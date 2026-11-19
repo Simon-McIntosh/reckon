@@ -233,19 +233,29 @@ def test_the_launch_from_the_pointer_is_the_same_worker(
     inline_id = "r-20261119T000000000000-inline-body"
     split_id = "r-20261119T000000000000-split-body"
     record = _queued_record(repository, node, split_id)
-    stored = runs.read_pointer(split_id)
-    inline = {**stored, "node": runs.node_definition(stored)}
-    inline.pop("node_body", None)
+    # The base revision's own shape: the fixture's node, every field inline.
+    # Built from the node this test declared rather than from an accessor, so a
+    # hydration that dropped a field cannot agree with itself and pass.
     inline_path = runs.pointer_path(inline_id)
     inline_path.parent.mkdir(parents=True, exist_ok=True)
-    inline_path.write_text(json.dumps(inline), encoding="utf-8")
+    inline_path.write_text(
+        json.dumps(
+            {
+                "run_id": inline_id,
+                "project": PROJECT,
+                "repo": str(repository),
+                "phase": "queued",
+                "node": node.as_dict(),
+            }
+        ),
+        encoding="utf-8",
+    )
 
     rebuilt = _node_from_pointer(runs.read_pointer(split_id))
     at_base = _node_from_pointer(runs.read_pointer(inline_id))
+    assert rebuilt.as_dict() == node.as_dict()
+    assert at_base.as_dict() == node.as_dict()
     assert rebuilt.as_dict() == at_base.as_dict()
-    assert rebuilt.brief == str(brief)
-    assert rebuilt.done_when == DEMONSTRABLE_DONE_WHEN
-    assert rebuilt.peer_scopes == _peer_scopes()
 
     wired = record["peer_channel"]["peers"]
     assert runs.peer_channel_peers(runs.read_pointer(split_id)) == wired
@@ -530,3 +540,84 @@ def test_a_review_judgement_reads_the_done_when_through_the_pointer(
 
     # The inline record, the shape the base revision judged, reads the same.
     assert runs_module.node_field(lifecycle, "done_when") == done_when
+
+
+def test_a_run_with_no_node_still_refuses_its_rebuild(repository: Path) -> None:
+    """(g) A pointer carrying no node refuses, rather than rebuilding empty."""
+    from reckon.crew import dispatch_sessions
+    from reckon.crew.node import CrewError
+
+    run_id = "r-20261119T000000000000-no-node"
+    path = runs.pointer_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "project": PROJECT,
+                "repo": str(repository),
+                "phase": "queued",
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(CrewError, match="records no node definition"):
+        dispatch_sessions._recorded_task_node(runs.read_pointer(run_id))
+
+    node = _node("rebuilt-body", done_when=DEMONSTRABLE_DONE_WHEN)
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "phase": "queued",
+            "node": node.as_dict(),
+        },
+    )
+    rebuilt = dispatch_sessions._recorded_task_node(runs.read_pointer(run_id))
+    assert rebuilt.done_when == DEMONSTRABLE_DONE_WHEN
+    assert rebuilt.brief == node.brief
+
+
+def test_the_judge_sees_the_done_when_of_a_run_listed_once(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """(h) Judged from the listing's own row, the judge reads the real done-when."""
+    from reckon.crew import recovery_review_dispatch as review_dispatch
+    from reckon.crew import review_need
+
+    done_when = "the judge reads the listed row's done-when"
+    node = _node(
+        "listed-body", done_when=done_when, manifest_path=str(tmp_path / "manifest.md")
+    )
+    run_id = "r-20261119T000000000000-listed-body"
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "phase": "working",
+            "node": _full_node(node),
+        },
+    )
+    listed = next(row for row in runs.list_live() if row["run_id"] == run_id)
+    assert "done_when" not in (listed.get("node") or {})
+
+    judged: list[dict] = []
+    monkeypatch.setattr(
+        review_need, "judge", lambda changes, **kwargs: judged.append(kwargs) or {}
+    )
+    monkeypatch.setattr(review_dispatch, "_review_accepts_promotion", lambda _r: True)
+    monkeypatch.setattr(review_dispatch, "_diff_between", lambda *_a, **_k: "+line")
+    from reckon import flight
+
+    monkeypatch.setattr(flight, "review_need_threshold", lambda _c: 0.5)
+    assert (
+        review_dispatch._judge_head_move(
+            listed, {"reviewed_head": "a" * 40, "head": "b" * 40}, config=None
+        )
+        is None
+    )
+    assert judged[-1]["goals"]["done_when"] == done_when
