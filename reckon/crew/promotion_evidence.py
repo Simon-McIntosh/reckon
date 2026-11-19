@@ -419,6 +419,13 @@ def _require_commits_beyond_base(
     after the tree it belonged to no longer existed. With no worktree to read,
     the observable question is the one the base answers — the citation is the
     run's work if it descends from the base the run was dispatched against.
+
+    Uncommitted declared work is only a defect for a run whose deliverable
+    belongs in a commit. A shadow run asserts no code and is refused a
+    citation by its own guard, so uncommitted work in its tree is the evidence
+    itself: the landing writes it into the run's shadow patch, which is what a
+    later reader measures. Refusing its row would leave the comparison arm with
+    its evidence in no artifact at all rather than in no commit.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
