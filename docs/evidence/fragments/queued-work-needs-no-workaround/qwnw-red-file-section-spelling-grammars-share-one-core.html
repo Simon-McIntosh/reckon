@@ -1,0 +1,21 @@
+<section id="qwnw-red-file-section-spelling-grammars-share-one-core-runs">
+<h3>Section spelling grammars: the red run and the repaired one</h3>
+<p>The file was red at the assigned base revision 39c536f2 in one case, <code>test_number_grammar_census_has_six_composed_frames</code>, and passes in full at head 0409b3be. One cause, and the product was wrong rather than the test: the test holds the section-number core to one owner and six frames that compose it, while <code>reckon/crew/plan_review.py</code> carried two further grammars that spelled the number as bare digits — a token gate and a reference scanner. The gate was redundant, because <code>_plan_html.section_record_id</code> already reads every <code>s</code>-prefixed, section-sign and bare-number spelling to the same record id, so it was removed rather than re-spelled. The scanner's pattern string is unchanged and now composes <code>SECTION_NUMBER_PATTERN</code>. No assertion was deleted or weakened.</p>
+<h4>Base run: red, 1 failed 44 passed</h4>
+<pre># revision: 39c536f25e471db929ddf93c09240e236f22a637
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-section-spelling-grammars-share-one-core
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_section_spelling_grammars_share_one_core.py
+..........................................F..                            [100%]
+FAILED tests/test_section_spelling_grammars_share_one_core.py::test_number_grammar_census_has_six_composed_frames - AssertionError: (PosixPath('/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-re...ction-spelling-grammars-share-one-core/reckon/crew/plan_review.py'), '_SECTION_TOKEN', "'^[sS][0-9]+(?:[.-][0-9]+)*$'")
+assert 'SECTION_NUMBER' in "'^[sS][0-9]+(?:[.-][0-9]+)*$'"
+1 failed, 44 passed in 13.38s
+EXIT=1</pre>
+<h4>Head run: green, 45 passed</h4>
+<pre># revision: 0409b3be130b9d3dbe25f3f0309f9b1962d0ffe1
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-f866e1a8e234-NXJEfm/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_section_spelling_grammars_share_one_core.py'
+.............................................                            [100%]
+45 passed in 9.30s
+EXIT=0</pre>
+</section>

@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T17:11:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "the head-arm block quotes 6 passed in 6.51s under the gate's own tree /tmp/mcintos-landing-cf7fe4c98767-i4ea0z/tree, but the cited log scoped-gate-1795011757597093462.log:7 records 6 passed in 1.12s, and 6.51s is the summary of a local worktree run, so the excerpt is presented as the gate log without being that run and a reader reconciling the block against the log finds a figure the log never printed"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "three further environment runs are claimed here (the operator home exported, a temporary home exported and none exported) with no log named for any of them, and the run directory holds only the two scoped-gate logs, so the corroborating runs a reader would check are unrecorded"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062931577460-qwnw-red-file-ledger-write-keeps-run-files/manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the done_when asks the manifest to list each cause with a product-wrong or test-wrong verdict, but the landing line describes the cause without naming which side was wrong and the verdict appears only in the fragment"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call site exists, because the landed change is a test file and an evidence fragment and no runtime module under reckon/ changed",
+    "diff": "read both commits against base 23b90169, where aefd7b73 scopes the refused-envelope patch with 11 insertions and 4 deletions and 79fd565a adds only the 28-line evidence fragment",
+    "done_when": "read the done_when against the head gate log, the base gate log and the manifest's suite arms, and every clause except the manifest-side verdict has a recorded result",
+    "goal": "read the node goal, that tests/test_ledger_write_keeps_run_files.py passes in full on the primary branch, against tests/test_ledger_write_keeps_run_files.py:299 and :304-305 and the head gate log, and the file passes in full at the reviewed head with no product change, pending promotion",
+    "manifest": "read the reviewed run's manifest.md, which states status complete, both commits, the gate command, both gate arms and both suite arms at 58 passed",
+    "write_paths": "read the declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround against the diff of 23b90169..79fd565a, and both changed paths lie inside them"
+  },
+  "justifications": {
+    "durability": "Reinstating the base form at tests/test_ledger_write_keeps_run_files.py:292-296 is exactly the base arm, which records FAILED test_a_refused_envelope_puts_the_run_file_back and the cache-root guard ERROR with EXIT=1",
+    "evidence": "The gate command in the manifest equals the command in the head log header, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html:24 quotes a head summary the cited log does not contain",
+    "fit": "The repair reuses the monkeypatch.context form already present one case above at tests/test_ledger_write_keeps_run_files.py:260 and the double-backtick comment idiom the test tree uses throughout",
+    "goal_fidelity": "The goal is that tests/test_ledger_write_keeps_run_files.py passes in full, and the head arm resolves to 6 passed with EXIT=0 in scoped-gate-1795011757597093462.log while the base arm of the same command records 1 failed plus 1 error",
+    "reuse": "No definition is added: the change reuses pytest's monkeypatch.context scoping instead of introducing a second patch mechanism, so no capability the repository owns is forked",
+    "scope_discipline": "The two changed paths in 23b90169..79fd565a are tests/test_ledger_write_keeps_run_files.py and the declared fragment under docs/evidence/fragments/queued-work-needs-no-workaround, and no product source under reckon/ was touched"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal, that tests/test_ledger_write_keeps_run_files.py passes in full on the primary branch, against tests/test_ledger_write_keeps_run_files.py:299 and :304-305 and the head gate log at scoped-gate-1795011757597093462.log, and found the file passing in full at the reviewed head with no product change, pending promotion.\nVERDICT done_when: read the done_when, which names the named file passing on all_debug with SLURM_JOB_ID unset, a verdict per cause, no assertion deleted or weakened, and both suite arms as inline JSON with 40-character revisions, against scoped-gate-1795011757597093462.log, scoped-gate-1795010862914107698.log and the manifest's baseline_suite and after_suite, and found every clause measured except that the manifest states no explicit product-wrong or test-wrong verdict.\nVERDICT write_paths: read the declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround against git diff 23b90169..79fd565a, and found both changed paths, tests/test_ledger_write_keeps_run_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html, inside them.\nVERDICT manifest: read the reviewed run's manifest.md and found it records status complete, the two commits aefd7b73d2 and 79fd565a73, the gate command, both gate arms and both suite arms at 58 passed with EXIT=0.\nVERDICT diff: read both commits against base 23b901694b and found aefd7b73 scoping the refused-envelope patch with 11 insertions and 4 deletions at tests/test_ledger_write_keeps_run_files.py:299 and 79fd565a adding only the 28-line evidence fragment, nothing outside the declared paths.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is that tests/test_ledger_write_keeps_run_files.py passes in full, and the head arm resolves to 6 passed with EXIT=0 in scoped-gate-1795011757597093462.log while the base arm of the same command records 1 failed plus 1 error.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate command in the manifest equals the command in the head log header, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html:24 quotes a head summary the cited log does not contain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two changed paths in 23b90169..79fd565a are tests/test_ledger_write_keeps_run_files.py and the declared fragment under docs/evidence/fragments/queued-work-needs-no-workaround, and no source under reckon/ was touched.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the base form at tests/test_ledger_write_keeps_run_files.py:292-296 is exactly the base arm, which records FAILED test_a_refused_envelope_puts_the_run_file_back and the cache-root guard ERROR with EXIT=1, so the regression reddens the gate.\nSCORE fit: 19\nJUSTIFICATION fit: the repair reuses the monkeypatch.context form already present one case above at tests/test_ledger_write_keeps_run_files.py:260 and the double-backtick comment idiom the test tree uses throughout.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added, so the change reuses pytest's monkeypatch.context scoping rather than forking a patch mechanism the repository already owns.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html:24 non-blocking: the head-arm block quotes 6 passed in 6.51s under the gate's own tree /tmp/mcintos-landing-cf7fe4c98767-i4ea0z/tree, but the cited log scoped-gate-1795011757597093462.log:7 records 6 passed in 1.12s, and 6.51s is the summary of a local worktree run, so the excerpt is presented as the gate log without being that run.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html:26 non-blocking: three further environment runs are claimed here with no log named for any of them, and the run directory holds only the two scoped-gate logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062931577460-qwnw-red-file-ledger-write-keeps-run-files/manifest.md:11 non-blocking: the done_when asks the manifest to list each cause with a product-wrong or test-wrong verdict, but the landing line describes the cause without naming which side was wrong.",
+  "review_run_id": "r-20261118T143835956336-review-of-qwnw-red-file-ledger-write-keeps-run-files-79fd565a73fb",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "79fd565a73fbe066b3a3519713c3f6ad464be312",
+  "reviewed_run_id": "r-20261118T062931577460-qwnw-red-file-ledger-write-keeps-run-files",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T17:27:08.873605+00:00",
+  "total": 111
+}

@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T18:49:15Z",
+  "findings": [
+    {
+      "file": "tests/test_budget.py",
+      "line": "1551",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert payload[\"hold\"][\"state\"][\"utilisation_pct\"] == 100.0 compares the hold payload against the utilisation the fixture itself recorded at tests/test_budget.py:1511, so it is an echo of the input rather than an independent reading and hold of the case rests on the literal guards at :1549-1550; the assertion predates this diff and is weaker than it looks."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget.html",
+      "line": "49",
+      "severity": "non-blocking",
+      "text": "non-blocking: the declared-suite after-arm row names 3868e1a917 while the manifest files that arm at a8c082cabe9168fb8a6f22b438d8f5d7e8126d0f from after_suite-arm.log, so the fragment's table and the run's cited arm log disagree on the revision a reader reconciles them against; the test file is identical at both commits, so no measurement is lost."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063300161303-qwnw-red-file-budget/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: measurement_module and measurement_cwd name the base-arm extraction base-arm-HZ2zIf, while the gate ran in /tmp/mcintos-landing-b2da85a80898-0DDetN/tree per its own log header and that log carries no module line, so the module path the manifest records does not describe the run the tests line names."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call site can reach the change: the diff alters a test's own argv and an evidence fragment, so runtime code imports neither.",
+    "diff": "Two commits over 60ecc274f1, 69 added lines and none deleted: tests/test_budget.py adds a six-line comment and two argv items (--section, s1) with no assertion moved, and the fragment adds the landing record.",
+    "done_when": "The done_when names tests/test_budget.py passing in full as an all_debug job with SLURM_JOB_ID unset, a base red, unchanged assertions, suite arms in inline JSON with full revisions, a negative control, and it is asserted by those logs; the all_debug partition and the ruff delta are asserted by the manifest's prose rather than carried in any log.",
+    "goal": "The node goal is to make tests/test_budget.py pass in full; scoped-gate-1795016644521000528.log records 70 passed, EXIT=0 for that file at 3868e1a917, and the change at tests/test_budget.py:1529 is what reaches the budget pre-flight at reckon/crew_dispatch_commands.py:1740.",
+    "manifest": "The manifest states one cause with the verdict test wrong, records 70 passed at head and 69 passed 1 failed at base, the two arms green either side with their JSON, and the gate and negative-control log paths; its measurement_module/manifest.md:13 names the base-arm extraction while the gate ran in the landing tree named at the gate log's line 4.",
+    "write_paths": "The declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two paths in the diff are inside them."
+  },
+  "justifications": {
+    "durability": "The fixture option added at tests/test_budget.py:1529 is proved load-bearing by negative-control-test-budget-at-base.log, where removing it turns the case red (1 failed, EXIT=1), and the unchanged literals at tests/test_budget.py:1549-1550 redden if the budget pre-flight stops answering budget-hold on exit 3.",
+    "evidence": "The gate in scoped-gate-1795016644521000528.log runs tests/test_budget.py at 3868e1a917 with SLURM_JOB_ID unset and records 70 passed, EXIT=0, but the partition the done_when names is not recorded anywhere in that log and the base red is a separate log rather than the same-home arm.",
+    "fit": "The added comment at tests/test_budget.py:1513.",
+    "goal_fidelity": "tests/test_budget.py passes in full at a8c082cabe \u2014 70 passed, EXIT=0 in scoped-gate-1795016644521000528.log \u2014 and the fixture change at tests/test_budget.py:1529 reaches the direct dispatch path instead of the whole-plan queue at reckon/crew_dispatch_commands.py:1740.",
+    "reuse": "The diff adds no function, class or module, so nothing forks an existing capability; the dispatch decision it exercises stays in reckon/crew_dispatch_commands.py:1740.",
+    "scope_discipline": "The diff 60ecc274f1..a8c082cabe touches only tests/test_budget.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget.html, both inside the declared paths, and no product module moves."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_budget.py passes in full, and scoped-gate-1795016644521000528.log records 70 passed, EXIT=0 for that file at 3868e1a917, reached by the fixture option at tests/test_budget.py:1529.\nVERDICT done_when: the brief's done_when requires the file green as an all_debug job with SLURM_JOB_ID unset, a base red, unchanged assertions, inline-JSON arms at full revisions and a negative control; the gate and arms assert all but the partition name.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the diff's two paths lie inside them.\nVERDICT manifest: read at .../manifest.md; one cause with the verdict test wrong, 70 passed at head, 69 passed 1 failed at base, both suite arms 58 passed EXIT=0, all logs named.\nVERDICT diff: read commit by commit over 60ecc274f1..a8c082cabe; 3868e1a917 adds a comment and --section s1 to the test's argv at tests/test_budget.py:1529, a8c082cabe adds the 61-line fragment, nothing else.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_budget.py:1529 reaches the direct dispatch path at reckon/crew_dispatch_commands.py:1740 instead of the whole-plan queue.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795016644521000528.log records 70 passed, EXIT=0 at 3868e1a917 with SLURM_JOB_ID unset, though no log names the all_debug partition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 60ecc274f1..a8c082cabe is inside the declared write paths named by the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-test-budget-at-base.log reddens the case when the fixture option is removed, and tests/test_budget.py:1549-1550 redden if the budget pre-flight stops answering budget-hold.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_budget.py:1513 follows the file's long-rationale comment idiom beside its sibling cases.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, so no capability is forked from reckon/crew_dispatch_commands.py:1740.\nFINDING tests/test_budget.py:1551 non-blocking: the utilisation assertion compares the hold payload against the utilisation the fixture itself recorded at tests/test_budget.py:1511, so it is an echo of the input and the case rests on the literal guards at :1549-1550; the assertion predates this diff.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget.html:49 non-blocking: the after-arm row names 3868e1a917 while the manifest files that arm at a8c082cabe from after_suite-arm.log, so the fragment's table and the file it cites disagree on the revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063300161303-qwnw-red-file-budget/manifest.md:13 non-blocking: measurement_module and measurement_cwd name the base-arm extraction base-arm-HZ2zIf while the gate ran in /tmp/mcintos-landing-b2da85a80898-0DDetN/tree per its own log header, which carries no module line.",
+  "review_run_id": "r-20261118T161101011039-review-of-qwnw-red-file-budget-a8c082cabe91",
+  "reviewed_base_sha": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "reviewed_head_sha": "a8c082cabe9168fb8a6f22b438d8f5d7e8126d0f",
+  "reviewed_run_id": "r-20261118T063300161303-qwnw-red-file-budget",
+  "rubric": "run_review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T19:15:45.386252+00:00",
+  "total": 112
+}

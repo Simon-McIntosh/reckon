@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-a-brief-points-rather-than-quotes — base red run and head green run</title>
+</head>
+<body>
+<article id="qwnw-red-file-a-brief-points-rather-than-quotes">
+<h1>qwnw-red-file-a-brief-points-rather-than-quotes</h1>
+
+<p>The file <code>tests/test_a_brief_points_rather_than_quotes.py</code> was red on the
+primary branch at <code>bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68</code>: one failure,
+twelve passes. The cause is in the test, not in the product.</p>
+
+<h2 id="qwnw-red-file-a-brief-points-rather-than-quotes-cause">Cause</h2>
+
+<p>The dispatch command keeps its result document on stdout and sends the run-identity
+notice — <code>reckon: created run &lt;id&gt;</code> — to stderr
+(<code>reckon/crew/dispatching/preparation.py</code>: "Stdout remains the command's final
+JSON document, so notices use stderr"). The test's payload helper parsed
+<code>result.output</code>, which click 8.4 assembles from stdout and stderr together,
+so the notice arrived ahead of the document:</p>
+
+<pre id="qwnw-red-file-a-brief-points-rather-than-quotes-repro">FAILED tests/test_a_brief_points_rather_than_quotes.py::test_a_copied_span_is_named_quoted_and_recorded_on_the_run - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+s = 'reckon: created run r-20261118T174701868230-brief-overlap', idx = 0</pre>
+
+<p>Only the non-dry-run case reaches the notice, which is why one test of thirteen failed.
+The helper now reads <code>result.stdout</code>, the channel the caller parses. No
+assertion was removed or weakened: <code>stdout</code> is a strict subset of the combined
+stream the helper previously read.</p>
+
+<h2 id="qwnw-red-file-a-brief-points-rather-than-quotes-runs">Runs</h2>
+
+<table id="qwnw-red-file-a-brief-points-rather-than-quotes-table">
+<thead>
+<tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>base</td>
+<td><code>bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68</code></td>
+<td>1 failed, 12 passed — <code>EXIT=1</code></td>
+<td><code>negative-control-base-red.log</code> in the run directory, alongside
+<code>scoped-gate-1795024614253356313.log</code></td>
+</tr>
+<tr>
+<td>head</td>
+<td><code>e85f4b928ed633b6507936fe25d968a42eff910d</code></td>
+<td>13 passed — <code>EXIT=0</code></td>
+<td><code>negative-control-head-green.log</code> and the scoped gate log</td>
+</tr>
+</tbody>
+</table>
+
+<p>Both scratch arms were extracted from their own revision and imported the module under
+test from that tree (<code>module.__file__</code> and the resolved working directory are
+named on each log's header lines). The scoped gate was submitted to <code>all_debug</code>
+with <code>SLURM_JOB_ID</code> unset; the two scratch arms ran inside this job's
+allocation.</p>
+
+</article>
+</body>
+</html>

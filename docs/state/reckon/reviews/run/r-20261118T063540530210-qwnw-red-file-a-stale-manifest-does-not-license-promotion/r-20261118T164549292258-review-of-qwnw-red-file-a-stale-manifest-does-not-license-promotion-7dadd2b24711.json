@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:958 complete",
+    "reckon/crew/promotion.py:1364 _require_commits_beyond_base (lambda call)",
+    "reckon/crew/promotion_evidence.py:390 _require_commits_beyond_base",
+    "reckon/crew/promotion_release.py:1269 _record_tree",
+    "reckon/crew/recovery_classification.py:1371 classify_pointer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:23:30Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: artifacts.ruff asserts that ruff check and ruff format --check report nothing on the changed path, but no ruff log exists under the run directory, so the done_when's lint clause is claimed rather than recorded and no receipt for it can be read."
+    }
+  ],
+  "head_log_revision": "7dadd2b24711c31c623aa8440978e8a1aa1d4316",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against base 9e1dc0dc3e2c; 48622e7 changes only _commit_work at tests/test_a_stale_manifest_does_not_license_promotion.py:171-183 and its four call sites, 7dadd2b adds the 55-line evidence fragment, and no product file is touched.",
+    "done_when": "the done_when names the file at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict in the manifest, and both suite arms as inline JSON with 40-character revisions; the manifest records base 1 failed and 3 passed at 9e1dc0d (base-run.log), head 4 passed at 48622e7 (head-gate-literal.log) and at 7dadd2b (scoped-gate-1795019594362391437.log), plus 58 passed in both suite arms.",
+    "goal": "the goal is that tests/test_a_stale_manifest_does_not_license_promotion.py passes in full; tests/test_a_stale_manifest_does_not_license_promotion.py:171-183 now commits the fixture's work in Path(record[\"worktree\"]) and the scoped gate log scoped-gate-1795019594362391437.log reads 4 passed EXIT=0 at 7dadd2b, so all four cases pass at head.",
+    "manifest": "read; status complete, commits 48622e7da308 and 7dadd2b24711, tests the literal pytest command, test_logs naming base-run.log, head-gate-literal.log and scoped-gate-1795019594362391437.log, baseline_suite and after_suite both 58 passed with empty failure_ids.",
+    "write_paths": "the fence names reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 9e1dc0dc3e2c..7dadd2b24711 shows only tests/test_a_stale_manifest_does_not_license_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stale-manifest-does-not-license-promotion.html, both inside it."
+  },
+  "justifications": {
+    "durability": "reinstating the base fixture's _commit_work(repo) makes crew.complete at tests/test_a_stale_manifest_does_not_license_promotion.py:272 raise, which is the FAILED id base-run.log records, and the three sibling cases pass under both fixtures so that one case carries the guard.",
+    "evidence": "baseline_suite-1795019638241383071.log and after_suite-1795019713241385077.log each record 58 passed at full 40-character revisions, but the lint clause appears only as the manifest's own artifacts.ruff sentence at manifest.md:24 with no ruff log beside it.",
+    "fit": "tests/test_a_stale_manifest_does_not_license_promotion.py:171-183 keeps the helper's name and adds only a docstring in the style of the sibling fixtures at :138-168, introducing no new name.",
+    "goal_fidelity": "tests/test_a_stale_manifest_does_not_license_promotion.py:272-277 promotes the run and asserts the pointer removed, and scoped-gate-1795019594362391437.log reads 4 passed EXIT=0 at 7dadd2b.",
+    "reuse": "searched tests/helpers (git.py only, no commit-in-run-tree helper) and reckon/crew for a writer of a run's own commit; the fixture reuses tests/helpers/git.py:git and the tree key that reckon/crew/promotion_release.py:1269 _record_tree already owns, adding no definition.",
+    "scope_discipline": "git diff 9e1dc0dc3e2c..7dadd2b24711 touches only tests/test_a_stale_manifest_does_not_license_promotion.py and the fragment, both inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_a_stale_manifest_does_not_license_promotion.py passes in full; tests/test_a_stale_manifest_does_not_license_promotion.py:171-183 now commits the fixture's work in Path(record[\"worktree\"]) and the scoped gate log scoped-gate-1795019594362391437.log reads 4 passed EXIT=0 at 7dadd2b, so all four cases pass at head.\nVERDICT done_when: the done_when names the file at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict in the manifest, and both suite arms as inline JSON with 40-character revisions; the manifest records base 1 failed and 3 passed at 9e1dc0d (base-run.log), head 4 passed at 48622e7 (head-gate-literal.log) and at 7dadd2b (scoped-gate-1795019594362391437.log), plus 58 passed in both suite arms.\nVERDICT write_paths: the fence names reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 9e1dc0dc3e2c..7dadd2b24711 shows only tests/test_a_stale_manifest_does_not_license_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stale-manifest-does-not-license-promotion.html, both inside it.\nVERDICT manifest: read; status complete, commits 48622e7da308 and 7dadd2b24711, tests the literal pytest command, test_logs naming base-run.log, head-gate-literal.log and scoped-gate-1795019594362391437.log, baseline_suite and after_suite both 58 passed with empty failure_ids.\nVERDICT diff: read both commits against base 9e1dc0dc3e2c; 48622e7 changes only _commit_work at tests/test_a_stale_manifest_does_not_license_promotion.py:171-183 and its four call sites, 7dadd2b adds the 55-line evidence fragment, and no product file is touched.\nCALL_SITES: reckon/crew/promotion.py:958 complete, reckon/crew/promotion.py:1364 _require_commits_beyond_base (lambda call), reckon/crew/promotion_evidence.py:390 _require_commits_beyond_base, reckon/crew/promotion_release.py:1269 _record_tree, reckon/crew/recovery_classification.py:1371 classify_pointer\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_stale_manifest_does_not_license_promotion.py:272-277 promotes the run and asserts the pointer removed, and scoped-gate-1795019594362391437.log reads 4 passed EXIT=0 at 7dadd2b.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline_suite-1795019638241383071.log and after_suite-1795019713241385077.log each record 58 passed at full 40-character revisions, but the lint clause appears only as the manifest's own artifacts.ruff sentence at manifest.md:24 with no ruff log beside it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9e1dc0dc3e2c..7dadd2b24711 touches only tests/test_a_stale_manifest_does_not_license_promotion.py and the fragment, both inside the declared fence.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the base fixture's _commit_work(repo) makes crew.complete at tests/test_a_stale_manifest_does_not_license_promotion.py:272 raise, which is the FAILED id base-run.log records, and the three sibling cases pass under both fixtures so that one case carries the guard.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_stale_manifest_does_not_license_promotion.py:171-183 keeps the helper's name and adds only a docstring in the style of the sibling fixtures at :138-168, introducing no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: searched tests/helpers (git.py only, no commit-in-run-tree helper) and reckon/crew for a writer of a run's own commit; the fixture reuses tests/helpers/git.py:git and the tree key that reckon/crew/promotion_release.py:1269 _record_tree already owns, adding no definition.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/manifest.md:24 non-blocking: artifacts.ruff asserts that ruff check and ruff format --check report nothing on the changed path, but no ruff log exists under the run directory, so the done_when's lint clause is claimed rather than recorded and no receipt for it can be read.",
+  "review_run_id": "r-20261118T164549292258-review-of-qwnw-red-file-a-stale-manifest-does-not-license-promotion-7dadd2b24711",
+  "reviewed_base_sha": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246",
+  "reviewed_head_sha": "7dadd2b24711c31c623aa8440978e8a1aa1d4316",
+  "reviewed_run_id": "r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T164549292258-review-of-qwnw-red-file-a-stale-manifest-does-not-license-promotion-7dadd2b24711"
+  },
+  "reviewer_run_id": "r-20261118T164549292258-review-of-qwnw-red-file-a-stale-manifest-does-not-license-promotion-7dadd2b24711",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:53:17.014852+00:00",
+  "total": 117
+}

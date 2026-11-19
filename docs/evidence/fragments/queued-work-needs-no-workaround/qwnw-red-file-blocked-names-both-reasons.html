@@ -1,0 +1,80 @@
+<section id="qwnw-red-file-blocked-names-both-reasons-node">
+  <p id="qwnw-red-file-blocked-names-both-reasons-cause">A blocked row names the refusal that gates its recovery, not only the reason its worker last wrote.</p>
+
+  <h2>What was wrong</h2>
+
+  <p id="qwnw-red-file-blocked-names-both-reasons-red">At the base revision
+  <code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code> the file reads
+  <code>1 failed, 5 passed</code>, and the failing id is
+  <code>test_the_monitor_row_for_the_combined_case_also_names_the_refusal</code>:</p>
+
+  <blockquote id="qwnw-red-file-blocked-names-both-reasons-quote"><code>assert 'waiting' == 'blocked'</code></blockquote>
+
+  <p id="qwnw-red-file-blocked-names-both-reasons-shape">The row the monitor paints for a run whose manifest reports
+  <code>blocked</code> while its lane also refused a turn comes out of
+  <code>_watch_verdict</code> with the word <em>waiting</em>. The classifier
+  already keeps both facts — its <code>detail</code> carries the manifest's
+  blocker followed by the refusal and its reset, and its
+  <code>next_action</code> is gated on the lane clearing — so the first two
+  cases of the file pass. Only the fleet word diverges, because a run
+  classified <code>blocked</code> whose lane also holds it is re-worded
+  <code>held</code> by recovery, and the reducer painted every held row with no
+  written hold record as the wait the clock alone ends.</p>
+
+  <p id="qwnw-red-file-blocked-names-both-reasons-verdict"><strong>Cause and verdict: the product.</strong> One cause. The reducer conflated two
+  different holds. A queue hold with no written record is the lane's to lift, and
+  reading it as a wait is the rule the code keeps: a run whose only fact is a
+  provider refusal, with no manifest verdict beside it, still reads
+  <code>waiting</code>, and <code>tests/test_recovery_state_typing.py</code>
+  pins that as <code>counts["blocked"] == 0</code>. But a block the worker's own
+  manifest reports is not lifted by any clock: the lane's refusal gates
+  <em>when</em> the blocker can be worked and never removes it. Painting that
+  row as a wait hid a reader's work behind a clock that answers a different
+  question, and dropped the row from the blocked count. The repair keeps the
+  manifest's word on such a row and leaves a bare lane hold reading as the wait
+  it is. No test file changed, and no assertion was deleted or weakened.</p>
+
+  <h2>The two arms, measured by the same instrument</h2>
+
+  <p id="qwnw-red-file-blocked-names-both-reasons-arms">Both arms ran the node's own file as an
+  <code>all_debug</code> batch job from an extracted tree, with
+  <code>SLURM_JOB_ID</code> unset for the pytest process; each log names the
+  revision, host, tree, command and the module the run imported.</p>
+
+  <table id="qwnw-red-file-blocked-names-both-reasons-table">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Job</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr id="qwnw-red-file-blocked-names-both-reasons-base-arm">
+        <td>base</td>
+        <td><code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code></td>
+        <td>1327127</td>
+        <td>1 failed, 5 passed; <code>EXIT=1</code></td>
+      </tr>
+      <tr id="qwnw-red-file-blocked-names-both-reasons-head-arm">
+        <td>head</td>
+        <td><code>21d27960764d8c25bec442a5d276250fa7fde0c7</code></td>
+        <td>1327130</td>
+        <td>6 passed; <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+    <p id="qwnw-red-file-blocked-names-both-reasons-importer">The importer arm covers the 146 test files that import
+  <code>reckon/crew/recovery_watch.py</code>, the reducer it lives in, or either
+  of its snapshot helpers, and both arms ran as one batch job on
+  <code>all_debug</code> (1327156, 9m28s and 9m48s). No failing id appears at
+  the head that the base arm does.</p>
+
+  <pre id="qwnw-red-file-blocked-names-both-reasons-importer-base">{"arm": "base", "revision": "60ecc274f1bf7008b09057c6a5252423deb4cfe5", "files": 146, "exit_status": 1, "summary": "38 failed, 1105 passed, 2 errors", "failure_count": 40, "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063305493207-qwnw-red-file-blocked-names-both-reasons/importer-base.log"}</pre>
+
+  <pre id="qwnw-red-file-blocked-names-both-reasons-importer-head">{"arm": "head", "revision": "21d27960764d8c25bec442a5d276250fa7fde0c7", "files": 146, "exit_status": 1, "summary": "36 failed, 1109 passed", "failure_count": 36, "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063305493207-qwnw-red-file-blocked-names-both-reasons/importer-head.log"}</pre>
+
+  <p id="qwnw-red-file-blocked-names-both-reasons-importer-delta">Delta: none added. Four ids leave between the arms — the node's own failing
+  case, the two <code>test_staged_write_inventory.py</code> errors the base arm
+  raised because its extracted tree was not a git repository
+  (<code>git ls-tree</code> exits 128 there), and one producer parse-count case
+  whose spawn reading differs between an extracted tree and a checkout. The
+  remaining failures are the standing red population of the primary branch,
+  unchanged in both arms.</p>
+
+</section>

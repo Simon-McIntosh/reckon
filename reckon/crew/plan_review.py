@@ -2028,28 +2028,24 @@ def _record_decided_units(units: Iterable[str]) -> None:
         holder["units"] = tuple(sorted(units))
 
 
-_SECTION_TOKEN = re.compile(r"^[sS][0-9]+(?:[.-][0-9]+)*$")
-
-
 def _normalise_sections(sections: Iterable[Any] | None) -> tuple[str, ...]:
     """The section units a ``--section`` spelling names, in the order given.
 
     Every spelling the parser derives an identity for is accepted — the ``s``
     prefix, the section symbol, and a bare number all name one section — and a
-    repeated name is dropped rather than read twice. A token naming no section is refused here, because
-    a scope that silently names nothing composes a review of the whole plan
-    while reporting itself as narrow.
+    repeated name is dropped rather than read twice. Each spelling resolves
+    through the one section-number derivation in :mod:`reckon._plan_html`, so
+    this module owns no grammar of its own. A name that no plan section
+    carries is refused downstream by :func:`review_scope`, whose message names
+    the sections the plan does carry — a better refusal than one here could
+    give, because only that caller holds the plan.
     """
     units: list[str] = []
     for raw in sections or ():
         token = str(raw or "").strip()
         if not token:
             continue
-        if _SECTION_TOKEN.match(token):
-            token = "§" + token[1:]
         unit = _plan_html.section_record_id(token)
-        if not unit:
-            raise ValueError(f"{raw!r} does not name a plan section")
         if unit not in units:
             units.append(unit)
     return tuple(units)
@@ -2206,14 +2202,9 @@ def _answer_instant(when: str) -> datetime | None:
     module wrote it. A stamp without one is read as UTC so a comparison against a
     commit's own time is never between two different zones.
     """
-    text = (when or "").strip()
-    if not text:
-        return None
-    try:
-        instant = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(when)
 
 
 def _commit_time(
@@ -2227,10 +2218,9 @@ def _commit_time(
     output = _git(repo, "show", "-s", "--format=%cI", commit)
     if not output or not output.strip():
         return None
-    try:
-        return datetime.fromisoformat(output.strip())
-    except ValueError:
-        return None
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(output)
 
 
 def _plan_text_at(
@@ -3278,9 +3268,11 @@ def _reviewed_plan_text(
         return None
 
 
-_SECTION_REFERENCE = re.compile(
-    r"§\s*(\d+(?:[.-]\d+)*)|(?<![0-9A-Za-z_])s(\d+(?:[.-]\d+)*)(?![0-9])"
+_SECTION_REFERENCE_GRAMMAR = (
+    rf"§\s*({_plan_html.SECTION_NUMBER_PATTERN})"
+    rf"|(?<![0-9A-Za-z_])s({_plan_html.SECTION_NUMBER_PATTERN})(?![0-9])"
 )
+_SECTION_REFERENCE = re.compile(_SECTION_REFERENCE_GRAMMAR)
 
 
 def _fragment_unit(anchor: str) -> str | None:

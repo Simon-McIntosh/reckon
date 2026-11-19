@@ -8,9 +8,17 @@
   second, 28 lines later, was the body those regions were meant to wrap. Python
   binds the second def at import time, so the opener was dead code and every
   reader inside a derivation resolved each live run's reviewed head for itself.
-  The body is now <code>_derive_fleet_state_body</code> and the opener calls it,
+  The body is now <code>_build_fleet_state</code> and the opener calls it,
   so the regions are entered by both <code>fleet_state</code> and
   <code>sweep</code> (whose own regions join the ones already open).</p>
+
+  <p><strong>The merge.</strong> The primary branch repaired the same defect
+  while this run was in flight
+  (<code>e618bd27c0ecb655b64771bb0c59a1b3261f1c43</code>), naming the body
+  <code>_build_fleet_state</code>. The merge of <code>73b9ac21</code> conflicted
+  on exactly those two hunks. The resolution keeps one opener and one body under
+  the primary's name, so both sides' intent lands and no second spelling of the
+  body survives; nothing else in the module differs between the sides.</p>
 
   <p><strong>The reproduction at base.</strong> Run at
   <code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code> over a base tree

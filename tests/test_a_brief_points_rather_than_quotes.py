@@ -146,7 +146,9 @@ def _invoke(
 
 
 def _payload(result) -> dict:
-    return json.loads(result.output.splitlines()[0])
+    # The dispatch document owns stdout; a notice such as the run identity goes to
+    # stderr, so read the document the caller parses rather than the merged stream.
+    return json.loads(result.stdout)
 
 
 def _overlap_reports(payload: dict) -> list[str]:

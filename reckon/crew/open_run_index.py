@@ -16,7 +16,7 @@ import re
 import sqlite3
 from collections.abc import Iterator, Mapping, Sequence
 from contextvars import ContextVar
-from functools import wraps
+from functools import partial, wraps
 from pathlib import Path
 from typing import Any
 
@@ -24,20 +24,48 @@ _READERS: ContextVar[tuple[Mapping[str, Any], ...] | None] = ContextVar(
     "open_run_readers", default=None
 )
 
+_PROJECT_READERS: ContextVar[dict[str, tuple[Mapping[str, Any], ...]] | None] = (
+    ContextVar("open_run_project_readers", default=None)
+)
+
 _VALIDATED: ContextVar[set[Path] | None] = ContextVar(
     "open_run_validated_indexes", default=None
 )
 
 
-def pointers() -> tuple[Mapping[str, Any], ...] | None:
-    """The live-index snapshot this operational read is using, if any."""
-    return _READERS.get()
+def pointers(*, project: str | None = None) -> tuple[Mapping[str, Any], ...] | None:
+    """The held live listing, narrowed to a project without another decode."""
+    snapshot = _READERS.get()
+    if snapshot is None or project is None:
+        return snapshot
+    projects = _PROJECT_READERS.get()
+    if projects is None:
+        return tuple(
+            row for row in snapshot if str(row.get("project") or "") == project
+        )
+    if project not in projects:
+        projects[project] = tuple(
+            row for row in snapshot if str(row.get("project") or "") == project
+        )
+    return projects[project]
 
 
 @contextlib.contextmanager
-def read_scope(record: Mapping[str, Any] | None = None) -> Iterator[None]:
-    """Share live identities and an explicitly reconstructed target's record."""
-    snapshot = pointers()
+def read_scope(
+    record: Mapping[str, Any] | None = None,
+    *,
+    live: Sequence[Mapping[str, Any]] | None = None,
+) -> Iterator[None]:
+    """Share live identities and an explicitly reconstructed target's record.
+
+    A caller supplying its own listing makes it the population of this pass.
+    Project selections keep their identity throughout the scope, so readers
+    sharing a project also share the review index built from that selection.
+    The tokens are reset on exit, including an exception, so the next pass
+    takes a fresh listing and sees pointers written during this one.
+    """
+    held = pointers()
+    snapshot = tuple(live) if live is not None else held
     if snapshot is None:
         from reckon.crew import runs
 
@@ -49,21 +77,29 @@ def read_scope(record: Mapping[str, Any] | None = None) -> Iterator[None]:
     ):
         snapshot = (*snapshot, record)
     token = _READERS.set(snapshot)
+    projects_token = _PROJECT_READERS.set({}) if snapshot is not held else None
     validated_token = _VALIDATED.set(set()) if _VALIDATED.get() is None else None
     try:
         yield
     finally:
         _READERS.reset(token)
+        if projects_token is not None:
+            _PROJECT_READERS.reset(projects_token)
         if validated_token is not None:
             _VALIDATED.reset(validated_token)
 
 
-def operational_read(function):
+def operational_read(function=None, *, live_reader=None):
     """Keep an operational entry point inside the open-run read population."""
+    if function is None:
+        return partial(operational_read, live_reader=live_reader)
 
     @wraps(function)
     def bounded(*args, **kwargs):
-        with read_scope(record=kwargs.get("record")):
+        live = kwargs.get("pointers")
+        if live is None and pointers() is None and live_reader is not None:
+            live = live_reader()
+        with read_scope(record=kwargs.get("record"), live=live):
             return function(*args, **kwargs)
 
     return bounded

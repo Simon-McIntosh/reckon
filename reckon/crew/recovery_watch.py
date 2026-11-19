@@ -1030,7 +1030,7 @@ EXPLAINED_STATES = frozenset(
 
 
 def _promote_record_holds(record: Mapping[str, Any]) -> bool:
-    """Whether this live pointer's completed run has a committed ledger row.
+    """Whether this live pointer's completed run has durable promotion evidence.
 
     Promotion appends the run's ledger row and then removes the live pointer,
     so for the length of that window the pointer still exists while the work
@@ -1040,14 +1040,13 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     ledger row settles the run even when it declares no repository change, so
     row presence, rather than its commit list, answers this question.
 
-    The row is read from the run's own repository, the root promotion wrote it
-    under. Promotion writes the per-run file before it touches the aggregate,
-    so a single stat answers whether the row was committed.
+    The authoritative run store is read before the legacy file in the run's
+    own repository, using the same evidence reader as pointer retirement.
     An unreadable or absent row answers False — the run then takes the word its
     pointer earns, which is the safe direction because the alternative promises
     a landing nothing recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -1058,29 +1057,22 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     repo = str(record.get("repo") or "")
     if not run_id or not project or not repo:
         return False
-    try:
-        return ledger_module.run_path(project, run_id, repo).is_file()
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return False
+    return _promoted_row(project, run_id, root=repo) is not None
 
 
 def _recorded_pointer_word(record: Mapping[str, Any]) -> str:
-    """Name a settled pointer's committed work or recorded completion.
+    """Name a settled pointer's promoted work or recorded completion.
 
     The row existence check already established settlement. A row that cannot
     be decoded cannot establish a code landing, so its safe word is recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
-    try:
-        path = ledger_module.run_path(
-            str(record.get("project") or ""),
-            str(record.get("run_id") or ""),
-            str(record.get("repo") or ""),
-        )
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return "recorded"
+    row = _promoted_row(
+        str(record.get("project") or ""),
+        str(record.get("run_id") or ""),
+        root=str(record.get("repo") or ""),
+    )
     return (
         "promoted"
         if isinstance(row, Mapping)
@@ -1424,8 +1416,16 @@ def _watch_verdict(
         # command: the release the classifier names would launch over the
         # admission pass's release path, and nothing on the row says a
         # coordinator's move is what ends the wait.
+        #
+        # A block the worker's own manifest reports keeps the word that block
+        # already earned. The lane's refusal gates *when* the blocker can be
+        # worked and never lifts it, so painting such a row as a wait would
+        # hide the reader's work behind a clock that answers a different
+        # question — the same reason the classification keeps the manifest's
+        # reason beside the refusal rather than in place of it.
         next_action = None
-        if stored_phase != "held":
+        manifest_blocked = str(row.get("manifest_status") or "") == "blocked"
+        if stored_phase != "held" and not manifest_blocked:
             state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
@@ -2269,7 +2269,10 @@ def _stuck_count(rows: Iterable[Mapping[str, Any]]) -> int:
 
 
 def _fleet_counts(
-    snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
+    snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Partition the fleet into working, reviewing, blocked, delivered and waiting.
 
@@ -2328,7 +2331,7 @@ def _fleet_counts(
     if any("delivery" in row and row["delivery"] is not None for row in rows):
         from .recovery_classification import delivery_summary
 
-        delivery = delivery_summary(rows)
+        delivery = delivery_summary(rows, pointers=pointers)
         counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
@@ -2862,6 +2865,8 @@ def handover_run_ids(project: str) -> set[str]:
 
 def _session_fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """The fleet partition per owning session, unowned rows under ``""``.
 
@@ -2875,7 +2880,7 @@ def _session_fleet_counts(
     for owner in owners | {""}:
         rows, _peers = _partition_session_rows(snapshots.values(), owner)
         counts[owner] = {
-            **_fleet_counts(snapshots, session=owner),
+            **_fleet_counts(snapshots, session=owner, pointers=pointers),
             "stuck": _stuck_count(rows),
         }
     return counts
@@ -2883,12 +2888,14 @@ def _session_fleet_counts(
 
 def _transition_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The fleet's counts at one transition, with the per-session partition."""
     return {
-        **_fleet_counts(snapshots),
+        **_fleet_counts(snapshots, pointers=pointers),
         "stuck": _stuck_count(snapshots.values()),
-        "sessions": _session_fleet_counts(snapshots),
+        "sessions": _session_fleet_counts(snapshots, pointers=pointers),
     }
 
 
@@ -4208,7 +4215,7 @@ def watch_ticker(
                         )
                         continue
 
-                    counts = _transition_counts(current)
+                    counts = _transition_counts(current, pointers=pointers)
                     watch_record["last_stage"] = "publishing"
                     if not fleet_seen:
                         fleet_seen = True

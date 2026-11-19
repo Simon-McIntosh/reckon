@@ -1,0 +1,107 @@
+<section id="qwnw-red-file-dispatch-names-a-model-landing">
+  <h2>The dispatch model-pair test reads the document from stdout</h2>
+
+  <p><strong>What was red.</strong> At base
+  <code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>,
+  <code>tests/test_dispatch_names_a_model.py</code> failed one of its twelve
+  cases — <code>test_live_pointer_records_lane_and_model_key</code> raised
+  <code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char
+  0)</code>. That case is the only one in the file that dispatches without
+  <code>--dry-run</code>, so it is the only one whose dispatch creates a run.</p>
+
+  <p><strong>Cause.</strong> The file's <code>payload()</code> helper decoded
+  <code>result.output</code>, which click 8.2 and later fold stdout and stderr
+  into. A live dispatch prints a progress notice before it answers —
+  <code>reckon/crew/dispatching/preparation.py</code> writes
+  <code>reckon: created run &lt;id&gt;</code> to stderr — so the decoder was
+  handed <code>'reckon: created run r-…-model-test'</code> instead of the
+  document, and the pointer assertions never ran.</p>
+
+  <p><strong>Verdict: the test was wrong, the product is right.</strong> Two
+  facts fix the direction. The rule is held by
+  <code>tests/test_dispatch_stdout_is_one_document.py</code>, whose
+  <code>_one_document()</code> reads <code>result.stdout</code> and asserts a
+  notice printed from beneath the command is absent from it. And the notice is
+  written to stderr deliberately, beside the operator's terminal. Repairing the
+  product instead would break that rule.</p>
+
+  <p><strong>What changed.</strong> Five lines added, two deleted, all in
+  <code>tests/test_dispatch_names_a_model.py</code>:
+  <code>payload()</code> now decodes
+  <code>result.stdout.splitlines()[0]</code>, and its failure message carries
+  both streams. No assertion was deleted or weakened — the assertions on the
+  live pointer's <code>backend</code>, <code>lane</code> and
+  <code>model_key</code> now execute and pass, which is the first run in which
+  they did.</p>
+
+  <h3 id="qwnw-red-file-dispatch-names-a-model-arms">Measured</h3>
+
+  <p>Each arm is its own <code>sbatch --wait</code> job on
+  <code>all_debug</code>, running <code>pytest</code> with
+  <code>SLURM_JOB_ID</code> unset, over a scratch tree archived from the
+  revision the arm names. Every log's header names the revision, the tree, the
+  command, the imported <code>module.__file__</code> and the resolved
+  <code>cwd</code>; its last line is the bare <code>EXIT=</code> receipt.</p>
+
+  <table id="qwnw-red-file-dispatch-names-a-model-arms-table">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>population</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td><td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code></td>
+        <td><code>tests/test_dispatch_names_a_model.py</code></td>
+        <td>1 failed, 11 passed — <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>head</td><td><code>582b926ed525beeed1fa50121fe8891e1a7a3bf0</code></td>
+        <td><code>tests/test_dispatch_names_a_model.py</code></td>
+      <td>12 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>base</td><td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code></td>
+        <td>neighbouring dispatch population</td>
+        <td>32 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>head</td><td><code>582b926ed525beeed1fa50121fe8891e1a7a3bf0</code></td>
+        <td>neighbouring dispatch population</td>
+        <td>32 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>base</td><td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code></td>
+        <td>the run's armed suite (census pair)</td>
+        <td>58 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>head</td><td><code>582b926ed525beeed1fa50121fe8891e1a7a3bf0</code></td>
+        <td>the run's armed suite (census pair)</td>
+        <td>58 passed — <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The armed suite is the command the run's declaration resolves to,
+  <code>tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code>; both arms
+  report the same count, so the census adds no failure on either side.</p>
+
+  <p>The neighbouring population is
+  <code>tests/test_picker_in_dispatch.py</code>,
+  <code>tests/test_dispatch_stdout_is_one_document.py</code> and
+  <code>tests/test_dispatch_names_its_backend.py</code>: the files that exercise
+  the dispatch path the repaired helper reads. It is identical in both arms, so
+  the delta of this node is the one case the base arm fails. No test file
+  imports the changed test, and no product module changed.</p>
+
+  <h3 id="qwnw-red-file-dispatch-names-a-model-control">Negative control</h3>
+
+  <p>The base arm is the negative control, and it fails for the reason the
+  repair addresses: the decoder was handed
+  <code>s = 'reckon: created run r-20261118T145023886016-model-test'</code> and
+  reported <code>FAILED
+  tests/test_dispatch_names_a_model.py::test_live_pointer_records_lane_and_model_key</code>.
+  The head arm runs the same file over the same scratch-tree form and reports
+  <code>12 passed</code>, so the repair is what moved it — not a difference in
+  environment, revision ordering or collection.</p>
+</section>

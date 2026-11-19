@@ -171,10 +171,9 @@ def _drained_log_path() -> Path:
 
 
 def _waited_seconds(requested_at: Any, finished_at: Any) -> float | None:
-    try:
-        requested = datetime.fromisoformat(str(requested_at))
-        finished = datetime.fromisoformat(str(finished_at))
-    except (TypeError, ValueError):
+    requested = parse_utc(str(requested_at))
+    finished = parse_utc(str(finished_at))
+    if requested is None or finished is None:
         return None
     return round(max(0.0, (finished - requested).total_seconds()), 3)
 
@@ -246,7 +245,10 @@ def _recent_drained(moment: datetime, window_seconds: float) -> list[dict[str, A
 
 
 def promotion_queue_report(
-    *, now: datetime | None = None, window_seconds: float = 3600.0
+    *,
+    now: datetime | None = None,
+    window_seconds: float = 3600.0,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """What the queue holds now and how fast it has drained recently.
 
@@ -261,7 +263,7 @@ def promotion_queue_report(
     waiting: list[dict[str, Any]] = []
     running = 0
     parked = 0
-    for request in _pending_requests(now=moment):
+    for request in _pending_requests(now=moment, pointers=pointers):
         phase = request.get("phase")
         if phase == REQUESTED:
             waiting.append(request)
@@ -271,9 +273,8 @@ def promotion_queue_report(
             parked += 1
     oldest = None
     for request in waiting:
-        try:
-            requested_at = datetime.fromisoformat(str(request.get("requested_at")))
-        except (TypeError, ValueError):
+        requested_at = parse_utc(str(request.get("requested_at")))
+        if requested_at is None:
             continue
         if oldest is None or requested_at < oldest[0]:
             oldest = (requested_at, request)
@@ -449,7 +450,12 @@ def request_promotion(
                 default=request["priority_override"],
             )
         runs._write_json(path, request)
-        stage_receipts.record_stage(run_id, "promotion_requested", at=request["requested_at"], attempt=request["request_id"])
+        stage_receipts.record_stage(
+            run_id,
+            "promotion_requested",
+            at=request["requested_at"],
+            attempt=request["request_id"],
+        )
         _mark_pointer(request, REQUESTED)
         return request
 
@@ -657,33 +663,52 @@ def _reviewed_run_id(
 
 def _reviewed_request_runs(
     requests: Iterable[Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> Iterator[tuple[Mapping[str, Any], str]]:
-    """Resolve a pass lazily, sharing one listing across source-node reviews."""
+    """Resolve a pass lazily, sharing one listing across source-node reviews.
+
+    ``pointers`` is a reading the caller already holds, so a pass composed
+    inside a fleet read does not list the fleet again. A reading answers only
+    the projects it carries: a request naming a project it does not hold is
+    still resolved against a listing, because one project's scoped reading must
+    not narrow another project's review to the durable fallback.
+    """
     from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
     from reckon.crew.repair import round_node_source
 
-    pointers = None
+    held = None if pointers is None else list(pointers)
+    covered = {str(pointer.get("project") or "") for pointer in held or ()}
+    listed = None
     listing_failed = False
     for request in requests:
         source = round_node_source(str(request.get("node") or ""), REVIEW_NODE_PREFIX)
         needs_population = bool(source and not source.startswith("r-"))
-        if needs_population and pointers is None:
-            try:
-                pointers = runs.list_live()
-            except Exception:  # noqa: BLE001 — ordering must never stop the drain
-                pointers, listing_failed = [], True
+        population = held
+        if needs_population and (
+            population is None or str(request.get("project") or "") not in covered
+        ):
+            if listed is None:
+                try:
+                    listed = runs.list_live()
+                except Exception:  # noqa: BLE001 — ordering must never stop the drain
+                    listed, listing_failed = [], True
+            population = listed
         yield (
             request,
             (
                 ""
                 if needs_population and listing_failed
-                else _reviewed_run_id(request, pointers=pointers)
+                else _reviewed_run_id(request, pointers=population)
             ),
         )
 
 
 def _pending_requests(
-    *, now: datetime | None = None, window_seconds: float = 3600.0
+    *,
+    now: datetime | None = None,
+    window_seconds: float = 3600.0,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Reviews, aged requests and priorities precede fair session turns.
 
@@ -695,7 +720,7 @@ def _pending_requests(
     requested rows consume simulated future turns: running rows are already
     charged, and parked rows take no slot.
     """
-    moment = now or datetime.fromisoformat(_now())
+    moment = now or parse_utc(_now()) or datetime.now(UTC)
     pending = []
     for path in _requests_dir().glob("*.json"):
         request = _read(path)
@@ -711,7 +736,7 @@ def _pending_requests(
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
         str(request.get("run_id") or "")
-        for request, reviewed in _reviewed_request_runs(pending)
+        for request, reviewed in _reviewed_request_runs(pending, pointers=pointers)
         if reviewed in waiting
     }
     served = Counter(
@@ -781,7 +806,9 @@ def _defer_to_a_queued_review(
         }
         requeued.pop("started_at", None)
         runs._write_json(_request_path(run_id), requeued)
-        stage_receipts.note_promotion_outcome(request, DEFERRED, {"reason": str(refusal)})
+        stage_receipts.note_promotion_outcome(
+            request, DEFERRED, {"reason": str(refusal)}
+        )
         _mark_pointer(requeued, REQUESTED)
     return True
 
@@ -1092,7 +1119,12 @@ class PromotionService:
                     "stage_seconds": stage_seconds,
                 }
                 runs._write_json(_request_path(run_id), request)
-                stage_receipts.record_stage(run_id, "promotion_attempt", at=request["started_at"], attempt=request["attempt_id"])
+                stage_receipts.record_stage(
+                    run_id,
+                    "promotion_attempt",
+                    at=request["started_at"],
+                    attempt=request["attempt_id"],
+                )
                 _mark_pointer(request, RUNNING)
             from reckon.crew.promotion_scope import _branch_write_scope
 
@@ -1223,7 +1255,9 @@ def _settle(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
         if current.get("request_id") != request.get("request_id"):
             return {}
         runs._write_json(_request_path(run_id), settled)
-    stage_receipts.record_stage(run_id, "promotion_settled", at=settled["settled_at"], outcome=reason)
+    stage_receipts.record_stage(
+        run_id, "promotion_settled", at=settled["settled_at"], outcome=reason
+    )
     return settled
 
 
@@ -1258,6 +1292,7 @@ def failure_obligations(
     the age, which is measured from the original request.
     """
     items: list[dict[str, Any]] = []
+    moment = now or datetime.now(UTC)
     for path in _requests_dir().glob("*.json"):
         request = _read(path)
         waiting = request.get("phase") == WAITING
@@ -1273,9 +1308,7 @@ def failure_obligations(
             _settle(request, settled)
             continue
         if waiting:
-            age = _waited_seconds(
-                request.get("requested_at"), (now or datetime.now(UTC)).isoformat()
-            )
+            age = _waited_seconds(request.get("requested_at"), moment.isoformat())
             if age is None or age <= WAITING_OBLIGATION_SECONDS:
                 continue
             checked_at = str(request.get("checked_at") or "unknown")
@@ -1302,8 +1335,7 @@ def failure_obligations(
                     0,
                     int(
                         (
-                            (now or datetime.now(UTC))
-                            - datetime.fromisoformat(request["finished_at"])
+                            moment - (parse_utc(request.get("finished_at")) or moment)
                         ).total_seconds()
                     ),
                 ),

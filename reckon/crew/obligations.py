@@ -880,7 +880,10 @@ def _live_pointers(project: str) -> list[dict[str, Any]]:
         snapshot = held.get(project)
         if snapshot is not None:
             return list(snapshot)
-    return runs.list_live(project=project)
+    from reckon.crew.open_run_index import pointers
+
+    snapshot = pointers(project=project)
+    return list(snapshot) if snapshot is not None else runs.list_live(project=project)
 
 
 def _recorded_review_dispatch(pointer: Mapping[str, Any]) -> Mapping[str, Any]:

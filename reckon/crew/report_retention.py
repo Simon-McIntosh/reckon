@@ -203,9 +203,21 @@ def report_items(project_dir: Path) -> list[Path]:
 
 
 def build_context(
-    *, project: str, docs_dir: Path, reports_root: Path, now: datetime
+    *,
+    project: str,
+    docs_dir: Path,
+    reports_root: Path,
+    now: datetime,
+    confined_to: str | None = None,
 ) -> Context:
-    """Read everything one project's items are judged against, once."""
+    """Read everything one project's items are judged against, once.
+
+    ``confined_to`` is the run a ``--run`` pass owns. That pass holds the named
+    run's artifacts — the operator named them, as the release door names a tree
+    its own record carries — so the confined run's own live pointer is left out
+    of the live set: a pointer names a run that may still write, which withholds
+    another run's tree but not the one this pass was sent for.
+    """
     from reckon import _plan_html, flight, ledger
     from reckon.crew import persist
     from reckon.crew.runs import list_live
@@ -232,9 +244,14 @@ def build_context(
             )
 
     project_reports = reports_root / project
+    # A pointer that names no project may be this project's run: the report tree
+    # is keyed by project, so such a pointer is withheld here rather than read
+    # as another project's and offered for removal while it may still be writing.
     live: list[Path] = [
         project_reports / str(record.get("run_id") or "")
-        for record in list_live(project=project)
+        for record in list_live()
+        if str(record.get("project") or "") in ("", project)
+        if not (confined_to and str(record.get("run_id") or "") == confined_to)
     ]
 
     ledger_dirs: list[tuple[str, Path]] = []

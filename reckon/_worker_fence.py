@@ -75,6 +75,22 @@ CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 # and the capability a refusal names are the same string.
 FENCE_BINARY = "bwrap"
 
+
+def fence_program() -> str:
+    """The fence program's absolute location on the node composing the fence.
+
+    A submitted job's task runs on another node and starts the fence itself, so
+    the location is resolved here, once, and carried in the recipe. The job
+    node never searches its own path for the program: on a partition whose node
+    holds no fence program there is no search that could succeed, and a search
+    that finds some other ``bwrap`` would run a program the dispatching node
+    never chose. An unresolvable program returns an empty string, which the
+    task refuses by name rather than reads as an unfenced launch.
+    """
+    found = shutil.which(FENCE_BINARY)
+    return "" if found is None else os.path.abspath(found)
+
+
 # Each fenced worker runs in a pid namespace of its own, with a procfs mounted
 # for that namespace over the host's. kill(2) resolves a pid in the caller's
 # namespace, so a worker can signal only the processes it started: a cleanup
@@ -2108,6 +2124,13 @@ def fence_argv(
         )
     recipe = {
         "argv": list(fenced),
+        # The program's location on *this* node, resolved once here. A job's
+        # task runs on another node, whose search path need not name the fence
+        # program at all, so the recipe carries the resolved path rather than
+        # leaving argv[0]'s bare name to be looked up there. A host that cannot
+        # resolve it composes an empty field, and the task then refuses by name
+        # before it starts rather than running unfenced.
+        "program": fence_program(),
         "directories": [str(path) for path in directories],
         "directory_sources": sorted(set(directory_sources)),
         "scratch": str(scratch),

@@ -38,6 +38,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon._timestamps import parse_utc
 from reckon.crew import obligation_snapshot, review_records, station_store
 
 # How long a stored row may stand before the derivation runs again with no
@@ -367,7 +368,7 @@ def refresh(
                 session,
                 {"identity": identity, "document": published},
                 changed_at=(
-                    datetime.fromisoformat(str(stored["changed_at"]))
+                    (parse_utc(stored["changed_at"]) or instant)
                     if unchanged
                     else instant
                 ),
@@ -626,13 +627,14 @@ def _publish_pending(
         if document is None or document.get("project") != project:
             continue
         stamp = document.get("computed_at")
+        computed_at = parse_utc(stamp)
         previous = document.get("stale")
         stored_at = (
             float(previous["stored_at"])
             if isinstance(previous, Mapping)
             else memory.at.timestamp()
             if memory is not None
-            else datetime.fromisoformat(str(stamp)).timestamp()
+            else (computed_at or instant).timestamp()
         )
         stale = roadmap_stale_answer(
             {"payload": document, "stored_at": stored_at, "key": stored_identity(row)},
@@ -642,7 +644,7 @@ def _publish_pending(
         store.write_obligation(
             str(row["session"]),
             {"identity": stored_identity(row), "document": stale},
-            changed_at=datetime.fromisoformat(str(row["changed_at"])),
+            changed_at=parse_utc(row["changed_at"]) or instant,
         )
         marked = True
     if marked:

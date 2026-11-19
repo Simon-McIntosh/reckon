@@ -153,6 +153,11 @@ def _coverage(path):
     return plan_review.review_coverage("sample", "fixture", plan=path)
 
 
+def _coverage_once(path):
+    """The coverage decision itself, with no persisted answer replayed."""
+    return plan_review._compute_coverage("sample", "fixture", plan=path)
+
+
 def _section_paragraph_match(path, section):
     """Return the document text and the section paragraph's match.
 
@@ -294,13 +299,19 @@ def test_ignoring_the_acceptance_leaves_the_section_uncovered(sectioned, monkeyp
     _requires_a_review(monkeypatch)
     _edited(repo, path)
     _accept(path)
-    assert "s5" not in _coverage(path)[1], "the acceptance covers the edit"
+    assert "s5" not in _coverage_once(path)[1], "the acceptance covers the edit"
 
     monkeypatch.setattr(
         plan_review, "_accepted_edit_units", lambda record, digests: set()
     )
 
-    _, uncovered, _ = _coverage(path)
+    # ``review_coverage`` persists its decision against the plan, the review
+    # records and the resolved configuration, and reuses it while those hold.
+    # The patch above changes code rather than an input, so a second
+    # ``review_coverage`` read would replay the answer the unpatched reader
+    # computed. The decision is what this control measures, so it is read
+    # through the function that makes it.
+    _, uncovered, _ = _coverage_once(path)
     assert "s5" in uncovered, (
         "without reading the acceptance record the acceptance has no effect"
     )

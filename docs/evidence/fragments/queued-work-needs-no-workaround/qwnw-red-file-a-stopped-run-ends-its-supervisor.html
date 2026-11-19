@@ -1,0 +1,86 @@
+<section id="qwnw-red-file-a-stopped-run-ends-its-supervisor-landing">
+  <h2>A stopped run's supervisor case stops the run the way it measures it</h2>
+
+  <p><strong>What broke.</strong> The file's cases stop a live detached
+  supervisor with a stub worker that ignores SIGTERM, then wait for the
+  supervisor's pid to go. They measure <em>the supervisor's</em> bounded drain:
+  one poll to notice the recorded stop, the configured stop grace for the worker
+  to end on its own, a poll to escalate to
+  <code>worker-ignored-the-stop-grace-signal</code>, and a poll to reap.</p>
+
+  <p>The stop was made with <code>dispatch.terminate</code>, the call
+  <code>crew stop</code> makes, and that call acquired a second escalator after
+  these cases were written. <code>terminate</code> now waits its own settle
+  window (<code>_STOP_SETTLE_SECONDS</code>, 2 s) for the graceful SIGTERM to be
+  honoured, then SIGKILLs the run's whole tree itself with reason
+  <code>run-stop-escalation</code>. The supervisor's own reaction cannot fit
+  inside that: it notices the stop on its next manifest poll, and that poll is
+  <code>_WORKER_MANIFEST_POLL_SECONDS</code> = 3 s, lengthened from 0.25 s for
+  storage load. With the case's 1 s grace the supervisor's SIGKILL would land at
+  3-4 s, well after the stop's at 2 s.</p>
+
+  <p><strong>Verdict: the test, not the product.</strong> The product keeps the
+  rule these cases were written against: the supervisor still drains a stopped
+  worker it is left to drain, and still attributes that kill in the run's own
+  <code>senders.jsonl</code> and exit record. What changed is who ends the run
+  when <code>crew stop</code> is the caller, and the stop's own whole-tree
+  escalation wins by design. Measured on the base tree with the stop the red
+  case made (below), the supervisor's reason never appears and the exit record
+  is filed by the stop, so the supervisor's kill was not observed at all.</p>
+
+  <p><strong>What changed.</strong> <code>_stop</code> sends the group SIGTERM
+  <code>crew stop</code> sends <em>first</em>, addressed to the supervisor's own
+  session, so the supervisor and the worker both receive it and the supervisor's
+  grace escalation is the only escalator that runs. The whole-tree fallback is
+  unchanged and stays covered by
+  <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>, which
+  drives <code>terminate</code> against a live run. Every assertion in the file
+  is unchanged; the module docstring and <code>_stop</code>'s own docstring name
+  why the fallback is not sent from here.</p>
+
+  <h3 id="qwnw-red-file-a-stopped-run-ends-its-supervisor-repro">The base defect, reproduced</h3>
+
+  <p>A probe replayed the fixture at base with <code>terminate</code> as the
+  stop. <code>terminate</code> returned after 2.09 s; the run's senders record in
+  order reads <code>run-stop</code> seven times, then
+  <code>run-stop-escalation</code> four times, and the exit record left behind
+  reads <code>recorded_by: crew-stop</code> with
+  <code>SIGKILL sent to 2 that ignored the 2s grace</code>. The supervisor's
+  kill reason appears nowhere, which is exactly what the red assertion reported.
+  Receipts: <code>repro-terminate-senders.jsonl</code>,
+  <code>repro-terminate-exit.json</code>; the base job's own failure is
+  <code>negative-control-base.log</code>.</p>
+
+  <h3 id="qwnw-red-file-a-stopped-run-ends-its-supervisor-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-stopped-run-ends-its-supervisor-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>Measured</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base tree</td>
+        <td><code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code></td>
+        <td><code>1 failed, 2 passed</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head, as an all_debug job</td>
+        <td><code>0869ce7985eab5972b4259abea1aa920f3dc94d1</code></td>
+        <td><code>3 passed</code>, <code>EXIT=0</code></td></tr>
+      <tr><td>declared ceiling control</td>
+        <td><code>0869ce7985</code>, working tree</td>
+        <td><code>1 failed</code>: <code>the supervisor's exit not met within 90s</code></td></tr>
+      <tr><td>declared mid-window control</td>
+        <td><code>0869ce7985</code>, working tree</td>
+        <td><code>1 failed</code>: <code>62.17 &lt; 40.0</code> on the elapsed bound</td></tr>
+      <tr><td>the node's suite, base arm</td>
+        <td><code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code></td>
+        <td><code>58 passed</code>, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's suite, after arm</td>
+        <td><code>0869ce7985eab5972b4259abea1aa920f3dc94d1</code></td>
+        <td><code>58 passed</code>, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Both declared mutations still redden their own assertion and nothing else,
+  which is what the cases are for: a grace beyond the wait ceiling leaves the
+  supervisor alive at the ceiling, and a grace between the bound and the ceiling
+  clears the wait and then misses the elapsed bound by 22 s.</p>
+</section>

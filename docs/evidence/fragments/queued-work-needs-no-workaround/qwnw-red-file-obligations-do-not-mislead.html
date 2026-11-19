@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Obligation hints do not mislead — base and head runs</title>
+</head>
+<body>
+<article id="qwnw-red-file-obligations-do-not-mislead-record">
+  <h1>tests/test_obligations_do_not_mislead.py</h1>
+  <p><strong>Cause.</strong> The file's second case asserts that a retained
+  worktree a live run occupies is not hinted while the tree nothing occupies
+  is. Its fixture created both worktrees with <code>git worktree add --detach
+  HEAD</code> and left them clean and reachable from <code>main</code>. Since
+  <code>fix(crew): hold a retained tree only while it carries unmerged
+  work</code> (c778aaa1f6) the derivation holds a retained tree only while it
+  has an uncommitted change or a commit the primary branch does not reach, so
+  both trees are rightly dropped and the assertion fails on an empty list for a
+  reason unrelated to the live-claim rule it tests.</p>
+  <p><strong>Verdict: test wrong.</strong> The product rule is the deliberate
+  later one, documented in <code>_tree_holds_unmerged_work</code>. The fixture
+  now commits a file in each retained tree, so each tree holds unmerged work
+  and the only reason the occupied tree is dropped is the live claim. No
+  assertion changed.</p>
+
+  <h2 id="qwnw-red-file-obligations-do-not-mislead-base">Base run (negative control)</h2>
+  <pre id="qwnw-red-file-obligations-do-not-mislead-base-log"><code>revision 23b901694b4bfec73d95be3a082d4c336d9a4101
+tree     /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-obligations-do-not-mislead
+command  PYTHONPATH="$PWD" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_obligations_do_not_mislead.py
+
+FAILED tests/test_obligations_do_not_mislead.py::test_a_live_run_reusing_a_retained_path_is_not_hintable - AssertionError: assert [] == ['run-promoted-free']
+1 failed, 1 passed in 1.70s
+EXIT=1</code></pre>
+
+  <h2 id="qwnw-red-file-obligations-do-not-mislead-head">Head run</h2>
+  <pre id="qwnw-red-file-obligations-do-not-mislead-head-log"><code>command  PYTHONPATH="$PWD" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_obligations_do_not_mislead.py
+
+..                                                                       [100%]
+2 passed in 1.82s
+EXIT=0</code></pre>
+
+  <h2 id="qwnw-red-file-obligations-do-not-mislead-mutation">The guarded thing happens</h2>
+  <p>A pytest plugin replaced <code>obligations._live_worktrees</code> with one
+  returning no claims. The case then fails, naming the promoted run whose path
+  the live run occupies — the exact hint the rule forbids.</p>
+  <pre id="qwnw-red-file-obligations-do-not-mislead-mutation-log"><code>FAILED tests/test_obligations_do_not_mislead.py::test_a_live_run_reusing_a_retained_path_is_not_hintable - AssertionError: assert ['run-promoted-free', 'run-promoted-old'] == ['run-promoted-free']
+1 failed, 1 passed in 1.67s
+EXIT=1</code></pre>
+  <p>Also with the base fixture (both trees clean and reachable) the derivation
+  returns no held tree at all, which is why the base run's list is empty rather
+  than carrying one wrong row.</p>
+
+  <h2 id="qwnw-red-file-obligations-do-not-mislead-all-debug">The named file as an all_debug job</h2>
+  <pre id="qwnw-red-file-obligations-do-not-mislead-all-debug-log"><code>job      1326661 (all_debug), SLURM_JOB_ID unset inside it
+revision 57b1145f313836030ff15b1dcb116b5cea98af28</code></pre>
+  <p>Log: <code>logs/head-target-all_debug.sbatch.log</code> under the run
+  directory; it ends <code>2 passed in 1.59s</code> and <code>EXIT=0</code>.
+  The base run of the same file, at 23b901694b4bfec73d95be3a082d4c336d9a4101,
+  is <code>logs/base-target-at-23b9016.log</code>: 1 failed, 1 passed,
+  <code>EXIT=1</code>, failing id
+  <code>test_a_live_run_reusing_a_retained_path_is_not_hintable</code>.</p>
+  <p>The declared suite arms over <code>tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code> read 58 passed
+  with <code>EXIT=0</code> at the base revision and 58 passed with
+  <code>EXIT=0</code> at head, so no failure is added.</p>
+</article>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="queued-work-needs-no-workaround">
+  <title>A named lane lets Jev choose its model | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A named lane lets Jev choose its model</h1>
+      <p class="lead">On the primary branch at <code>ab67be8bb1ec</code> the file ran
+      1 failed, 10 passed. The single failure,
+      <code>test_the_named_lane_choice_is_recorded_on_the_run</code>, raised
+      <code>JSONDecodeError: Expecting value: line 1 column 1 (char 0)</code> on the string
+      <code>reckon: created run r-20261118T162200234224-named-lane-record</code>.</p>
+    </header>
+
+    <section id="qwnw-red-file-a-named-lane-lets-jev-choose-its-model-cause">
+      <h2>Cause and verdict</h2>
+      <p>The product is right and the test was wrong. A real dispatch writes its payload as
+      one JSON line on stdout and writes the created-run advisory to stderr
+      (<code>reckon/crew/dispatching/preparation.py:1579</code>). Click 8.4's
+      <code>CliRunner</code> captures the two streams separately: <code>result.output</code>
+      is the combined stream, so the advisory precedes the payload, while
+      <code>result.stdout</code> carries the JSON line and nothing else. The test parsed
+      <code>result.output.splitlines()[0]</code>, which is the advisory.</p>
+      <p>Shown rather than assumed: a command that writes <code>progress</code> to stderr and
+      <code>{"a": 1}</code> to stdout reads back as
+      <code>output='progress\n{"a": 1}\n'</code>, <code>stdout='{"a": 1}\n'</code>. The
+      dry-run cases passed before the change only because a dry run emits no advisory.</p>
+      <p>So the repair is in the test: all four payload reads are now
+      <code>result.stdout.splitlines()[0]</code>, and the module docstring records that
+      stdout carries exactly one JSON line. No assertion is deleted or weakened — every
+      assertion the file carried before it still carries, unchanged.</p>
+    </section>
+
+    <section id="qwnw-red-file-a-named-lane-lets-jev-choose-its-model-measure">
+      <h2>Measure</h2>
+      <p>Head revision <code>dc60bfd02c</code>, on <code>all_debug</code> (Slurm job
+      <code>1795019481</code>, host <code>98dci4-clu-3144</code>):
+      <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_a_named_lane_lets_jev_choose_its_model.py</code> reads
+      <code>11 passed in 2.59s</code>, <code>EXIT=0</code>. Log:
+      <code>scoped-gate-1795019481778458507.log</code> under this run's directory.</p>
+    </section>
+
+    <section id="qwnw-red-file-a-named-lane-lets-jev-choose-its-model-negative-control">
+      <h2>Negative control</h2>
+      <p>The base revision <code>ab67be8bb1ec</code> in a scratch tree under the run's
+      <code>$TMPDIR</code>, importing that tree's own <code>reckon/__init__.py</code>, runs
+      1 failed, 10 passed, <code>EXIT=1</code>. The failing id is
+      <code>tests/test_a_named_lane_lets_jev_choose_its_model.py::test_the_named_lane_choice_is_recorded_on_the_run</code>
+      with <code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</code>.
+      Logged at <code>negative-control-base.log</code> under this run's directory, whose
+      header names the base revision, the scratch tree, the command, the
+      <code>module.__file__</code> it imported and the working directory it resolved from.</p>
+      <p>The after arm at <code>dc60bfd02c</code> does not fail that id: the same file,
+      same revision as the measure above, is 11 passed. No failure in this file survives,
+      and the base arm's only failing id is the one repaired.</p>
+    </section>
+  </main>
+</body>
+</html>

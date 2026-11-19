@@ -1,0 +1,28 @@
+<section id="qwnw-red-file-a-stopped-run-resumes-with-advice-cause">
+<h2>Cause: the fixture stood its stub outside the resumed fence's grants</h2>
+<p>Both failing ids were the two tests that resume a worker, and both failed waiting for <code>received.json</code>: the resumed attempt's stub never ran. <code>resume-1.stderr.log</code> read <code>bwrap: execvp …/bin/codex: No such file or directory</code> while the stub was present on disk — the fence's stdio named a program its composition had hidden. Verdict: <strong>test wrong</strong>. No assertion was deleted or weakened.</p>
+<p>Two rules the test predated, both from <code>f420eb11bf</code> (2026-11-14, "a fenced worker's /tmp is its own scratch"), and the assertion it makes — a stopped tree records an exit receipt and a stopped run resumes with the advice it is given — is unchanged:</p>
+<ol>
+<li><b>Granted script.</b> The stub lived under pytest's temporary tree, and the fence mounts the run's own scratch over <code>/tmp</code>, so a path there reads as absent rather than read-only. The stub now sits in the run directory, which is a writable grant of the resumed attempt's fence, beside the receipt it writes.</li>
+<li><b>Granted interpreter.</b> The shebang named <code>sys.executable</code>, and a gate job copies the tree beneath <code>/tmp</code> and runs that copy, so the interpreter itself was inside the masked root. Measured with the fence binary directly at scratch <code>$TMPDIR/fence-probe</code>: a program in the run directory runs under a home-path interpreter (<code>interp-visible</code>, <code>home-interp</code>), and the same program under a <code>/tmp</code>-path interpreter prints <code>bwrap: execvp …/bin/py_tmp: No such file or directory</code> — the identical message. The shebang now names <code>Path(sys.executable).resolve()</code>.</li>
+</ol>
+</section>
+
+<section id="qwnw-red-file-a-stopped-run-resumes-with-advice-negative-control">
+<h2>Negative control: the base revision's run</h2>
+<p>The base tree failed before any edit, and the head tree passes. Base run at <code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code>, logged at <code>negative-control-base.log</code> in the run directory, <code>EXIT=1</code>, 2 failed / 5 passed:</p>
+<pre>FAILED tests/test_a_stopped_run_resumes_with_advice.py::test_a_stopped_tree_records_its_exit_and_resumes_with_advice - AssertionError: the resumed stub did not receive advice
+FAILED tests/test_a_stopped_run_resumes_with_advice.py::test_a_legacy_stopped_run_with_no_exit_resumes_on_its_launch_host - AssertionError: the resumed stub did not receive advice</pre>
+<p>And the receipt the failure left behind, from the base run's captured output:</p>
+<pre>resume-1.stderr.log bwrap: execvp /tmp/reckon-crew-scratch/r-20261118T062524258091-qwnw-red-file-a-stopped-run-resumes-with-advice/pytest-of-mcintos/pytest-1/test_a_stopped_tree_records_it0/bin/codex: No such file or directory</pre>
+</section>
+
+<section id="qwnw-red-file-a-stopped-run-resumes-with-advice-head-run">
+<h2>Head run: seven of seven, as a job on all_debug</h2>
+<p>The named file at <code>c4824882e5ac9d03648a268b116406b8f473ec3b</code>, submitted to <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, log on shared storage at <code>scoped-gate-1794999323073559801.log</code>:</p>
+<pre># revision: c4824882e5ac9d03648a268b116406b8f473ec3b
+# tree: /tmp/mcintos-landing-385da25458b8-90gi7r/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stopped_run_resumes_with_advice.py'
+.......                                                                  [100%]
+EXIT=0</pre>
+</section>

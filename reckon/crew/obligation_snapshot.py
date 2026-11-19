@@ -1889,12 +1889,10 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
         ledger_module.index_reuse(),
         head_module.review_heads_resolve_once(),
     ):
-        return _derive_fleet_state_body(project, now=now)
+        return _build_fleet_state(project, now=now)
 
 
-def _derive_fleet_state_body(
-    project: str, *, now: datetime | None = None
-) -> FleetState:
+def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
     """Build the fleet state, inside the regions :func:`fleet_state` opened."""
     module = _derivation_module()
     instant = _utc_now() if now is None else now

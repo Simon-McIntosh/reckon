@@ -211,6 +211,13 @@ def test_a_live_run_reusing_a_retained_path_is_not_hintable(
     free = managed / "node-retained"
     for path in (occupied, free):
         _git(repository, "worktree", "add", "-q", "--detach", str(path), "HEAD")
+        # A retained tree is held only while it carries work a landing has not
+        # taken, so each tree is left holding a commit the primary branch does
+        # not reach. Without it both trees hold nothing and neither is a duty,
+        # which would pass the assertion below for the wrong reason.
+        (path / "work.txt").write_text(f"work in {path.name}\n", encoding="utf-8")
+        _git(path, "add", "work.txt")
+        _git(path, "commit", "-q", "-m", f"test: {path.name} keeps unmerged work")
     retained_at = (OBSERVED_AT - timedelta(seconds=600)).isoformat()
     _write_ledger(
         repository,

@@ -472,12 +472,20 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
 
 
 def retire_promoted_pointers(
-    *, project: str | None = None, session: str | None = None, only_run: str = ""
+    *,
+    project: str | None = None,
+    session: str | None = None,
+    only_run: str = "",
+    release_workspaces: bool = True,
 ) -> list[dict[str, Any]]:
-    """Release integrated group members, then retire ownerless promoted pointers."""
+    """Release integrated workspaces, then retire ownerless promoted pointers."""
     from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
-    retired = []
+    retired = (
+        release_merged_promotions(project=project, session=session, only_run=only_run)
+        if release_workspaces
+        else []
+    )
     live = runs.list_live() if project is None else runs.list_live(project=project)
     selected = [
         pointer
@@ -598,20 +606,38 @@ def _read(path: Path) -> dict[str, Any] | None:
     return loaded if isinstance(loaded, dict) else None
 
 
-def _promoted_row(project: str, run_id: str) -> Mapping[str, Any] | None:
-    """The run's ledger row in the project's mount, or None when it has none."""
+def _promotion_evidence(
+    project: str, run_id: str, *, root: str | Path | None = None
+) -> Mapping[str, Any] | None:
+    """Read the authoritative store before its legacy file, refusing unreadability."""
+    from reckon import ledger, run_store
+    from reckon.crew import merge
+
+    rows = run_store.stored_run_rows(project, run_ids=[run_id])
+    if rows:
+        return rows[0]
+    repository = merge.project_repository(project) if root is None else Path(root)
+    path = ledger.run_path(project, run_id, repository)
+    try:
+        row = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
+        raise ValueError(f"invalid promotion evidence at {path}")
+    return row
+
+
+def _promoted_row(
+    project: str, run_id: str, *, root: str | Path | None = None
+) -> Mapping[str, Any] | None:
+    """The run's promoted row, or None when absent or unreadable."""
     from reckon import ledger
     from reckon.crew import merge
 
     try:
-        repository = merge.project_repository(project)
-        path = ledger.run_path(project, run_id, repository)
-        if not path.is_file():
-            return None
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger.LedgerError, merge.MergeError):
+        return _promotion_evidence(project, run_id, root=root)
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError, merge.MergeError):
         return None
-    return row if isinstance(row, Mapping) else None
 
 
 def _reviewed_head(row: Mapping[str, Any]) -> str:
@@ -623,7 +649,7 @@ def _reviewed_head(row: Mapping[str, Any]) -> str:
 
 
 def _promoted_row_absent(project: str, run_id: str) -> bool:
-    """Whether the project's ledger proves the run has no row.
+    """Whether successful store and legacy-file reads prove the run has no row.
 
     A row that exists but cannot be read is not evidence of absence: retiring
     the record of a promoted-but-unmerged run would strand its head off the
@@ -633,9 +659,8 @@ def _promoted_row_absent(project: str, run_id: str) -> bool:
     from reckon.crew import merge
 
     try:
-        repository = merge.project_repository(project)
-        return not ledger.run_path(project, run_id, repository).is_file()
-    except (OSError, ledger.LedgerError, merge.MergeError):
+        return _promotion_evidence(project, run_id) is None
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError, merge.MergeError):
         return False
 
 
@@ -1114,7 +1139,9 @@ def landed_workspace_refusal(
     return ""
 
 
-def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
+def release_merged_promotions(
+    *, only_run: str = "", project: str | None = None, session: str | None = None
+) -> list[dict[str, Any]]:
     """Finish promoted live workspaces after an independently published merge.
 
     The promotion row proves delivery and the published branch proves integration.
@@ -1129,9 +1156,13 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
 
     results: list[dict[str, Any]] = []
     for pointer in runs.list_live():
+        if (project is not None and pointer.get("project") != project) or (
+            session is not None and pointer.get("session") != session
+        ):
+            continue
         run_id = str(pointer.get("run_id") or "")
-        project = str(pointer.get("project") or "")
-        if not run_id or not project or (only_run and run_id != only_run):
+        run_project = str(pointer.get("project") or "")
+        if not run_id or not run_project or (only_run and run_id != only_run):
             continue
         if not pointer.get("worktree") or pointer.get("landing_group"):
             continue
@@ -1160,12 +1191,12 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
             and read_promotion(run_id).get("phase") in PENDING
         ):
             continue
-        row = _promoted_row(project, run_id)
+        row = _promoted_row(run_project, run_id)
         head = _reviewed_head(row) if row else ""
         if not head or _promotion_lease_held(run_id) or _reviewed_run_is_busy(pointer):
             continue
         try:
-            repository = merge.project_repository(project)
+            repository = merge.project_repository(run_project)
             remote = merge.head_on_remote_branch(repository, head)
             primary = str(remote["remote_head"] or "")
             on_branch = remote["on_branch"]
@@ -1223,7 +1254,9 @@ def finish_pending_landings(
     handled = {row["run_id"] for row in released}
     directory = pending_dir()
     if not directory.is_dir():
-        return results + retire_promoted_pointers(only_run=only_run)
+        return results + retire_promoted_pointers(
+            only_run=only_run, release_workspaces=False
+        )
     live = (
         set(live_run_ids)
         if live_run_ids is not None
@@ -1287,7 +1320,9 @@ def finish_pending_landings(
         if row is None:
             age = moment - float(record.get("written_at") or moment)
             if run_id not in live:
-                if age > UNPROMOTED_RECORD_SECONDS:
+                if age > UNPROMOTED_RECORD_SECONDS and _promoted_row_absent(
+                    project, run_id
+                ):
                     clear_pending(run_id)
                     results.append({"run_id": run_id, "status": "dropped-unpromoted"})
                 continue
@@ -1562,7 +1597,9 @@ def finish_pending_landings(
             }
         )
     handled = {row["run_id"] for row in results}
-    retired_pointers = retire_promoted_pointers(only_run=only_run)
+    retired_pointers = retire_promoted_pointers(
+        only_run=only_run, release_workspaces=False
+    )
     return results + [row for row in retired_pointers if row["run_id"] not in handled]
 
 

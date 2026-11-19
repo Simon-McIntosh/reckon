@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/reports.py:audit_manifest",
+    "reckon/cli.py crew check --manifest"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T17:40:57Z",
+  "findings": [
+    {
+      "file": "tests/test_check_manifest_resolves_named_commits.py",
+      "line": "82",
+      "severity": "non-blocking",
+      "text": "the added `test_log` keyword on `_manifest` is never supplied at any call site (grep for `test_log=` over the reviewed file returns nothing), so the fixture carries unused surface where the node's whole cause was a cited log path"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "the fragment quotes the head arm at 945f66f8ec0476583a6d29961d96ebbfff4e8a42, not the landed head 28872be6, while the run directory holds scoped-gate-1795017074984346327.log at 28872be6 (6 passed, EXIT=0) that the fragment never quotes, so the recorded head pass is one commit behind the revision being promoted"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the block is captioned 'guard-fires.log, run at head' but that log's own header line records revision=60ecc274f1bf7008b09057c6a5252423deb4cfe5, and the block prints neither header nor revision, so the artefact does not support the claim it is quoted under"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "the suite arms the fragment quotes run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which can be affected by an edit to tests/test_check_manifest_resolves_named_commits.py, so the pair cannot fail on this change and evidences nothing about it; the fragment also quotes log ids 1795016804192566987/1795016846362817895 while the manifest's arms name 1795017094338697536/1795017168538112479"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the head gate's provenance is asserted only in prose: the base arm names job 1327114, but no head log records a job id, a partition or that SLURM_JOB_ID was unset, so the done_when's 'a job on all_debug with SLURM_JOB_ID unset' cannot be read off any header"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063253797188-qwnw-red-file-check-manifest-resolves-named-commits/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "the done_when requires ruff check and ruff format --check to report nothing new on the changed paths, and no ruff command or output is recorded in the manifest's tests/test_logs or in the fragment"
+    }
+  ],
+  "head_log_revision": "28872be6fa7116623287ab0b1f49b0c719041bfb",
+  "item_verdicts": {
+    "diff": "read both commits against base 60ecc274: 945f66f8 parameterises _manifest and adds _write_test_log plus the messages_received: none line in tests/test_check_manifest_resolves_named_commits.py; 28872be6 adds the 34-line fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html; no assertion is removed or weakened and no product source is touched.",
+    "done_when": "the done_when asks for the file green at head as a job on all_debug with SLURM_JOB_ID unset, the base run's failing ids logged beside it in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html, a cause verdict, an unaffected importing-file arm, ruff on the changed paths and plain 40-character commits: base red and head green are recorded over the revision each names and the cause verdict is stated, but the head job's provenance and the ruff clause are recorded nowhere.",
+    "goal": "the node's goal is that tests/test_check_manifest_resolves_named_commits.py passes in full on the primary branch; the landed change repairs that file's fixture only (TEST_LOG_NAME at :32, _write_test_log at :106) and the file reads 6 passed EXIT=0 at 28872be6 in scoped-gate-1795017074984346327.log",
+    "manifest": "read the reviewed manifest.md: status complete, commits 945f66f8ec0476583a6d29961d96ebbfff4e8a42,28872be6fa7116623287ab0b1f49b0c719041bfb, a tests line naming the scoped pytest run, both suite arms recorded with full 40-character revisions and EXIT=0, negative_control_log logs/base-arm.log, and rubric lines for all six dimensions.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's html and its figure directory; git diff 60ecc274..28872be6 lists only tests/test_check_manifest_resolves_named_commits.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html, both inside them, and no figure directory was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_check_manifest_resolves_named_commits.py passes in full on the primary branch; the landed change repairs that file's fixture only and it reads 6 passed EXIT=0 at 28872be6 in scoped-gate-1795017074984346327.log.\nVERDICT done_when: the done_when asks for a head pass as a job on all_debug with SLURM_JOB_ID unset, the base failing ids beside it in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html, a cause verdict, an unaffected importing-file arm, ruff on the changed paths and plain 40-character commits; base red and head green are recorded over the revision each names and the cause verdict is stated, but the head job's provenance and the ruff clause are recorded nowhere.\nVERDICT write_paths: read the node's declared paths (reckon, tests, the queued-work-needs-no-workaround fragment directory, its html and its figure directory); the diff touches only tests/test_check_manifest_resolves_named_commits.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html, both inside them.\nVERDICT manifest: read manifest.md; status complete, commits 945f66f8ec0476583a6d29961d96ebbfff4e8a42,28872be6fa7116623287ab0b1f49b0c719041bfb, the tests line naming the scoped pytest run, both suite arms with full revisions and EXIT=0, negative_control_log logs/base-arm.log, and six rubric lines.\nVERDICT diff: read both commits against 60ecc274; 945f66f8 parameterises _manifest and adds _write_test_log plus messages_received: none in tests/test_check_manifest_resolves_named_commits.py, 28872be6 adds the 34-line fragment, no assertion removed or weakened and no product source touched.\nCALL_SITES: reckon/crew/reports.py:audit_manifest, reckon/cli.py crew check --manifest (the surface the changed case drives)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_check_manifest_resolves_named_commits.py:106 writes the cited log beside the fixture manifest and tests/test_check_manifest_resolves_named_commits.py:214 calls it, so the one red case passes without touching product code and the file reads 6 passed at 28872be6.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795017074984346327.log records 6 passed EXIT=0 at 28872be6 and logs/base-arm.log records 1 failed, 5 passed EXIT=1 at 60ecc274, but no head log names a job or partition and the manifest's suite pair measures two files this change cannot affect.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 60ecc274..28872be6 lists only tests/test_check_manifest_resolves_named_commits.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html, both inside the node's declared write paths, with no product, plan or index edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_check_manifest_resolves_named_commits.py:243 asserts exactly one finding, and the base arm at 60ecc274 is the literal reinstatement of the fixture regression (log cited at /tmp, no messages_received) where that same assertion reddens with three findings.\nSCORE fit: 17\nJUSTIFICATION fit: TEST_LOG_NAME at tests/test_check_manifest_resolves_named_commits.py:32 and _write_test_log at :106 follow the module's RUN_ID constant and private-helper idiom, but the _manifest keyword added at :82 is never supplied so it is dead surface.\nSCORE reuse: 18\nJUSTIFICATION reuse: no shared owner for a manifest-cited fixture log exists; the search over tests/helpers/git.py, tests/helpers/landing_repository.py and tests/ found only private per-file writers such as tests/test_a_control_log_is_judged_at_write.py:185.\nFINDING tests/test_check_manifest_resolves_named_commits.py:82 non-blocking: the added `test_log` keyword on `_manifest` is never supplied at any call site (grep for `test_log=` over the reviewed file returns nothing), so the fixture carries unused surface where the node's whole cause was a cited log path\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html:14 non-blocking: the fragment quotes the head arm at 945f66f8ec0476583a6d29961d96ebbfff4e8a42, not the landed head 28872be6, while the run directory holds scoped-gate-1795017074984346327.log at 28872be6 (6 passed, EXIT=0) that the fragment never quotes, so the recorded head pass is one commit behind the revision being promoted\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html:21 non-blocking: the block is captioned 'guard-fires.log, run at head' but that log's own header line records revision=60ecc274f1bf7008b09057c6a5252423deb4cfe5, and the block prints neither header nor revision, so the artefact does not support the claim it is quoted under\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html:28 non-blocking: the suite arms the fragment quotes run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which can be affected by an edit to tests/test_check_manifest_resolves_named_commits.py, so the pair cannot fail on this change and evidences nothing about it; the fragment also quotes log ids 1795016804192566987/1795016846362817895 while the manifest's arms name 1795017094338697536/1795017168538112479\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-resolves-named-commits.html:13 non-blocking: the head gate's provenance is asserted only in prose: the base arm names job 1327114, but no head log records a job id, a partition or that SLURM_JOB_ID was unset, so the done_when's 'a job on all_debug with SLURM_JOB_ID unset' cannot be read off any header\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063253797188-qwnw-red-file-check-manifest-resolves-named-commits/manifest.md:10 non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths, and no ruff command or output is recorded in the manifest's tests/test_logs or in the fragment",
+  "review_run_id": "r-20261118T160130605137-review-of-qwnw-red-file-check-manifest-resolves-named-commits-28872be6fa71",
+  "reviewed_base_sha": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "reviewed_head_sha": "28872be6fa7116623287ab0b1f49b0c719041bfb",
+  "reviewed_run_id": "r-20261118T063253797188-qwnw-red-file-check-manifest-resolves-named-commits",
+  "reviewer_run_id": "r-20261118T160130605137-review-of-qwnw-red-file-check-manifest-resolves-named-commits-28872be6fa71",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:09:45.386418+00:00",
+  "total": 107
+}

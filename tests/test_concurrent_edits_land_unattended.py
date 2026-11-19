@@ -494,7 +494,11 @@ def test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate(
     )
     runs._write_json(
         ledger.run_path(PROJECT, pointer["run_id"], fleet.repo),
-        {"promoted_revision": conflicting["head"], "commits": [conflicting["head"]]},
+        {
+            "run_id": pointer["run_id"],
+            "promoted_revision": conflicting["head"],
+            "commits": [conflicting["head"]],
+        },
     )
     pointer = runs.read_pointer(pointer["run_id"])
     repair = pointer["merge_conflict"]
