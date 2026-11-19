@@ -15,33 +15,50 @@
   the one cause both failing ids share: the product keeps the rule, every
   other fixture states the line, and no assertion was changed or deleted.</p>
 
+  <p>The repair round adds
+  <code>tests/test_qwnw_red_file_a_claimless_review_is_refused_at_store.py</code>,
+  which pins the rule through the command surface in both directions: the
+  manifest that never states its messages is refused naming the line, and the
+  same manifest passes once it states none.</p>
+
   <table id="qwnw-red-file-a-claimless-review-is-refused-at-store-arms">
     <caption>Each arm is a log whose first lines name the revision and the
     command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>node tests, head gate</td>
-        <td><code>1cfbeeb7ed39b6eddda53bf7b6b10c179005e134</code></td>
+        <td><code>afd2113bb7bbd71b99c123dd37e9a0146794ce1c</code></td>
         <td>4 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>negative control, base test file</td>
+      <tr><td>node tests, base — the same run is this node's negative control</td>
         <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
         <td>2 failed, 2 passed, <code>EXIT=1</code></td></tr>
-      <tr><td>node tests, base</td>
-        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
-        <td>2 failed, 2 passed, <code>EXIT=1</code></td></tr>
-      <tr><td>scoped suite, baseline arm</td>
-        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>scoped suite, after arm</td>
-        <td><code>1cfbeeb7ed39b6eddda53bf7b6b10c179005e134</code></td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
     </tbody>
   </table>
 
-  <p>Both arms of the scoped suite are green on both sides of the change, and
-  <code>ruff check</code> plus <code>ruff format --check</code> report
-  nothing on the changed path. The base and head logs live in the run
-  directory: the head gate re-run and the base attempt are named by the
-  manifest's <code>test_logs</code> and <code>negative_control_log</code>.
+  <p>The scoped suite passes in both arms; its figures and log paths are the
+  manifest's <code>baseline_suite</code> and <code>after_suite</code> rather
+  than a second copy here.</p>
+
+  <h3 id="qwnw-red-file-a-claimless-review-is-refused-at-store-ids">The
+  failing ids at the base revision</h3>
+
+  <ul>
+    <li><code>test_check_manifest_refuses_a_handwritten_claimless_record</code>
+      — <code>assert 2 == 1</code></li>
+    <li><code>test_a_stated_claim_passes_both_paths</code> —
+      <code>AssertionError: ['messages_received: no delivery receipt was
+      recorded, so the manifest must say `messages_received: none`']</code></li>
+  </ul>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> report
+  nothing on the changed path. Every log a reader needs sits in the run
+  directory, in <code>logs/</code> or beside the manifest — the head gate
+  re-run as <code>scoped-gate-*.log</code> whose last line is
+  <code>EXIT=0</code>, the base attempt as <code>logs/negctl-base.log</code>
+  whose last line is <code>EXIT=1</code>, and the two suite arms as
+  <code>baseline_suite-*.log</code> and <code>after_suite-*.log</code>. Their
+  exact names are the manifest's <code>test_logs</code>,
+  <code>negative_control_log</code>, <code>baseline_suite.log_path</code> and
+  <code>after_suite.log_path</code>.
   </p>
 </section>
