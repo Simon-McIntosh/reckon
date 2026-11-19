@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -236,9 +236,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s29" data-id="c-close-s29" data-who="reckon-build" data-when="2026-11-19T08:23:00Z">
-    <div class="r-comment-body"><p>§29 landed by direct merge (head <code>34f98b1226</code>), on the lead's instruction. A promoted run that shows a turn in progress is released once its recorded process is proved dead, a promoted measurement run is released on its promotion alone, and a run whose liveness is unknown, or whose worktree is dirty or ahead of its promoted head, is kept with its reason. Evaluated read-only on the fleet: of 8 promoted runs holding pointers, 6 read releasable and 2 are kept as unknown. Merged candidate gate: 67 passed in 51.65s.</p></div>
-</div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
     <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
 </div>
@@ -458,6 +455,9 @@
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261118T105428794719-a-moved-head-still-gets-a-review" data-who="reckon-build" data-when="2026-11-18T11:09:35Z">
     <div class="r-comment-body"><p>Requests for a moved head compose a light review when the earlier brief prevents carry-forward, preserving the store guard and eligible legacy carry; all 5 regression cases and 63 scoped checks pass, the base negative control raises naming both heads, and 72 importer files add 0 failure IDs against the base (both arms: 525 passed, 14 pre-existing failures).</p></div>
 </div>
+<div class="r-comment" data-section="s29" data-id="c-close-s29" data-who="reckon-build" data-when="2026-11-19T08:23:00Z">
+    <div class="r-comment-body"><p>§29 landed by direct merge (head <code>34f98b1226</code>), on the lead's instruction. A promoted run that shows a turn in progress is released once its recorded process is proved dead, a promoted measurement run is released on its promotion alone, and a run whose liveness is unknown, or whose worktree is dirty or ahead of its promoted head, is kept with its reason. Evaluated read-only on the fleet: of 8 promoted runs holding pointers, 6 read releasable and 2 are kept as unknown. Merged candidate gate: 67 passed in 51.65s.</p></div>
+</div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T212418904664-review-of-a-promoted-run-with-no-live-worker-gives-up-its-pointer-1dd9db02a00d" data-who="reckon-build" data-when="2026-11-18T21:28:20.542Z">
     <div class="r-comment-body"><p>the review of run r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer at 0be7b97a81c3d7771f57391a1991460b9cc44d52..1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0 is stored as parsed with six scores goal_fidelity 9, evidence 10, scope_discipline 20, durability 12, fit 16, reuse 4, zero added failures and four findings, two blocking and two non-blocking; nothing is committed because a review run changes no repository file, so git status in the worktree is empty</p></div>
 </div>
@@ -465,7 +465,7 @@
     <div class="r-comment-body"><p>review scored 75, 3 finding(s)</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261119T070603914339-review-of-a-promoted-run-with-no-live-worker-gives-up-its-pointer-34f98b12266e" data-who="reckon-build" data-when="2026-11-19T08:09:34.573Z">
-    <div class="r-comment-body"><p>review scored 99, 3 finding(s)</p></div>
+    <div class="r-comment-body"><p>An independent review of run r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer at head 34f98b12266e15e762088a522889fa5f0606e9d0 against base 0be7b97a81c3d7771f57391a1991460b9cc44d52 is recorded as parsed with all six dimensions scored (goal_fidelity 17, evidence 17, scope_discipline 19, durability 16, fit 18, reuse 12), added_failure_count 0 with no added failure ids, five item verdicts plus the CALL_SITES line naming five production call sites, and three findings, all non-blocking: _measured_workspace_refusal at reckon/crew/pending_landing.py:1158 re-implements the inspection block landed_workspace_refusal owns at :1106, _release_measured_pointer retires at :1219 without the landing_check refusal its sibling applies at :113, and the reviewed manifest.md:5 lists one of the three commits in its range.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§3 landed (head <code>e44a9454d7</code>, review 120 of 120, no added failures). A repeated completion call now re-evaluates a parked request and dates the check, and a request parked for more than 30 minutes is an obligation naming its condition. The worker's replay showed the base drain already promotes a repaired request when a slot is free, so the section's first case was already met; the congested case is §12.</p></div>
