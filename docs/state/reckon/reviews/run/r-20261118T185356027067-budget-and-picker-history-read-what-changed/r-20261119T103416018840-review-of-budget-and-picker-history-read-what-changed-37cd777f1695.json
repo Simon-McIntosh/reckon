@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795084258346863040.log (revision 4dd916ef30, command over tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py) records \"58 passed\" with no FAILED id and EXIT=0, and after_suite-1795084301682773877.log (revision 37cd777f16, the same two files plus the node test) records \"64 passed\" with no FAILED id and EXIT=0, so the failure-set difference is empty (0). The base arm does not include the node test, which does not exist at the base revision; the base-revision row-count claim rests on negative-control-base-modules.log instead, which records 4 failed, 2 passed, EXIT=1 with the head test file over base modules.",
+  "base_log_revision": "08cf09dc1d2c7cfd5979a206a1db7e5fdd4e3e29",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/budget.py:709 _ledger_readings -> ledger.stored_history",
+    "reckon/ledger.py:1939 picker_runs -> ledger.stored_history",
+    "reckon/crew/dispatch_picker.py:304 picker rows -> ledger.picker_runs",
+    "reckon/crew/section_holds.py:127 section holds -> ledger.picker_runs",
+    "reckon/mcp_views.py:1786 section attempts -> ledger.picker_runs",
+    "reckon/crew/routing.py:483 routing -> budget.latest_recorded",
+    "reckon/crew/dispatch_admission.py:429 admission -> budget.latest_recorded"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:41:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185356027067-budget-and-picker-history-read-what-changed/negative-control-revert-answering-commit.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm of the negative control the manifest names was run at 0e7703803a95b0df314aa2b29632b1c20829c9a4, a commit on top of the reviewed head whose diff against 37cd777f16 rewrites reckon/ledger.py and adds 68 lines to reckon/file_memo.py, so the control's green side is not the revision this record names; the red side (2 failed, 1 passed, EXIT=1 on the reverted tree) still shows the checks fire, and after_suite-1795084301682773877.log independently reports 64 passed EXIT=0 at 37cd777f16."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1849",
+      "severity": "non-blocking",
+      "text": "non-blocking: _handed_rows copies each row dict but shares every nested value, and _PICKER_FIELDS at reckon/ledger.py:1700-1726 includes the nested budget, throughput and lane_receipt, so a caller that patches a nested field changes what the next reader of the held history is handed, which ledger.load's per-read json.loads never allowed; the guard at tests/test_budget_and_picker_history_read_what_changed.py:348 patches only a top-level key and pops a row, so it cannot catch this."
+    },
+    {
+      "file": "tests/test_budget_and_picker_history_read_what_changed.py",
+      "line": "309",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_concurrent_reads_keep_their_own_history is not a guard for _HELD_LOCK at reckon/ledger.py:1766 \u2014 the run's own revert log records the arm as 'F.F', i.e. this test passed (1 passed) against the pre-repair container that holds no lock, so removing the lock again would leave it green; it asserts only the content of each answer and names no condition under which a lost or half-replaced entry makes it fail."
+    }
+  ],
+  "head_log_revision": "37cd777f1695fc810664a0d3cdb8dccf711ddc2d",
+  "item_aggregate": {
+    "absent": [],
+    "items_reported": 6,
+    "items_total": 6
+  },
+  "item_verdicts": {
+    "call_sites": "checked the runtime callers at the reviewed head: reckon/budget.py:709 _ledger_readings calls stored_history, reckon/ledger.py:1939 picker_runs calls it with picker_only=True and is reached from reckon/crew/dispatch_picker.py:304, reckon/crew/section_holds.py:127 and reckon/mcp_views.py:1786, and budget.latest_recorded is reached from reckon/crew/routing.py:483 and reckon/crew/dispatch_admission.py:429.",
+    "diff": "read commit by commit from 08cf09dc1d to 37cd777f16; the only commit is 37cd777f16, +94/-43 in reckon/ledger.py (the dict container replaced by functools.lru_cache cells behind a lock, plus _handed_rows) and +111 in the node test (three new tests, the skip guard removed).",
+    "done_when": "the done_when names a 2,000-row temporary crew home counted through a stand-in on the store read, asserting 0 decodes on the unchanged repeat, at most 10 after 5 promotions and answers equal to the read it replaced; tests/test_budget_and_picker_history_read_what_changed.py:183-226 asserts exactly those counts and :276-306 compares the answers against ledger.load rows and order alike, and the manifest records the run at 37cd777f16 as 64 passed EXIT=0.",
+    "goal": "the node goal is that the budget's ledger readings and picker_runs read only rows promoted since their last read; the gained commit rewrites the container that holds those rows (reckon/ledger.py:1759-1795) and hands every reader its own dicts (:1849-1852), so both readers keep answering from the stored history rather than decoding it again.",
+    "manifest": "read at the reviewed head; it records commits ad7a0a8775, 4d3102ae46, 08cf09dc1d and 37cd777f16, the scoped gate as 64 passed EXIT=0 at 37cd777f16 on all_debug, matched arms as base 58 passed and head 64 passed, both EXIT=0, and three negative-control logs.",
+    "write_paths": "the node declared reckon/budget.py, reckon/ledger.py, tests/test_budget_and_picker_history_read_what_changed.py and two docs paths; the gained commit touches only reckon/ledger.py and the node test, both declared."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_and_picker_history_read_what_changed.py:268 and :348 fail on the pre-repair container (negative-control-revert-answering-commit.log records 2 failed, 1 passed, EXIT=1), but :309 passes against that same unlocked tree and the nested-value case the ledger.py:1849 docstring promises is untested.",
+    "evidence": "the gate log scoped-gate-1795084181568961223.log was run at 37cd777f1695 and records \"64 passed\" with EXIT=0, and the matched arm after_suite-1795084301682773877.log records \"64 passed\" with EXIT=0 against baseline_suite-1795084258346863040.log's \"58 passed\" EXIT=0, but the cited negative control's head arm was run at 0e7703803a, not the reviewed head.",
+    "fit": "reckon/ledger.py:1770-1778 replaces the hand-rolled eviction loop with functools.lru_cache over a cell and keeps the module's comment-and-docstring idiom, adding only the private names _Entry, _HELD_LOCK, _history_cell, _held_history and _handed_rows.",
+    "goal_fidelity": "reckon/ledger.py:1892-1894 and :1927 hand every reader its own row dicts and :1786-1795 keep the held entry behind one lock, so the readers still answer only what was promoted since while the two defects the earlier review named are removed by the same commit.",
+    "reuse": "reckon/ledger.py:1770 now leaves the bound, eviction and clear to functools.lru_cache rather than implementing them, but the repository's owner of a bounded memo, reckon/file_memo.py:445 memoized_key, is still not extended or reused, so a second bounded container over the same rows remains at reckon/ledger.py:1759-1795.",
+    "scope_discipline": "the gained commit touches only reckon/ledger.py and tests/test_budget_and_picker_history_read_what_changed.py, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the budget's ledger readings and picker_runs read only rows promoted since their last read; the gained commit keeps both readers on stored_history and repairs its container at reckon/ledger.py:1759-1795.\nVERDICT done_when: the done_when's 2,000-row counted-decode measure is asserted at tests/test_budget_and_picker_history_read_what_changed.py:183-226 (0 decodes on the repeat, at most 10 after 5 promotions) and the answer equality against ledger.load at :276-306, with scoped-gate-1795084181568961223.log recording 64 passed EXIT=0 at 37cd777f16.\nVERDICT write_paths: the declared paths are listed in the reviewed manifest; the gained commit touches only reckon/ledger.py and tests/test_budget_and_picker_history_read_what_changed.py, both declared write paths.\nVERDICT manifest: read; it names the four commits, the scoped gate at 37cd777f16 (64 passed, EXIT=0), matched arms base 58 / head 64 both EXIT=0, and three negative-control logs, one of which cites a head outside the reviewed range.\nVERDICT diff: read commit by commit from 08cf09dc1d2c7cfd5979a206a1db7e5fdd4e3e29 to 37cd777f1695fc810664a0d3cdb8dccf711ddc2d; one commit, reckon/ledger.py +94/-43 replacing the dict container with functools.lru_cache cells behind a lock and adding _handed_rows, and the node test +111 in the declared scope.\nCALL_SITES: reckon/budget.py:709, reckon/ledger.py:1939, reckon/crew/dispatch_picker.py:304, reckon/crew/section_holds.py:127, reckon/mcp_views.py:1786, reckon/crew/routing.py:483, reckon/crew/dispatch_admission.py:429\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1786-1795 and :1849-1852 hold the decoded rows behind one lock and hand every reader its own row dicts, so both readers still answer only what was promoted since.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795084181568961223.log and after_suite-1795084301682773877.log both record 64 passed EXIT=0 at 37cd777f16, but the manifest's named negative control ran its head arm at 0e7703803a rather than the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit changes only reckon/ledger.py and tests/test_budget_and_picker_history_read_what_changed.py, both declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_budget_and_picker_history_read_what_changed.py:268 and :348 fail on the pre-repair container per negative-control-revert-answering-commit.log, while :309 passes against that same unlocked tree and the nested-value sharing at reckon/ledger.py:1849 is untested.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1770-1778 uses functools.lru_cache over a cell in place of the hand-rolled eviction loop and keeps the module's comment, docstring and private-helper idiom.\nSCORE reuse: 15\nJUSTIFICATION reuse: the bound, eviction and clear now belong to functools.lru_cache at reckon/ledger.py:1770, but reckon/file_memo.py:445 memoized_key remains the repository's owner of a bounded memo and is neither extended nor reused, leaving a second bounded container at reckon/ledger.py:1759-1795.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185356027067-budget-and-picker-history-read-what-changed/negative-control-revert-answering-commit.log:1 non-blocking: the named negative control's head arm ran at 0e7703803a, outside the reviewed range and over a rewritten ledger.py, so its green side is not the reviewed revision; the after_suite log supplies the green at 37cd777f16.\nFINDING reckon/ledger.py:1849 non-blocking: _handed_rows shares nested values (budget, throughput, lane_receipt are in _PICKER_FIELDS), so a caller mutating a nested field still changes the next reader's answer, which load never allowed and tests/...:348 does not test.\nFINDING tests/test_budget_and_picker_history_read_what_changed.py:309 non-blocking: the concurrency test passed against the unlocked pre-repair container in the run's own revert log (F.F), so removing the lock again leaves it green and it guards no failure mode.\n",
+  "review_node": "review-of-budget-and-picker-history-read-what-changed-37cd777f1695",
+  "review_run_id": "r-20261119T103416018840-review-of-budget-and-picker-history-read-what-changed-37cd777f1695",
+  "reviewed_base_sha": "08cf09dc1d2c7cfd5979a206a1db7e5fdd4e3e29",
+  "reviewed_head_sha": "37cd777f1695fc810664a0d3cdb8dccf711ddc2d",
+  "reviewed_run_id": "r-20261118T185356027067-budget-and-picker-history-read-what-changed",
+  "reviewer_run_id": "r-20261119T103416018840-review-of-budget-and-picker-history-read-what-changed-37cd777f1695",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:06:15.950919+00:00",
+  "total": 102
+}
