@@ -2880,6 +2880,22 @@ def _roster_ids(entries: Any) -> set[str]:
     }
 
 
+def _reader_members(project: str, fallback: Sequence[Any]) -> list[Any]:
+    """The roster the same :func:`load` read would carry right now.
+
+    A history read answers the store's imported roster when one exists and the
+    aggregate's own otherwise. The roster guard must measure that roster rather
+    than the aggregate's copy, which the store may have moved past: judging a
+    projected payload against the stale copy would refuse a write that drops
+    nothing. The store is read without importing into it, so a guard never
+    creates a store as a side effect.
+    """
+    from reckon import run_store
+
+    stored = run_store.read_auxiliary(project)
+    return list(stored[0]["members"]) if stored else list(fallback)
+
+
 def dropped_member_ids(stored: Any, incoming: Any) -> list[str]:
     """Member ids the stored roster holds that an incoming write leaves out.
 
@@ -3068,13 +3084,18 @@ def _write_state(
     orchestrators safe: the loser is told to re-read rather than silently
     overwriting a record it never saw.
 
-    A write that leaves out a member id the stored roster holds is refused
+    A write that leaves out a member id the roster the same read carries holds is
+    refused
     unless ``allow_member_removal`` states that the removal is intended. This
     is what stops a write emptying a roster through a call meant for another
     purpose: the caller that genuinely retires a member passes the flag, so
     the removal is stated where it is performed rather than inferred later
     from an absence. An absent ledger has no members, so creating one from
-    empty is unaffected.
+    empty is unaffected. The roster compared against is the one :func:`load`
+    would return now — the store's imported copy when one exists, the
+    aggregate's own otherwise — so a payload read through :func:`load` is
+    measured by the members it declares even though the aggregate keeps its
+    own copies: a truncation cannot ride an aggregate write.
 
     A write that cannot bring every per-run file it must change into line with
     its aggregate row is abandoned, and the files it had already changed are
@@ -3150,8 +3171,9 @@ def _write_state(
         # A run update preserves the aggregate's own copies instead of copying
         # that projection back into the file or judging it as a roster removal.
         projected_auxiliary = "auxiliary_version" in data
-        incoming_members = list(
-            aggregate["members"] if projected_auxiliary else data.get("members", [])
+        declared_members = list(data.get("members", []))
+        incoming_members = (
+            list(aggregate["members"]) if projected_auxiliary else declared_members
         )
         incoming_holds = list(
             aggregate["holds"] if projected_auxiliary else data.get("holds", [])
@@ -3163,8 +3185,17 @@ def _write_state(
         # view, and the per-run files it folds in are rows this write must leave
         # where they are.
         current_view = expected_version == stored_version
+        # The roster guard measures the members the caller declared against the
+        # roster the same read carries: a projected payload's members are that
+        # read's roster, and the aggregate's copy may be the one the store has
+        # moved past.
+        reference_members = (
+            _reader_members(project, stored["members"])
+            if projected_auxiliary
+            else stored["members"]
+        )
         dropped = (
-            dropped_member_ids(stored["members"], incoming_members)
+            dropped_member_ids(reference_members, declared_members)
             if current_view
             else []
         )
@@ -3172,8 +3203,8 @@ def _write_state(
             raise LedgerError(
                 f"refusing to write the ledger for {project!r}: this write drops "
                 f"roster member(s) {', '.join(dropped)} that the stored roster "
-                f"holds, taking the member count from {len(stored['members'])} to "
-                f"{len(incoming_members)}, which is how a roster empties itself "
+                f"holds, taking the member count from {len(reference_members)} to "
+                f"{len(declared_members)}, which is how a roster empties itself "
                 "without anyone asking; pass allow_member_removal=True when the "
                 "removal is intended"
             )
