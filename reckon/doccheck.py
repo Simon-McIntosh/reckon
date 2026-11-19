@@ -417,9 +417,9 @@ DEFERRED_WORK_RULE = (
     "additional work is a plan section or an instruction in the dispatching prompt"
 )
 #: Every spelling of work sent onward that names its object, so ordinary prose
-#: is not caught: the hyphenated and run-together forms of follow-on, a verb of
-#: onward motion followed by a section number, and a verb of onward motion
-#: aiming at a qualifying noun (``follow-up``, ``later``, ``next``,
+#: is not caught: the hyphenated and run-together spellings of the retired term
+#: itself, a verb of onward motion followed by a section number, and a verb of
+#: onward motion aiming at a qualifying noun (``follow-up``, ``later``, ``next``,
 #: ``separate``) followed by the bucket it names. Up to two words may sit
 #: between a phrase's parts, so ``go to a follow-up figure node`` reads as one
 #: statement. A sentence that only cites a landed section — ``landed in §N`` —
