@@ -14,16 +14,15 @@ supplied, the run's own project carried on its snapshot.
 
 from __future__ import annotations
 
-import json
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from reckon import crew, ledger
+from reckon import crew
 from reckon.crew import recovery
-from tests.helpers.git import git as _git
+from tests.helpers.landing_repository import landed_checkout, record_promoted_row
 
 
 @pytest.fixture()
@@ -67,45 +66,6 @@ def _snapshot(pointer: dict) -> dict:
     return recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
 
 
-def _landed_repository(home: Path, tmp_path: Path) -> tuple[Path, str]:
-    """A checkout whose project state resolves to the temporary home's own.
-
-    A ledger row names the checkout it was promoted into, because the departure
-    word asks that checkout's primary branch whether the delivered head reached
-    it: a promoted run whose head no branch carries is a landing still owed and
-    reads delivered rather than promoted. The state directory is carried into
-    the checkout as the symlink a mounted project carries, so the row is
-    reached by the discovery path and by the checkout's own path alike.
-    """
-    repo = tmp_path / "repo"
-    (repo / "docs").mkdir(parents=True)
-    project_state = home / "state" / "proj"
-    project_state.mkdir(parents=True)
-    (project_state / "index.json").write_text("{}\n", encoding="utf-8")
-    (repo / "docs" / "state").symlink_to(home / "state")
-    _git(repo, "init", "-q", "-b", "main")
-    _git(repo, "config", "user.email", "worker@example.invalid")
-    _git(repo, "config", "user.name", "Worker")
-    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
-    _git(repo, "add", "seed.txt")
-    _git(repo, "commit", "-q", "-m", "chore: seed the checkout")
-    return repo, _git(repo, "rev-parse", "HEAD")
-
-
-def _record_ledger_row(run_id: str, repo: Path, head: str) -> None:
-    """Write the per-run ledger file a landed promotion leaves behind.
-
-    The row names the checkout and the head its landing delivered, and that
-    head is on the checkout's primary branch, which is what the departure word
-    reads to word the run promoted rather than delivered.
-    """
-    path = ledger.run_path("proj", run_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps({"run_id": run_id, "repo": str(repo), "commits": [head]})
-    )
-
-
 def test_a_discarded_block_never_reads_promoted(home) -> None:
     """A blocked run removed by crew discard departs discarded, never promoted.
 
@@ -137,10 +97,10 @@ def test_a_recorded_promotion_reads_promoted(home, tmp_path) -> None:
     whose head no branch carries is a landing still owed and reads delivered.
     So the fixture promotes into a real checkout whose head is the branch's.
     """
-    repo, head = _landed_repository(home, tmp_path)
+    repo, head = landed_checkout(home, tmp_path)
     pointer = _blocked_pointer(home, "r-promoted", repo=repo)
     snapshot = _snapshot(pointer)
-    _record_ledger_row("r-promoted", repo, head)
+    record_promoted_row("r-promoted", repo, head)
     crew.pointer_path("r-promoted").unlink()
 
     folded, _ = recovery.fleet_transitions({"r-promoted": snapshot}, {})
