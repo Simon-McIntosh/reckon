@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-claim-nobody-is-working-is-released">
+  <meta name="plan-title" content="A Claim Nobody Is Working Is Released">
+  <meta name="plan-summary" content="Four kinds of run hold a live pointer or read as alive with no worker behind them; each is released or reported as it is, so waits lift and discards stick.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S28">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="delivered-work-lands-without-a-coordinator">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-claim-nobody-is-working-is-released#s2&quot;,&quot;a-claim-nobody-is-working-is-released#s3&quot;,&quot;a-claim-nobody-is-working-is-released#s4&quot;,&quot;a-claim-nobody-is-working-is-released#s5&quot;]}">
+  <title>A Claim Nobody Is Working Is Released | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: four kinds of run outlive their worker</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>A live pointer is a claim: it holds the run's paths, keeps the sections that wait on it waiting, and tells every reader that a worker exists. <code>delivered-work-lands-without-a-coordinator</code> made a promoted run with no live worker give up its pointer (its §21, §26, §27 and §29, all landed by 19 November). Three kinds of run fall outside the cases those sections cover, and a fourth reads as alive when it never started. Each was seen on the fleet on 18 and 19 November.</p>
+    <table>
+      <thead><tr><th>Case</th><th>What was seen</th><th>Why the landed rule does not reach it</th><th>Section</th></tr></thead>
+      <tbody>
+        <tr><td>The worker was recorded on a node that no longer hosts the fleet</td><td>Promoted runs kept their pointers after the fleet moved node; a discard of each was undone on the next pass</td><td>The worker's liveness reads as unknown, and unknown is kept</td><td>§2</td></tr>
+        <tr><td>A journaled measurement run</td><td>A run marked as measurement-only kept its pointer after its measurement was recorded</td><td>It is never promoted, so the promoted-run rule never tests it</td><td>§3</td></tr>
+        <tr><td>A member of a landing group</td><td>One member's pointer survived its group's landing and held the sections waiting on it</td><td>The group lands as one head; the member's own record shows no promotion</td><td>§4</td></tr>
+        <tr><td>A resume whose step never started</td><td>A resume launched a 32-CPU overlapping scheduler step that never ran; the run read as alive, and stopping it left the scheduler client processes behind</td><td>Liveness is read from the launcher, not from a turn having begun</td><td>§5</td></tr>
+      </tbody>
+    </table>
+    <p>The rule each section keeps from the landed work: a run showing a turn in progress is never released on an unknown reading. Only a run with no turn in progress may be released without proof that its worker is dead.</p>
+
+    <h2 id="s2">§2 — A run whose worker was on a previous fleet node gives up its claim</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> The fleet moves node every few days. Every promoted run launched before the move then reads as liveness unknown for ever, and its pointer is never retired.</p>
+    <p><strong>Deliverable.</strong> A promoted run whose recorded launcher host is not the node the fleet record names, and which shows no turn in progress, gives up its pointer on the next pass. A discard of such a run is not undone.</p>
+    <p><strong>Done when.</strong> A test builds a temporary crew home holding three promoted runs recorded on a host other than the current fleet node: one with no turn in progress, one whose stream grew inside the turn window, and one recorded on the current node with a dead process. After one pass the first and third have no pointer and the second keeps its pointer. A discarded run of the first kind has no pointer after two further passes. Negative control: at the base revision the first run keeps its pointer. The existing release tests add no failure against the base. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/process_liveness.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_run_from_a_previous_fleet_node_is_released.py</code>.</p>
+
+    <h2 id="s3">§3 — A measurement run gives up its claim when its measurement is recorded</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> A measurement-only run is journaled, not promoted. Nothing retires its pointer, so its paths stay claimed after its record is written.</p>
+    <p><strong>Deliverable.</strong> A measurement-only run whose record is stored and which has no live worker has no pointer after the next pass. One whose record is not yet stored keeps it.</p>
+    <p><strong>Done when.</strong> A test builds a temporary crew home with two measurement-only runs, one with its record stored and no live worker, one without a record. After one pass the first has no pointer and its record is unchanged byte for byte; the second keeps its pointer. Negative control: at the base revision the first keeps its pointer. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/landing_measure.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_recorded_measurement_run_is_released.py</code>.</p>
+
+    <h2 id="s4">§4 — A landing-group member is released when its group lands</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> Sections that wait on a group member wait on its pointer. When the group lands as one head and one member's pointer survives, those sections never start.</p>
+    <p><strong>Deliverable.</strong> When a landing group's head is on the primary branch, every member's pointer is retired and every section waiting on a member is released. A group whose head is not on the primary branch keeps every member.</p>
+    <p><strong>Done when.</strong> A test builds a temporary repository and crew home with a three-member group and one request waiting on each member. With the group head merged, one pass leaves no member pointer and all three requests released. With the head unmerged, every pointer and every wait is kept. Negative control: at the base revision the merged case leaves at least one member pointer. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_landed_group_releases_every_member.py</code>.</p>
+
+    <h2 id="s5">§5 — A resume that never started reads as not started, and a stop leaves no process</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> A resume was reported on 19 November whose scheduler step asked for 32 CPUs inside the fleet job and never started. The run read as alive for as long as the client process waited, so nothing resumed it again, and stopping it left that client and its children running.</p>
+    <p><strong>Deliverable.</strong> A resumed run reads as working only once its worker has begun a turn. A resume whose worker has not begun a turn within a stated bound reads as a failed launch, naming what it was waiting for. Stopping any run ends every process the launch started, and reports each pid it signalled.</p>
+    <p><strong>Done when.</strong> A test launches a resume through a stand-in launcher that blocks before starting the worker: within the bound the run's classification is the failed-launch one and carries the launcher's own waiting reason, and it is offered for resume again. A second stand-in starts a worker that begins a turn: the run reads as working. Stopping the blocked run leaves no process from its launch tree alive, checked by pid, and prints each pid signalled. Negative control: at the base revision the blocked run reads as working, and the stop leaves the stand-in launcher alive. Tests run on <code>all_debug</code> with at most <code>-n 4</code> and start no scheduler step. Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/process_liveness.py</code> and <code>tests/test_a_resume_that_never_started_reads_as_not_started.py</code>.</p>
+
+    <h2 id="s6">§6 — The fleet holds no claim without a worker</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A census of the live fleet after §2 to §5 have landed, beside the same census taken before.</p>
+    <p><strong>Done when.</strong> The evidence record holds two censuses of every live pointer on the workstation, each row giving the run, its kind, its recorded host, whether a turn is in progress and the pointer's age. The census before landing lists at least one run of each kind in §1, or says which kind had none that day. The census taken at least six hours after the last landing lists no promoted, measurement-only or landed-group run older than one hour with no turn in progress, and no run reading as working whose worker has begun no turn. A census that read fewer pointers than the live directory holds fails as unread. Write paths: <code>docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-acnwr-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-19" data-recommends-skill="/reckon-build a-claim-nobody-is-working-is-released" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the four release cases, then take the census</h4>
+    <div class="r-fu-body"><p>§2 to §5 are independent of one another and may run together; §2 and §4 both write the pending-landing module and meet at the merge. §6 runs last. The plan owes its content and design reviews before the first node.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-claim-nobody-is-working-is-released</pre>
+    </article>
+</section>
+
+    <section data-reckon="comments" id="comments" class="r-comments">
+<h2><span class="sec">§</span> Comments</h2>
+</section>
+  </main>
+</body>
+</html>
