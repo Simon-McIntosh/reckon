@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_count": 0,
+  "after_failure_ids": [],
+  "baseline_failure_count": 0,
+  "baseline_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1364 (the domain gate that calls _require_commits_beyond_base)",
+    "reckon/crew/promotion.py:3853 (the import of that guard)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:59:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "515",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded-merge exemption the reconciliation re-applies has no assertion that reddens without it at this head, because the hand-merge fixture's merge names the run head as a parent and _integration_brings_the_run at promotion_evidence.py:390-413 already admits that shape (tests/test_run_scope_measure_nets_churn.py:201 cites such a merge with no recorded_merge field); deleting lines 515-519 leaves tests/test_a_hand_merged_run_is_recorded.py green, so the gate cannot detect that half of a wrong resolution."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "413",
+      "severity": "non-blocking",
+      "text": "non-blocking: admission tests run_head in parents, so a merge whose first parent is the run head is admitted while the scope charge at promotion_evidence.py:232 reads commit^1..commit, charging the merged-in branch's content rather than the run's work the docstring promises; requiring the run head as the second parent would match the charge."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read b3bcd2ea (parents 62ea9222, 0d99e2f) and a1d5d940 (parents b3bcd2ea, 95672eee) against base 62ea9222; b3bcd2ea's own content is the promotion_evidence.py conflict resolution at promotion_evidence.py:390-413 and :502-524, and a1d5d940 touches only docs/plans/queued-work-needs-no-workaround.html and two review-record JSONs under docs/state.",
+    "done_when": "node.json's done_when asks for the file to pass at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, a red base arm at full 40-character revisions and an importer arm over the run's importers; the manifest records the a1d5d940 gate at 2 passed with EXIT=0 and the base arm at 1 failed, 1 passed with EXIT=1, but no log carries a SLURM marker (the gate ran on host 98dci4-clu-3141) and importers-head-1795072204228350715.log:1 names bfed9c71 rather than the reviewed head.",
+    "goal": "the source node's goal is that its file passes in full - brief-for-worker.md:38 reads \"Make tests/test_a_hand_merged_run_is_recorded.py pass in full on the primary branch\" - and the increment since the last reviewed head 62ea9222 keeps that outcome: reckon/crew/promotion_evidence.py:515-519 still carries the recorded-merge exemption beside the integration-merge admission at promotion_evidence.py:390-413, and scoped-gate-1795208370492896056.log reads 2 passed at a1d5d940.",
+    "manifest": "read the reviewed run's manifest.md; it reads status complete with a checkpoint naming the third merge at a1d5d940, a tests line running the node's file, and suite arms of 58 passed with EXIT=0 at b24fe95a and a1d5d940.",
+    "write_paths": "the reviewed run's manifest declares reckon, tests, the section's fragment directory and its figure path; the increment's only product file, reckon/crew/promotion_evidence.py, sits inside reckon, and the other paths in the 62ea9222..a1d5d940 diff (docs/plans/*, docs/state/*) arrive from primary through the two merges rather than from this run."
+  },
+  "justifications": {
+    "durability": "the hand-merge fixture's merge names the run head as a parent, so promotion_evidence.py:390-413 admits that citation without the exemption at promotion_evidence.py:515 and no assertion reddens when the reconciliation drops it.",
+    "evidence": "scoped-gate-1795208370492896056.log records 2 passed with EXIT=0 at a1d5d940, but its host is 98dci4-clu-3141 with no SLURM marker and importers-head-1795072204228350715.log:1 measures bfed9c71 rather than the head.",
+    "fit": "promotion_evidence.py:390 follows the module's private-helper, docstring and spacing idiom beside _declared_repository_roots, and promotion_evidence.py:2489 adds _commit_parents to the sibling import list.",
+    "goal_fidelity": "promotion_evidence.py:515-519 keeps the exemption whose absence refused the hand-merge citation, and scoped-gate-1795208370492896056.log reads 2 passed at a1d5d940.",
+    "reuse": "promotion_evidence.py:410 composes promotion_scope.py:551 _commit_parents rather than shelling out for the parents, though it re-derives the merge test that promotion_scope.py:575 _merge_revisions already owns.",
+    "scope_discipline": "the run-authored change is promotion_evidence.py inside the declared reckon path, and the roughly 320 other paths in the diff are primary's content arriving through the two merges."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that its file passes in full - brief-for-worker.md:38 reads \"Make tests/test_a_hand_merged_run_is_recorded.py pass in full on the primary branch\" - and the increment since the last reviewed head 62ea9222 keeps that outcome: reckon/crew/promotion_evidence.py:515-519 still carries the recorded-merge exemption beside the integration-merge admission at promotion_evidence.py:390-413, and scoped-gate-1795208370492896056.log reads 2 passed at a1d5d940.\nVERDICT done_when: node.json's done_when asks for the file to pass at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, a red base arm at full 40-character revisions and an importer arm over the run's importers; the manifest records the a1d5d940 gate at 2 passed with EXIT=0 and the base arm at 1 failed, 1 passed with EXIT=1, but no log carries a SLURM marker (the gate ran on host 98dci4-clu-3141) and importers-head-1795072204228350715.log:1 names bfed9c71 rather than the reviewed head.\nVERDICT write_paths: the reviewed run's manifest declares reckon, tests, the section's fragment directory and its figure path; the increment's only product file, reckon/crew/promotion_evidence.py, sits inside reckon, and the other paths in the 62ea9222..a1d5d940 diff (docs/plans/*, docs/state/*) arrive from primary through the two merges rather than from this run.\nVERDICT manifest: read the reviewed run's manifest.md; it reads status complete with a checkpoint naming the third merge at a1d5d940, a tests line running the node's file, and suite arms of 58 passed with EXIT=0 at b24fe95a and a1d5d940.\nVERDICT diff: read b3bcd2ea (parents 62ea9222, 0d99e2f) and a1d5d940 (parents b3bcd2ea, 95672eee) against base 62ea9222; b3bcd2ea's own content is the promotion_evidence.py conflict resolution at promotion_evidence.py:390-413 and :502-524, and a1d5d940 touches only docs/plans/queued-work-needs-no-workaround.html and two review-record JSONs under docs/state.\nCALL_SITES: reckon/crew/promotion.py:1364 (the domain gate that calls _require_commits_beyond_base), reckon/crew/promotion.py:3853 (the import of that guard)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion_evidence.py:515-519 keeps the exemption whose absence refused the hand-merge citation, and scoped-gate-1795208370492896056.log reads 2 passed at a1d5d940.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795208370492896056.log records 2 passed with EXIT=0 at a1d5d940, but its host is 98dci4-clu-3141 with no SLURM marker and importers-head-1795072204228350715.log:1 measures bfed9c71 rather than the head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the run-authored change is promotion_evidence.py inside the declared reckon path, and the roughly 320 other paths in the diff are primary's content arriving through the two merges.\nSCORE durability: 14\nJUSTIFICATION durability: the hand-merge fixture's merge names the run head as a parent, so promotion_evidence.py:390-413 admits that citation without the exemption at promotion_evidence.py:515 and no assertion reddens when the reconciliation drops it.\nSCORE fit: 18\nJUSTIFICATION fit: promotion_evidence.py:390 follows the module's private-helper, docstring and spacing idiom beside _declared_repository_roots, and promotion_evidence.py:2489 adds _commit_parents to the sibling import list.\nSCORE reuse: 19\nJUSTIFICATION reuse: promotion_evidence.py:410 composes promotion_scope.py:551 _commit_parents rather than shelling out for the parents, though it re-derives the merge test that promotion_scope.py:575 _merge_revisions already owns.\nFINDING reckon/crew/promotion_evidence.py:515 non-blocking: the recorded-merge exemption the reconciliation re-applies has no assertion that reddens without it at this head, because the hand-merge fixture's merge names the run head as a parent and _integration_brings_the_run at promotion_evidence.py:390-413 already admits that shape (tests/test_run_scope_measure_nets_churn.py:201 cites such a merge with no recorded_merge field); deleting lines 515-519 leaves tests/test_a_hand_merged_run_is_recorded.py green, so the gate cannot detect that half of a wrong resolution.\nFINDING reckon/crew/promotion_evidence.py:413 non-blocking: admission tests run_head in parents, so a merge whose first parent is the run head is admitted while the scope charge at promotion_evidence.py:232 reads commit^1..commit, charging the merged-in branch's content rather than the run's work the docstring promises; requiring the run head as the second parent would match the charge.\n",
+  "review_run_id": "r-20261120T210410832922-review-of-qwnw-red-file-a-hand-merged-run-is-recorded-a1d5d9401977",
+  "reviewed_base_sha": "62ea9222e017fe882442b4dd649158d083ef5a9a",
+  "reviewed_head_sha": "a1d5d94019776f4e46e8fe4170b2036d504bce3b",
+  "reviewed_logs": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded/after_suite-1795208479632987817.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded/baseline_suite-1795208403493408611.log",
+    "gate": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded/scoped-gate-1795208370492896056.log"
+  },
+  "reviewed_run_id": "r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T210410832922-review-of-qwnw-red-file-a-hand-merged-run-is-recorded-a1d5d9401977"
+  },
+  "reviewer_run_id": "r-20261120T210410832922-review-of-qwnw-red-file-a-hand-merged-run-is-recorded-a1d5d9401977",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:23:06.084542+00:00",
+  "total": 102
+}
