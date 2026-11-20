@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/station.py:467 SweepBeat._run -> on_report(project, session, report, counts)",
+    "reckon/crew/station.py:1129 Station.__init__ wires on_report to _record_sweep_report",
+    "reckon/crew/station.py:1655 Station.tick in the station service loop",
+    "reckon/crew/obligation_snapshot.py:725 read_station_tick publishes last_sweep",
+    "reckon/crew/watch_unit.py:1214 read_station_tick consumer",
+    "reckon/crew/recovery_watch.py:4253 take_parsed_stream_bytes"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T22:41:43Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": "137",
+      "severity": "blocking",
+      "text": "blocking: `beat.on_report` is stubbed as `lambda project, session, report: ...` while reckon/crew/station.py:467 now calls it with a fourth argument, so the TypeError is swallowed by SweepBeat._run's except and two tests fail at the reviewed head \u2014 reproduced in a scratch extraction of d992690af3 (`2 failed, 2 passed`, `TypeError: <lambda>() takes 3 positional arguments but 4 were given`); the node's after_suite did not include this file."
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "492",
+      "severity": "non-blocking",
+      "text": "non-blocking: `extends` is a new keyword of `memoized` with no caller anywhere in reckon/ or tests/, so the ANSWER_EXTENDED branch at :480 is unreachable and untested; the stream extension the goal needs is recorded directly at reckon/_backends.py:4791, and the dead parameter should be dropped or given its declared user."
+    },
+    {
+      "file": "tests/test_a_tick_reports_what_it_recomputed.py",
+      "line": "280",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate asserts only that every recompute read the plan's byte length and never that the recompute count is one, so it cannot fail on the done_when's \"one full recompute\" and passes for any number of plan-sized recomputes."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3862",
+      "severity": "non-blocking",
+      "text": "non-blocking: the same read is now counted twice at the same points (`_count_parsed_bytes(len(data))` and `file_memo.record_memo(...)`, likewise at :4790-4791), so the process-wide total read by reckon/crew/recovery_watch.py:4253 and the per-pass counts can drift if one site is edited without the other."
+    }
+  ],
+  "head_log_revision": "fe3605f0f52d951b7d5ef41bbe3500b3690acbd7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified six production call sites across station.py, obligation_snapshot.py, watch_unit.py and recovery_watch.py.",
+    "diff": "read commit by commit against df8fba8b: fe3605f0f5 carries the counting, stream records, scopes, last_sweep reading and the test; d992690af3 carries only the evidence fragment, figure script and SVG.",
+    "done_when": "tests/test_a_tick_reports_what_it_recomputed.py drives three rounds over 20 pointers, 20 streams and 20 plans, fails at base (negative-control.log EXIT=1) and passes at head (my re-run 1 passed), but does not assert the done_when's one full recompute.",
+    "goal": "the node's goal is that a finished tick and a finished sweep pass publish what they served from cache, extended and recomputed in full with the bytes read; reckon/crew/station.py:1326-1334 wraps the tick in file_memo.counting(), :461-467 wraps the sweep pass, and reckon/crew/obligation_snapshot.py:725 publishes last_sweep beside last_tick.",
+    "manifest": "read; status complete, commits fe3605f0f5 and d992690af3, baseline_suite and after_suite both completed with 0 failures, negative_control_log populated; no ruff result recorded although the done_when asks for one.",
+    "write_paths": "git diff --stat df8fba8b..d992690af3 lists eight paths, every one inside the dispatch's declared fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_reports_what_it_recomputed.py:266-277 fails if the extension outcome or the plan recompute is lost (negative control EXIT=1 at base), but nothing in the added assertions guards the tick's counting scope opening outside the operational read, since a kind that stops being counted vanishes from the counts silently.",
+    "evidence": "the gate at tests/test_a_tick_reports_what_it_recomputed.py:280 asserts no more than that every recompute is the plan's length, so the done_when's \"one full recompute\" is unmeasured while the delivered round reports two, and the node's suite arms left the changed on_report arity untested.",
+    "fit": "the module follows the surrounding idiom of reckon/crew/station.py:1200 and its comments describe the mechanism, but reckon/crew/station.py:467 changes the on_report callback arity and leaves the in-repo implementer at tests/test_a_promoted_runs_marked_pointer_is_retired.py:137 unfixed.",
+    "goal_fidelity": "reckon/crew/station.py:1326-1334 and :461-467 make each pass report its own answers per kind, and the reading carries them under last_tick and last_sweep.",
+    "reuse": "no per-pass counting owner existed in reckon/file_memo.py and MemoCounts is the first, but reckon/_backends.py:3862-3863 and :4790-4791 keep a second byte total beside take_parsed_stream_bytes instead of extending it.",
+    "scope_discipline": "every path in df8fba8b..d992690af3 is one the dispatch declared, though reckon/file_memo.py:492 adds an `extends` parameter no caller in the repository uses."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a finished tick and a finished sweep pass publish what they served from cache, extended incrementally and recomputed in full with the bytes those recomputes read; reckon/crew/station.py:1326-1334 wraps the tick in file_memo.counting(), reckon/crew/station.py:461-467 wraps the sweep pass, and reckon/crew/obligation_snapshot.py:725 publishes last_sweep beside last_tick, so the deliverable is present.\nVERDICT done_when: tests/test_a_tick_reports_what_it_recomputed.py drives three rounds over 20 pointers, 20 streams and 20 plans and fails at base as recorded (negative-control.log EXIT=1) and passes at head (my re-run: 1 passed); it does not assert the done_when's \"one full recompute\" \u2014 line 280 accepts any number of plan-sized recomputes, and the landing record states the rebuilt plan reports two.\nVERDICT write_paths: I read the manifest's declared paths and git diff --stat df8fba8b..d992690af3; all eight changed paths sit inside the fence (reckon/file_memo.py, reckon/_backends.py, reckon/crew/station.py, reckon/crew/obligation_snapshot.py, the new test, the evidence fragment, the figure script and its SVG).\nVERDICT manifest: read; status complete, commits fe3605f0f5 and d992690af3, the tests line names the literal gate command, baseline_suite (df8fba8b, completed, 0 failures) and after_suite (fe3605f0, completed, 0 failures), and negative_control_log names the red log; it records no ruff result although the done_when asks for one.\nVERDICT diff: read commit by commit against df8fba8b \u2014 fe3605f0f5 adds MemoCounts/counting/record_memo to file_memo.py, stream records to _backends.py, the tick and sweep counting scopes plus last_sweep storage to station.py, the last_sweep reading to obligation_snapshot.py and the 285-line gate test.\nCALL_SITES: reckon/crew/station.py:467 (SweepBeat._run calls on_report with counts), reckon/crew/station.py:1129 (Station.__init__ wires on_report to _record_sweep_report), reckon/crew/station.py:1655 (Station.tick in the station service loop), reckon/crew/obligation_snapshot.py:725 (read_station_tick publishes last_sweep), reckon/crew/watch_unit.py:1214 (read_station_tick consumer), reckon/crew/recovery_watch.py:4253 (take_parsed_stream_bytes, the pre-existing stream-byte counter)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:1326-1334 and :461-467 make each pass report its own answers per kind, and the reading carries them under last_tick and last_sweep.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate at tests/test_a_tick_reports_what_it_recomputed.py:280 asserts no more than \"every recompute is the plan's length\", so the done_when's \"one full recompute\" is unmeasured while the delivered round reports two, and the node's suite arms left the changed on_report arity untested.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in df8fba8b..d992690af3 is one the dispatch declared, though reckon/file_memo.py:492 adds an `extends` parameter no caller in the repository uses.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_tick_reports_what_it_recomputed.py:266-277 fails if the extension outcome or the plan recompute is lost (negative control EXIT=1 at base), but nothing in the added assertions guards the tick's counting scope opening outside the operational read, since a kind that stops being recorded altogether disappears from the counts silently.\nSCORE fit: 15\nJUSTIFICATION fit: the module follows the surrounding idiom of reckon/crew/station.py:1200 and the comments describe the mechanism, but reckon/crew/station.py:467 changes the on_report callback arity and leaves an in-repo implementer at tests/test_a_promoted_runs_marked_pointer_is_retired.py:137 unfixed.\nSCORE reuse: 16\nJUSTIFICATION reuse: no per-pass counting owner existed in reckon/file_memo.py and the new MemoCounts is the first, but reckon/_backends.py:3862-3863 and :4790-4791 keep a second byte total beside take_parsed_stream_bytes instead of extending take_parsed_stream_bytes itself.\nFINDING tests/test_a_promoted_runs_marked_pointer_is_retired.py:137 blocking: `beat.on_report` is stubbed as `lambda project, session, report: ...` while reckon/crew/station.py:467 now calls it with a fourth argument, so the TypeError is swallowed by SweepBeat._run's except and two tests fail at the reviewed head \u2014 reproduced in a scratch extraction of d992690af3, `2 failed, 2 passed` with `TypeError: <lambda>() takes 3 positional arguments but 4 were given`; the node's after_suite did not include this file.\nFINDING reckon/file_memo.py:492 non-blocking: `extends` is a new keyword of `memoized` with no caller anywhere in reckon/ or tests/, so the ANSWER_EXTENDED branch at :480 is unreachable and untested; the stream extension the goal needs is recorded directly at reckon/_backends.py:4791, and the dead parameter should be dropped or given its declared user.\nFINDING tests/test_a_tick_reports_what_it_recomputed.py:280 non-blocking: the gate asserts only that every recompute read the plan's byte length and never that the recompute count is one, so it cannot fail on the done_when's \"one full recompute\" and passes for any number of plan-sized recomputes.\nFINDING reckon/_backends.py:3862 non-blocking: the same read is now counted twice at the same points (`_count_parsed_bytes(len(data))` and `file_memo.record_memo(...)`, likewise at :4790-4791), so the process-wide total read by reckon/crew/recovery_watch.py:4253 and the per-pass counts can drift if one site is edited without the other.",
+  "review_run_id": "r-20261120T224049811271-review-of-a-tick-reports-what-it-recomputed-d992690af3f1",
+  "reviewed_base_sha": "df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6",
+  "reviewed_head_sha": "d992690af3f1e75ae31ca7ed24a767ef5315bef7",
+  "reviewed_run_id": "r-20261120T202733679890-a-tick-reports-what-it-recomputed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T224049811271-review-of-a-tick-reports-what-it-recomputed-d992690af3f1"
+  },
+  "reviewer_run_id": "r-20261120T224049811271-review-of-a-tick-reports-what-it-recomputed-d992690af3f1",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:56:24.589306+00:00",
+  "total": 95
+}
