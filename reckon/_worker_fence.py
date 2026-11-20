@@ -1908,7 +1908,7 @@ def unmergeable_seals(
 
 def scheduler_shields(
     relay_root: str | Path | None,
-    search_path: str | None = None,
+    declared_directories: Iterable[str | Path] = (),
 ) -> tuple[list[tuple[str, str]], list[tuple[str, str]], str]:
     """The mounts that put a scheduler shim in front of every copy of its tool.
 
@@ -1922,6 +1922,12 @@ def scheduler_shields(
     submitted job replays this argv on another node and masks its own copies
     the same way, so the guard travels with the fence rather than with the
     submitting process.
+
+    ``declared_directories`` are the ones the flight layer declares for finding
+    a backend's command. The launch appends them to the worker's path after
+    everything it inherits, so a scheduler installed only there is reachable
+    from the worker while this process's own path holds no copy of it; they are
+    masked with the rest rather than left as a route the fence cannot see.
 
     The shim reads its own home and that target from the two names in
     :mod:`reckon.nested_launch`: masked, only the file differs, and its
@@ -1946,7 +1952,7 @@ def scheduler_shields(
         if not (shim.is_file() and os.access(shim, os.X_OK)):
             continue
         copies: list[str] = []
-        for directory in _scheduler_search_directories(search_path):
+        for directory in _scheduler_search_directories(declared_directories):
             candidate = directory / tool
             if not (candidate.is_file() and os.access(candidate, os.X_OK)):
                 continue
@@ -1966,23 +1972,56 @@ def scheduler_shields(
     return masks, relays, str(shims)
 
 
-def _scheduler_search_directories(search_path: str | None) -> list[Path]:
+def _scheduler_search_directories(
+    declared: Iterable[str | Path] = (),
+) -> list[Path]:
     """The directories a scheduler tool is looked up in, in search order.
 
-    The composing process's own path is what it can resolve the tool on, and
-    it is the same path the launch inherits; a directory a launch adds later is
-    reached by name through the shim, and only a copy the composer can see is
-    masked. Empty entries are the shell's working directory and name nothing
-    here.
+    This process's own path comes first, because it is what the composer can
+    resolve the tool on and what the launch inherits; the flight layer's
+    declared directories follow it, in the order the launch appends them to the
+    worker's path. Empty entries are the shell's working directory and name
+    nothing here.
     """
-    text = os.environ.get("PATH", os.defpath) if search_path is None else search_path
+    text = os.environ.get("PATH", os.defpath)
     directories: list[Path] = []
-    for entry in str(text).split(os.pathsep):
+    for entry in (*str(text).split(os.pathsep), *(str(path) for path in declared)):
         if not entry:
             continue
         directory = Path(entry)
         if directory not in directories:
             directories.append(directory)
+    return directories
+
+
+def scheduler_declared_directories(
+    config: Mapping[str, Any] | None, home: str | Path | None = None
+) -> list[Path]:
+    """The directories the flight layer declares for finding a backend command.
+
+    ``launch_search_path`` appends these to the worker's path after everything
+    it inherits, so a scheduler installed only in one of them is reachable from
+    the worker even though the composing process's own path holds no copy. They
+    are read from every backend the flight declares, because which backend a
+    plan runs is not a fact a fence composition holds, and masking a directory
+    no launch uses costs one read-only bind. A layer that declares none
+    contributes nothing.
+    """
+    from reckon._backends import backend_search_directories
+
+    if not isinstance(config, Mapping):
+        return []
+    backends = config.get("backends")
+    if not isinstance(backends, Mapping):
+        return []
+    directories: list[Path] = []
+    for entry in backends.values():
+        if not isinstance(entry, Mapping):
+            continue
+        for raw in backend_search_directories(entry):
+            resolved = _resolve_declared_path(raw, home)
+            if resolved is not None and resolved not in directories:
+                directories.append(resolved)
     return directories
 
 
@@ -2292,7 +2331,9 @@ def fence_argv(
         except OSError:
             candidate = None
         relay_root = candidate
-    scheduler_masks, scheduler_relays, shim_home = scheduler_shields(relay_root)
+    scheduler_masks, scheduler_relays, shim_home = scheduler_shields(
+        relay_root, scheduler_declared_directories(config, home)
+    )
     for source, destination in scheduler_masks:
         fenced += ["--ro-bind", source, destination]
     for source, destination in scheduler_relays:
@@ -2337,14 +2378,17 @@ def fence_argv(
         "directories": [str(path) for path in directories],
         "directory_sources": sorted(set(directory_sources)),
         "scratch": str(scratch),
-        # What this fence cannot guard, stated rather than implied. An absolute
-        # path to a scheduler binary the composing node could not resolve —
-        # one a launch's own path adds later — is not masked, so that path
-        # reaches the real tool. Every copy the composer resolved is masked at
-        # the shim, and the shim re-enters this fence at the task boundary.
+        # What this fence cannot guard, stated rather than implied. Every copy
+        # of a scheduler tool on this node's path or in a directory the flight
+        # layer declares is masked at the shim; what remains is a copy only
+        # the node a job lands on holds, or one added to a worker's path after
+        # this composition. Neither is forwarded unfenced: the masked path's
+        # shim refuses when it can find no tool.
         "limit": (
-            "A scheduler binary resolved only on the job node's own path is "
-            "not masked there; every copy the composing node resolved is."
+            "A scheduler binary only the job node's path holds, or one a "
+            "worker's path gains after this composition, is not masked there; "
+            "every copy this node resolves is, and a masked call whose shim "
+            "finds no tool refuses rather than starting unfenced."
         ),
     }
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()

@@ -92,6 +92,14 @@ def sandbox(tmp_path, monkeypatch):
     stand_in = scheduler / "sbatch"
     stand_in.write_text(STAND_IN, encoding="utf-8")
     stand_in.chmod(0o755)
+    # A second copy in a directory the flight layer declares for finding a
+    # backend's command: the launch appends it to the worker's path, and this
+    # process's own path never holds it.
+    declared = tmp_path / "declared-bin"
+    declared.mkdir()
+    declared_stand_in = declared / "sbatch"
+    declared_stand_in.write_text(STAND_IN, encoding="utf-8")
+    declared_stand_in.chmod(0o755)
     record = run / "stand-in-argv.txt"
     path = os.pathsep.join(
         [
@@ -107,12 +115,13 @@ def sandbox(tmp_path, monkeypatch):
         "run": run,
         "scratch": scratch,
         "stand_in": stand_in,
+        "declared": declared,
         "record": record,
         "path": path,
     }
 
 
-def _composed(case, command):
+def _composed(case, command, *, config=None):
     """The argv a fenced worker launch is started with, and its own recipe."""
     argv = fence.fence_argv(
         ["/bin/sh", "-c", command],
@@ -120,6 +129,7 @@ def _composed(case, command):
         worktree=case["worktree"],
         manifest_path=case["run"] / "manifest.md",
         writable_directories=[case["scratch"]],
+        config=config,
     )
     assert nested_launch.WORKER_FENCE_ENV in argv, argv
     index = argv.index(nested_launch.WORKER_FENCE_ENV)
@@ -146,10 +156,10 @@ def _environment(case):
     return environment
 
 
-def _scheduler_received(case, command):
+def _scheduler_received(case, command, *, config=None):
     """Enter the fence, run one submission, and read what the stand-in got."""
     case["record"].unlink(missing_ok=True)
-    argv, recipe = _composed(case, command)
+    argv, recipe = _composed(case, command, config=config)
     result = subprocess.run(
         argv,
         capture_output=True,
@@ -218,3 +228,23 @@ def test_a_scheduler_name_reaches_the_shim_with_the_same_wrapped_task(sandbox):
     # The same wrapped task either way: the route a caller picks moves the
     # file, never the fence on the task.
     assert by_name == absolute
+
+
+@requires_bwrap
+def test_a_declared_backend_directory_is_shielded(sandbox, monkeypatch):
+    declared = sandbox["declared"]
+    config = {"backends": {"alpha": {"search_path": [str(declared)]}}}
+    command = shlex.join([str(declared / "sbatch"), *SUBMISSION])
+    # The composing process's own path holds no copy of the tool at all: the
+    # only one this launch can reach is in the directory the flight layer
+    # declares, which the launch appends to the worker's path. A fence that
+    # read only its own path would compose no mask here, and the absolute call
+    # below would reach the stand-in bare.
+    with monkeypatch.context() as composer:
+        composer.setenv("PATH", str(nested_launch.shim_directory()))
+        received, worker_recipe = _scheduler_received(sandbox, command, config=config)
+    carried = _carried_fence(received)
+    assert carried is not None, (
+        f"the declared directory's scheduler was reached with a bare task: {received}"
+    )
+    assert carried == worker_recipe
