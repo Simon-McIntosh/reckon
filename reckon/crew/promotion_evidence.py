@@ -1667,7 +1667,7 @@ def _log_failure_count(log_text: str) -> int | None:
     if log_format == "ctest":
         log_ids = review_module.gate_log_failure_ids(log_text)
         return None if log_ids is None else len(log_ids)
-    return review_module.pytest_summary_failure_count(log_text)
+    return review_module.pytest_summary_failure_total(log_text)
 
 
 def _text_the_receipt_describes(log_text: str) -> str:
@@ -1681,7 +1681,13 @@ def _text_the_receipt_describes(log_text: str) -> str:
     and there the labels are one gate rather than successive attempts:
     inherited failures in an earlier label belong to the receipt even when the
     final label is clean, so the whole log is what the receipt describes.
+    A per-file pytest gate runs one process per file and appends every run into
+    one log, marked by :func:`reckon.crew.review.per_file_gate_runs`; its files
+    are one gate as well, so a file that failed before one that passed belongs
+    to the receipt and the whole log is read.
     """
+    if review_module.per_file_gate_runs(log_text) is not None:
+        return log_text
     if review_module._gate_log_format(log_text) == "ctest":
         return log_text
     return review_module.last_run_text(log_text)
@@ -1860,10 +1866,10 @@ def _require_gate_log_agrees(
       has filed contradictory evidence.
     * a receipt figure the log does not agree with — the ``after_suite`` arm
       naming this log, when its failure count differs from the failed plus
-      errored figure of the log's last run in that log's own format, or its
-      failure ids differ from the ids of the log's last run in either
-      direction. Both are read from the last run, the one whose status the
-      tail records.
+      errored figure the log states in its own format, or its failure ids
+      differ from the ids the log reports in either direction. Both are read
+      from the run the receipt describes: the last attempt at a suite, or
+      every marked file of a per-file gate, or every label of a ctest gate.
     * no evidence the command ran — a line carrying the shell's own
       command-not-found diagnostic, when the log carries nothing that shows a
       command did run, states the command never executed. A runner log may
@@ -1881,7 +1887,9 @@ def _require_gate_log_agrees(
       better named by it than by the record the capture never reached.
     * a pytest gate whose last run reached no pytest summary — such a run did
       not finish, so its tail states a status for a suite that never reported
-      one. A command that does not run pytest is not held to a pytest summary.
+      one. A per-file gate is held the same way for every file it marks: a
+      file that reached no summary leaves the gate unmeasured. A command that
+      does not run pytest is not held to a pytest summary.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -1955,18 +1963,19 @@ def _require_gate_log_agrees(
             "the log reports, or re-run the gate into its own log"
         )
     command = str(gate_check.get("command") or "").strip()
-    if _command_runs_pytest(gate_check.get("command") or ""):
-        last_run = review_module.last_run_text(log_text)
-        if review_module.pytest_summary_failure_count(last_run) is None:
-            raise CrewError(
-                f"run {run_id!r} asserts gate 'passed' but its cited log "
-                f"{log_path!r} reaches no pytest summary for a command that "
-                f"runs pytest ({command!r}): the run stopped before its own "
-                "result, so its exit record states a status for a suite that "
-                "never reported one. Found: a pytest gate whose last run "
-                "reached no pytest summary. Finish the run and cite its log, "
-                "or cite the command that produced the run the log records"
-            )
+    if (
+        _command_runs_pytest(gate_check.get("command") or "")
+        and review_module.pytest_summary_failure_total(log_text) is None
+    ):
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' but its cited log "
+            f"{log_path!r} reaches no pytest summary for a command that "
+            f"runs pytest ({command!r}): the run stopped before its own "
+            "result, so its exit record states a status for a suite that "
+            "never reported one. Found: a pytest gate whose last run "
+            "reached no pytest summary. Finish the run and cite its log, "
+            "or cite the command that produced the run the log records"
+        )
 
 
 _SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
