@@ -1956,6 +1956,10 @@ def _png_twin_findings_for_base(
         svg = png[:-4] + ".svg"
         if svg not in head:
             continue
+        if png not in head:
+            # Added and then removed by the run itself: the committed head
+            # holds no copy, so there is nothing left to remove.
+            continue
         findings.append(
             f"{png} adds a PNG twin of the SVG figure {svg} in the same "
             "directory; the figure rule keeps one SVG per figure and bans a "
