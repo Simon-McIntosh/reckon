@@ -374,12 +374,23 @@ class RequestIndex:
     def for_owner(
         self, project: str, session: str
     ) -> list[tuple[Path, dict[str, Any]]]:
-        """The requests owed to one session, as they read when this index was built."""
-        return [
-            entry
-            for entry in self._by_owner.get((project, session), ())
-            if str(entry[0]) not in self._settled
-        ]
+        """The requests owed to one session, as the files stand now.
+
+        A drain outside this publish may have answered one of these requests
+        since the index was built — settled it, requeued it, moved it on — so
+        each request this slice would raise a duty for is re-read through the
+        memo's identity check. That costs one stat per candidate and decodes
+        only a file that changed, which is what makes a slice read what the
+        directory says rather than what it said when the publish began.
+        """
+        entries: list[tuple[Path, dict[str, Any]]] = []
+        for path, record in self._by_owner.get((project, session), ()):
+            if str(path) in self._settled:
+                continue
+            if record.get("phase") not in ERRORS and record.get("phase") != WAITING:
+                continue
+            entries.append((path, _request_record(path)))
+        return entries
 
     def note_settled(self, path: Path) -> None:
         """Leave a request this publish settled out of its later slices.

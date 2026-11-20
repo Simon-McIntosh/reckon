@@ -457,3 +457,38 @@ def test_a_derivation_carries_one_request_reading_into_every_slice(
     # counter above is one that sees a reading when a reader takes one.
     requests.failure_obligations(DERIVED_PROJECT, sessions[0], now=NOW, index=None)
     assert listings["calls"] == 1
+
+
+def test_a_request_another_drain_settled_is_not_raised_from_the_index(
+    crew_home, decodes
+):
+    """A slice reads the request as the file stands, not as the index saw it.
+
+    Another drain settles a request between the publish's reading and a later
+    slice. The base revision re-listed the directory for each session and would
+    have skipped it, so the slice must too — the memo's identity check is what
+    distinguishes a changed request from the one the index holds.
+    """
+    fixture = _build(crew_home)
+    index = requests.request_index()
+    project, session = SESSIONS[0]
+    answered = requests.failure_obligations(project, session, now=NOW, index=index)
+    raised = {row["run_id"] for row in answered if row["kind"] != requests.WAITING}
+    assert raised, "the fixture raises no failure for the first session"
+    target = min(raised)
+    path = fixture.path_of(target)
+    record = json.loads(path.read_text())
+    record.update(
+        {
+            "phase": requests.SETTLED,
+            "settled": "promoted",
+            "settled_at": NOW.isoformat(),
+        }
+    )
+    runs._write_json(path, record)
+
+    again = requests.failure_obligations(project, session, now=NOW, index=index)
+    assert target not in {row["run_id"] for row in again}
+    assert {row["run_id"] for row in again} == {row["run_id"] for row in answered} - {
+        target
+    }
