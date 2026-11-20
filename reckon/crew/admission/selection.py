@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections import deque
 
 from .. import queue_order
@@ -163,9 +164,7 @@ def admit_once(
                     else _launching._resolve_lane_config(pointer, select_local=False)
                 )
                 # The installed local drainer also admits every metered route.
-                return (
-                    lane == str(config.get("local_backend") or "") and backend != lane
-                )
+                return drainer_serves_the_local_lane(lane, config)
 
             excluded_by_lane = [pointer for pointer in queued if not included(pointer)]
             queued = [pointer for pointer in queued if included(pointer)]
@@ -708,6 +707,43 @@ def admit_once(
                 order, verdicts, moment=moment, ordered=not bool(run_id)
             )
         return result
+
+
+def drainer_serves_the_local_lane(lane: str, config: Mapping[str, Any]) -> bool:
+    """Whether a drainer started for ``lane`` is the installed local drainer.
+
+    The local drainer is the one that admits every route, and it is declared
+    once, outside the flight configuration, under the name of whichever local
+    backend was current when it was declared. A local lane can be reached
+    through more than one backend: each is a different worker harness in front
+    of the same model server, publishing one lane document. Moving the
+    configured local backend from one of them to another does not move the
+    lane, so a drainer named for either is still the local drainer. Compared by
+    name alone it would stop admitting every request not queued under its own
+    backend, and nothing would report the queue as undrained.
+
+    So the drainer serves the local lane when its name is the configured local
+    backend, or when its backend and the configured one declare the same lane
+    document.
+    """
+    local = str(config.get("local_backend") or "")
+    if not lane or not local:
+        return False
+    if lane == local:
+        return True
+    backends = config.get("backends")
+    if not isinstance(backends, Mapping):
+        return False
+
+    def document(name: str) -> str:
+        settings = backends.get(name)
+        if not isinstance(settings, Mapping):
+            return ""
+        declared = str(settings.get("lane_document") or "").strip()
+        return os.path.realpath(os.path.expanduser(declared)) if declared else ""
+
+    served = document(lane)
+    return bool(served) and served == document(local)
 
 
 # How long one pass waits for a lane that granted no worker slot to publish room
