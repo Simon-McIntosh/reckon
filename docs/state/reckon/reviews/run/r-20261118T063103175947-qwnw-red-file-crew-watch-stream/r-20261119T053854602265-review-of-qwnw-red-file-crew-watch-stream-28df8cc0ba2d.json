@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2351 delivery_summary feeding the live counters",
+    "reckon/crew/obligation_snapshot.py:2203 delivery_summary feeding the obligations feed",
+    "reckon/crew/obligations.py:5241 delivery_summary feeding the obligations summary"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:28:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-stream.html",
+      "id": "f4af63cd019",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment the done_when names as the place the base failing ids sit beside the head run was never created and is absent at 28df8cc0, so the plan section has no evidence artefact to cite even though both logs exist in the run directory."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063103175947-qwnw-red-file-crew-watch-stream/manifest.md",
+      "id": "ff3bd0d787e",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite record tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/crew/recovery_classification.py, so the done_when's arm over the importing test files was not measured while about thirty test files import it."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "fdc7dde7c47",
+      "line": "3532",
+      "severity": "non-blocking",
+      "text": "non-blocking: the pair promotable and scoring restates the delivered-classification set that reckon/crew/promotion_checks.py:1466 and reckon/crew/stage_receipts.py:51 already carry, so a classification added to the delivered family must now be found in three places."
+    }
+  ],
+  "head_log_revision": "28df8cc0ba2dcfcf53ff94183cf0a09a263c1ec0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production call sites of delivery_summary, the function whose delivered count the changed reading feeds.",
+    "diff": "read the single commit 28df8cc0 against base 42fe90d0; it adds a six-line comment and widens one condition at reckon/crew/recovery_classification.py:3532 from promotable alone to promotable and scoring, with no test change.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a base arm with its failing ids, an arm over the importing test files, ruff on the changed paths and the pair logged in the run's evidence fragment; watch-stream-head.log (rev 28df8cc0, EXIT=0, 3 passed) and watch-stream-base-job.log (rev 42fe90d0, EXIT=1, the late-reader assertion failing) are recorded, the recorded arm runs two files that do not import the changed module, and the named evidence fragment was never written.",
+    "goal": "the goal is that tests/test_crew_watch_stream.py passes in full at head; the landed change at reckon/crew/recovery_classification.py:3532 admits the scoring classification into _delivery_reading so a delivered run awaiting review is counted as delivered, and watch-stream-head.log records 3 passed at 28df8cc0.",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits 28df8cc0, changed_paths one file, tests the single-file pytest gate, test_logs naming the head log at the landed revision and the base arm log, negative_control_log the base log with EXIT=1, and baseline_suite and after_suite both 58 passed EXIT=0.",
+    "write_paths": "the fence was reckon, tests and the two docs paths under queued-work-needs-no-workaround; git diff 42fe90d0..28df8cc0 touches only reckon/crew/recovery_classification.py inside the fence, and the declared docs/evidence fragment is absent rather than out of scope."
+  },
+  "justifications": {
+    "durability": "reinstating the base condition at reckon/crew/recovery_classification.py:3532 reddens tests/test_crew_watch_stream.py:184, which the base arm at 42fe90d0 shows as EXIT=1, but no run over the three delivery_summary consumers was recorded at head.",
+    "evidence": "watch-stream-head.log records 3 passed EXIT=0 at 28df8cc0 and watch-stream-base-job.log records the late-reader failure EXIT=1 at 42fe90d0, but the arm at manifest.md:16 runs two files that never import the changed module and the done_when's evidence fragment is unwritten.",
+    "fit": "the change keeps the module's lazy-import idiom at reckon/crew/recovery_classification.py:3534 and introduces no new identifier, so nothing the naming rules forbid enters the tree.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:3532 makes the delivered counter count a delivered run awaiting review, which is the behaviour tests/test_crew_watch_stream.py:184 asserts and the base arm failed at.",
+    "reuse": "nothing in reckon/crew exports a delivered-classification predicate, so no owner was forked, but the pair at reckon/crew/recovery_classification.py:3532 restates the set already written at reckon/crew/promotion_checks.py:1466 and reckon/crew/stage_receipts.py:51.",
+    "scope_discipline": "git diff --stat 42fe90d0..28df8cc0 lists only reckon/crew/recovery_classification.py, inside the declared reckon fence, with no unrelated hunk."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_crew_watch_stream.py passes in full at head; the landed change at reckon/crew/recovery_classification.py:3532 admits the scoring classification into _delivery_reading, so a delivered run awaiting review is counted as delivered, and watch-stream-head.log records 3 passed at 28df8cc0.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a base arm with its failing ids, an arm over the importing test files, ruff on the changed paths, and the pair logged in the run's evidence fragment; watch-stream-head.log (rev 28df8cc0, EXIT=0, 3 passed) and watch-stream-base-job.log (rev 42fe90d0, EXIT=1, the late-reader assertion failing) are recorded, the recorded arm runs two files that do not import the changed module, and the named evidence fragment was never written.\nVERDICT write_paths: the fence was reckon, tests and the two docs paths under queued-work-needs-no-workaround; git diff 42fe90d0..28df8cc0 touches only reckon/crew/recovery_classification.py inside the fence, and the declared docs/evidence fragment is absent rather than out of scope.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits 28df8cc0, changed_paths one file, tests the single-file pytest gate, test_logs naming the head log at the landed revision and the base arm log, negative_control_log the base log with EXIT=1, and baseline_suite and after_suite both 58 passed EXIT=0.\nVERDICT diff: read the single commit 28df8cc0 against base 42fe90d0; it adds a six-line comment and widens one condition at reckon/crew/recovery_classification.py:3532 from promotable alone to promotable and scoring, with no test change.\nCALL_SITES: reckon/crew/recovery_watch.py:2351 delivery_summary feeding the live counters, reckon/crew/obligation_snapshot.py:2203 delivery_summary feeding the obligations feed, reckon/crew/obligations.py:5241 delivery_summary feeding the obligations summary\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:3532 makes the delivered counter count a delivered run awaiting review, which is the behaviour tests/test_crew_watch_stream.py:184 asserts and the base arm failed.\nSCORE evidence: 13\nJUSTIFICATION evidence: watch-stream-head.log records 3 passed EXIT=0 at 28df8cc0 and watch-stream-base-job.log records the late-reader failure EXIT=1 at 28df8cc0's base 42fe90d0, but the arm at manifest.md:16 runs two files that never import the changed module and the done_when's evidence fragment is unwritten.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 42fe90d0..28df8cc0 lists only reckon/crew/recovery_classification.py, inside the declared reckon fence.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the base condition at reckon/crew/recovery_classification.py:3532 reddens tests/test_crew_watch_stream.py:184, which the base arm at 42fe90d0 shows as EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the change keeps the module's lazy-import idiom at reckon/crew/recovery_classification.py:3534 and introduces no identifier the naming rules forbid.\nSCORE reuse: 16\nJUSTIFICATION reuse: nothing in reckon/crew exports a delivered-classification predicate, so no owner was forked, but the pair at reckon/crew/recovery_classification.py:3532 restates the set already carried by reckon/crew/promotion_checks.py:1466 and reckon/crew/stage_receipts.py:51.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-stream.html:1 non-blocking: the fragment the done_when names as the place the base failing ids sit beside the head run was never created and is absent at 28df8cc0, so the plan section has no evidence artefact to cite even though both logs exist in the run directory.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063103175947-qwnw-red-file-crew-watch-stream/manifest.md:16 non-blocking: baseline_suite and after_suite record tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/crew/recovery_classification.py, so the done_when's arm over the importing test files was not measured while about thirty test files import it.\nFINDING reckon/crew/recovery_classification.py:3532 non-blocking: the pair promotable and scoring restates the delivered-classification set that reckon/crew/promotion_checks.py:1466 and reckon/crew/stage_receipts.py:51 already carry, so a classification added to the delivered family must now be found in three places.\n",
+  "review_run_id": "r-20261119T053854602265-review-of-qwnw-red-file-crew-watch-stream-28df8cc0ba2d",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "28df8cc0ba2dcfcf53ff94183cf0a09a263c1ec0",
+  "reviewed_run_id": "r-20261118T063103175947-qwnw-red-file-crew-watch-stream",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T053854602265-review-of-qwnw-red-file-crew-watch-stream-28df8cc0ba2d"
+  },
+  "reviewer_run_id": "r-20261119T053854602265-review-of-qwnw-red-file-crew-watch-stream-28df8cc0ba2d",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:43:39.235587+00:00",
+  "total": 102
+}
