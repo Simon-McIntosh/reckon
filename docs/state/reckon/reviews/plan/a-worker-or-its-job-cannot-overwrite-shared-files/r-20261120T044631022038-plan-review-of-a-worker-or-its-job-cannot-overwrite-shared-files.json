@@ -1,0 +1,103 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T04:47:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:13",
+      "id": "wiring-1",
+      "reason": "the scalar is a declared input to scheduling and the gap equals the new section's own estimate, so it must read 18.5.",
+      "text": "`plan-effort-hours` is 16.5 but the declared sections sum to 18.5 (`s1` 0.25, `s2` 1.0, `s3` 0.75, `s4` 2.25, `s5` 0.75, `s6` 0.5, `s7` 2.0, `s8` 1.5, `s9` 0.5, `s10` 0.5, `s11` 1.0, `s12` 1.0, `s13` 3.0, `s14` 1.5, `s15` 2.0), and the shortfall is exactly s15's share, so the plan now understates its own remaining work by the whole of the section it just added \u2014 a scheduler reading this scalar (`reckon/roadmap.py:525`) sizes the remaining effort 2.0 h low",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:24",
+      "id": "wiring-2",
+      "reason": "an unordered pair on the same module is the collision the map exists to prevent, and \u00a715's mechanism rests on the fence model \u00a713 replaces.",
+      "text": "s15 appears in `plan-section-declarations` but in no `plan-section-depends-on` entry, although it declares `reckon/_worker_fence.py` and `reckon/nested_launch.py` as write paths \u2014 the same two modules unlanded `s13` rewrites, whose allow-list fence was reverted on 19 November \u2014 and it is not upstream of `s10`, so a batch dispatch runs two nodes over one module with no gate between them and no ordering for the section that changes how jobs are submitted",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:144",
+      "id": "wiring-3",
+      "reason": "the followup body is the ordering an orchestrator dispatches from, so it must either be rewritten with \u00a715 or resolved in favour of the new one.",
+      "text": "the document change added a second open followup (`f-awoj-s28`) carrying the same `/reckon-build` prompt while leaving `f-awojcosf-001` open with its dispatch order \"\u00a79 follows \u00a74. \u00a710 runs last\", which names neither \u00a713 nor \u00a714 nor \u00a715, while the map now makes \u00a713, \u00a714 and \u00a715 upstream of \u00a710 \u2014 a dispatcher reading the older followup runs the stale order and \u00a715 appears in no order anywhere",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:138",
+      "id": "reasoning-1",
+      "reason": "the node would either implement the named mechanism and fail its own gate, or invent an unnamed one; the test's stand-in must sit where the product resolves scheduler binaries or the deliverable must narrow to resolved paths.",
+      "text": "the \"likely mechanism\" is to mount the shim read-only over \"every real scheduler binary the shim lookup would forward to\", a fixed set of resolved paths, while the done-when installs \"a stand-in scheduler installed at an absolute path outside the worktree\" \u2014 a path in no lookup set, so an implementation of the stated mechanism leaves the stand-in reachable unfenced and the green arm of the test fails; the alternative is an interception of arbitrary absolute paths, which the section neither names nor bounds, so the endpoint and its measure do not meet",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:131",
+      "id": "done_when-1",
+      "reason": "a done declaration resting on an unrun control is the plan's own evidence contradicting itself; either the control is run or \u00a714 reopens.",
+      "text": "`s14` is declared `done`, but the section's own close comment records \"the base-revision control was a local test, not a betelgeuse job\" while \u00a714's negative control is \"at the base revision the betelgeuse job refuses with \u00a712's message\", so the section is closed on a control it did not run and no later reader can tell whether the guard fires on that partition",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:131",
+      "id": "done_when-2",
+      "reason": "a defect with an owner nowhere in the plan cannot be dispatched or closed, so \u00a715/\u00a714's carrier can be refused by a flight schema that never learns the key.",
+      "text": "the same close comment records \"the flight schema does not yet declare the fence_program key\" as an unresolved defect and `f-awoj-s28` (plan.html:149) only says to \"place\" that report in the plan: no section owns declaring the key, no done-when acquires it, and \u00a714 ships a carried setting the flight composition is recorded as not declaring",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:136",
+      "id": "naming-1",
+      "reason": "the section id resolves and the numbering is display-only, so this is a presentation nit rather than a defect a node acts on.",
+      "text": "s15's heading reads \"A job submitted by the scheduler's absolute path runs fenced or not at all\" while every sibling heading carries a \"\u00a7N \u2014 \" label, so the section the dependency map and any dispatch refer to as \u00a715 has no matching heading in the surface",
+      "type": "naming",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "9962ac8b7d7250c67e20a362efc02e527d46cf88",
+  "plan_fingerprint": "002c3a5e407599b8667f3230bfeeb87f44ed7d8b9c9ca888316074adf0a080a2",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261120T044631022038-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "404ea4690fef702cb246ddfa2f3c7351b37cdf12",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/nested_launch.py` near line 787 resolves (the cited docstring is line 787), commit `1df382b80c` resolves, and the cited nova run and its `stream.jsonl` resolve with the named job ids present.",
+    "done_when": "a finding \u2014 the newly declared `s14: done` (plan.html:23) lands the section although its own close comment records the declared negative control as a local test rather than the betelgeuse job \u00a714's done-when names.",
+    "evidence_paths": "pass \u2014 s15's matched arms write \"under the run directory\" and \u00a714's job ids and output go in the node's manifest, both durable paths a later reader can open.",
+    "naming": "a finding (cosmetic) \u2014 s15's heading (plan.html:136) drops the `\u00a715 \u2014 ` label every sibling heading carries, so text referring to \"\u00a715\" matches no heading in the surface.",
+    "reasoning": "a finding \u2014 s15's stated likely mechanism (mount the shim over the real scheduler binaries the shim lookup would forward to) cannot intercept the stand-in scheduler its own done-when installs at an arbitrary absolute path outside the worktree.",
+    "single_goal": "pass \u2014 s15 carries one deliverable: a job submitted from inside the fence by any path to a scheduler binary runs fenced or is not started.",
+    "wiring": "a finding \u2014 plan.html:13 states `plan-effort-hours` 16.5 while the declared sections sum to 18.5, and plan.html:24 has no `depends-on` entry for s15, which shares `reckon/_worker_fence.py` and `reckon/nested_launch.py` with the unlanded s13."
+  },
+  "section_digests": {
+    "_document": "a3cda8c3eb7793a6b77f50b49268a693d9a54649bd444c31bac92a5bf644fdc3",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "2921806863fa66f192dc45d31056b040e9e07cc5f67e20df721264aafdecb087",
+    "s11": "a23ab44da2be981ee6a354e5c6393269b7bec3c26c755667911cf7cc88de1a44",
+    "s12": "53044d21d6e76db24a2a0c0bd2e8fc0cef89b2ce90b3bf713bd1770d356942cd",
+    "s13": "d72ebf8dbff5d3fe58b4a0aa65cd38ceeb0c6b9e2fa2d40ce7faf8b3db016cf5",
+    "s14": "8f9362c607ea0d2310ac1bd4c85d058093aa9bddb81aa1ac8e23baebaa0dc994",
+    "s15": "3bbef74fceb0d36fc1dd1ce9c74ca647367ce24cae58029310e12f3907c0e860",
+    "s2": "672162d0e96a24a032f95b7ade817c96cf03b6d88f8f4c83f57f8e7b253409ce",
+    "s3": "9b6d5901be84127eaa75a84242d4374832a661d904144efdfaa597367a03eaac",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "4d339ca4c2860c39db4a36518f8045c9b620085666f9beffdd963261346af665",
+    "s7": "2099f1fb292d04b4514f50a5dac17e2c0480f9b2d27c3a83ba62c45c0c7e1afb",
+    "s8": "1b886461a44e82b5dcefddc891828d3bd8e080296db484cac33bf8e4d032637f",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T04:53:56.873015+00:00",
+  "total": null
+}
