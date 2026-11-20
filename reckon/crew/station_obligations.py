@@ -173,6 +173,52 @@ def _ended_sweep_failures(
     return kept
 
 
+def _live_pointer_owner(run_id: str) -> str:
+    """The session a run's live pointer names now, or "" where it names none.
+
+    A run whose pointer is gone or unreadable has no owner to be read: the
+    failure it recorded is then owed by nobody, which is what keeps a stored
+    entry from raising a row in whichever session happens to hold the record.
+    """
+    try:
+        text = obligation_snapshot.live_pointer_path(run_id).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    try:
+        document = json.loads(text)
+    except ValueError:
+        return ""
+    if not isinstance(document, Mapping):
+        return ""
+    return str(document.get("session") or "")
+
+
+def _sweep_failures_by_owner(
+    failures_by_session: Mapping[str, Any],
+) -> dict[str, list[Mapping[str, Any]]]:
+    """Group stored failures under the session each run's pointer names now.
+
+    The stored record is keyed by the session whose sweep wrote the failure,
+    and that entry outlives a change of the run's owner: a session hands a run
+    to another, or a sweep records a failure with no session at all. A row's
+    command acts on the run, so the session that can act on it is the one the
+    run's live pointer names, whichever session the record keeps it under. A
+    failure whose pointer names no session raises nothing and stays stored.
+    """
+    grouped: dict[str, list[Mapping[str, Any]]] = {}
+    for failures in failures_by_session.values():
+        if not isinstance(failures, list):
+            continue
+        for failure in failures:
+            if not isinstance(failure, Mapping):
+                continue
+            owner = _live_pointer_owner(str(failure.get("run_id") or ""))
+            if not owner:
+                continue
+            grouped.setdefault(owner, []).append(failure)
+    return grouped
+
+
 def _ledger_holds_run(run_id: str, project: str, roots: Mapping[str, Path]) -> bool:
     """Whether a promoted record for this run stands beside the project's ledger."""
     from reckon.crew import runs
@@ -213,6 +259,14 @@ def prune_sweep_failures(store: Any, project: str) -> dict[str, Any]:
 def _with_sweep_failures(
     payload: Mapping[str, Any], failures: Iterable[Mapping[str, Any]]
 ) -> dict[str, Any]:
+    """Raise each stored failure as one row of this payload's session's row.
+
+    ``failures`` is the set the payload's own session owes, which is the
+    session the run's live pointer names: :func:`_sweep_failures_by_owner` is
+    the one grouping that decides it, so a caller hands over its own group
+    rather than the stored record, whose keys are sweep authors and outlive a
+    change of owner.
+    """
     rows = list(payload.get("obligations") or ())
     project = str(payload.get("project") or "")
     for failure in _ended_sweep_failures(failures, project=project):
@@ -404,8 +458,13 @@ def refresh(
         return []
 
     registrations = follower_rows(project)
+    # A stored failure is a duty of the session its run's pointer names, not of
+    # the session whose sweep recorded it: the record outlives a change of
+    # owner, and a row raised in a session that cannot act on the run is one it
+    # can only acknowledge until the next sweep raises it again.
+    owned = _sweep_failures_by_owner(sweep_failures)
     sessions = sorted(
-        set(sweep_failures)
+        set(owned)
         | {
             str(row.get("session") or "")
             for row in registrations
@@ -429,7 +488,7 @@ def refresh(
         for session in sessions:
             payload = _with_sweep_failures(
                 obligation_snapshot.payload_for(state, session),
-                sweep_failures.get(session, ()),
+                owned.get(session, ()),
             )
             identity = payload_identity(payload)
             stored = store.read_obligation(session)
