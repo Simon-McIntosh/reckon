@@ -339,53 +339,19 @@ def _read(path: Path) -> dict[str, Any]:
 # One decode per version of each request file. A publish reads the directory
 # once and slices it per subscribed session, and the next publish reuses every
 # request whose file has not changed, so the decodes a sweep pays for are the
-# requests it changed rather than the population it re-reads. A stored record is
-# never modified: a reader that wants a different version writes the file.
-_REQUEST_CACHE: dict[str, tuple[tuple[Any, ...], dict[str, Any]]] = {}
-_REQUEST_CACHE_LOCK = threading.Lock()
+# requests it changed rather than the population it re-reads. The identity, the
+# re-verification after the read and the storage are ``file_memo``'s.
+REQUEST_MEMO = "promotion_request"
 
 
-def _request_identity(path: Path) -> tuple[Any, ...] | None:
-    """The stat identity a rewrite of ``path`` changes, or None when it is gone."""
-    try:
-        return file_memo.file_signature(path)
-    except OSError:
-        return None
+def _request_record(path: Path) -> dict[str, Any]:
+    """One request's record, decoded once per version of its file.
 
-
-def _cached_request(path: Path) -> dict[str, Any]:
-    """Decode one promotion request at most once per version of its file.
-
-    The identity is taken on both sides of the decode, so a write landing in
-    between leaves nothing stored rather than pairing one file's bytes with
-    another file's identity. A file that cannot be stat'ed is decoded uncached,
-    so its error path is unchanged.
+    ``file_memo.memoized`` owns the identity-keyed decode: it keys on the file's
+    stat signature, re-verifies it after the read so a write landing in between
+    stores nothing, and decodes uncached when the file cannot be stat'ed.
     """
-    identity = _request_identity(path)
-    if identity is None:
-        return _read(path)
-    with _REQUEST_CACHE_LOCK:
-        cached = _REQUEST_CACHE.get(str(path))
-    if cached is not None and cached[0] == identity:
-        return cached[1]
-    record = _read(path)
-    if record and _request_identity(path) == identity:
-        with _REQUEST_CACHE_LOCK:
-            _REQUEST_CACHE[str(path)] = (identity, record)
-    return record
-
-
-def _forget_absent_requests(directory: Path, present: set[str]) -> None:
-    """Drop the decoded records of the files this reading did not find."""
-    prefix = str(directory) + os.sep
-    with _REQUEST_CACHE_LOCK:
-        absent = [
-            key
-            for key in _REQUEST_CACHE
-            if key.startswith(prefix) and key not in present
-        ]
-        for key in absent:
-            del _REQUEST_CACHE[key]
+    return file_memo.memoized(REQUEST_MEMO, path, lambda: _read(path))
 
 
 class RequestIndex:
@@ -428,8 +394,13 @@ def request_index() -> RequestIndex:
     """Read the promotion request directory once, from the decodes on hand."""
     directory = _requests_dir()
     paths = sorted(directory.glob("*.json"))
-    records = [(path, record) for path in paths if (record := _cached_request(path))]
-    _forget_absent_requests(directory, {str(path) for path in paths})
+    # The region hands each stored record as the cached read-only view, so a
+    # slice reads what the publish's one decode produced rather than a copy of
+    # it, and a caller that tries to change a request record is refused.
+    with file_memo.read_only_region():
+        records = [
+            (path, record) for path in paths if (record := _request_record(path))
+        ]
     return RequestIndex(records)
 
 
@@ -1466,10 +1437,10 @@ def _settle(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
         "settled_at": _now(),
     }
     with runs._pointer_lock(f"promotion-request-{run_id}"):
-        # The guard's read is identity-verified like every cached decode, so it
+        # The guard's read is identity-verified like every memoised decode, so it
         # reports the file as it stands now without decoding a version this
         # process already holds.
-        current = _cached_request(_request_path(run_id))
+        current = _request_record(_request_path(run_id))
         if current.get("request_id") != request.get("request_id"):
             return {}
         runs._write_json(_request_path(run_id), settled)

@@ -7,21 +7,26 @@ station's 1,578 requests over six sessions decoded 28 MB for each of them, 11.9%
 of every sample in the tick's profile. The tests below build a directory large
 enough to measure, count the decodes through a stand-in for the request reader,
 and hold the duties and the settlements to the reading the base revision
-produced for the same files.
+produced for the same files. The last one derives a fleet state and slices it,
+so the publish the section is about — not only a hand-built index — is what the
+counts are taken over.
 """
 
 from __future__ import annotations
 
 import json
 from collections import Counter
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from reckon._timestamps import parse_utc
+from reckon.crew import obligation_snapshot, runs
 from reckon.crew import promotion_requests as requests
-from reckon.crew import runs
+from tests.helpers.git import git as _git
 
 PROJECTS = ("alpha-project", "beta-project", "gamma-project")
 # Two sessions per project, so the six sessions of one publish read a directory
@@ -29,6 +34,9 @@ PROJECTS = ("alpha-project", "beta-project", "gamma-project")
 SESSIONS = tuple(
     (project, f"{project}-session-{index}") for project in PROJECTS for index in (1, 2)
 )
+DERIVED_PROJECT = "publish-fixture"
+DERIVED_SESSIONS = (f"{DERIVED_PROJECT}-session-1", f"{DERIVED_PROJECT}-session-2")
+DERIVED_PADDING = 40
 REQUEST_COUNT = 400
 NOW = datetime(2026, 11, 20, 6, 0, tzinfo=UTC)
 REQUESTED_AT = (NOW - timedelta(hours=3)).isoformat()
@@ -317,3 +325,135 @@ def test_a_publish_shares_one_reading_across_its_sessions(crew_home, decodes):
     assert rewritten == expected_settled
     assert set(decodes.values()) == {1}
     assert _rows(second) == expected_duties
+
+
+@pytest.fixture
+def listings(monkeypatch) -> dict[str, int]:
+    """Count every reading of the request directory."""
+    counted = {"calls": 0}
+    resolve = requests._requests_dir
+
+    def counting():
+        counted["calls"] += 1
+        return resolve()
+
+    monkeypatch.setattr(requests, "_requests_dir", counting)
+    return counted
+
+
+def _seed_checkout(repository: Path) -> None:
+    """A checkout with one commit, which the fixture's project mounts."""
+    (repository / "docs" / "state" / DERIVED_PROJECT).mkdir(parents=True)
+    (repository / "seed.txt").write_text("seed\n")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "seed.txt"),
+        ("commit", "-q", "-m", "test: seed the publish fixture"),
+    ):
+        _git(repository, *arguments)
+
+
+@pytest.fixture
+def derived(
+    home: Path, tmp_path: Path, decodes: Counter, listings: dict[str, int]
+) -> Iterator[tuple[Any, list[str]]]:
+    """A project whose fleet state a publish derives, holding two failures.
+
+    One failure is owed to each of the fixture's two sessions and both runs are
+    live, so each session's slice raises its own duty. The rest of the
+    directory is settled, so the reading a publish pays for is the population
+    rather than the two duties.
+    """
+    repository = tmp_path / "repo"
+    repository.mkdir()
+    _seed_checkout(repository)
+    (home / "mounts.json").write_text(
+        json.dumps({DERIVED_PROJECT: str(repository / "docs")}), encoding="utf-8"
+    )
+    directory = requests._requests_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    for index, session in enumerate(DERIVED_SESSIONS, start=1):
+        identifier = f"r-20261120T00000000{index}-derived"
+        runs._write_json(
+            runs.pointer_path(identifier),
+            {
+                "run_id": identifier,
+                "project": DERIVED_PROJECT,
+                "session": session,
+                "repo": str(repository),
+                "worktree": str(repository),
+            },
+        )
+        runs._write_json(
+            directory / f"{identifier}.json",
+            _record(
+                identifier,
+                DERIVED_PROJECT,
+                session,
+                requests.FAILED,
+                finished_at=FINISHED_AT,
+                error=f"the landing checkout refused head {index}",
+            ),
+        )
+    for index in range(DERIVED_PADDING):
+        identifier = f"r-20261120T0000009{index:02d}-settled"
+        runs._write_json(
+            directory / f"{identifier}.json",
+            _record(
+                identifier,
+                DERIVED_PROJECT,
+                DERIVED_SESSIONS[index % len(DERIVED_SESSIONS)],
+                requests.SETTLED,
+            ),
+        )
+    decodes.clear()
+    listings["calls"] = 0
+    state = obligation_snapshot.fleet_state(DERIVED_PROJECT, now=NOW)
+    return state, list(DERIVED_SESSIONS)
+
+
+def test_a_derivation_carries_one_request_reading_into_every_slice(
+    derived, decodes, listings
+):
+    """The derivation reads the directory once and its slices read it never."""
+    state, sessions = derived
+    # The instrument saw the derivation's own reading, so the zero the slices
+    # are held to below is an absence of readings rather than of a reader.
+    assert listings["calls"] == 1
+    assert isinstance(state.promotion_index, requests.RequestIndex)
+    assert len(state.promotion_index.records) == 2 + DERIVED_PADDING
+    print(f"derivation listed once and decoded {sum(decodes.values())} requests")
+    assert sum(decodes.values()) == 2 + DERIVED_PADDING
+    assert max(decodes.values()) == 1
+
+    decodes.clear()
+    listings["calls"] = 0
+    payloads = {
+        session: obligation_snapshot._payload_for_state(state, session)
+        for session in sessions
+    }
+    print(
+        f"slices over one derivation decoded {sum(decodes.values())} requests and"
+        f" listed the directory {listings['calls']} times"
+    )
+    assert dict(decodes) == {}
+    assert listings["calls"] == 0
+
+    raised = {
+        session: sorted(
+            row["run_id"]
+            for row in payload["obligations"]
+            if row.get("kind") == "promotion-failed"
+        )
+        for session, payload in payloads.items()
+    }
+    assert raised == {
+        session: [f"r-20261120T00000000{index}-derived"]
+        for index, session in enumerate(sessions, start=1)
+    }
+    # A slice that builds its own reading lists the directory again, so the
+    # counter above is one that sees a reading when a reader takes one.
+    requests.failure_obligations(DERIVED_PROJECT, sessions[0], now=NOW, index=None)
+    assert listings["calls"] == 1
