@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "baseline_suite (42fe90d0b0a46060bafde2490dda7d4002cda478) and after_suite (7a9ec8dc97bd4d0af4b4e987b5b86ff065aeddab) each record completed true, failure_count 0 and empty failure_ids, so the head adds no failure the base does not carry",
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:01:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-attaches-the-figures.html",
+      "id": "f9177537cf5",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment names ec1783f9 as its head, one revision short of the landed 7a9ec8dc, so the head gate at the delivered revision (gate-head-final.log, job 1329893) appears nowhere in the artefact and a reader of the fragment cannot see the run the manifest records."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-attaches-the-figures.html",
+      "id": "f64f4bb493e",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm cites job 1329874 as its after arm, which the run stream records against 4ff0a11133, while the arm at the landed head is job 1329896; line 48 carries the same lag, citing the suite after arm as job 1329849 at ec1783f9 while the landed head's arm is job 1329895."
+    }
+  ],
+  "head_log_revision": "7a9ec8dc97bd4d0af4b4e987b5b86ff065aeddab",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is a test-only edit, so no production runtime code reaches it; tests/test_dispatch_renders_svg_figures.py imports the module but is itself a test.",
+    "diff": "read commit by commit against 42fe90d0b0; c0130e6e7d changes one parse line and a two-line comment, and 7d4b73c126, ec1783f9a6, 4ff0a11133 and 7a9ec8dc97 extend the one fragment, 64 insertions and 1 deletion.",
+    "done_when": "the done_when asks for a full pass at head as an all_debug job launched with SLURM_JOB_ID unset and output on shared storage; gate-head-final.log at revision 7a9ec8dc, host 98dci4-clu-3142, reads 10 passed and EXIT=0, recorded in the manifest as job 1329893.",
+    "goal": "the goal is that tests/test_dispatch_attaches_the_figures.py passes in full on the primary branch; tests/test_dispatch_attaches_the_figures.py:486 reads the dispatch document from result.stdout, the stream reckon/crew/dispatching/preparation.py:1581 keeps it on by writing the notice to stderr.",
+    "manifest": "read; status complete, five commits, two changed paths, head gate 10 passed EXIT=0 job 1329893 against base 1 failed 9 passed EXIT=1 job 1329791, suite arms 58 passed EXIT=0 either side, importer arms 2 failed either side, host shim failure under outside_scope.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a figures directory; the diff touches only tests/test_dispatch_attaches_the_figures.py and the fragment, both inside it."
+  },
+  "justifications": {
+    "durability": "gate-base.log ends EXIT=1 with FAILED tests/test_dispatch_attaches_the_figures.py::test_crew_dispatch_image_reaches_the_argv, so restoring result.output at tests/test_dispatch_attaches_the_figures.py:486 reddens that test.",
+    "evidence": "gate-head-final.log names revision 7a9ec8dc and ends EXIT=0 over 10 passed, while the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-attaches-the-figures.html:6 still names ec1783f9 as its head.",
+    "fit": "the comment at tests/test_dispatch_attaches_the_figures.py:484-485 states the stream rule as tests/test_an_edit_that_answers_a_review_is_covered.py:346 already reads result.stdout, and adds no new name.",
+    "goal_fidelity": "tests/test_dispatch_attaches_the_figures.py:486 parses result.stdout, the stream reckon/crew/dispatching/preparation.py:1581 keeps the JSON document on, so the file's one failing case passes.",
+    "reuse": "no owner exists for reading a dispatch CLI document, each test parses inline (tests/test_page_paints_from_the_index.py:502), and this change adds no definition at all.",
+    "scope_discipline": "git diff --stat 42fe90d0b0..7a9ec8dc lists only tests/test_dispatch_attaches_the_figures.py and the landed fragment, both inside the fence, though four of the five commits rewrite that one evidence file."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T060900877148-review-of-qwnw-red-file-dispatch-attaches-the-figures-7a9ec8dc97bd",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "7a9ec8dc97bd4d0af4b4e987b5b86ff065aeddab",
+  "reviewed_run_id": "r-20261118T063051175974-qwnw-red-file-dispatch-attaches-the-figures",
+  "reviewer_run_id": "r-20261119T060900877148-review-of-qwnw-red-file-dispatch-attaches-the-figures-7a9ec8dc97bd",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:28:34.644605+00:00",
+  "total": 112
+}
