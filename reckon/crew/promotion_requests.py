@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from reckon import checkout_trust
+from reckon import checkout_trust, file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import runs, stage_receipts
 from reckon.crew.host_lease import HostLease, local_host
@@ -334,6 +334,103 @@ def _read(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise CrewError(f"promotion record {path} does not hold an object")
     return value
+
+
+# One decode per version of each request file. A publish reads the directory
+# once and slices it per subscribed session, and the next publish reuses every
+# request whose file has not changed, so the decodes a sweep pays for are the
+# requests it changed rather than the population it re-reads. A stored record is
+# never modified: a reader that wants a different version writes the file.
+_REQUEST_CACHE: dict[str, tuple[tuple[Any, ...], dict[str, Any]]] = {}
+_REQUEST_CACHE_LOCK = threading.Lock()
+
+
+def _request_identity(path: Path) -> tuple[Any, ...] | None:
+    """The stat identity a rewrite of ``path`` changes, or None when it is gone."""
+    try:
+        return file_memo.file_signature(path)
+    except OSError:
+        return None
+
+
+def _cached_request(path: Path) -> dict[str, Any]:
+    """Decode one promotion request at most once per version of its file.
+
+    The identity is taken on both sides of the decode, so a write landing in
+    between leaves nothing stored rather than pairing one file's bytes with
+    another file's identity. A file that cannot be stat'ed is decoded uncached,
+    so its error path is unchanged.
+    """
+    identity = _request_identity(path)
+    if identity is None:
+        return _read(path)
+    with _REQUEST_CACHE_LOCK:
+        cached = _REQUEST_CACHE.get(str(path))
+    if cached is not None and cached[0] == identity:
+        return cached[1]
+    record = _read(path)
+    if record and _request_identity(path) == identity:
+        with _REQUEST_CACHE_LOCK:
+            _REQUEST_CACHE[str(path)] = (identity, record)
+    return record
+
+
+def _forget_absent_requests(directory: Path, present: set[str]) -> None:
+    """Drop the decoded records of the files this reading did not find."""
+    prefix = str(directory) + os.sep
+    with _REQUEST_CACHE_LOCK:
+        absent = [
+            key
+            for key in _REQUEST_CACHE
+            if key.startswith(prefix) and key not in present
+        ]
+        for key in absent:
+            del _REQUEST_CACHE[key]
+
+
+class RequestIndex:
+    """One publish's reading of the promotion request directory.
+
+    Derived once per publish and sliced per session, so the directory is listed
+    and each changed request decoded once however many sessions a publish
+    serves. Requests are grouped by the owner they are owed to, because every
+    reader of this directory asks for one owner's requests.
+    """
+
+    def __init__(self, records: Iterable[tuple[Path, dict[str, Any]]]) -> None:
+        self.records = list(records)
+        self._by_owner: dict[tuple[str, str], list[tuple[Path, dict[str, Any]]]] = {}
+        for path, record in self.records:
+            owner = (str(record.get("project") or ""), str(record.get("session") or ""))
+            self._by_owner.setdefault(owner, []).append((path, record))
+        self._settled: set[str] = set()
+
+    def for_owner(
+        self, project: str, session: str
+    ) -> list[tuple[Path, dict[str, Any]]]:
+        """The requests owed to one session, as they read when this index was built."""
+        return [
+            entry
+            for entry in self._by_owner.get((project, session), ())
+            if str(entry[0]) not in self._settled
+        ]
+
+    def note_settled(self, path: Path) -> None:
+        """Leave a request this publish settled out of its later slices.
+
+        A later slice of the same publish would otherwise read the record as it
+        stood before the settle and settle it a second time.
+        """
+        self._settled.add(str(path))
+
+
+def request_index() -> RequestIndex:
+    """Read the promotion request directory once, from the decodes on hand."""
+    directory = _requests_dir()
+    paths = sorted(directory.glob("*.json"))
+    records = [(path, record) for path in paths if (record := _cached_request(path))]
+    _forget_absent_requests(directory, {str(path) for path in paths})
+    return RequestIndex(records)
 
 
 def read_promotion(run_id: str) -> dict[str, Any]:
@@ -1369,7 +1466,10 @@ def _settle(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
         "settled_at": _now(),
     }
     with runs._pointer_lock(f"promotion-request-{run_id}"):
-        current = _read(_request_path(run_id))
+        # The guard's read is identity-verified like every cached decode, so it
+        # reports the file as it stands now without decoding a version this
+        # process already holds.
+        current = _cached_request(_request_path(run_id))
         if current.get("request_id") != request.get("request_id"):
             return {}
         runs._write_json(_request_path(run_id), settled)
@@ -1401,29 +1501,38 @@ def settle_requests_for(run_id: str, *, settled_as: str = "promoted") -> list[st
 
 
 def failure_obligations(
-    project: str, session: str, *, now: datetime | None = None
+    project: str,
+    session: str,
+    *,
+    now: datetime | None = None,
+    index: RequestIndex | None = None,
 ) -> list[dict[str, Any]]:
     """Project failures and overdue waits into the owning session's duties.
 
     A waiting request takes no promotion slot, but after half an hour its
     owner needs its condition and last observation. Rechecking never resets
     the age, which is measured from the original request.
+
+    ``index`` is the publish's own reading of the directory: a publish serving
+    many sessions derives one and passes it to each, so every changed request
+    is decoded once for the publish rather than once per session. A caller
+    without one reads an index here, from the decode this process already
+    holds for every request whose file has not changed.
     """
     items: list[dict[str, Any]] = []
     moment = now or datetime.now(UTC)
-    for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+    source = request_index() if index is None else index
+    for path, request in source.for_owner(project, session):
         waiting = request.get("phase") == WAITING
         if request.get("phase") not in ERRORS and not waiting:
-            continue
-        if request.get("project") != project or request.get("session") != session:
             continue
         settled = _settled_state(request)
         if settled:
             # The run has arrived where the refusal asked it to go, or can no
             # longer go anywhere: the request is settled here rather than
             # raising a duty whose next command cannot apply.
-            _settle(request, settled)
+            if _settle(request, settled):
+                source.note_settled(path)
             continue
         if waiting:
             age = _waited_seconds(request.get("requested_at"), moment.isoformat())

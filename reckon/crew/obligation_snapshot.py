@@ -1960,6 +1960,9 @@ class FleetState:
         default_factory=dict
     )
     unlanded_source: list[dict[str, Any]] = dataclass_field(default_factory=list)
+    # One reading of the promotion request directory for the whole sweep. A
+    # slice that builds its own would decode every request once per session.
+    promotion_index: Any = None
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
@@ -2036,6 +2039,12 @@ def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetSta
             # input, so neither answer depends on which ran first.
             held_worktrees = module._held_worktrees_by_session(project, now=instant)
             with module.derivation_history(project):
+                from reckon.crew.promotion_requests import request_index
+
+                # One publish reads the request directory once and slices it
+                # for every session it serves; deriving the index per slice
+                # decoded every request once per session.
+                promotion_index = request_index()
                 state = FleetState(
                     project=project,
                     now=instant,
@@ -2060,6 +2069,7 @@ def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetSta
                         project, list(pointers.values()), now=instant
                     ),
                     unlanded_source=module._unlanded_source_items(project),
+                    promotion_index=promotion_index,
                 )
     state.findings = list(skipped_records)
     return state
@@ -2285,7 +2295,11 @@ def _payload_for_state(state: FleetState, session: str) -> dict[str, Any]:
     items.extend(state.merged_sections.get(session, []))
     from reckon.crew.promotion_requests import failure_obligations
 
-    items.extend(failure_obligations(state.project, session, now=state.now))
+    items.extend(
+        failure_obligations(
+            state.project, session, now=state.now, index=state.promotion_index
+        )
+    )
     items.extend(module.session_scratch_items(state.project, session, now=state.now))
     # The project's main checkout is read here exactly as the derivation reads
     # it, through the derivation's own detector rather than a second one, so a
