@@ -1220,6 +1220,14 @@ slots:
     range: integer
     minimum_value: 1
 
+  launch_failure_limit:
+    description: >-
+      How many failed launches in a row one queued request takes before it
+      stops being re-queued and stays `launch-failed`, carrying the last
+      failure. The runtime default is 3 when no layer sets this value.
+    range: integer
+    minimum_value: 1
+
   project_weights:
     description: >-
       Positive fair-use weight for each project sharing the local queue.
@@ -1331,6 +1339,7 @@ classes:
     description: Project-wide queue depth and fair-use weights.
     slots:
       - max_requests
+      - launch_failure_limit
       - project_weights
       - repick_after_seconds
       - priority_budget

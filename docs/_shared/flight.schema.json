@@ -2701,6 +2701,14 @@
             "additionalProperties": false,
             "description": "Project-wide queue depth and fair-use weights.",
             "properties": {
+                "launch_failure_limit": {
+                    "description": "How many failed launches in a row one queued request takes before it stops being re-queued and stays `launch-failed`, carrying the last failure. The runtime default is 3 when no layer sets this value.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
                 "max_requests": {
                     "description": "Maximum queued non-review requests in one project. The runtime default is 500 when no layer sets this value.",
                     "minimum": 1,
