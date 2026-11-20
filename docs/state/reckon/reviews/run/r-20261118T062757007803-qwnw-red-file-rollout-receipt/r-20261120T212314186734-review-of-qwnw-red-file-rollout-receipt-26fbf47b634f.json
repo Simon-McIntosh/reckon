@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/rollout.py:read_rollout_receipt"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:24:12Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_rollout_receipt.py",
+      "line": "457",
+      "severity": "non-blocking",
+      "text": "the rewritten ledger case asserts nothing once the reader stops finding the fixture rollouts: every assertion sits behind isinstance guards at tests/test_rollout_receipt.py:457-465 and files_found is computed at :441 and only printed at :468, so a regression answering Unmeasured.MISSING_ROLLOUT for all twelve sessions leaves the case green, while the same file asserts `is not Unmeasured.MISSING_ROLLOUT` at :292 and :302."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "the fragment records the fixture readings out of order as [24_495_394, 1_644_077, 900_000] and calls the run one spanning two resets, while tests/test_rollout_receipt.py:773 writes readings = [24_495_394, 900_000, 1_644_077] as one reset; under the fragment order the stated fold readings[0] + (last - readings[1]) would be negative, so the evidence cannot be replayed from its own text."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "the third failing id is introduced as `verbatim from that log` but is truncated to test_real_named_rollout_cumulative, where logs/base-tests-test_rollout_receipt.log:81 prints test_real_named_rollout_cumulative_beats_naive_single_readings, so a reader matching the id against the log finds no such test."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md",
+      "line": "31",
+      "severity": "non-blocking",
+      "text": "the arm over the importer test files is reported as prose (3 failed 192 passed at base and 195 passed at head) with no command, revision or log path, while the done_when requires both arms as inline JSON carrying full 40-character revisions; the inline JSON pair at :18-19 records the armed suite instead, and no file under the run directory holds those readings."
+    }
+  ],
+  "item_aggregate": {
+    "present": 6,
+    "required": 6
+  },
+  "item_verdicts": {
+    "call_sites": "the diff touches only a test module and an evidence fragment, so no production call site can reach the change; the production reader the rewritten cases exercise is reckon/crew/rollout.py:read_rollout_receipt, reached in production by reckon/crew/paid_lanes.py, and the diff leaves it untouched.",
+    "diff": "read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478 commit by commit: 86a34ba83c rewrites three machine-reading cases in tests/test_rollout_receipt.py into fixture-built populations using _stamp, _span_session and POPULATIONS and adds one exact fold assertion, and 26fbf47b634 adds the 64-line evidence fragment under its own doc(evidence) subject; no production file changes.",
+    "done_when": "the done_when asks for tests/test_rollout_receipt.py green at head as an all_debug job with SLURM_JOB_ID unset, red at base with its failing ids logged beside it, an arm over the importer test files recorded as inline JSON at full 40-character revisions, and clean ruff on the changed paths; manifest.md:11 records the gate command, head-arm-1795209433899897330.log:1-11 records the head arm (22 passed, slurm_job_id_present: no) and logs/base-tests-test_rollout_receipt.log:79-84 records the base arm (3 failed, EXIT=1, full ids), but the importer arm is prose at manifest.md:31 and no inline JSON pair or log carries it.",
+    "goal": "the reviewed node.json carries no goal key (its keys are admission_findings, brief, peer_scopes, done_when) and its brief is empty, so the deliverable is read from plan section s29 of docs/plans/queued-work-needs-no-workaround.html and from the done_when: make tests/test_rollout_receipt.py pass in full at head after it was red at base; head-arm-1795209433899897330.log:10 reads 22 passed at 26fbf47b634f, so the landed change does that.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md: status complete, commits 86a34ba83cf2d80915527d7cab6c86d67325e2a8 and 26fbf47b634f666bf622c4a238156a2ac4976442, the gate command and its logs, both suite arms as inline JSON at full 40-character revisions, and negative_control_log logs/base-tests-test_rollout_receipt.log; every log it names exists and reads as claimed, except that the importer-arm numbers cited at :31 have no log, command or revision anywhere on disk.",
+    "write_paths": "read the declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the fragment itself, docs/figures/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt) against the 2-path diff: tests/test_rollout_receipt.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html both sit inside them, and no reckon/ path changed."
+  },
+  "justifications": {
+    "durability": "tests/test_rollout_receipt.py:784 cumulative == readings[0] + (last_value - readings[1]) and the share band at :760 redden on the regressions they name, but the ledger case guards its invariants behind isinstance at :457-465 and prints files_found at :468 without asserting it, so a reader returning Unmeasured.MISSING_ROLLOUT for every fixture session leaves the case green.",
+    "evidence": "logs/base-tests-test_rollout_receipt.log:79-84 records the 3 failing ids and EXIT=1 and head-arm-1795209433899897330.log:10-11 records 22 passed and EXIT=0, but the importer arm the done_when requires as inline JSON appears only as cited prose at manifest.md:31 with no command, revision or log path.",
+    "fit": "the rewrite uses the tmp_path plus monkeypatch.setattr(rollout, \"CLIENT_SESSIONS_DIR\", ...) idiom the same file already uses at :89, :141 and :246, and the fragment follows the sibling evidence fragments' id-anchored headings and measurements block.",
+    "goal_fidelity": "tests/test_rollout_receipt.py:384-470 now build their ledger and rollouts under tmp_path and monkeypatch rollout.CLIENT_SESSIONS_DIR, and head-arm-1795209433899897330.log:10 reads 22 passed at 26fbf47b634f666bf622c4a238156a2ac4976442, so the named file is green at head exactly as the done_when asks.",
+    "reuse": "no production definition is added; _stamp, _span_session and POPULATIONS at tests/test_rollout_receipt.py:677-706 compose the file's own _write_rollout, _tool_call and _total_record, and a capability search over tests/ found the other rollout-fixture helpers module-local (tests/test_a_promotion_reads_only_its_own_rollout_home.py:27, tests/test_headroom_publishes_real_readings.py:15), so no repository owner was forked.",
+    "scope_discipline": "the diff is exactly tests/test_rollout_receipt.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html, both inside the node declared write paths, and carries no edit to reckon/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node.json carries no goal key (its keys are admission_findings, brief, peer_scopes, done_when) and its brief is empty, so the deliverable is read from plan section s29 of docs/plans/queued-work-needs-no-workaround.html and from the done_when: make tests/test_rollout_receipt.py pass in full at head after it was red at base; head-arm-1795209433899897330.log:10 reads 22 passed at 26fbf47b634f, so the landed change does that.\nVERDICT done_when: the done_when asks for tests/test_rollout_receipt.py green at head as an all_debug job with SLURM_JOB_ID unset, red at base with its failing ids logged beside it, an arm over the importer test files recorded as inline JSON at full 40-character revisions, and clean ruff on the changed paths; manifest.md:11 records the gate command, head-arm-1795209433899897330.log:1-11 records the head arm (22 passed, slurm_job_id_present: no) and logs/base-tests-test_rollout_receipt.log:79-84 records the base arm (3 failed, EXIT=1, full ids), but the importer arm is prose at manifest.md:31 and no inline JSON pair or log carries it.\nVERDICT write_paths: read the declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the fragment itself, docs/figures/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt) against the 2-path diff: tests/test_rollout_receipt.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html both sit inside them, and no reckon/ path changed.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md: status complete, commits 86a34ba83cf2d80915527d7cab6c86d67325e2a8 and 26fbf47b634f666bf622c4a238156a2ac4976442, the gate command and its logs, both suite arms as inline JSON at full 40-character revisions, and negative_control_log logs/base-tests-test_rollout_receipt.log; every log it names exists and reads as claimed, except that the importer-arm numbers cited at :31 have no log, command or revision anywhere on disk.\nVERDICT diff: read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478 commit by commit: 86a34ba83c rewrites three machine-reading cases in tests/test_rollout_receipt.py into fixture-built populations using _stamp, _span_session and POPULATIONS and adds one exact fold assertion, and 26fbf47b634 adds the 64-line evidence fragment under its own doc(evidence) subject; no production file changes.\nCALL_SITES: reckon/crew/rollout.py:read_rollout_receipt\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_rollout_receipt.py:384-470 now build their ledger and rollouts under tmp_path and monkeypatch rollout.CLIENT_SESSIONS_DIR, and head-arm-1795209433899897330.log:10 reads 22 passed at 26fbf47b634f666bf622c4a238156a2ac4976442, so the named file is green at head exactly as the done_when asks.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-tests-test_rollout_receipt.log:79-84 records the 3 failing ids and EXIT=1 and head-arm-1795209433899897330.log:10-11 records 22 passed and EXIT=0, but the importer arm the done_when requires as inline JSON appears only as cited prose at manifest.md:31 with no command, revision or log path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is exactly tests/test_rollout_receipt.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html, both inside the node declared write paths, and carries no edit to reckon/.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_rollout_receipt.py:784 cumulative == readings[0] + (last_value - readings[1]) and the share band at :760 redden on the regressions they name, but the ledger case guards its invariants behind isinstance at :457-465 and prints files_found at :468 without asserting it, so a reader returning Unmeasured.MISSING_ROLLOUT for every fixture session leaves the case green.\nSCORE fit: 18\nJUSTIFICATION fit: the rewrite uses the tmp_path plus monkeypatch.setattr(rollout, \"CLIENT_SESSIONS_DIR\", ...) idiom the same file already uses at :89, :141 and :246, and the fragment follows the sibling evidence fragments' id-anchored headings and measurements block.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; _stamp, _span_session and POPULATIONS at tests/test_rollout_receipt.py:677-706 compose the file's own _write_rollout, _tool_call and _total_record, and a capability search over tests/ found the other rollout-fixture helpers module-local (tests/test_a_promotion_reads_only_its_own_rollout_home.py:27, tests/test_headroom_publishes_real_readings.py:15), so no repository owner was forked.\nFINDING tests/test_rollout_receipt.py:457 non-blocking: the rewritten ledger case asserts nothing once the reader stops finding the fixture rollouts: every assertion sits behind isinstance guards at tests/test_rollout_receipt.py:457-465 and files_found is computed at :441 and only printed at :468, so a regression answering Unmeasured.MISSING_ROLLOUT for all twelve sessions leaves the case green, while the same file asserts `is not Unmeasured.MISSING_ROLLOUT` at :292 and :302.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html:43 non-blocking: the fragment records the fixture readings out of order as [24_495_394, 1_644_077, 900_000] and calls the run one spanning two resets, while tests/test_rollout_receipt.py:773 writes readings = [24_495_394, 900_000, 1_644_077] as one reset; under the fragment order the stated fold readings[0] + (last - readings[1]) would be negative, so the evidence cannot be replayed from its own text.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html:56 non-blocking: the third failing id is introduced as `verbatim from that log` but is truncated to test_real_named_rollout_cumulative, where logs/base-tests-test_rollout_receipt.log:81 prints test_real_named_rollout_cumulative_beats_naive_single_readings, so a reader matching the id against the log finds no such test.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md:31 non-blocking: the arm over the importer test files is reported as prose (3 failed 192 passed at base and 195 passed at head) with no command, revision or log path, while the done_when requires both arms as inline JSON carrying full 40-character revisions; the inline JSON pair at :18-19 records the armed suite instead, and no file under the run directory holds those readings.",
+  "review_run_id": "r-20261120T212314186734-review-of-qwnw-red-file-rollout-receipt-26fbf47b634f",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "26fbf47b634f666bf622c4a238156a2ac4976442",
+  "reviewed_run_id": "r-20261118T062757007803-qwnw-red-file-rollout-receipt",
+  "reviewer": {
+    "backend": "omp",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T212314186734-review-of-qwnw-red-file-rollout-receipt-26fbf47b634f"
+  },
+  "reviewer_run_id": "r-20261120T212314186734-review-of-qwnw-red-file-rollout-receipt-26fbf47b634f",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T21:46:00.286146+00:00",
+  "total": 104
+}
