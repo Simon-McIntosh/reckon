@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own arm logs read on disk: after_suite-1795120142579727449.log at d7846c73e51c records 58 passed EXIT=0 with no FAILED line, and baseline_suite-1795120067778962136.log at 28fbf2bc2fe2b records 58 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:1610 _fragment_body_bytes",
+    "reckon/evidence.py:1664 composed evidence record"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T07:43:19Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the head column is labelled with the base revision 28fbf2bc2fe2 and its gate cell at line 7 repeats the base run's '6 passed in 0.33s', while the head gate log scoped-gate-1795120046702696256.log:2,9 reads revision d7846c73e51c6845e1da7ba4341751c89744c7ea and '6 passed in 0.37s', so the record presents a base measurement as the head one and a figure no head run produced."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "the suite row quotes 36.20s and 35.93s, which are baseline_suite-1795119461904062422.log and after_suite-1795119536859548741.log (the latter itself at revision 28fbf2bc2fe2b), not the arms manifest.md:17-18 declares at 43.20s (baseline 28fbf2bc2fe2b) and 36.19s (after d7846c73e51c), so the cited pair does not reconcile with the arms the record names."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "the fragment attributes the head gate to 'job 1319168, node 98dci4-clu-3141', but 1319168 is the fleet job id present in the worker environment (/tmp/39486-fleet-1319168 in worker.json) and no log in the run directory records a job id or partition; the gate's scheduler sidecar opens with 'srun: task re-enters the worker fence', so the done_when's clause requiring a job on all_debug with SLURM_JOB_ID unset is carried by no log line."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the only suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and reckon._store and never reckon.crew.prompts, the module the reviewed test reads through compose_prompt, so the arm adds no failure trivially and cannot detect a regression in the code the file guards."
+    },
+    {
+      "file": "mutant-run.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "the mutation ran its scratch tree at /tmp/reckon-crew-scratch, a bare /tmp path, where the dispatch's worktree rule 8 requires a temporary tree under $TMPDIR so it dies with the run's scratch."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit d7846c73e5; one HTML fragment, 22 insertions",
+    "done_when": "the green head gate and both inline-JSON arms are recorded, but the all_debug/SLURM_JOB_ID-governed clause has no log line and the arms do not import the module under test",
+    "goal": "the node goal's passing run is delivered as the evidence fragment, with the file green at both base and head",
+    "manifest": "read; complete, naming one commit and both arms with 0 failures",
+    "write_paths": "read the declared paths; the diff is the one fragment inside them"
+  },
+  "justifications": {
+    "durability": "mutant-run.log:93-94 records six failing ids and EXIT=1, but nothing checks the fragment's figures against the logs it cites.",
+    "evidence": "qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:5-8 quotes base figures under a Head label and no log records the all_debug partition.",
+    "fit": "the fragment follows the section/h2/table/pre shape of qwnw-red-file-prompt-carries-the-declaration.html:1-12.",
+    "goal_fidelity": "scoped-gate-1795120046702696256.log:2,9 records 6 passed EXIT=0 at the delivered head d7846c73e51c.",
+    "reuse": "reckon/evidence.py:1610 owns fragment composition and consumes the added file.",
+    "scope_discipline": "the diff adds only the one fragment, inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pass in full on the primary branch; the file is green at base 28fbf2bc2fe2b (scoped-gate-1795119913014369160.log:9, \"6 passed in 0.33s\") and at head d7846c73e51c, and the delivered change is the evidence fragment qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html, which the section admits for a file already green.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause with a verdict, no weakened assertion, an importer arm as inline JSON and a negative control; manifest.md:17-18 records both arms as inline JSON with 40-character revisions and mutant-run.log records the falsifying run, but no log records a partition or SLURM_JOB_ID and the arms cover modules the named file does not import.\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that node's fragment and its figure path; the delivered diff touches only the fragment and adds nothing else.\nVERDICT manifest: read in full; it names d7846c73e51c6845e1da7ba4341751c89744c7ea as its only commit, records the head gate command and log with EXIT=0, both suite arms with 0 failures, the named mutation log and the fragment as the whole delivery.\nVERDICT diff: read the single commit d7846c73e5 against base 28fbf2bc2fe2b; it adds 22 lines to one HTML evidence fragment and changes no source, test or figure.\nCALL_SITES: reckon/evidence.py:1610 _fragment_body_bytes, reckon/evidence.py:1664 composed evidence record\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the goal's deliverable is the passing run, and scoped-gate-1795120046702696256.log:2,9 records 6 passed EXIT=0 at the delivered head d7846c73e51c.\nSCORE evidence: 10\nJUSTIFICATION evidence: the head gate is recorded at d7846c73e51c, but qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:5-8 quotes base figures under a Head label and no log records the done_when's all_debug partition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html, inside the specified scope.\nSCORE durability: 8\nJUSTIFICATION durability: the diff adds no assertion, and although mutant-run.log:93-94 records six failing ids and EXIT=1 for the existing test, nothing checks the fragment's figures against the logs it cites, which is the claim that diverged.\nSCORE fit: 15\nJUSTIFICATION fit: the fragment follows the section/h2/table/pre shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-prompt-carries-the-declaration.html:1-12 but paraphrases figures where that sibling quotes the log receipt verbatim.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff defines no function, class or module, and reckon/evidence.py:1610 owns fragment composition and consumes the added file rather than being forked by it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:5 non-blocking: the head column is labelled with the base revision 28fbf2bc2fe2 and its gate cell at line 7 repeats the base run's '6 passed in 0.33s', while the head gate log scoped-gate-1795120046702696256.log:2,9 reads revision d7846c73e51c6845e1da7ba4341751c89744c7ea and '6 passed in 0.37s', so the record presents a base measurement as the head one and a figure no head run produced.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:8 non-blocking: the suite row quotes 36.20s and 35.93s, which are baseline_suite-1795119461904062422.log and after_suite-1795119536859548741.log (the latter itself at revision 28fbf2bc2fe2b), not the arms manifest.md:17-18 declares at 43.20s (baseline 28fbf2bc2fe2b) and 36.19s (after d7846c73e51c), so the cited pair does not reconcile with the arms the record names.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 non-blocking: the fragment attributes the head gate to 'job 1319168, node 98dci4-clu-3141', but 1319168 is the fleet job id present in the worker environment (/tmp/39486-fleet-1319168 in worker.json) and no log in the run directory records a job id or partition; the gate's scheduler sidecar opens with 'srun: task re-enters the worker fence', so the done_when's clause requiring a job on all_debug with SLURM_JOB_ID unset is carried by no log line.\nFINDING manifest.md:17 non-blocking: the only suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and reckon._store and never reckon.crew.prompts, the module the reviewed test reads through compose_prompt, so the arm adds no failure trivially and cannot detect a regression in the code the file guards.\nFINDING mutant-run.log:2 non-blocking: the mutation ran its scratch tree at /tmp/reckon-crew-scratch, a bare /tmp path, where the dispatch's worktree rule 8 requires a temporary tree under $TMPDIR so it dies with the run's scratch.\n",
+  "review_run_id": "r-20261120T074159330622-review-of-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-d7846c73e51c",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "d7846c73e51c6845e1da7ba4341751c89744c7ea",
+  "reviewed_run_id": "r-20261118T054310379573-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies",
+  "scores": {
+    "durability": 8,
+    "evidence": 10,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T07:55:00.000000+00:00",
+  "total": 89
+}
