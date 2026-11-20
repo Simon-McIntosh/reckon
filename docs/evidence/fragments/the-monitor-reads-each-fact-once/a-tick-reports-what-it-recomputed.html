@@ -1,0 +1,95 @@
+<section id="a-tick-reports-what-it-recomputed-landing">
+  <h2>A finished pass reports what it recomputed</h2>
+
+  <p><strong>What changed.</strong> The station published what it had observed and
+  never what it had paid to observe it, so a quiet pass and a pass that re-parsed
+  the whole fleet read identically. Every tick and every sweep pass now runs
+  inside one counting scope and publishes the answers it served under
+  <code>memo_counts</code> on its own record: <code>last_tick</code> for the last
+  finished tick, <code>last_sweep</code> for the last finished sweep pass, each
+  keyed by memo kind with <code>cached</code>, <code>extended</code>,
+  <code>recomputed</code> and the <code>bytes_read</code> the recomputed and
+  extended answers read.</p>
+
+  <p><strong>The counts cover every file-backed memo kind</strong> the passes
+  read: the plan and pointer parses and the mount, flight-layer and resource
+  identifications the station and the sweep pass derive, and
+  <code>stream_observation</code>, the backend stream summary, which grows by the
+  bytes a stream gained rather than by a whole re-read. A path that cannot be
+  stat'ed reads no bytes, so it is counted for nothing, and a derivation another
+  thread runs while the scope is open is not attributed to it, because a tick
+  sharing an interpreter with a sweep pass must report only its own work.</p>
+
+  <p><strong>The tick's scope opens outside its operational read</strong>, which
+  lists the live pointers and decodes one record per run. That listing was the
+  whole reason the first measured tick read 7,661 bytes of pointer text; a scope
+  opened inside it would have reported a cold tick as having read nothing.</p>
+
+  <h3 id="a-tick-reports-what-it-recomputed-measured">Measured</h3>
+
+  <p>The gate test drives three rounds over a temporary crew home holding 20 live
+  pointers, 20 worker streams and 20 plan files, one sweep pass after each tick.
+  Freezing the process-wide memos before the first round makes it cold. Between
+  the second and third rounds one plan file is rewritten and one stream gains a
+  record of exactly 4,096 bytes.</p>
+
+  <table id="a-tick-reports-what-it-recomputed-rounds">
+    <caption>Bytes each pass reported reading, from the census the rounds
+    recorded (<code>rounds.json</code> beside the run's manifest).</caption>
+    <thead><tr><th>round</th><th>pass</th><th>bytes read</th><th>what it read</th></tr></thead>
+    <tbody>
+      <tr><td>cold</td><td>tick</td><td>83,318</td>
+        <td>20 pointer records, 19 stream scans, the mount and flight
+        registries, one stream observation</td></tr>
+      <tr><td>cold</td><td>sweep pass</td><td>243,205</td>
+        <td>20 plans, decoded through four memo kinds</td></tr>
+      <tr><td>unchanged</td><td>tick</td><td><strong>0</strong></td>
+        <td>every kind answered from cache</td></tr>
+      <tr><td>unchanged</td><td>sweep pass</td><td><strong>0</strong></td>
+        <td>every kind answered from cache</td></tr>
+      <tr><td>one plan, one 4 KiB stream</td><td>tick</td><td>4,096</td>
+        <td>exactly one <code>extended</code> stream observation;
+        <code>recomputed</code> zero</td></tr>
+      <tr><td>one plan, one 4 KiB stream</td><td>sweep pass</td><td>884</td>
+        <td>the rewritten plan, twice: 442 bytes each for
+        <code>parse_meta</code> and <code>plan_text</code>; no stream bytes
+        parsed and nothing else recomputed</td></tr>
+    </tbody>
+  </table>
+
+  <img alt="Grouped bars of bytes each pass read in three rounds: the cold round 81 KiB in the tick and 238 KiB in the sweep pass, the unchanged round zero for both, and the round with one plan rewritten and one 4 KiB stream grown 4 KiB in the tick and 884 bytes in the sweep pass." src="/reckon/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed-bytes-by-round.svg">
+
+  <p>A plan is answered through more than one memo kind, so the round that
+  rewrites one plan reports two recomputes rather than one; what the test
+  asserts is that every recomputed answer read exactly the rewritten plan's
+  length, so nothing outside that plan was re-read.</p>
+
+  <table id="a-tick-reports-what-it-recomputed-arms">
+    <caption>Every arm ran on <code>all_debug</code>; each log opens with its
+    revision and literal command and ends with a bare
+    <code>EXIT=&lt;code&gt;</code> line.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline suite</td><td><code>df8fba8b</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite</td><td><code>fe3605f0</code></td>
+        <td>59 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate</td><td><code>fe3605f0</code></td>
+        <td>59 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the same test against the base tree</td>
+        <td><code>df8fba8b</code> plus the test file</td>
+        <td>1 failed, <code>EXIT=1</code> &mdash; the tick's record carries no
+        <code>memo_counts</code> there</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The negative control fails for the right reason.</strong> Against a
+  tree extracted at the base revision with the new test copied in, the reading
+  exists and the station ticks, but no record carries a <code>memo_counts</code>
+  key, so the first assertion that a finished tick reported its counts is the one
+  that fails.</p>
+
+  <p><strong>Not done here.</strong> The reference-rate buckets stay for a later
+  section, and the reading keeps everything else it carried: only the two
+  <code>memo_counts</code> blocks are new.</p>
+</section>
