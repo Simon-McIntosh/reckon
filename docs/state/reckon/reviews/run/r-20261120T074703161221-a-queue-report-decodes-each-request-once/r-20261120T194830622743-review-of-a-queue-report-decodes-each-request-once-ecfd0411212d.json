@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3613",
+    "reckon/crew/queue_view.py:165",
+    "reckon/crew_run_commands.py:2071",
+    "reckon/crew/promotion_requests.py:1168"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T19:49:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T074703161221-a-queue-report-decodes-each-request-once/manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "the matched arms chosen for the base/after comparison are tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.crew.promotion_requests, so they cannot detect a regression this change introduces; the remaining support is the new test's own transcription of the base loop and its red negative control."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base 7ffe0eca6682a65cd745644aa0bc8ea99d18b475; one product change at reckon/crew/promotion_requests.py:819-822, a 303-line test and a 67-line evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_queue_report_decodes_each_request_once.py; that test builds 400 requests and asserts one decode per request on the first call, none on an unchanged second call and exactly one on a rewritten third, and the manifest records '2 passed in 1.27s' in measurement-figures.log.",
+    "goal": "the node goal is that a promotion-queue report decodes each request at most once; reckon/crew/promotion_requests.py:819 now reads each globbed path through _request_record, the memo the obligations path already uses, instead of _read.",
+    "manifest": "read; it reports status complete, names commit ecfd0411, records the scoped gate at 60 passed, both suite arms at 58 base and 60 after with zero failures each, and a red negative control of 2 failed with EXIT=1 at base.",
+    "write_paths": "read the manifest's declared paths; the diff touches exactly three of the four declared paths (the figures directory is declared but unused), and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queue_report_decodes_each_request_once.py:267 asserts the unchanged second call decodes nothing and line 296 asserts only the rewritten request is decoded, and both redden at base as negative-control.log:39 and :83 show.",
+    "evidence": "measurement-figures.log records the 400/0/1 decode counts and negative-control.log shows both tests red at base, but the matched arms named at manifest.md:18 (test_staged_write_inventory.py, test_every_shared_home_lock_holds_across_nodes.py) do not import promotion_requests.",
+    "fit": "the change reuses the existing REQUEST_MEMO and _request_record names at reckon/crew/promotion_requests.py:346-354 and the surrounding comment style, naming nothing the repository rules forbid.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:819 replaces the per-call _read with dict(_request_record(path)), so an unchanged request is not decoded again while the directory is still listed on every call.",
+    "reuse": "no new mechanism is added: _request_record at reckon/crew/promotion_requests.py:347 and file_memo.memoized already own the identity-keyed decode, and the change is one call site switching to them.",
+    "scope_discipline": "every changed path in the diff (reckon/crew/promotion_requests.py, tests/test_a_queue_report_decodes_each_request_once.py, the node fragment) is a declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a promotion-queue report decodes each request at most once; reckon/crew/promotion_requests.py:819 now reads each globbed path through _request_record, the memo the obligations path already uses, instead of _read.\nVERDICT done_when: the done_when names tests/test_a_queue_report_decodes_each_request_once.py; that test builds 400 requests and asserts one decode per request on the first call, none on an unchanged second call and exactly one on a rewritten third, and the manifest records '2 passed in 1.27s' in measurement-figures.log.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly three of the four declared paths (the figures directory is declared but unused), and nothing outside them.\nVERDICT manifest: read; it reports status complete, names commit ecfd0411, records the scoped gate at 60 passed, both suite arms at 58 base and 60 after with zero failures each, and a red negative control of 2 failed with EXIT=1 at base.\nVERDICT diff: read commit by commit against base 7ffe0eca6682a65cd745644aa0bc8ea99d18b475; one product change at reckon/crew/promotion_requests.py:819-822, a 303-line test and a 67-line evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_classification.py:3613, reckon/crew/queue_view.py:165, reckon/crew_run_commands.py:2071, reckon/crew/promotion_requests.py:1168\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:819 replaces the per-call _read with dict(_request_record(path)), so an unchanged request is not decoded again while the directory is still listed on every call.\nSCORE evidence: 16\nJUSTIFICATION evidence: measurement-figures.log records the 400/0/1 decode counts and negative-control.log shows both tests red at base, but the matched arms named at manifest.md:18 do not import promotion_requests.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path in the diff is a declared write path.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queue_report_decodes_each_request_once.py:267 asserts the unchanged second call decodes nothing and line 296 asserts only the rewritten request is decoded, and both redden at base as negative-control.log:39 and :83 show.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses the existing REQUEST_MEMO and _request_record names at reckon/crew/promotion_requests.py:346-354 and the surrounding comment style.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new mechanism is added: _request_record at reckon/crew/promotion_requests.py:347 and file_memo.memoized already own the identity-keyed decode, and the change is one call site switching to them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T074703161221-a-queue-report-decodes-each-request-once/manifest.md:18 non-blocking: the matched arms chosen for the base/after comparison are tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.crew.promotion_requests, so they cannot detect a regression this change introduces.",
+  "review_run_id": "r-20261120T194830622743-review-of-a-queue-report-decodes-each-request-once-ecfd0411212d",
+  "reviewed_base_sha": "7ffe0eca6682a65cd745644aa0bc8ea99d18b475",
+  "reviewed_head_sha": "ecfd0411212dafc1d2f276fd35fe10727dae1821",
+  "reviewed_run_id": "r-20261120T074703161221-a-queue-report-decodes-each-request-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T20:05:00+00:00",
+  "total": 112
+}

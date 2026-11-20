@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="543">
+<meta name="plan-version" content="544">
 <meta name="plan-modified" content="2026-11-20">
 </head>
 <body>
@@ -1976,6 +1976,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s106" data-id="c-run-r-20261120T194830622743-review-of-a-queue-report-decodes-each-request-once-ecfd0411212d" data-who="reckon-build" data-when="2026-11-20T19:54:45.430Z">
+    <div class="r-comment-body"><p>reviewed r-20261120T074703161221-a-queue-report-decodes-each-request-once at head ecfd0411212dafc1d2f276fd35fe10727dae1821 against base 7ffe0eca6682a65cd745644aa0bc8ea99d18b475; all six dimensions scored, findings 1 non-blocking, no blocking finding; record stored at the reviewed run&#x27;s review-records/ directory.</p></div>
 </div>
 </section>
 </main>
