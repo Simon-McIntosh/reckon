@@ -1,0 +1,135 @@
+"""A fragment is reconciled with the logs its manifest cites.
+
+An evidence record that quotes a figure no run produced passed every check in
+the delivery path, so the comparison lives in
+:mod:`reckon.crew.fragment_reconcile` and these cases hold it to the shapes a
+record takes: a figure its log recorded, a figure from a superseded arm, a
+figure standing under the wrong revision, a malformed arm record, and a log the
+manifest names but the run directory does not hold. Every tree here is
+synthesised under ``tmp_path``; no case reads a real run directory.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from reckon.crew.fragment_reconcile import ManifestUnreadableError, reconcile
+
+BASE = "1" * 40
+HEAD = "2" * 40
+BASE_SUMMARY = "58 passed in 43.20s"
+AFTER_SUMMARY = "58 passed in 36.19s"
+
+
+def _log(path: Path, revision: str, summary: str) -> Path:
+    path.write_text(
+        f"# revision: {revision}\n# tree: /tmp/tree\n{summary}\nEXIT=0\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _arm(revision: str, log: Path) -> str:
+    return json.dumps(
+        {
+            "revision": revision,
+            "command": "pytest -q tests",
+            "exit_status": 0,
+            "log_path": str(log),
+            "completed": True,
+            "failure_count": 0,
+            "failure_ids": [],
+        }
+    )
+
+
+def _manifest(base_log: Path, after_log: Path) -> str:
+    return (
+        "node: example\n"
+        f"baseline_suite: {_arm(BASE, base_log)}\n"
+        f"after_suite: {_arm(HEAD, after_log)}\n"
+        "test_logs: none\n"
+    )
+
+
+def _logs(tmp_path: Path) -> tuple[Path, Path, str]:
+    base_log = _log(tmp_path / "base.log", BASE, BASE_SUMMARY)
+    after_log = _log(tmp_path / "after.log", HEAD, AFTER_SUMMARY)
+    return base_log, after_log, _manifest(base_log, after_log)
+
+
+def _fragment(*lines: str) -> str:
+    body = "".join(f"<p>{line}</p>\n" for line in lines)
+    return f"<section>\n{body}</section>\n"
+
+
+def test_a_fragment_whose_figures_its_logs_record_reconciles(tmp_path: Path) -> None:
+    """Every quoted figure stands beside the revision its log recorded."""
+    _base, _after, manifest = _logs(tmp_path)
+    fragment = _fragment(
+        f"Base <code>{BASE}</code>",
+        f"{BASE_SUMMARY}",
+        f"Head <code>{HEAD}</code>",
+        f"{AFTER_SUMMARY}",
+    )
+
+    assert reconcile(fragment, manifest) == []
+
+
+def test_a_figure_no_log_recorded_is_reported(tmp_path: Path) -> None:
+    """A stale timing cannot outlive its arm."""
+    _base, _after, manifest = _logs(tmp_path)
+    fragment = _fragment(
+        f"Base <code>{BASE}</code>",
+        "58 passed in 9.99s",
+        f"Head <code>{HEAD}</code>",
+        AFTER_SUMMARY,
+    )
+
+    failures = reconcile(fragment, manifest)
+
+    assert any("9.99s" in failure for failure in failures)
+
+
+def test_a_figure_under_the_wrong_revision_is_reported(tmp_path: Path) -> None:
+    """The head arm's summary may not stand as the only revision's figure."""
+    _base, _after, manifest = _logs(tmp_path)
+    fragment = _fragment(
+        f"Only <code>{BASE}</code> is named here",
+        f"{BASE_SUMMARY}",
+        f"and {AFTER_SUMMARY} is quoted too far from its own revision",
+    )
+
+    failures = reconcile(fragment, manifest)
+
+    assert any(HEAD[:12] in failure for failure in failures)
+
+
+def test_a_malformed_arm_is_refused_by_name(tmp_path: Path) -> None:
+    """A broken arm record names itself instead of crashing the check."""
+    base_log, after_log, _manifest_text = _logs(tmp_path)
+    manifest = (
+        "node: example\n"
+        'baseline_suite: {"revision": "' + BASE + '", "command": "pytest\n'
+        '", "exit_status: 0}\n'
+        f"after_suite: {_arm(HEAD, after_log)}\n"
+        f"test_logs: {base_log}\n"
+    )
+
+    with pytest.raises(ManifestUnreadableError, match="baseline_suite"):
+        reconcile(_fragment(str(base_log)), manifest)
+
+
+def test_an_absent_cited_log_is_reported(tmp_path: Path) -> None:
+    """A citation to a log the run directory does not hold is a failure."""
+    base_log = _log(tmp_path / "base.log", BASE, BASE_SUMMARY)
+    missing = tmp_path / "missing.log"
+    manifest = _manifest(base_log, missing)
+    fragment = _fragment(f"Base <code>{BASE}</code>", BASE_SUMMARY)
+
+    failures = reconcile(fragment, manifest)
+
+    assert any(str(missing) in failure for failure in failures)
