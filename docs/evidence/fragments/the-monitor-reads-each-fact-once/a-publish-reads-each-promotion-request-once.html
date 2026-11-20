@@ -28,14 +28,16 @@
   each, and the function held 11.9% of every sample in the tick's profile.</p>
 
   <p><strong>What landed.</strong> A request is decoded at most once per version
-  of its file. The record is cached under the file's full stat identity, taken
-  on both sides of the decode so a write landing in between stores nothing
-  rather than pairing one file's bytes with another file's identity. A publish
-  builds one <code>RequestIndex</code> from that decode, groups it by the owner
-  each request is owed to, and carries it on the fleet state, so a slice decodes
-  nothing its publish has not changed. A request a publish settles is left out
-  of its own later slices, and the settle guard reads through the same identity
-  check, so settling a request already read costs no second decode.</p>
+  of its file, through <code>file_memo.memoized</code> — the repository's owner
+  of the identity-keyed decode, which keys on the file's stat signature,
+  re-verifies it after the read so a write landing in between stores nothing,
+  and decodes uncached when the file cannot be stat'ed. One publish reads the
+  directory inside a read-only region, so every slice is handed the stored
+  record's view rather than a copy, and builds one <code>RequestIndex</code>
+  from it grouped by owner. The index travels on the fleet state, so a slice
+  decodes and lists nothing its publish has not changed; a request the publish
+  settles is left out of its own later slices, and the settle guard reads
+  through the same memoised decode.</p>
 
   <p><strong>The measure.</strong> 400 requests across 3 projects and 6
   sessions, one publish:</p>
@@ -57,6 +59,15 @@
   directory after the rewrite decodes it again. One index for the publish leaves
   it at one decode, because the settled request is left out of the later
   slices.</p>
+
+  <p><strong>The publish itself.</strong> A second census derives a fleet state
+  over a synthesised home, so the counts are taken over the derivation the
+  station runs rather than a hand-built index. The derivation reads the request
+  directory once and decodes its 42 requests once each; the two session slices
+  that follow decode nothing and list the directory nothing. Reverting either
+  the derivation's <code>request_index()</code> or the slice's
+  <code>index=</code> argument makes that census fail — two listings, or no
+  index on the state at all.</p>
 
   <p><strong>Parity.</strong> The duties each session is owed, and the set of
   requests a publish settles, are compared against a transcription of the base
