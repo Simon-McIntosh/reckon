@@ -610,12 +610,37 @@ def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
     raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(reasons))
 
 
-def _tree_paths(tree: Path, revision: str) -> tuple[str, ...]:
-    """Every path ``revision``'s tree carries, or ``()`` when it resolves to none."""
-    result = _git(tree, "ls-tree", "-r", "--name-only", revision, check=False)
+def _commit_added_paths(tree: Path, commit: str) -> tuple[str, ...]:
+    """The paths one commit adds, read from that commit's own diff.
+
+    A commit's diff names the paths the commit moved, so the read costs the
+    change rather than the tree's whole file list, which is what a base-to-head
+    listing costs on a repository carrying thousands of files.
+    """
+    result = _git(
+        tree,
+        "diff-tree",
+        "--no-commit-id",
+        "--no-renames",
+        "--diff-filter=A",
+        "--name-only",
+        "-r",
+        commit,
+        check=False,
+    )
     if result.returncode:
         return ()
     return tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
+
+
+def _commit_holds_path(tree: Path, commit: str, path: str) -> bool:
+    return _git(tree, "cat-file", "-e", f"{commit}:{path}", check=False).returncode == 0
+
+
+def _revision_is_readable(tree: Path, revision: str) -> bool:
+    """Whether ``revision`` resolves to a commit ``tree`` can read."""
+    probe = _git(tree, "rev-parse", "--verify", f"{revision}^{{commit}}", check=False)
+    return probe.returncode == 0
 
 
 def _is_ancestor(tree: Path, ancestor: str, descendant: str) -> bool:
@@ -715,19 +740,24 @@ def _png_twin_findings_in_run_commits(record: Mapping[str, Any]) -> list[str]:
     )
     if not resolved:
         return []
-    head_paths = _tree_paths(tree, _reviewed_head(tree, record, resolved))
-    if not head_paths:
-        return []
     base = _recorded_base_revision(record)
-    base_paths = set(_tree_paths(tree, base)) if base else set()
-    if base and not base_paths:
+    if base and not _revision_is_readable(tree, base):
         return []
+    head = _reviewed_head(tree, record, resolved)
+    candidates = {
+        path
+        for commit in resolved
+        for path in _commit_added_paths(tree, commit)
+        if path.endswith(".png")
+    }
     findings: list[str] = []
-    for png in sorted(path for path in head_paths if path.endswith(".png")):
-        if png in base_paths:
+    for png in sorted(candidates):
+        if base and _commit_holds_path(tree, base, png):
+            continue
+        if not _commit_holds_path(tree, head, png):
             continue
         svg = png[:-4] + ".svg"
-        if svg not in head_paths:
+        if not _commit_holds_path(tree, head, svg):
             continue
         findings.append(
             f"{png} adds a PNG twin of the SVG figure {svg} in the same "
