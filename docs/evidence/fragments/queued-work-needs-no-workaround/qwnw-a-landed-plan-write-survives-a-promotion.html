@@ -1,0 +1,34 @@
+<section id="qwnw-a-landed-plan-write-survives-a-promotion-landing">
+  <h2>A landed section append survives a concurrent landing comment</h2>
+
+  <p><strong>What changed.</strong> One test now states the meeting the plan
+  measured: a state write that appends a section and a promotion that records a
+  landing comment on the same plan, with the promotion reading before the append
+  lands and writing after it. Both changes are in the file afterwards, and the
+  counter advanced once per landed write.</p>
+
+  <p>The guard is one comparison in <code>reckon/_store.py</code>: a comment
+  append is applied onto a plan only when the two writers agree about the rest
+  of the document, so a write carrying a section the file does not have is a
+  conflict rather than a silent overwrite. The later writer is refused naming
+  the version it read and the earlier change stays, which is the endpoint's
+  second ending.</p>
+
+  <h3 id="qwnw-a-landed-plan-write-survives-a-promotion-measured">Measured</h3>
+
+  <table id="qwnw-a-landed-plan-write-survives-a-promotion-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node tests, after arm</td><td><code>8563e2e16f</code></td>
+        <td>60 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>node tests, base arm</td><td><code>3ab436fe38</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: disagreement guard removed</td>
+        <td><code>8563e2e16f</code>, dirty tree</td>
+        <td>1 failed, 1 passed: the appended section is dropped,
+        <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+</section>
