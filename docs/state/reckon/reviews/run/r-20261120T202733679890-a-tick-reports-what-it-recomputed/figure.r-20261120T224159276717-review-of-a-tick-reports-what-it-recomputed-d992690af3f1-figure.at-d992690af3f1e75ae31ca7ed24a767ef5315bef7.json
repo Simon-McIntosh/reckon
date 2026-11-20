@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T22:43:13Z",
+  "figures": {
+    "docs/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed-bytes-by-round.svg": {
+      "contrast": "pass \u2014 all tick, direct-label and legend text is dark on white, and the muted-blue annotation is legible; the mid grey and light grey fills separate tick from sweep pass.",
+      "data_ink": "pass \u2014 two flat grey bar series carry the weight; no gradient, shadow or fill behind them.",
+      "decoration": "pass \u2014 no gridlines, no background band or shading; top and right spines removed, leaving the two scales that carry numbers.",
+      "label_collision": "pass \u2014 measured text bands in the third group sit at rows 552-568, 594-610 and 626-648 with clear gaps, so no labels overlap each other or the bars; nothing is clipped at any edge (lowest ink row 712 of 720, 4 px clearance at left and at right).",
+      "legibility": "pass \u2014 three rounds read at a glance: cold 81 KiB tick and 238 KiB sweep pass, unchanged zero for both and stated 'nothing changed: no bytes read', and one rewritten plan plus a 4 KiB stream grown 4 KiB tick and 884 B sweep pass labelled 'extension of the bytes that arrived' and 'one plan re-read'.",
+      "table_form": "pass \u2014 the grouped bars show the cold-versus-zero-versus-incremental magnitude at a glance, which the six numeric rows above cannot; a chart is the right form for this comparison."
+    }
+  },
+  "findings": [
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The linear scale is the correct choice for data that includes two exact zeros, and the sweep-pass value is stated in its own unit directly above the bar; a log axis or a broken axis would distort the zero rows the figure exists to show.",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed-bytes-by-round.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "On a linear 0-250 KiB axis the third round's bars are near-invisible: the 884 B sweep-pass bar renders as roughly a one-pixel sliver at the baseline and the 4 KiB tick bar as about nine pixels, so that round's magnitudes are read from the numeric labels rather than from bar height. The sliver is honest to the scale (a log axis would misplace the true zero rows) and the exact values are printed above both bars, so a reader can still recover the data."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_reason": "Showing 884 B exactly is more faithful than rounding to 0.9 KiB on a [KiB] axis, and the accompanying table states every raw byte count, so the mixed prefix improves precision without hiding the datum.",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed_bytes.py",
+      "line": 84,
+      "severity": "non-blocking",
+      "summary": "The bar labels mix units: every label is in KiB except the sweep-pass value of 884 bytes, while the axis is titled '[KiB]', so a reader comparing that bar against the axis must convert. The bare '884 B' is more precise than a rounded '0.9 KiB' and sits under a caption that gives the raw byte counts, so the value is not lost."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261120T224159276717-review-of-a-tick-reports-what-it-recomputed-d992690af3f1-figure",
+  "reviewed_base_sha": "df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6",
+  "reviewed_head_sha": "d992690af3f1e75ae31ca7ed24a767ef5315bef7",
+  "reviewed_run_id": "r-20261120T202733679890-a-tick-reports-what-it-recomputed",
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:54:39.163773+00:00",
+  "total": null
+}

@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="548">
+<meta name="plan-version" content="549">
 <meta name="plan-modified" content="2026-11-20">
 </head>
 <body>
@@ -1986,6 +1986,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s107" data-id="c-run-r-20261120T224159276717-review-of-a-tick-reports-what-it-recomputed-d992690af3f1-figure" data-who="reckon-build" data-when="2026-11-20T22:54:08.221Z">
+    <div class="r-comment-body"><p>figure review of recomputed-bytes-by-round.svg: parsed, all six rubric items pass, two non-blocking findings exempted; record at .../review-records/r-20261120T202733679890-a-tick-reports-what-it-recomputed.figure.json</p></div>
 </div>
 </section>
 </main>
