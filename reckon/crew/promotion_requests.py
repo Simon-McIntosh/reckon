@@ -816,7 +816,12 @@ def _pending_requests(
     moment = now or parse_utc(_now()) or datetime.now(UTC)
     pending = []
     for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+        # The report shares ``_request_record``'s decode, so a directory read
+        # once per tick costs one decode per request rather than one per call,
+        # and a request unchanged since the previous tick decodes not at all.
+        # The copy is this call's own: the loop below writes an override onto
+        # it, which a read-only region's view of the memo would refuse.
+        request = dict(_request_record(path))
         if request.get("phase") in QUEUED:
             if "priority_override" not in request:
                 # Requests written without a priority snapshot still inherit
