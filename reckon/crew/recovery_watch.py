@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon import file_memo
+from reckon._worker_fence import BackendError
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -4471,7 +4472,12 @@ def recover(
         if run_id:
             try:
                 observed = observe(run_id, config=config)
-            except CrewError as exc:
+            except (CrewError, BackendError) as exc:
+                # A stream a backend's dialect refuses is one run's fault. A
+                # pointer moved to another harness keeps the stream its first
+                # harness wrote, and left uncaught that refusal ended the pass
+                # for every other run of the project, so none of them was
+                # classified and no review they owed was composed.
                 unreadable = str(exc)
         observed = _derive_missing_manifest(observed, config=config)
         report = classify_pointer(observed)
