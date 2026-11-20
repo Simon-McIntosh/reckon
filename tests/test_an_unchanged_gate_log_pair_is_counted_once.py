@@ -238,3 +238,42 @@ def test_a_log_in_neither_format_reads_as_unmeasured(
         "the unreadable log did not change between the two reads, so it must be "
         f"read once; it was read {counted_reads[HEAD_LOG_NAME]} times"
     )
+
+
+def test_a_failed_read_is_retried_rather_than_kept(
+    stored_review: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A read that failed once is not memorised as the pair's answer.
+
+    A transient read failure leaves the head log unread, so the pair has no
+    count to state. That unmeasured result describes the error rather than the
+    logs, and keeping it would hold the review unmeasured for as long as the
+    process runs; the next read of the same pair reads the log again and
+    measures the count.
+    """
+    read_text = Path.read_text
+    failed_once = False
+
+    def raising(path: Path, *arguments: Any, **keywords: Any) -> str:
+        nonlocal failed_once
+        if path.name == HEAD_LOG_NAME and not failed_once:
+            failed_once = True
+            raise OSError("transient read failure")
+        return read_text(path, *arguments, **keywords)
+
+    file_memo.clear()
+    monkeypatch.setattr(Path, "read_text", raising)
+
+    first = _read()
+    second = _read()
+
+    assert first["added_failure_count"] is None, (
+        "the head log could not be read, so the first review read must state no "
+        f"count; it stated {first['added_failure_count']}"
+    )
+    assert second["added_failure_count"] == 1, (
+        "the failed read must not be kept, so the second review read must read "
+        f"the log again and count the added failure; it stated "
+        f"{second['added_failure_count']}"
+    )
+    assert second["added_failure_ids"] == ["tests/test_gate.py::test_beta"]
