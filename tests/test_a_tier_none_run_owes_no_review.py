@@ -192,14 +192,14 @@ def test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing(
     assert docs_item["kind"] == "review-ready", docs_item
     assert docs_item["review_tier"] == "none", docs_item
 
-    # The command is never the review dispatch its own row carries: a duty that
-    # reads ready to promote while naming that dispatch offers work the tier
-    # rule has decided against. A settlement is offered only from a passing
-    # measurement of the current head, and this run records none, so the duty
-    # offers the observation that shows the refusal instead of a promotion the
-    # acceptance gate would refuse.
+    # The command is the promotion the run is owed, not the review dispatch
+    # its own row carries: a duty that reads ready to promote while naming
+    # that dispatch offers work the tier rule has decided against. A run that
+    # records no passing measurement of its head is still offered — withdrawing
+    # the offer would leave the commits unoffered — but the verdict it states
+    # is the one its evidence supports, `not-run`, never `passed`.
     assert docs_item["next_command"].startswith(
-        f"reckon crew observe --run {DOCS_RUN}"
+        f"reckon crew complete --run {DOCS_RUN} --gate not-run --wait --commit"
     ), docs_item
     assert "crew dispatch" not in docs_item["next_command"], docs_item
 
