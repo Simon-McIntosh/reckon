@@ -105,6 +105,11 @@ WORKER_FENCE_ENV = "RECKON_WORKER_FENCE"
 SHIM_HOME_ENV = "RECKON_SHIM_HOME"
 SHIM_REAL_DIRECTORY_ENV = "RECKON_SHIM_REAL_DIRECTORY"
 
+# The checkout a process running from a published reload image was started
+# from. The supervisor sets it on a copy it starts from an image, and
+# :func:`shim_directory` reads it to name shims on storage every node shares.
+SOURCE_ROOT_ENV = "RECKON_FOLLOWER_SOURCE_ROOT"
+
 # The other route, and the partitions that show what a separate partition job
 # looks like here. The verb is part of the route: a separate partition job is
 # submitted with ``sbatch``, and with ``sbatch --wait`` when the caller needs
@@ -445,8 +450,39 @@ def real_binary(
 
 
 def shim_directory() -> Path:
-    """The directory the shims live in, derived from this module's location."""
-    return Path(__file__).resolve().parent / "host_shims"
+    """The shim directory a launched worker can read, wherever it runs.
+
+    The directory is derived from this module's location, with one exception.
+    A service that reloads itself imports the package from a published reload
+    image, and an image lives on the launching node's local disk and never
+    travels between nodes. A worker placed on another node is handed this
+    directory twice — on its search path, and as the source of the mounts that
+    put a shim in front of each scheduler binary — and a mount whose source the
+    worker's node does not hold refuses the launch outright. The shim also
+    looks for its interpreter in the environment beside its own checkout, which
+    an image does not carry.
+
+    So a process running from an image names the shims of the checkout the
+    image was published from: the root its launcher carried, or else the
+    checkout that owns the running interpreter's environment. Either is on the
+    storage every node shares. An image whose checkout cannot be found keeps
+    its own directory, which is still right for a worker on the same node.
+    """
+    own = Path(__file__).resolve().parent / "host_shims"
+    from reckon.checkout_trust import published_reload_image
+
+    if not published_reload_image(own.parent.parent):
+        return own
+    for root in (
+        os.environ.get(SOURCE_ROOT_ENV, ""),
+        str(Path(sys.prefix).parent),
+    ):
+        if not root:
+            continue
+        candidate = (Path(root) / "reckon" / "host_shims").resolve()
+        if candidate != own and candidate.is_dir():
+            return candidate
+    return own
 
 
 # The bubblewrap options a composed fence is built from, grouped by what they
