@@ -32,8 +32,8 @@ def store(tmp_path, monkeypatch):
     ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=root)
     ledger.append_run(PROJECT, _row(), root=root)
     file_memo.clear()
-    counted = Mock(wraps=budget.ledger.load)
-    monkeypatch.setattr(budget.ledger, "load", counted)
+    counted = Mock(wraps=budget.ledger.stored_history)
+    monkeypatch.setattr(budget.ledger, "stored_history", counted)
     yield root, counted
     file_memo.clear()
 
@@ -113,11 +113,11 @@ def test_a_missing_generation_does_not_cache_readings(store):
 def test_explicit_records_are_not_shadowed_by_the_cached_ledger(store):
     root, counted = store
     assert _latest(root).budget["utilisation_pct"] == 25
+    assert counted.call_count == 1
     assert _latest(root, records=[_row(utilisation=80)]).budget["utilisation_pct"] == 80
-    assert counted.call_count == 2
-    assert counted.call_args.kwargs["headers_only"]
+    assert counted.call_count == 1
     assert _latest(root).budget["utilisation_pct"] == 25
-    assert counted.call_count == 2
+    assert counted.call_count == 1
 
 
 def test_config_changes_are_reflected_in_readings(store):
