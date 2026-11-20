@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/pace_report.py:1617",
+    "reckon/crew/routing.py:483",
+    "reckon/crew/dispatch_admission.py:462",
+    "reckon/crew/resumption.py:1155",
+    "reckon/budget.py:2168"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T22:29:01Z",
+  "findings": [
+    {
+      "file": "tests/test_budget_readings_decode_the_ledger_once.py",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture wraps budget.ledger.stored_history, an attribute absent from reckon/ledger.py at the reviewed head 0cc7e0f38e (git show 0cc7e0f38e:reckon/ledger.py has no stored_history), so the file cannot execute at its own revision and only runs against main 957f6eb2; a bisect or a base-arm run at the test's own head fails with AttributeError rather than a test verdict."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suites block names `after ad6396ba`, while the manifest's after_suite records revision 0cc7e0f38e754af81d1cd1dea0bc571c511156dc, so the fragment and the manifest name different arms for the same measurement; both logs exist and exit 0, but a reader comparing them cannot tell which arm the fragment means."
+    }
+  ],
+  "head_log_revision": "0cc7e0f38e754af81d1cd1dea0bc571c511156dc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the gained range 66ceb308..0cc7e0f38e commit by commit; 20fadbcd retargets the mock from ledger.load to ledger.stored_history and the explicit-records counts, ad6396ba adds the merged-head and control blocks to the fragment, and 0cc7e0f38e restates the suite arm revision.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job, a base arm with its failing ids, a named cause per failure, an importer arm adding no failure, and ruff clean; merged-head-gate.log reads 11 passed EXIT=0, base-node-test.log reads 3 failed EXIT=1 with the three ids, merged-head-store-token-control.log reads 2 failed 9 passed EXIT=1, and baseline_suite/after_suite each read 0 failures.",
+    "goal": "the node's goal is that tests/test_budget_readings_decode_the_ledger_once.py passes in full on the primary branch; the gained commits retarget that file's decode counter to the merged head's seam (tests/test_budget_readings_decode_the_ledger_once.py:35-36) and the merged-head gate log records 11 passed EXIT=0.",
+    "manifest": "read manifest.md in the reviewed run directory; it states status complete, lists the five commits, records the merged-head gate and control logs, and records baseline_suite at 6fa2b177 and after_suite at 0cc7e0f38e both with failure_count 0.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the gained diff touches exactly the test file and the fragment (git diff --stat 66ceb308..0cc7e0f38e: two files, 19 insertions, 6 deletions), both inside them."
+  },
+  "justifications": {
+    "durability": "the retargeted counts at tests/test_budget_readings_decode_the_ledger_once.py:116-120 redden if the code reads the store on an explicit-records call, and merged-head-store-token-control.log shows the token-drop regression reddening the two store-write cases.",
+    "evidence": "merged-head-gate.log records 11 passed EXIT=0 for the file at revision \"957f6eb2 plus 0cc7e0f38e754af81d1cd1dea0bc571c511156dc\", and the manifest records baseline_suite and after_suite each with failure_count 0.",
+    "fit": "the fixture keeps the surrounding Mock-wraps pattern of tests/test_budget_readings_decode_the_ledger_once.py:26-38 and reads the same budget.ledger attribute the module uses at reckon/budget.py:709.",
+    "goal_fidelity": "tests/test_budget_readings_decode_the_ledger_once.py:35-36 counts the merged head's stored_history seam that reckon/budget.py:709 decodes from, which is what makes the file green at head.",
+    "reuse": "the change retargets an existing seam, ledger.stored_history (reckon/ledger.py:1842), rather than adding a second counter mechanism; no new definition was added.",
+    "scope_discipline": "every path in the gained diff (tests/test_budget_readings_decode_the_ledger_once.py:35, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html:34-48) is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_budget_readings_decode_the_ledger_once.py passes in full on the primary branch; the gained commits retarget that file's decode counter to the merged head's seam (tests/test_budget_readings_decode_the_ledger_once.py:35-36) and the merged-head gate log records 11 passed EXIT=0.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job, a base arm with its failing ids, a named cause per failure, an importer arm adding no failure, and ruff clean; merged-head-gate.log reads 11 passed EXIT=0, base-node-test.log reads 3 failed EXIT=1 with the three ids, merged-head-store-token-control.log reads 2 failed 9 passed EXIT=1, and baseline_suite/after_suite each read 0 failures.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the gained diff touches exactly the test file and the fragment (git diff --stat 66ceb308..0cc7e0f38e: two files, 19 insertions, 6 deletions), both inside them.\nVERDICT manifest: read manifest.md in the reviewed run directory; it states status complete, lists the five commits, records the merged-head gate and control logs, and records baseline_suite at 6fa2b177 and after_suite at 0cc7e0f38e both with failure_count 0.\nVERDICT diff: read the gained range 66ceb308..0cc7e0f38e commit by commit; 20fadbcd retargets the mock from ledger.load to ledger.stored_history and the explicit-records counts, ad6396ba adds the merged-head and control blocks to the fragment, and 0cc7e0f38e restates the suite arm revision.\nCALL_SITES: reckon/pace_report.py:1617, reckon/crew/routing.py:483, reckon/crew/dispatch_admission.py:462, reckon/crew/resumption.py:1155, reckon/budget.py:2168\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_budget_readings_decode_the_ledger_once.py:35-36 counts the merged head's stored_history seam that reckon/budget.py:709 decodes from, which is what makes the file green at head.\nSCORE evidence: 16\nJUSTIFICATION evidence: merged-head-gate.log records 11 passed EXIT=0 for the file at revision \"957f6eb2 plus 0cc7e0f38e754af81d1cd1dea0bc571c511156dc\", and the manifest records baseline_suite and after_suite each with failure_count 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the gained diff (tests/test_budget_readings_decode_the_ledger_once.py:35, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html:34-48) is inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the retargeted counts at tests/test_budget_readings_decode_the_ledger_once.py:116-120 redden if the code reads the store on an explicit-records call, and merged-head-store-token-control.log shows the token-drop regression reddening the two store-write cases.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture keeps the surrounding Mock-wraps pattern of tests/test_budget_readings_decode_the_ledger_once.py:26-38 and reads the same budget.ledger attribute the module uses at reckon/budget.py:709.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change retargets an existing seam, ledger.stored_history (reckon/ledger.py:1842), rather than adding a second counter mechanism; no new definition was added.\nFINDING tests/test_budget_readings_decode_the_ledger_once.py:35 non-blocking: the fixture wraps budget.ledger.stored_history, an attribute absent from reckon/ledger.py at the reviewed head 0cc7e0f38e (git show 0cc7e0f38e:reckon/ledger.py has no stored_history), so the file cannot execute at its own revision and only runs against main 957f6eb2; a bisect or a base-arm run at the test's own head fails with AttributeError rather than a test verdict.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html:34 non-blocking: the suites block names `after ad6396ba`, while the manifest's after_suite records revision 0cc7e0f38e754af81d1cd1dea0bc571c511156dc, so the fragment and the manifest name different arms for the same measurement; both logs exist and exit 0, but a reader comparing them cannot tell which arm the fragment means.",
+  "review_run_id": "r-20261120T215030861606-review-of-qwnw-red-file-budget-readings-decode-the-ledger-once-0cc7e0f38e75",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "0cc7e0f38e754af81d1cd1dea0bc571c511156dc",
+  "reviewed_run_id": "r-20261118T054240036018-qwnw-red-file-budget-readings-decode-the-ledger-once",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T215030861606-review-of-qwnw-red-file-budget-readings-decode-the-ledger-once-0cc7e0f38e75"
+  },
+  "reviewer_run_id": "r-20261120T215030861606-review-of-qwnw-red-file-budget-readings-decode-the-ledger-once-0cc7e0f38e75",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:38:30.413960+00:00",
+  "total": 111
+}
