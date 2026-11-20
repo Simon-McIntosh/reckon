@@ -830,6 +830,25 @@ class StationSubscriber:
             self.save_checkpoint()
         return released
 
+    def drain(self) -> list[Mapping[str, Any]]:
+        """Every row this pane still holds, released because the pane is ending.
+
+        A hold waits for a later row that would make the held one redundant. A
+        pane that is leaving reads no later row, so nothing can complete the
+        pair for it and the held row is the last account it will give: a run
+        that blocked a few minutes before its session's work drained was held
+        for its full window, and a follower that settled inside that window
+        left with the row undelivered.
+        """
+        released = self.path.flush(now=float("inf"))
+        if released:
+            self.save_checkpoint()
+        for event in released:
+            self._emitted = _record_emission(
+                event, sequence=getattr(self, "_emitted", 0)
+            )
+        return released
+
     def live_work(self, session: str | None = None) -> bool | None:
         """The station's answer for that population, or ``None`` for no answer.
 
