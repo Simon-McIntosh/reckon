@@ -157,6 +157,47 @@ def test_missing_directory_grant_is_private_and_missing_seal_stays_absent(rehear
     assert not (case["grant"] / "job-marker").exists()
 
 
+def test_a_sibling_the_job_cannot_enter_is_left_out_of_the_prepared_parent(rehearsal):
+    """A directory beside the absent grant that this user cannot enter.
+
+    A job node's tmp holds other accounts' private directories and stale mounts
+    of deleted ones. Preparing an absent grant re-binds each child of its
+    nearest existing parent by name, and one child that could not be bound
+    refused the whole fence before the task started. Such a child is left out:
+    the task starts, and the directory is absent inside its fence.
+    """
+    case = rehearsal
+    locked = case["grant"].parent / "another-accounts-directory"
+    locked.mkdir()
+    readable = case["grant"].parent / "readable-sibling"
+    readable.mkdir()
+    (case["grant"] / "worker-marker").unlink()
+    case["grant"].rmdir()
+    locked.chmod(0o000)
+    try:
+        result = subprocess.run(
+            nested_launch._task_command(
+                case["recipe"],
+                [
+                    "/bin/sh",
+                    "-c",
+                    'test ! -e "$1" && test -d "$2" && test -d "$3"',
+                    "sh",
+                    str(locked),
+                    str(readable),
+                    str(case["grant"]),
+                ],
+            ),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    finally:
+        locked.chmod(0o700)
+    assert result.returncode == 0, result.stderr
+
+
 @pytest.mark.skipif(
     not os.environ.get("RECKON_JOB_FENCE_REHEARSAL_ROOT"),
     reason="dedicated scheduler rehearsal needs a shared durable receipt root",
