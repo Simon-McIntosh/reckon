@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1072">
+<meta name="plan-version" content="1074">
 <meta name="plan-modified" content="2026-11-20">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -362,7 +362,7 @@
 
     <h2 id="s37">§37 — A plan write reported as landed is in the plan</h2>
 <section data-reckon="section" data-id="s37" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> On 2026-11-19 three appends of one section each answered <code>landed: true</code> and were absent from the plan file afterwards. A promotion running at the same time rewrote the whole plan file from the copy it had read earlier, and the appended section went with it. Nothing reported the loss; a fourth attempt on a quiet lane held.</p><p><strong>Endpoint.</strong> A plan write that answers as landed is present in the plan file after every writer that was in flight at the same time has finished. A writer that cannot keep another writer's change refuses and names the version it read; it never overwrites.</p><p><strong>Done when.</strong> A new test, <code>tests/test_a_landed_plan_write_survives_a_promotion.py</code>, starts a state write that appends a section and a promotion that records a landing comment on the same plan, interleaved so the promotion reads before the append lands and writes after it. Both changes are present in the file at the end, or the later writer is refused naming the version conflict and the file still holds the earlier change. The test covers both orders. Negative control: with the later writer restored to a whole-file rewrite from its earlier read, the test fails on the missing section.</p><p>Write paths: <code>reckon/_store.py</code>, <code>reckon/crew/promotion_scope.py</code>, <code>tests/test_a_landed_plan_write_survives_a_promotion.py</code>, <code>docs/evidence/fragments/queued-work-needs-no-workaround/s37.html</code>.</p>
+<p><strong>Why.</strong> On 2026-11-19 three appends of one section each answered <code>landed: true</code> and were absent from the plan file afterwards. Promotions of other runs were writing to the same plan during each of the three. Nothing reported the loss; a fourth attempt on a quiet lane held. Which writer drops the change is not established.</p><p><strong>Endpoint.</strong> A plan write that answers as landed is present in the plan file after every writer that was in flight at the same time has finished. A writer that cannot keep another writer's change refuses and names the version it read; it never overwrites.</p><p><strong>Done when.</strong> A new test, <code>tests/test_a_landed_plan_write_survives_a_promotion.py</code>, starts a state write that appends a section and a promotion that records a landing comment on the same plan, interleaved so the promotion reads before the append lands and writes after it. Both changes are present in the file at the end, or the later writer is refused naming the version conflict and the file still holds the earlier change. The test covers both orders. Negative control: with the later writer restored to a whole-file rewrite from its earlier read, the test fails on the missing section.</p><p>Write paths: <code>reckon/_store.py</code>, <code>reckon/crew/promotion_scope.py</code>, <code>tests/test_a_landed_plan_write_survives_a_promotion.py</code>, <code>docs/evidence/fragments/queued-work-needs-no-workaround/s37.html</code>.</p>
 
     <h2 id="s38">§38 — A relative brief path launches from any directory</h2>
 <section data-reckon="section" data-id="s38" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -395,10 +395,16 @@
     <pre class="r-fu-prompt">/reckon-build queued-work-needs-no-workaround §3 §29 §31 §32 §33</pre>
     <p class="r-fu-outcome"><p>Superseded by f-qwnw-004, which adds sections 34 and 35. Sections 32 and 33 are queued as one node each.</p></p>
     </article>
-<article class="r-fu" data-id="f-qwnw-004" data-status="open" data-written-by="reckon-build" data-written-at="2026-11-19" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-qwnw-004" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-11-19" data-recommends-skill="" data-resolved-at="2026-11-20T20:45:48+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Queue the remaining implementable sections</h4>
     <div class="r-fu-body"><p>Sections 3, 29, 31, 32, 33, 34 and 35 are the plan's remaining implementable work. Section 29's red-file nodes land one by one. Sections 31 to 35 are each one node: 34 (a promotion that succeeded is recorded as promoted) and 35 (a loaded node still publishes a current disk reading) are queued ahead of the others, since each removes a false row every session carries.</p></div>
     <pre class="r-fu-prompt">/reckon-build queued-work-needs-no-workaround §3 §29 §31 §32 §33 §34 §35</pre>
+    <p class="r-fu-outcome"><p>Sections 31, 32 and 34 landed and are declared done. Sections 3, 29, 33 and 35 stay open, and sections 36 to 40 were added; the next followup carries them.</p></p>
+    </article>
+<article class="r-fu" data-id="f-qwnw-005" data-status="open" data-written-by="reckon-edit" data-written-at="2026-11-20" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the open sections</h4>
+    <div class="r-fu-body"><p>Sections 3, 29, 33 and 35 to 40 are the plan's remaining implementable work. Sections 33 and 35 have runs in a repair round; 36 to 40 have no node yet.</p></div>
+    <pre class="r-fu-prompt">/reckon-build queued-work-needs-no-workaround §3 §29 §33 §35 §36 §37 §38 §39 §40</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -3265,7 +3271,7 @@
     <div class="r-comment-body"><p>review of run r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working at 0cb37bf4feabaf9835b4a02c30c246f9ee46029f..f95179643f7ed325aefebfe201d5c32de7f469a3 scores goal_fidelity 17, evidence 12, scope_discipline 17, durability 14, fit 18, reuse 20, records added_failure_count 0 with no added ids, and carries one blocking finding on the importer arm (4 ids the base arm does not fail, 3 of them with no relief) plus three non-blocking findings on the unlogged flakiness probe, on the untested merge resolution, and on the missing all_debug job log</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261120T074455915480-review-of-qwnw-red-file-a-wait-ages-on-its-stream-84382c3d4675" data-who="reckon-build" data-when="2026-11-20T20:38:06Z">
-    <div class="r-comment-body"><p>Reviewed r-20261118T062509903466-qwnw-red-file-a-wait-ages-on-its-stream at head 84382c3d46 against base 28fbf2bc2f: tests/test_a_wait_ages_on_its_stream.py runs 10 passed at head and 2 failed at base in this reviewer&#x27;s own extraction, the cause verdict &quot;test wrong&quot; holds, and the stored review record scores goal 20, evidence 16, scope 20, durability 18, fit 16, reuse 5 with 0 added failures and two non-blocking findings (a duplicated expected-payload helper and a vacuous before/after arm pair).</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261118T062509903466-qwnw-red-file-a-wait-ages-on-its-stream at head 84382c3d46 against base 28fbf2bc2f: tests/test_a_wait_ages_on_its_stream.py runs 10 passed at head and 2 failed at base in this reviewer's own extraction, the cause verdict "test wrong" holds, and the stored review record scores goal 20, evidence 16, scope 20, durability 18, fit 16, reuse 5 with 0 added failures and two non-blocking findings (a duplicated expected-payload helper and a vacuous before/after arm pair).</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
