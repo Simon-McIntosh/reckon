@@ -2325,7 +2325,13 @@ def fence_argv(
     # on another node and has to mask its own copies as well.
     relay_root = None
     if manifest_path is not None:
-        candidate = Path(manifest_path).parent / SCHEDULER_RELAY_DIRECTORY
+        # Resolved, because bubblewrap cannot create a mount point below a
+        # symlink: a run directory reached through one is bound at the path the
+        # kernel composes the mount at, the same rule the protected overlays
+        # follow.
+        candidate = resolved_destination(
+            Path(manifest_path).parent / SCHEDULER_RELAY_DIRECTORY
+        )
         try:
             candidate.mkdir(parents=True, exist_ok=True)
         except OSError:
@@ -2341,7 +2347,18 @@ def fence_argv(
         # there composes no relay and its shim searches its own path instead. A
         # mask that could not be made would refuse its own launch, so this one
         # is allowed to be absent.
-        fenced += ["--ro-bind-try", source, destination]
+        target = Path(destination)
+        if not target.exists():
+            # The mount point is made here rather than left to bubblewrap,
+            # which would have to create it inside the sandbox; that fails
+            # wherever the run directory is reached through a link or sealed by
+            # a later mount, and a launch that cannot make its relay would lose
+            # its own scheduler with it.
+            try:
+                target.touch()
+            except OSError:
+                continue
+        fenced += ["--ro-bind-try", source, str(target)]
     if shim_home:
         from reckon.nested_launch import SHIM_HOME_ENV, SHIM_REAL_DIRECTORY_ENV
 
