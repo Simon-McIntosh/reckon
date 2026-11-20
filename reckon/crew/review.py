@@ -2834,11 +2834,11 @@ def _gate_log_path(manifest_text: str, field: str) -> str | None:
 
 
 # A delivered run's logs never change, so a repeated read of its review would
-# re-read and re-scan the same bytes for every reader that asked. The text is
-# held against each log's own stat identity and the added-failure count against
-# the pair's two identities, so a reader pays one read per log and one scan per
-# pair until a log is written.
-_GATE_LOG_TEXT_MEMO = "review_gate_log_text"
+# re-read and re-scan the same bytes for every reader that asked. What is held
+# is the pair's own result — the count, the ids and each arm's header revision —
+# never an arm log's text: the station is long-lived, a pair of logs runs to
+# megabytes, and the memo's entry bound says nothing about how many bytes an
+# entry may hold.
 _ADDED_FAILURES_MEMO = "review_gate_log_added_failures"
 
 
@@ -2868,39 +2868,49 @@ def _read_gate_log_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
-def _gate_log_observation(
-    path: Path | None,
-) -> tuple[tuple[int, ...] | None, str | None]:
-    """Return a gate log's stat identity and text, reading its bytes once.
+def _read_gate_log_at(path: Path | None) -> str | None:
+    """Return one gate log's text, or ``None`` when it is absent or unreadable.
 
-    The identity is the one the text was read at, and a second observation of
-    an unchanged file returns the text already held rather than reading the
-    file again. A log that is not there, or cannot be read, is observed as
-    ``(None, None)``: the caller reads that as unmeasured rather than raising,
-    because a review read before its run delivered the log has no count to
-    take, and that is a state the record can carry.
+    A review read before its run delivered the log has no text to read, and that
+    is a state the record can carry as unmeasured rather than a reason to raise.
     """
     if path is None:
-        return None, None
+        return None
     try:
-        identity = file_memo.file_signature(path)
+        return _read_gate_log_text(path)
     except OSError:
-        return None, None
+        return None
+
+
+def _gate_log_identity(path: Path | None) -> tuple[int, ...] | None:
+    """Return the stat identity a gate log's bytes are keyed on, or ``None``."""
+    if path is None:
+        return None
     try:
-        text = file_memo.memoized(
-            _GATE_LOG_TEXT_MEMO,
-            path,
-            lambda: _read_gate_log_text(path),
-            identity=identity,
-        )
+        return file_memo.file_signature(path)
     except OSError:
-        return None, None
-    return identity, text
+        return None
 
 
 def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | None:
     """Read a named gate log, resolving a relative path against ``run_directory``."""
-    return _gate_log_observation(_gate_log_file(log_path, run_directory))[1]
+    return _read_gate_log_at(_gate_log_file(log_path, run_directory))
+
+
+class _ArmLogPair(NamedTuple):
+    """The facts one derivation of an arm-log pair yields.
+
+    The count and the added ids are the derivation's answer; ``base_present``
+    distinguishes a missing base log from a pair that simply added nothing, and
+    the two revisions are what each arm's own header records. No log text is
+    carried, so holding the result holds no bytes of the logs.
+    """
+
+    count: int | None
+    added_ids: list[str]
+    base_present: bool
+    base_revision: str | None
+    head_revision: str | None
 
 
 def _added_failures_for_arm_logs(
@@ -2909,39 +2919,45 @@ def _added_failures_for_arm_logs(
     *,
     base_directory: str | Path | None,
     head_directory: str | Path | None,
-) -> tuple[int | None, list[str], str | None, str | None]:
-    """Read both arm logs and return the count, ids and the texts read.
+) -> _ArmLogPair:
+    """Return the pair's count, ids, base-log presence and both revisions.
 
-    Each log is read once per stat identity, and the count is derived once per
-    pair of identities: a review read five times reads each log once per state
-    and scans the pair once, while a log rewritten to a new identity is read and
-    recounted because the pair's key no longer matches. The count is not taken
-    at all when a log is absent, which reads as unmeasured rather than as a
-    measured zero.
+    The pair is derived once per pair of stat identities and answered from the
+    memo on every later read of the same pair, so five reads of an unchanged
+    review read each log once. A log rewritten to a new identity misses the key
+    and the pair is derived again from both logs — the difference needs both
+    arms, and neither arm's bytes are retained to avoid the second read.
 
-    The texts are returned because a caller also records the revision each log's
-    header names, and it must be the text the count was derived from rather than
-    a second read of a file that may have changed since.
+    The held value is the result alone: the count, the added ids, whether the
+    base log was there, and the two revision strings each header names. No log
+    text is kept, so an entry's size follows the number of failing tests rather
+    than the size of the logs it was derived from.
     """
-    base_identity, base_text = _gate_log_observation(base_path)
-    head_identity, head_text = _gate_log_observation(head_path)
     key = (
-        base_identity,
-        head_identity,
+        _gate_log_identity(base_path),
+        _gate_log_identity(head_path),
         os.fspath(base_directory) if base_directory is not None else "",
         os.fspath(head_directory) if head_directory is not None else "",
     )
-    count, added_ids = file_memo.memoized_key(
-        _ADDED_FAILURES_MEMO,
-        key,
-        lambda: added_failures_from_gate_logs(
+
+    def derive() -> _ArmLogPair:
+        base_text = _read_gate_log_at(base_path)
+        head_text = _read_gate_log_at(head_path)
+        count, added_ids = added_failures_from_gate_logs(
             base_text,
             head_text,
             base_directory=base_directory,
             head_directory=head_directory,
-        ),
-    )
-    return count, added_ids, base_text, head_text
+        )
+        return _ArmLogPair(
+            count=count,
+            added_ids=added_ids,
+            base_present=base_text is not None,
+            base_revision=recorded_log_revision(base_text),
+            head_revision=recorded_log_revision(head_text),
+        )
+
+    return file_memo.memoized_key(_ADDED_FAILURES_MEMO, key, derive)
 
 
 def recorded_log_revision(log_text: str | None) -> str | None:
@@ -3661,10 +3677,10 @@ def annotate_review_of_run(
         return record
     base_directory = _arm_directory(manifest_text, _BASE_LOG_FIELD)
     head_directory = _arm_directory(manifest_text, _HEAD_LOG_FIELD)
-    # Both logs are read once per identity and the pair is annotated once per
-    # pair of identities, so the duties that read the same stored review within
-    # a tick share one read rather than repeating it for each of them.
-    count, added_ids, base_text, head_text = _added_failures_for_arm_logs(
+    # The pair's result is derived once per pair of log identities, so the
+    # duties that read the same stored review within a tick share one derivation
+    # rather than repeating it for each of them.
+    pair = _added_failures_for_arm_logs(
         _gate_log_file(_gate_log_path(manifest_text, _BASE_LOG_FIELD), run_directory),
         _gate_log_file(_gate_log_path(manifest_text, _HEAD_LOG_FIELD), run_directory),
         base_directory=base_directory,
@@ -3672,9 +3688,9 @@ def annotate_review_of_run(
     )
     annotated = _annotated_added_failure_count(
         record,
-        count,
-        added_ids,
-        base_present=base_text is not None,
+        pair.count,
+        pair.added_ids,
+        base_present=pair.base_present,
         retirement_text=_manifest_prose(manifest_text),
         base_directory=base_directory,
         head_directory=head_directory,
@@ -3683,8 +3699,8 @@ def annotate_review_of_run(
     # lets a reader tie the added-failure count to that commit without re-running
     # the gate. A header naming the base while the change is at another commit
     # then reads as the mismatch it is rather than as evidence about the change.
-    annotated[_BASE_LOG_REVISION_KEY] = recorded_log_revision(base_text)
-    annotated[_HEAD_LOG_REVISION_KEY] = recorded_log_revision(head_text)
+    annotated[_BASE_LOG_REVISION_KEY] = pair.base_revision
+    annotated[_HEAD_LOG_REVISION_KEY] = pair.head_revision
     return annotated
 
 

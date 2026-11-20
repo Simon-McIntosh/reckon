@@ -162,12 +162,13 @@ def test_five_reads_of_an_unchanged_pair_read_each_log_once(
 def test_a_rewritten_head_log_is_read_again_and_recounted(
     stored_review: dict, counted_reads: Counter[str]
 ) -> None:
-    """A head log at a new identity is read again, and the count follows it.
+    """A head log at a new identity misses the pair's key and is recounted.
 
-    The pair's identity includes each log's own identity, so rewriting the head
-    log with one more failing test misses the stored count: the head log is read
-    again, the base log is not, and the review reports the failure the head
-    gained.
+    The pair's key holds both logs' identities, so rewriting the head log with
+    one more failing test misses the stored count. Nothing but the result is
+    held — no log bytes are kept — so the derivation reads both arms again: the
+    head to find the failure it gained, and the base to difference against. Once
+    derived, the new pair is answered from the memo like any other.
     """
     for _ in range(5):
         _read()
@@ -196,9 +197,18 @@ def test_a_rewritten_head_log_is_read_again_and_recounted(
         "the rewritten head log has a new identity, so it must be read again; "
         f"it was read {counted_reads[HEAD_LOG_NAME]} times"
     )
-    assert counted_reads[BASE_LOG_NAME] == 1, (
-        "the base log did not change, so the rewritten pair must not read it "
-        f"again; it was read {counted_reads[BASE_LOG_NAME]} times"
+    assert counted_reads[BASE_LOG_NAME] == 2, (
+        "the count is a difference over both arms and no log text is retained, "
+        "so a changed pair derives from both logs again; the base log was read "
+        f"{counted_reads[BASE_LOG_NAME]} times"
+    )
+
+    _read()
+    assert counted_reads[HEAD_LOG_NAME] == 2
+    assert counted_reads[BASE_LOG_NAME] == 2, (
+        "the rewritten pair is now the unchanged pair, so a further read must "
+        "come from the memo; the base log was read "
+        f"{counted_reads[BASE_LOG_NAME]} times"
     )
 
 
