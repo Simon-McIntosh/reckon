@@ -168,10 +168,11 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
     ]
     # Each triple is the fleet's work after that transition. A blocked or
     # delivered run leaves the working count, which is what a reader takes
-    # "working" means. The unpromoted figure counts delivered work rather than
-    # the completed rows themselves: a completed run whose independent review
-    # is still owed reads as a run to be reviewed and is not yet delivered, so
-    # it is counted in none of the three.
+    # "working" means. The unpromoted figure counts the state each row is drawn
+    # in — a completed run whose independent review is still owed sits as
+    # completed_unpromoted and is delivered work waiting on a gate, so it counts
+    # there — and a run that leaves the fleet is in none of the cells, which is
+    # why the departure one line later drops the figure again.
     assert [
         (event["working"], event["blocked"], event["unpromoted"])
         for event in transitions
@@ -179,7 +180,7 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         (2, 0, 0),
         (2, 0, 0),
         (1, 1, 0),
-        (1, 0, 0),
+        (1, 0, 1),
         (1, 0, 0),
         (0, 0, 0),
     ]
