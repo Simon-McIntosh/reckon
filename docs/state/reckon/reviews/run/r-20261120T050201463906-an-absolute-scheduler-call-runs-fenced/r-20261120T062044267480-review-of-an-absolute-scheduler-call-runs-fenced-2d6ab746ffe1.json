@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:3336",
+    "reckon/_worker_fence.py:2340",
+    "reckon/crew/dispatch_sessions.py:1487",
+    "reckon/crew/dispatch_sessions.py:2023",
+    "reckon/crew/dispatching/launch.py:763",
+    "reckon/nested_launch.py:940"
+  ],
+  "completed_at": "2026-11-20T06:26:58Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-20T06:21:56Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/an-absolute-scheduler-call-runs-fenced.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Measured section still reports the scoped gate and suite arms at 135bb40a with 60 passed, and the first bullet at :41 still says \"2 passed\", while the file now documents three cases and the reviewed head 2d6ab746 records 61 passed in after_suite-1795155145710390295.log and scoped-gate-1795155246827378509.log; the fragment's own figures no longer reconcile with the run's logs it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 2af0448931 and 2d6ab746 against e8039eaaf3 and the full e6d692b1..2d6ab746 range commit by commit \u2014 2af0448931 replaces scheduler_shields' unused search_path argument with declared_directories, adds scheduler_declared_directories (reckon/_worker_fence.py:1997) reading every backend in the flight config through the existing backend_search_directories, rewords the recipe's limit at :2405 and adds the third test case; 2d6ab746 resolves the relay root through resolved_destination and touches each relay file before the bind (reckon/_worker_fence.py:2333-2361), with the fragment reworded.",
+    "done_when": "the done_when's arms are recorded: tests/test_an_absolute_scheduler_call_runs_fenced.py at head holds three cases (absolute path, by name, declared-only directory), the base arm negative-control-base.log records \"2 failed\" EXIT=1 at e6d692b1 with the bare ['--partition=all_debug', '--wrap=echo fenced-task'], baseline_suite-1795155102955970870.log records 58 passed EXIT=0 at e6d692b1 and after_suite-1795155145710390295.log 61 passed EXIT=0 at 2d6ab746, and the matched all_debug wide arms wide-arm-base.log/wide-arm-head.log report 6 failed/1261 passed and 6 failed/1264 passed with identical FAILED ids.",
+    "goal": "node.json carries no goal key (only admission_findings, brief, done_when and peer_scopes), so the deliverable is plan \u00a715's \"A job submitted from inside the fence, by any path to a scheduler binary, either runs inside the submitting worker's fence or is not started\" (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:139); the commits this review covers (2af0448931, 2d6ab746) close the flight-declared-directory route at reckon/_worker_fence.py:1997 scheduler_declared_directories and keep the relay mount point composable at reckon/_worker_fence.py:2333-2361.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/manifest.md \u2014 status complete, commits 135bb40ae4/e8039eaaf3/2af0448931/2d6ab746, baseline_suite 58 passed EXIT=0, after_suite 61 passed EXIT=0, wide arms 6 failed both sides with no added id, negative-control-base.log 2 failed EXIT=1.",
+    "write_paths": "read the nine declared write paths from the dispatch and the reviewed manifest; the three paths of e8039eaa..2d6ab746 (the fragment, reckon/_worker_fence.py, tests/test_an_absolute_scheduler_call_runs_fenced.py) and all eight paths of e6d692b1..2d6ab746 lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_an_absolute_scheduler_call_runs_fenced.py:240 fails with \"the declared directory's scheduler was reached with a bare task\" when scheduler_declared_directories returns no directory (the mutation is recorded in the reviewed manifest's negative_control_note at 1 failed, 2 passed), and the 2d6ab746 mount-point fix is guarded by the symlinked-home case in tests/test_launch_plan_fences_the_home.py that the wide arm showed red at 2af04489 and green at 2d6ab746.",
+    "evidence": "the measure's arms are recorded in the run directory (negative-control-base.log 2 failed EXIT=1 at e6d692b1; after_suite-1795155145710390295.log 61 passed EXIT=0 at 2d6ab746; wide-arm-head.log 6 failed, 1264 passed with no new FAILED id against wide-arm-base.log), but the evidence fragment at docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/an-absolute-scheduler-call-runs-fenced.html:44 still cites the 135bb40a 60-passed arm and :41 says \"2 passed\", neither of which reconciles with the three-case file at the reviewed head.",
+    "fit": "the additions follow the module's idiom of a documented public helper and call-time imports (reckon/_worker_fence.py:2010 imports reckon._backends inside the function to avoid the module cycle), and the names scheduler_declared_directories and declared_directories state what they carry without a plan or ticket label.",
+    "goal_fidelity": "reckon/_worker_fence.py:1997-2024 feeds the flight-declared directories into scheduler_shields and :2340 masks each real copy, so a scheduler reachable only through a declared directory is now overlaid with the shim, and :2333-2361 removes the composition failure that the symlinked run directory produced at 2af04489.",
+    "reuse": "the new helper delegates the declaration read to reckon/_backends.py:409 backend_search_directories and the path resolution to reckon/_worker_fence.py:1257 _resolve_declared_path, and 2d6ab746 reuses resolved_destination at reckon/_worker_fence.py:1406; a capability search over reckon for another enumerator of declared search directories found only launch_search_path's own PATH composition, which this change feeds rather than forks.",
+    "scope_discipline": "the incremental diff e8039eaa..2d6ab746 touches exactly the three paths the goal names and all eight cumulative paths sit inside the dispatch's nine declared write paths; nothing else moved."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: node.json carries no goal key (only admission_findings, brief, done_when and peer_scopes), so the deliverable is plan \u00a715's \"A job submitted from inside the fence, by any path to a scheduler binary, either runs inside the submitting worker's fence or is not started\" (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:139); the commits this review covers (2af0448931, 2d6ab746) close the flight-declared-directory route at reckon/_worker_fence.py:1997 scheduler_declared_directories and keep the relay mount point composable at reckon/_worker_fence.py:2333-2361.\nVERDICT done_when: the done_when's arms are recorded: tests/test_an_absolute_scheduler_call_runs_fenced.py at head holds three cases (absolute path, by name, declared-only directory), the base arm negative-control-base.log records \"2 failed\" EXIT=1 at e6d692b1 with the bare ['--partition=all_debug', '--wrap=echo fenced-task'], baseline_suite-1795155102955970870.log records 58 passed EXIT=0 at e6d692b1 and after_suite-1795155145710390295.log 61 passed EXIT=0 at 2d6ab746, and the matched all_debug wide arms wide-arm-base.log/wide-arm-head.log report 6 failed/1261 passed and 6 failed/1264 passed with identical FAILED ids.\nVERDICT write_paths: read the nine declared write paths from the dispatch and the reviewed manifest; the three paths of e8039eaa..2d6ab746 (the fragment, reckon/_worker_fence.py, tests/test_an_absolute_scheduler_call_runs_fenced.py) and all eight paths of e6d692b1..2d6ab746 lie inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/manifest.md \u2014 status complete, commits 135bb40ae4/e8039eaaf3/2af0448931/2d6ab746, baseline_suite 58 passed EXIT=0, after_suite 61 passed EXIT=0, wide arms 6 failed both sides with no added id, negative-control-base.log 2 failed EXIT=1.\nVERDICT diff: read 2af0448931 and 2d6ab746 against e8039eaaf3 and the full e6d692b1..2d6ab746 range commit by commit \u2014 2af0448931 replaces scheduler_shields' unused search_path argument with declared_directories, adds scheduler_declared_directories (reckon/_worker_fence.py:1997) reading every backend in the flight config through the existing backend_search_directories, rewords the recipe's limit at :2405 and adds the third test case; 2d6ab746 resolves the relay root through resolved_destination and touches each relay file before the bind (reckon/_worker_fence.py:2333-2361), with the fragment reworded.\nCALL_SITES: reckon/_backends.py:3336, reckon/_worker_fence.py:2340, reckon/crew/dispatch_sessions.py:1487, reckon/crew/dispatch_sessions.py:2023, reckon/crew/dispatching/launch.py:763, reckon/nested_launch.py:940\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1997-2024 feeds the flight-declared directories into scheduler_shields and :2340 masks each real copy, so a scheduler reachable only through a declared directory is now overlaid with the shim, and :2333-2361 removes the composition failure that the symlinked run directory produced at 2af04489.\nSCORE evidence: 14\nJUSTIFICATION evidence: the measure's arms are recorded in the run directory (negative-control-base.log 2 failed EXIT=1 at e6d692b1; after_suite-1795155145710390295.log 61 passed EXIT=0 at 2d6ab746; wide-arm-head.log 6 failed, 1264 passed with no new FAILED id against wide-arm-base.log), but the evidence fragment at docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/an-absolute-scheduler-call-runs-fenced.html:44 still cites the 135bb40a 60-passed arm and :41 says \"2 passed\", neither of which reconciles with the three-case file at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the incremental diff e8039eaa..2d6ab746 touches exactly the three paths the goal names and all eight cumulative paths sit inside the dispatch's nine declared write paths; nothing else moved.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_absolute_scheduler_call_runs_fenced.py:240 fails with \"the declared directory's scheduler was reached with a bare task\" when scheduler_declared_directories returns no directory (the mutation is recorded in the reviewed manifest's negative_control_note at 1 failed, 2 passed), and the 2d6ab746 mount-point fix is guarded by the symlinked-home case in tests/test_launch_plan_fences_the_home.py that the wide arm showed red at 2af04489 and green at 2d6ab746.\nSCORE fit: 19\nJUSTIFICATION fit: the additions follow the module's idiom of a documented public helper and call-time imports (reckon/_worker_fence.py:2010 imports reckon._backends inside the function to avoid the module cycle), and the names scheduler_declared_directories and declared_directories state what they carry without a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new helper delegates the declaration read to reckon/_backends.py:409 backend_search_directories and the path resolution to reckon/_worker_fence.py:1257 _resolve_declared_path, and 2d6ab746 reuses resolved_destination at reckon/_worker_fence.py:1406; a capability search over reckon for another enumerator of declared search directories found only launch_search_path's own PATH composition, which this change feeds rather than forks.\nFINDING docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/an-absolute-scheduler-call-runs-fenced.html:44 non-blocking: the Measured section still reports the scoped gate and suite arms at 135bb40a with 60 passed, and the first bullet at :41 still says \"2 passed\", while the file now documents three cases and the reviewed head 2d6ab746 records 61 passed in after_suite-1795155145710390295.log and scoped-gate-1795155246827378509.log; the fragment's own figures no longer reconcile with the run's logs it cites.\n",
+  "review_method": "Read-only review of the commits the reviewed run gained since it was reviewed: plan \u00a715, the reviewed run's node.json and manifest.md, e8039eaaf3..2d6ab746 commit by commit (with the cumulative e6d692b1..2d6ab746 range read for context), the new test file and fragment at the reviewed head, the run's negative-control, scoped-gate, baseline/after suite and wide-arm logs, and one read outside the diff for the reuse judgement (reckon/_backends.py:409 backend_search_directories, reckon/crew/dispatch_launch.py:729 launch_search_path, reckon/_worker_fence.py:1257 _resolve_declared_path). Ruff check and format --check were run on the two changed Python files extracted at 2d6ab746 into a scratch tree and both returned EXIT=0. No suite was re-run and nothing in the reviewed tree was modified.",
+  "review_run_id": "r-20261120T062044267480-review-of-an-absolute-scheduler-call-runs-fenced-2d6ab746ffe1",
+  "reviewed_base_sha": "e6d692b1b42efe97685bb9dcc2f542c0de4135a1",
+  "reviewed_head_sha": "2d6ab746ffe170a3ec07ef3710db75071c8eebdf",
+  "reviewed_run_id": "r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "2af0448931b5ea242c7e3257eec34db49731f4d1",
+    "2d6ab746ffe170a3ec07ef3710db75071c8eebdf"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_derivation": "Derived from the reviewed run's own gate logs: baseline_suite-1795155102955970870.log at e6d692b1b42efe97685bb9dcc2f542c0de4135a1 records \"58 passed in 35.19s\" with no FAILED line and a final EXIT=0; after_suite-1795155145710390295.log at 2d6ab746ffe170a3ec07ef3710db75071c8eebdf records \"61 passed in 39.78s\" with no FAILED line and a final EXIT=0. Both arms declare completed: true with failure_count 0 and no failure ids, so the head arm adds no failure and added_failure_count is 0 with an empty added_failure_ids.",
+    "after_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_absolute_scheduler_call_runs_fenced.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/after_suite-1795155145710390295.log",
+      "revision": "2d6ab746ffe170a3ec07ef3710db75071c8eebdf"
+    },
+    "baseline_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/baseline_suite-1795155102955970870.log",
+      "revision": "e6d692b1b42efe97685bb9dcc2f542c0de4135a1"
+    },
+    "reviewed_run_arms": [
+      "scoped-gate-1795155246827378509.log 61 passed in 47.30s EXIT=0 at 2d6ab746 (all_debug)",
+      "negative-control-base.log 2 failed in 2.90s EXIT=1 at e6d692b1, absolute-path arm handed the bare task",
+      "baseline_suite-1795155102955970870.log 58 passed in 35.19s EXIT=0 at e6d692b1",
+      "after_suite-1795155145710390295.log 61 passed in 39.78s EXIT=0 at 2d6ab746",
+      "wide-arm-base.log 6 failed, 1261 passed, 9 skipped EXIT=1 at e6d692b1 over 107 files",
+      "wide-arm-head.log 6 failed, 1264 passed, 9 skipped EXIT=1 at 2d6ab746 over 108 files, no FAILED id absent from the base arm's list"
+    ]
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T06:28:26.150492+00:00",
+  "total": 109
+}
