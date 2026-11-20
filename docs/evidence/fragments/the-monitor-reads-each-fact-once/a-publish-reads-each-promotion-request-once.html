@@ -37,7 +37,10 @@
   from it grouped by owner. The index travels on the fleet state, so a slice
   decodes and lists nothing its publish has not changed; a request the publish
   settles is left out of its own later slices, and the settle guard reads
-  through the same memoised decode.</p>
+  through the same memoised decode. Each candidate a slice would raise a duty
+  for is re-read through that memo's identity check, so a request another drain
+  settled between the reading and a later slice is skipped as the base revision
+  skipped it, at one stat per candidate.</p>
 
   <p><strong>The measure.</strong> 400 requests across 3 projects and 6
   sessions, one publish:</p>
