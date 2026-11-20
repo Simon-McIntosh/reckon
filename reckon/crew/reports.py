@@ -2064,6 +2064,52 @@ def _figure_findings(
     return findings
 
 
+def _fragment_reconciliation_findings(
+    text: str,
+    *,
+    node: TaskNode | None = None,
+    worktree: Path | None = None,
+) -> list[str]:
+    """Report each figure a node's landing record states that its logs contradict.
+
+    A record can quote a timing no arm produced, and every other reader of a
+    manifest reads the log's own header without ever comparing it to the prose
+    beside it, so the comparison belongs where the worker still holds the turn.
+    The record lives at ``docs/evidence/fragments/<plan>/<node>.html``; a node
+    that wrote none is not held to it, and a body the reader cannot use is left
+    to the arm rules that already refuse it.
+
+    Every finding carries the module's own words, because the repair is always
+    the same one: quote the figure the log recorded, under the revision that log
+    names, or repoint the arm at the log that holds the figure.
+    """
+    if worktree is None or node is None:
+        return []
+    plan = str(getattr(node, "plan", "") or "").strip()
+    node_id = str(getattr(node, "id", "") or "").strip()
+    if not plan or not node_id:
+        return []
+    fragment_path = (
+        Path(worktree) / "docs" / "evidence" / "fragments" / plan / f"{node_id}.html"
+    )
+    if not fragment_path.is_file():
+        return []
+    from reckon.crew.fragment_reconcile import ManifestUnreadableError, reconcile
+
+    try:
+        fragment = fragment_path.read_text(encoding="utf-8")
+        failures = reconcile(fragment, text)
+    except (OSError, UnicodeDecodeError):
+        return []
+    except ManifestUnreadableError:
+        return []
+    return [
+        f"the landing record {fragment_path.name!r} does not reconcile with the "
+        f"logs the manifest cites: {failure}"
+        for failure in failures
+    ]
+
+
 def _read_source_or_none(path: Path) -> str | None:
     """Read a source file, returning ``None`` when it cannot be read."""
     try:
@@ -3078,6 +3124,9 @@ def audit_manifest(
     )
     findings.extend(
         _figure_findings(manifest, node=node, worktree=worktree, repository=repository)
+    )
+    findings.extend(
+        _fragment_reconciliation_findings(text, node=node, worktree=worktree)
     )
     findings.extend(
         _commit_citation_findings(manifest, worktree=worktree, repository=repository)

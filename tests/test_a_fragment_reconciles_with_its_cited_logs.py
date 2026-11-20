@@ -2,11 +2,13 @@
 
 An evidence record that quotes a figure no run produced passed every check in
 the delivery path, so the comparison lives in
-:mod:`reckon.crew.fragment_reconcile` and these cases hold it to the shapes a
-record takes: a figure its log recorded, a figure from a superseded arm, a
-figure standing under the wrong revision, a malformed arm record, and a log the
-manifest names but the run directory does not hold. Every tree here is
-synthesised under ``tmp_path``; no case reads a real run directory.
+:mod:`reckon.crew.fragment_reconcile` and runs inside ``crew check --manifest``.
+These cases hold each of its three parts to a fragment that only that part
+refuses: a figure its log recorded, a fragment naming no revision, a fragment
+quoting a figure its log never recorded, a figure standing too far from the
+revision it belongs to, a malformed arm record, and a log the manifest names but
+the run directory does not hold. Every tree here is synthesised under
+``tmp_path``; no case reads a real run directory.
 """
 
 from __future__ import annotations
@@ -16,7 +18,11 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew.fragment_reconcile import ManifestUnreadableError, reconcile
+from reckon.crew.fragment_reconcile import (
+    NEARBY_CHARACTERS,
+    ManifestUnreadableError,
+    reconcile,
+)
 
 BASE = "1" * 40
 HEAD = "2" * 40
@@ -71,16 +77,26 @@ def test_a_fragment_whose_figures_its_logs_record_reconciles(tmp_path: Path) -> 
     _base, _after, manifest = _logs(tmp_path)
     fragment = _fragment(
         f"Base <code>{BASE}</code>",
-        f"{BASE_SUMMARY}",
+        BASE_SUMMARY,
         f"Head <code>{HEAD}</code>",
-        f"{AFTER_SUMMARY}",
+        AFTER_SUMMARY,
     )
 
     assert reconcile(fragment, manifest) == []
 
 
-def test_a_figure_no_log_recorded_is_reported(tmp_path: Path) -> None:
-    """A stale timing cannot outlive its arm."""
+def test_a_fragment_naming_no_revision_is_reported(tmp_path: Path) -> None:
+    """A cited log's revision must be named, so a figure has an owner."""
+    _base, _after, manifest = _logs(tmp_path)
+    fragment = _fragment(BASE_SUMMARY, f"Head <code>{HEAD}</code>", AFTER_SUMMARY)
+
+    failures = reconcile(fragment, manifest)
+
+    assert any(BASE[:12] in failure for failure in failures)
+
+
+def test_a_figure_its_log_never_recorded_is_reported(tmp_path: Path) -> None:
+    """A stale timing cannot outlive the arm that recorded another one."""
     _base, _after, manifest = _logs(tmp_path)
     fragment = _fragment(
         f"Base <code>{BASE}</code>",
@@ -91,21 +107,27 @@ def test_a_figure_no_log_recorded_is_reported(tmp_path: Path) -> None:
 
     failures = reconcile(fragment, manifest)
 
-    assert any("9.99s" in failure for failure in failures)
+    assert any(BASE_SUMMARY in failure for failure in failures)
 
 
-def test_a_figure_under_the_wrong_revision_is_reported(tmp_path: Path) -> None:
-    """The head arm's summary may not stand as the only revision's figure."""
+def test_a_figure_far_from_its_revision_is_reported(tmp_path: Path) -> None:
+    """A figure stated pages away from its revision belongs to no arm here."""
     _base, _after, manifest = _logs(tmp_path)
+    filler = "filler " * ((NEARBY_CHARACTERS // 7) + 60)
     fragment = _fragment(
-        f"Only <code>{BASE}</code> is named here",
-        f"{BASE_SUMMARY}",
-        f"and {AFTER_SUMMARY} is quoted too far from its own revision",
+        f"Base <code>{BASE}</code>",
+        BASE_SUMMARY,
+        f"Head <code>{HEAD}</code>",
+        filler,
+        AFTER_SUMMARY,
     )
 
     failures = reconcile(fragment, manifest)
 
-    assert any(HEAD[:12] in failure for failure in failures)
+    assert any(
+        AFTER_SUMMARY in failure and "not stated beside" in failure
+        for failure in failures
+    )
 
 
 def test_a_malformed_arm_is_refused_by_name(tmp_path: Path) -> None:
