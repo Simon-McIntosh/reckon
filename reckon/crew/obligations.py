@@ -4837,6 +4837,13 @@ def _obligations_view(
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
     live_pointers = list(pointers.values())
+    from reckon.crew.fleet_supervisor import producer_start_failure_obligations
+
+    items.extend(
+        producer_start_failure_obligations(
+            project, session, now=now, pointers=live_pointers
+        )
+    )
     from reckon.crew.section_obligations import merged_section_items
 
     items.extend(merged_section_items(project, session, live_pointers, now=now))

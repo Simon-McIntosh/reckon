@@ -2190,9 +2190,20 @@ def _payload_for_state(state: FleetState, session: str) -> dict[str, Any]:
     module = _derivation_module()
     in_flight = state.reviews_in_flight.get(session, set())
     items: list[dict[str, Any]] = []
-    from reckon.crew.fleet_supervisor import fleet_test_obligations
+    from reckon.crew.fleet_supervisor import (
+        fleet_test_obligations,
+        producer_start_failure_obligations,
+    )
 
     items.extend(fleet_test_obligations(state.project, session, now=state.now))
+    items.extend(
+        producer_start_failure_obligations(
+            state.project,
+            session,
+            now=state.now,
+            pointers=state.pointers.values(),
+        )
+    )
     # Read once, for the first queued row this session owns, from the ordering
     # the admission pass admits by; a session with nothing queued never orders
     # anything.
