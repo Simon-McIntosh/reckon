@@ -80,8 +80,22 @@
         <td><code>df8fba8b</code> plus the test file</td>
         <td>1 failed, <code>EXIT=1</code> &mdash; the tick's record carries no
         <code>memo_counts</code> there</td></tr>
+      <tr><td>promoted-pointer cohort, which stubs the sweep's report hook</td>
+        <td><code>d992690a</code> then <code>bf2b5fbc</code></td>
+        <td>2 failed, 2 passed at <code>d992690a</code>: the three-parameter stub
+        raised <code>TypeError: &lt;lambda&gt;() takes 3 positional arguments but
+        4 were given</code> inside the sweep and was swallowed with the pass;
+        4 passed once the stub names the fourth parameter</td></tr>
     </tbody>
   </table>
+
+  <p><strong>A pass's report hook gained the counts, so every caller states
+  them.</strong> <code>SweepBeat</code> hands its report hook the pass's memo
+  counts beside the report. One existing cohort test stubbed that hook with
+  three parameters and appended nothing, so its own assertions read an empty
+  list and two of its tests failed at this head while reporting no error. The
+  stub names the fourth parameter now; the reverted run reproduces the two
+  failures with the same <code>TypeError</code>.</p>
 
   <p><strong>The negative control fails for the right reason.</strong> Against a
   tree extracted at the base revision with the new test copied in, the reading
