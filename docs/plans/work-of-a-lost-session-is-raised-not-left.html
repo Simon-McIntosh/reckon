@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-title" content="Work Of A Lost Session Is Raised, Not Left">
+  <meta name="plan-summary" content="Requests and runs whose coordinator session is gone are retired or raised to the lead by the admit service, and a wait that cannot resolve is removed.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="queued-work-needs-no-workaround">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;work-of-a-lost-session-is-raised-not-left#s2&quot;],&quot;s4&quot;:[&quot;work-of-a-lost-session-is-raised-not-left#s2&quot;],&quot;s5&quot;:[&quot;work-of-a-lost-session-is-raised-not-left#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: work that nobody owns keeps the lane busy and the queue long</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>On 20 November the lead asked why the local lane had stopped draining. The lane was open with ten free slots and the admit service was passing every 25 seconds, yet the monitor showed nine ready requests and nineteen waiting. None of it was launchable, and part of the reason was work whose coordinator session no longer existed.</p>
+    <p>A census of the live pointers that morning found seven records owned by five sessions with no running process:</p>
+    <table>
+      <thead><tr><th>Session</th><th>Project</th><th>Record</th><th>State</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>67139f13</code></td><td>imas-ambix</td><td><code>reasoning-text-in-tool-arguments</code></td><td>complete since 23 October, review owed</td><td>its review was composed, launched and refused for want of a follower every two to three minutes</td></tr>
+        <tr><td><code>efd0ee8c</code></td><td>reckon</td><td><code>the-old-event-logs-are-retired</code></td><td>awaiting upstream for 573 hours</td><td>counted as waiting work on every pass</td></tr>
+        <tr><td><code>404513fc</code></td><td>reckon</td><td><code>a-launch-span-is-dated-and-bounded</code></td><td>blocked, already classified promoted</td><td>its landing group was refused with <code>op_error</code> on every pass</td></tr>
+        <tr><td><code>404513fc</code></td><td>reckon</td><td><code>service-runs-mains-code</code></td><td>complete, already classified promoted</td><td>listed as landed elsewhere on every pass</td></tr>
+        <tr><td><code>eff55e9f</code></td><td>nova</td><td>two finished review runs</td><td>complete, promotable</td><td>never promoted</td></tr>
+        <tr><td><code>session-concurrent-dispatch</code></td><td><code>concurrent-dispatch-fixture</code></td><td><code>node-one-worktree</code></td><td>orphaned</td><td>a test's pointer in the real live directory</td></tr>
+      </tbody>
+    </table>
+    <p>Two queued reviews of sessions <code>67139f13</code> and <code>efd0ee8c</code> had also been relaunched and refused on every pass for days, each attempt creating and removing a run. They were dropped by hand that morning. One was recomposed by the review reflex within minutes and refused again, because the duty belongs to a finished run that the lost session still owns; a week-long acknowledgement on that run is the only thing holding it now.</p>
+    <p>Finding the owner of a record took three hand steps. The pointer carries the session id; the scheduler job a session submits carries nothing, so job 1331989 was traced to its session through the worktree path in its working directory; and the session id was mapped to a peer name by reading the harness's own session files. Eight messages to seven peers then settled most of the nineteen waits in an hour, which is the evidence that the missing piece is the address, not the channel.</p>
+    <p>The same morning showed that a wait can be correct for days. The imas-codex coordinator answered that four requests waiting 48 to 81 hours were parked by design behind a benchmark the lead must rule on. So age alone is not a reason to remove a wait: the reason is that nothing can ever release it, or that nobody is left to act on it.</p>
+    <p>The lead ruled on 20 November: when a session has been lost for three days its reviews are dropped and its implement work is raised to the lead for adoption or retirement; a wait that cannot resolve is removed; and none of this may add load to an orchestrator's own loop.</p>
+
+    <h2 id="s2">§2 — A lost session is a derived fact, read once by the admit service</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> One Python function answers, for a coordinator session id, whether the session is lost and since when. A session is lost when no follower lease, session-host record or running coordinator process has existed for it for longer than a flight setting, <code>lost_session.after_hours</code>, whose default is 72. The answer is keyed on the last instant the session was heard, never on the age of its process, because a resumed session keeps its id for weeks. A session that has never registered a follower is dated from its oldest live record. The crew <code>directory</code> view carries the answer for every session that owns a live record: <code>last_heard_at</code>, <code>lost</code> and <code>lost_since</code>.</p>
+    <p>The admit service is the only caller that acts on the answer, and it reads it at most once per session per pass from state it already lists. No follower, hook, station tick or session command gains a read.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_lost_session_is_a_derived_fact.py</code> passes, covering: a session whose last lease is 71 hours old reads live and one at 73 hours reads lost, each computed from the fixture's own instants; a session with a running coordinator process reads live whatever its lease age; a session resumed after ten days with a fresh lease reads live; the setting moves the boundary; and the directory view returns the three fields for a lost and a live session. A second assertion in the same file counts the reads an admit pass makes over a fixture of 40 pointers across 6 sessions and requires the lost-session reads to number at most 6.</p>
+    <p><strong>Negative control.</strong> With the function replaced by one keyed on process age, the resumed-session case must fail.</p>
+
+    <h2 id="s3">§3 — A lost session's reviews retire, and no review is composed under it</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A queued or awaiting-upstream request of role review whose session is lost is retired by the admit pass that finds it, leaving a discard record that names the lost session, the instant it was last heard and the rule. A finished run that owes a review and whose session is lost gets no review composed under that session, by the reflex or by recovery, so nothing is created to be refused. The duty is not forgotten: the run is carried into the decision §4 raises.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_lost_sessions_reviews_retire.py</code> passes, covering: one admit pass retires a lost session's queued review and writes the discard record with those three facts; a second pass creates no run and attempts no launch for it; a finished run of a lost session with a review owed yields zero composed reviews across three reflex passes; a live session's identical records are untouched; and the pass's verdict record lists each retirement under a named key.</p>
+    <p><strong>Negative control.</strong> With the session made live in the fixture, the same pass must retire nothing and the reflex must compose the review.</p>
+
+    <h2 id="s4">§4 — A lost session's implement work is raised as one decision for the lead</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> For each lost session that owns anything other than a review request, the admit service records exactly one open decision, readable through <code>crew view decisions</code>. The decision lists every record the session owns with its project, plan, section, phase and age, and the work each one holds back. It is written once and updated in place as the list changes; it is never written again while it is open. Until it is answered, the session's implement requests launch nothing and its landing groups are skipped without a refusal being recorded on each pass.</p>
+    <p>The decision takes one of two answers per record. <em>Adopt</em> names a live session: the record's ownership moves to that session, so that session's follower hears the run and its obligations list it, and a queued request becomes launchable. <em>Retire</em> removes a request with a discard record, and for a run records its disposition without promoting it. A record the classifier already reads as promoted or landed elsewhere needs no answer: its pointer is retired by the pass with the reason recorded.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_lost_sessions_work_is_raised.py</code> passes, covering: a lost session with one implement request, one blocked run and one finished run yields one decision naming all three, and ten further passes leave the decision count at one; an adopt answer moves ownership so the adopter's live view lists the run and the lost session's lists nothing; a retire answer leaves a discard record and no pointer; an already-promoted pointer of a lost session is retired without a decision; and a landing group containing a lost session's member is skipped with one recorded reason, not refused per pass.</p>
+    <p><strong>Negative control.</strong> With the decision store emptied between passes, the test asserting a single decision must fail by counting more than one write.</p>
+
+    <h2 id="s5">§5 — A wait that cannot resolve is removed; an idle wait is reported to its owner</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Every awaiting-upstream request is classed by what could release it, in Python, and the class is carried on the live view as <code>wait_class</code>:</p>
+    <table>
+      <thead><tr><th>Class</th><th>Meaning</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><code>progressing</code></td><td>an upstream section has a live run or a queued request</td><td>nothing</td></tr>
+        <tr><td><code>idle</code></td><td>every unlanded upstream section is still declared open, and none has a run or request</td><td>after <code>stranded_wait.report_after_hours</code> (default 72) the request appears once in its owner's obligations, naming the sections nobody is building</td></tr>
+        <tr><td><code>stranded</code></td><td>an upstream it names can never land: the section id is absent from its plan, the plan is absent, or the plan is closed, superseded or abandoned with that section not done</td><td>the request is retired with a discard record naming the upstream and why it cannot land, and its owner's obligations carry the retirement once</td></tr>
+      </tbody>
+    </table>
+    <p>A wait is never removed for its age alone. A request held with <code>crew queue hold</code> keeps its hold whatever its class.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_wait_that_cannot_resolve_is_removed.py</code> passes, covering one request per class plus: a request waiting 500 hours behind a live upstream run stays <code>progressing</code> and is untouched; a request whose upstream plan is superseded is retired on the first pass with the reason recorded; a request naming a section id its plan does not carry is retired; an idle request is reported once and not again on later passes; and a held request in the stranded class is not retired.</p>
+    <p><strong>Negative control.</strong> With the upstream plan's status moved from superseded back to active in the fixture, the retirement case must fail.</p>
+
+    <h2 id="s6">§6 — A record's owner can be read and addressed in one step</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Two reads that today need hand work. First, every scheduler job submitted through reckon's scheduler shims or by reckon itself carries its coordinator session id and run id in the job's comment field, so <code>squeue</code> and <code>scontrol show job</code> name the owner. Second, the crew <code>directory</code> view carries, for each session, the name another session uses to message it and whether that session is listed as reachable now, so a session id on a pointer resolves to an address without reading the harness's files by hand.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_records_owner_is_addressable.py</code> passes, covering: the argv a fenced worker's <code>sbatch</code>, <code>srun</code> and <code>salloc</code> hand the scheduler carries a comment holding the session id and run id, read from a stand-in scheduler that records its argv; a comment the caller supplied is kept and the ids are added to it; a submission outside any run adds nothing; and the directory view returns a peer name and a reachable flag for a session with a harness record in the fixture and nulls for one without.</p>
+    <p><strong>Negative control.</strong> With the session id unset in the submitting environment, the comment assertion must fail.</p>
+
+    <h2 id="s7">§7 — A launch-failed run resumes with a plain resume</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>On 20 November a review that spent its ten launch attempts on a fence fault sat in phase <code>launch-failed</code>. Once the fault was fixed, <code>crew resume --run</code> refused it, and only the lane-change form, <code>crew resume --backend … --reason …</code>, launched it again on the same backend.</p>
+    <p><strong>Deliverable.</strong> <code>crew resume --run</code> on a run in phase <code>launch-failed</code> launches a fresh attempt on the run's own backend, with its attempt allowance restored, and the view's next action for that phase names that command.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_launch_failed_run_resumes.py</code> passes, covering: a run driven to <code>launch-failed</code> by a launcher that raises, then resumed with a launcher that succeeds, reaches a launched record on the same backend; and the live view's next action for the failed run is the plain resume command.</p>
+    <p><strong>Negative control.</strong> At the base revision the resume case must fail with the refusal.</p>
+
+    <h2 id="s8">§8 — An obligation never names a session as a stranger to its own run</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The nova coordinator of session <code>0f4fa699</code> reported on 20 November that its own held run, <code>r-20261118T185447788898-cached-point-program</code>, appears in its obligations five to seven times with the reason &ldquo;Not this session's run: owner session 0f4fa699&rdquo;, which is its own session id. The run is held on the lead's instruction as evidence and must not be promoted, resumed, landed or collected; this section reads its records and changes none of them.</p>
+    <p><strong>Deliverable.</strong> A written cause, in this plan's landed record, for that reason appearing against the run's own owner and for the row repeating, established from the stored acknowledgements and obligation rows. Then the repair: an obligation row whose stated owner equals the reading session is never drawn with a not-yours reason, and one run contributes one row per duty.</p>
+    <p><strong>Done when.</strong> <code>tests/test_an_obligation_knows_its_own_owner.py</code> passes, built from a fixture reproducing the stored shape the cause names, covering: the owning session's obligations list the run once with no not-yours reason; another session's obligations do not list it as theirs.</p>
+    <p><strong>Negative control.</strong> At the base revision the single-row case must fail on the reproduced fixture.</p>
+
+    <h2 id="s9">§9 — No test leaves a pointer in the real live directory</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The live directory holds <code>r-20261117T093219…node-one-worktree</code>, project <code>concurrent-dispatch-fixture</code>, session <code>session-concurrent-dispatch</code>, phase orphaned: a test wrote into the real crew home on 17 November and the record has been read by every pass since.</p>
+    <p><strong>Deliverable.</strong> The test that writes that project and session is found and isolated to its own crew home, and it asserts afterwards that the real live directory gained nothing. The stray pointer is retired through <code>crew discard</code> with the reason recorded.</p>
+    <p><strong>Done when.</strong> The owning test file passes with an added assertion that the count of entries in the real live directory is equal before and after the case, and <code>crew view live --project concurrent-dispatch-fixture</code> returns no runs.</p>
+    <p><strong>Negative control.</strong> With the isolation removed from the case, the added assertion must fail.</p>
+
+    <h2 id="s10">§10 — The git shims are read from a path the worker's node holds</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The admit service runs from a code image on its own node's local disk, and a worker it launches may run on another node that holds no such image. The scheduler shim directory was corrected for this on 20 November after it refused every such launch. The git shim directory is derived the same way; it is only placed on the worker's search path, so on the other node it is silently absent and the worker runs without the git shim.</p>
+    <p><strong>Deliverable.</strong> The git shim directory a launch names is on storage every node shares whenever the launching process runs from a code image, by the same rule the scheduler shim directory follows, and one test states that rule for both.</p>
+    <p><strong>Done when.</strong> <code>tests/test_shims_are_read_from_the_shared_checkout.py</code> passes with cases for the git shim directory matching its four existing scheduler cases: an image names the checkout's directory from the carried root, from the interpreter's checkout, keeps its own when no checkout is found, and a checkout keeps its own.</p>
+    <p><strong>Negative control.</strong> At the base revision the two image cases for the git shim directory must fail.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="lost-session-implement-work" data-choice="raise" data-by="Simon McIntosh" data-when="2026-11-20">
+        <p class="r-dec-q">When a session has been lost for three days, are its implement requests dropped like its reviews, or raised to the lead for adoption?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="raise">raise</button>
+          <button class="r-opt" data-value="drop">drop</button>
+        </p>
+        <p class="r-dec-rat">Raise them. A dropped review is composed again by the reflex under a live session; nothing composes a dropped implement request again, so dropping it loses the work silently.</p>
+      </div>
+      <div class="r-dec" data-key="stranded-waits" data-choice="remove-unresolvable-report-idle" data-by="Simon McIntosh" data-when="2026-11-20">
+        <p class="r-dec-q">Is waiting work with no connection to anything that could release it removed?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="remove-unresolvable-report-idle">remove what cannot resolve, report what is idle</button>
+          <button class="r-opt" data-value="remove-by-age">remove by age</button>
+        </p>
+        <p class="r-dec-rat">The lead asked for stranded waits to be removed. A wait whose upstream can never land is removed. A wait whose upstream is only idle is reported to its owner, because the same morning a coordinator showed four multi-day waits that were parked by design.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-wlsr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-20">
+        <h4 class="r-fu-title">Build the lost-session rule and the stranded-wait rule</h4>
+        <div class="r-fu-body"><p>Plan authored from the 20 November lane investigation. Answer its content review, then dispatch every implementable section in one batch; §3, §4 and §5 wait on §2.</p></div>
+        <pre class="r-fu-prompt">/reckon-build work-of-a-lost-session-is-raised-not-left</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
