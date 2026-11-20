@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:23:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-arranges-its-follower.html",
+      "id": "fffedf8a3dd",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "the fragment states the base and head runs were made as jobs on all_debug with SLURM_JOB_ID unset, but neither base-negative-control.log nor head-run.log carries a host or partition header, while the facility suite and scoped-gate logs do carry a '# host:' header, so the done_when's environment qualifier is claimed rather than recorded; have those two runs written through the wrapper that stamps revision, tree and host so a later reader can re-run the qualifier."
+    },
+    {
+      "file": "tests/test_a_queued_request_arranges_its_follower.py",
+      "id": "f3a51ada6f5",
+      "line": "95",
+      "severity": "non-blocking",
+      "text": "the assertion moved from a byte-exact comparison to a parsed comparison of host.line against _request_payload(), so key order and separators on the wire are no longer pinned and a product change that reordered or re-spaced the line would stay green; a three-key bytes literal was directly available, so the done_when's 'no assertion is deleted or weakened' holds for payload content but not for the wire format the previous assertion enforced."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites in reckon/crew/dispatch_watch.py; the node changes no product file, and the assertion it lands constrains the request line _request_line writes, reached through _deliver_request.",
+    "diff": "read commits 1c86942186 and c69a2ba086 against base 73b9ac21a5: a +11/-1 test edit adding one helper and replacing the byte comparison, and a +10 evidence fragment; no product file is touched.",
+    "done_when": "the done_when requires the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, no assertion deleted or weakened, and a red base arm; head-run.log records 2 passed EXIT=0 and base-negative-control.log records 1 failed, 1 passed EXIT=1 with the failing id named.",
+    "goal": "the node goal is to make tests/test_a_queued_request_arranges_its_follower.py pass in full on the primary branch; the landed change repairs the one stale assertion at tests/test_a_queued_request_arranges_its_follower.py:95 and the file reads 2 passed at head 1c86942186 against 1 failed, 1 passed at base 73b9ac21a5.",
+    "manifest": "the reviewed manifest records status complete, both commits, the gate command with its log paths, the base negative control with its failing id and EXIT=1, and suite arms at 58 passed; its artifacts line reconciles with every cited log's own summary line.",
+    "write_paths": "the declared paths are reckon, tests, the queued-work-needs-no-workaround fragment directory and the node's own fragment file; the diff's two paths, tests/test_a_queued_request_arranges_its_follower.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-arranges-its-follower.html, sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_request_arranges_its_follower.py:95 fails if reckon/crew/dispatch_watch.py:932 stops writing the pair or drops the ownership key, but a reinstated change to key order or separators in that line stays green because the comparison is structural.",
+    "evidence": "base-negative-control.log records the failing id and EXIT=1 at revision 73b9ac21a5, head-run.log records 2 passed EXIT=0 at 1c86942186, and both suite arms record 58 passed EXIT=0, but neither base nor head log carries a host line, so the done_when's all_debug and SLURM_JOB_ID-unset qualifier is unread from the receipt.",
+    "fit": "tests/test_a_queued_request_arranges_its_follower.py:20 follows the module's module-level helper idiom and tests/test_dispatch_session_host.py:297 uses the same parsed-payload comparison, and no name carries a plan or ticket identifier.",
+    "goal_fidelity": "tests/test_a_queued_request_arranges_its_follower.py:95 now compares the parsed payload the product writes against a three-key literal, and both cases in that file read 2 passed at head 1c86942186 against 1 failed, 1 passed at base 73b9ac21a5.",
+    "reuse": "search over tests/ for the request payload, request-line and ownership assertions found only inline literals at tests/test_dispatch_session_host.py:297 and tests/test_a_pane_settles_when_no_work_is_live.py:433, so no test-side owner is forked; reckon/crew/dispatch_watch.py:932 stays the only writer of the line.",
+    "scope_discipline": "the two commits 1c86942186 and c69a2ba086 touch only tests/test_a_queued_request_arranges_its_follower.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-arranges-its-follower.html, both inside the declared write paths, with no product change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_queued_request_arranges_its_follower.py pass in full on the primary branch; the landed change repairs the one stale assertion at tests/test_a_queued_request_arranges_its_follower.py:95 and the file reads 2 passed at head 1c86942186 against 1 failed, 1 passed at base 73b9ac21a5.\nVERDICT done_when: the done_when requires the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, no assertion deleted or weakened, and a red base arm; head-run.log records 2 passed EXIT=0 and base-negative-control.log records 1 failed, 1 passed EXIT=1 with the failing id named.\nVERDICT write_paths: the declared paths are reckon, tests, the queued-work-needs-no-workaround fragment directory and the node's own fragment file; the diff's two paths, tests/test_a_queued_request_arranges_its_follower.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-arranges-its-follower.html, sit inside them.\nVERDICT manifest: the reviewed manifest records status complete, both commits, the gate command with its log paths, the base negative control with its failing id and EXIT=1, and suite arms at 58 passed; its artifacts line reconciles with every cited log's own summary line.\nVERDICT diff: read commits 1c86942186 and c69a2ba086 against base 73b9ac21a5: a +11/-1 test edit adding one helper and replacing the byte comparison, and a +10 evidence fragment; no product file is touched.\nCALL_SITES: reckon/crew/dispatch_watch.py:_request_line, reckon/crew/dispatch_watch.py:_deliver_request\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_queued_request_arranges_its_follower.py:95 now compares the parsed payload the product writes against a three-key literal, and both cases in that file read 2 passed at head 1c86942186 against 1 failed, 1 passed at base 73b9ac21a5.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-negative-control.log records the failing id and EXIT=1 at revision 73b9ac21a5, head-run.log records 2 passed EXIT=0 at 1c86942186, and both suite arms record 58 passed EXIT=0, but neither base nor head log carries a host line, so the done_when's all_debug and SLURM_JOB_ID-unset qualifier is unread from the receipt.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits 1c86942186 and c69a2ba086 touch only tests/test_a_queued_request_arranges_its_follower.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-arranges-its-follower.html, both inside the declared write paths, with no product change.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_queued_request_arranges_its_follower.py:95 fails if reckon/crew/dispatch_watch.py:932 stops writing the pair or drops the ownership key, but a reinstated change to key order or separators in that line stays green because the comparison is structural.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_queued_request_arranges_its_follower.py:20 follows the module's module-level helper idiom and tests/test_dispatch_session_host.py:297 uses the same parsed-payload comparison, and no name carries a plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: search over tests/ for the request payload, request-line and ownership assertions found only inline literals at tests/test_dispatch_session_host.py:297 and tests/test_a_pane_settles_when_no_work_is_live.py:433, so no test-side owner is forked; reckon/crew/dispatch_watch.py:932 stays the only writer of the line.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-arranges-its-follower.html:3 non-blocking: the fragment states the base and head runs were made as jobs on all_debug with SLURM_JOB_ID unset, but neither base-negative-control.log nor head-run.log carries a host or partition header, while the facility suite and scoped-gate logs do carry a '# host:' header, so the done_when's environment qualifier is claimed rather than recorded; have those two runs written through the wrapper that stamps revision, tree and host so a later reader can re-run the qualifier.\nFINDING tests/test_a_queued_request_arranges_its_follower.py:95 non-blocking: the assertion moved from a byte-exact comparison to a parsed comparison of host.line against _request_payload(), so key order and separators on the wire are no longer pinned and a product change that reordered or re-spaced the line would stay green; a three-key bytes literal was directly available, so the done_when's 'no assertion is deleted or weakened' holds for payload content but not for the wire format the previous assertion enforced.\n",
+  "review_run_id": "r-20261119T004751769494-review-of-qwnw-red-file-a-queued-request-arranges-its-follower-c69a2ba0869b",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "c69a2ba0869b551c7e21ee93650ca63f887c2595",
+  "reviewed_run_id": "r-20261118T044639196754-qwnw-red-file-a-queued-request-arranges-its-follower",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:00:59.649370+00:00",
+  "total": 106
+}
