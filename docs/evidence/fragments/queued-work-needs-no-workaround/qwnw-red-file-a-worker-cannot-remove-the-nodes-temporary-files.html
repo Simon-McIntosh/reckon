@@ -14,13 +14,14 @@ EXIT=1</pre>
 </section>
 <section id="qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files-head-pass">
 <h2>Head run: the same file passes in full</h2>
-<p>At head <code>ce86d1f8b2d4db12f84dff7aac2cc5a948fc1fe8</code> the file passes in full (8 passed) on all_debug as a job of its own, with its output on shared storage. The repaired case asserts the mounts unchanged, then the <code>--setenv</code> triple and the recipe it encodes, field for field: the mounts as the recipe's own argv, the resolved program, the runtime paths and the scratch root, the directory sources in their sorted order, the scratch, and the absolute-path limit of the task route.</p>
-<pre># revision: ce86d1f8b2d4db12f84dff7aac2cc5a948fc1fe8
-# host: 98dci4-clu-3142.iter.org
-# tree: /tmp/mcintos-landing-95bd35be154d-AShCBt/tree
-module: /tmp/mcintos-landing-95bd35be154d-AShCBt/tree/reckon/_worker_fence.py
-cwd: /tmp/mcintos-landing-95bd35be154d-AShCBt/tree
+<p>At head <code>7adfb550ce83ecd73f5df58d80ff478d3009fb47</code> the file passes in full (8 passed) on all_debug as a step of the worker's job. Two commits since the first repair moved the ground: main <code>957f6eb2532928e3825f59c52a3c0bf2a23ee64f</code> now inserts a scheduler guard between the mounts and the carried recipe, masking every copy of a scheduler verb the node's path resolves and the relay root it forwards to, and the recipe gained a carried-program field and a new limit text. The repaired case asserts the mounts unchanged, then the guard by the rule it keeps rather than as a literal: each mask pairs a verb's shim with a copy of that verb, each relay lands under the run's relay directory and forwards to a masked copy, one relay per verb, and the shim's environment names both directories; a composition that masks nothing fails its positive control. The recipe follows, field for field: the mounts, guard and shim environment as the recipe's own argv, the resolved program, no carried program, the runtime paths and the scratch root, the directory sources in their sorted order, the scratch, and the absolute-path limit of the task route. On main alone the same file still fails that one case (<code>1 failed, 7 passed</code>).</p>
+<pre># revision: 957f6eb2532928e3825f59c52a3c0bf2a23ee64f plus this node's three commits (cherry-picked onto main)
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py
+# tree: /tmp/merged-tree-MrmyyH/tree
+# head: e9eeda5e0d07c2913e722180ad95a0949b2ba832
+module: /tmp/merged-tree-MrmyyH/tree/reckon/_worker_fence.py
+shim env: RECKON_SHIM_HOME
 ........                                                                 [100%]
-8 passed in 3.46s
+8 passed in 3.74s
 EXIT=0</pre>
 </section>
