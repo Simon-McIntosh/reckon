@@ -1,0 +1,110 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:3336",
+    "reckon/host_shims/sbatch:65",
+    "reckon/host_shims/srun:65",
+    "reckon/host_shims/salloc:65",
+    "reckon/nested_launch.py:940",
+    "reckon/crew/reports.py:1533"
+  ],
+  "completed_at": "2026-11-20T06:20:00Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-20T05:39:43Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the test files importing the changed modules to add no failure against base in matched all_debug arms, but the recorded arms run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/_worker_fence.py, reckon/nested_launch.py or reckon/crew/reports.py, so the 58-to-60 pair cannot see a regression in the changed modules; the direct importer tests/test_nested_launch.py is in no arm and its base/head parity is asserted at manifest.md:21 with no log path under the run directory."
+    },
+    {
+      "file": "reckon/host_shims/sbatch",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: RECKON_SHIM_HOME is set with --setenv on the whole fenced argv (reckon/_worker_fence.py:2304-2306) and read unconditionally by srun and salloc too, so any shim resolved inside that fence from a different checkout takes repo_root from the fence composer's checkout and imports its reckon.nested_launch rather than its own; the launcher strips other checkouts' shim directories from the worker PATH (reckon/crew/dispatch_launch.py:790-796), so the route needs a gate that prepends its own tree's host_shims inside the fence."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "2345",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recipe's limit names only \"a scheduler binary resolved only on the job node's own path\" as unguarded, but _scheduler_search_directories at :1969 reads only the composing process's PATH while the launch appends declared backend directories to the worker's PATH (reckon/crew/dispatch_launch.py:799), so a real scheduler copy in such a directory is also unmasked on the submitting node and the recorded limit understates the residual the docstring at :1973 states."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1911",
+      "severity": "non-blocking",
+      "text": "non-blocking: scheduler_shields' search_path parameter has no caller \u2014 its only call at reckon/_worker_fence.py:2295 passes relay_root alone and the new test does not call it \u2014 so the argument is an unexercised branch rather than a used seam."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 135bb40ae4 and e8039eaaf3 against e6d692b1 \u2014 135bb40ae4 adds scheduler_shields and _scheduler_search_directories (reckon/_worker_fence.py:1909,1969) with the fence block at :2287-2308 and the reworded limit at :2345, relocated_binary and the two env names (reckon/nested_launch.py:105-106,398) with main() handing real_binary the caller's environment (:927), self_dir in all three shims (reckon/host_shims/sbatch:18), the retired-notice recognition (reckon/crew/reports.py:1515-1535) and the new test; e8039eaaf3 changes only the fragment.",
+    "done_when": "the done_when names tests/test_an_absolute_scheduler_call_runs_fenced.py plus matched importer arms submitted with sbatch to all_debug; the new test's measure is recorded \u2014 scoped-gate-1795152455084450339.log \"60 passed in 38.85s\" EXIT=0 at 135bb40ae4 and negative-control-base.log \"2 failed in 2.90s\" EXIT=1 at e6d692b1 quoting the bare ['--partition=all_debug', '--wrap=echo fenced-task'] \u2014 but the recorded suite arms at manifest.md:17-18 run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports a changed module.",
+    "goal": "node.json carries no goal key (only admission_findings, brief, done_when and peer_scopes), so the deliverable is plan \u00a715's \"A job submitted from inside the fence, by any path to a scheduler binary, either runs inside the submitting worker's fence or is not started\" (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:139); the landed change meets it through reckon/_worker_fence.py:1909 scheduler_shields and the mask block at reckon/_worker_fence.py:2287-2308, which overlay every copy of sbatch/srun/salloc the composing PATH resolves with that tool's shim and name the relay and shim home through two --setenv lines.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/manifest.md \u2014 status complete, commits 135bb40ae4 and e8039eaaf3, baseline_suite 58 passed EXIT=0 and after_suite 60 passed EXIT=0 both completed with failure_count 0, negative-control-base.log 2 failed EXIT=1 at base e6d692b1.",
+    "write_paths": "the dispatch declares nine paths and all eight paths of e6d692b1..e8039eaa are inside them (reckon/_worker_fence.py, reckon/nested_launch.py, reckon/crew/reports.py, reckon/host_shims/{sbatch,srun,salloc}, tests/test_an_absolute_scheduler_call_runs_fenced.py, the fragment), noting plan \u00a715's own write-path sentence (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:139) names only four of them."
+  },
+  "justifications": {
+    "durability": "tests/test_an_absolute_scheduler_call_runs_fenced.py:202 reddens to None when the mask block at reckon/_worker_fence.py:2295 is removed and :162-165 reddens when relocated_binary at reckon/nested_launch.py:398 is removed (the shim then finds no real tool and writes no record), while both cases skip rather than fail where bubblewrap is absent.",
+    "evidence": "the measure's own arm is recorded and falls at base (negative-control-base.log \"2 failed\" EXIT=1 at e6d692b1 versus scoped-gate-1795152455084450339.log \"60 passed\" EXIT=0 at 135bb40a), but the importer arms the done_when names are absent from manifest.md:17-18 and the parity they claim at manifest.md:21 cites no log.",
+    "fit": "the additions follow the module's own idiom of documented module-level constants and call-time imports (reckon/_worker_fence.py:82,89,1936), apart from scheduler_shields' search_path parameter at reckon/_worker_fence.py:1911, which no caller supplies.",
+    "goal_fidelity": "reckon/_worker_fence.py:2295-2308 puts each resolved copy of sbatch/srun/salloc behind its shim inside the fence and names the relay and shim home, so an absolute path reaches the same wrap as a name, with the composer's-PATH residual recorded in the recipe's limit at reckon/_worker_fence.py:2345.",
+    "reuse": "the capability owners are extended rather than forked \u2014 reckon/shim_lookup.py:is_shim and real_executable are reused for skip and search, and reckon/nested_launch.py:424 real_binary gains the relocation read instead of a second lookup; a search of reckon/*.py for split(os.pathsep) found no helper enumerating every executable copy, so _scheduler_search_directories at reckon/_worker_fence.py:1969 is new.",
+    "scope_discipline": "every one of the eight paths in e6d692b1..e8039eaa is listed in the dispatch's nine declared write paths, and the reports.py notice retirement and the three shim lines are required by the wording and the masked path this change introduces."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: node.json carries no goal key (only admission_findings, brief, done_when and peer_scopes), so the deliverable is plan \u00a715's \"A job submitted from inside the fence, by any path to a scheduler binary, either runs inside the submitting worker's fence or is not started\" (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:139); the landed change meets it through reckon/_worker_fence.py:1909 scheduler_shields and the mask block at reckon/_worker_fence.py:2287-2308, which overlay every copy of sbatch/srun/salloc the composing PATH resolves with that tool's shim and name the relay and shim home through two --setenv lines.\nVERDICT done_when: the done_when names tests/test_an_absolute_scheduler_call_runs_fenced.py plus matched importer arms submitted with sbatch to all_debug; the new test's measure is recorded \u2014 scoped-gate-1795152455084450339.log \"60 passed in 38.85s\" EXIT=0 at 135bb40ae4 and negative-control-base.log \"2 failed in 2.90s\" EXIT=1 at e6d692b1 quoting the bare ['--partition=all_debug', '--wrap=echo fenced-task'] \u2014 but the recorded suite arms at manifest.md:17-18 run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports a changed module.\nVERDICT write_paths: the dispatch declares nine paths and all eight paths of e6d692b1..e8039eaa are inside them (reckon/_worker_fence.py, reckon/nested_launch.py, reckon/crew/reports.py, reckon/host_shims/{sbatch,srun,salloc}, tests/test_an_absolute_scheduler_call_runs_fenced.py, the fragment), noting plan \u00a715's own write-path sentence (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:139) names only four of them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/manifest.md \u2014 status complete, commits 135bb40ae4 and e8039eaaf3, baseline_suite 58 passed EXIT=0 and after_suite 60 passed EXIT=0 both completed with failure_count 0, negative-control-base.log 2 failed EXIT=1 at base e6d692b1.\nVERDICT diff: read 135bb40ae4 and e8039eaaf3 against e6d692b1 \u2014 135bb40ae4 adds scheduler_shields and _scheduler_search_directories (reckon/_worker_fence.py:1909,1969) with the fence block at :2287-2308 and the reworded limit at :2345, relocated_binary and the two env names (reckon/nested_launch.py:105-106,398) with main() handing real_binary the caller's environment (:927), self_dir in all three shims (reckon/host_shims/sbatch:18), the retired-notice recognition (reckon/crew/reports.py:1515-1535) and the new test; e8039eaaf3 changes only the fragment.\nCALL_SITES: reckon/_backends.py:3336, reckon/host_shims/sbatch:65, reckon/host_shims/srun:65, reckon/host_shims/salloc:65, reckon/nested_launch.py:940, reckon/crew/reports.py:1533\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:2295-2308 puts each resolved copy of sbatch/srun/salloc behind its shim inside the fence and names the relay and shim home, so an absolute path reaches the same wrap as a name, with the composer's-PATH residual recorded in the recipe's limit at reckon/_worker_fence.py:2345.\nSCORE evidence: 13\nJUSTIFICATION evidence: the measure's own arm is recorded and falls at base (negative-control-base.log \"2 failed\" EXIT=1 at e6d692b1 versus scoped-gate-1795152455084450339.log \"60 passed\" EXIT=0 at 135bb40a), but the importer arms the done_when names are absent from manifest.md:17-18 and the parity they claim at manifest.md:21 cites no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the eight paths in e6d692b1..e8039eaa is listed in the dispatch's nine declared write paths, and the reports.py notice retirement and the three shim lines are required by the wording and the masked path this change introduces.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_absolute_scheduler_call_runs_fenced.py:202 reddens to None when the mask block at reckon/_worker_fence.py:2295 is removed and :162-165 reddens when relocated_binary at reckon/nested_launch.py:398 is removed (the shim then finds no real tool and writes no record), while both cases skip rather than fail where bubblewrap is absent.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the module's own idiom of documented module-level constants and call-time imports (reckon/_worker_fence.py:82,89,1936), apart from scheduler_shields' search_path parameter at reckon/_worker_fence.py:1911, which no caller supplies.\nSCORE reuse: 19\nJUSTIFICATION reuse: the capability owners are extended rather than forked \u2014 reckon/shim_lookup.py:is_shim and real_executable are reused for skip and search, and reckon/nested_launch.py:424 real_binary gains the relocation read instead of a second lookup; a search of reckon/*.py for split(os.pathsep) found no helper enumerating every executable copy, so _scheduler_search_directories at reckon/_worker_fence.py:1969 is new.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/manifest.md:17 non-blocking: the done_when requires the test files importing the changed modules to add no failure against base in matched all_debug arms, but the recorded arms run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/_worker_fence.py, reckon/nested_launch.py or reckon/crew/reports.py, so the 58-to-60 pair cannot see a regression in the changed modules; the direct importer tests/test_nested_launch.py is in no arm and its base/head parity is asserted at manifest.md:21 with no log path under the run directory.\nFINDING reckon/host_shims/sbatch:18 non-blocking: RECKON_SHIM_HOME is set with --setenv on the whole fenced argv (reckon/_worker_fence.py:2304-2306) and read unconditionally by srun and salloc too, so any shim resolved inside that fence from a different checkout takes repo_root from the fence composer's checkout and imports its reckon.nested_launch rather than its own; the launcher strips other checkouts' shim directories from the worker PATH (reckon/crew/dispatch_launch.py:790-796), so the route needs a gate that prepends its own tree's host_shims inside the fence.\nFINDING reckon/_worker_fence.py:2345 non-blocking: the recipe's limit names only \"a scheduler binary resolved only on the job node's own path\" as unguarded, but _scheduler_search_directories at :1969 reads only the composing process's PATH while the launch appends declared backend directories to the worker's PATH (reckon/crew/dispatch_launch.py:799), so a real scheduler copy in such a directory is also unmasked on the submitting node and the recorded limit understates the residual the docstring at :1973 states.\nFINDING reckon/_worker_fence.py:1911 non-blocking: scheduler_shields' search_path parameter has no caller \u2014 its only call at reckon/_worker_fence.py:2295 passes relay_root alone and the new test does not call it \u2014 so the argument is an unexercised branch rather than a used seam.",
+  "review_method": "Read-only review: plan \u00a715, the reviewed node.json, its manifest.md, both commits of e6d692b1..e8039eaaf3 reviewed commit by commit with the full eight-path diff, the new test file read from the reviewed head, the evidence fragment, and the reviewed run's scoped-gate, negative-control, baseline_suite and after_suite logs read for their revision headers, summary lines and EXIT= lines. One read outside the diff, for the reuse judgement: reckon/shim_lookup.py and a capability search over reckon/*.py for an existing enumerator of PATH copies. No suite was re-run and nothing in the reviewed tree was modified.",
+  "review_run_id": "r-20261120T053839574772-review-of-an-absolute-scheduler-call-runs-fenced-e8039eaaf381",
+  "reviewed_base_sha": "e6d692b1b42efe97685bb9dcc2f542c0de4135a1",
+  "reviewed_head_sha": "e8039eaaf3817020ec72e75085c8edc0e12fbcd2",
+  "reviewed_run_id": "r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "135bb40ae44d953ae9db356bd101fa8fba42fecf",
+    "e8039eaaf3817020ec72e75085c8edc0e12fbcd2"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_derivation": "Derived from the reviewed run's own gate logs: baseline_suite-1795152542468766688.log at e6d692b1b42efe97685bb9dcc2f542c0de4135a1 records \"58 passed in 35.14s\" with no FAILED line and a final EXIT=0; after_suite-1795152585338573877.log at 135bb40ae44d953ae9db356bd101fa8fba42fecf records \"60 passed in 38.71s\" with no FAILED line and a final EXIT=0. Both arms declare completed: true with failure_count 0 and no failure ids, so the head arm adds no failure and added_failure_count is 0 with an empty added_failure_ids.",
+    "after_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_absolute_scheduler_call_runs_fenced.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/after_suite-1795152585338573877.log",
+      "revision": "135bb40ae44d953ae9db356bd101fa8fba42fecf"
+    },
+    "baseline_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced/baseline_suite-1795152542468766688.log",
+      "revision": "e6d692b1b42efe97685bb9dcc2f542c0de4135a1"
+    },
+    "reviewed_run_arms": [
+      "scoped-gate-1795152455084450339.log 60 passed in 38.85s EXIT=0 at 135bb40ae4 (all_debug)",
+      "negative-control-base.log 2 failed in 2.90s EXIT=1 at e6d692b1, absolute-path arm handed the bare task",
+      "baseline_suite-1795152542468766688.log 58 passed in 35.14s EXIT=0 at e6d692b1",
+      "after_suite-1795152585338573877.log 60 passed in 38.71s EXIT=0 at 135bb40a"
+    ]
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T05:50:25.499252+00:00",
+  "total": 104
+}
