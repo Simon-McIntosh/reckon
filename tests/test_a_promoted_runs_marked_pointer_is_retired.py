@@ -134,7 +134,9 @@ def cohort(tmp_path, monkeypatch):
 def _station_sweep():
     reports = []
     beat = station.SweepBeat(start=lambda run: run())
-    beat.on_report = lambda project, session, report: reports.append(report)
+    # The station's report hook is handed the pass's memo counts beside the
+    # report; this cohort cares about the report alone.
+    beat.on_report = lambda project, session, report, _counts: reports.append(report)
     assert beat.request(PROJECT, "owner", moment=datetime.now(UTC), changed=True)
     assert len(reports) == 1
     return reports[0]
