@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1082">
+<meta name="plan-version" content="1084">
 <meta name="plan-modified" content="2026-11-20">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3286,7 +3286,10 @@
     <div class="r-comment-body"><p>The three failing cases were the test and not the product -- each read a ledger, a client home or a record shape outside the repository under test, and each now builds that population in one temporary root and points the reader at it; the named file reads 22 passed at head 26fbf47b63 as an all_debug job with SLURM_JOB_ID unset (base 42fe90d0b0: 3 failed, 19 passed) and the armed suite reads 58 passed at both arms.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261120T203625969683-review-of-qwnw-red-file-every-ledger-question-reads-the-store-ff12c6836ae5" data-who="reckon-build" data-when="2026-11-20T21:25:20.658Z">
-    <div class="r-comment-body"><p>independent review of run r-20261118T062445238812-qwnw-red-file-every-ledger-question-reads-the-store at base 42fe90d0b0a46060bafde2490dda7d4002cda478 and head ff12c6836ae52c35c0ebbf409677aa2e4c2369cc is parsed and stored at the reviewed run&#x27;s review-records directory: goal_fidelity 19, evidence 14, scope_discipline 19, durability 18, fit 16, reuse 10 (total 96), added failures 0, and five non-blocking findings — the fragment quotes a base-arm header line its log does not contain, its case count contradicts its own guard, the importer arm is prose rather than the inline JSON the done_when names, the test&#x27;s tmp_path_name misnames a fixture builder, and _plan_owner_sql restates row_plan&#x27;s precedence with one test as the only coupling.</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261118T062445238812-qwnw-red-file-every-ledger-question-reads-the-store at base 42fe90d0b0a46060bafde2490dda7d4002cda478 and head ff12c6836ae52c35c0ebbf409677aa2e4c2369cc is parsed and stored at the reviewed run's review-records directory: goal_fidelity 19, evidence 14, scope_discipline 19, durability 18, fit 16, reuse 10 (total 96), added failures 0, and five non-blocking findings — the fragment quotes a base-arm header line its log does not contain, its case count contradicts its own guard, the importer arm is prose rather than the inline JSON the done_when names, the test's tmp_path_name misnames a fixture builder, and _plan_owner_sql restates row_plan's precedence with one test as the only coupling.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261120T210111495059-review-of-qwnw-red-file-a-resumed-run-counts-as-working-0493d2049fd1" data-who="reckon-build" data-when="2026-11-20T21:55:23.806Z">
+    <div class="r-comment-body"><p>attached an independent review of run r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working over the one commit it gained since its last review (028b6f3439..0493d2049f, the fragment only: the added-ids caption, one table row corrected from &quot;1 failed, 2 passed&quot; to 3 passed in both trees, and two bullets folded into one), scoring goal_fidelity 19, evidence 15, scope_discipline 20, durability 15, fit 19, reuse 20, with added_failure_count 0 from the run&#x27;s own arms, and recording two non-blocking findings: the crash-seat cell at :150 quotes assert 3.100182317197323 &lt; 3.0 that no artefact under verify/ carries, and the gained commit&#x27;s body still says the reload case fails intermittently in the base tree where its own table now records 3 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
@@ -3335,6 +3338,12 @@
 </div>
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261120T210813697448-review-of-qwnw-a-loaded-node-publishes-a-current-disk-reading-0ca74c486961" data-who="reckon-build" data-when="2026-11-20T21:24:33.654Z">
     <div class="r-comment-body"><p>Review of 0ca74c4869 against 68d13e40, one commit, two test files, +117 -1: goal_fidelity 18, evidence 15, scope_discipline 20, durability 16, fit 16, reuse 18, added_failure_count 0, two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261120T212506484432-review-of-qwnw-a-per-file-gate-log-counts-every-failure-793e6e60ad6d" data-who="reckon-build" data-when="2026-11-20T21:49:17.266Z">
+    <div class="r-comment-body"><p>Review of r-20261120T204937395980-qwnw-a-per-file-gate-log-counts-every-failure at 793e6e60ad (base 3ab436fe38) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 20 (total 112), with 0 added failures; three non-blocking findings: the evidence fragment cites the after arm at 59e524393d where its log names 793e6e60ad, the no-summary refusal message still says "last run", and the per-file marker regex can match a test's own printed output.</p></div>
+</div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261120T204937395980-qwnw-a-per-file-gate-log-counts-every-failure" data-who="reckon-build" data-when="2026-11-20T21:23:26.684Z">
+    <div class="r-comment-body"><p>A gate log of marked per-file runs now counts every file: three runs whose first two fail and third passes read 2 failures and both ids where the last-run reader read 0, a marked run with no summary leaves the gate unmeasured, and an unmarked log is still read at its last attempt; the scoped gate and both suite arms completed at 0 failures.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T005738501568-review-of-qwnw-a-declared-write-path-fences-nothing-bc0fa81931ba" data-who="reckon-build" data-when="2026-11-15T02:35:19.779Z">
     <div class="r-comment-body"><p>review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing/review-records/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing.at-bc0fa81931bac1c9bfc484536c8eff74b279d8e5.json ; no commit, this node writes outside the repository</p></div>
@@ -3390,11 +3399,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde" data-who="reckon-build" data-when="2026-11-15T06:53:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde.html</p></div>
 </div>
-<div class="r-comment" data-section="s39" data-id="c-run-r-20261120T212506484432-review-of-qwnw-a-per-file-gate-log-counts-every-failure-793e6e60ad6d" data-who="reckon-build" data-when="2026-11-20T21:49:17.266Z">
-    <div class="r-comment-body"><p>Review of r-20261120T204937395980-qwnw-a-per-file-gate-log-counts-every-failure at 793e6e60ad (base 3ab436fe38) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 20 (total 112), with 0 added failures; three non-blocking findings: the evidence fragment cites the after arm at 59e524393d where its log names 793e6e60ad, the no-summary refusal message still says "last run", and the per-file marker regex can match a test's own printed output.</p></div>
-</div>
-<div class="r-comment" data-section="s39" data-id="c-run-r-20261120T204937395980-qwnw-a-per-file-gate-log-counts-every-failure" data-who="reckon-build" data-when="2026-11-20T21:23:26.684Z">
-    <div class="r-comment-body"><p>A gate log of marked per-file runs now counts every file: three runs whose first two fail and third passes read 2 failures and both ids where the last-run reader read 0, a marked run with no summary leaves the gate unmeasured, and an unmarked log is still read at its last attempt; the scoped gate and both suite arms completed at 0 failures.</p></div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261120T204802120637-qwnw-a-landed-plan-write-survives-a-promotion" data-who="reckon-build" data-when="2026-11-20T21:35:52.272Z">
+    <div class="r-comment-body"><p>Added tests/test_a_landed_plan_write_survives_a_promotion.py, which interleaves a section append with a landing comment in both orders: 2 passed there, 60 passed on the scoped gate and 58 on the base arm, and the negative control (the disagreement guard removed) fails with the appended section missing.</p></div>
 </div>
 </section>
 </main>
