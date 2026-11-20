@@ -2805,6 +2805,114 @@ def _fragment_plan_of(changed: Any) -> str | None:
     return None
 
 
+# A fragment cites the logs behind its measurements by name, and a sentence
+# beside such a citation can also name the revision it believes the log
+# records. That second copy is what fails: the run directory's logs are
+# rewritten in place by every rerun, so a revision frozen into the prose is
+# contradicted by the artefact the same sentence points at, and the record can
+# no longer be rechecked. Measured 2026-11-20 on this run: the merged-head
+# sentence named main ``c422a8f5`` beside ``logs/merged-head.log``, whose header
+# by then recorded ``46602c8f``, and the gate, the suite arms and an independent
+# review all read past it because nothing resolved the citation. The log's own
+# header is the authority for the pair, so a claim written in prose is compared
+# against it here rather than trusted.
+_FRAGMENT_CITED_LOG = re.compile(r"logs/[A-Za-z0-9_.\-]+\.log")
+
+# The revision a fragment sentence asserts, behind the role it asserts. Only
+# ``main`` and ``revision`` are read: those are the two roles a replay header
+# records, so those are the only claims a cited log can be held against.
+_FRAGMENT_REVISION_CLAIM = re.compile(
+    r"\b(main|revision)\b[^0-9A-Za-z]{0,8}([0-9a-fA-F]{7,64})",
+    re.IGNORECASE,
+)
+
+# The roles a capture header records, as ``# main: <sha>`` and
+# ``# revision: <sha>``.
+_FRAGMENT_LOG_HEADER = re.compile(
+    r"^#\s*(main|revision)\s*:\s*([0-9a-fA-F]{7,64})\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# A log captured into a fragment is a quotation, not a claim the fragment makes:
+# the header block is copied whole, so its revision pair is the log's own and
+# cannot contradict the file it was copied from. Judging it would refuse an
+# honest quotation.
+_QUOTED_LOG_BLOCK = re.compile(r"<pre\b[^>]*>.*?</pre\s*>", re.IGNORECASE | re.DOTALL)
+
+
+def _fragment_prose_lines(text: str) -> list[str]:
+    """A fragment's lines with quoted log blocks dropped and numbering kept."""
+    stripped = _QUOTED_LOG_BLOCK.sub(
+        lambda block: "\n" * block.group(0).count("\n"), text
+    )
+    return stripped.splitlines()
+
+
+def _fragment_citation_findings(
+    manifest: dict[str, Any],
+    *,
+    worktree: Path | None,
+    manifest_path: Path | None,
+) -> list[str]:
+    """Judge a run's landing fragment against the logs it cites on the same line.
+
+    A claim that a cited log records a revision is only as good as the log, and
+    the log is the copy that moves: a rerun rewrites it, so the fragment keeps a
+    pair nobody can recheck and a reader cannot tell a stale claim from a fresh
+    one. The comparison is made only where a line does both — cites a log and
+    names a revision — because a fragment that cites a log and says nothing
+    about its header leaves the header to speak for itself, which is the shape
+    this check wants.
+    """
+    if manifest_path is None:
+        return []
+    tree = Path.cwd() if worktree is None else Path(worktree)
+    findings: list[str] = []
+    for changed in manifest.get("changed_paths") or ():
+        if _fragment_plan_of(changed) is None:
+            continue
+        fragment = _normalized_scope_path(changed)
+        path = Path(fragment)
+        if not path.is_absolute():
+            path = tree / path
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        for number, line in enumerate(_fragment_prose_lines(text), start=1):
+            cited = _FRAGMENT_CITED_LOG.findall(line)
+            claims = {
+                (role.lower(), revision.lower())
+                for role, revision in _FRAGMENT_REVISION_CLAIM.findall(line)
+            }
+            if not cited or not claims:
+                continue
+            for name in dict.fromkeys(cited):
+                log_text, _ = _read_control_log(name, manifest_path=manifest_path)
+                if log_text is None:
+                    continue
+                recorded = {
+                    role.lower(): revision.lower()
+                    for role, revision in _FRAGMENT_LOG_HEADER.findall(log_text)
+                }
+                for claimed_role, claimed in sorted(claims):
+                    recorded_value = recorded.get(claimed_role)
+                    if recorded_value is None:
+                        continue
+                    if _names_the_same_revision(claimed, recorded_value):
+                        continue
+                    findings.append(
+                        f"fragment {fragment!s} line {number} names "
+                        f"{claimed_role} {claimed} on the same line that cites "
+                        f"{name!r}, whose header records {claimed_role} "
+                        f"{recorded_value}: a revision written beside a cited "
+                        "log is contradicted by that log as soon as it is "
+                        "rewritten, so the sentence must leave the pair to the "
+                        "log's own header"
+                    )
+    return findings
+
+
 def _landing_record_beside(root: Path, plan: str) -> Path | None:
     """The landing record a plan's fragments compose into, when one exists.
 
@@ -3085,6 +3193,11 @@ def audit_manifest(
     )
     findings.extend(
         _commit_citation_findings(manifest, worktree=worktree, repository=repository)
+    )
+    findings.extend(
+        _fragment_citation_findings(
+            manifest, worktree=worktree, manifest_path=resolved_manifest_path
+        )
     )
     findings.extend(_unmarked_finding_severity_findings(node))
     findings.extend(_unresolved_revision_findings(node))
