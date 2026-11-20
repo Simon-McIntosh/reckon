@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="532">
+<meta name="plan-version" content="533">
 <meta name="plan-modified" content="2026-11-20">
 </head>
 <body>
@@ -1951,6 +1951,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s105" data-id="c-run-r-20261120T051803182027-review-of-an-unchanged-gate-log-pair-is-counted-once-7ccd5f0d1f35" data-who="reckon-build" data-when="2026-11-20T05:18:59.438Z">
+    <div class="r-comment-body"><p>Reviewed 7ccd5f0d1f against e6d692b1: goal fidelity 19, evidence 18, scope discipline 17, durability 15, fit 16, reuse 20 (total 105, parsed, all six checklist items answered, four non-blocking findings); the count-once memo for the arm-log pair has no assertion that reddens if it is removed.</p></div>
 </div>
 </section>
 </main>
