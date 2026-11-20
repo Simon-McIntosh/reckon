@@ -51,6 +51,9 @@ INTERPRETER = REPO_ROOT / ".venv" / "bin" / "python"
 # bound would separate two readings by the whole sum.
 STEP_BOUND = 2
 STEP_SLEEP = 1.8
+# The sweep's own duration once it has done its work: longer than the pass
+# bound, so the pass has to publish before it and end the sweep at its bound.
+SWEEP_SLEEP = 6
 PASS_BOUND = 4
 WAIT = 2
 LIMIT = 8
@@ -87,8 +90,21 @@ sleep "$FIX_STEP_SLEEP"
 exec /usr/bin/stat "$@"
 """
 
+# The shim answers a sampled step after its bound. The sweep step is answered
+# by the real module first and only then lingers past the pass bound, which is
+# the shape measured on 19 November: 25.3 seconds of sweep against a 15-second
+# bound, after a reading that had already been published.
 STUB_SHIM = """\
 #!/bin/bash
+if [[ "$*" == *reclaim-node-scratch* ]]; then
+    "$RECKON_REAL_PYTHON" "$@"
+    sleep "$FIX_SWEEP_SLEEP"
+    exit 0
+fi
+if [[ "${FIX_PERMISSION_ERROR:-}" == "1" && "$*" == *sample-test-processes* ]]; then
+    echo "Permission denied: /proc/1/environ" >&2
+    exit 1
+fi
 sleep "$FIX_STEP_SLEEP"
 echo 0
 """
@@ -204,6 +220,8 @@ def node(tmp_path, monkeypatch):
         "worktree:\n"
         "  node_tmp_reserve_bytes: 0\n"
         f"  node_tmp_sample_max_age_seconds: {LIMIT}\n"
+        "session_scratch:\n"
+        "  orphan_grace_seconds: 1\n"
     )
     monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(flight))
     box = sandbox(
@@ -220,6 +238,8 @@ def node(tmp_path, monkeypatch):
             "RECKON_HOME": str(root / "crew-home"),
             "RECKON_WORKER_SCRATCH_ROOT": str(root / "scratch"),
             "FIX_STEP_SLEEP": str(STEP_SLEEP),
+            "FIX_SWEEP_SLEEP": str(SWEEP_SLEEP),
+            "RECKON_REAL_PYTHON": str(INTERPRETER),
         },
     )
     stubs = root / "stubbin"
@@ -351,3 +371,92 @@ def test_an_expired_reading_names_its_sampler_and_holds_no_stop_hook(node):
     )
     assert pressure["kind"] == "node-disk-reserve"
     assert hooks._blocking_items([pressure]) == [pressure]
+
+
+def sweep_case(node, extra_env):
+    """One pass whose sweep has work to do, at a bound the sweep outruns."""
+    box, _mount = node
+    box.env.update(extra_env)
+    # The sampled steps spend most of a node's pass, so this case declares:
+    # a pass long enough that its sweep step still starts, and a sweep step
+    # bound the sweep outruns once its work is written, so the pass ends the
+    # step at the bound. The sweep's work is written first, so its record of
+    # what it removed survives the ending.
+    box.env["FLEET_PASS_BOUND_SECONDS"] = str(PASS_BOUND + 20)
+    stale = box.root / "scratch" / "stale-run"
+    stale.mkdir(parents=True)
+    (stale / "payload").write_bytes(b"x")
+    # The sweep's grace is the smallest the schema allows, and the age it
+    # measures is the entry's own, so the case waits it out rather than moving
+    # a clock that a sampler running as a process would not see.
+    time.sleep(1.2)
+
+    def run():
+        return subprocess.run(
+            ["bash", str(SCRIPT), "--once"],
+            env=box.env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    return box, stale, run
+
+
+def journal_rows(box):
+    """Every row the sweep recorded, each one a whole line of the journal."""
+    path = box.state / "scratch-removals.jsonl"
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines()]
+
+
+def assert_published_inside_the_limit(box, started, limit):
+    """The reading this pass published is inside the limit from its own start."""
+    reading = reading_now(box.state / supervisor.NODE_DISK_RECORD)
+    assert reading is not None, "the pass published no reading at all"
+    latency = (parse_utc(reading["utc"]) - started).total_seconds()
+    assert latency < limit, (
+        f"the pass published its reading {latency:.1f} seconds after it began, "
+        f"beyond the {limit}-second limit the reader applies"
+    )
+    return reading
+
+
+def test_a_sweep_that_outruns_its_bound_still_leaves_a_current_reading(node):
+    box, stale, run = sweep_case(node, {})
+    limit = supervisor.node_disk_sample_max_age_seconds()
+    started = datetime.now(UTC)
+    result = run()
+    assert result.returncode == 0, result.stderr
+    # The sweep does its work and then lingers past the sample bound, where the
+    # pass ends it. The reading was published before it started, so it is
+    # current however long the sweep took.
+    reading = assert_published_inside_the_limit(box, started, limit)
+    # Read as of its own publication: the record the pass wrote is one the
+    # reader accepts, which the pass's later lingering cannot change.
+    supervisor.published_node_disk_sample(box.env, now=parse_utc(reading["utc"]))
+    rows = journal_rows(box)
+    assert [row["state"] for row in rows if row["path"] == str(stale)] == [
+        "intent",
+        "complete",
+    ], journal_rows(box)
+    assert not stale.exists()
+
+
+def test_a_step_that_fails_on_a_permission_error_leaves_the_journal_whole(node):
+    box, stale, run = sweep_case(node, {"FIX_PERMISSION_ERROR": "1"})
+    limit = supervisor.node_disk_sample_max_age_seconds()
+    started = datetime.now(UTC)
+    result = run()
+    assert result.returncode == 0, result.stderr
+    assert "Permission denied" in result.stderr
+    # The pass reported the step's unknown value and carried on: the reading
+    # was published inside the limit and the journal holds every row the sweep
+    # meant to write, whole.
+    assert_published_inside_the_limit(box, started, limit)
+    rows = journal_rows(box)
+    assert [row["state"] for row in rows if row["path"] == str(stale)] == [
+        "intent",
+        "complete",
+    ], journal_rows(box)

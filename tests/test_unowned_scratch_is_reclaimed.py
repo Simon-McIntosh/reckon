@@ -191,7 +191,14 @@ def test_disk_pass_runs_sweep_and_pressure_separates_live_and_unowned(
     reason = supervisor.node_disk_pressure(sample)["reason"]
     assert f"live crew scratch: {live}" in reason
     assert f"unowned crew scratch: {young}" in reason
-    assert str(orphan) not in reason
+    # The reading is taken before the sweep runs, so the mount's own largest
+    # entry census can still name the directory the sweep has by now removed.
+    # The crew scratch census is what says whether an entry was removed, and
+    # the orphan is absent from it.
+    assert not any(
+        member["path"] == str(orphan) and not member.get("removed")
+        for member in sample["crew_scratch"]["entries"]
+    )
     assert len(capsys.readouterr().out.split()) == 4
 
 
