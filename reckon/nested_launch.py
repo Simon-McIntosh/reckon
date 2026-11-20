@@ -586,17 +586,10 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
     return fence_roots([str(word) for word in argv])
 
 
-# How long a submitted job's task waits for its node's mounts to hold before it
-# starts: the tries, and the pause between them. A job node's automounter makes
-# and removes mount points under the node tmp for about the first second of a
-# job, and the fence's setup fails on one that vanishes while it is being bound.
-MOUNT_SETTLE_TRIES = 10
-MOUNT_SETTLE_SECONDS = 1.0
-
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
-_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile, time
+_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile
 spec = json.loads(base64.urlsafe_b64decode(sys.argv[-1]))
 recipe = spec["fence"]
 # The recipe's own list, not a copy: a seal this node repairs to the ``-try``
@@ -706,6 +699,14 @@ if not spec.get("sources_prepared"):
             for child in sorted(parent.iterdir()):
                 if child.is_symlink():
                     prepare += ["--symlink", os.readlink(child), str(child)]
+                elif child.is_dir() and not os.access(child, os.R_OK | os.X_OK):
+                    # A directory this user cannot enter cannot be bound by
+                    # name either: a job node's tmp holds other accounts'
+                    # private directories and stale mounts of deleted ones,
+                    # and one such child refused the whole fence before the
+                    # task started. The task could never have read it, so it
+                    # is left out of the private copy of its parent.
+                    continue
                 else:
                     prepare += ["--dev-bind", str(child), str(child)]
         for path in missing:
@@ -727,20 +728,6 @@ try:
         command = [script, *command]
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
     prefix += ["--setenv", spec["env"], encoded]
-    # The fence binds the node's whole tree, submounts included. A job node's
-    # automounter makes short-lived mount points under the node tmp while a job
-    # starts, and one that is listed and then gone fails the fence's own setup
-    # before the task runs. That is the node settling, not a refusal, so the
-    # mounts are tried with a task that does nothing until they hold, for a
-    # bounded number of tries. Any other failure is left for the real start to
-    # report, and the task itself is started exactly once.
-    for _ in range(_MOUNT_SETTLE_TRIES):
-        probe = subprocess.run([*prefix, "--", "/bin/true"], check=False,
-                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.PIPE)
-        if probe.returncode == 0 or b"Can't bind mount" not in probe.stderr:
-            break
-        time.sleep(_MOUNT_SETTLE_SECONDS)
     result = subprocess.run([*prefix, "--", *command], check=False)
 finally:
     if script is not None:
@@ -751,10 +738,8 @@ raise SystemExit(result.returncode if result.returncode >= 0 else 128-result.ret
 # the parent cannot import from, and a constant a reader edits in one place is
 # how the status the parent documents and the status the child exits with stay
 # the same figure.
-_TASK_REENTRY = (
-    _TASK_REENTRY_TEMPLATE.replace("_FENCE_PROGRAM_STATUS", str(FENCE_PROGRAM_STATUS))
-    .replace("_MOUNT_SETTLE_TRIES", str(MOUNT_SETTLE_TRIES))
-    .replace("_MOUNT_SETTLE_SECONDS", str(MOUNT_SETTLE_SECONDS))
+_TASK_REENTRY = _TASK_REENTRY_TEMPLATE.replace(
+    "_FENCE_PROGRAM_STATUS", str(FENCE_PROGRAM_STATUS)
 )
 
 
