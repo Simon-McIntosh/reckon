@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms on disk: baseline_suite-1795120073038811272.log at 28fbf2bc2fe records 58 passed in 42.51s, EXIT=0 with no FAILED line, and after_suite-1795120116187885581.log at 84382c3d46 records 58 passed in 35.14s, EXIT=0 with no FAILED line, so the set difference is empty (0). Both arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which the manifest itself records as not exercising the changed file.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/runs.py:5339 (stream baseline builds counts from _fleet_counts)",
+    "reckon/crew/admission/holds.py:527 (admission writes a transition row carrying counts)",
+    "reckon/crew/recovery_watch.py:2920 (_session_fleet_counts calls _fleet_counts per session)",
+    "reckon/crew/recovery_watch.py:2933 (_transition_counts calls _fleet_counts)",
+    "reckon/crew/recovery_watch.py:3546 (scoped watch event counts calls _fleet_counts)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T19:37:09Z",
+  "findings": [
+    {
+      "file": "tests/test_a_wait_ages_on_its_stream.py",
+      "id": "f9ebc98facf",
+      "line": "159",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added _counts helper re-implements tests/test_crew_recovery.py:500 _no_queue_counts, the existing owner of exactly this expectation (the same six keys, the same rationale that the three buckets travel beside the promotion queue's measured figures). Test modules already import helpers across files (tests/test_a_brief_landed_section_releases_its_waiters.py:15 imports _git), so the owner could be extended with an optional waiting argument and imported here; two copies of the payload will drift apart the next time the counters change, and only one of them is in a file a counters change would prompt someone to open."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062509903466-qwnw-red-file-a-wait-ages-on-its-stream/manifest.md",
+      "id": "fcc2bc50b3b",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's arm clause asks for an arm over the files that import what the node changed, and the recorded baseline_suite and after_suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which the manifest's own outside_scope line says do not exercise the change. Because the node changed only a test file, no test file imports it, so the delta of zero is uninformative either way; an arm over the modules that exercise recovery._fleet_counts (for example tests/test_crew_recovery.py) would have measured the edit's blast radius instead of two unrelated modules."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites of _fleet_counts: reckon/crew/runs.py:5339, reckon/crew/admission/holds.py:527 and reckon/crew/recovery_watch.py:2920,2933,3546; the product is unchanged, so these read the payload the repaired test now pins.",
+    "diff": "read both commits against 28fbf2bc2fe2b27addcf04248210222f2115c1ee: ec7ebe4f39 edits tests/test_a_wait_ages_on_its_stream.py (+22 -12) and 84382c3d46 adds the 22-line evidence fragment; the test hunk moves two literal expected dicts into a helper that also names promotion_queued, oldest_promotion_position and oldest_promotion_requested_at, and keeps both comparisons exact-equality.",
+    "done_when": "the done_when asks for the file green at head on a compute partition, a per-cause verdict, an arm over the files that import the change, the base run logged beside the head run, and clean ruff; the head gate scoped-gate-1795120183174459931.log records 10 passed EXIT=0, I reproduced 10 passed from a scratch extraction of 84382c3d46, ruff reports nothing on the changed file, and the negative control is in the fragment and on disk.",
+    "goal": "the node goal is to make tests/test_a_wait_ages_on_its_stream.py pass in full on the primary branch; at head 84382c3d46 the file runs 10 passed EXIT=0 while the same file at main 7ffe0eca66 still runs 2 failed, 8 passed, so the goal is met and the defect it repairs is still live on the branch.",
+    "manifest": "read in full; it reports status complete, the two commit ids comma-separated, the gate at 10 passed, arms at 58 passed each with EXIT=0, and the negative control at 2 failed, 8 passed EXIT=1, and every log it cites exists with those figures.",
+    "write_paths": "the node's declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (with the one fragment path); the diff touches tests/test_a_wait_ages_on_its_stream.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-wait-ages-on-its-stream.html and nothing else."
+  },
+  "justifications": {
+    "durability": "both repaired assertions at tests/test_a_wait_ages_on_its_stream.py:211 and :237 redden on any regression that drops or misreports the promotion figures, since they compare the whole six-key payload by exact equality, and they redden on the pre-repair payload itself, which the base run logs; the assertions are independent of the code under test because the expected dict is built in the test module and the actual comes from recovery._fleet_counts.",
+    "evidence": "scoped-gate-1795120183174459931.log records 10 passed EXIT=0 at 84382c3d46 and my own extraction of that revision on this node reproduces 10 passed, while logs/negative-control-base.txt records the two failing ids at 28fbf2bc2fe, but the arm pair the done_when asks for runs two unrelated modules, so the zero-failure delta it reports is not a measurement of this change.",
+    "fit": "the helper and its module-level docstring follow the neighbouring _row and _condition_test helpers in tests/test_a_wait_ages_on_its_stream.py:150, and the commits carry conventional subjects with bodies and no attribution, but _counts is already the name of a differently shaped helper in tests/test_a_held_request_is_drawn_by_its_owner.py:117 and tests/test_a_request_that_its_not_launched_is_not_drawn_working.py:121, so the name reads as a third meaning of the same word.",
+    "goal_fidelity": "tests/test_a_wait_ages_on_its_stream.py at 84382c3d46 runs 10 passed EXIT=0 from a scratch extraction, and the node names the cause as the test being wrong while leaving the product untouched, which is what plan section 29 asks a test-role node to do.",
+    "reuse": "the added _counts at tests/test_a_wait_ages_on_its_stream.py:159 duplicates the capability tests/test_crew_recovery.py:500 _no_queue_counts already owns, used at six call sites in that module, without extending or importing it, and tests/test_crew_obligations.py:279 pins the same payload inline a third time.",
+    "scope_discipline": "the two paths in the diff are tests/test_a_wait_ages_on_its_stream.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-wait-ages-on-its-stream.html, both inside the declared write paths, and no product file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_wait_ages_on_its_stream.py pass in full on the primary branch; at head 84382c3d46 that file runs 10 passed EXIT=0 from a scratch extraction, while the same file at main 7ffe0eca66 still runs 2 failed, 8 passed, so the goal is met and the defect is still live on the branch.\nVERDICT done_when: the done_when asks for the file green at head on a compute partition, a per-cause verdict, an arm over the files that import the change, the base run logged beside the head run, and clean ruff; scoped-gate-1795120183174459931.log records 10 passed EXIT=0 at 84382c3d46, ruff reports nothing on the changed file, and the base run is logged in logs/negative-control-base.txt and in the fragment, but the recorded arm pair runs two modules the manifest says do not exercise the change.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround including the one fragment path; the diff touches tests/test_a_wait_ages_on_its_stream.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-wait-ages-on-its-stream.html, both inside them.\nVERDICT manifest: read in full; status complete, two comma-separated commit ids, the gate at 10 passed, the arms at 58 passed each with EXIT=0, and the negative control at 2 failed, 8 passed EXIT=1, with every cited log present on disk and showing those figures.\nVERDICT diff: read both commits against 28fbf2bc2fe2b27addcf04248210222f2115c1ee; ec7ebe4f39 edits tests/test_a_wait_ages_on_its_stream.py (+22 -12) by moving two literal expected dicts into a helper that adds the three promotion figures while keeping exact equality, and 84382c3d46 adds the 22-line evidence fragment.\nCALL_SITES: reckon/crew/runs.py:5339, reckon/crew/admission/holds.py:527, reckon/crew/recovery_watch.py:2920, reckon/crew/recovery_watch.py:2933, reckon/crew/recovery_watch.py:3546\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_wait_ages_on_its_stream.py at 84382c3d46 runs 10 passed EXIT=0 from a scratch extraction, and the node leaves the product untouched while naming the test as the wrong side.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795120183174459931.log records 10 passed EXIT=0 at 84382c3d46 and logs/negative-control-base.txt records the two failing ids at 28fbf2bc2fe, but the arm pair at manifest.md:17 runs two unrelated modules so its zero-failure delta does not measure this change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_a_wait_ages_on_its_stream.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-wait-ages-on-its-stream.html, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_wait_ages_on_its_stream.py:211 and :237 compare the whole six-key payload by exact equality, so they redden if recovery._fleet_counts drops or misreports promotion_queued or the oldest-promotion figures, and they redden on the pre-repair payload itself.\nSCORE fit: 16\nJUSTIFICATION fit: the helper at tests/test_a_wait_ages_on_its_stream.py:159 follows the neighbouring _row helper's style, but the name _counts already denotes a differently shaped helper in tests/test_a_held_request_is_drawn_by_its_owner.py:117 and tests/test_a_request_that_has_not_launched_is_not_drawn_working.py:121.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_wait_ages_on_its_stream.py:159 re-implements tests/test_crew_recovery.py:500 _no_queue_counts, the existing owner of this expected payload with six call sites, without extending or importing it.\nFINDING tests/test_a_wait_ages_on_its_stream.py:159 non-blocking: the added _counts helper re-implements tests/test_crew_recovery.py:500 _no_queue_counts, which builds the same six-key expected payload for a fleet with no promotion request queued; the owner could be extended with an optional waiting argument and imported, as test modules here already import helpers across files, and two copies will drift apart the next time the counters change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062509903466-qwnw-red-file-a-wait-ages-on-its-stream/manifest.md:17 non-blocking: the recorded baseline_suite and after_suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which the manifest's own outside_scope line says do not exercise the change, so the zero-failure delta the done_when asks for is not measured over anything that exercises recovery._fleet_counts.",
+  "review_node": "review-of-qwnw-red-file-a-wait-ages-on-its-stream-84382c3d4675",
+  "review_run_id": "r-20261120T074455915480-review-of-qwnw-red-file-a-wait-ages-on-its-stream-84382c3d4675",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "84382c3d46757c298d2c484e88bcaaea9e930dd5",
+  "reviewed_run_id": "r-20261118T062509903466-qwnw-red-file-a-wait-ages-on-its-stream",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T074455915480-review-of-qwnw-red-file-a-wait-ages-on-its-stream-84382c3d4675"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T19:44:30.191336+00:00",
+  "total": 95
+}
