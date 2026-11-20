@@ -1,0 +1,10 @@
+<section id="qwnw-a-per-file-gate-log-counts-every-failure">
+<h2>A gate log of several per-file runs counts every failure</h2>
+<p>A gate that runs one pytest process per file appends every run into one log. The receipt reader took the log's last run only, so a gate whose earlier files failed and whose last file passed counted zero failures.</p>
+<pre># reproduced before the repair: three marked runs, first two failing, last passing
+ids: {'tests/test_b.py::test_two', 'tests/test_a.py::test_one'}
+receipt describes: '# file: tests/test_c.py'
+log_failure_count: 0</pre>
+<p>The repair marks each run with a per-file header, sums the per-file summaries and unions the failure ids across every marked file. A marked file that reached no summary leaves the gate unmeasured rather than clean, and an unmarked log is still read at its last attempt.</p>
+<p>Gate (all_debug): scoped suite at <code>59e524393d</code> — 0 failed; base arm at <code>3ab436fe38</code> and after arm at <code>59e524393d</code> each completed at 0 failures. Negative control: with the reader taking the last run only, the three-file log reads 0 failures (4 failed, EXIT=1).</p>
+</section>
