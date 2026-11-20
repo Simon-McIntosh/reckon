@@ -65,6 +65,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
@@ -2832,8 +2833,21 @@ def _gate_log_path(manifest_text: str, field: str) -> str | None:
     return None
 
 
-def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | None:
-    """Read a named gate log, resolving a relative path against ``run_directory``."""
+# A delivered run's logs never change, so a repeated read of its review would
+# re-read and re-scan the same bytes for every reader that asked. What is held
+# is the pair's own result — the count, the ids and each arm's header revision —
+# never an arm log's text: the station is long-lived, a pair of logs runs to
+# megabytes, and an entry bound says nothing about how many bytes an entry may
+# hold.
+
+
+def _gate_log_file(log_path: str | None, run_directory: Path | None) -> Path | None:
+    """Return where a named gate log sits, or ``None`` when none is named.
+
+    A relative path is resolved against ``run_directory``, the reviewed run's
+    own directory, and a retired run's path is resolved to the run's archived
+    location rather than read as missing.
+    """
     if not log_path:
         return None
     path = Path(log_path)
@@ -2841,11 +2855,160 @@ def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | No
         path = Path(run_directory) / path
     from reckon.crew.runs import resolve_run_path
 
-    path = resolve_run_path(path)
+    return resolve_run_path(path)
+
+
+def _read_gate_log_text(path: Path) -> str:
+    """Read one gate log's bytes as text.
+
+    This is the one place an arm log is read, so a stand-in placed here counts
+    the reads of each arm's log rather than the review's own bookkeeping.
+    """
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _read_gate_log_attempt(path: Path | None) -> tuple[str | None, bool]:
+    """Return one gate log's text and whether reading it failed.
+
+    A path that names no log is not a failure: the run simply has no such log,
+    and that is a state the record can carry as unmeasured. A log that is there
+    but cannot be read is a failure, and the caller must not keep what a failed
+    read produced — the next read of the same pair has to try again rather than
+    inherit one transient error for the life of the process.
+    """
+    if path is None:
+        return None, False
     try:
-        return path.read_text(encoding="utf-8", errors="replace")
+        return _read_gate_log_text(path), False
+    except OSError:
+        return None, True
+
+
+def _read_gate_log_at(path: Path | None) -> str | None:
+    """Return one gate log's text, or ``None`` when it is absent or unreadable.
+
+    A review read before its run delivered the log has no text to read, and that
+    is a state the record can carry as unmeasured rather than a reason to raise.
+    """
+    return _read_gate_log_attempt(path)[0]
+
+
+def _gate_log_identity(path: Path | None) -> tuple[int, ...] | None:
+    """Return the stat identity a gate log's bytes are keyed on, or ``None``."""
+    if path is None:
+        return None
+    try:
+        return file_memo.file_signature(path)
     except OSError:
         return None
+
+
+def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | None:
+    """Read a named gate log, resolving a relative path against ``run_directory``."""
+    return _read_gate_log_at(_gate_log_file(log_path, run_directory))
+
+
+class _ArmLogPair(NamedTuple):
+    """The facts one derivation of an arm-log pair yields.
+
+    The count and the added ids are the derivation's answer; ``base_present``
+    distinguishes a missing base log from a pair that simply added nothing, and
+    the two revisions are what each arm's own header records. No log text is
+    carried, so holding the result holds no bytes of the logs.
+    """
+
+    count: int | None
+    added_ids: list[str]
+    base_present: bool
+    base_revision: str | None
+    head_revision: str | None
+
+
+# One entry per pair of arm-log identities, each a few short strings and the ids
+# the head added. The bound is on entries, which is what an entry's size depends
+# on: no log text is held, so 4096 pairs of a large run cost the same as 4096
+# pairs of a small one.
+_PAIR_RESULTS: file_memo.BoundedMap[_ArmLogPair] = file_memo.bounded_map(
+    "review_gate_log_pair_results", limit=4096
+)
+
+
+def _added_failures_for_arm_logs(
+    base_path: Path | None,
+    head_path: Path | None,
+    *,
+    base_directory: str | Path | None,
+    head_directory: str | Path | None,
+) -> _ArmLogPair:
+    """Return the pair's count, ids, base-log presence and both revisions.
+
+    The pair is derived once per pair of stat identities and answered from the
+    map on every later read of the same pair, so five reads of an unchanged
+    review read each log once. A log rewritten to a new identity misses the key
+    and the pair is derived again from both logs — the difference needs both
+    arms, and neither arm's bytes are retained to avoid the second read.
+
+    A derivation that reads a log unsuccessfully is handed to this caller and
+    not kept: the text it read is missing rather than empty, so the result says
+    nothing about the pair, and holding it would keep one transient error in
+    place until the process restarted. A pair whose logs are simply absent is
+    kept, because the key already carries that absence and a log that appears
+    changes it.
+
+    The held value is the result alone: the count, the added ids, whether the
+    base log was there, and the two revision strings each header names. No log
+    text is kept, so an entry's size follows the number of failing tests rather
+    than the size of the logs it was derived from.
+    """
+    key = (
+        _gate_log_identity(base_path),
+        _gate_log_identity(head_path),
+        os.fspath(base_directory) if base_directory is not None else "",
+        os.fspath(head_directory) if head_directory is not None else "",
+    )
+    held = _PAIR_RESULTS.get(key)
+    if held is not None:
+        # The ids are handed out as a fresh list: a record built from this pair
+        # carries them, and a caller that changed them must not reach the entry
+        # every later reader is answered from.
+        return held._replace(added_ids=list(held.added_ids))
+    pair, failed = _derive_arm_log_pair(
+        base_path,
+        head_path,
+        base_directory=base_directory,
+        head_directory=head_directory,
+    )
+    if not failed:
+        _PAIR_RESULTS.put(key, pair)
+    return pair._replace(added_ids=list(pair.added_ids))
+
+
+def _derive_arm_log_pair(
+    base_path: Path | None,
+    head_path: Path | None,
+    *,
+    base_directory: str | Path | None,
+    head_directory: str | Path | None,
+) -> tuple[_ArmLogPair, bool]:
+    """Read both arms and return the pair's result and whether a read failed."""
+    base_text, base_failed = _read_gate_log_attempt(base_path)
+    head_text, head_failed = _read_gate_log_attempt(head_path)
+    count, added_ids = added_failures_from_gate_logs(
+        base_text,
+        head_text,
+        base_directory=base_directory,
+        head_directory=head_directory,
+    )
+    return (
+        _ArmLogPair(
+            count=count,
+            added_ids=added_ids,
+            base_present=base_text is not None,
+            base_revision=recorded_log_revision(base_text),
+            head_revision=recorded_log_revision(head_text),
+        ),
+        base_failed or head_failed,
+    )
 
 
 def recorded_log_revision(log_text: str | None) -> str | None:
@@ -3366,17 +3529,50 @@ def annotate_added_failures(
     """
     if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
         return dict(record)
-    result = dict(record)
     count, added_ids = added_failures_from_gate_logs(
         base_text,
         head_text,
         base_directory=base_directory,
         head_directory=head_directory,
     )
+    return _annotated_added_failure_count(
+        record,
+        count,
+        added_ids,
+        base_present=base_text is not None,
+        retirement_text=retirement_text,
+        base_directory=base_directory,
+        head_directory=head_directory,
+    )
+
+
+def _annotated_added_failure_count(
+    record: dict[str, Any],
+    count: int | None,
+    added_ids: list[str],
+    *,
+    base_present: bool,
+    retirement_text: str = "",
+    base_directory: str | Path | None = None,
+    head_directory: str | Path | None = None,
+) -> dict[str, Any]:
+    """Record an already-taken added-failure count on ``record`` and cap its total.
+
+    The count and the ids are handed in rather than derived here so a caller
+    reading the same pair of logs again does not rescan them for a number it
+    already holds; :func:`annotate_added_failures` derives them and delegates
+    here, and the review reader takes them from
+    :func:`_added_failures_for_arm_logs`. What is decided from the count — the
+    unmeasured note, the retirement of added ids and the total's cap — stays
+    here, because it is the record's shape rather than the logs' content.
+    """
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        return dict(record)
+    result = dict(record)
     result["added_failure_count"] = count
     result["added_failure_ids"] = added_ids
     if count is None:
-        missing = "base" if base_text is None else "head"
+        missing = "base" if not base_present else "head"
         result["added_failures_note"] = (
             f"unmeasured: the reviewed manifest names no {missing} gate log, so "
             "the added-failure count was not taken"
@@ -3530,26 +3726,32 @@ def annotate_review_of_run(
         )
     except OSError:
         return record
-    base_text = _read_gate_log(
-        _gate_log_path(manifest_text, _BASE_LOG_FIELD), run_directory
+    base_directory = _arm_directory(manifest_text, _BASE_LOG_FIELD)
+    head_directory = _arm_directory(manifest_text, _HEAD_LOG_FIELD)
+    # The pair's result is derived once per pair of log identities, so the
+    # duties that read the same stored review within a tick share one derivation
+    # rather than repeating it for each of them.
+    pair = _added_failures_for_arm_logs(
+        _gate_log_file(_gate_log_path(manifest_text, _BASE_LOG_FIELD), run_directory),
+        _gate_log_file(_gate_log_path(manifest_text, _HEAD_LOG_FIELD), run_directory),
+        base_directory=base_directory,
+        head_directory=head_directory,
     )
-    head_text = _read_gate_log(
-        _gate_log_path(manifest_text, _HEAD_LOG_FIELD), run_directory
-    )
-    annotated = annotate_added_failures(
+    annotated = _annotated_added_failure_count(
         record,
-        base_text=base_text,
-        head_text=head_text,
+        pair.count,
+        pair.added_ids,
+        base_present=pair.base_present,
         retirement_text=_manifest_prose(manifest_text),
-        base_directory=_arm_directory(manifest_text, _BASE_LOG_FIELD),
-        head_directory=_arm_directory(manifest_text, _HEAD_LOG_FIELD),
+        base_directory=base_directory,
+        head_directory=head_directory,
     )
     # Each arm log's own header says which revision it measured, so recording it
     # lets a reader tie the added-failure count to that commit without re-running
     # the gate. A header naming the base while the change is at another commit
     # then reads as the mismatch it is rather than as evidence about the change.
-    annotated[_BASE_LOG_REVISION_KEY] = recorded_log_revision(base_text)
-    annotated[_HEAD_LOG_REVISION_KEY] = recorded_log_revision(head_text)
+    annotated[_BASE_LOG_REVISION_KEY] = pair.base_revision
+    annotated[_HEAD_LOG_REVISION_KEY] = pair.head_revision
     return annotated
 
 
