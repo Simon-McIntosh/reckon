@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="534">
+<meta name="plan-version" content="535">
 <meta name="plan-modified" content="2026-11-20">
 </head>
 <body>
@@ -1076,6 +1076,15 @@ staged paths.</p>
 <div class="r-comment" data-section="s103" data-id="c-run-r-20261119T194721356715-a-memoised-pointer-record-reverifies-its-identity" data-who="reckon-build" data-when="2026-11-19T19:57:41Z">
     <div class="r-comment-body"><p>A memoised pointer record is now stored under the stat identity its text was read at — file_memo.memoized takes the caller's identity and keeps nothing once the file has moved past it, in the read-only region path too — so the listing after a rename between the text fetch and the memo store returns the new record (base: still 'working' against a file holding 'complete') while an unchanged 300-pointer listing still decodes none and a single rename costs one decode.</p></div>
 </div>
+<div class="r-comment" data-section="s104" data-id="c-run-r-20261120T052557005388-review-of-a-publish-reads-each-promotion-request-once-6cf52be5d168" data-who="reckon-build" data-when="2026-11-20T05:27:07.828Z">
+    <div class="r-comment-body"><p>Review of r-20261120T045503326543-a-publish-reads-each-promotion-request-once at 6cf52be5d1 scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 13, fit 17, reuse 5 with 0 added failures, and files four non-blocking findings: a hand-rolled request cache duplicating file_memo.memoized, no test reaching the obligation_snapshot publish wiring, a mid-publish stale index, and the suite arms run on the fleet node rather than the declared all_debug sbatch job.</p></div>
+</div>
+<div class="r-comment" data-section="s105" data-id="c-run-r-20261120T051803182027-review-of-an-unchanged-gate-log-pair-is-counted-once-7ccd5f0d1f35" data-who="reckon-build" data-when="2026-11-20T05:18:59.438Z">
+    <div class="r-comment-body"><p>Reviewed 7ccd5f0d1f against e6d692b1: goal fidelity 19, evidence 18, scope discipline 17, durability 15, fit 16, reuse 20 (total 105, parsed, all six checklist items answered, four non-blocking findings); the count-once memo for the arm-log pair has no assertion that reddens if it is removed.</p></div>
+</div>
+<div class="r-comment" data-section="s105" data-id="c-run-r-20261120T054332381254-review-of-an-unchanged-gate-log-pair-is-counted-once-a35432d2893e" data-who="reckon-build" data-when="2026-11-20T05:44:59.707Z">
+    <div class="r-comment-body"><p>Independent review of the gate-log pair node at head a35432d289 — six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 20, total 112), added failures 0 derived from the run&#x27;s own arm logs (58 passed at e6d692b1 and 61 passed at a35432d289, no FAILED id in either), and two non-blocking findings: a transient read error is memoised as an unmeasured pair at reckon/crew/review.py:2882 and _read_gate_log at :2895 is left reachable only from a test; the repair commit 252be86322 is guarded, since removing the pair memo reddens the read-count assertions (3 failed EXIT=1, each log read 5 times).</p></div>
+</div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261027T045950194125-review-of-a-lift-row-reads-as-a-lift-4112d7fe4231" data-who="reckon-build" data-when="2026-10-27T05:05:34.764Z">
     <div class="r-comment-body"><p>Independent review of a-lift-row-reads-as-a-lift at head 4112d7fe423163695922e63d7b0bae188e395f45 from base 54f4934f3dd3b2238d514f8b4e085958da53395c: all six checklist items answered, total 99/120 (goal_fidelity 16, evidence 16, scope_discipline 19, durability 17, fit 18, reuse 13), added_failure_count 0 over the reviewed run's own base/head gate logs; three non-blocking findings — a merged grant is drawn twice because the grant's own row is emitted before the merged copy, the replaced lift id is inferred from event order rather than read from the producer's record, and _lift_line duplicates the trailing-cell scaffolding of _reset_line.</p></div>
 </div>
@@ -1951,12 +1960,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
-</div>
-<div class="r-comment" data-section="s105" data-id="c-run-r-20261120T051803182027-review-of-an-unchanged-gate-log-pair-is-counted-once-7ccd5f0d1f35" data-who="reckon-build" data-when="2026-11-20T05:18:59.438Z">
-    <div class="r-comment-body"><p>Reviewed 7ccd5f0d1f against e6d692b1: goal fidelity 19, evidence 18, scope discipline 17, durability 15, fit 16, reuse 20 (total 105, parsed, all six checklist items answered, four non-blocking findings); the count-once memo for the arm-log pair has no assertion that reddens if it is removed.</p></div>
-</div>
-<div class="r-comment" data-section="s104" data-id="c-run-r-20261120T052557005388-review-of-a-publish-reads-each-promotion-request-once-6cf52be5d168" data-who="reckon-build" data-when="2026-11-20T05:27:07.828Z">
-    <div class="r-comment-body"><p>Review of r-20261120T045503326543-a-publish-reads-each-promotion-request-once at 6cf52be5d1 scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 13, fit 17, reuse 5 with 0 added failures, and files four non-blocking findings: a hand-rolled request cache duplicating file_memo.memoized, no test reaching the obligation_snapshot publish wiring, a mid-publish stale index, and the suite arms run on the fleet node rather than the declared all_debug sbatch job.</p></div>
 </div>
 </section>
 </main>
