@@ -75,6 +75,19 @@ CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 # and the capability a refusal names are the same string.
 FENCE_BINARY = "bwrap"
 
+# The scheduler tools a task is submitted with. Their shims under
+# ``reckon/host_shims`` are what re-enter a worker's fence at the task
+# boundary, and each is guarded through PATH alone until the fence puts it in
+# front of the tool's own absolute paths; see :func:`scheduler_shields`.
+SCHEDULER_TOOLS = ("sbatch", "srun", "salloc")
+
+# The directory beneath the run directory holding the real scheduler binaries a
+# masked path forwards to. It lives in the run directory because that directory
+# is the one place a launch always has writable and a submitted job on another
+# node can read: the relay a job's own masked paths forward to is the same file,
+# reached by the same shared path.
+SCHEDULER_RELAY_DIRECTORY = ".scheduler-bin"
+
 
 # The flight key naming a fence program carried on shared storage. A job node
 # whose own path holds no fence program runs the carried copy instead, so the
@@ -1893,6 +1906,86 @@ def unmergeable_seals(
     return tuple(seals.values())
 
 
+def scheduler_shields(
+    relay_root: str | Path | None,
+    search_path: str | None = None,
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]], str]:
+    """The mounts that put a scheduler shim in front of every copy of its tool.
+
+    The shims guard a launch only while the tool resolves through ``PATH``: an
+    absolute path reaches the real binary and the shim is never consulted,
+    which is the route a worker took on 19 November. The fence is the one place
+    that can change what an absolute path resolves to, so every copy of the
+    tool the launching node's search path holds is overlaid read-only with that
+    tool's shim, and the first copy — the one the shim itself would forward to
+    — is bound read-only under ``relay_root`` as its forwarding target. A
+    submitted job replays this argv on another node and masks its own copies
+    the same way, so the guard travels with the fence rather than with the
+    submitting process.
+
+    The shim reads its own home and that target from the two names in
+    :mod:`reckon.nested_launch`: masked, only the file differs, and its
+    directory can no longer be read from ``$0``.
+
+    Returns the ``(source, destination)`` masks, the relays, and the shim
+    directory to name — in that order, and all three empty or zero when the
+    launch keeps no run directory to relay into, no shim directory, or no real
+    copy of any tool. Masking without a relay would refuse the launch's own
+    submissions, so nothing is masked in that case.
+    """
+    from reckon.nested_launch import shim_directory
+    from reckon.shim_lookup import is_shim
+
+    if relay_root is None:
+        return [], [], ""
+    shims = shim_directory().resolve()
+    masks: list[tuple[str, str]] = []
+    relays: list[tuple[str, str]] = []
+    for tool in SCHEDULER_TOOLS:
+        shim = shims / tool
+        if not (shim.is_file() and os.access(shim, os.X_OK)):
+            continue
+        copies: list[str] = []
+        for directory in _scheduler_search_directories(search_path):
+            candidate = directory / tool
+            if not (candidate.is_file() and os.access(candidate, os.X_OK)):
+                continue
+            try:
+                resolved = str(candidate.resolve())
+            except OSError:
+                continue
+            if resolved == str(shim) or is_shim(resolved) or resolved in copies:
+                continue
+            copies.append(resolved)
+        if not copies:
+            continue
+        relays.append((copies[0], str(Path(relay_root) / tool)))
+        masks.extend((str(shim), copy) for copy in copies)
+    if not relays:
+        return [], [], ""
+    return masks, relays, str(shims)
+
+
+def _scheduler_search_directories(search_path: str | None) -> list[Path]:
+    """The directories a scheduler tool is looked up in, in search order.
+
+    The composing process's own path is what it can resolve the tool on, and
+    it is the same path the launch inherits; a directory a launch adds later is
+    reached by name through the shim, and only a copy the composer can see is
+    masked. Empty entries are the shell's working directory and name nothing
+    here.
+    """
+    text = os.environ.get("PATH", os.defpath) if search_path is None else search_path
+    directories: list[Path] = []
+    for entry in str(text).split(os.pathsep):
+        if not entry:
+            continue
+        directory = Path(entry)
+        if directory not in directories:
+            directories.append(directory)
+    return directories
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -2185,6 +2278,34 @@ def fence_argv(
         if carried_directory.exists():
             target = str(resolved_destination(carried_directory))
             fenced += ["--ro-bind", target, target]
+    # A scheduler tool is guarded only while it resolves through PATH, so an
+    # absolute path to it runs the real binary with the shim never consulted;
+    # see :func:`scheduler_shields`. Emitted after every grant — a grant over a
+    # directory holding one of those binaries would otherwise be the last word
+    # on it — and before the recipe, because a submitted job replays this argv
+    # on another node and has to mask its own copies as well.
+    relay_root = None
+    if manifest_path is not None:
+        candidate = Path(manifest_path).parent / SCHEDULER_RELAY_DIRECTORY
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            candidate = None
+        relay_root = candidate
+    scheduler_masks, scheduler_relays, shim_home = scheduler_shields(relay_root)
+    for source, destination in scheduler_masks:
+        fenced += ["--ro-bind", source, destination]
+    for source, destination in scheduler_relays:
+        # The relay names a binary on *this* node; a job node that holds none
+        # there composes no relay and its shim searches its own path instead. A
+        # mask that could not be made would refuse its own launch, so this one
+        # is allowed to be absent.
+        fenced += ["--ro-bind-try", source, destination]
+    if shim_home:
+        from reckon.nested_launch import SHIM_HOME_ENV, SHIM_REAL_DIRECTORY_ENV
+
+        fenced += ["--setenv", SHIM_HOME_ENV, shim_home]
+        fenced += ["--setenv", SHIM_REAL_DIRECTORY_ENV, str(relay_root)]
     # The scheduler starts tasks outside this mount namespace. Carry the
     # composed mounts rather than rediscovering protection from job-local env,
     # including masks, credentials and the worktree's exclusive seals.
@@ -2216,7 +2337,15 @@ def fence_argv(
         "directories": [str(path) for path in directories],
         "directory_sources": sorted(set(directory_sources)),
         "scratch": str(scratch),
-        "limit": "Absolute scheduler paths bypass task re-entry; interpreter permissions guard that route.",
+        # What this fence cannot guard, stated rather than implied. An absolute
+        # path to a scheduler binary the composing node could not resolve —
+        # one a launch's own path adds later — is not masked, so that path
+        # reaches the real tool. Every copy the composer resolved is masked at
+        # the shim, and the shim re-enters this fence at the task boundary.
+        "limit": (
+            "A scheduler binary resolved only on the job node's own path is "
+            "not masked there; every copy the composing node resolved is."
+        ),
     }
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
     fenced += ["--setenv", "RECKON_WORKER_FENCE", encoded]

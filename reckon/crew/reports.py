@@ -1507,8 +1507,18 @@ def _names_the_same_revision(left: str, right: str) -> bool:
 _FENCE_NOTICE_TOOLS = frozenset({"salloc", "sbatch", "srun"})
 
 
-def _fence_notice_text() -> str:
-    """The fence notice with its tool prefix removed.
+# The notices a fence has written as its launch prologue. A log written before
+# the notice was reworded is still a log whose first line is the launch's, so
+# the retired wording is kept here rather than dropped: recognition is what
+# keeps a measure's own header reading as the first recorded line in every log
+# a review may still open.
+_RETIRED_FENCE_NOTICE_TEXTS = (
+    "task re-enters the worker fence; absolute scheduler paths bypass this guard.",
+)
+
+
+def _fence_notice_texts() -> tuple[str, ...]:
+    """The fence notice, current wording first, with its tool prefix removed.
 
     Read at call time: the launcher imports ``reckon.nested_launch`` first, and
     that module reaches this one while it is still initialising, so a
@@ -1516,13 +1526,14 @@ def _fence_notice_text() -> str:
     """
     from reckon.nested_launch import SCHEDULER_FENCE_NOTICE
 
-    return SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
+    current = SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
+    return (current, *_RETIRED_FENCE_NOTICE_TEXTS)
 
 
 def _is_fence_prologue(line: str) -> bool:
     """Whether a log line is the launch fence's notice rather than a record."""
     tool, _, rest = line.partition(":")
-    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() == _fence_notice_text()
+    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() in _fence_notice_texts()
 
 
 def _first_recorded_line(text: str) -> str:
