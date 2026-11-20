@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:22:42Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/pending_landing.py:1251",
+      "id": "deep_module-1",
+      "reason": "one deep release decision makes \u00a72 to \u00a75's negative controls test the same guard from four inputs, where four branches let each section pass alone while their union still leaks a pointer.",
+      "text": "the design gives each of \u00a72, \u00a73 and \u00a74 its own case in the one landing pass (`release_merged_promotions` and its siblings), so the same question \u2014 may this claim be released \u2014 is answered in three places while the reading that distinguishes the cases is a single liveness arm set in `record_process_liveness` (reckon/crew/process_liveness.py:380); the depth is available instead as one release decision taking one liveness reading, which is why the four sections need not each carry a branch",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/pending_landing.py:1188",
+      "id": "reuse_search-1",
+      "reason": "three of the four sections would be implemented to prove a defect the code already handles, so each must instead name the guard that refuses today (the busy check, the lease, the missing group journal) and extend it rather than adding a fourth release path beside it.",
+      "text": "\u00a73's endpoint already exists: `_release_measured_pointer` retires a promoted measurement run's pointer after releasing its tree, and `release_merged_promotions` (reckon/crew/pending_landing.py:1251) reaches it every pass, skipping only a pointer holding a landing group (:1277), a pending-landing record (:1280), an in-flight promotion (:1282), a head that is not promoted, a held promotion lease (:1289), or a run `_reviewed_run_is_busy` proves live (reckon/crew/recovery_repair_dispatch.py:380) whose recorded process is not proved dead (:1313), and dispatching to it on `_measurement_reason` (:1322); \u00a71's premise is also wrong at reckon/crew/recovery_classification.py:41 (`_is_measurement_run` marks such a run) and reckon/crew/promotion.py:876 (`_measurement_reason` writes the promotion row `_release_measured_pointer` reads), so a measurement-only run is promoted and the promoted-run rule does test it. \u00a75's failed-launch classification is likewise already implemented: `_resumed_launch_is_stranded` (reckon/crew/recovery_liveness.py:626), `_stranded_attempt_clause` (:612), the `launch-failed` state (reckon/crew/recovery_watch.py:1455) and its bound `STRANDED_LAUNCH_BOUND_SECONDS` (reckon/crew/recovery_liveness.py:70). \u00a74's is `retire_integrated_group_members` (reckon/crew/pending_landing.py:157), which already retires every member whose head is an ancestor of primary through `_release_integrated_group_member` (:129), calling `_release_waiters_of_the_landed_section` (:154), driven each pass by `finish_landing_groups` (:240). \u00a72's host reading already exists twice: `fleet_migrate._runs_launched_on` (reckon/crew/fleet_migrate.py:658) filters live runs by `launcher_host` against the fleet record `_fleet_record` reads (reckon/crew/fleet_migrate.py:491), and `process_liveness._srun_client_ended` (reckon/crew/process_liveness.py:240-259) already refuses a pid read when `launcher_host != socket.gethostname()`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/landing_measure.py:1",
+      "id": "reuse_search-2",
+      "reason": "a write path naming a module that does not own the behaviour is the confusion the reuse map exists to prevent, and correcting it changes what the node edits.",
+      "text": "\u00a73 lists `reckon/crew/landing_measure.py` in its write paths, but that module measures a delivered run's suite before landing, while the measurement-only marker and its release live in `reckon/crew/recovery_classification.py:41`, `reckon/crew/promotion.py:876,1482` and `reckon/crew/pending_landing.py:1188`, so a node following \u00a73 opens a file that does not own the behaviour and its done-when can pass while the release path is untouched",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/process_signal.py:917",
+      "id": "duplicate_owner-1",
+      "reason": "a forked kill path is the highest-consequence duplicate in the crew, because two owners of \"what belongs to this run\" can signal different populations and nothing reports the disagreement.",
+      "text": "\u00a75's second half (\"stopping any run ends every process the launch started, and reports each pid it signalled\") is exactly `signal_worker(..., reach_run=True)`, which already descends from the run's recorded pids and the run id in `environ`, refuses a process whose environment cannot be read, and returns the pids signalled; a second stop path would fork process ownership, whose other readers are `reckon/crew/census.py:1` (\"stop only proven local orphans\") and `routing._signal_process_group`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/pending_landing.py:423",
+      "id": "duplicate_owner-2",
+      "reason": "the node brief must say the change is one arm in `record_process_liveness`, not a branch in the landing pass, or \"unknown is kept\" gets a second implementation that can drift from the first.",
+      "text": "\u00a72 lists `reckon/crew/pending_landing.py` as its write path and so adds a release condition beside the one retirement funnel `retire_pointer_if` (:423) and `retire_promoted_pointers` (:474), while the fact that decides it \u2014 whether the recorded worker can be proven dead \u2014 is owned by `record_process_liveness` (reckon/crew/process_liveness.py:380) and read at `_recorded_process_proved_dead` (reckon/crew/pending_landing.py:1142); a host-identity branch written into the release path instead of as a liveness arm gives the fleet two answers to \"is this worker dead\", which `claims.py:224` and `recovery_liveness.py` already oblige to agree",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_release.py:571",
+      "id": "duplicate_owner-3",
+      "reason": "the plan owes a statement that the new cases reuse the existing release-and-record pair, since the alternative is a second receipt writer and a second waiter release for the same merge.",
+      "text": "\u00a73 and \u00a74 both list `reckon/crew/promotion_release.py` as a write path, but the receipt, ledger row and section-waiter release they need is already `_release_after_promotion` (:571) and `_record_release_on_ledger` (:739), which the measurement path (`pending_landing.py:1188`) and the group path (`:129`) both already call, so a third caller-side release step would duplicate the receipt writer",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/pending_landing.py:1188",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is an extension of the guard that refuses today, and a wrapper accepted without that sentence ships a parallel path whose divergence no test detects.",
+      "text": "\u00a73 and \u00a74 each propose a release step over machinery that already exists (`_release_measured_pointer`, `_release_integrated_group_member`) and already calls the shared release and waiter-release functions, so the plan asks for a thin layer with no stated reason the existing layer cannot be extended",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b9082c9c7612aacf777fec838e3eeb425a487d94",
+  "plan_fingerprint": "55fcf4e419a84c3d8243d551705d4f55440f022064ba0d5ffad64f29d9966b3b",
+  "plan_slug": "a-claim-nobody-is-working-is-released",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261119T182002291824-plan-review-of-a-claim-nobody-is-working-is-released",
+  "reviewed_blob_sha": "58ebdd515c20d3b03d3933f8fda4bc71d3f5c87c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the design spreads one decision (may this claim be released?) across four sections and two files, each adding its own branch to the landing pass, while the reading that distinguishes them lives in `reckon/crew/process_liveness.py`.",
+    "duplicate_owner": "a finding \u2014 \u00a75's stop path duplicates `process_signal.signal_worker(reach_run=True)`, and \u00a72 duplicates the liveness arm that already reads a launch host.",
+    "interface_budget": "pass \u2014 public_definitions 3039, cli_options 528, mcp_views 15, refusal_families 25; no section adds a public definition, a CLI option, an MCP view or a refusal family, and \u00a75's \"failed launch\" is the state the tree already spells `launch-failed`, so no section adds surface to account for.",
+    "reuse_search": "a finding \u2014 three of the plan's four endpoints already exist in the tree, and \u00a73 names a write path (`reckon/crew/landing_measure.py`) that is the suite-measurement module, not the owner of measurement-only runs.",
+    "thin_wrapper": "a finding \u2014 \u00a73 and \u00a74 add release steps beside `promotion_release._release_after_promotion` without saying why the existing release path cannot take the case."
+  },
+  "section_digests": {
+    "_document": "274da94c32ae21f75ab319c134ee070490657b3df5ec947964a84d7e3f65baee",
+    "s1": "05d19cd8311964ff3f39edcb6f6001983d854f54efe21e6fab628d2bf2d700be",
+    "s2": "31c170be4951db63af1611f315ea98f170521c6fa5d29d94f4de2266b76647fb",
+    "s3": "e1ab157cd4a1eae9aa12b1663c5b99dcd8436fed8b54c5252e0d9340bb82a93d",
+    "s4": "ec03acc9d9512d7a14042d8168f168a03f069190fef0cbc3e69139a2d33f3b79",
+    "s5": "dfd5788c2eb7c77b78075346068509e49b441c81c20632665e0f9e42a4780f0e",
+    "s6": "d7448a36c325bec906e26c628378d83db636835580ee0f69c43396dbb03bdebe"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:31:09.305853+00:00",
+  "total": null
+}

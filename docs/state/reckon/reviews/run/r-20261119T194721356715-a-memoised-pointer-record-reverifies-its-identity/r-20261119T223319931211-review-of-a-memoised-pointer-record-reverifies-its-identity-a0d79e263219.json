@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/runs.py:read_pointer",
+    "reckon/crew/runs.py:_list_live_records",
+    "reckon/crew/admission/holds.py:638",
+    "reckon/crew/admission/holds.py:513",
+    "reckon/crew/admission/launching.py:503",
+    "reckon/crew/claims.py:288",
+    "reckon/crew/dispatch_launch.py:193",
+    "reckon/crew/dispatch_peer.py:451"
+  ],
+  "completed_at": "2026-11-19T22:40:49.482969+00:00",
+  "dispatched_at": "2026-11-19T22:34:10Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against 32afa7130b; the only gained commit is the merge a0d79e26, whose runs.py delta takes the stat once at :1667-1670 and builds the identity through :1900-1911 (_pointer_identity delegating to file_memo.signature_from_stat), keys _POINTER_TEXT on the resulting 5-field signature at :1471, and keeps main's _pointer_as_read at :1914 and its removal of the published-pointer population; the merged file carries no conflict marker and no hunk of main's runs.py is dropped.",
+    "done_when": "the done_when (node.json) names tests/test_a_memoised_pointer_record_reverifies_its_identity.py and a base-revision negative control, and the reviewed manifest records that file's gate at a0d79e2 (scoped-gate-1795127337456556077.log, 61 passed, EXIT=0, revision header a0d79e2), the base arm (baseline_suite-1795127386114493149.log, 58 passed, EXIT=0 at eed783c) and the base negative control (logs/negative-control-base.log, 2 failed 1 passed, EXIT=1); I read all three receipts, and the delta itself adds no test line because tests/test_a_memoised_pointer_record_reverifies_its_identity.py is byte-identical across 32afa7130b..a0d79e2632.",
+    "goal": "the source node's goal (prompt.txt:38) is \"Make a memoised pointer record return the new record on the listing after a rename that lands between the text fetch and the memo store\"; the delta it gained since it was reviewed is the single merge commit a0d79e2, and in the merged reckon/crew/runs.py:1641-1682 fetches the text's identity before the read and :1758-1765 hands it to file_memo.memoized as identity=identity, so the merge re-applies the goal's mechanism on top of primary main rather than replacing it.",
+    "manifest": "read at the reviewed run's manifest.md; it records the merge repair as primary 7992c481b0 merged at a0d79e26 with the conflict only in runs._pointer_text, the gate and both arms by log path, the negative control with its quoted base failure, and an outside_scope pair (test_one_derivation_lists_the_live_directory_once, test_a_liveness_read_over_a_listing_leaves_the_next_listing_unchanged) that is already red at primary 7992c481b0 in a scratch extraction.",
+    "write_paths": "the node declared reckon/crew/runs.py, reckon/file_memo.py, tests/test_a_memoised_pointer_record_reverifies_its_identity.py, its evidence fragment and its figure directory; the gained delta touches only reckon/crew/runs.py (37 added, 12 removed against main 7992c481b0), which is inside the first declared path, and the coordinator's 101-path listing is main's own commits carried in by the merge rather than writes this node made."
+  },
+  "justifications": {
+    "durability": "tests/test_a_memoised_pointer_record_reverifies_its_identity.py:112 asserts after[\"r-target\"] == \"complete\" against the file its own fixture wrote, and it reddens if :1764 drops identity=identity (the base arm shows assert 'working' == 'complete'), but the delta adds no assertion of its own and :109 (the {working, complete} disjunction the earlier review recorded) still admits both values its own stand-in can leave.",
+    "evidence": "the manifest names scoped-gate-1795127337456556077.log (61 passed, EXIT=0 at a0d79e2632), baseline_suite-1795127386114493149.log (58 passed, EXIT=0 at eed783c) and logs/negative-control-base.log (2 failed, EXIT=1), and I read each receipt rather than the claim, though the baseline arm runs two test files while the after arm runs three, so the matched-arm pair rests on the manifest's scoped gate rather than on that suite pair.",
+    "fit": "the merged reckon/crew/runs.py:1900-1911 keeps the file's private-helper and docstring idiom and resolves the conflict in favour of one identity owner, but _pointer_identity is now a one-line delegation whose only content is its docstring and _pointer_node_body at :1694 still names its identity fields itself in a 4-field shape beside it.",
+    "goal_fidelity": "reckon/crew/runs.py:1758-1765 passes the identity fetched before the read at :1670 into file_memo.memoized, so a rename between that fetch and the store leaves nothing for the replacing file's identity, which is the goal the merge had to preserve.",
+    "reuse": "the delta removes the duplicate field ordering from _pointer_text by routing through file_memo.signature_from_stat (:1900-1911) and leaves the parse in file_memo.memoized, so nothing added in this delta re-implements a capability reckon/file_memo.py owns.",
+    "scope_discipline": "the gained delta is one merge commit changing only reckon/crew/runs.py, a declared write path, and it adds no path the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal (prompt.txt:38) is \"Make a memoised pointer record return the new record on the listing after a rename that lands between the text fetch and the memo store\"; the delta it gained since it was reviewed is the single merge commit a0d79e2, and in the merged reckon/crew/runs.py:1641-1682 fetches the text's identity before the read and :1758-1765 hands it to file_memo.memoized as identity=identity, so the merge re-applies the goal's mechanism on top of primary main rather than replacing it.\nVERDICT done_when: the done_when (node.json) names tests/test_a_memoised_pointer_record_reverifies_its_identity.py and a base-revision negative control, and the reviewed manifest records that file's gate at a0d79e2 (scoped-gate-1795127337456556077.log, 61 passed, EXIT=0, revision header a0d79e2), the base arm (baseline_suite-1795127386114493149.log, 58 passed, EXIT=0 at eed783c) and the base negative control (logs/negative-control-base.log, 2 failed 1 passed, EXIT=1); I read all three receipts, and the delta itself adds no test line because tests/test_a_memoised_pointer_record_reverifies_its_identity.py is byte-identical across 32afa7130b..a0d79e2632.\nVERDICT write_paths: the node declared reckon/crew/runs.py, reckon/file_memo.py, tests/test_a_memoised_pointer_record_reverifies_its_identity.py, its evidence fragment and its figure directory; the gained delta touches only reckon/crew/runs.py (37 added, 12 removed against main 7992c481b0), which is inside the first declared path, and the coordinator's 101-path listing is main's own commits carried in by the merge rather than writes this node made.\nVERDICT manifest: read at the reviewed run's manifest.md; it records the merge repair as primary 7992c481b0 merged at a0d79e26 with the conflict only in runs._pointer_text, the gate and both arms by log path, the negative control with its quoted base failure, and an outside_scope pair (test_one_derivation_lists_the_live_directory_once, test_a_liveness_read_over_a_listing_leaves_the_next_listing_unchanged) that is already red at primary 7992c481b0 in a scratch extraction.\nVERDICT diff: read commit by commit against 32afa7130b; the only gained commit is the merge a0d79e26, whose runs.py delta takes the stat once at :1667-1670 and builds the identity through :1900-1911 (_pointer_identity delegating to file_memo.signature_from_stat), keys _POINTER_TEXT on the resulting 5-field signature at :1471, and keeps main's _pointer_as_read at :1914 and its removal of the published-pointer population; the merged file carries no conflict marker and no hunk of main's runs.py is dropped.\nCALL_SITES: reckon/crew/runs.py:read_pointer, reckon/crew/runs.py:_list_live_records, reckon/crew/admission/holds.py:638, reckon/crew/admission/holds.py:513, reckon/crew/admission/launching.py:503, reckon/crew/claims.py:288, reckon/crew/dispatch_launch.py:193, reckon/crew/dispatch_peer.py:451\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1758-1765 passes the identity fetched before the read at :1670 into file_memo.memoized, so a rename between that fetch and the store leaves nothing for the replacing file's identity, which is the goal the merge had to preserve.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest names scoped-gate-1795127337456556077.log (61 passed, EXIT=0 at a0d79e2632), baseline_suite-1795127386114493149.log (58 passed, EXIT=0 at eed783c) and logs/negative-control-base.log (2 failed, EXIT=1), and I read each receipt rather than the claim, though the baseline arm runs two test files while the after arm runs three, so the matched-arm pair rests on the manifest's scoped gate rather than on that suite pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained delta is one merge commit changing only reckon/crew/runs.py, a declared write path, and it adds no path the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_memoised_pointer_record_reverifies_its_identity.py:112 asserts after[\"r-target\"] == \"complete\" against the file its own fixture wrote, and it reddens if :1764 drops identity=identity (the base arm shows assert 'working' == 'complete'), but the delta adds no assertion of its own and :109 (the {working, complete} disjunction the earlier review recorded) still admits both values its own stand-in can leave.\nSCORE fit: 17\nJUSTIFICATION fit: the merged reckon/crew/runs.py:1900-1911 keeps the file's private-helper and docstring idiom and resolves the conflict in favour of one identity owner, but _pointer_identity is now a one-line delegation whose only content is its docstring and _pointer_node_body at :1694 still names its identity fields itself in a 4-field shape beside it.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta removes the duplicate field ordering from _pointer_text by routing through file_memo.signature_from_stat (:1900-1911) and leaves the parse in file_memo.memoized, so nothing added in this delta re-implements a capability reckon/file_memo.py owns.",
+  "review_run_id": "r-20261119T223319931211-review-of-a-memoised-pointer-record-reverifies-its-identity-a0d79e263219",
+  "reviewed_base_sha": "32afa7130ba046ae9b23e914a7bf73ea0a3f2fd3",
+  "reviewed_head_sha": "a0d79e2632195c013a715fd7d4ec21ad1c14911f",
+  "reviewed_run_id": "r-20261119T194721356715-a-memoised-pointer-record-reverifies-its-identity",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:40:49.482969+00:00",
+  "total": 110
+}

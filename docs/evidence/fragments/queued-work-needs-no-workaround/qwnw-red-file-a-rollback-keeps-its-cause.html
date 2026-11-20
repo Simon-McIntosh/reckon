@@ -1,0 +1,69 @@
+<section id="qwnw-red-file-a-rollback-keeps-its-cause-landing">
+  <h2>A red file passes, and its cause is named</h2>
+
+  <p><strong>Verdict: the test was wrong, the product is right.</strong> Three
+  cases in <code>tests/test_a_rollback_keeps_its_cause.py</code> armed a
+  named-commit rule the roster no longer keeps. When members moved into the run
+  store, a capture stopped writing any tracked path and a registration stopped
+  committing one, so nothing can be obstructed by an uncommitted roster and the
+  three refusal cases could not raise.</p>
+
+  <p>The rules the code does keep are what the file now asserts: a capture is
+  bookkeeping that leaves the work tree clean and survives the registration
+  after it; a registration writes only the row it names; and a write computed
+  from a view read before another author's change is refused by name rather than
+  applied over it. No assertion that guards a rule was deleted or weakened; the
+  one case that asserted the value its own setup had just written was dropped,
+  because the same value surviving the later registration is the guard that
+  bites.</p>
+
+  <h3 id="qwnw-red-file-a-rollback-keeps-its-cause-arms">Arms</h3>
+  <table id="qwnw-red-file-a-rollback-keeps-its-cause-arm-rows">
+    <caption>Each arm is a log whose first lines name the revision, host and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head arm</td>
+        <td><code>742c559fec</code>, job 1331566 on <code>all_debug</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base arm</td>
+        <td><code>6fa2b177c5</code>, extraction</td>
+        <td>3 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>declared suite, after arm</td>
+        <td><code>742c559fec</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, baseline arm</td>
+        <td><code>6fa2b177c5</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-rollback-keeps-its-cause-control">Negative control</h3>
+
+  <p>At <code>6fa2b177c5</code> the same file, run in an extraction of that
+  revision, fails three cases while the three rollback cases pass — the product
+  half was already correct, which is why no product source changed. The three
+  failing ids are:</p>
+
+  <ul>
+    <li><code>test_a_capture_only_ledger_admits_a_registration</code> —
+    <code>assert '?? docs/state/proj/crew.json' == 'M
+    docs/state/proj/crew.json'</code>: the old case required the capture to
+    leave the roster staged for a commit.</li>
+    <li><code>test_a_real_member_change_still_refuses_a_registration</code> —
+    <code>Failed: DID NOT RAISE LedgerError</code>.</li>
+    <li><code>test_a_new_uncommitted_member_still_refuses_a_registration</code>
+    — <code>Failed: DID NOT RAISE LedgerError</code>.</li>
+  </ul>
+
+  <p>The red log is <code>neg-control-base.log</code> and the green one
+  <code>slurm-gate.log</code>, both under
+  <code>~/.config/reckon/crew/runs/r-20261118T054244049004-qwnw-red-file-a-rollback-keeps-its-cause/</code>.</p>
+
+  <h3 id="qwnw-red-file-a-rollback-keeps-its-cause-outside">Outside scope</h3>
+
+  <p><code>reckon/ledger.py</code> still carries
+  <code>_roster_obstruction</code> and <code>_refuse_dirty_roster_commit</code>,
+  unreferenced since the roster moved into the store. Removing dead code is a
+  separate change.</p>
+</section>

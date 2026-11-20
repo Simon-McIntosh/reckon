@@ -2268,6 +2268,12 @@ class RowPolicy:
         A landing follows a delivery: it is news where the last word this pane
         carried for the run was that delivery, and silence otherwise — a
         reloaded pane already showed the completion, so the echo is inventory.
+        One landing has no delivery before it. A review goes from a live state
+        straight to its stored record, so that row is the only account of its
+        end: held, the coordinator that composed the review is never told its
+        findings are ready. It is news where this pane carried the run and has
+        not drawn a landing for it; a landing that leaves a settled state is
+        the echo of a delivery and keeps the first rule.
         A drop is news where the pane carried the run at all: a run this pane
         never drew is the coordinator's own discard, and a ``withdrawn``
         departure is its own withdrawal rather than a drop.
@@ -2298,7 +2304,14 @@ class RowPolicy:
             # belongs to is still queued.
             return True
         if _pane_word(event) == "landed":
-            return self._printed.get(run_id) == "delivered"
+            carried = self._printed.get(run_id)
+            if carried == "delivered":
+                return True
+            return (
+                bool(carried)
+                and carried not in LANDING_PANE_WORDS
+                and str(event.get("from_state") or "") not in SETTLED_STATES
+            )
         return bool(self._printed.get(run_id))
 
     def _mark_carried(

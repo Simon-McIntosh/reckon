@@ -11,15 +11,14 @@ host's FIFO. The first shows the request reaching the host and the host's own
 child re-arming the pair. The second shows that attachment is not the answer:
 another host's live follower for the session leaves the re-arm reporting that
 nothing was re-armed, because that is not a follower this session's host runs.
-The third shows that only the pair's own session may ask: a resume issued from
-a different coordinator writes no request at all, and answers with the session
-that owns the follower.
+The third shows that only the pair's own host may be asked: a resume issued from
+a different coordinator writes the run's pair to that session's own host, and
+asks the calling session's host nothing.
 
 Three negative controls, one per case: dropping the host request from the resume
 leaves the first case with no host child; accepting any live registration makes
-the second case answer success; and re-arming without asking whose session the
-pair is makes the third case send a request and report a follower it did not
-owe.
+the second case answer success; and ignoring whose session the pair is makes the
+third case write its request to the calling session's host.
 """
 
 from __future__ import annotations
@@ -226,6 +225,51 @@ def _write_census(children: list[dict]) -> Path:
     return path
 
 
+def _write_owning_host(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, subprocess.Popen[bytes]]:
+    """A live host for the run's own session, in this case's runtime and state.
+
+    The hand-off finds a session's host from two records: the host census naming
+    the owner process and its kernel start tick, and the harness's own record
+    naming the session that process runs. Both are written here for a stand-in
+    owner, and the FIFO is named the way the host entry point names it, so the
+    census lookup is what the case exercises rather than a path handed to it.
+    """
+    from reckon.crew import session_host
+
+    owner = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(120)"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    start = session_host.process_start_time(owner.pid)
+    assert start, "the stand-in owner must have a kernel start tick"
+    directory = session_host._state_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{owner.pid}-{start}{session_host.RECORD_SUFFIX}").write_text(
+        json.dumps(
+            {
+                "pid": owner.pid,
+                "owner": {"pid": owner.pid, "start_time": start},
+                "children": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    sessions = tmp_path / "harness-sessions"
+    sessions.mkdir()
+    (sessions / f"{owner.pid}.json").write_text(
+        json.dumps({"pid": owner.pid, "sessionId": SESSION}), encoding="utf-8"
+    )
+    monkeypatch.setenv("RECKON_HARNESS_SESSIONS_DIR", str(sessions))
+    fifo = dispatch_watch._session_host_fifo_path((owner.pid, start))
+    assert fifo is not None
+    fifo.parent.mkdir(parents=True, exist_ok=True)
+    os.mkfifo(fifo)
+    return fifo, owner
+
+
 class _StubSessionHost:
     """A reader on the session host's FIFO that answers a request with a child.
 
@@ -413,7 +457,7 @@ def test_a_rearm_answers_failure_when_only_another_hosts_follower_is_live(
     assert dispatch_watch._session_host_child_pid(PROJECT, SESSION) is None
 
 
-def test_a_resume_from_another_session_asks_no_host_and_names_the_owner(
+def test_a_resume_from_another_session_asks_the_runs_own_host(
     home: Path,
     repo: Path,
     tmp_path: Path,
@@ -421,13 +465,17 @@ def test_a_resume_from_another_session_asks_no_host_and_names_the_owner(
     bounded_wait: None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A different session's resume cannot re-arm the run's pair, and says whose it is.
+    """A different session's resume asks the run's own host, never its own.
 
-    The request travels to the host of the Claude process issuing the resume, so
-    a coordinator resuming another session's run would ask its own host for a
-    pair it does not own. The stub here would re-arm on any request, which is
-    what makes the case discriminate: a re-arm that asked anyway would report
-    success and leave a follower in the wrong session's host.
+    The request names the run's pair, and the host a session's follower runs is
+    the one its own session runs, so a coordinator resuming another session's
+    run must reach that session's host rather than ask its own. Both halves are
+    asserted: the run's host receives one request marked the owner's own, and
+    the calling session's host, whose stub would re-arm on any request, is asked
+    nothing. A re-arm asking its own host would leave a follower in the wrong
+    session's pane and report that as the run's. The run's own host is named
+    here by the census and the harness record the hand-off reads, so the case
+    fails on a lookup that cannot find it rather than passing for want of one.
     """
     assert home.is_dir(), "the case runs against the temporary crew home"
     monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "a-different-coordinator-session")
@@ -435,18 +483,29 @@ def test_a_resume_from_another_session_asks_no_host_and_names_the_owner(
     fifo = _host_fifo(claude_session)
     fifo.parent.mkdir(parents=True, exist_ok=True)
     os.mkfifo(fifo)
+    own_fifo, owner = _write_owning_host(tmp_path, monkeypatch)
     host = _StubSessionHost(fifo, rearm=True)
+    owner_host = _StubSessionHost(own_fifo, rearm=False)
     launched: list[int] = []
     host.start()
+    owner_host.start()
     try:
         result = _resume(record, launched)
     finally:
         host.stop()
+        owner_host.stop()
+        owner.terminate()
+        owner.wait(timeout=5)
 
     assert launched == [4242], "the resume still launches its worker"
     assert host.lines == [], "another session's host is asked nothing"
-    assert result["follower_rearmed"] is False
-    assert SESSION in result["follower_note"], (
-        f"the answer must name the session that owns the pair: {result['follower_note']!r}"
+    assert owner_host.lines, "the run's own host must be asked for its pair"
+    assert len(owner_host.lines) == 1, "one resume asks once"
+    request = json.loads(owner_host.lines[0])
+    assert request["project"] == PROJECT
+    assert request["session"] == SESSION
+    assert request["owner_checked"] is True, (
+        "the run's own host owns the pair, so the request is marked checked"
     )
+    assert result["follower_rearmed"] is True
     assert dispatch_watch._session_host_child_pid(PROJECT, SESSION) is None

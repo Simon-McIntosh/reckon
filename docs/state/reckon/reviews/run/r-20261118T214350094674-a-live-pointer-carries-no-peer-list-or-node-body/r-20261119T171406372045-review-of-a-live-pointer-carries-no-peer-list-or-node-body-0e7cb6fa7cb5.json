@@ -3,6 +3,28 @@
   "added_failure_ids": [],
   "completed_at": "",
   "dispatched_at": "2026-11-19T17:33:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a small consolidation of two body-file readers in one module, with no behaviour difference; recorded for the next change to runs.py",
+      "recorded_at": "2026-11-19T18:13:01.943504+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "test strength: the fixture-anchored equality at 255 guards the read path, and this inline arm duplicates it on the write path; no behaviour is unguarded at head",
+      "recorded_at": "2026-11-19T18:13:08.211666+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "case (d) holds the classification inputs equal to base; that classify_pointer reads no moved field is the reason it stays equal, not a gap",
+      "recorded_at": "2026-11-19T18:13:16.688511+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "write cost traded for read cost: pointer mutations are far rarer than listings, and node.json is small once peer_scopes moved; a write-side measurement follows the landing",
+      "recorded_at": "2026-11-19T18:13:26.379478+00:00"
+    }
+  },
   "findings": [
     {
       "file": "reckon/crew/runs.py",

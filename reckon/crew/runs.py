@@ -258,6 +258,138 @@ def _without_pointer_omitted_fields(
     }
 
 
+#: The node-definition fields a live pointer carries only as a path. A pointer's
+#: ``node`` is read by every fleet-state derivation on every pass — adjacency
+#: compares the peer scopes, a queued launch rebuilds the whole definition — and
+#: the brief, the raw done-when text and the admission findings are read by none
+#: of the passes that only list the directory. On 18 November one plan's runs
+#: carried about 340 KB each of scopes and definitions. They are written once to
+#: :data:`NODE_BODY_NAME` in the run's own directory, and the pointer's node keeps
+#: only that file's path.
+NODE_BODY_FIELDS = ("admission_findings", "brief", "done_when", "peer_scopes")
+
+#: The key a pointer's node uses to name the file holding its body.
+NODE_BODY_KEY = "node_body"
+
+#: The file in a run's directory holding the node fields no listing reads.
+NODE_BODY_NAME = "node.json"
+
+
+def node_body_path(run_id: str) -> Path:
+    """Path of one run's node-definition body file."""
+    return run_dir(run_id) / NODE_BODY_NAME
+
+
+def _read_node_body_file(path: Path) -> dict[str, Any]:
+    """The stored node body for one run, or an empty mapping."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    return dict(data) if isinstance(data, Mapping) else {}
+
+
+def _split_node_body(path: Path, payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Move a live pointer's node body into the run's own file.
+
+    A write carrying none of the fields is left whole, so an ordinary pointer
+    mutation does not touch the body file. A write carrying any of them merges
+    those values into the stored body and leaves the pointer's node naming that
+    file. Merging rather than replacing keeps a later write that carries one
+    field from erasing the rest.
+    """
+    node = payload.get("node")
+    if not isinstance(node, Mapping):
+        return payload
+    moved = {name: node[name] for name in NODE_BODY_FIELDS if name in node}
+    if not moved:
+        return payload
+    run_id = path.stem
+    body_path = node_body_path(run_id)
+    body = _read_node_body_file(body_path)
+    body.update(moved)
+    write_json_atomically(
+        body_path,
+        body,
+        indent=2,
+        sort_keys=True,
+        mode=0o600,
+        ensure_ascii=True,
+    )
+    slim = {name: value for name, value in node.items() if name not in NODE_BODY_FIELDS}
+    slim[NODE_BODY_KEY] = str(body_path)
+    return {**payload, "node": slim}
+
+
+def _without_peer_list(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    """``payload`` with its peer channel stripped to the endpoint it names.
+
+    The wired peers are already published once in the run's own registry
+    (``peer-channel/peers.json``), which is what a question, a reply and a
+    listing of the channel read. The pointer's copy cost every follower on the
+    node on every pass and nothing read it.
+    """
+    channel = payload.get("peer_channel")
+    if not isinstance(channel, Mapping) or "peers" not in channel:
+        return payload
+    return {
+        **payload,
+        "peer_channel": {
+            name: value for name, value in channel.items() if name != "peers"
+        },
+    }
+
+
+def node_definition(record: Mapping[str, Any]) -> dict[str, Any]:
+    """One run's node definition, hydrated from wherever its body is stored.
+
+    A pointer written after the move names the body file and carries none of
+    the node's body fields; one written before it still carries them inline.
+    The accessor answers for both, with an inline value winning where a record
+    holds both, so an old pointer keeps reading as it did.
+    """
+    node = record.get("node")
+    node = dict(node) if isinstance(node, Mapping) else {}
+    missing = [name for name in NODE_BODY_FIELDS if name not in node]
+    if not missing:
+        return node
+    body: dict[str, Any] = {}
+    body_path = str(node.get(NODE_BODY_KEY) or "")
+    if body_path:
+        body = _read_node_body_file(Path(body_path))
+    else:
+        body = _pointer_node_body(str(record.get("run_id") or ""))
+    for name in missing:
+        if name in body:
+            node[name] = body[name]
+    return node
+
+
+def node_field(
+    record: Mapping[str, Any], name: str, default: Any = None
+) -> Any:
+    """One node-definition value for a run, whatever shape its pointer has."""
+    if name not in NODE_BODY_FIELDS:
+        raise CrewError(f"{name!r} is not part of a node's stored body")
+    node = record.get("node")
+    if isinstance(node, Mapping) and name in node:
+        return node[name]
+    return node_definition(record).get(name, default)
+
+
+def peer_channel_peers(record: Mapping[str, Any]) -> dict[str, Any]:
+    """One run's wired peers, from the pointer or from its own registry."""
+    channel = record.get("peer_channel")
+    if isinstance(channel, Mapping) and "peers" in channel:
+        return dict(channel.get("peers") or {})
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return {}
+    index = _read_node_body_file(run_dir(run_id) / "peer-channel" / "peers.json")
+    listed = index.get("peers")
+    return dict(listed) if isinstance(listed, Mapping) else {}
+
+
 def read_dispatch_detail(record: Mapping[str, Any]) -> dict[str, Any]:
     """One run's dispatch-time detail, read through its single accessor.
 
@@ -509,6 +641,8 @@ def _write_json(
     if path.parent == live_dir() and path.suffix == ".json":
         payload = _without_pointer_omitted_fields(payload)
         payload = _split_dispatch_detail(path, payload)
+        payload = _split_node_body(path, payload)
+        payload = _without_peer_list(payload)
     write_json_atomically(
         path,
         payload,
@@ -1334,8 +1468,13 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
 # identity, so a listing that finds the identity unchanged decodes nothing and
 # pays no copy: the record is handed out as that owner's read-only view, and the
 # single-pointer reader copies it once for the callers that change what they read.
-_POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
+_POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
+
+#: The unreduced text of a legacy pointer, kept only for the runs whose node
+#: body is actually asked for. A pointer written after the body moved names its
+#: body file and never reaches this store.
+_POINTER_BODY_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
 
 #: The memo kind under which ``file_memo`` keeps a live pointer's decoded record.
 _POINTER_RECORD_KIND = "live_pointer_record"
@@ -1386,83 +1525,137 @@ def _json_value_end(text: str, start: int) -> int:
     return index
 
 
-def _pointer_text_without_omitted_members(text: str) -> str:
-    """``text`` with every top-level omitted member cut out of its object.
+#: The member paths a listing drops before it decodes a pointer. A pointer
+#: written before a field was moved still carries it inline, and every
+#: fleet-state derivation re-reads the directory: reading it back to hand it to
+#: a decoder that has no reader for it is the whole cost. The bytes are read
+#: either way; what this saves is the decode.
+POINTER_OMITTED_PATHS: tuple[tuple[str, ...], ...] = (
+    ("clone_matches",),
+    ("peer_channel", "peers"),
+    *(("node", name) for name in NODE_BODY_FIELDS),
+)
 
-    A pointer written before this reader existed still holds the field on disk,
-    and every fleet-state derivation re-reads the directory: reading it back to
-    hand it to a decoder that has no reader for it is the whole cost. The bytes
-    are read either way; what this saves is the decode.
 
-    Only the object's own top level is walked, and strings, escapes and nesting
-    are tracked, so a key spelled inside some value is not mistaken for a
-    member. A text this cannot reduce — not one object, a scanner surprise — is
-    returned exactly as it arrived, and the caller parses the reduction before
-    it is offered, so an unexpected shape costs a decode rather than a pointer.
+def _object_members(text: str, opening: int) -> list[tuple[str, int, int, int]]:
+    """Each member of the JSON object whose ``{`` is at ``opening``.
+
+    Answers, in order, the member's name and the spans of its key and value.
+    An object this scanner cannot read — not an object, a truncated value, a
+    malformed key — answers an empty list, and the caller then leaves the text
+    as it arrived.
     """
-    if not any(f'"{name}"' in text for name in POINTER_OMITTED_FIELDS):
+    members: list[tuple[str, int, int, int]] = []
+    index = opening + 1
+    while index < len(text):
+        char = text[index]
+        if char in _JSON_WHITESPACE or char == ",":
+            index += 1
+            continue
+        if char == "}":
+            return members
+        if char != '"':
+            return []
+        key_end = _json_string_end(text, index)
+        try:
+            name = json.loads(text[index:key_end])
+        except ValueError:
+            return []
+        if not isinstance(name, str):
+            return []
+        probe = key_end
+        while probe < len(text) and text[probe] in _JSON_WHITESPACE:
+            probe += 1
+        if probe >= len(text) or text[probe] != ":":
+            return []
+        value = probe + 1
+        while value < len(text) and text[value] in _JSON_WHITESPACE:
+            value += 1
+        end = _json_value_end(text, value)
+        if end <= value:
+            return []
+        members.append((name, index, value, end))
+        index = end
+    return []
+
+
+def _reduced_object(
+    text: str, opening: int, paths: Sequence[tuple[str, ...]]
+) -> str | None:
+    """``text[opening:]``'s object with every declared member path cut out.
+
+    Rebuilt rather than spliced, because a path may name a member of a member
+    and the inner cut moves every span after it. The rebuild only feeds a
+    decoder, so the separators it chooses cost nothing. ``None`` is the answer
+    for an object the scanner cannot read, or for a nesting that does not
+    resolve to an object; the caller then decodes the original text.
+    """
+    members = _object_members(text, opening)
+    close = _json_value_end(text, opening)
+    if not members:
+        if text[opening + 1 : close - 1].strip():
+            return None
+        return "{}"
+    kept: list[str] = []
+    for name, _key_start, value_start, value_end in members:
+        matching = [path for path in paths if path[0] == name]
+        if any(len(path) == 1 for path in matching):
+            continue
+        value = text[value_start:value_end]
+        nested = [path[1:] for path in matching if len(path) > 1]
+        if nested:
+            inner = value.find("{")
+            if inner < 0:
+                return None
+            reduced = _reduced_object(value, inner, nested)
+            if reduced is None:
+                return None
+            value = value[:inner] + reduced + value[_json_value_end(value, inner) :]
+        kept.append(f"{json.dumps(name, ensure_ascii=True)}: {value}")
+    return "{" + ", ".join(kept) + "}"
+
+
+def _pointer_text_without_omitted_members(text: str) -> str:
+    """``text`` with every omitted member path cut out of its object.
+
+    A pointer written before this reader existed still holds the fields on
+    disk, and every fleet-state derivation re-reads the directory: reading
+    them back to hand them to a decoder that has no reader for them is the
+    whole cost. The bytes are read either way; what this saves is the decode.
+
+    A text this cannot reduce — not one object, a scanner surprise — is returned
+    exactly as it arrived, and the caller parses the reduction before it is
+    offered, so an unexpected shape costs a decode rather than a pointer.
+    """
+    if not any(f'"{path[0]}"' in text for path in POINTER_OMITTED_PATHS):
         return text
     opening = text.find("{")
     if opening < 0:
         return text
-    spans: list[tuple[int, int]] = []
-    depth = 1
-    index = opening + 1
-    while index < len(text):
-        char = text[index]
-        if char == '"':
-            end = _json_string_end(text, index)
-            if depth == 1:
-                try:
-                    name = json.loads(text[index:end])
-                except ValueError:
-                    name = None
-                probe = end
-                while probe < len(text) and text[probe] in _JSON_WHITESPACE:
-                    probe += 1
-                if (
-                    name in POINTER_OMITTED_FIELDS
-                    and probe < len(text)
-                    and text[probe] == ":"
-                ):
-                    value = probe + 1
-                    while value < len(text) and text[value] in _JSON_WHITESPACE:
-                        value += 1
-                    spans.append((index, _json_value_end(text, value)))
-            index = end
-            continue
-        if char in "{[":
-            depth += 1
-        elif char in "}]":
-            depth -= 1
-            if depth == 0:
-                break
-        index += 1
-    for begin, end in reversed(spans):
-        after = end
-        while after < len(text) and text[after] in _JSON_WHITESPACE:
-            after += 1
-        before = begin - 1
-        while before >= 0 and text[before] in _JSON_WHITESPACE:
-            before -= 1
-        if after < len(text) and text[after] == ",":
-            cut_from, cut_to = begin, after + 1
-        elif before >= 0 and text[before] == ",":
-            cut_from, cut_to = before, end
-        else:
-            cut_from, cut_to = begin, end
-        text = text[:cut_from] + text[cut_to:]
-    return text
+    reduced = _reduced_object(text, opening, POINTER_OMITTED_PATHS)
+    if reduced is None:
+        return text
+    return text[:opening] + reduced + text[_json_value_end(text, opening) :]
 
 
-def _pointer_text(path: Path) -> str:
-    """A pointer's text, re-read only when its stat identity has moved.
+def _pointer_text(path: Path) -> tuple[tuple[int, int, int, int, int], str]:
+    """A pointer's text and the stat identity it was read at.
 
     The text is kept without the fields no live pointer reader asks for, so a
     pointer left on disk by an older writer costs its decoder no more than a
     current one. The reduction is parsed here before it is kept: a text this
     reader cannot reduce is parsed as it is, rather than one pointer dropped
     from every listing by a scanner that misjudged it.
+
+    The identity is the file's own — ``file_memo.signature_from_stat``'s — and
+    it is taken before the text is read and returned beside it, because the
+    record memoised from that text has to be stored under it. A writer replaces
+    a pointer by rename, and an identity taken after the read can already
+    describe the file that replaced it: the record of these bytes kept under
+    that one would answer every later listing. The store is given this identity
+    instead, and keeps nothing when the file has moved past it, so a text read
+    as its file was replaced costs one listing's staleness rather than a record
+    pinned to the replacement's identity.
 
     Raises ``FileNotFoundError`` for a pointer that is gone, as a direct read
     would, and forgets whatever was kept for it.
@@ -1474,11 +1667,11 @@ def _pointer_text(path: Path) -> str:
         with _POINTER_TEXT_LOCK:
             _POINTER_TEXT.pop(key, None)
         raise
-    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    identity = _pointer_identity(info)
     with _POINTER_TEXT_LOCK:
         kept = _POINTER_TEXT.get(key)
     if kept is not None and kept[0] == identity:
-        return kept[1]
+        return kept
     text = path.read_text()
     reduced = _pointer_text_without_omitted_members(text)
     if reduced is not text:
@@ -1488,7 +1681,48 @@ def _pointer_text(path: Path) -> str:
             reduced = text
     with _POINTER_TEXT_LOCK:
         _POINTER_TEXT[key] = (identity, reduced)
-    return reduced
+    return (identity, reduced)
+
+
+def _pointer_node_body(run_id: str) -> dict[str, Any]:
+    """A legacy pointer's inline node body, read only when the body is asked for.
+
+    Only a pointer written before the body was moved needs this: such a record
+    names no body file, so the file itself is the one place its fields still
+    exist. The text is kept under the file's stat identity so a pass that asks
+    about the same legacy pointer twice decodes it once, and the reduction the
+    listing uses is skipped here because the reduction is exactly what removed
+    these fields.
+    """
+    if not run_id:
+        return {}
+    path = pointer_path(run_id)
+    try:
+        info = path.stat()
+    except OSError:
+        return {}
+    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    with _POINTER_TEXT_LOCK:
+        kept = _POINTER_BODY_TEXT.get(str(path))
+    if kept is not None and kept[0] == identity:
+        text = kept[1]
+    else:
+        try:
+            text = path.read_text()
+        except OSError:
+            return {}
+        with _POINTER_TEXT_LOCK:
+            _POINTER_BODY_TEXT[str(path)] = (identity, text)
+    try:
+        data = json.loads(text)
+    except ValueError:
+        return {}
+    if not isinstance(data, Mapping):
+        return {}
+    node = data.get("node")
+    if not isinstance(node, Mapping):
+        return {}
+    return {name: node[name] for name in NODE_BODY_FIELDS if name in node}
 
 
 def _pointer_record(path: Path) -> Any:
@@ -1506,6 +1740,14 @@ def _pointer_record(path: Path) -> Any:
     as a listing that read every text dropped it, and an unchanged pass reads no
     text and decodes nothing.
 
+    The store is given the identity that text was read at rather than one taken
+    here, because writers replace a pointer by rename: a stat taken after the
+    read can already describe the replacing file, and the record of the text
+    just read would then be kept under that file's identity and answer every
+    listing until the pointer moved again. Handed the read's own identity, the
+    store answers only from what it kept for that identity and keeps nothing
+    when the file has moved on, so the next listing decodes the new text.
+
     The record comes back as one shallow copy of that owner's view, so a reader
     that stamps a field of the record it was handed cannot reach the memo every
     later listing reads. A reader that changes a pointer reads it through
@@ -1513,10 +1755,13 @@ def _pointer_record(path: Path) -> Any:
     readers change.
     """
     try:
-        text = _pointer_text(path)
+        identity, text = _pointer_text(path)
         with file_memo.read_only_region():
             record = file_memo.memoized(
-                _POINTER_RECORD_KIND, path, lambda: json.loads(text)
+                _POINTER_RECORD_KIND,
+                path,
+                lambda: json.loads(text),
+                identity=identity,
             )
             return dict(record)
     except OSError:
@@ -1610,7 +1855,7 @@ def station_pid_on_this_host() -> int | None:
         info = path.stat()
     except OSError:
         return None
-    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    identity = _pointer_identity(info)
     key = str(path)
     with _STATION_PID_LOCK:
         kept = _STATION_PID.get(key)
@@ -1652,17 +1897,65 @@ def pid_belongs_to_the_station(pid: object) -> bool:
     return station is not None and station == pid
 
 
-def read_pointer(run_id: str) -> dict[str, Any]:
-    """Read one run's live pointer, or say which run is unknown.
+def _pointer_identity(info: os.stat_result) -> tuple[int, int, int, int, int]:
+    """The identity a pointer's bytes are recognised by when it is read again.
+
+    The identity is ``file_memo``'s — the device, inode, size and both change
+    stamps — because that owner is the one that keeps a parse against it, and a
+    listing hands it the identity the text was read at. Taken from a stat the
+    caller has already made, so a reader that needs both the identity and
+    something else about the same observation stats the file once. A writer
+    that replaces a pointer moves it, so a value kept under one identity is the
+    file's content until the file moves.
+    """
+    return file_memo.signature_from_stat(info)
+
+
+def _pointer_as_read(data: Mapping[str, Any]) -> dict[str, Any]:
+    """The record a by-id read answers with, holding no station pid.
+
+    The node's body now lives in the run's own file once it has been moved
+    there, and this is the reader every caller that changes a pointer takes, so
+    the definition is hydrated here: those callers read one shape whichever way
+    the pointer was written, while a listing still returns the slim record it
+    decoded because every fleet-state derivation pays for what it lists.
 
     A record naming this host's station names no process of the run. Every
     launch made from inside the station's own long-lived process is recorded
     through a seam that may hand back the launcher, so the pointer can carry the
     station's pid where the supervisor's belongs; read as written, that pid
     makes ``crew stop``, ``crew discard`` and every liveness reading aim at the
-    process that holds every session's claims. The pid is therefore dropped from
-    this reading — the one reader every one of those callers takes — and the
-    record is left on disk for whatever watchdog wrote it.
+    process that holds every session's claims. An attempt record read as naming
+    no process points at nothing the reading host issued, so the process table
+    probe has no pid of this host's to answer for.
+
+    This reader's callers change what they read — a resume marks its own
+    pointer, an admission pass rewrites one — so the copy is deep and taken
+    here, once for the one run asked about, rather than being charged to every
+    pointer of every pass that only reads the listing. Deep because what those
+    callers change is nested: the dispatch options and the section records
+    inside the document are shared by a shallow copy with the memoised view
+    every later listing reads, and a shallow stamp would reach it.
+    """
+    record = copy.deepcopy(data)
+    if isinstance(record.get("node"), Mapping):
+        record["node"] = node_definition(record)
+    if not pid_belongs_to_the_station(record.get("pid")):
+        return record
+    record.pop("pid", None)
+    record.pop("pid_start_time", None)
+    return record
+
+
+def read_pointer(run_id: str) -> dict[str, Any]:
+    """Read one run's live pointer, or say which run is unknown.
+
+    The document is decoded only when its stat identity has moved: a listing
+    that finds every pointer where its previous pass left it decodes none, and
+    a by-id read of a pointer an earlier listing decoded answers from the same
+    memo without reading the file. The record carries no station pid for the
+    reason :func:`_pointer_as_read` states, and it is left on disk for whatever
+    watchdog wrote it.
     """
     path = pointer_path(run_id)
     try:
@@ -1675,23 +1968,7 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
-    # This reader's callers change what they read — a resume marks its own
-    # pointer, an admission pass rewrites one — so the copy is taken here, once
-    # for the one run asked about, rather than being charged to every pointer of
-    # every pass that only reads the listing.
-    record = copy.deepcopy(data)
-    if pid_belongs_to_the_station(record.get("pid")):
-        # Read as naming no process of the run: the station is not one, and a
-        # reader that treats it as one signals or refuses on the node's own
-        # station. An attempt record read as naming no process, pointing at
-        # nothing the reading host issued, so the process table probe has no
-        # pid of this host's to answer for.
-        record = {
-            name: value
-            for name, value in record.items()
-            if name not in ("pid", "pid_start_time")
-        }
-    return record
+    return _pointer_as_read(data)
 
 
 def recorded_dispatch_overrides(record: Mapping[str, Any]) -> tuple[str, ...]:

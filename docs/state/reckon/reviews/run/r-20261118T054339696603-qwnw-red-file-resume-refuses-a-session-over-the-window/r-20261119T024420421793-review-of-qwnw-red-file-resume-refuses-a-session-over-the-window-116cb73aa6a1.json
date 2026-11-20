@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite-1795054382843248558.log ends \"58 passed in 35.06s\" with EXIT=0 at 42fe90d0b0a4 and after_suite-1795054459575601548.log ends \"58 passed in 35.44s\" with EXIT=0 at 0ee512d79e6c, neither carrying a FAILED line, so the set difference is empty (0).",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:562 (lazy re-export of resume_plan at dispatch_sessions.py:1324)",
+    "reckon/crew/dispatch_sessions.py:1324 (resume_plan, the hand-typed resume door the first test calls)",
+    "reckon/crew/resumption.py:2067 (_resume, the review-repair reflex's door the second test calls; :160 store_refused_advice is its refusal-branch write)",
+    "reckon/crew/recovery_wait.py:1555 (resume_window_refusal, the guard whose refusal both tests assert)",
+    "reckon/crew/runs.py:160 (pointer_path) with reckon/crew/runs.py:1600 (read_pointer)",
+    "reckon/crew/runs.py:495 (_write_json, which splits dispatch detail out of a live pointer, so the file cannot equal the mapping the fixture passed)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:28:04Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054339696603-qwnw-red-file-resume-refuses-a-session-over-the-window/manifest.md",
+      "id": "fc2625bfe1a",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names 'ruff check and ruff format --check report nothing new on the changed paths', but the manifest's tests, test_logs and artifacts fields record only the pytest gate and no ruff run is logged in the run directory, so the one obligation the record leaves unmeasured is measured nowhere; the head file is in fact clean (ruff check and ruff format --check on the 116cb73a blob both exit 0), which makes this a record gap rather than a defect in the two files the node changed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call sites: the two resume doors the tests call, the window refusal they assert, and the pointer path, reader and writer they compare.",
+    "diff": "read commit by commit against 42fe90d0b0a4: 0ee512d79e6c replaces the pointer-record comparison with a before-and-after comparison of pointer_path(OVER_RUN).read_text() in two tests and drops the now-unused binding, and 116cb73aa6 adds the 101-line evidence fragment; nothing else changed.",
+    "done_when": "the done_when asks the file to pass in full at head as a job on all_debug with SLURM_JOB_ID unset, its base run logged beside it with the failing ids, an added-failure arm, a product-or-test verdict per cause, ruff clean on the changed paths and no assertion deleted or weakened; the manifest records the base arm (2 failed, 4 passed, EXIT=1), the head gate (6 passed, EXIT=0), both suite arms (58 passed) and the head file is in fact ruff-clean, but the run records no ruff result.",
+    "goal": "the node goal is that tests/test_resume_refuses_a_session_over_the_window.py passes in full on the primary branch; the landed diff rewrites the two pointer-equality assertions at tests/test_resume_refuses_a_session_over_the_window.py:305 and :352 to compare the pointer file's own text, and the recorded head run of that file reads 6 passed.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054339696603-qwnw-red-file-resume-refuses-a-session-over-the-window/manifest.md; it records status complete, both commits, the base arm with both failing ids, the head gate 6 passed, both suite arms 58 passed, the scaffolding attribution for the empty scoped-gate log, and no ruff result.",
+    "write_paths": "the declared paths are reckon, tests and the manifest's two fragment paths; the delivered diff is tests/test_resume_refuses_a_session_over_the_window.py plus docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-refuses-a-session-over-the-window.html, so every changed path is inside them."
+  },
+  "justifications": {
+    "durability": "The base arm shows reverting the change re-reddens the file, and the added assertion at tests/test_resume_refuses_a_session_over_the_window.py:320 reddens if any refusal path writes the pointer, a write the refusal code already performs on the observed-end branch at reckon/crew/dispatch_sessions.py:1439.",
+    "evidence": "The scoped gate log names revision 0ee512d79e6c on host 98dci4-clu-3141 and ends \"6 passed in 10.51s\" with EXIT=0, the base arm ends \"2 failed, 4 passed in 4.41s\" with EXIT=1 on exactly the two repaired ids, and both suite logs read 58 passed with EXIT=0, but the manifest records no ruff run.",
+    "fit": "The change calls the already-imported pointer_path from reckon/crew/runs.py:160 and follows the prose-comment style at tests/test_resume_refuses_a_session_over_the_window.py:303-308 without adding a name.",
+    "goal_fidelity": "The goal is that tests/test_resume_refuses_a_session_over_the_window.py passes in full on the primary branch, and at head its two pointer-equality assertions became file-text comparisons at tests/test_resume_refuses_a_session_over_the_window.py:305 and :352, with the recorded head gate reading 6 passed.",
+    "reuse": "The diff adds no definition and reads the live pointer through its existing owner, reckon/crew/runs.py:160 pointer_path, rather than re-deriving the path.",
+    "scope_discipline": "The diff touches only tests/test_resume_refuses_a_session_over_the_window.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-refuses-a-session-over-the-window.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that tests/test_resume_refuses_a_session_over_the_window.py passes in full on the primary branch; the landed diff rewrites the two pointer-equality assertions at tests/test_resume_refuses_a_session_over_the_window.py:305 and :352 to compare the pointer file's own text, and the recorded head run of that file reads 6 passed.\nVERDICT done_when: The done_when asks the file to pass in full at head as a job on all_debug with SLURM_JOB_ID unset, its base arm logged beside it with the failing ids, an added-failure arm, a product-or-test verdict per cause, ruff clean on the changed paths and no assertion deleted or weakened; the manifest records the base arm (2 failed, 4 passed, EXIT=1), the head gate (6 passed, EXIT=0 on host 98dci4-clu-3141, whose partitions include all_debug), both suite arms (58 passed), and the cause as a test encoding a storage shape the product no longer keeps, but records no ruff result while the head file is in fact clean.\nVERDICT write_paths: The declared paths are reckon, tests and the fragment directory; the delivered diff is tests/test_resume_refuses_a_session_over_the_window.py plus docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-refuses-a-session-over-the-window.html, so every changed path is inside them.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054339696603-qwnw-red-file-resume-refuses-a-session-over-the-window/manifest.md; it records status complete, both commits, the base arm with both failing ids, the head gate 6 passed, both suite arms 58 passed, the scaffolding attribution for the empty scoped-gate log, and no ruff result.\nVERDICT diff: Read commit by commit against 42fe90d0b0a4: 0ee512d79e6c replaces the pointer-record comparison with a before-and-after comparison of pointer_path(OVER_RUN).read_text() in two tests and drops the now-unused binding, and 116cb73aa6 adds the 101-line evidence fragment; nothing else changed.\nCALL_SITES: reckon/crew/dispatch.py:562, reckon/crew/dispatch_sessions.py:1324, reckon/crew/resumption.py:2067, reckon/crew/recovery_wait.py:1555, reckon/crew/runs.py:160, reckon/crew/runs.py:495\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_resume_refuses_a_session_over_the_window.py:305 and :352 now hold each refusal to leaving the pointer file byte-identical, and the recorded head gate reads 6 passed, so the file the goal names passes in full pending promotion.\nSCORE evidence: 16\nJUSTIFICATION evidence: the scoped-gate log names revision 0ee512d79e6c and ends \"6 passed in 10.51s\" with EXIT=0, the base arm ends \"2 failed, 4 passed in 4.41s\" with EXIT=1 on exactly the two repaired ids, and both suite logs read 58 passed, but no ruff run is recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 42fe90d0b0a4..116cb73aa6 is inside the declared write paths, tests/ and the queued-work-needs-no-workaround fragment directory.\nSCORE durability: 19\nJUSTIFICATION durability: the recorded base arm shows reverting the change re-reddens the file, and the added assertion at tests/test_resume_refuses_a_session_over_the_window.py:320 reddens if a refusal writes the pointer, a write the observed-end branch at reckon/crew/dispatch_sessions.py:1439 performs.\nSCORE fit: 19\nJUSTIFICATION fit: the change calls the already-imported pointer_path from reckon/crew/runs.py:160 and follows the prose-comment style at tests/test_resume_refuses_a_session_over_the_window.py:303-308 without adding a name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and reads the real path through its existing owner, reckon/crew/runs.py:160, rather than re-deriving it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054339696603-qwnw-red-file-resume-refuses-a-session-over-the-window/manifest.md:18 non-blocking: the done_when names ruff check and ruff format --check on the changed paths, but the reviewed manifest records only the pytest gate and no ruff run, so that done_when obligation is measured nowhere; the head file is in fact ruff-clean (both commands exit 0), so this is a record gap, not a defect in the change.",
+  "review_node": "review-of-qwnw-red-file-resume-refuses-a-session-over-the-window-116cb73aa6a1",
+  "review_run_id": "r-20261119T024420421793-review-of-qwnw-red-file-resume-refuses-a-session-over-the-window-116cb73aa6a1",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_commits": [
+    "0ee512d79e6c09edc7ee6f2e683be3873d0a8c3b",
+    "116cb73aa6a113f4bdc3b537477d37ffadc6ba19"
+  ],
+  "reviewed_head_sha": "116cb73aa6a113f4bdc3b537477d37ffadc6ba19",
+  "reviewed_run_id": "r-20261118T054339696603-qwnw-red-file-resume-refuses-a-session-over-the-window",
+  "reviewer": "omp-local:deepseek-v4.1-flash",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:51:55.552640+00:00",
+  "total": 113
+}

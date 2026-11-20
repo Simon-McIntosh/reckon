@@ -1,0 +1,208 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T10:32:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:56",
+      "id": "done_when-1",
+      "reason": "without a discriminating case the node's gate cannot show the lease rule is doing the work, and the control as written would report success while the defect it names is present.",
+      "text": "\u00a72's negative control is \"with the function replaced by one keyed on process age, the resumed-session case must fail\", but the resumed session in that case has a fresh lease and therefore a fresh process, so process-age keying also reads it live and the case passes; the stated mutation cannot produce the failure the control claims",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:102",
+      "id": "done_when-2",
+      "reason": "half the section's deliverable is unverifiable, and the cause is what decides whether the repair targets the right mechanism.",
+      "text": "\u00a78's first deliverable, \"a written cause, in this plan's landed record\", is measured by nothing in the done-when, which only asserts the repaired obligations list; a worker can pass the gate having written no cause",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:88",
+      "id": "single_goal-1",
+      "reason": "one node cannot be closed on a partial result, so a worker that lands one half and is blocked on the other leaves the section neither closable nor re-dispatchable.",
+      "text": "\u00a76 delivers two unrelated capabilities: scheduler job comments carrying session and run ids, and a directory view carrying a peer name and a reachable flag; they share no surface and no test",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:23",
+      "id": "wiring-1",
+      "reason": "the two nodes would ship contradictory behaviour for the same record and a reader could not tell which retirement happened.",
+      "text": "\u00a74 raises a decision covering \"every record the session owns\" including awaiting-upstream requests, while \u00a75 retires any stranded awaiting-upstream request outright; a stranded request owned by a lost session is claimed by both sections, neither declares the other, and no rule says which acts first or whether the decision is written for a record \u00a75 then deletes",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:101",
+      "id": "reasoning-1",
+      "reason": "the repair and its base-arm control both target a comparison the source does not contain, so a worker either ships a no-op guard or returns blocked after its base arm passes.",
+      "text": "\u00a78 blames an obligation row drawn with the reason \"Not this session's run: owner session 0f4fa699\" against the run's own owner, but that text is emitted by no code in this tree: a search of `reckon/`, `tests/` and `docs/ui/` for \"Not this session\" and \"owner session\" finds only a docstring in `reckon/crew/session_host.py:431`, while the phrase exists verbatim in a stored acknowledgement reason (`~/.config/reckon/crew/acknowledgements/r-20261117T225500180499-fit-inside-the-iteration.json`); the plan's own evidence \u2014 the row appearing \"five to seven times\" \u2014 is the shape of a stored deferral re-raised, not of an owner comparison",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:108",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a79's done-when resolves the record by project (`crew view live --project concurrent-dispatch-fixture`), so the truncated id does not misdirect a worker.",
+      "text": "the stray pointer \u00a79 cites is written `r-20261117T093219\u2026node-one-worktree`, truncated with an ellipsis, so it names no record a later reader can open",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+  "plan_fingerprint": "c0da824f14890e2e69483010505befa5c49af85dbeb9d061eec540189d9d8cfe",
+  "plan_slug": "work-of-a-lost-session-is-raised-not-left",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the control case becomes a session whose coordinator process is ten days old and never restarted, holding a fresh lease: it reads live by lease and lost by process age, so the replaced function fails it",
+      "reason": "",
+      "when": "2026-11-20T20:03:14.347544+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "section 8 becomes an investigation whose done-when is a research record naming the emitter of the row text and reproducing it; the repair is no longer part of this section",
+      "reason": "",
+      "when": "2026-11-20T20:03:20.867745+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the section no longer asserts a comparison in reckon source; it asks where the text is emitted, in or outside this tree, before any repair is stated",
+      "reason": "",
+      "when": "2026-11-20T20:03:27.611763+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "section 6 keeps the scheduler job comment; the directory view's peer name and reachable flag move to a new section with its own test",
+      "reason": "",
+      "when": "2026-11-20T20:03:35.060855+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "section 5 owns a stranded wait whoever owns the request; section 4's decision lists only records still live after that retirement, and its test asserts a stranded request of a lost session is retired and absent from the decision",
+      "reason": "",
+      "when": "2026-11-20T20:03:42.895158+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "the stray pointer is cited by its full run id",
+      "reason": "",
+      "when": "2026-11-20T20:03:48.281405+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "note": "the stray pointer is cited by its full run id",
+      "reason": "",
+      "when": "2026-11-20T20:03:48.281405+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "note": "the control case becomes a session whose coordinator process is ten days old and never restarted, holding a fresh lease: it reads live by lease and lost by process age, so the replaced function fails it",
+      "reason": "",
+      "when": "2026-11-20T20:03:14.347544+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "note": "section 8 becomes an investigation whose done-when is a research record naming the emitter of the row text and reproducing it; the repair is no longer part of this section",
+      "reason": "",
+      "when": "2026-11-20T20:03:20.867745+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "note": "the section no longer asserts a comparison in reckon source; it asks where the text is emitted, in or outside this tree, before any repair is stated",
+      "reason": "",
+      "when": "2026-11-20T20:03:27.611763+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "note": "section 6 keeps the scheduler job comment; the directory view's peer name and reachable flag move to a new section with its own test",
+      "reason": "",
+      "when": "2026-11-20T20:03:35.060855+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e6cd4d92b1565c1aa3c2887a778b3e3e5d2b2f83",
+      "commit_basis": "edit",
+      "note": "section 5 owns a stranded wait whoever owns the request; section 4's decision lists only records still live after that retirement, and its test asserts a stranded request of a lost session is retired and absent from the decision",
+      "reason": "",
+      "when": "2026-11-20T20:03:42.895158+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-of-a-lost-session-is-raised-not-left/r-20261120T103056359361-plan-review-of-work-of-a-lost-session-is-raised-not-left.json",
+  "review_run_id": "r-20261120T103056359361-plan-review-of-work-of-a-lost-session-is-raised-not-left",
+  "reviewed_blob_sha": "8470397425464fc04b47c7b5807a7855a97b590d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a78's quoted obligation reason does not resolve to any emitter in this tree, and \u00a79 cites a truncated run id.",
+    "done_when": "a finding \u2014 \u00a72's negative control cannot fail the case it names, and \u00a78's \"written cause\" deliverable has no check.",
+    "evidence_paths": "pass \u2014 every gate the sections name is a test file under `tests/` plus the plan's own landed record; no scratchpad, node-local temporary or session-only path is named.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a named symbol, file or comment, and no section states a changelog.",
+    "reasoning": "a finding \u2014 \u00a78's stated cause (an obligation row drawn with a not-yours reason against its own owner) is not the mechanism the cited evidence supports.",
+    "single_goal": "a finding \u2014 \u00a76 carries two independent deliverables (a scheduler comment field and a directory-view peer address) in one node.",
+    "wiring": "a finding \u2014 \u00a73/\u00a74/\u00a75 correctly depend on \u00a72 and `plan-after` resolves, but \u00a74 and \u00a75 both act on a lost session's awaiting-upstream request with no declared relationship and no precedence rule."
+  },
+  "section_digests": {
+    "_document": "84a1b9187932d38fe2986a6edd538f704aced9d22439474259db1a93dee4a590",
+    "s1": "97d20596806fb031c34ba234b045b924725cca184c9388f84deb8af3eb261f80",
+    "s10": "f66c53b4748748a78b7c31563d293a6af014ee4a840b956d71347b0096e660f5",
+    "s2": "9658de0dfb7caaad10ad9679e7b53f8ed890ed4e3d784c3e90189bc37a2511ef",
+    "s3": "36d2e2500f8d8b34f9a08006e3980de143b30d0d219a541fae72768d29dd88e7",
+    "s4": "1e0ab74a2bea5d660a51b02ef77a88f6cc6b95ddcc375d270ab60cf8d0b170f5",
+    "s5": "39a809133b86cc25a4bc08452c4649e80c3601d9d483c92d2a4e0ad4c73fb156",
+    "s6": "a58741e39be2fbcffd09ae0299e0147bdd0f757621963e6b4f858caa4ce746b6",
+    "s7": "1fcb9877d1467576d37f1eb5e1b29ed55f5ddd8991ed8313cf145d20b69f73d9",
+    "s8": "827170d826d125a715d4c3451fba7366e4de4e801d6ab601b4b4a5178d4fe911",
+    "s9": "801e59e8ba1a7d503691a6625fac27a6a8b56bc523b117213aeb7096d56592f3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T10:37:36.983378+00:00",
+  "total": null
+}

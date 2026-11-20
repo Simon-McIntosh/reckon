@@ -1,0 +1,25 @@
+<section id="ldop-the-read-tells-apart-what-waits-was-taken-and-was-withdrawn-landing">
+<h2>The read names four states and drops what was withdrawn</h2>
+<p><code>read_decisions</code> returned ready, pending and taken-and-reversible
+rows, and everything else landed in <code>decisions</code>. A plan-authored
+decision holding no queued request, run or deferred section is now
+<code>plan-block</code>: its own list, its own state, and its owning session,
+recording time and held work reported absent by name (<code>absent</code>)
+rather than as an empty value, so a plan edit date and a plan coordinator are
+never stood in for facts the decision does not carry.</p>
+<p>A record that names the decision which settled it (<code>withdrawn_by</code>)
+stands in no list at all. Nothing else would ever release the work waiting
+behind it, so <code>release_withdrawn_holds</code> returns those requests to
+the phase they were held from, and the admission pass runs it beside the
+plan-review release. A pointer that has moved off <code>held</code> since the
+pass read it is left where it now stands.</p>
+<p>Measure: three tests over a temporary crew home with two mounted projects.
+The four lists hold one record each and no record twice
+(<code>total_count == 4</code>, <code>count == 1</code>); the withdrawn report
+appears in none of them; and an admission pass over a queued request held
+behind it reports <code>released_withdrawn == ["r-held"]</code> with the
+pointer's <code>queue_hold is None</code>. Removing the sweep, the plan-block
+branch, or the withdrawal exclusion from the source fails the corresponding
+test; the base-revision run of the same test is recorded in
+<code>s5.html</code>.</p>
+</section>

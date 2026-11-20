@@ -1,0 +1,99 @@
+<section id="qwnw-red-file-a-killed-worker-resumes-to-completion-landing">
+  <h2>A killed worker is classified, resumed and completed</h2>
+
+  <p><strong>What changed.</strong> The per-run supervisor spawned its worker,
+  kept only the pid, and let the <code>Popen</code> handle be collected the
+  moment the spawn returned. <code>subprocess</code> reaps its own child from
+  that handle's finaliser, so when the handle won the race the supervisor's
+  <code>os.waitpid</code> raised <code>ChildProcessError</code> and the attempt
+  was recorded as ended by neither a code nor a signal: a worker killed by
+  <code>SIGTERM</code> left an exit record whose <code>signal</code> and
+  <code>signal_name</code> were both <code>null</code>, and the classification
+  that reads that record could not name the signal that ended the run. In
+  <code>reckon/crew/dispatch_launch.py</code> the pid carrier
+  (<code>_WorkerPid</code>) now holds the <code>Popen</code> it was made from, so
+  the handle lives for the whole wait and the reap stays where the exit record
+  is composed; a wait that still finds nothing asks the handle for the code it
+  collected, so the reading survives if some other owner got there first.</p>
+
+  <p><strong>What was already right.</strong> The resume fixture in
+  <code>tests/test_a_killed_worker_resumes_to_completion.py</code> placed its
+  stub worker on the node's own <code>/tmp</code>. A resumed attempt is fenced,
+  and the fence seals the node <code>/tmp</code> and overlays the run's scratch
+  on it, so the resumed worker could not execute a command from there and the
+  attempt ended with <code>exit_code</code> 1. That is the fence doing what it
+  is sealed to do, so the fixture now places its stub inside the run's own
+  directory, which the fence binds through at its own path. No assertion was
+  deleted or weakened: the same sequence runs, and the last assertion still
+  reads the exit the resumed attempt left on the committed ledger row.</p>
+
+  <h3 id="qwnw-red-file-a-killed-worker-resumes-to-completion-measured">Measured</h3>
+
+  <p>The head run is the node's own test as a job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset and its output on
+  shared storage. Every run below was driven through the worktree's own
+  interpreter with <code>PYTHONPATH</code> naming the tree under test.</p>
+
+  <table id="qwnw-red-file-a-killed-worker-resumes-to-completion-arms">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>head, node test, an <code>all_debug</code> job</td>
+        <td><code>c529224d9b</code></td>
+        <td>1 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>head, node test, four local repetitions</td>
+        <td><code>c529224d9b</code></td>
+        <td>4 passed, <code>EXIT=0</code> each</td>
+      </tr>
+      <tr>
+        <td>head, declared scoped suite</td>
+        <td><code>c529224d9b</code></td>
+        <td>passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>base, node test</td>
+        <td><code>b24fe95a78</code></td>
+        <td>1 failed, <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-killed-worker-resumes-to-completion-control">Negative control</h3>
+
+  <p>The base package is red for two distinct causes, and both are recorded
+  here.</p>
+
+  <p><strong>The stub is unreachable from inside the resumed attempt.</strong>
+  A job on <code>all_debug</code> at the base revision runs the node's own test
+  file against a base extraction and reads <code>1 failed in 4.15s</code>,
+  <code>EXIT=1</code>, failing at
+  <code>assert second["exit_code"] == 0</code> — <code>assert 1 == 0</code>,
+  which is the resumed worker refusing the stub's path before any of the
+  work that follows.</p>
+
+  <p><strong>The exit record names no signal.</strong> The product defect is a
+  race, so it was run repeatedly: the base product with the head test file left
+  <code>signal_name</code> and <code>signal</code> both null on six consecutive
+  local runs, each reporting
+  <code>AssertionError: assert None == 'SIGTERM'</code> at the first assertion
+  after the record is read, <code>EXIT=1</code> every time. One run of the same
+  arm on an <code>all_debug</code> node passed, which is what a race looks like
+  when the node's timing goes the other way; the local six-for-six is the
+  reading that names the defect, and an instrumented run of the supervisor
+  printed <code>waitpid(6635) raised ChildProcessError</code> at the moment the
+  supervisor tried to collect the worker it had spawned.</p>
+
+  <p>The two logged runs are
+  <code>base-arm.log</code> (base revision, base test, an
+  <code>all_debug</code> job) and <code>base-race-reproduction.log</code> (base
+  product, head test, six local repetitions).</p>
+
+  <h3 id="qwnw-red-file-a-killed-worker-resumes-to-completion-outside">Outside scope</h3>
+
+  <p>None. This gate measures only this node's own change; verifying the
+  merged result belongs to a separately dispatched test node.</p>
+</section>

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Scope refusal names its claimant</title></head><body>
+<section id="qwnw-red-file-scope-refusal-names-its-claimant">
+<h2>A scope refusal names its claimant</h2>
+<p>The dispatch printed <code>reckon: created run &mdash;</code> on stderr before the live-claim read that refuses a hand dispatch, so a caller reading the command output saw the notice first and the refusal document second.</p>
+<p>Move the notice past the repository scope claim and the adjacent peer read in <code>reckon/crew/dispatching/preparation.py</code>. A launched dispatch still carries the notice; a held, queued or refused one prints none.</p>
+<table id="qwnw-red-file-scope-refusal-names-its-claimant-runs"><caption>Node test at base and head, all_debug, SLURM job id unset</caption>
+<thead><tr><th>Revision</th><th>Result</th><th>Receipt</th></tr></thead><tbody>
+<tr><td><code>42fe90d0</code></td><td>2 failed, 1 passed</td><td><code>EXIT=1</code></td></tr>
+<tr><td><code>dd537f44</code></td><td>3 passed</td><td><code>EXIT=0</code></td></tr>
+</tbody></table>
+<p>Both base failures are the JSON decode on the leading notice line: the refusal document follows it. The same ids pass at head.</p>
+</section>
+</body></html>

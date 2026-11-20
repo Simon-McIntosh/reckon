@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1119 base_checkout",
+    "reckon/crew/queue_landing.py:1124 base_checkout",
+    "reckon/crew/promotion_evidence.py:1556 base_checkout",
+    "reckon/crew/promotion_records.py:1237 base_checkout",
+    "reckon/crew/routing.py:1759 _release_worktree_whole",
+    "reckon/crew/landing_measure.py:1654 _release_worktree_whole",
+    "reckon/crew/promotion.py:931 _release_worktree_whole",
+    "reckon/crew/promotion_release.py:477 _release_worktree_whole",
+    "reckon/crew/gc.py:1106 _release_worktree_whole"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:46:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 1653,
+      "severity": "non-blocking",
+      "text": "the release's copy deletion is now an unbounded recursive delete inside a measurement whose every git call is bounded by `timeout`, so a large base checkout can hold a promotion admission pass with no deadline where the replaced git worktree remove call carried one"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 9 production call sites",
+    "diff": "read commit by commit; three product/test hunks plus evidence prose",
+    "done_when": "both arms ran as all_debug jobs with SLURM_JOB_ID unset; importer arms add no failure",
+    "goal": "the named file passes in full at head (14 passed) where the base failed one id",
+    "manifest": "read; records status complete, commits, gate command, arms and logs",
+    "write_paths": "every delivered path is inside the declared reckon, tests and fragment paths"
+  },
+  "notes": "added_failure_count and added_failure_ids derived from the reviewed run's own baseline_suite-1795072684587520378.log and after_suite-1795072727575756745.log via reckon.crew.review.added_failures_from_gate_logs: both pytest, 58 passed each",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_worktree_release_is_whole.py pass in full on the primary branch; arms/head-named.log at c257d07 reports 14 passed, EXIT=0, against 1 failed at b24fe95, so the file is made whole.\nVERDICT done_when: the done_when asks for the named file to pass at head as an all_debug job with SLURM_JOB_ID unset plus an importer arm adding no failure; arms/run-named.sh runs each arm under env -u SLURM_JOB_ID and the manifest records base-named/head-named, arms/base-failids.txt (43 ids) and arms/head-failids.txt (41 ids) with no head-only id.\nVERDICT write_paths: the manifest declares reckon, tests, the evidence fragment directory and the one fragment file; the four delivered paths all fall under those declarations.\nVERDICT manifest: read in full; it records status complete, the three commits, the named-file gate command, both arms, the declared suite pair (58 passed at each revision, failure_count 0), the importer arms and the mutant log.\nVERDICT diff: read commit by commit against b24fe95 (c257d07 product and test, e3dc9244 and 502f199 evidence prose); reckon/crew/landing_measure.py:1652-1657 replaces git worktree remove --force with _release_worktree_whole, reckon/crew/routing.py:1543 gains an optional trash_root, tests/test_a_worktree_release_is_whole.py:432-457 adds the case and one callers-map entry.\nCALL_SITES: reckon/crew/queue_landing.py:1119 landing_measure.base_checkout, reckon/crew/queue_landing.py:1124 landing_measure.base_checkout, reckon/crew/promotion_evidence.py:1556 landing_measure.base_checkout, reckon/crew/promotion_records.py:1237 landing_measure.base_checkout, reckon/crew/routing.py:1759 _release_worktree_whole, reckon/crew/routing.py:2740 _release_worktree_whole, reckon/crew/promotion.py:931 _release_worktree_whole, reckon/crew/promotion_release.py:477 _release_worktree_whole, reckon/crew/gc.py:1106 _release_worktree_whole\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: arms/head-named.log at 502f199's product head c257d07 reports \"14 passed\" with EXIT=0 where arms/base-named.log reports \"1 failed, 12 passed\" naming landing_measure.py::base_checkout.\nSCORE evidence: 18\nJUSTIFICATION evidence: arms/head-named.log and arms/base-named.log are the gate the done_when names and the manifest records them, but the head named arm sits at c257d09's predecessor c257d07 rather than at 502f199, and baseline_suite/after_suite carry the final pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four diff paths (landing_measure.py, routing.py, the test file and the declared fragment) are inside the declared reckon, tests and fragment paths, and the two docs commits touch only the fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_worktree_release_is_whole.py:455-457 reddens on the reinstated defect \u2014 arms/mutant-new-case.log fails that case with AssertionError: [] plus the callers map and the git-remove rule \u2014 while its own expectation, scratch = tree.parent at line 452, is independent of the trash_root the test never passes in.\nSCORE fit: 19\nJUSTIFICATION fit: landing_measure.py:1602 imports the helper lazily inside base_checkout, the idiom this module already uses at landing_measure.py:1544, and routing.py:1543 adds an optional keyword mirroring the function's existing run_id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no release mechanism of its own \u2014 landing_measure.py:1654 calls the owner reckon/crew/routing.py:1543 and extends it with one optional trash_root rather than forking the move-aside sequence.\nFINDING reckon/crew/landing_measure.py:1653 non-blocking: the release's copy deletion is now an unbounded recursive delete inside a measurement whose every git call is bounded by `timeout`, so a large base checkout can hold a promotion admission pass with no deadline where the replaced git worktree remove call carried one.\n",
+  "review_run_id": "r-20261119T073030305053-review-of-qwnw-red-file-a-worktree-release-is-whole-502f199fb769",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "502f199fb7693904d297881272c351c869aed847",
+  "reviewed_run_id": "r-20261118T063455267249-qwnw-red-file-a-worktree-release-is-whole",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-worktree-release-is-whole",
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:08:08.642181+00:00",
+  "total": 116
+}

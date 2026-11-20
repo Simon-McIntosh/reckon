@@ -16,12 +16,12 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="elevated">
-  <meta name="plan-sprint" content="S27">
+  <meta name="plan-sprint" content="S28">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;],&quot;s7&quot;:[&quot;work-flows-to-the-lane#s77&quot;],&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s13&quot;],&quot;s10&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s7&quot;],&quot;s9&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s2&quot;,&quot;dispatch-admission-and-landing-take-seconds#s3&quot;,&quot;dispatch-admission-and-landing-take-seconds#s4&quot;,&quot;dispatch-admission-and-landing-take-seconds#s5&quot;,&quot;dispatch-admission-and-landing-take-seconds#s6&quot;,&quot;dispatch-admission-and-landing-take-seconds#s7&quot;,&quot;dispatch-admission-and-landing-take-seconds#s8&quot;,&quot;dispatch-admission-and-landing-take-seconds#s10&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;],&quot;s7&quot;:[&quot;work-flows-to-the-lane#s77&quot;],&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s13&quot;],&quot;s10&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s7&quot;],&quot;s9&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s2&quot;,&quot;dispatch-admission-and-landing-take-seconds#s3&quot;,&quot;dispatch-admission-and-landing-take-seconds#s4&quot;,&quot;dispatch-admission-and-landing-take-seconds#s5&quot;,&quot;dispatch-admission-and-landing-take-seconds#s6&quot;,&quot;dispatch-admission-and-landing-take-seconds#s7&quot;,&quot;dispatch-admission-and-landing-take-seconds#s8&quot;,&quot;dispatch-admission-and-landing-take-seconds#s10&quot;,&quot;dispatch-admission-and-landing-take-seconds#s11&quot;,&quot;queued-work-needs-no-workaround#s35&quot;]}">
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -108,11 +108,22 @@
 
     
 
+    <h2 id="s11">§11 — The obligations sweep builds the roadmap once per pass</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> A 90-second profile of the station on 19 November showed the obligations sweep building the project roadmap again for each review item it examined. A session's obligations then arrive minutes stale, which is how they read all that day.</p>
+    <p><strong>Deliverable.</strong> One obligations sweep builds each project's roadmap at most once, however many review items it examines, and reports the same obligations as today.</p>
+    <p><strong>Done when.</strong> A test runs one sweep over a temporary crew home holding 40 review items across two projects and counts roadmap builds: at most one per project, and the obligations reported equal those of the base sweep on the same home. Negative control: at the base revision the count exceeds two. Ten consecutive sweeps on the fleet node after landing each finish within 30 s, read from the station's own stage timings, beside ten from before. The test runs on <code>all_debug</code> with at most <code>-n 4</code>; importers add no failure against the base. Write paths: <code>reckon/crew/station_obligations.py</code>, <code>reckon/crew/obligations.py</code>, <code>reckon/crew/section_obligations.py</code> and <code>tests/test_an_obligations_sweep_builds_the_roadmap_once.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-daalts-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-16" data-recommends-skill="/reckon-build dispatch-admission-and-landing-take-seconds" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the dispatch scope check and the plan-write read first</h4>
     <div class="r-fu-body"><p>§2 and §5 return the most coordinator time and share no file. §3 waits on the promotion-order change in the delivered-work plan. §4, §6, §7 and §8 are independent of one another. §9 runs last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build dispatch-admission-and-landing-take-seconds</pre>
+    </article>
+<article class="r-fu" data-id="f-daalts-s28" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-review" data-written-at="2026-11-19" data-recommends-skill="/reckon-build dispatch-admission-and-landing-take-seconds" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the obligations sweep section, then measure</h4>
+    <div class="r-fu-body"><p>§11 is new and owes a review of its section before dispatch. <code>queued-work-needs-no-workaround</code> §35 owns the node-disk reading, and §9 waits on it; the measurement taken here, for that section: on 19 November at 18:26 UTC the fleet health loop's node-disk sample took 25.3 s (20.5 s of CPU) against the 15 s the loop allows it, so each sample was killed, the published disk reading went stale and every session drew a <code>node-disk-stale</code> obligation; one run by hand refreshed it. The same loop's test-process sample exits on a permission error when it reads the environment of a process it may not read. §9 is the fleet measurement and now also waits on §11. The four fleet-measurement sections of sprint S28 (this plan, and its three siblings) need the same quiet 24 hours; take them in one window.</p></div>
     <pre class="r-fu-prompt">/reckon-build dispatch-admission-and-landing-take-seconds</pre>
     </article>
 </section>

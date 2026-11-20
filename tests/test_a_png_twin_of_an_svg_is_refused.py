@@ -233,3 +233,53 @@ def test_an_untracked_png_is_not_a_finding(fixture: Fixture) -> None:
 
     promoted = crew.complete(RUN_ID, gate="passed", root=fixture.repo)
     assert promoted["record"]["run_id"] == RUN_ID
+
+
+def test_a_twin_the_run_removed_in_a_later_commit_is_not_charged(
+    fixture: Fixture,
+) -> None:
+    """The run added a copy, then removed it: its head holds one SVG."""
+    fixture.figure("c.svg").write_text("<svg/>\n", encoding="utf-8")
+    fixture.figure("c.png").write_text("png\n", encoding="utf-8")
+    fixture.commit("add a figure and its rasterised copy")
+    added = fixture.head
+    fixture.figure("c.png").unlink()
+    fixture.commit("remove the rasterised copy")
+    fixture.stage([f"{FIGURE_DIR}/c.svg"])
+    manifest = fixture.config_home / "manifest.md"
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8").replace(
+            f"commits: {fixture.head}\n", f"commits: {added}, {fixture.head}\n"
+        ),
+        encoding="utf-8",
+    )
+
+    checked = _check()
+    assert checked.exit_code == 0, checked.output
+    assert _twin(json.loads(checked.output)["findings"]) == []
+
+    promoted = crew.complete(RUN_ID, gate="passed", root=fixture.repo)
+    assert promoted["record"]["run_id"] == RUN_ID
+
+
+def test_a_twin_still_at_the_head_is_charged_whatever_else_is_cited(
+    fixture: Fixture,
+) -> None:
+    fixture.figure("d.svg").write_text("<svg/>\n", encoding="utf-8")
+    fixture.figure("d.png").write_text("png\n", encoding="utf-8")
+    fixture.commit("add a figure and its rasterised copy")
+    added = fixture.head
+    fixture.figure("e.svg").write_text("<svg/>\n", encoding="utf-8")
+    fixture.commit("add a second figure")
+    fixture.stage([f"{FIGURE_DIR}/d.svg", f"{FIGURE_DIR}/d.png", f"{FIGURE_DIR}/e.svg"])
+    manifest = fixture.config_home / "manifest.md"
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8").replace(
+            f"commits: {fixture.head}\n", f"commits: {added}, {fixture.head}\n"
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(RUN_ID, gate="passed", root=fixture.repo)
+    assert f"{FIGURE_DIR}/d.png" in str(refusal.value)

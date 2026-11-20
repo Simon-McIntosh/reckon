@@ -1,0 +1,92 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "max(gaps) > limit fails if the reading step is moved back to the tail of the pass or the pass bound stops clamping the steps, which is what the recorded red log shows at the base ordering (18.3s against 8s); the count assertion fails if a pass publishes nothing; accepted['utc'] == published.readings[-1]['utc'] fails if the reader parses a different record than the watcher saw.",
+      "independence": "The separations are read from the readings' own timestamps, not from the values handed to the sampler; the limit comes from the reader (supervisor.node_disk_sample_max_age_seconds) rather than a literal in the assertion, and :246 checks that reader resolves the configured value.",
+      "limit": "The scaled margin is 6 seconds of wait plus pass bound against an 8-second limit on one machine, so a much slower host shrinks the headroom without changing the ordering under test.",
+      "location": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:243-273"
+    },
+    {
+      "conditions_for_failure": "published['sampler_pid'] == first.pid fails if the sampler stops exporting FLEET_HEALTH_SAMPLER_PID (the recorded red log shows the base arm failing with KeyError: 'sampler_pid'); the replacement wait fails if the lock is not released after the group dies; the separation assertion fails if a replacement restarts a long wait before publishing.",
+      "independence": "Both pids are the operating system's pids of processes the test started, not values the test hands to the code.",
+      "limit": "The separation is measured from two readings of one record file, so a replacement that published to a different state directory would fail the pid wait rather than the separation.",
+      "location": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:276-322"
+    },
+    {
+      "conditions_for_failure": "The reason assertions fail if sampler_pid is dropped from NodeDiskSampleError or from node_disk_reading_obligation; the age assertions fail if age_seconds stops being carried; _blocking_items([row]) == [] fails if node-disk-stale leaves the hook's non-blocking set, and == [pressure] fails if the low-space row is wrongly exempted.",
+      "independence": "The pid is a live process the test started but it is written into the fixture reading rather than produced by a sampler; the blocking assertions are independent of the row's text because _row_is_actionable reads only the kind, and the pressure row is the positive control that the predicate still returns something.",
+      "limit": "The case never drives the obligations view itself, so a view that dropped node-disk rows before calling _blocking_items would not be caught here.",
+      "location": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:325-353"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "bin/fleet-health:139 (sample-node-disk at the head of each pass)",
+    "bin/fleet-health:213 (reclaim-node-scratch as its own step)",
+    "reckon/crew/fleet_supervisor.py:4268-4271 (main dispatches sample-node-disk and reclaim-node-scratch)",
+    "reckon/crew/fleet_supervisor.py:861 node_disk_obligation",
+    "reckon/crew/admission/service.py:186-208 node_disk_admission_hold",
+    "reckon/hooks/coordinator_obligations.py:827 _row_is_actionable"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T08:08:30Z",
+  "findings": [
+    {
+      "disposition_hint": "give the sweep its own bound outside pass_end, as the reading step has, or run it on a pass of its own",
+      "file": "bin/fleet-health",
+      "line": "213",
+      "severity": "non-blocking",
+      "text": "non-blocking: reclaim-node-scratch runs last and bounded() returns 124 as soon as the pass budget is spent (bin/fleet-health:117-118), while the nine steps ahead of it can each consume their bound \u2014 the plan's own measurement has seven 20-second steps against a 90-second pass, so on a loaded node the sweep never runs and unowned scratch is never reclaimed, where the base at least reclaimed whatever it managed inside its 15-second disk bound."
+    },
+    {
+      "disposition_hint": "add the three kinds to NON_BLOCKING_DUTY_KINDS, or have the mirror derive from the constants",
+      "file": "reckon/crew/obligations.py",
+      "line": "408",
+      "severity": "non-blocking",
+      "text": "non-blocking: the hook's _NON_BLOCKING_KINDS documents itself as mirroring the derivation's own vocabulary, and the change added node-disk-stale, node-disk-missing and node-disk-unreadable only to the copy at reckon/hooks/coordinator_obligations.py:268-270; NON_BLOCKING_DUTY_KINDS still omits all three, so the two sets now disagree and any consumer that reads the owner treats a stale disk reading as a blocking duty."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the single commit 68d13e40, 5 files, +513 -21: the pass reordered and bounded in bin/fleet-health, the sweep split into reclaim_node_scratch and the sampler pid carried into the reading and the stale row in reckon/crew/fleet_supervisor.py, three duty kinds added to the hook mirror, a 353-line test file and a two-line adjustment in tests/test_unowned_scratch_is_reclaimed.py.",
+    "done_when": "The done_when names tests/test_a_loaded_node_publishes_a_current_disk_reading.py with three clauses plus a negative control; the file's three cases assert separation below the reader's own limit (:243-273), the same across a mid-wait replacement (:276-322) and the expired row's sampler, age and empty blocking set (:325-353), and the recorded gate log shows 61 passed at 68d13e40; the ruff-format and all_debug clauses have no receipt in the run directory.",
+    "goal": "The node goal is that the published disk reading stays inside its freshness limit on a loaded node; bin/fleet-health:139 now publishes the reading as the first step of a pass whose every step is clamped to what is left of a 90-second pass bound (bin/fleet-health:110-124), so consecutive readings are separated by the wait plus the pass bound inside the reader's limit.",
+    "manifest": "The manifest records status complete at 68d13e40de, the scoped gate command with 61 passed, baseline and after suite arms both exit 0 with zero failures, a red negative control at the base ordering, and states the one scaffolding retry and its repair.",
+    "write_paths": "The manifest declares nine paths including bin/fleet-health, reckon/crew/fleet_supervisor.py, reckon/hooks/coordinator_obligations.py, tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py; all five delivered paths are inside that list and reckon/crew/station_obligations.py and the docs paths were left untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:265 fails on the restored base ordering \u2014 the recorded red log shows 18.3 seconds against the 8-second limit \u2014 while :293's sampler-pid assertion reads a fabricated fixture pid rather than a live sampler's, which the file's other case supplies.",
+    "evidence": "The scoped gate log at 68d13e40 records 61 passed and both suite arms record exit 0 with zero failures, but no artefact records the all_debug run or the ruff format check the done_when names, and I verified the formatting independently (4 files already formatted) rather than from a receipt.",
+    "fit": "bin/fleet-health:110 bounded() follows the file's own helper idiom beside ms_since and over_load, and reckon/crew/fleet_supervisor.py:539 keeps the module's environ-argument convention rather than reading os.environ.",
+    "goal_fidelity": "bin/fleet-health:139 publishes before any other step and bin/fleet-health:110-124 clamps each step to what is left of pass_bound, so a pass is bounded and a stale row now carries the sampler pid and age at reckon/crew/fleet_supervisor.py:814-833.",
+    "reuse": "bounded() wraps the timeout idiom the same file already uses, reclaim_node_scratch reuses reclaim_unowned_scratch and write_json_atomically, and no owner exists for an environment pid reader (searched reckon/ for _env_int/int env helpers and sampler_pid); the one widened copy, the hook vocabulary at reckon/hooks/coordinator_obligations.py:257 duplicates the owner at reckon/crew/obligations.py:408 without extending it.",
+    "scope_discipline": "Every path the commit touches is a declared write path, and the only file outside the new test that changed, tests/test_unowned_scratch_is_reclaimed.py, changed to follow the sweep's new call contract."
+  },
+  "notes": "Read artefacts only; no full suite re-run. The reviewed head 68d13e40 is not an ancestor of this review's worktree base 11c7cc50, so the landed files were read with git show 68d13e40:<path> and the diff 28fbf2bc..68d13e40, and the formatting check was run on those extracted head files (ruff format --check: 4 files already formatted).",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that the published disk reading stays inside its freshness limit on a loaded node; bin/fleet-health:139 now publishes the reading as the first step of a pass whose every step is clamped to what is left of a 90-second pass bound (bin/fleet-health:110-124), so consecutive readings are separated by the wait plus the pass bound inside the reader's limit.\nVERDICT done_when: The done_when names tests/test_a_loaded_node_publishes_a_current_disk_reading.py with three clauses plus a negative control; the file's three cases assert separation below the reader's own limit (:243-273), the same across a mid-wait replacement (:276-322) and the expired row's sampler, age and empty blocking set (:325-353), and the recorded gate log shows 61 passed at 68d13e40; the ruff-format and all_debug clauses have no receipt in the run directory.\nVERDICT write_paths: The manifest declares nine paths including bin/fleet-health, reckon/crew/fleet_supervisor.py, reckon/hooks/coordinator_obligations.py, tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py; all five delivered paths are inside that list and reckon/crew/station_obligations.py and the docs paths were left untouched.\nVERDICT manifest: The manifest records status complete at 68d13e40de, the scoped gate command with 61 passed, baseline and after suite arms both exit 0 with zero failures, a red negative control at the base ordering, and states the one scaffolding retry and its repair.\nVERDICT diff: Read the single commit 68d13e40, 5 files, +513 -21: the pass reordered and bounded in bin/fleet-health, the sweep split into reclaim_node_scratch and the sampler pid carried into the reading and the stale row in reckon/crew/fleet_supervisor.py, three duty kinds added to the hook mirror, a 353-line test file and a two-line adjustment in tests/test_unowned_scratch_is_reclaimed.py.\nCALL_SITES: bin/fleet-health:139 (sample-node-disk at the head of each pass), bin/fleet-health:213 (reclaim-node-scratch as its own step), reckon/crew/fleet_supervisor.py:4268-4271 (main dispatches sample-node-disk and reclaim-node-scratch), reckon/crew/fleet_supervisor.py:861 node_disk_obligation, reckon/crew/admission/service.py:186-208 node_disk_admission_hold, reckon/hooks/coordinator_obligations.py:827 _row_is_actionable",
+  "review_run_id": "r-20261120T075952383246-review-of-qwnw-a-loaded-node-publishes-a-current-disk-reading-68d13e40de27",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "68d13e40de278d26b49a6965366c65f3a96404fd",
+  "reviewed_run_id": "r-20261119T184810689491-qwnw-a-loaded-node-publishes-a-current-disk-reading",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T08:27:16.463252+00:00",
+  "total": 97,
+  "verdicts": {
+    "diff": "Read the single commit 68d13e40, 5 files, +513 -21: the pass reordered and bounded in bin/fleet-health, the sweep split into reclaim_node_scratch and the sampler pid carried into the reading and the stale row in reckon/crew/fleet_supervisor.py, three duty kinds added to the hook mirror, a 353-line test file and a two-line adjustment in tests/test_unowned_scratch_is_reclaimed.py.",
+    "done_when": "The done_when names tests/test_a_loaded_node_publishes_a_current_disk_reading.py with three clauses plus a negative control; the file's three cases assert separation below the reader's own limit (:243-273), the same across a mid-wait replacement (:276-322) and the expired row's sampler, age and empty blocking set (:325-353), and the recorded gate log shows 61 passed at 68d13e40; the ruff-format and all_debug clauses have no receipt in the run directory.",
+    "goal": "The node goal is that the published disk reading stays inside its freshness limit on a loaded node; bin/fleet-health:139 now publishes the reading as the first step of a pass whose every step is clamped to what is left of a 90-second pass bound (bin/fleet-health:110-124), so consecutive readings are separated by the wait plus the pass bound inside the reader's limit.",
+    "manifest": "The manifest records status complete at 68d13e40de, the scoped gate command with 61 passed, baseline and after suite arms both exit 0 with zero failures, a red negative control at the base ordering, and states the one scaffolding retry and its repair.",
+    "write_paths": "The manifest declares nine paths including bin/fleet-health, reckon/crew/fleet_supervisor.py, reckon/hooks/coordinator_obligations.py, tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py; all five delivered paths are inside that list and reckon/crew/station_obligations.py and the docs paths were left untouched."
+  }
+}

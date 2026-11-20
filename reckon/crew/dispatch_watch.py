@@ -24,6 +24,7 @@ from typing import (
 )
 from reckon import (
     _store,
+    node_runtime,
 )
 from reckon.crew.node import (
     CrewError,
@@ -43,6 +44,7 @@ from reckon.crew.runs import (
     watch_state,
     watch_stream_path,
 )
+from reckon.crew.watch_unit import read_producer_start_failure
 
 
 # Process startup and registration may receive only one scheduler slice in six
@@ -293,20 +295,65 @@ def seat_held_elsewhere(child_pid):
     except Exception:
         return False
 
+log_path = sys.argv[2]
+message_limit = 500
+
+def produced_message(offset):
+    # The producer's own words, taken from what it appended to the log it was
+    # handed. Its standard error goes to that same file rather than to the null
+    # device, because a producer that exits at start has nothing else to say
+    # and its reason is the only diagnosis a later reader can reach.
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='replace') as stream:
+            stream.seek(offset)
+            text = stream.read()
+    except (OSError, ValueError):
+        return ''
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not lines:
+        return ''
+    return lines[-1][-message_limit:]
+
+def note_failure(child_pid, status, message, giving_up):
+    # Imported here for the same reason the seat answer is: this script runs
+    # before the module it names is importable, and a failure inside the
+    # recording must not hide the exit status the wrapper is about to raise.
+    with open(log_path, 'a', encoding='utf-8') as log:
+        log.write(f'reckon crew watch: producer for {project} exited at start '
+                  f'with status {status}: {message}\\n')
+    sys.path.insert(0, module_root)
+    try:
+        from reckon.crew.watch_unit import record_producer_start_failure
+        record_producer_start_failure(project, pid=child_pid, status=status,
+                                      message=message, attempts=crashes,
+                                      giving_up=giving_up)
+    except Exception:
+        return
+
 for signum in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):
     signal.signal(signum, stop)
 
 while True:
     if stopping is not None:
         raise SystemExit(128 + stopping)
-    producer = subprocess.Popen(sys.argv[8:], stdin=subprocess.DEVNULL,
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                close_fds=True)
-    child_pid = producer.pid
-    started = time.monotonic()
-    if stopping is not None and producer.poll() is None:
-        producer.send_signal(stopping)
-    status = producer.wait()
+    try:
+        offset = os.path.getsize(log_path)
+    except OSError:
+        offset = 0
+    # The log directory is made here rather than left to the producer's own
+    # adoption: a producer that never gets that far would otherwise fail on a
+    # missing directory and lose the reason to a traceback nothing reads.
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    with open(log_path, 'a', encoding='utf-8', errors='replace') as errlog:
+        producer = subprocess.Popen(sys.argv[8:], stdin=subprocess.DEVNULL,
+                                    stdout=subprocess.DEVNULL, stderr=errlog,
+                                    close_fds=True)
+        child_pid = producer.pid
+        started = time.monotonic()
+        if stopping is not None and producer.poll() is None:
+            producer.send_signal(stopping)
+        status = producer.wait()
+        errlog.flush()
     ran_seconds = time.monotonic() - started
     producer = None
     if stopping is not None:
@@ -323,10 +370,14 @@ while True:
         crashes = 0
     else:
         crashes += 1
+    message = produced_message(offset)
     if crashes == 5:
-        with open(sys.argv[2], 'a', encoding='utf-8') as log:
+        with open(log_path, 'a', encoding='utf-8') as log:
             log.write('reckon crew watch stopped: producer crashed repeatedly; restart limit reached\\n')
+        note_failure(child_pid, status, message, True)
         raise SystemExit(status)
+    if crashes:
+        note_failure(child_pid, status, message, False)
     time.sleep(delay)
     delay = min(delay * 2, cap)
 """.replace("__IDENTITY_NAMES__", repr(SESSION_IDENTITY_ENV_NAMES))
@@ -404,6 +455,17 @@ class _SpawnedHandle:
 
     def poll(self) -> None:
         return None
+
+
+def _producer_start_failing(project: str) -> bool:
+    """Whether the project's producer start is failing now.
+
+    Read through the published state rather than the record alone, so the
+    answer is the one a launch's own record carries: a producer that is live
+    supersedes any older failure, and one that took the seat after a failure
+    supersedes it too.
+    """
+    return bool(watch_state(project).get("producer_start_failure"))
 
 
 def _start_watch_producer(project: str) -> Any:
@@ -504,6 +566,13 @@ def _ensure_watch_producer(
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except BlockingIOError:
+                if _producer_start_failing(project):
+                    # A producer whose start is failing is not waited on: the
+                    # caller is not arming a working producer, so holding here
+                    # would refuse every other launch for the bound while
+                    # nothing was being brought up. The launch proceeds as one
+                    # with no producer armed, and the failure record says so.
+                    return watch_state(project, session=session)
                 if time.monotonic() >= deadline:
                     raise CrewError(
                         f"watch arming lock {arming_lock} remained held for "
@@ -517,11 +586,22 @@ def _ensure_watch_producer(
             _stop_watch_producer_within(project, max(0.0, deadline - time.monotonic()))
             state = watch_state(project)
         if not state["watcher_live"]:
+            attempt_started = time.time()
             supervisor = _start_watch_producer(project)
             while time.monotonic() < deadline:
                 if watch_state(project)["watcher_live"]:
                     break
                 if supervisor.poll() is not None:
+                    break
+                # The wrapper writes the start failure, and the spawn handle
+                # cannot report it on the fleet-delegated route, so the record
+                # ending the wait is what keeps a launch from sitting out the
+                # whole bound on a start that has already failed.
+                failure = read_producer_start_failure(project)
+                if (
+                    failure is not None
+                    and float(failure["failed_at"]) >= attempt_started
+                ):
                     break
                 time.sleep(0.05)
     return watch_state(project, session=session)
@@ -596,21 +676,9 @@ def session_host_runtime_candidate(
     values, exactly as ``reckon.host.host_facts`` does; the defaults are the
     process's own environment and the node's per-user runtime directory.
     """
-    env = os.environ if environ is None else environ
-    runtime = str(env.get("XDG_RUNTIME_DIR") or "").strip()
-    if runtime:
-        return Path(runtime), "runtime-directory"
-    run_user = (
-        Path(run_user_root)
-        if run_user_root is not None
-        else Path(f"/run/user/{os.getuid()}")
+    return node_runtime.runtime_root_candidate(
+        environ=environ, run_user_root=run_user_root
     )
-    if run_user.is_dir():
-        return run_user, "per-user-runtime"
-    scratch = str(env.get("TMPDIR") or "").strip()
-    if scratch:
-        return Path(scratch), "scratch"
-    return None, "none"
 
 
 def session_host_runtime_root(
@@ -859,12 +927,12 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
 
     A resume launches a worker the session's pane has to show, and a resume
     sends no dispatch request, so a pair whose host child has settled stays idle
-    until some later dispatch happens to ask again. The request travels to the
-    host of the Claude process issuing the resume, so only that session's own
-    pair can be re-armed: a resume issued from another session would ask its own
-    host for a pair it does not own, and the answer would describe a follower
-    that is not the run's. The pair's session owns its follower, so another
-    session's resume reports that and asks no host.
+    until some later dispatch happens to ask again. The pair's session owns its
+    follower, so the request goes to the host that runs that session: a resume
+    issued from another session hands the run to the run's own live host, and
+    falls back to the calling session's waiting host, unmarked, only when the
+    run's session has no live host -- a session with nothing of its own running
+    is shown by the pane that restarted the work.
 
     The answer, when the re-arm is the session's own, is this host's live child
     for the pair -- a session attached through another host's follower, or
@@ -875,9 +943,10 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
         return False, "the run records no session, so no host owns its follower"
     calling = _calling_session()
     if calling != session:
-        # The resume's own host can still take the run: the request names the
-        # run's pair and travels to this process's FIFO, which is the pane the
-        # caller watches. Report the refusal only when no waiting host took it.
+        # The run goes to its own session's live host, and to this process's
+        # waiting host -- the pane the caller watches, unmarked -- only when
+        # that session has none. Report the refusal only when no waiting host
+        # took it.
         handoff = hand_off_mismatched_session(project, session)
         # A resume composes no launch record, so the hand-off it recorded is
         # dropped here rather than left for a later dispatch to claim.
@@ -1272,6 +1341,25 @@ class _FollowerAdmissionUnmet(WatcherRequired):
         )
 
 
+def _producer_start_failure_warning(project: str, failure: Mapping[str, Any]) -> str:
+    """Say that the launch proceeds with no producer armed, and why.
+
+    A producer start that fails is not a reason to refuse the work: the run is
+    still launched, and what the session loses is the sweep that would notice
+    its end. The warning names that loss and the producer's own words, because
+    the fix is the producer's and the reason is the only thing that names it.
+    """
+    message = str(failure.get("message") or "").strip()
+    log = str(failure.get("log_path") or watch_log_path(project))
+    return (
+        f"no watch producer is armed for {project!r}: its start failed "
+        f"(exit status {failure.get('exit_status')}) with {message or 'no message'}, "
+        f"recorded in {log}. This launch was admitted with no producer armed, "
+        "so nothing sweeps the run's end until a producer starts; re-arm it "
+        f"with `reckon crew watch --ensure --project {project}`."
+    )
+
+
 def _watcher_delivery_admission(
     project: str,
     dispatch_watch: Mapping[str, Any],
@@ -1288,7 +1376,9 @@ def _watcher_delivery_admission(
     is live, and handed the re-arm warning: the project is still watched, and
     the run's own record keeps the delivery it was missing visible to a later
     reader. Everything else is refused, and every unmet condition is named in
-    the one refusal rather than one per round trip.
+    the one refusal rather than one per round trip. A project whose producer
+    start has failed is the fourth: the launch is admitted with no producer
+    armed, and the warning names the failure rather than refusing the work.
 
     ``delivery`` names how the session's follower was sought — ``"host"`` when a
     session host attached it, ``"monitor"`` otherwise. It rides the refusal too,
@@ -1306,11 +1396,20 @@ def _watcher_delivery_admission(
         # below do not apply to it. The producer does apply: every launch kind
         # reads the project's watch seat, so its absence is refused here for
         # this kind too, as the call site refused it for all kinds.
+        failure = dispatch_watch.get("producer_start_failure")
+        if failure:
+            return _producer_start_failure_warning(project, failure)
         if dispatch_watch.get("watcher_live"):
             return None
         refusal = WatcherRequired(project, dispatch_watch)
         refusal.delivery = delivery
         raise refusal
+    failure = dispatch_watch.get("producer_start_failure")
+    if failure:
+        # A launch is not refused because a producer cannot start: it proceeds
+        # as it would with no producer armed, and the warning is what says so
+        # in the launch's own record and in the caller's answer.
+        return _producer_start_failure_warning(project, failure)
     if dispatch_watch.get("session_follower_released") and dispatch_watch.get(
         "watcher_live"
     ):

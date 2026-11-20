@@ -387,6 +387,32 @@ def _declared_repository_roots(
     )
 
 
+def _integration_brings_the_run(
+    tree: Path, revision: str, run_head: str | None
+) -> bool:
+    """Report whether ``revision`` is a merge that carries the run's own head.
+
+    A run's work can reach the record inside an integration merge: a
+    coordinator merges the run's head, so the merge names the run's head as one
+    of its parents. The scope measurement charges that merge the content it
+    brought relative to its first parent — the run's work — so the content it
+    charges is bounded by what the citation itself carries.
+
+    Being merely descended from the run's head is not enough. A later commit on
+    the same branch, or a merge someone else made on top of it, also descends
+    from the run's head while bringing content this run never touched, and
+    charging its first-parent diff to this run would record another writer's
+    work as the run's own. Only the merge that names the run's head as a parent
+    is admitted; every other commit outside the run's history stays foreign.
+    """
+    if not run_head:
+        return False
+    parents = _commit_parents(tree, revision)
+    if len(parents) < 2:
+        return False
+    return run_head in parents
+
+
 def _require_commits_beyond_base(
     run_id: str,
     record: Mapping[str, Any],
@@ -419,6 +445,19 @@ def _require_commits_beyond_base(
     after the tree it belonged to no longer existed. With no worktree to read,
     the observable question is the one the base answers — the citation is the
     run's work if it descends from the base the run was dispatched against.
+
+    Uncommitted declared work is only a defect for a run whose deliverable
+    belongs in a commit. A shadow run asserts no code and is refused a
+    citation by its own guard, so uncommitted work in its tree is the evidence
+    itself: the landing writes it into the run's shadow patch, which is what a
+    later reader measures. Refusing its row would leave the comparison arm with
+    its evidence in no artifact at all rather than in no commit.
+
+    An integration merge that names the run's own head as one of its parents is
+    the run's work too: the merge is the commit that carried it, and the scope
+    measurement charges it the content it brought relative to its first parent.
+    A commit merely descended from the run's head is not admitted, because what
+    it brought is not bounded by what the run did.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
@@ -471,14 +510,18 @@ def _require_commits_beyond_base(
                 "run. Cite the commit the run committed on top of the base, or "
                 "pass --no-commit '<why>' when it produced none"
             )
+
+        carries_the_run = _integration_brings_the_run(tree, canonical, canonical_head)
         if canonical == canonical_recorded_merge:
             # The merge the recording named, which it verified carries this
             # run's head and is on the primary branch; no run history can hold
             # the merge between the run and that branch.
             continue
         predates_base = _revision_is_ancestor(tree, canonical, canonical_base)
-        outside_history = canonical_head is not None and not _revision_is_ancestor(
-            tree, canonical, canonical_head
+        outside_history = (
+            canonical_head is not None
+            and not carries_the_run
+            and not _revision_is_ancestor(tree, canonical, canonical_head)
         )
         if (
             predates_base
@@ -2443,6 +2486,7 @@ from reckon.crew.promotion_release import (
 from reckon.crew.promotion_scope import (
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
+    _commit_parents,
     _is_shadow,
     _merge_revisions,
     _repository_scope_paths,

@@ -38,6 +38,7 @@ from reckon import _store, file_memo, flight, ledger, review_tiers
 from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_reset,
+    obligation_snapshot,
     queue_admission,
     recovery,
     recovery_classification,
@@ -201,7 +202,7 @@ DUTY_ROW_FIELDS = (
     # text quotes.
     "review_owner",
     "reflex_window_seconds",
-    # An overdue remedy's time-dependent intervals; see refresh_overdue_remedy.
+    # An overdue remedy's time-dependent intervals; see obligation_snapshot.refresh_overdue_remedy.
     "overdue_remedy",
     "refused_at",
     "queued_at",
@@ -843,9 +844,16 @@ def live_pointer_snapshot(
     The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
     exactly as long as the block and no later read inherits it.
     """
-    listing = (
-        list(pointers) if pointers is not None else runs.list_live(project=project)
-    )
+    if pointers is not None:
+        listing = list(pointers)
+    else:
+        # An enclosing read scope already holds this pass's population, so the
+        # read that opened it is the view's one read: listing the directory
+        # again here would answer from a second snapshot.
+        from reckon.crew.open_run_index import pointers as held_pointers
+
+        held = held_pointers(project=project)
+        listing = list(held) if held is not None else runs.list_live(project=project)
     published: dict[str, list[dict[str, Any]]] = {}
     for pointer in listing:
         published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
@@ -857,6 +865,8 @@ def live_pointer_snapshot(
     # holding a pass whose pointers have gone. A reader below fills it in for
     # this listing; it outlives nothing.
     reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
+    # A reader that asks for one run by id answers from the memo the listing
+    # filled: a pointer whose stat identity has not moved is decoded once.
     try:
         yield listing
     finally:
@@ -1257,19 +1267,6 @@ def _iso(instant: datetime) -> str:
     return instant.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _age_of_instant(value: Any, *, now: datetime) -> int:
-    """The non-negative age in seconds of one stored instant."""
-    stamp = parse_utc(value)
-    if stamp is None:
-        return 0
-    return max(0, int((now - stamp).total_seconds()))
-
-
-def _overdue_figure(seconds: int) -> str:
-    """How an overdue interval is printed in a duty's remedy text."""
-    return f"{max(0, int(seconds)) // 60}m {max(0, int(seconds)) % 60}s"
-
-
 def _overdue_remedy(
     project: str,
     pointer: Mapping[str, Any],
@@ -1303,50 +1300,10 @@ def _overdue_remedy(
     return remedy
 
 
-def _render_overdue_remedy(
-    remedy: Mapping[str, Any], *, age: int, now: datetime
-) -> str:
-    """Compose an overdue duty's text from its intervals at one clock reading."""
-    figure = _overdue_figure(int(age))
-    stage = str(remedy.get("stage") or "")
-    if stage:
-        stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
-        text = (
-            f"review overdue by {figure}: the station's tick has run "
-            f"{_overdue_figure(stage_age)} in its {stage} stage, which holds "
-            "the reflex's sweep"
-        )
-        dispatch = str(remedy.get("dispatch") or "")
-        if dispatch:
-            return f"{text}; dispatch the review now with: {dispatch}"
-        return f"{text}; dispatch the review for session {remedy.get('session')!r} now"
-    return (
-        f"review overdue by {figure}: session {remedy.get('session')!r} "
-        "has an armed follower, but its reflex has not dispatched this "
-        "run's review; inspect the follower's review pass"
-    )
-
-
-def refresh_overdue_remedy(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
-    """One duty row whose time-dependent remedy text is composed at ``now``.
-
-    A published snapshot stores a duty's age as the instant it is measured
-    from, and the reader turns it back into seconds against its own clock. The
-    remedy text beside it was composed once, at the writer's instant, so without
-    this the figure it prints stays at the value the snapshot was written with
-    while ``age_seconds`` grows — a stuck clock beside a moving one. The row
-    carries the intervals the figure is built from, so the text is composed
-    here at the reading instant, from the same refreshed age the row shows.
-    """
-    refreshed = dict(row)
-    remedy = refreshed.get("overdue_remedy")
-    if not isinstance(remedy, Mapping):
-        return refreshed
-    age = refreshed.get("age_seconds")
-    if isinstance(age, bool) or not isinstance(age, int):
-        return refreshed
-    refreshed["next_command"] = _render_overdue_remedy(remedy, age=age, now=now)
-    return refreshed
+# The reader composes an overdue duty's text for a snapshot row, so the reader
+# is where the render lives and this module composes through its copy.
+_render_overdue_remedy = obligation_snapshot._render_overdue_remedy
+_overdue_figure = obligation_snapshot._overdue_figure
 
 
 def _reflex_review_command(
@@ -1855,11 +1812,13 @@ def _acknowledgements_in_force(
     project's committed history — a deliberate remainder of a promoted run is
     withheld exactly as a live run's is, and expires the same way.
 
-    A deferral whose ``until`` has passed is not returned, so the run it named
-    re-enters the list on the next read rather than lingering in the
-    acknowledged block. A run whose deferral cannot be parsed as an instant is
-    treated as undeferred: an unreadable deadline is no excuse to withhold an
-    obligation.
+    A deferral whose ``until`` has passed is not returned, and its file is
+    removed by the same read that refuses it: the deferral excuses nothing and
+    leaving it behind charges every later read for a record no reader can
+    honour. A deferral whose ``until`` cannot be parsed as an instant is
+    likewise not returned — an unreadable deadline is no excuse to withhold an
+    obligation — but its file is left in place, because a sweep removes only
+    what it can prove expired and an unreadable instant proves nothing.
     """
     in_force: dict[str, dict[str, Any]] = {}
     live_ids: set[str] = set()
@@ -1889,11 +1848,11 @@ def _acknowledgements_in_force(
             runs.release_run_acknowledgement(run_id, record, promoted=True)
             continue
         until = parse_utc(record.get("until"))
-        if (
-            until is not None
-            and until > now
-            and not _acknowledgement_condition_ended(record)
-        ):
+        if until is None:
+            # Nothing proves this record expired, so it is refused the duty it
+            # proves: the run is owed, the file an operator wrote stays.
+            continue
+        if until > now and not _acknowledgement_condition_ended(record):
             in_force[run_id] = record
         else:
             runs.release_run_acknowledgement(run_id, record, promoted=True)
@@ -4878,6 +4837,13 @@ def _obligations_view(
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
     live_pointers = list(pointers.values())
+    from reckon.crew.fleet_supervisor import producer_start_failure_obligations
+
+    items.extend(
+        producer_start_failure_obligations(
+            project, session, now=now, pointers=live_pointers
+        )
+    )
     from reckon.crew.section_obligations import merged_section_items
 
     items.extend(merged_section_items(project, session, live_pointers, now=now))
@@ -5259,8 +5225,14 @@ def _obligations_view(
             str(item["kind"]),
         )
     )
+    # Counted over the same population this view derives its rows from, so the
+    # summary and the rows cannot disagree about which runs are live, and the
+    # directory is not listed a second time inside one view. The count reads
+    # through the shared ownerless partition, so a session that owns no row of
+    # its own is still counted.
     unreconciled = runs.unreconciled_for_session(
-        runs.drain_unreconciled_by_session(project), session
+        runs.drain_unreconciled_by_session(project, pointers=live_pointers),
+        session,
     )
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]

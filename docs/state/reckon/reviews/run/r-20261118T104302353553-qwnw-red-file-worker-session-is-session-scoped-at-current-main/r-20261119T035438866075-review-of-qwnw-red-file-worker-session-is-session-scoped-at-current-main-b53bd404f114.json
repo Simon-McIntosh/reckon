@@ -1,0 +1,97 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The fixture registers no member in the roster store, or the store region is read from somewhere other than where ledger.register_member wrote; it is a positive control on fixture setup rather than on the capture, so an empty region cannot make the later comparison pass vacuously.",
+      "lines": "tests/test_worker_session_is_session_scoped.py:191-192"
+    },
+    {
+      "fails_if": "capture_run_session writes the roster payload at any point during _complete, which the reverted mutation in the fragment's guard-fires block demonstrates; reverting only the test's own input does not make this true, because the before and after sides are two reads of state the code under test can change.",
+      "lines": "tests/test_worker_session_is_session_scoped.py:202-203"
+    },
+    {
+      "fails_if": "the roster store's version advances during the capture even when the payload is left untouched; it is not implied by the payload comparison.",
+      "lines": "tests/test_worker_session_is_session_scoped.py:204"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value against an input the test itself handed to the code under test: roster_before/version_before are read from the ledger store before the capture and roster_after/version_after from the same store afterwards, so a write by capture_run_session moves only the after side and reddens the assertion, as the recorded mutation shows.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:371 capture_run_session",
+    "reckon/crew/promotion_records.py:193 capture_run_session",
+    "reckon/crew/promotion.py:2424 capture_run_session",
+    "reckon/crew/promotion.py:3149 capture_run_session",
+    "reckon/crew/routing.py:3504 ledger.load_auxiliary",
+    "reckon/ledger.py:2636 load_auxiliary"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:29:02Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "19-20",
+      "severity": "non-blocking",
+      "text": "non-blocking: both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which neither import nor exercise the changed file, so the done_when's arm over the test files that import what you changed is answered by the flight-declared substitution rather than by that population; the node changes no product code, so the requirement is close to vacuous, but the arms as recorded cannot show an importer is unaffected."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-session-is-session-scoped-at-current-main.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the guard-fires block records the reverted-mutation failure as pasted pytest text with no revision, host, tree or command header and no EXIT line, so the negative control that justifies the repaired assertion cannot be re-read or re-run by a later reader; a red log under the run directory named from the fragment would make it verifiable."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the diff adds no production definition, so the runtime code the repaired assertion stands against was examined instead: capture_run_session's four call sites and the roster-store reader that both sides of the comparison use.",
+    "diff": "read 7a34defe95 and b53bd404f1 against 42fe90d0b0: 7a34defe95 replaces the committed docs/state/proj/crew.json byte comparison with ledger.load_auxiliary reads whose payload and version are compared before and after the capture, adds a positive assertion that the region holds worker-a, and changes no product file; b53bd404f1 adds only the evidence fragment.",
+    "done_when": "the done_when requires the named file green at head as an all_debug job with the base run's failing ids logged beside it in the fragment; scoped-gate-1795059416798597292.log carries 5 passed/EXIT=0 at b53bd404f1, negative-control-base-run.log carries the failing id test_the_capture_path_records_the_session_on_the_run with EXIT=1 at 42fe90d0b0, and both runs are quoted in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-session-is-session-scoped-at-current-main.html:4-22.",
+    "goal": "dispatch-detail.json:admit_request.node.goal requires tests/test_worker_session_is_session_scoped.py to pass in full on the primary branch; the landed change repairs that file's one red case and scoped-gate-1795059416798597292.log records it at 5 passed, so the deliverable the goal names is present.",
+    "manifest": "manifest.md records status complete, the base arm at 1 failed/4 passed, the head gate at 5 passed on all_debug, two 58-passed suite arms as inline JSON with full revisions, and the roster-storage cause with a test-wrong verdict, and its outside_scope line names the gate log's missing scratch-tree measurement headers.",
+    "write_paths": "the manifest's declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two changed paths in the diff, tests/test_worker_session_is_session_scoped.py and the fragment html under that evidence directory, both sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_session_is_session_scoped.py:203-204 fails on a capture that writes the roster, which the fragment's guard-fires block shows with a reverted product mutation, though the only record of that mutation is pasted text without a revision header or EXIT line.",
+    "evidence": "scoped-gate-1795059416798597292.log records 5 passed/EXIT=0 at b53bd404f1 and negative-control-base-run.log records the named case failing with FileNotFoundError/EXIT=1 at 42fe90d0b0, but both 58-passing suite arms run tests the manifest itself says do not exercise this node's file and the head gate log carries no module.__file__ or resolved-cwd header, so the green run cannot be tied to the tree it imported.",
+    "fit": "tests/test_worker_session_is_session_scoped.py:191 uses the same ledger.load_auxiliary(project, root) call already used at tests/test_dispatch_lane_disagreement.py:58 and reckon/crew/routing.py:3504, and the comment above the assertions states the claim the reads support.",
+    "goal_fidelity": "dispatch-detail.json:admit_request.node.goal asks that tests/test_worker_session_is_session_scoped.py pass in full on the primary branch, and the landed repair makes the diff's only source change at tests/test_worker_session_is_session_scoped.py:191-204 while scoped-gate-1795059416798597292.log records 5 passed at b53bd404f1.",
+    "reuse": "the added reads extend the existing roster-store owner at reckon/ledger.py:2636 rather than adding a second reader; a search over reckon/ for roster reads found ledger.load_auxiliary as the single accessor and no new helper was introduced.",
+    "scope_discipline": "the two paths in 42fe90d0b0..b53bd404f1 are tests/test_worker_session_is_session_scoped.py and the evidence fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both inside the manifest's declared write paths, and no product file changes in either commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json:admit_request.node.goal requires tests/test_worker_session_is_session_scoped.py to pass in full on the primary branch; the landed change repairs that file's one red case and scoped-gate-1795059416798597292.log records 5 passed at b53bd404f1.\nVERDICT done_when: the done_when requires the named file green at head as an all_debug job with the base run's failing ids logged beside it in the fragment; scoped-gate-1795059416798597292.log carries 5 passed/EXIT=0 and negative-control-base-run.log carries the failing id test_the_capture_path_records_the_session_on_the_run with EXIT=1, both quoted at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-session-is-session-scoped-at-current-main.html:4-22.\nVERDICT write_paths: the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; both changed paths in 42fe90d0b0..b53bd404f1 are inside them.\nVERDICT manifest: manifest.md records complete, 1 failed/4 passed at base, 5 passed at head on all_debug, two 58-passed arms and the roster-storage cause; its outside_scope line names the gate log's missing measurement headers.\nVERDICT diff: read 7a34defe95 and b53bd404f1 against 42fe90d0b0; the first replaces the committed crew.json byte comparison with ledger.load_auxiliary payload and version comparisons at tests/test_worker_session_is_session_scoped.py:191-204, the second adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_sessions.py:371 capture_run_session, reckon/crew/promotion_records.py:193 capture_run_session, reckon/crew/promotion.py:2424 capture_run_session, reckon/crew/promotion.py:3149 capture_run_session, reckon/crew/routing.py:3504 ledger.load_auxiliary, reckon/ledger.py:2636 load_auxiliary\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: dispatch-detail.json:admit_request.node.goal asks that tests/test_worker_session_is_session_scoped.py pass in full, and scoped-gate-1795059416798597292.log records 5 passed at b53bd404f1.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795059416798597292.log records 5 passed/EXIT=0 and negative-control-base-run.log the named failure/EXIT=1, but both suite arms exercise files the manifest says do not cover this node and the head gate log names no module.__file__ or resolved cwd.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_worker_session_is_session_scoped.py and its evidence fragment, both inside the declared write paths, and no product file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_worker_session_is_session_scoped.py:203-204 reddens when a capture writes the roster, shown by the fragment's reverted-mutation failure, though that record is pasted text with no revision header or EXIT line.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_worker_session_is_session_scoped.py:191 reuses the ledger.load_auxiliary(project, root) call already used at reckon/crew/routing.py:3504.\nSCORE reuse: 20\nJUSTIFICATION reuse: the changed assertions read the roster through its existing owner, ledger.load_auxiliary at reckon/ledger.py:2636, and introduce no new helper or second reader.\nFINDING manifest.md:19-20 non-blocking: both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which neither import nor exercise the changed file, so the done_when's arm over the test files that import what you changed is answered by the flight-declared substitution rather than by that population; the node changes no product code, so the requirement is close to vacuous, but the arms as recorded cannot show an importer is unaffected.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-session-is-session-scoped-at-current-main.html:29 non-blocking: the guard-fires block records the reverted-mutation failure as pasted pytest text with no revision, host, tree or command header and no EXIT line, so the negative control that justifies the repaired assertion cannot be re-read or re-run by a later reader; a red log under the run directory named from the fragment would make it verifiable.",
+  "review_run_id": "r-20261119T035438866075-review-of-qwnw-red-file-worker-session-is-session-scoped-at-current-main-b53bd404f114",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "b53bd404f1141ba7dd62695804a7ba9c847e89b4",
+  "reviewed_run_id": "r-20261118T104302353553-qwnw-red-file-worker-session-is-session-scoped-at-current-main",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T104302353553-qwnw-red-file-worker-session-is-session-scoped-at-current-main/after_suite-1795059439025818182.log",
+      "revision": "b53bd404f1141ba7dd62695804a7ba9c847e89b4",
+      "summary": "58 passed"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T104302353553-qwnw-red-file-worker-session-is-session-scoped-at-current-main/baseline_suite-1795059249654146191.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+      "summary": "58 passed"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:48:23.816898+00:00",
+  "total": 112
+}

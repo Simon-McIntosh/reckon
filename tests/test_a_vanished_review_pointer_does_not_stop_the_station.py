@@ -140,17 +140,27 @@ def _runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(tmp_path / "mounts.json"))
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     (tmp_path / "mounts.json").write_text("{}", encoding="utf-8")
+    # The real reloader is polled with the station's duties and answers "no
+    # reload owed" here; the case's business is the tick loop, not the image.
     monkeypatch.setattr(
-        station, "StationReloader", lambda _root: SimpleNamespace(poll=lambda: None)
+        station,
+        "StationReloader",
+        lambda _root: SimpleNamespace(poll=lambda duties=None: None),
     )
     return runtime
 
 
 def _ticking_station(tick) -> SimpleNamespace:
-    """A station instance whose only live part is the tick under this case."""
+    """A station instance whose live parts are the tick and the shutdown drains.
+
+    ``run_station`` gives a stopping station's derivations a bounded moment to
+    land by draining its duties, so the double carries the drain as well as the
+    tick; neither the drain nor the reflex is what this case asserts on.
+    """
     return SimpleNamespace(
         clock=lambda: datetime.now(tz=UTC),
         reflex=SimpleNamespace(start=lambda: None, stop=lambda: None),
+        duties=SimpleNamespace(drain=lambda timeout=None: None),
         tick=tick,
     )
 

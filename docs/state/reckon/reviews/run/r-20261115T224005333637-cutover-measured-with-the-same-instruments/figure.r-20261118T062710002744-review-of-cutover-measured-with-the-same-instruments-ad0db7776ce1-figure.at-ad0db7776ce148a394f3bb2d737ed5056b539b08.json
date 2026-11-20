@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "attachments_judged": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure/image-0.png"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T22:50:16Z",
+  "figures": {
+    "docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.svg": {
+      "contrast": "cannot be assessed for text \u2014 no text is rendered, so there is no glyph-versus-background contrast to measure and the absence is recorded under legibility. The bar fills (#1565c0 blue, #1b5e20 green, #6d4c41 and #8d6e63 brown) all clear 3:1 against the background.",
+      "data_ink": "pass \u2014 the bars carry the ink: six solid rectangles on a plain background, no gradient, no patterned fill, no drop shadow, no gridline. The bound and the append-rate series carry almost no ink, but that is the axis-scaling defect recorded under legibility rather than decorative ink.",
+      "decoration": "defect (non-blocking) \u2014 one non-data element is present, a full-canvas background rectangle filled #fdfdfb drawn behind both panels (script line 107). At rgb(253,253,251) against white it is near-invisible, so it does not distract or hold the node, but the house plot style leaves the background unfilled.",
+      "label_collision": "fail (blocking) \u2014 no label is clipped or overlapping because no label is drawn at all; the canvas regions that carry the title, row names and value strings in the drawing script are empty in the render. The figure has no labelling to read, which is the same defect recorded against legibility.",
+      "legibility": "fail (blocking) \u2014 measured on the attached 1400x615 PNG, no text renders anywhere: zero pixels darker than luminance 200 in the label column left of the bars (x < 440, full height), zero in the top title band (y < 45, full width), and zero to the right of the longest bar. Both panel titles, all seven row labels, all seven value labels and both 'bound \u2026' annotations are absent, so a reader cannot tell which bar is which arm, what value it carries, what the units are, or where either bound sits. The bar geometry matches the fragment's alt text exactly (reads 1842.4 / 481.8 / 4215.0 / 3.0 MB/min, CPU 52.6 / 33.5 / 89.0 %), so only the text is missing, not the data.",
+      "table_form": "pass \u2014 the image compares six magnitudes against two bounds, which is a spatial comparison and is appropriately drawn as bars; it is not a table rendered as an image. The same numbers also appear as a table in the evidence fragment, which this chart summarises."
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-cutover-measured-with-the-same-instruments-ad0db7776ce1",
+      "recorded_at": "2026-11-19T23:14:41.831939+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-cutover-measured-with-the-same-instruments-ad0db7776ce1",
+      "recorded_at": "2026-11-19T23:14:44.988628+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.svg",
+      "line": null,
+      "severity": "blocking",
+      "summary": "Every text element is absent from the attached PNG. Across all 1400x615 pixels there are zero dark pixels in the entry the script draws a title into, zero in the 416-pixel label column to the left of the bars, and zero in the value column to the right of each bar; the only colours in the image are the background, four fill colours and the red bound dashes. The two panel titles, the seven row labels, the seven value labels and both 'bound 20 MB/min' / 'bound 5 %' annotations are all missing, so a reader cannot identify a single bar, read a single value, or find either bound. The bar lengths match the numbers in the fragment's alt text exactly, so the geometry and data are correct and only the text is lost; the drawing script sets its type through a CSS shorthand with a 'system-ui' font stack (line 94), which is the likely cause and the place to look. A figure with no labels at all is unreadable, so this holds the node."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.py",
+      "line": 112,
+      "severity": "blocking",
+      "summary": "The top panel scales its axis linearly to the largest bar (4,215 MB/min, so the top is 4,847), which squeezes the two series the figure exists to show into the first few pixels: the dashed 20 MB/min bound lands at x=447 against a bar left edge of x=444, 3 px from the origin where it is indistinguishable from the axis start, and the fourth read series (3.0 MB/min, 'bytes the fleet appended') renders as a 2 px sliver at x=444-445. A reader therefore cannot see where the bound is relative to the station's 1,842 MB/min or the cutover's 481.8 MB/min, which is the whole comparison, and the fleet's append-rate floor is invisible. A broken axis, a log scale, or a separate panel for the near-bound series would let both be read; the bottom CPU panel, whose top is 100 against a 5 % bound, places its bound 42 px from the origin and is fine."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.py",
+      "line": 107,
+      "severity": "non-blocking",
+      "summary": "A full-canvas background rectangle filled #fdfdfb is drawn behind both panels. It is a decorative fill the house plot style removes; at rgb(253,253,251) on white it is effectively invisible in the render, so it does not distract from the data or impede reading."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.py",
+      "line": 72,
+      "severity": "non-blocking",
+      "summary": "Both old-path series are drawn in the muddy brown family: #6d4c41 for '3 followers, no station (old)' and #8d6e63 for 'bytes the fleet appended'. The house plot style excludes browns of this kind in favour of clean hues, and the two are also too close in value to separate at a glance in the render, so even once the labels are restored a reader must read the row labels to tell the two brown bars apart."
+    }
+  ],
+  "notes": "Read-only figure review of the single rendered PNG named in this review (image-0.png, 1400x615). Only that PNG was opened, plus pixel measurements taken from it; no SVG and no other image was opened, read, listed, searched, rendered or shown, and no file was edited, created, moved, deleted, redrawn, relabelled or reformatted. The figure's drawing script and the evidence fragment were read as text to establish the intended labels and the intended values, and every verdict above is anchored in what the PNG actually renders. The fragment's caption carries measurement provenance (one 60 s window per bar on 18 November, 141 live pointers, the definitions of the read and CPU instruments) rather than repeating a title, so no caption finding is recorded. No suite ran for this figure review; added_failure_count is 0 by construction.",
+  "project": "reckon",
+  "review_run_id": "r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure",
+  "reviewed_base_sha": "04fef2631c344cffa6616b48380729d6953ab9e8",
+  "reviewed_head_sha": "ad0db7776ce148a394f3bb2d737ed5056b539b08",
+  "reviewed_run_id": "r-20261115T224005333637-cutover-measured-with-the-same-instruments",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewed_at": "2026-11-19T22:54:01Z",
+    "reviewer_run_id": "r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure"
+  },
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:57:51.085451+00:00",
+  "total": null
+}

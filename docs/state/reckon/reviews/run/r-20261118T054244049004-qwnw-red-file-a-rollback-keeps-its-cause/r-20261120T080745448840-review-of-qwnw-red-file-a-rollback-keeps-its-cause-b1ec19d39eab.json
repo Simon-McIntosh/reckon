@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "call_sites": [
+    "reckon/ledger.py:3541 members",
+    "reckon/ledger.py:2668 write_members",
+    "reckon/ledger.py:3894 register_member",
+    "reckon/crew/dispatch.py dispatch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T08:08:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms table cites 742c559fec and job 1331566 for the head arm, and :33 cites 742c559fec for the after-suite arm, while the only surviving head logs name b1ec19d39eab (slurm-gate.log:1-2 in job 1332930, after_suite.log:1), so a reader following this evidence artefact's citation finds no log; the fragment is what the done_when requires beside the head run, so its arms should cite the logs on disk."
+    },
+    {
+      "file": "manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed run's artifacts line states the head run was job 1331601 while the slurm-gate.log it points at is job 1332930 at b1ec19d39eab, so the record's headline metric and its own log disagree on which job produced the green result."
+    },
+    {
+      "file": "tests/test_a_rollback_keeps_its_cause.py",
+      "line": "265",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when states no assertion is deleted or weakened, and 742c559fec deletes the roster echo assertion here; the deletion is defensible because the value it compared was the one the test's own setup had just written and the guard that bites survives at :277, but the record states the done_when's invariant as met rather than dispositioning this departure."
+    }
+  ],
+  "findings_note": "",
+  "head_log_revision": "b1ec19d39eabda77eeb65885cdd54586d45d1141",
+  "item_verdicts": {
+    "diff": "read commit by commit over 97ec0c8097634e34a730b29cb5f022b2ed87c217..b1ec19d39eabda77eeb65885cdd54586d45d1141 and the whole 6fa2b177c511a297d3440956aa64eaa759d4554a..b1ec19d39eab: 742c559fec moves the test's _roster helper onto ledger.members and drops one echo assertion, fafe8f33c9 adds the 69-line evidence fragment, b1ec19d39e gives the arms table its own element id; no product source changed.",
+    "done_when": "the done_when names the file green at head as an all_debug job with SLURM_JOB_ID unset, both suite arms as inline JSON with full 40-character revisions, a red base arm whose failing ids sit beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html, ruff clean on the changed paths, and no assertion deleted or weakened; the head job is real (slurm-gate.log:1-2, job 1332930 on all_debug at b1ec19d39eab, EXIT=0), both suite arms read 58 passed EXIT=0 on 6fa2b177c5 and on head, the fragment lists the three base failing ids, and ruff on the changed test path reads clean when run \u2014 but one assertion at tests/test_a_rollback_keeps_its_cause.py:265 is deleted and the fragment's arms table cites a revision and a job that no surviving log names.",
+    "goal": "the node's goal is to make tests/test_a_rollback_keeps_its_cause.py pass in full on the primary branch; the three commits gained since 97ec0c8097634e34a730b29cb5f022b2ed87c217 keep it green (slurm-gate.log:1-6, 6 passed EXIT=0 at b1ec19d39eab) and add the per-node evidence fragment the earlier round owed.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054244049004-qwnw-red-file-a-rollback-keeps-its-cause/manifest.md; it declares status complete, the three commits, the named file at 6 passed on all_debug, both suite arms at 58 passed with full 40-character revisions, negative_control_log neg-control-base.log, and an outside_scope note on two now-unreferenced ledger helpers \u2014 but its artifacts line (manifest.md:19) cites job 1331601 for the head run whose log slurm-gate.log is job 1332930, and it records no ruff result for the changed path.",
+    "write_paths": "the declared scope was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its per-node fragment, plus docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause; the diff 6fa2b177c511a297d3440956aa64eaa759d4554a..b1ec19d39eabda77eeb65885cdd54586d45d1141 touches exactly the fragment html (+69) and tests/test_a_rollback_keeps_its_cause.py (+104/-40), both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_rollback_keeps_its_cause.py:295 reddens if a registration writes the roster from the view it read before another member changed, :320 reddens if reckon/ledger.py:2668's version refusal is removed, and :267's guard is shown firing by neg-control-base.log.",
+    "evidence": "slurm-gate.log:1-2 records revision b1ec19d39eab in job 1332930 on all_debug and neg-control-base.log:1 records 3 failed EXIT=1 at 6fa2b177c5, but qwnw-red-file-a-rollback-keeps-its-cause.html:27 cites 742c559fec and job 1331566 that no log in the run directory names.",
+    "fit": "tests/test_a_rollback_keeps_its_cause.py:247 keeps the file's own helper and test_a_* idiom and qwnw-red-file-a-rollback-keeps-its-cause.html:21 repeats the arms-table caption wording of sibling fragment qwnw-a-clean-landing-releases-its-worktree.html:40; no identifier the naming rules forbid is introduced.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html:1 now accompanies the green head gate in slurm-gate.log:1-6, so the file the goal names passes and the artefact the measure names exists.",
+    "reuse": "tests/test_a_rollback_keeps_its_cause.py:248 now reads the roster through reckon/ledger.py:3541 members instead of rebuilding an id-keyed view from load_auxiliary, so the added helper extends the owner of that capability and adds no second reader.",
+    "scope_discipline": "git diff --numstat 6fa2b177c511a297d3440956aa64eaa759d4554a..b1ec19d39eabda77eeb65885cdd54586d45d1141 lists only the fragment html and tests/test_a_rollback_keeps_its_cause.py, both under declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "",
+  "review_run_id": "r-20261120T080745448840-review-of-qwnw-red-file-a-rollback-keeps-its-cause-b1ec19d39eab",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "b1ec19d39eabda77eeb65885cdd54586d45d1141",
+  "reviewed_run_id": "r-20261118T054244049004-qwnw-red-file-a-rollback-keeps-its-cause",
+  "reviewer_run_id": "r-20261120T080745448840-review-of-qwnw-red-file-a-rollback-keeps-its-cause-b1ec19d39eab",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T08:35:12.249250+00:00",
+  "total": 108
+}

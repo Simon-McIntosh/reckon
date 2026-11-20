@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:_fragment_href",
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/crew/reports.py:_fragment_plan_of"
+  ],
+  "completed_at": "2026-11-20T08:20:00Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-20T07:44:01Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parenthetical calls open_run_index.matches_sources forced to False \"the base revision's path\", but base 28fbf2bc reads the bounded path \u2014 that revision's own gate log records 2 passed, which requires the restored matches_sources to be truthy and the second derivation to stay within DECODE_BOUND \u2014 so the record misnames the revision the falsifying mutation reproduces."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"The file was red for an earlier revision of this tree\" is unsupported by anything this run records \u2014 all three gate logs at base 28fbf2bc read EXIT=0, and the test file first appears in db4228c682, an ancestor of that base, in the same commit as the product change, so no earlier revision of this tree carried the file to be red."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read a6905aee5ca7a5345df0e9a37020afd6d8531a36 against base 28fbf2bc2fe2b27addcf04248210222f2115c1ee commit by commit; the single commit adds the 32-line evidence fragment and touches no product or test file.",
+    "done_when": "the done_when names tests/test_the_held_worktree_screen_reads_only_open_runs.py passing in full as an all_debug job with SLURM_JOB_ID unset and output on shared storage; the gate is recorded at base (scoped-gate-1795119348926203067.log, \"2 passed in 2.69s\", EXIT=0) and at head (scoped-gate-1795119752357169360.log, \"2 passed in 2.71s\", EXIT=0), but SLURM_JOB_ID being unset is claimed by the manifest alone and no red negative-control run is logged.",
+    "goal": "the node's goal is \"Make tests/test_the_held_worktree_screen_reads_only_open_runs.py pass in full on the primary branch\"; the gate at base 28fbf2bc and at head a6905aee both record \"2 passed\" EXIT=0 (scoped-gate-1795119348926203067.log, scoped-gate-1795119752357169360.log), and the gate at base 28fbf2bc records the file green.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054315272839-qwnw-red-file-the-held-worktree-screen-reads-only-open-runs/manifest.md \u2014 status complete, commits a6905aee5ca7a5345df0e9a37020afd6d8531a36, both suite arms 58 passed EXIT=0, negative_control: none with a stated reason.",
+    "write_paths": "the dispatch declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment itself; the one path in 28fbf2bc..a6905aee is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html, inside the declared fragment write path."
+  },
+  "justifications": {
+    "durability": "the fragment adds no assertion and nothing fails if it is deleted, so the only guard is the pre-existing decode bound at tests/test_the_held_worktree_screen_reads_only_open_runs.py:287, which this node verified at both revisions rather than added.",
+    "evidence": "both gate logs carry full revision headers and a terminal EXIT=0 and the suite arms at manifest.md:17-18 are complete, but the fragment's falsifying mutation at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html:21-26 has no log and misnames base 28fbf2bc as the refusal path.",
+    "fit": "the fragment's section id, h2 and bold-led paragraphs at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html:1-4 follow the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-4 and introduce no identifier.",
+    "goal_fidelity": "the goal's file passes at head a6905aee, \"2 passed\" EXIT=0 in scoped-gate-1795119752357169360.log, and the delivered fragment is what the done_when directs when the base run is already green.",
+    "reuse": "the diff adds no function, class or module, so nothing forks a capability, and the fragment is consumed by the existing owners reckon/evidence.py:compose_landed_record and reckon/evidence.py:_fragment_href.",
+    "scope_discipline": "the one added file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html, is inside the declared fragment write path and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "project_name": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_the_held_worktree_screen_reads_only_open_runs.py pass in full on the primary branch\"; the gate at base 28fbf2bc and at head a6905aee both record \"2 passed\" EXIT=0 (scoped-gate-1795119348926203067.log, scoped-gate-1795119752357169360.log), and the landed change is the evidence fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html, which is the deliverable the done_when names when the file already passes at base.\nVERDICT done_when: the done_when names tests/test_the_held_worktree_screen_reads_only_open_runs.py passing in full as an all_debug job with SLURM_JOB_ID unset and output on shared storage; the gate is recorded at base (scoped-gate-1795119348926203067.log, \"# revision: 28fbf2bc2fe2b27addcf04248210222f2115c1ee\", \"2 passed in 2.69s\", EXIT=0) and at head (scoped-gate-1795119752357169360.log, \"# revision: a6905aee5ca7a5345df0e9a37020afd6d8531a36\", \"2 passed in 2.71s\", EXIT=0), with all_debug recorded in scoped-gate-at-head.json, but SLURM_JOB_ID being unset is claimed by the manifest alone and the negative-control red run the done_when asks to log beside the head run does not exist (manifest negative_control: none).\nVERDICT write_paths: the dispatch declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment itself; the one path in 28fbf2bc..a6905aee is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html, inside the declared fragment path.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054315272839-qwnw-red-file-the-held-worktree-screen-reads-only-open-runs/manifest.md \u2014 status complete, commits a6905aee5ca7a5345df0e9a37020afd6d8531a36, baseline_suite and after_suite both 58 passed EXIT=0 with failure_count 0, and negative_control: none with the reason that the base run has no failing id to control against.\nVERDICT diff: read a6905aee5ca7a5345df0e9a37020afd6d8531a36 against base 28fbf2bc2fe2b27addcf04248210222f2115c1ee commit by commit; the single commit adds the 32-line evidence fragment and touches no product or test file, and the fragment's base-revision attribution at line 24 misnames the refusal mode.\nCALL_SITES: reckon/evidence.py:_fragment_href, reckon/evidence.py:compose_landed_record, reckon/crew/reports.py:_fragment_plan_of\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal's file passes at head a6905aee, \"2 passed\" EXIT=0 in scoped-gate-1795119752357169360.log, and the delivered fragment is what the done_when directs when the base run is already green.\nSCORE evidence: 15\nJUSTIFICATION evidence: both gate logs carry full revision headers and a terminal EXIT=0 and the suite arms at manifest.md:17-18 are complete, but the fragment's falsifying mutation at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html:21-26 has no log and misnames base 28fbf2bc as the refusal path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the one added file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html, is inside the declared fragment write path and carries nothing the goal does not imply.\nSCORE durability: 12\nJUSTIFICATION durability: the fragment adds no assertion and nothing fails if it is deleted, so the only guard is the pre-existing decode bound at tests/test_the_held_worktree_screen_reads_only_open_runs.py:287, which this node verified at both revisions rather than added.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment's section id, h2 and bold-led paragraphs at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html:1-4 follow the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-4 and introduce no identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so nothing forks a capability, and the fragment is consumed by the existing owners reckon/evidence.py:compose_landed_record and reckon/evidence.py:_fragment_href.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html:24 non-blocking: the parenthetical calls open_run_index.matches_sources forced to False \"the base revision's path\", but base 28fbf2bc reads the bounded path \u2014 that revision's own gate log records 2 passed, which requires the restored matches_sources to be truthy and the second derivation to stay within DECODE_BOUND \u2014 so the record misnames the revision the falsifying mutation reproduces.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-screen-reads-only-open-runs.html:8 non-blocking: \"The file was red for an earlier revision of this tree\" is unsupported by anything this run records \u2014 all three gate logs at base 28fbf2bc read EXIT=0, and the test file first appears in db4228c682, an ancestor of that base, in the same commit as the product change, so no earlier revision of this tree carried the file to be red.\n",
+  "review_method": "Read-only review: the reviewed node.json fields (goal, done_when, write_paths), the reviewed run's manifest.md, its two scoped-gate logs and two suite-arm logs read for revision headers, summary lines and EXIT= lines, the single commit a6905aee5ca7a5345df0e9a37020afd6d8531a36 read against base 28fbf2bc2fe2b27addcf04248210222f2115c1ee, the test file and the fragment read from the reviewed head, and a capability read outside the diff at reckon/evidence.py and reckon/crew/reports.py for the fragment's consumers. No suite was re-run and nothing in the reviewed tree was modified.",
+  "review_run_id": "r-20261120T074253546880-review-of-qwnw-red-file-the-held-worktree-screen-reads-only-open-runs-a6905aee5ca7",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "a6905aee5ca7a5345df0e9a37020afd6d8531a36",
+  "reviewed_run_id": "r-20261118T054315272839-qwnw-red-file-the-held-worktree-screen-reads-only-open-runs",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "a6905aee5ca7a5345df0e9a37020afd6d8531a36"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_derivation": "Derived from the reviewed run's own gate logs: baseline_suite-1795119629089025366.log at 28fbf2bc2fe2b27addcf04248210222f2115c1ee records \"58 passed in 35.53s\" with no FAILED line and a final EXIT=0; after_suite-1795119671910480833.log at a6905aee5ca7a5345df0e9a37020afd6d8531a36 records \"58 passed in 35.37s\" with no FAILED line and a final EXIT=0. Both arms declare completed: true with failure_count 0, so the head arm adds no failure and added_failure_count is 0 with an empty added_failure_ids.",
+    "after_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054315272839-qwnw-red-file-the-held-worktree-screen-reads-only-open-runs/after_suite-1795119671910480833.log",
+      "revision": "a6905aee5ca7a5345df0e9a37020afd6d8531a36"
+    },
+    "baseline_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054315272839-qwnw-red-file-the-held-worktree-screen-reads-only-open-runs/baseline_suite-1795119629089025366.log",
+      "revision": "28fbf2bc2fe2b27addcf04248210222f2115c1ee"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T08:05:08.238447+00:00",
+  "total": 102
+}

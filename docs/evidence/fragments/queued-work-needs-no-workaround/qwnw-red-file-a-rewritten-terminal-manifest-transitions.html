@@ -1,0 +1,36 @@
+<section id="qwnw-red-file-a-rewritten-terminal-manifest-transitions-base">
+<h2>A rewritten terminal manifest: the base run and its failing id</h2>
+<p>At base revision <code>28fbf2bc2fe2b27addcf04248210222f2115c1ee</code>, the file ran eight passing cases and one failing:
+<code>test_the_rewrite_marker_does_not_leak_into_a_later_departure</code>. The case asserted that a rewritten
+report's run departs with the word <code>promoted</code>; the product worded it <code>complete</code>. The cause
+is the delivered-head ancestry rule a departure's landing now asks: the fixture's synthetic project registers no
+mount, its ledger row names <code>abc1234</code>, and no branch this fixture can reach carries that commit, so the
+landing is unverified and reads the delivered word. The case was written before that rule and kept its word.</p>
+<p>Base control log: <code>runs/r-20261118T044633437199-qwnw-red-file-a-rewritten-terminal-manifest-transitions/negative-control-base.log</code>.
+The failure is the test's, not the product's: <code>tests/test_a_landed_reading_follows_the_primary_branch.py</code>
+and <code>tests/test_cleanly_reviewed_run_lands_itself.py</code> assert the delivered rule and pass at base.</p>
+<pre># revision: 28fbf2bc2fe2b27addcf04248210222f2115c1ee
+# command: env PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_rewritten_terminal_manifest_transitions.py
+.......F.                                                                [100%]
+FAILED tests/test_a_rewritten_terminal_manifest_transitions.py::test_the_rewrite_marker_does_not_leak_into_a_later_departure
+  AssertionError: assert (previous, state) == ("failed", "promoted")
+  assert ('failed', 'complete') == ('failed', 'promoted')
+1 failed, 8 passed in 0.99s
+EXIT=1</pre>
+</section>
+
+<section id="qwnw-red-file-a-rewritten-terminal-manifest-transitions-head">
+<h2>A rewritten terminal manifest: the head run on all_debug</h2>
+<p>At <code>86fb48ceb31977d7e732d6665bf6ff9a90be40a0</code> the same file passes in full, as a job on
+<code>all_debug</code> through <code>reckon crew verify-gate --worker</code> with the worker fence masking the
+scheduler's own job id. The only product-visible change is the case's expectation, re-pinned to the delivered word
+the ancestry rule gives an unverified landing; no assertion was removed, and the marker checks that carry the case's
+subject are unchanged.</p>
+<p>Head gate log: <code>runs/r-20261118T044633437199-qwnw-red-file-a-rewritten-terminal-manifest-transitions/scoped-gate-1795120354116871895.log</code>.</p>
+<pre># revision: 86fb48ceb31977d7e732d6665bf6ff9a90be40a0
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_rewritten_terminal_manifest_transitions.py'
+.........                                                                [100%]
+9 passed in 0.63s
+EXIT=0</pre>
+</section>

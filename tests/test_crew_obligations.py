@@ -224,7 +224,7 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
     monkeypatch.setattr(
         runs,
         "drain_unreconciled_by_session",
-        lambda _project: {SESSION: 7},
+        lambda _project, **_kwargs: {SESSION: 7},
     )
 
     result = obligations_module.obligations(PROJECT, SESSION)

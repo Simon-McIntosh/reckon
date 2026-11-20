@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline_suite.log line 1 reads '# revision: 42fe90d0b0a46060bafde2490dda7d4002cda478' and its summary line reads '58 passed in 47.74s' with no FAILED line, closing EXIT=0. after_suite.log line 1 reads '# revision: 4293481fc26c981669df9be2570d770431fa30de' and its summary line reads '58 passed in 51.33s' with no FAILED line, closing EXIT=0. The after arm therefore adds no failing id the base arm did not have, and the manifest's inline baseline_suite and after_suite name the same two log paths with completed true and failure_count 0.",
+  "call_sites": "reckon/crew/promotion.py:1364, reckon/crew/promotion.py:3853, reckon/crew/promotion_scope.py:575",
+  "completed_at": "",
+  "coverage_note": "Covers only the commit the run gained since its review at bdd6806d: 4293481fc2 'Merge primary main into the run-scope repair'. The earlier deltas 42fe90d0..84832e9c, 84832e9c..414d4e87 and 414d4e87..bdd6806d are covered by the records at .at-84832e9c76712dbc3c8af55a1d56b6516668185f.json, .at-414d4e877a70458ac256e6b7b671cf8ec896ebb0.json and .at-bdd6806d445bf1e4aa7085181d6f1f8af3739e56.json. The merge's whole contribution relative to its primary parent was read (git diff 598044b419 4293481f), and the run's whole diff 42fe90d0..4293481f was read for context; only the delta is scored.",
+  "dispatched_at": "2026-11-19T21:55:20Z",
+  "findings": [
+    {
+      "disposition": null,
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the page still names head 784dcda3 with 4 passed and has no section for the merge head's own gate (5 passed at 4293481f), so the fragment a reader measures the run by is stale exactly where the delta re-measured it."
+    },
+    {
+      "disposition": null,
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "551",
+      "severity": "non-blocking",
+      "text": "non-blocking: _commit_parents is a second reader of a commit's parent list beside reckon/crew/merge.py:289 _parents, and this merge carries it onto the primary line, so the two can drift; the prior record carries the same defect for the same line."
+    },
+    {
+      "disposition": null,
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn/scoped-gate-1795124964772861940.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate's scheduler sidecar is 0 bytes, so the all_debug job with SLURM_JOB_ID unset that the done_when names is attested by no receipt."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:1364 calls _require_commits_beyond_base through a lambda, its import sits at :3853, and promotion_scope.py:575 reads parents through _commit_parents",
+    "diff": "read bdd6806d..4293481f: one merge commit that against 598044b419 adds _integration_brings_the_run, its docstring paragraph, the carries_the_run conjunct and the _commit_parents import in reckon/crew/promotion_evidence.py",
+    "done_when": "the head gate reads 5 passed with EXIT=0 at 4293481f and both suite arms are inline at full revisions, but the all_debug / SLURM_JOB_ID-unset condition has a 0-byte scheduler receipt and the fragment still names the earlier head",
+    "goal": "the goal is for tests/test_run_scope_measure_nets_churn.py to pass in full on the primary branch; the gained commit is the primary-main merge whose resolution carries the run's merge-admission rule onto that line, and the file reads 5 passed at 4293481f",
+    "manifest": "read; tests, test_logs, both inline arms with completed true and failure_count 0, and status complete are present, while the commits field omits the merge's first parent bdd6806d",
+    "write_paths": "the declared paths are reckon, tests, the fragment directory and file, and the figures directory; every authored path is inside them and only the merge's inbound primary content is outside"
+  },
+  "justifications": {
+    "durability": "tests/test_run_scope_measure_nets_churn.py:263 reddens if the carries_the_run conjunct at promotion_evidence.py:502 is removed, but the resolved canonical_head-is-None branch has no case of its own",
+    "evidence": "scoped-gate-1795124964772861940.log:6 records 5 passed with EXIT=0 at 4293481f, but its scheduler sidecar is 0 bytes and the fragment line 13 still names 784dcda3 with 4 passed",
+    "fit": "promotion_evidence.py:387 matches the surrounding private-helper and docstring idiom of :416",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:387 lands the run's merge-admission rule on the primary line while tests/test_run_scope_measure_nets_churn.py reads 5 passed at 4293481f",
+    "reuse": "promotion_scope.py:551 re-implements the parent read owned by reckon/crew/merge.py:289 and this merge carries it onto the primary line",
+    "scope_discipline": "every authored file is inside the declared paths and only docs/plans/*.html and docs/state/reckon/reviews/** arrive from the merge's primary parent"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is 'Make tests/test_run_scope_measure_nets_churn.py pass in full on the primary branch', and the only commit gained since the review at bdd6806d is 4293481f 'Merge primary main into the run-scope repair', whose resolution at reckon/crew/promotion_evidence.py:387-413 carries the run's _integration_brings_the_run rule onto the primary line while the named file reads 5 passed at that head.\nVERDICT done_when: the done_when asks for the named file passing at head as an all_debug job with SLURM_JOB_ID unset, both arms as inline JSON at full 40-character revisions, and a base-run negative control logged in the fragment; manifest.md records baseline_suite at 42fe90d0 and after_suite at 4293481f (58 passed each, completed true, failure_count 0), and scoped-gate-1795124964772861940.log:6 records '5 passed in 2.87s' EXIT=0 at revision 4293481f, but that gate's scheduler sidecar is 0 bytes so the partition condition is unattested.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn; every file the run authored sits inside them (reckon/crew/promotion_evidence.py, reckon/crew/promotion_scope.py, tests/test_run_scope_measure_nets_churn.py, the fragment), while the merge's inbound primary content (docs/plans/*.html, docs/state/reckon/reviews/**, docs/sprints/S28.html) is outside them by reconciliation rather than authorship.\nVERDICT manifest: read the reviewed run's manifest.md; it carries six commit ids, one tests line, scoped-gate-1795124964772861940.log as test_logs, both suite arms inline as JSON with full revisions and completed true, failure_count 0 and failure_ids [], status complete \u2014 but its commits field omits bdd6806d, the merge's first parent and the commit that adds the fragment.\nVERDICT diff: read the delta bdd6806d..4293481f commit by commit; it is one commit, the merge, and against its primary parent 598044b419 it adds only _integration_brings_the_run at reckon/crew/promotion_evidence.py:387-413, the docstring paragraph at :455-460, the carries_the_run conjunct at :502-506 and the _commit_parents import at :2472, with the remaining 600-plus paths inbound from primary main.\nCALL_SITES: reckon/crew/promotion.py:1364, reckon/crew/promotion.py:3853, reckon/crew/promotion_scope.py:575\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:387 lands the run's merge-admission rule on the primary line and tests/test_run_scope_measure_nets_churn.py reads 5 passed at 4293481f, though the merge is consolidation rather than new goal work.\nSCORE evidence: 12\nJUSTIFICATION evidence: scoped-gate-1795124964772861940.log:6 records 5 passed with EXIT=0 at revision 4293481f and both arms are inline, but that log's scheduler sidecar is 0 bytes and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html:13 still names 784dcda3 with 4 passed.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the run's authored files (reckon/crew/promotion_evidence.py, reckon/crew/promotion_scope.py, tests/test_run_scope_measure_nets_churn.py, the fragment) all sit inside the declared paths, and only the merge's inbound primary content lies outside them.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_run_scope_measure_nets_churn.py:263 reddens if the carries_the_run conjunct at reckon/crew/promotion_evidence.py:502 is dropped from outside_history \u2014 the same case reads 'DID NOT RAISE CrewError' in negative-control-tighten.log at 84832e9c \u2014 but no case exercises the resolved file's canonical_head-is-None branch, so the merge's own reconciliation is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_evidence.py:387 follows the module's private-helper idiom and google-free docstring style beside :416, and the name states the fact it answers.\nSCORE reuse: 14\nJUSTIFICATION reuse: the delta's added _integration_brings_the_run delegates the parent read to promote scope's owner at reckon/crew/promotion_scope.py:551, which is itself a second implementation of reckon/crew/merge.py:289 _parents and is carried onto the primary line by this merge.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html:13 non-blocking: the page still names head 784dcda3 with 4 passed, and the merge head's own gate (5 passed at 4293481f, scoped-gate-1795124964772861940.log:6) has no section, so a reader of the fragment sees a stale head for a run whose delta is exactly that re-measurement.\nFINDING reckon/crew/promotion_scope.py:551 non-blocking: _commit_parents is a second reader of a commit's parent list beside reckon/crew/merge.py:289 _parents (git rev-parse <commit>^@), and this merge carries it onto the primary line, so two parent readers can drift; the prior record at .at-bdd6806d carries the same defect for the same line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn/scoped-gate-1795124964772861940.log:1 non-blocking: the head gate's scheduler sidecar is 0 bytes, so the all_debug job with SLURM_JOB_ID unset that the done_when names is attested by no receipt and only the log's own host and revision lines identify the run.",
+  "remarks": "Read 598044b419..4293481f (the merge's own contribution) and bdd6806d..4293481f (the delta since the prior review), plus 42fe90d0..4293481f for context. Every head-side read was taken from git objects (git show 4293481f:<path>), because this worktree's HEAD is a later primary commit and its promotion_evidence.py differs from the reviewed revision. The gate log was read, not re-run.",
+  "review_run_id": "r-20261119T215415558619-review-of-qwnw-red-file-run-scope-measure-nets-churn-4293481fc26c",
+  "reviewed_at": "2026-11-19T22:30:00Z",
+  "reviewed_base_sha": "bdd6806d445bf1e4aa7085181d6f1f8af3739e56",
+  "reviewed_head_sha": "4293481fc26c981669df9be2570d770431fa30de",
+  "reviewed_run_id": "r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn",
+  "rubric": "recorded five item verdicts plus the CALL_SITES line and six dimension scores; three findings, each carrying an explicit non-blocking severity",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 14,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:01:38.628166+00:00",
+  "total": 93
+}

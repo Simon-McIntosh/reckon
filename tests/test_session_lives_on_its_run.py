@@ -128,23 +128,40 @@ def _dispatch(repo, *, node_id="capture", backend="alpha"):
 
 
 def _members(repo):
-    roster = json.loads((repo / "docs/state/proj/crew.json").read_bytes())
-    return json.dumps(roster["data"]["members"], separators=(",", ":")).encode()
+    """The roster's members as the store holds it, with the version it advances.
+
+    The store is a roster's only home, so the canonical members JSON plus the
+    store's version is the whole observable state of the roster: a write that
+    left the members alone still advances the version, so a caller cannot
+    rewrite the roster without the assertion below seeing it.
+    """
+    roster, version = ledger.load_auxiliary("proj", repo)
+    return json.dumps(roster["members"], separators=(",", ":")).encode(), version
+
+
+def _status(repo):
+    """The worktree's state, tracked and untracked, as a roster write would show."""
+    return subprocess.run(
+        ["git", "-C", str(repo), "status", "--porcelain"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
 
 
 @pytest.mark.parametrize("legacy_session", [False, True])
 def test_dispatch_and_observe_leave_roster_members_byte_identical(repo, legacy_session):
     if legacy_session:
-        data, version = ledger.load("proj", root=repo)
-        data["members"][0].update(
+        roster, version = ledger.load_auxiliary("proj", repo)
+        roster["members"][0].update(
             session_id="unrelated-session",
             session_model="unrelated-model",
             sessions={"unrelated-configuration": "unrelated-session"},
             session_owners={"unrelated-configuration": "unrelated-coordinator"},
         )
-        ledger.write("proj", data, version, root=repo)
+        ledger.write_members("proj", roster["members"], version, repo)
     before = _members(repo)
-    raw_before = (repo / "docs/state/proj/crew.json").read_bytes()
+    before_status = _status(repo)
     dispatched = _dispatch(repo)
     assert _members(repo) == before
     observed = crew.observe(dispatched["run_id"], config=CONFIG)
@@ -152,7 +169,7 @@ def test_dispatch_and_observe_leave_roster_members_byte_identical(repo, legacy_s
     assert observed["session_harness"] == "codex"
     assert crew.read_pointer(dispatched["run_id"])["session_id"] == FIRST_SESSION
     assert _members(repo) == before
-    assert (repo / "docs/state/proj/crew.json").read_bytes() == raw_before
+    assert _status(repo) == before_status
     crew.observe(dispatched["run_id"], config=CONFIG)
     assert _members(repo) == before
 

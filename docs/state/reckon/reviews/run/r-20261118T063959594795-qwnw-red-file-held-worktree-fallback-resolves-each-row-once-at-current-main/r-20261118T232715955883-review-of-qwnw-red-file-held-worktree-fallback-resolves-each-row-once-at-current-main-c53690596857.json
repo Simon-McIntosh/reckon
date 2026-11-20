@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite at e9dffe5259e14aac4f921e6ee6e63ce03e43ad86 (suite-baseline-e9dffe52.log) records 58 passed EXIT=0 with no FAILED line, and after_suite at c53690596857c962ec1097454c7d93a4fb1e6a18 (suite-after-c5369059.log) records 58 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:1657 (compose_landed_record appends the fragment for its ledgered node)",
+    "reckon/serve.py:2751 (the HTTP evidence read composes the record body)",
+    "reckon/mcp.py:1344 (the MCP evidence read composes the same body)",
+    "reckon/doccheck.py:1971 (doccheck composes the record before checking it)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:31:23Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html",
+      "id": "f2dcdd9dec2",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence says the job's revision, host, tree and command are written on the log's header lines, while the quoted block at :26-31 drops the '# tree:' line the log actually carries, and neither the block nor the sentence records the all_debug partition or the SLURM_JOB_ID unset that the done_when names, so those two conditions rest on manifest prose I had to recover from the run transcript rather than on the cited log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063959594795-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main/measure-target-file-head-c5369059.log",
+      "id": "fdc9f6af88e",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header records the command as 'PYTHONPATH=. .venv/bin/python -m pytest ...' while the job executed 'PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest ...', so the receipt's fallback command is not the literal one that ran; both paths resolve to the same uv cpython 3.14.2 interpreter and I reproduced 5 passed with the recorded form, so the reading is sound but the recorded command is not exact."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063959594795-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main/negative-control-mutation.log",
+      "id": "f861231c91c",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scratch tree for the mutation sits at a bare '/tmp/reckon-crew-scratch/...' path, which the run's own dispatch forbids in favour of $TMPDIR, so the control's tree outlives the run's scratch and is visible to every process on the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): rename or drop the fragment and reckon/evidence.py:1657 composes the plan record without it, surfacing through reckon/serve.py:2751, reckon/mcp.py:1344 and reckon/doccheck.py:1971.",
+    "diff": "read all five commits of e9dffe5259e14aac4f921e6ee6e63ce03e43ad86..c53690596857c962ec1097454c7d93a4fb1e6a18; the range adds one new file, 78 insertions and no deletions, all of it the evidence fragment, and no product or test byte moves.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, plus an arm over the importing files that adds no failure; measure-target-file-head-c5369059.log records 5 passed EXIT=0 at c5369059 and suite-after-c5369059.log records 58 passed EXIT=0, so the gate measures the stated measure, though the two environment conditions are recorded only in the manifest and the run transcript.",
+    "goal": "the goal is tests/test_held_worktree_fallback_resolves_each_row_once.py passing in full on the primary branch; I ran that file at my own head 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061 with SLURM_JOB_ID unset and it read 5 passed, and the delivered fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html:1 is the landing record for that green reading, which is the deliverable the section names for a file already green when its node starts.",
+    "manifest": "read; it reports status complete, five commits ending c5369059, a literal pytest command, baseline_suite and after_suite as completed JSON with 0 failures each, and five log paths, every one of which exists on disk and ends with the EXIT line the manifest claims.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the single diff path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html sits inside the third and inside no other."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktree_fallback_resolves_each_row_once.py:383 is the guard for the property the fragment records, and negative-control-mutation.log shows it reddening at 21042 path resolutions against the 2*500 bound when the old per-tree pass is reinstated in a scratch copy of reckon/crew/obligations.py, so a regression of that behaviour fails a test.",
+    "evidence": "measure-target-file-head-c5369059.log:1-6 records the revision, host, tree, command and EXIT=0 of the head run, but it records neither the all_debug partition nor the SLURM_JOB_ID unset the done_when names, so the recorded gate does not itself evidence both of the measure's conditions.",
+    "fit": "the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html:1 follows the sibling shape at qwnw-a-clean-landing-releases-its-worktree.html:1 and is named for its node id, which reckon/evidence.py:1667 requires of a composed fragment.",
+    "goal_fidelity": "tests/test_held_worktree_fallback_resolves_each_row_once.py reads 5 passed at my head 7c481b65 and the fragment records the same reading at c5369059, so the goal's deliverable holds at the revision that landed and at current main.",
+    "reuse": "the diff adds no function, class or module; a search of reckon/ by capability for evidence-fragment handling finds the existing composer at reckon/evidence.py:1657 and the subtree rule at reckon/resources.py:65, and the new file is a fragment those already own, with no registration step skipped.",
+    "scope_discipline": "the diff's single path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html:1-78, is inside the declared docs/evidence/fragments/queued-work-needs-no-workaround directory and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is tests/test_held_worktree_fallback_resolves_each_row_once.py passing in full on the primary branch; I ran that file at my own head 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061 with SLURM_JOB_ID unset and it read 5 passed, and the delivered fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html:1 is the landing record for that green reading.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, plus an arm over the importing files that adds no failure; measure-target-file-head-c5369059.log records 5 passed EXIT=0 at c5369059 and suite-after-c5369059.log records 58 passed EXIT=0, so the gate measures the stated measure, though the two environment conditions are recorded only in the manifest and the run transcript.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the single diff path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html sits inside the third and inside no other.\nVERDICT manifest: read; it reports status complete, five commits ending c5369059, a literal pytest command, baseline_suite and after_suite as completed JSON with 0 failures each, and five log paths, every one of which exists on disk and ends with the EXIT line the manifest claims.\nVERDICT diff: read all five commits of e9dffe5259e14aac4f921e6ee6e63ce03e43ad86..c53690596857c962ec1097454c7d93a4fb1e6a18; the range adds one new file, 78 insertions and no deletions, all of it the evidence fragment, and no product or test byte moves.\nCALL_SITES: reckon/evidence.py:1657, reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1971\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_held_worktree_fallback_resolves_each_row_once.py reads 5 passed at my head 7c481b65 and the fragment records the same reading at c5369059, so the goal's deliverable holds at the revision that landed and at current main.\nSCORE evidence: 15\nJUSTIFICATION evidence: measure-target-file-head-c5369059.log:1-6 records the revision, host, tree, command and EXIT=0 of the head run, but it records neither the all_debug partition nor the SLURM_JOB_ID unset the done_when names, so the recorded gate does not itself evidence both of the measure's conditions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's single path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html:1-78, is inside the declared docs/evidence/fragments/queued-work-needs-no-workaround directory and carries nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_held_worktree_fallback_resolves_each_row_once.py:383 is the guard for the property the fragment records, and negative-control-mutation.log shows it reddening at 21042 path resolutions against the 2*500 bound when the old per-tree pass is reinstated in a scratch copy of reckon/crew/obligations.py.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html:1 follows the sibling shape at qwnw-a-clean-landing-releases-its-worktree.html:1 and is named for its node id, which reckon/evidence.py:1667 requires of a composed fragment.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; a search of reckon/ by capability for evidence-fragment handling finds the existing composer at reckon/evidence.py:1657 and the subtree rule at reckon/resources.py:65, and the new file is a fragment those already own, with no registration step skipped.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main.html:75 non-blocking: the sentence says the job's revision, host, tree and command are written on the log's header lines, while the quoted block at :26-31 drops the '# tree:' line the log actually carries, and neither the block nor the sentence records the all_debug partition or the SLURM_JOB_ID unset the done_when names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063959594795-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main/measure-target-file-head-c5369059.log:4 non-blocking: the header records the command as 'PYTHONPATH=. .venv/bin/python -m pytest ...' while the job executed the root venv's absolute interpreter, so the receipt names a command that is not the literal one that ran.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063959594795-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main/negative-control-mutation.log:2 non-blocking: the mutation's scratch tree sits at a bare /tmp path, which the run's own dispatch forbids in favour of $TMPDIR.",
+  "review_node": "review-of-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-c53690596857",
+  "review_run_id": "r-20261118T232715955883-review-of-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-c53690596857",
+  "reviewed_base_sha": "e9dffe5259e14aac4f921e6ee6e63ce03e43ad86",
+  "reviewed_head_sha": "c53690596857c962ec1097454c7d93a4fb1e6a18",
+  "reviewed_run_id": "r-20261118T063959594795-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T232715955883-review-of-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-c53690596857"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:24:18.757446+00:00",
+  "total": 110
+}

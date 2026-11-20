@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:44:24Z",
+  "findings": [
+    {
+      "file": "tests/test_admission_survives_a_kill.py",
+      "line": 227,
+      "severity": "non-blocking",
+      "text": "assert worker[\"pid\"] == pid compares the pid the call returned against the record the same call wrote, so it holds whenever the function is internally consistent and observes nothing independent; the load-bearing arm is pid > 0 at :226."
+    },
+    {
+      "file": "tests/test_admission_survives_a_kill.py",
+      "line": 230,
+      "severity": "non-blocking",
+      "text": "the finally hands pid to os.kill; if the launch path ever returns 0, kill(0, SIGTERM) signals the test's whole process group instead of a helper process, so a red arm on that path aborts the pytest session rather than failing one case."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 4369,
+      "severity": "non-blocking",
+      "text": "the unreadable-stamp fallback branch has no case: reverting it to an order-only comparison leaves the green arm green, so the preserved difference test the repair's prose promises is unpinned."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261119T070351053658-review-of-qwnw-red-file-a-terminal-worker-exits-within-its-grace-d544984149f2",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "d544984149f2be31b37c35d5ddac3ea70c8c1fc6",
+  "reviewed_run_id": "r-20261118T063519139605-qwnw-red-file-a-terminal-worker-exits-within-its-grace",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:03:31.869590+00:00",
+  "total": 107
+}

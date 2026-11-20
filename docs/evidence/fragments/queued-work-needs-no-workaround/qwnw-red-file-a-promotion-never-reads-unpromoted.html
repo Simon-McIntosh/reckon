@@ -1,0 +1,60 @@
+<section id="qwnw-red-file-a-promotion-never-reads-unpromoted-landing">
+  <h2>A promotion's landing is read against the project's checkout</h2>
+
+  <p><strong>What changed.</strong> A departure's word comes from the ledger row
+  the promotion wrote, and that row carries no checkout. In
+  <code>reckon/crew/recovery_watch.py</code>, <code>_ledger_landing_word</code>
+  asked the landing question with a record naming no repository, so the
+  ancestry check could not read one and the word fell back to
+  <code>complete</code>: a row whose commits sat on the project's primary
+  branch read as work that never landed.</p>
+
+  <p><code>_ledger_landing_word</code> now resolves the project's repository
+  through <code>project_mount_repository</code>, and sets it on the record before
+  asking whether the head landed. That call already holds the row it read, so it
+  passes the row to <code>_delivered_head</code>, which now accepts one and
+  skips the second read; <code>_promoted_awaiting_merge</code> forwards it.</p>
+
+  <p>No assertion changed. A head reachable from the project's primary branch
+  reads <code>promoted</code>; the same head one commit off it still reads
+  <code>complete</code>. A row whose checkout cannot be read still reads
+  <code>complete</code> too, which is the fail-closed direction: the word
+  changes only when the ancestry was actually read.</p>
+
+  <h3 id="qwnw-red-file-a-promotion-never-reads-unpromoted-measured">Measured</h3>
+
+  <p>Every log names its revision, host, tree and command in its first lines and ends with a bare
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-a-promotion-never-reads-unpromoted-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, as a job on <code>all_debug</code></td>
+        <td><code>e5cd9897ff</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the same file at the base, extraction</td>
+        <td><code>b24fe95a78</code></td>
+        <td>1 failed, 5 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the twenty-five importer files, base arm</td>
+        <td><code>b24fe95a78</code>, extraction</td>
+        <td>11 failed, 184 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the same files, head arm</td>
+        <td><code>e5cd9897ff</code>, worktree</td>
+        <td>10 failed, 185 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head against base</td><td>the two arms above</td>
+        <td>0 added failures, 1 fixed</td></tr>
+      <tr><td>the run's declared suite, base arm</td>
+        <td><code>b24fe95a78</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the run's declared suite, head arm</td>
+        <td><code>e5cd9897ff</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The ten cases still red at the head are red at the base as well; none is
+  in this node's file. Four of them are the same unread-checkout word seen from
+  other fixtures that record a row with no repository on the machine at all,
+  and six are ticker column-width and spend-glyph readings that never touch this
+  rule.</p>
+</section>

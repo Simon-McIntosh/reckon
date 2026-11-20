@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon import file_memo
+from reckon._worker_fence import BackendError
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -2355,7 +2356,14 @@ def _fleet_counts(
         "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
         "unpromoted": delivered_rows - repairing,
     }
-    if any("delivery" in row and row["delivery"] is not None for row in rows):
+    # The promotion figures join the counts only when some row carries a
+    # delivery reading. An empty one is the classifier's "nothing delivered
+    # here" rather than a zero to publish, the same way ``reviewing`` and
+    # ``waiting`` join the result only when a run is in them: metadata with no
+    # reading behind it would sit in a dict of counts as a value that is not a
+    # count, and the fleet's figures are read as a partition that adds up to
+    # the rows it summarises.
+    if any(row.get("delivery") for row in rows):
         from .recovery_classification import delivery_summary
 
         delivery = delivery_summary(rows, pointers=pointers)
@@ -2451,12 +2459,23 @@ def _manifest_rewritten(
 
 
 def _ledger_landing_word(project: str, row: Mapping[str, Any]) -> str:
-    """A promotion only announces landing once its head reaches primary."""
+    """A promotion only announces landing once its head reaches primary.
+
+    A ledger row names its project and never its checkout, so the ancestry
+    question is asked against the project's registered mount: that is the tree
+    the landing puts the row's head on, and asking it nowhere would word every
+    landed promotion as still awaiting its merge.
+    """
     if not row.get("commits"):
         return "recorded"
+    from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.recovery_classification import _promoted_awaiting_merge
 
-    if _promoted_awaiting_merge({**row, "project": project}, moment=time.time()):
+    record = {**row, "project": project}
+    checkout = project_mount_repository(project)
+    if checkout is not None:
+        record["repo"] = str(checkout)
+    if _promoted_awaiting_merge(record, moment=time.time(), row=row):
         return "complete"
     return "promoted"
 
@@ -4460,7 +4479,12 @@ def recover(
         if run_id:
             try:
                 observed = observe(run_id, config=config)
-            except CrewError as exc:
+            except (CrewError, BackendError) as exc:
+                # A stream a backend's dialect refuses is one run's fault. A
+                # pointer moved to another harness keeps the stream its first
+                # harness wrote, and left uncaught that refusal ended the pass
+                # for every other run of the project, so none of them was
+                # classified and no review they owed was composed.
                 unreadable = str(exc)
         observed = _derive_missing_manifest(observed, config=config)
         report = classify_pointer(observed)

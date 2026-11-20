@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/obligations.py:2712",
+    "reckon/crew/obligations.py:4252",
+    "reckon/crew/obligations.py:4283",
+    "reckon/crew/obligations.py:4338",
+    "reckon/crew/recovery_memo.py:691",
+    "reckon/crew/recovery_classification.py:1937",
+    "reckon/crew/recovery_classification.py:1949",
+    "reckon/crew/recovery_stream.py:193",
+    "reckon/crew/obligation_snapshot.py:1942",
+    "reckon/crew/review.py:4526"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:26:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unreadable-review-duty-names-its-fault.html",
+      "line": "98",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the 226-file merge arm adds five ids and names a fifth, test_manifest_accepts_owned_commits_and_ignores_imported_primary, as failing only inside the batch; the merge arm log holds 33 FAILED ids of which four are new against the base arm's 56 (56 - 27 + 4 = 33), and that test name appears in neither arm log, so the cited log shows the claimed fifth passing and the arm's added set is overstated by one."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1229",
+      "severity": "non-blocking",
+      "text": "non-blocking: the merge dedents a comment to column 0 inside the nested dict literal in _unreadable_record_items, so the code reads as a conflict-resolution artifact even though it parses and ruff format does not reindent comments."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "657",
+      "severity": "non-blocking",
+      "text": "non-blocking: note_read_failure drops a replayed finding whose file is gone, and no case in tests/test_an_unreadable_review_duty_names_its_fault.py deletes a record, so removing 'not Path(path).is_file()' from that condition leaves all five cases green."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 175c772e16, the e7e4d9b7e0 merge of f0e03154 and beb8171514 against e392d805; the merge replaces report_read_failures with note_read_failure and _append_read_failure, routes recovery_memo._read_review_once through review_records.memoised_read, adds the derivation_history marker to obligation_snapshot._derive_fleet_state and rewires the fragment's control and arm paragraphs.",
+    "done_when": "read the done_when and the manifest's arms; it asks for the node's file green as an all_debug job with SLURM_JOB_ID unset beside a base arm, a negative control and an importer arm per revision, and the manifest cites jobs 1327169, 1331861, 1331863 and 1327316/1327361/1331791 whose logs carry the summaries it quotes.",
+    "goal": "read the source node's node.json goal text and the delivered head; gate-final2.log records 5 passed EXIT=0 at beb81715141f5d861e914bf7f524902f7feb5141 for tests/test_an_unreadable_review_duty_names_its_fault.py against 1 failed 4 passed EXIT=1 at 60ecc274 in gate-base-60ecc274.log, and the three commits gained since the previous review keep that reading.",
+    "manifest": "read the reviewed run's manifest.md against the logs it names; it records the file at base 1 failed 4 passed EXIT=1 and at head 5 passed EXIT=0, the standing pair 58 passed EXIT=0 on both arms, the no-op control 3 failed 2 passed and the 226-file arms 56/52/33, but its five-added-ids narrative names a fifth id neither arm log lists as failed.",
+    "write_paths": "read the declared scope (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround) against the gained diff; it touches only reckon/crew/review_records.py, reckon/crew/recovery_memo.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unreadable-review-duty-names-its-fault.html beside the merge of primary main, all inside it."
+  },
+  "justifications": {
+    "durability": "the replay is guarded, since replacing note_read_failure with a no-op reddens 3 of 5 in negative-control-final2.log, but the not-Path(path).is_file() condition at reckon/crew/review_records.py:657 has no case, so deleting it leaves all five cases green.",
+    "evidence": "the manifest records each arm with its log, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unreadable-review-duty-names-its-fault.html:98 states the merge arm adds five ids where importers-arm-merge.log holds 33 failed ids, only four new against the base arm's 56, and line 103 names a fifth id that appears in neither arm log.",
+    "fit": "the merge dedents the comment at reckon/crew/obligation_snapshot.py:1229 to column 0 inside a nested dict literal, while the added holder otherwise follows the docstring idiom of reckon/crew/review_records.py:636.",
+    "goal_fidelity": "gate-final2.log records 5 passed EXIT=0 at beb81715141f5d861e914bf7f524902f7feb5141 for the file the goal names, and the gained commits only move the replay onto main's holder and update the fragment.",
+    "reuse": "the merge folds recovery_memo._read_review_once onto review_records.memoised_read and main's note_read_failure rather than keeping two carry mechanisms, and derivation_history at reckon/crew/obligations.py:3711 extends recorded_run_rows at reckon/crew/obligations.py:3673.",
+    "scope_discipline": "the gained commits touch reckon/crew/review_records.py, reckon/crew/recovery_memo.py and the declared fragment, beside the merge of primary main f0e03154 that landing the run requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_an_unreadable_review_duty_names_its_fault.py passes in full at the delivered head; gate-final2.log records 5 passed EXIT=0 at beb81715141f5d861e914bf7f524902f7feb5141 against 1 failed 4 passed EXIT=1 at 60ecc274 in gate-base-60ecc274.log, and the three commits gained since the previous review keep that reading.\nVERDICT done_when: the done_when asks for the node's file green as an all_debug job with SLURM_JOB_ID unset beside a base arm, a negative control and an importer arm per revision; the manifest cites jobs 1327169, 1331861, 1331863 and 1327316/1327361/1331791 whose logs carry the summaries it quotes.\nVERDICT write_paths: the declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the gained diff touches only reckon/crew/review_records.py, reckon/crew/recovery_memo.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unreadable-review-duty-names-its-fault.html beside the merge of primary main, all inside it.\nVERDICT manifest: read against the logs it names; it records the file at base 1 failed 4 passed EXIT=1 and at head 5 passed EXIT=0, the standing pair 58 passed EXIT=0 on both arms, the no-op control 3 failed 2 passed and the 226-file arms 56/52/33, but its five-added-ids narrative names a fifth id neither arm log lists as failed.\nVERDICT diff: read 175c772e16, the e7e4d9b7e0 merge of f0e03154 and beb8171514 against e392d805; the merge replaces report_read_failures with note_read_failure and _append_read_failure, routes recovery_memo._read_review_once through review_records.memoised_read, adds the derivation_history marker to obligation_snapshot._derive_fleet_state and rewires the fragment's control and arm paragraphs.\nCALL_SITES: reckon/crew/obligations.py:2712, reckon/crew/obligations.py:4252, reckon/crew/obligations.py:4283, reckon/crew/obligations.py:4338, reckon/crew/recovery_memo.py:691, reckon/crew/recovery_classification.py:1937, reckon/crew/recovery_classification.py:1949, reckon/crew/recovery_stream.py:193, reckon/crew/obligation_snapshot.py:1942, reckon/crew/review.py:4526\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: gate-final2.log records 5 passed EXIT=0 at beb81715141f5d861e914bf7f524902f7feb5141 for the file the goal names, and the gained commits only move the replay onto main's holder and update the fragment.\nSCORE evidence: 13\nJUSTIFICATION evidence: the manifest records each arm, but the fragment at line 98 states the merge arm adds five ids where importers-arm-merge.log holds 33 failed ids, only four new against the base arm's 56.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained commits touch reckon/crew/review_records.py, reckon/crew/recovery_memo.py and the declared fragment, beside the merge of primary main f0e03154 that landing the run requires.\nSCORE durability: 14\nJUSTIFICATION durability: the replay is guarded by negative-control-final2.log at 3 failed 2 passed, but the not-Path(path).is_file() condition at reckon/crew/review_records.py:657 has no case.\nSCORE fit: 16\nJUSTIFICATION fit: the merge dedents the comment at reckon/crew/obligation_snapshot.py:1229 to column 0 inside a nested dict literal.\nSCORE reuse: 18\nJUSTIFICATION reuse: the merge folds recovery_memo._read_review_once onto review_records.memoised_read rather than keeping a second carry mechanism, and derivation_history at reckon/crew/obligations.py:3711 extends recorded_run_rows at reckon/crew/obligations.py:3673.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unreadable-review-duty-names-its-fault.html:98 non-blocking: the fragment claims five added ids and names a fifth id that neither the base nor the merge arm log lists as failed, while the merge arm log's 33 failures reconcile with four added ids.\nFINDING reckon/crew/obligation_snapshot.py:1229 non-blocking: the merge dedents a comment to column 0 inside the nested dict literal in _unreadable_record_items.\nFINDING reckon/crew/review_records.py:657 non-blocking: the file-must-still-exist rule has no case, so deleting not Path(path).is_file() leaves all five cases green.",
+  "review_run_id": "r-20261119T180551446904-review-of-qwnw-red-file-an-unreadable-review-duty-names-its-fault-beb81715141f",
+  "reviewed_base_sha": "e392d805a410e40662bd950f6134c9248a974ff1",
+  "reviewed_head_sha": "beb81715141f5d861e914bf7f524902f7feb5141",
+  "reviewed_run_id": "r-20261118T063314245189-qwnw-red-file-an-unreadable-review-duty-names-its-fault",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:57:20.002726+00:00",
+  "total": 100
+}
