@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import checkout_trust, flight
+from reckon import checkout_trust, file_memo, flight
 from reckon._timestamps import parse_utc
 from reckon.crew import (
     census,
@@ -396,7 +396,9 @@ class SweepBeat:
         beat_seconds: float = SWEEP_BEAT_SECONDS,
         concurrency: int | None = None,
     ) -> None:
-        self.on_report: Callable[[str, str, Mapping[str, Any]], None] | None = None
+        self.on_report: (
+            Callable[[str, str, Mapping[str, Any], file_memo.MemoCounts], None] | None
+        ) = None
         self.concurrency = max(
             1, SWEEP_CONCURRENCY if concurrency is None else int(concurrency)
         )
@@ -457,11 +459,12 @@ class SweepBeat:
                 from reckon.crew.pending_landing import retire_promoted_pointers
 
                 retire_promoted_pointers(project=project, session=session)
-                report = self.sweep(
-                    project, session=session, now=moment, writer=dict(SWEEP_WRITER)
-                )
+                with file_memo.counting() as counts:
+                    report = self.sweep(
+                        project, session=session, now=moment, writer=dict(SWEEP_WRITER)
+                    )
                 if isinstance(report, Mapping) and self.on_report is not None:
-                    self.on_report(project, session, report)
+                    self.on_report(project, session, report, counts)
                 reviews = report.get("reviews") if isinstance(report, Mapping) else None
                 if isinstance(reviews, Mapping):
                     for failure in reviews.get("failed") or ():
@@ -1135,13 +1138,33 @@ class Station:
         self.store.set_station_value(station_store.CREW_HOME_KEY, str(self.home))
 
     def _record_sweep_report(
-        self, project: str, session: str, report: Mapping[str, Any]
+        self,
+        project: str,
+        session: str,
+        report: Mapping[str, Any],
+        counts: file_memo.MemoCounts | None = None,
     ) -> None:
+        """Record the sweep's failures, and what the pass itself recomputed.
+
+        The counts answer the same question the tick's do, for the pass that
+        runs on its own thread: a sweep asked for the same plans twice in a row
+        must be able to say it was served from cache rather than parsed again.
+        """
         # The sweep thread owns its connection; the tick and heartbeat keep
         # their own handles to the same guarded store.
         store = station_store.StationStore(self.store.root, guard=self.store.guard)
         try:
             station_obligations.record_sweep_report(store, project, session, report)
+            reading = {
+                "project": project,
+                "session": session,
+                "finished_at": self.clock().astimezone(UTC).isoformat(),
+            }
+            if counts is not None:
+                reading["memo_counts"] = counts.summary()
+            store.set_station_value(
+                obligation_snapshot.STATION_LAST_SWEEP_KEY, json.dumps(reading)
+            )
         finally:
             store.close()
 
@@ -1174,22 +1197,32 @@ class Station:
                 self._stage_durations.get(self._timed_stage, 0.0) + elapsed
             )
 
-    def _record_finished_tick(self, finished: str) -> None:
-        """Replace the completed measurement as one bounded station record."""
+    def _record_finished_tick(
+        self, finished: str, counts: file_memo.MemoCounts | None = None
+    ) -> None:
+        """Replace the completed measurement as one bounded station record.
+
+        ``counts`` are the memo answers this tick was served, per kind, so a
+        reader can tell a pass that recomputed a derivation from one that was
+        answered from cache. The reading carries counts only when the tick ran
+        inside a :func:`reckon.file_memo.counting` scope; a caller driving the
+        pass outside one records none rather than a fabricated zero.
+        """
         self._measure_stage(time.monotonic())
         slowest = max(self._stage_durations, key=self._stage_durations.get)
+        record = {
+            "started_at": self._tick_started_at,
+            "finished_at": finished,
+            "stage_durations_seconds": self._stage_durations,
+            "duration_seconds": sum(self._stage_durations.values()),
+            "slowest_stage": slowest,
+            "slowest_stage_seconds": self._stage_durations[slowest],
+        }
+        if counts is not None:
+            record["memo_counts"] = counts.summary()
         self.store.set_station_value(
             obligation_snapshot.STATION_LAST_TICK_KEY,
-            json.dumps(
-                {
-                    "started_at": self._tick_started_at,
-                    "finished_at": finished,
-                    "stage_durations_seconds": self._stage_durations,
-                    "duration_seconds": sum(self._stage_durations.values()),
-                    "slowest_stage": slowest,
-                    "slowest_stage_seconds": self._stage_durations[slowest],
-                }
-            ),
+            json.dumps(record),
         )
         self._stage_since = None
 
@@ -1283,11 +1316,24 @@ class Station:
             )
         return removed
 
-    @operational_read
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Run one pass, then hand whatever the store freed back to the kernel."""
         try:
-            return self._tick(now=now)
+            # The pass's own work is measured here rather than from the
+            # process's totals: a tick and a sweep pass share the interpreter,
+            # and each must report the answers it paid for. The scope opens
+            # outside the operational read that lists the live pointers,
+            # because that listing decodes a pointer record for every run and
+            # the tick paid for it. It closes before the tick is recorded, so
+            # the counts describe derivation rather than the record written
+            # after it.
+            with file_memo.counting() as counts:
+                published, finished = self._tick(now=now)
+            self._record_finished_tick(finished, counts)
+            self.store.set_station_value(
+                obligation_snapshot.STATION_TICK_FINISHED_AT_KEY, finished
+            )
+            return published
         finally:
             # After the pass, not inside it: a tick is the largest allocation
             # the station makes, and the allocator keeps the arenas it frees
@@ -1298,9 +1344,16 @@ class Station:
             # finally and never in the returns below.
             release_freed_memory()
 
-    def _tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
-        """Publish every new transition, then move the heartbeat."""
+    @operational_read
+    def _tick(self, *, now: datetime | None = None) -> tuple[list[dict[str, Any]], str]:
+        """Run one pass, answering what it published and when it finished."""
         moment = now or self.clock()
+        published = self._tick_work(moment)
+        finished = self.clock().astimezone(UTC).isoformat()
+        return published, finished
+
+    def _tick_work(self, moment: datetime) -> list[dict[str, Any]]:
+        """Publish every new transition, then move the heartbeat."""
         stages = obligation_snapshot.STATION_TICK_STAGES
         self._enter(stages[0], started=moment)
         self.store.tick(home=self.home)
@@ -1432,13 +1485,6 @@ class Station:
         if self.maintenance is not None:
             for row in self.maintenance.run(self.projects(), moment=moment):
                 print(f"station-maintenance: {row}", flush=True)
-        # The finish stamp is what closes the tick for a reader: until it is
-        # later than the start, a stage on record is a tick still running.
-        finished = self.clock().astimezone(UTC).isoformat()
-        self._record_finished_tick(finished)
-        self.store.set_station_value(
-            obligation_snapshot.STATION_TICK_FINISHED_AT_KEY, finished
-        )
         return published
 
 

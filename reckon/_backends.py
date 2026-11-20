@@ -70,6 +70,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from reckon import file_memo
 from reckon._observations import optional_number
 from reckon._timestamps import parse_iso, parse_utc
 from reckon._worker_fence import (  # noqa: F401
@@ -3823,6 +3824,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
             and (stored.whole or not whole)
         ):
             _PARSED_STREAMS.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return stored
         # The held entry carries the version the last read reached whether or
         # not it was asked for the whole stream, so a whole request extends it
@@ -3858,6 +3860,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
         with source.open("rb") as handle:
             data = handle.read()
         _count_parsed_bytes(len(data))
+        file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_RECOMPUTED, len(data))
         added, malformed = parse_events(
             data.decode("utf-8", errors="replace").splitlines()
         )
@@ -3875,6 +3878,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
         live = _PARSED_STREAMS.get(key)
         if live is not None and live.identity == identity and (live.whole or not whole):
             _PARSED_STREAMS.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return live
         pending = (
             [*((stored.pending_events or ()) if joined and stored else ()), *added]
@@ -3942,6 +3946,11 @@ def cached_stream_events(
 # resume a read of an evicted stream starts from, which is why the events cache
 # keeps no second store of its own: this one is already per path and
 # count-bounded.
+# The memo kind this module's stream observation is counted under, so a pass
+# measuring what it recomputed reports the stream reader beside the file parses
+# rather than as an unnamed cost carried inside another kind.
+_STREAM_MEMO_KIND = "stream_observation"
+
 _STREAM_SUMMARY_LOCK = threading.RLock()
 _STREAM_SUMMARIES: OrderedDict[str, _StreamSummary] = OrderedDict()
 _STREAM_SUMMARY_LIMIT = 2048
@@ -4170,6 +4179,7 @@ def _stream_summary(
         stored = _STREAM_SUMMARIES.get(key)
         if stored is not None and stored.identity == identity:
             _STREAM_SUMMARIES.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return stored, [], 0, False
     grows = stored is not None and stored.cursor.grows_from(path, info)
     if grows:
@@ -4778,6 +4788,7 @@ def _stream_lines_from(
     text = data[: cut + 1].decode("utf-8", errors="replace")
     if count:
         _count_parsed_bytes(cut + 1)
+        file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_EXTENDED, cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 
