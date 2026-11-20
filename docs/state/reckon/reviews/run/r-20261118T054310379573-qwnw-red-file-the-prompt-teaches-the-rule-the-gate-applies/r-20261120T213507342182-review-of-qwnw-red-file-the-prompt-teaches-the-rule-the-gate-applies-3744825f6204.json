@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own gate logs read on disk: baseline_suite-1795120067778962136.log at 28fbf2bc2fe2b reads '58 passed in 43.20s' with EXIT=0 and no FAILED line, and after_suite-1795210020418654151.log at 3744825f6204 reads '58 passed in 48.43s' with EXIT=0 and no FAILED line, so the set difference is empty (0). The manifest's baseline_suite arm (manifest.md:20) and after_suite arm (manifest.md:21) are both well-formed JSON at this head, so both arms were read from the files they name.",
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T22:26:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-3744825f6204",
+      "recorded_at": "2026-11-20T23:02:39.341032+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "24",
+      "severity": "blocking",
+      "text": "the record asserts the reconciliation 'fails on the fragment as first delivered and passes on this one', but the check landed at 3744825f run on that fragment with the run's manifest prints seven FAIL lines and exits 1: the table still carries the d7846c73-era figures ('6 passed in 1.06s', '58 passed in 36.19s', '46 passed in 8.85s') while manifest.md:15 now cites 3744825f logs that record 0.47s/48.43s, and reconcile-after.log, the only log the paragraph names for the passing run, holds 'FAIL mutant-run.log: 6 failed in 1.79s is not stated beside the 28fbf2bc2fe2 it belongs to'"
+    },
+    {
+      "file": "reckon/crew/fragment_reconcile.py",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "REVISION_LINE is a second revision-header recogniser beside the owner the repository already keeps, reports._GATE_LOG_REVISION (reckon/crew/reports.py:1486) as reached through review.recorded_log_revision (reckon/crew/review.py:3102): it accepts only '^# revision: <40 lowercase hex>' while the audit accepts any case of the 'rev'/'revision' label with 7-64 hex, so a log whose first line reads 'revision <sha> tree <path>' or names an abbreviated sha is refused here after the manifest check passed it, which is the drift the comment at reckon/crew/review.py:2308-2318 says a second pattern causes"
+    },
+    {
+      "file": "tests/test_a_fragment_reconciles_with_its_cited_logs.py",
+      "line": "108",
+      "severity": "non-blocking",
+      "text": "the assertion that names HEAD[:12] reddens on the missing-revision branch at reckon/crew/fragment_reconcile.py:150, not on the proximity check at :161 the case is named and documented for, because the fragment it builds never contains the head revision; forcing _nearby to return True leaves all 5 cases green (measured on a scratch copy), and deleting the 'record.summary not in flat' branch at :156 leaves all 5 green too, so two of the module's three stated parts have no guard that fails when they regress"
+    },
+    {
+      "file": "manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "manifest.md:14 records the gate command over both test files, but no log in the run directory records that run: no file carries '12 passed', test_logs (manifest.md:15) names none of it, and the added test file's own five passes are therefore claimed rather than recorded"
+    },
+    {
+      "file": "reckon/crew/fragment_reconcile.py",
+      "line": "176",
+      "severity": "non-blocking",
+      "text": "the module is reachable only as 'python -m reckon.crew.fragment_reconcile' and from its own test; no production call site invokes it, so the delivery-path comparison its docstring promises depends on a reader remembering to run it"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 97de208c74..3744825f6204 commit by commit: one commit adding two new files (reckon/crew/fragment_reconcile.py, +198; tests/test_a_fragment_reconciles_with_its_cited_logs.py, +135), with no edit to the named test, the prompt sites or the fragment",
+    "done_when": "the done_when requires the named file green at head as an all_debug job with SLURM_JOB_ID unset beside both suite arms and a negative control; manifest.md:14 records a local two-file pytest invocation, manifest.md:13's after arm is the staged-write suite rather than the named file, and the all_debug clause is recorded unmet in the fragment's scheduler section",
+    "goal": "the node goal is to make tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pass in full on the primary branch; the gained commit 3744825f touches neither that file nor reckon/crew/prompts.py, and named-file-head-3744825f6204.log:7 records the file green at head with '6 passed in 0.47s'",
+    "manifest": "read manifest.md at 3744825f; it is complete at 23 lines with well-formed suite arms, but its checkpoint at line 6 claims the new check 'passes on the record delivered here', which a run of that check on that record refutes",
+    "write_paths": "the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html, and docs/figures/...; the two paths the gained commit adds are reckon/crew/fragment_reconcile.py and tests/test_a_fragment_reconciles_with_its_cited_logs.py, both inside reckon and tests"
+  },
+  "justifications": {
+    "durability": "tests/test_a_fragment_reconciles_with_its_cited_logs.py:108 passes on the missing-revision branch, and forcing _nearby-free behaviour (return True in reckon/crew/fragment_reconcile.py:119) leaves the five cases green, so the proximity and summary-presence guards have no failing case",
+    "evidence": "manifest.md:14 names a two-file gate with no log behind it and the done_when's all_debug clause is unmet, so the recorded evidence reads the arms but not the measure the done_when asserts",
+    "fit": "the module follows the surrounding crew idiom of a docstringed module with a main(argv) entry, seen in reckon/crew/reports.py:1486 and its argparse neighbours, and introduces no forbidden name",
+    "goal_fidelity": "named-file-head-3744825f6204.log:7 records the goal's file green at head, and the gained commit's reckon/crew/fragment_reconcile.py adds a reconciler that is not part of that goal",
+    "reuse": "reckon/crew/fragment_reconcile.py:38 duplicates the revision-header recogniser the repository owns at reckon/crew/reports.py:1486 and review.py:3102, and its own summary regex at :40 sits beside review.pytest_summary_failure_count at review.py:2586 without extending either owner",
+    "scope_discipline": "both paths in the gained diff sit inside the declared reckon and tests roots, though a 333-line checker is not implied by a goal that names one already-green test file"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pass in full on the primary branch; the gained commit 3744825f touches neither that file nor reckon/crew/prompts.py, and named-file-head-3744825f6204.log:7 records the file green at head with '6 passed in 0.47s'.\nVERDICT done_when: the done_when requires the named file green at head as an all_debug job with SLURM_JOB_ID unset beside both suite arms and a negative control; manifest.md:14 records a local two-file pytest invocation, manifest.md:13's after arm is the staged-write suite rather than the named file, and the all_debug clause is recorded unmet in the fragment's scheduler section.\nVERDICT write_paths: the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html, and docs/figures/...; the two paths the gained commit adds are reckon/crew/fragment_reconcile.py and tests/test_a_fragment_reconciles_with_its_cited_logs.py, both inside reckon and tests.\nVERDICT manifest: read manifest.md at 3744825f; it is complete at 23 lines with well-formed suite arms, but its checkpoint at line 6 claims the new check 'passes on the record delivered here', which a run of that check on that record refutes.\nVERDICT diff: read 97de208c74..3744825f6204 commit by commit: one commit adding two new files (reckon/crew/fragment_reconcile.py, +198; tests/test_a_fragment_reconciles_with_its_cited_logs.py, +135), with no edit to the named test, the prompt sites or the fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: named-file-head-3744825f6204.log:7 records the goal's file green at head, and the gained commit's reckon/crew/fragment_reconcile.py adds a reconciler that is not part of that goal.\nSCORE evidence: 8\nJUSTIFICATION evidence: manifest.md:14 names a two-file gate with no log behind it and the done_when's all_debug clause is unmet, so the recorded evidence reads the arms but not the measure the done_when asserts.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: both paths in the gained diff sit inside the declared reckon and tests roots, though a 333-line checker is not implied by a goal that names one already-green test file.\nSCORE durability: 9\nJUSTIFICATION durability: tests/test_a_fragment_reconciles_with_its_cited_logs.py:108 passes on the missing-revision branch, and forcing _nearby to return True at reckon/crew/fragment_reconcile.py:119 leaves the five cases green, so the proximity and summary-presence guards have no failing case.\nSCORE fit: 15\nJUSTIFICATION fit: the module follows the surrounding crew idiom of a docstringed module with a main(argv) entry, seen in reckon/crew/reports.py:1486 and its argparse neighbours, and introduces no forbidden name.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/fragment_reconcile.py:38 duplicates the revision-header recogniser the repository owns at reckon/crew/reports.py:1486 and review.py:3102, and its own summary regex at :40 sits beside review.pytest_summary_failure_count at review.py:2586 without extending either owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:24 blocking: the record asserts the reconciliation 'fails on the fragment as first delivered and passes on this one', but the check landed at 3744825f run on that fragment with the run's manifest prints seven FAIL lines and exits 1: the table still carries the d7846c73-era figures ('6 passed in 1.06s', '58 passed in 36.19s', '46 passed in 8.85s') while manifest.md:15 now cites 3744825f logs that record 0.47s/48.43s, and reconcile-after.log holds a FAIL line.\nFINDING reckon/crew/fragment_reconcile.py:38 non-blocking: REVISION_LINE is a second revision-header recogniser beside reports._GATE_LOG_REVISION at reckon/crew/reports.py:1486 (reached through review.recorded_log_revision at reckon/crew/review.py:3102), narrower than the owner, so a header the audit accepts is refused here.\nFINDING tests/test_a_fragment_reconciles_with_its_cited_logs.py:108 non-blocking: the assertion reddens on the missing-revision branch at reckon/crew/fragment_reconcile.py:150 rather than the proximity check at :161, and forcing _nearby to return True or deleting the summary-presence branch at :156 leaves all five cases green.\nFINDING manifest.md:14 non-blocking: the recorded two-file gate command has no log in the run directory, so the added test file's passes are claimed rather than recorded.\nFINDING reckon/crew/fragment_reconcile.py:176 non-blocking: no production call site invokes the check.\n",
+  "review_run_id": "r-20261120T213507342182-review-of-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-3744825f6204",
+  "reviewed_base_sha": "97de208c74fcf7c962b92c8ef272d372234a532c",
+  "reviewed_head_sha": "3744825f6204499d25080cdabb6c23749835a920",
+  "reviewed_run_id": "r-20261118T054310379573-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies",
+  "scores": {
+    "durability": 9,
+    "evidence": 8,
+    "fit": 15,
+    "goal_fidelity": 11,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:40:28.188500+00:00",
+  "total": 60
+}
