@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="utf-8" data-node="qwnw-red-file-run-state-reads-what-the-worker-reached">
+<head>
+<meta charset="utf-8">
+<title>run state reads what the worker reached</title>
+</head>
+<body>
+<article id="qwnw-red-file-run-state-reads-what-the-worker-reached">
+<h1 id="qwnw-red-file-run-state-reads-what-the-worker-reached-heading">Run state reads what the worker reached</h1>
+
+<section id="qwnw-red-file-run-state-reads-what-the-worker-reached-red">
+<h2>What was red at the base revision</h2>
+<p>At <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> the file read
+<code>1 failed, 4 passed</code>. The failing id was
+<code>tests/test_run_state_reads_what_the_worker_reached.py::test_an_exited_worker_with_committed_work_and_an_open_status_reads_its_own_state</code>,
+stopping at line 179 on <code>TypeError: unsupported operand type(s) for +</code>.</p>
+<p>The classification half of the test already held: the live pointer classifies as
+<code>exited-unfinished</code>, the run separates <code>blocked</code> from
+<code>unreadable</code>, and its next action names
+<code>row["next_action"]</code> names the repair command.</p>
+</section>
+<section id="node-head-evidence">
+<h2>Head and negative-control evidence</h2>
+<p>Base red log <code>negative-control-base.log</code>: <code>1 failed, 4 passed</code>, <code>EXIT=1</code>.</p>
+<p>Head gate job on all_debug at <code>fb18ca80b237e31dbebbbed03367fee159483568</code>: <code>5 passed</code>, <code>EXIT=0</code>, log <code>scoped-gate-1795062557884016744.log</code>.</p>
+</section>
+<section id="node-cause">
+<h2>Cause and verdict</h2>
+<p><strong>Product.</strong> <code>_fleet_counts</code> installed its promotion figures whenever a row carried a delivery key, testing for <code>None</code> alone, while the classifier writes an empty reading for a run with nothing delivered. The counts then carried a <code>None</code> beside the three buckets. The gate now requires a reading with a status; no assertion was removed or weakened and the test file is unchanged.</p>
+</section>
+<section id="node-arms">
+<h2>Declared suite arms</h2>
+<p>Base <code>42fe90d0b0a4</code>: <code>58 passed</code>, <code>EXIT=0</code> (<code>baseline_suite-arm.log</code>). Head <code>fb18ca80b237e31dbebbbed03367fee159483568</code>: <code>58 passed</code>, <code>EXIT=0</code>, log <code>after_suite-arm.log</code>.</p>
+</section>
+</article>
+</body>
+</html>
