@@ -150,6 +150,56 @@ def test_two_presenting_sessions_are_handed_each_decision_once(fleet):
     }
 
 
+def test_two_sessions_claiming_at_once_leave_one_presenter(fleet):
+    """Simultaneous claims: one wins, one is refused, and one claim exists.
+
+    The claim is a read of "no claim yet" followed by a write of one, so the two
+    halves race. The claim is taken under the decision's own lock, and this test
+    starts both sessions on a barrier, so a regression that drops the lock lets
+    both write and both return a claim, which fails here.
+    """
+    import threading
+
+    from reckon.crew.decision_answers import claim_presentation, presenting_claims
+    from reckon.crew.lead_decisions import record_decision
+
+    _home, _mounts, _sessions = fleet
+    decision = record_decision(_record("sample"))
+    start = threading.Barrier(2)
+    outcomes: dict[str, object] = {}
+
+    def take(session: str) -> None:
+        start.wait()
+        try:
+            outcomes[session] = claim_presentation(decision["id"], session=session)
+        except ValueError as exc:
+            outcomes[session] = exc
+
+    threads = [
+        threading.Thread(target=take, args=(session,))
+        for session in ("raced-a", "raced-b")
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    winners = [
+        session for session, outcome in outcomes.items() if isinstance(outcome, dict)
+    ]
+    refused = [
+        session
+        for session, outcome in outcomes.items()
+        if isinstance(outcome, ValueError)
+    ]
+    assert len(winners) == 1, outcomes
+    assert len(refused) == 1, outcomes
+    claims = [
+        claim for claim in presenting_claims() if claim["decision_id"] == decision["id"]
+    ]
+    assert [claim["session"] for claim in claims] == winners
+
+
 def test_ready_choices_precede_plan_block_ones_with_absent_fields(fleet):
     """The ready decision is offered first; the plan-block one names what it
     does not have instead of reporting it as empty."""
@@ -167,6 +217,10 @@ def test_ready_choices_precede_plan_block_ones_with_absent_fields(fleet):
     assert view["choices"][0]["releases"]["requests"] == ["held-request"]
     assert view["choices"][0]["releases"]["count"] == 1
     assert view["choices"][0]["absent"] == []
+    # The lead answers what the owner wrote: the question and its context are
+    # the record's own words, not a summary of them.
+    assert view["choices"][0]["question"] == ready["question"]
+    assert view["choices"][0]["context"] == ready["context"]
 
     plan_block = view["choices"][1]
     assert plan_block["repository"] == "companion"
@@ -235,16 +289,27 @@ def test_an_answer_is_recorded_through_the_presenting_session(fleet):
     assert lead_presentation.present(session="other")["choices"] == []
 
 
-def test_the_present_verb_prints_the_choice_set() -> None:
-    """The CLI form the skill runs is the presentation, not a second reading."""
+def test_the_present_verb_prints_the_choice_set(fleet):
+    """The CLI form the skill runs is the presentation, not a second reading.
+
+    The verb is asserted at exit 0 and on its payload: an exit status that also
+    admits a refusal would leave the printed set untested on exactly the path a
+    regression shows up in.
+    """
+    from reckon.crew.lead_decisions import record_decision
+
+    _home, _mounts, _sessions = fleet
+    decision = record_decision(_record("sample"))
+
     result = CliRunner().invoke(
         main, ["crew", "decision", "present", "--session", "probe", "--pretty"]
     )
-    assert result.exit_code in (0, 1), result.output
-    if result.exit_code == 0:
-        payload = json.loads(result.output)
-        assert payload["view"] == "lead-choices"
-        assert "unread_projects" in payload
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["view"] == "lead-choices"
+    assert "unread_projects" in payload
+    assert [item["id"] for item in payload["choices"]] == [decision["id"]]
+    assert payload["choices"][0]["question"] == decision["question"]
 
 
 def test_a_refused_project_is_named_and_does_not_reorder_the_fleet(

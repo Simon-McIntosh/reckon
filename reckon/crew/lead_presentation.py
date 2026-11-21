@@ -21,14 +21,13 @@ the answer lands in the plan.
 
 from __future__ import annotations
 
-import hashlib
 import json
-import re
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon.crew.decision_answers import readably_named
 from reckon.crew.run_paths import crew_home
 
 #: The read's lists a presenting session offers, in the order it offers them,
@@ -318,17 +317,15 @@ def release(*, session: str, decision_id: str | None = None) -> dict[str, Any]:
 def ask_path(session: str) -> Path:
     """The file holding the one ask sent to one live session.
 
-    A session's own id is not a filename — it may carry slashes and capitals —
-    so the readable part is stripped to safe characters and a digest keeps two
-    ids that strip alike apart.
+    The name is the one the answer store gives every identity it files: a
+    session id may carry slashes and capitals, so the shared rule strips it and
+    appends a digest, and two sessions whose ids read alike keep their own ask.
     """
-    readable = re.sub(r"[^a-z0-9.-]+", "-", str(session).lower()).strip("-")
-    digest = hashlib.sha256(str(session).encode("utf-8")).hexdigest()[:8]
     return (
         crew_home()
         / "decisions"
         / "asks"
-        / f"{(readable or 'session')[-60:]}-{digest}.json"
+        / f"{readably_named(session, fallback='session')}.json"
     )
 
 

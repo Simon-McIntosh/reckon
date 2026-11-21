@@ -1,0 +1,158 @@
+<section id="ldop-one-session-presents-the-decisions-as-choices-evidence">
+<h2>One session presents the lead's open decisions as choices</h2>
+<p>The node ships a skill (<code>skills/reckon-select/SKILL.md</code>) and the
+three verbs it names: <code>crew decision present</code>,
+<code>crew decision choose</code> and <code>crew decision release</code>. The
+presentation is a thin layer over the one decision read — a choice is the read's
+own row plus the releases a decision frees and the fields a row cannot carry —
+so no second derivation of what waits on the lead exists.</p>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-contract-fails-at-base">The negative control: at the base revision the skill does not exist</h3>
+<p>Four tests hold the contract the done-when asks for — the installer's own
+enumeration reaches the skill, every command the skill cites resolves, the
+<code>reckon-build</code> inventory names the presenting verbs, and the skill
+names the presenting session and the choice fields. Extracted at the base
+revision, all four fail; the same file passes at the head.</p>
+<pre># measure/negative-control.log
+# revision 130892970e904f7352b96ab87d17c83fcee24aff
+# tree /tmp/reckon-crew-scratch/.../ldop-base
+# module .../ldop-base/reckon/__init__.py
+# cwd /tmp/reckon-crew-scratch/.../ldop-base
+# command PYTHONPATH=. .../.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_select_skill_contract.py
+FFFF                                                                     [100%]
+FAILED tests/test_select_skill_contract.py::test_the_select_skill_is_discovered_beside_the_other_reckon_skills
+FAILED tests/test_select_skill_contract.py::test_every_command_the_select_skill_cites_resolves
+FAILED tests/test_select_skill_contract.py::test_the_decisions_surface_carries_the_presenting_verbs
+FAILED tests/test_select_skill_contract.py::test_the_select_skill_names_the_presenting_session_and_the_choice_fields
+4 failed in 1.22s
+EXIT=1
+</pre>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-head-tests">The same tests pass at the head</h3>
+<pre># measure/head-tests.log
+# revision 81b39dc9bb
+# tree .../ldop-one-session-presents-the-decisions-as-choices
+# command PYTHONPATH=. .../.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_session_presents_the_decisions_as_choices.py tests/test_select_skill_contract.py
+..........                                                               [100%]
+10 passed in 6.87s
+EXIT=0
+</pre>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-guard">The guard fires when the merged list's re-sort is removed</h3>
+<p>One unreadable document refuses the fleet read, so the read falls back to
+per-project reads; each of those returns decisions in that project's own order,
+and the merged lists are therefore sorted again by the read's own held-work key.
+With the re-sort removed from the merged lists, the fleet order changes and the
+guard's test fails — the ordering rule lives in the read, and the presentation
+cannot silently lose it.</p>
+<pre># measure/merge-sort-mutation.log
+# tree /tmp/reckon-crew-scratch/.../mutation (committed HEAD with the merge re-sort removed)
+# command PYTHONPATH=. .../.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_session_presents_the_decisions_as_choices.py -k reorder
+F                                                                        [100%]
+________ test_a_refused_project_is_named_and_does_not_reorder_the_fleet ________
+  Full diff:
+    [
+  +     '1f735af4-33dc-47f8-8d60-38a5e0c3bf66',
+        'a126b752-f7b0-4c74-a816-0fd627c27ab5',
+  -     '1f735af4-33dc-47f8-8d60-38a5e0c3bf66',
+    ]
+1 failed, 5 deselected in 0.34s
+EXIT=1
+</pre>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-rehearsal">The presentation over the lead's own recorded state</h3>
+<p>Rehearsed against copies of the live fleet: its live pointers and decision
+records, the mounted plan documents of <code>reckon</code>,
+<code>imas-ambix</code>, <code>nova</code> and <code>tessera</code>, and the live
+harness session directory. One presentation returned <strong>42 choices</strong>
+— 12 ready decisions and 30 plan-block rows — from four projects
+(<code>reckon</code> 17, <code>imas-ambix</code> 15, <code>tessera</code> 6,
+<code>nova</code> 4), with the held work first and the plan-block rows last.</p>
+<pre># measure/rehearsal-final.json
+"present_exit": 0, "count": 42
+"unread_projects": [{"project": "imas-efit",
+   "detail": "research/corsica-boundary-gap.html: location type 'research' conflicts with reckon-type 'plan'"}]
+"states": {"ready": 12, "plan-block": 30}
+"repositories": {"reckon": 17, "imas-ambix": 15, "tessera": 6, "nova": 4}
+held_work_count, in presented order: [2, 1, 1, 1, 1, 1, 1, 1, ...]
+first row:  reckon  crew-state-stays-bounded §4 — held 2,
+            releases {"count": 2, "requests": ["r-20261027T092539309658-the-old-event-logs-are-retired"],
+                      "runs": [], "sections": ["§4"]}
+last row:   tessera tessera-interface-traceability — plan-block,
+            absent ["session", "recorded_at", "held_work"], held_work_count null
+</pre>
+<p>The one document the fleet cannot parse is named rather than swallowing the
+read: <code>imas-efit</code> reports the conflicting document above, and the
+other four projects still present the counts quoted here.</p>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-survey">The survey asks in writing and names the sessions it could not reach</h3>
+<p>Every presentation opens with the survey: a session holding an unanswered
+decision without a record is asked in writing, once, and the ask list comes back
+with the presentation. On this fleet every reachable session already carries a
+record, so nothing new was asked; three replied with a record and 30 were
+unreachable with the reason named, never assumed to have answered.</p>
+<pre># measure/rehearsal-final.json
+"asked": [], "already_asked": [], "survey_error": null
+"replied": ["67139f13-acc5-4116-8e4d-ecb63acaac2c",
+            "d2b31d35-d43f-471c-8494-93ef30b1d4b5",
+            "efd0ee8c-9d4e-4fa3-a440-ac05791d4758"]
+"unreached": 30 rows, each {"detail": "no harness record names a live process for this session"}
+</pre>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-answers">Three answers recorded, and the held request freed</h3>
+<p>Three decisions were answered through the verbs the skill names, across two
+projects, each with the option the choice recommended. The crew-record decision
+reports <code>answer_via: "presenting-session"</code>; the two plan-scoped ones
+lock through the same verb and report no such field, because a plan lock records
+who locked it, not which session presented it.</p>
+<pre># measure/rehearsal-final.json
+{"id": "eeb1cdbc-cb5e-41e1-8369-89a1b721dc9c", "option": "revised-basis", "exit": 0,
+ "choice": "revised-basis", "answered_at": "2026-11-21T22:11:45.679626+00:00",
+ "answer_via": "presenting-session"}
+{"id": "plan:imas-ambix:jt60sa-pulse-ids:topology-source", "option": "eqdb-record",
+ "exit": 0, "choice": "eqdb-record", "answered_at": "2026-11-21T22:11:54.236110+00:00"}
+{"id": "plan:nova:inverse-equilibrium-baseline:reduced-reconstructions", "option": "supersede",
+ "exit": 0, "choice": "supersede", "answered_at": "2026-11-21T22:12:13.433642+00:00"}
+</pre>
+<p>The first decision held a request, and the answer freed it. No request on
+today's fleet carries the <code>--awaiting lead --decision</code> binding — that
+binding is what this plan exists to give the fleet — so the rehearsal placed it
+through the hold verb the fleet already has, over a copy of a live held request.
+The presentation then showed the request under the answer: held work 1, releases
+naming it. The admission pass's own release stage moved it out of
+<code>held</code>, back to the phase it came from.</p>
+<pre># measure/rehearsal-final.json
+"bound_hold": {"ok": true, "count": 1,
+  "held": [{"run_id": "r-20261114T144526369757-icm-forward-solve-iron",
+            "awaits": "lead", "phase": "held"}]}
+presented order: the bound decision is 12 of 42 — held_work_count 1,
+  releases {"count": 1, "requests": ["r-20261114T144526369757-icm-forward-solve-iron"]}
+"released": ["r-20261114T144526369757-icm-forward-solve-iron"]
+phases: held -> awaiting-upstream (its phase before the hold)
+</pre>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-live-untouched">The answers land in the copies; the live plans do not move</h3>
+<p>Answering a plan-scoped decision writes the plan document, so the rehearsal
+runs over copies of the mounted plans. The two live documents the render would
+have written were hashed before and after the whole rehearsal and are unchanged;
+the copies the decision records were answered in differ from them, which is
+where the lock landed.</p>
+<pre># measure/rehearsal-final.json
+"live_untouched": true
+witness before  imas-ambix/docs/plans/jt60sa-pulse-ids.html          e26fdceb26f2f975
+                nova/docs/plans/inverse-equilibrium-baseline.html    f181d78287814df2
+witness after   imas-ambix/docs/plans/jt60sa-pulse-ids.html          e26fdceb26f2f975
+                nova/docs/plans/inverse-equilibrium-baseline.html    f181d78287814df2
+the copies      the same two files under the rehearsal mounts       970bae354a703052 / 293db179e3693dbd
+</pre>
+
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-limits">What the rehearsal does not show</h3>
+<p>Two limits are recorded rather than hidden. Who answered a plan-scoped
+decision is not written beside the lock, so <code>answer_via</code> is
+<code>null</code> for the two plan rows. And an answer written under a live run's
+environment is refused by the run-scoped write guard:
+<code>crew decision choose --id plan:…</code> returns <code>was not locked:
+run_scoped_write</code> while <code>RECKON_RUN_ID</code> is set. The rehearsal
+clears that variable for the child process; the presenting session the skill
+describes is a lead's session, which carries no run id.</p>
+</section>
