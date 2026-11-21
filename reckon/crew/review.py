@@ -506,6 +506,40 @@ FIGURE_VERDICTS_KEY = "figures"
 # repaired by opening the figure and an item name alone does not say which one.
 FIGURE_VERDICT_SHORTFALLS_KEY = "figure_verdict_shortfalls"
 
+# The verdict lines a figure reviewer writes, one per rubric item, in the form
+# the figure brief asks for. A record that stores those lines without also
+# folding them into an item map was read as carrying no verdict at all, and a
+# complete review was refused naming every item it had just answered. The lines
+# are therefore a spelling of the same measurement as ``rubric_items``, folded
+# to one map before any reader judges the record, exactly as a claims record's
+# ``claim_verdicts`` folds to ``claims``.
+FIGURE_LINES_KEY = "rubric_lines"
+FIGURE_LINE_RE = re.compile(
+    r"^\s*RUBRIC\s+(?P<item>[A-Za-z0-9_]+)\s*:\s*(?P<verdict>.*)$"
+)
+
+
+def figure_line_verdicts(record: Mapping[str, Any]) -> dict[str, str]:
+    """The item verdicts a record states as ``RUBRIC <item>: <verdict>`` lines.
+
+    A line whose verdict is blank states nothing, so its item is left out and
+    reads as missing rather than as checked. The first line for an item wins,
+    because a duplicate line is not a second verdict on the same item.
+    """
+    lines = record.get(FIGURE_LINES_KEY)
+    if not isinstance(lines, (list, tuple)):
+        return {}
+    stated: dict[str, str] = {}
+    for line in lines:
+        match = FIGURE_LINE_RE.match(str(line))
+        if not isinstance(match, re.Match):
+            continue
+        item = match.group("item")
+        verdict = match.group("verdict").strip()
+        if verdict and item not in stated:
+            stated[item] = verdict
+    return stated
+
 
 def figure_rubric_verdicts(
     record: Mapping[str, Any],
@@ -519,7 +553,10 @@ def figure_rubric_verdicts(
     counted one figure's verdict for another's would report a review nobody
     made. A record stating its verdicts flat — one figure's record, the shape
     written before several figures shared a review — is returned as it stands,
-    with no shortfall, so its reading does not move.
+    with no shortfall, so its reading does not move. An item the flat map does
+    not name is taken from the record's ``RUBRIC <item>: <verdict>`` lines, so
+    a record that answered its rubric in the form the brief asks for and never
+    folded it to an item map is read by the same verdict its reviewer wrote.
     """
     flat = record.get("rubric_items")
     stated = (
@@ -527,6 +564,8 @@ def figure_rubric_verdicts(
         if isinstance(flat, Mapping)
         else {}
     )
+    for item, verdict in figure_line_verdicts(record).items():
+        stated.setdefault(item, verdict)
     figures = record.get(FIGURE_VERDICTS_KEY)
     if not isinstance(figures, Mapping):
         return stated, []

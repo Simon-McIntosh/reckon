@@ -1880,14 +1880,15 @@ def _figure_missing_measures(review: Mapping[str, Any]) -> list[str]:
     """The figure rubric items a record carries no verdict for.
 
     A verdict line that states nothing is not a verdict, so an item whose value
-    is blank is reported missing rather than taken as checked. A
-    ``rubric_items`` value that is not a mapping cannot name the items it
-    carries, so every item is reported missing rather than iterated over
-    something that does not answer.
+    is blank is reported missing rather than taken as checked. A record that
+    states its verdicts as ``RUBRIC <item>: <verdict>`` lines rather than as a
+    ``rubric_items`` map is read through the same fold every other rubric
+    reader uses, so a review answered in the form its brief asks for is not
+    refused naming the items it carries. A record carrying no verdict in either
+    shape names no items, so every item is reported missing rather than the
+    record iterated over something that does not answer.
     """
-    items = review.get("rubric_items")
-    if not isinstance(items, Mapping):
-        return list(review_module.FIGURE_REVIEW_ITEMS)
+    items, _shortfalls = review_module.figure_rubric_verdicts(review)
     return [
         item
         for item in review_module.FIGURE_REVIEW_ITEMS
