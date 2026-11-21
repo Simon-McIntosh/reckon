@@ -208,6 +208,27 @@ def test_a_script_comment_survives_beside_the_ids(sandbox):
     assert SESSION in comment and RUN in comment, comment
 
 
+def test_an_option_after_a_script_comment_is_still_a_directive():
+    comment, kept = nested_launch._script_comment(
+        ["#SBATCH --comment=a --partition=gpu"]
+    )
+
+    assert comment == "a", comment
+    assert kept == ["#SBATCH --partition=gpu"], (
+        f"an option declared beside the script's comment was swallowed into "
+        f"the comment text: {kept}"
+    )
+
+
+def test_a_multi_word_script_comment_keeps_its_words():
+    comment, kept = nested_launch._script_comment(
+        ["#SBATCH --comment=nightly calibration", "#SBATCH --partition=all_debug"]
+    )
+
+    assert comment == "nightly calibration", comment
+    assert kept == ["#SBATCH --partition=all_debug"], kept
+
+
 def test_a_fleet_allocation_is_found_once_its_comment_gains_an_owner():
     owner = "reckon session=0f6b2a4c-session run=r-20260101T000000000000-fleetish"
     rows = [
@@ -235,15 +256,16 @@ def test_a_composed_dispatch_launch_hands_its_worker_the_session(
         worktree=str(tmp_path),
         fence=False,
     )
-    # The session is what the run's record carries, read here exactly as the
-    # launch reads it rather than handed to the composition as a literal.
+    # The session is what the run's record carries, read through the launch's
+    # own reader rather than spelled out here, so a change to where the record
+    # keeps it moves this case with the code.
     record = {"session": SESSION}
     composed = dispatch_launch._worker_runtime_plan(
         plan,
         run_id=RUN,
         manifest_path=str(tmp_path / "manifest.md"),
         attempt_started_at="2026-01-01T00:00:00Z",
-        coordinator_session=str(record.get("session") or ""),
+        coordinator_session=dispatch_launch.coordinator_session(record),
     )
 
     assert composed.environment.get("RECKON_SESSION_ID") == SESSION, (

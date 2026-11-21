@@ -905,34 +905,22 @@ def owner_comment(environ: Mapping[str, str]) -> str:
     return ""
 
 
-def with_owner_comment(argv: Sequence[str], environ: Mapping[str, str]) -> list[str]:
-    """The argv with the submitting run's owner added to its comment field.
+def with_owner_comment(
+    argv: Sequence[str],
+    environ: Mapping[str, str],
+    *,
+    text: str = "",
+) -> list[str]:
+    """The argv with its comment field carrying ``text`` and the run's owner.
 
-    A comment the caller supplied is kept and the owner is appended to it, so
-    a site that names its own reason for the job does not lose it. The scan
-    stops at the first operand, because from there the words belong to the
-    launched command rather than to the scheduler.
+    A comment the caller supplied is kept, ``text`` lifted out of a submitted
+    script is merged beside it, and the owner is appended, so a site that names
+    its own reason for the job does not lose it. The scan stops at the first
+    operand, because from there the words belong to the scheduler's command
+    rather than to its options.
     """
-    owner = owner_comment(environ)
-    arguments = list(argv)
-    if not owner:
-        return arguments
-    for index, argument in enumerate(arguments):
-        if argument == "--":
-            break
-        if argument.startswith("--comment="):
-            arguments[index] = f"{argument} {owner}"
-            return arguments
-        if argument == "--comment":
-            following = index + 1
-            if following < len(arguments) and not arguments[following].startswith("-"):
-                arguments[following] = f"{arguments[following]} {owner}"
-            else:
-                arguments[index] = f"--comment={owner}"
-            return arguments
-        if not argument.startswith("-"):
-            break
-    return [f"--comment={owner}", *arguments]
+    parts = [part for part in (text.strip(), owner_comment(environ)) if part]
+    return with_comment_text(argv, " ".join(parts))
 
 
 def _batch_directives(script: bytes) -> list[str]:
@@ -960,29 +948,45 @@ def _script_comment(directives: Sequence[str]) -> tuple[str, list[str]]:
     text = ""
     kept: list[str] = []
     for line in directives:
-        body = line.strip()[len("#SBATCH") :].strip()
-        declared = ""
-        rest = body
-        at = body.find("--comment=")
-        if at >= 0:
-            declared = body[at + len("--comment=") :].strip()
-            rest = body[:at].strip()
-        else:
-            at = body.find("--comment")
-            if at >= 0 and body[at + len("--comment") :][:1].isspace():
-                declared = body[at + len("--comment") :].strip()
-                rest = body[:at].strip()
-        if not declared:
+        words = line.strip()[len("#SBATCH") :].split()
+        declared: list[str] = []
+        rest: list[str] = []
+        found = False
+        index = 0
+        while index < len(words):
+            word = words[index]
+            if word == "--comment" or word.startswith("--comment="):
+                found = True
+                if word.startswith("--comment=") and word[len("--comment=") :]:
+                    declared.append(word[len("--comment=") :])
+                index += 1
+                # A directive's comment runs to the next option word, so an
+                # option declared after it stays an option instead of being
+                # swallowed into the comment text.
+                while index < len(words) and not words[index].startswith("-"):
+                    declared.append(words[index])
+                    index += 1
+                continue
+            rest.append(word)
+            index += 1
+        if not found:
             kept.append(line)
             continue
-        text = f"{text} {declared}".strip()
+        text = " ".join(filter(None, [text, " ".join(declared)])).strip()
         if rest:
-            kept.append("#SBATCH " + rest)
+            kept.append("#SBATCH " + " ".join(rest))
     return text, kept
 
 
-def _with_comment_text(argv: Sequence[str], text: str) -> list[str]:
-    """The argv with ``text`` merged into its comment field, other words kept."""
+def with_comment_text(argv: Sequence[str], text: str) -> list[str]:
+    """The argv with ``text`` merged into its comment field, other words kept.
+
+    The one scan of a scheduler command line's option words that places comment
+    text: a caller's existing comment keeps its words, ``text`` follows them,
+    and the field is prepended when the argv carries none. The owner comment
+    and a submitted script's directive both merge through this, so the two
+    cannot disagree about where a comment belongs.
+    """
     if not text:
         return list(argv)
     arguments = list(argv)
@@ -1069,7 +1073,7 @@ def fenced_scheduler_task(
         raise ValueError("fenced sbatch script must start with an interpreter shebang")
     command = _task_command(recipe, operands[1:], script=script)
     script_comment, directives = _script_comment(_batch_directives(script))
-    options = _with_comment_text(options, script_comment)
+    options = with_comment_text(options, script_comment)
     wrapper = "\n".join(["#!/bin/sh", *directives, "exec " + shlex.join(command), ""])
     # The scheduler spools this stdin script before exec returns. An anonymous
     # file keeps it alive through exec without leaving a wrapper on disk.
