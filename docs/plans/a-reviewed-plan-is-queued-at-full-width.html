@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Dispatching a plan queues every implementable section, unqueued reviewed plans are obligations, and waits nothing can release are removed.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="13.0">
+  <meta name="plan-effort-hours" content="11.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -19,9 +19,9 @@
   <meta name="plan-sprint" content="S28">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-after" content="queued-work-needs-no-workaround">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s2&quot;],&quot;s2&quot;:[&quot;queued-work-needs-no-workaround#s3&quot;],&quot;s3&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s2&quot;],&quot;s7&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s2&quot;,&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;],&quot;s8&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s7&quot;],&quot;s9&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-after" content="building-a-plan-queues-all-of-it">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s2&quot;],&quot;s7&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;],&quot;s8&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s7&quot;],&quot;s9&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -47,14 +47,12 @@
         <tr><td>power_convertor</td><td>1</td><td>1</td><td>0</td></tr>
       </tbody>
     </table>
-    <p>That is 298 declared sections and 28 requests. Some of the 298 are held for good reason: an unreviewed plan, an open decision, a plan no live session owns. The count does not separate those, and nothing in reckon does either, which is the first gap. The second is that <code>crew dispatch</code> queues one section unless a coordinator writes a batch file, so full width depends on each session remembering a rule. The third is that no dispatch records whether it came as a whole plan, so the question the lead asked cannot be answered from the records.</p>
+    <p>That is 298 declared sections and 28 requests. Some of the 298 are held for good reason: an unreviewed plan, an open decision, a plan no live session owns. The count does not separate those, and nothing in reckon does either, which is the first gap. The second is that the call which queues a whole plan exists (§2) but nothing makes a session use it, so full width depends on each session remembering a rule. The third is that no dispatch records whether it came as a whole plan, so the question the lead asked cannot be answered from the records.</p>
     <p>Of the 18 requests waiting at the same time, 7 waited on sections nobody was building, 3 to 25 days old. Two of those were in the phase that says their upstream can no longer land. The lost-session plan reports an idle wait once and removes a wait it classes as stranded; these two were classed idle, so they were reported and left.</p>
 
-    <h2 id="s2">§2 — Dispatching a plan with no section queues every implementable section</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="implementable"></section>
-    <p><strong>Deliverable.</strong> A dispatch that names a plan and no section queues one request for every section of that plan declared implementable that has no live request, in one call. Each request takes its goal, write paths, waits and negative control from its section. A section that cannot be queued is refused by name with its reason and does not stop the rest. A dispatch that names a section behaves as it does today.</p>
-    <p><strong>Done when.</strong> <code>tests/test_a_plan_dispatch_queues_every_implementable_section.py</code> passes, covering: a plan with four implementable sections, one of which already has a live request, queues exactly the other three; a section whose declared wait has not landed is stored awaiting its upstream and not launched; a section with no done-when is refused naming that section while the others are queued; a second identical call queues nothing and returns the existing requests; and a call naming one section queues that section alone. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests importing the dispatch command module add no failure against the base on <code>all_debug</code>.</p>
-    <p><strong>Negative control.</strong> On main after <code>130892970e</code> the first case must fail with the call refused for want of a section.</p>
+    <h2 id="s2">§2 — Dispatching a plan with no section already queues every implementable section</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="done"></section>
+    <p>This section is not built here. It was delivered on 14 November 2026 by <code>building-a-plan-queues-all-of-it</code> §2 (commit <code>74fd70f0e7</code>, covered by <code>tests/test_a_plan_dispatch_queues_every_section.py</code>): <code>reckon crew dispatch --project P --plan SLUG --session S</code> with no section queues one request for every section the plan declares implementable, with its waits. The first draft of this plan proposed it again because its author did not find the earlier plan; the count in §1 stands, and what it shows is that the call exists and is not being used. §4 and §7 are what make it used.</p>
 
     <h2 id="s3">§3 — A request records the width it was dispatched at</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="implementable"></section>
