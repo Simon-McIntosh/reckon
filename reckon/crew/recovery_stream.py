@@ -8,6 +8,7 @@ from statistics import median
 from typing import Any, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
+from reckon._worker_fence import BackendError
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     WAITING_REQUEST_PHASES,
@@ -88,7 +89,16 @@ def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
     key = _completion_stamp_key(record)
     if key is not None and key in _COMPLETION_STAMPS:
         return _COMPLETION_STAMPS[key]
-    stamp = _terminal_stream_data(record).completed_at
+    try:
+        stamp = _terminal_stream_data(record).completed_at
+    except BackendError:
+        # A stream its backend's dialect refuses carries no finish stamp this
+        # reader can take. A pointer moved to another harness keeps the stream
+        # its first harness wrote, and the refusal used to leave every
+        # classification of that run, and with it the whole pass that was
+        # classifying the project. The answer is not kept, so the stamp is
+        # read again once the pointer and its stream agree.
+        return None
     if key is not None:
         if len(_COMPLETION_STAMPS) >= _COMPLETION_STAMPS_LIMIT:
             _COMPLETION_STAMPS.clear()
