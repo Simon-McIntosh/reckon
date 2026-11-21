@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends
+from reckon._worker_fence import fence_program
 from reckon.crew import worker_behaviour as behaviour
 from reckon.crew.admission.selection import gate_admits_request
 
@@ -28,24 +29,40 @@ LOCAL_BACKENDS = {
 
 
 def _node(tmp_path: Path) -> dict[str, Path]:
-    """A node's run directory, worktree and delivery roots, laid out once."""
+    """A node's run directory, worktree, delivery roots and home, laid out once."""
     run_directory = tmp_path / "run"
     worktree = tmp_path / "worktree"
     delivery = tmp_path / "delivery"
-    for directory in (run_directory, worktree, delivery):
+    home = tmp_path / "home"
+    extra = tmp_path / "extra"
+    for directory in (run_directory, worktree, delivery, home, extra):
         directory.mkdir()
-    return {"run": run_directory, "worktree": worktree, "delivery": delivery}
+    return {
+        "run": run_directory,
+        "worktree": worktree,
+        "delivery": delivery,
+        "home": home,
+        "extra": extra,
+    }
 
 
-def _compose(node: dict[str, Path], name: str, backend) -> _backends.LaunchPlan:
+def _compose(
+    node: dict[str, Path],
+    name: str,
+    backend,
+    *,
+    fence: bool = True,
+    extra_write_roots: tuple[Path, ...] = (),
+) -> _backends.LaunchPlan:
     return _backends.launch_plan(
         backend_name=name,
         backend=backend,
         prompt="one node, one brief",
         worktree=node["worktree"],
         manifest_path=node["run"] / "manifest.md",
-        writable_directories=(node["delivery"],),
-        fence=False,
+        writable_directories=(node["delivery"], *extra_write_roots),
+        fence=fence,
+        fence_home=node["home"],
         behaviour_role=behaviour.IMPLEMENT_ROLE,
         flight_config={"local_backend": name, "backends": dict(LOCAL_BACKENDS)},
     )
@@ -58,21 +75,78 @@ def _treatments(node: dict[str, Path], names) -> dict[str, dict]:
     }
 
 
-def test_every_local_backend_gives_one_node_the_same_treatment(tmp_path: Path) -> None:
-    node = _node(tmp_path)
-    treatments = _treatments(node, tuple(LOCAL_BACKENDS))
+def _require_fence_program() -> None:
+    """Skip where no composing launch can produce protections rather than compare
+    two sets that are empty by construction.
+
+    Without the fence program no launch composes a fence at all, so the fence
+    protections and write roots this case exists to compare are empty for every
+    backend and equal for the wrong reason.
+    """
+    if not fence_program():
+        pytest.skip(
+            "the fence program (bwrap) is not installed on this host, so no "
+            "composed launch can produce fence protections to compare"
+        )
+
+
+def _assert_one_treatment(treatments: dict[str, dict]) -> None:
+    """Every backend's treatment equals the first, naming any that differs."""
     reference_name, reference = next(iter(treatments.items()))
     for name, treatment in treatments.items():
-        assert treatment == reference, (
-            f"backend {name!r} treats one node differently from {reference_name!r}"
+        differing = sorted(
+            dimension
+            for dimension in reference
+            if treatment.get(dimension) != reference[dimension]
         )
+        assert not differing, (
+            f"backend {name!r} treats one node differently from "
+            f"{reference_name!r} on "
+            + "; ".join(
+                f"{dimension}: {reference[dimension]!r} -> {treatment[dimension]!r}"
+                for dimension in differing
+            )
+        )
+
+
+def test_every_local_backend_gives_one_node_the_same_treatment(tmp_path: Path) -> None:
+    _require_fence_program()
+    node = _node(tmp_path)
+    treatments = _treatments(node, tuple(LOCAL_BACKENDS))
+    _assert_one_treatment(treatments)
+    reference = next(iter(treatments.values()))
     # The facts the lane owns, stated rather than implied: one inbox, one
-    # allowlist, one duty, one landing route, and one lane identity.
+    # allowlist, one duty, one landing route, one lane identity, and a fence
+    # that actually composed something for each backend.
     assert reference["lane"] == LANE_DOCUMENT
     assert reference["inbox_directory"] == str(node["run"] / "inbox")
     assert reference["mcp_server_allowlist"] is True
     assert reference["review_duty"] is True
     assert reference["landing_treatment"] == "promoted-under-its-lane"
+    for name, treatment in treatments.items():
+        assert treatment["fence_protections"], (
+            f"backend {name!r} composed no fence protections"
+        )
+        assert treatment["write_roots"], f"backend {name!r} composed no write roots"
+
+
+def test_a_backend_given_an_extra_write_root_differs_by_that_root(
+    tmp_path: Path,
+) -> None:
+    """Negative control: an extra write root on one backend is named."""
+    _require_fence_program()
+    node = _node(tmp_path)
+    treatments = _treatments(node, tuple(LOCAL_BACKENDS))
+    mutated = dict(treatments)
+    mutated["omp-local"] = _compose(
+        node,
+        "omp-local",
+        LOCAL_BACKENDS["omp-local"],
+        extra_write_roots=(node["extra"],),
+    ).worker_behaviour
+    with pytest.raises(AssertionError) as caught:
+        _assert_one_treatment(mutated)
+    assert str(node["extra"]) in str(caught.value)
 
 
 def test_a_launch_that_loses_its_inbox_is_not_the_same_treatment(
