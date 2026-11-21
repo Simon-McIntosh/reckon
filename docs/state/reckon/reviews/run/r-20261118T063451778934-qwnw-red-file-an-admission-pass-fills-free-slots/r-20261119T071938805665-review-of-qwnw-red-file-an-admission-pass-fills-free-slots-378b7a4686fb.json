@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:1665 compose_landed_record",
+    "reckon/evidence.py:1610 _fragment_body_bytes",
+    "reckon/crew/reports.py:2788 _fragment_plan_of"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:45:03Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence \"Every command in the table was afterwards re-run at the run's committed head\" overstates the record \u2014 no scheduler log carries 378b7a4686 (the newest passing scoped gate, scoped-gate-1795069819195546764.log, runs at f9594a2be155, whose tree differs from the delivered head only in this fragment) and the head's declared-suite arm is a local run, so a reader cannot tell which of the three rows was measured by a scheduler job at the delivered revision."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base local run is recorded as \"7 passed in 26.21s\" with the log cell reading \"node shell, EXIT=0\" and no path, so the figure that the first row rests on is a claim no reader can open; only the all_debug job at the same revision (scoped-gate-1795068396469106880.log) corroborates it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header \"The failures seen on a loaded host\" is offered where the done_when asked for the measure's negative control, but the two red logs it cites (local-rerun-1.log, single-2.log) show only the test's own 15-second deadline (tests/test_an_admission_pass_fills_free_slots.py:221) expiring and evidence no co-running pytest process, so the load attribution behind \"Two of five local repetitions failed\" rests on the worker's account rather than on the receipts."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit across b24fe95a789c..378b7a4686fb; the range holds one commit (378b7a4686 test(admission): record that the pass-fills-free-slots file is green at base) adding one 70-line evidence fragment and nothing else.",
+    "done_when": "the done_when's measure is that file run as a job on all_debug with SLURM_JOB_ID unset; the manifest records that arm at the base revision (scoped-gate-1795068396469106880.log, EXIT=0, 7 passed in 23.86s) but its head arm is a local worktree run (fallback-local-1795070706.log), and no scoped-gate log carries the delivered head 378b7a4686.",
+    "goal": "the goal is that tests/test_an_admission_pass_fills_free_slots.py passes in full, and it does at the delivered revision \u2014 fallback-local-1795070706.log records 7 passed in 25.21s at 378b7a4686, and the file itself is untouched by the node (last changed at c70c6e73dc).",
+    "manifest": "read; it states status complete, names commit 378b7a4686 in commits, carries baseline_suite and after_suite as complete JSON arms (exit_status 0, failure_count 0, full 40-character revisions b24fe95a789.../378b7a4686f...) and records the post-07:25Z scheduler bwrap fault under outside_scope.",
+    "write_paths": "the manifest declares docs/evidence/fragments/queued-work-needs-no-workaround among the fenced paths, and the diff's one path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html is inside it."
+  },
+  "justifications": {
+    "durability": "the node adds no assertion, and the guard it relies on \u2014 tests/test_an_admission_pass_fills_free_slots.py:51-52, whose expectations are literals rather than values handed back to the code \u2014 was never exercised red, so nothing here shows the file reddens when the admission rule it measures is undone.",
+    "evidence": "the gate log scoped-gate-1795068396469106880.log measures the done_when's file on all_debug at the base revision with EXIT=0, but the head arm the manifest files (after_suite-plain-1795071814.log, fallback-local-1795070706.log) is a local worktree run, not the all_debug job the done_when names.",
+    "fit": "the fragment is a bare <section id=\"qwnw-red-file-an-admission-pass-fills-free-slots-landing\"> with h2 paragraphs and a table, the shape the 404 siblings under docs/evidence/fragments/queued-work-needs-no-workaround/ use, and every element id begins with the node id.",
+    "goal_fidelity": "tests/test_an_admission_pass_fills_free_slots.py passes in full at the delivered head (fallback-local-1795070706.log, 7 passed in 25.21s) and the commit adds no product code, so the green run rather than a repair is the deliverable the goal names.",
+    "reuse": "the diff adds no function, class or module; its composition is owned already by reckon/evidence.py:1610 _fragment_body_bytes, which returns a bare-section fragment unchanged, and a search of docs/evidence/fragments/queued-work-needs-no-workaround/ found no prior account of this run.",
+    "scope_discipline": "the diff's only path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html, inside the declared fragment scope, and it carries nothing beyond the run's own evidence."
+  },
+  "node": "review-of-qwnw-red-file-an-admission-pass-fills-free-slots-378b7a4686fb",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_an_admission_pass_fills_free_slots.py passes in full, and it does at the delivered revision \u2014 fallback-local-1795070706.log records 7 passed in 25.21s at 378b7a4686, and the file itself is untouched by the node (last changed at c70c6e73dc).\nVERDICT done_when: the done_when's measure is that file run as a job on all_debug with SLURM_JOB_ID unset; the manifest records that arm at the base revision (scoped-gate-1795068396469106880.log, EXIT=0, 7 passed in 23.86s) but its head arm is a local worktree run (fallback-local-1795070706.log), and no scoped-gate log carries the delivered head 378b7a4686.\nVERDICT write_paths: the manifest declares docs/evidence/fragments/queued-work-needs-no-workaround among the fenced paths, and the diff's one path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html is inside it.\nVERDICT manifest: read; it states status complete, names commit 378b7a4686 in commits, carries baseline_suite and after_suite as complete JSON arms (exit_status 0, failure_count 0, full 40-character revisions b24fe95a789.../378b7a4686f...) and records the post-07:25Z scheduler bwrap fault under outside_scope.\nVERDICT diff: read commit by commit across b24fe95a789c..378b7a4686fb; the range holds one commit (378b7a4686 test(admission): record that the pass-fills-free-slots file is green at base) adding one 70-line evidence fragment and nothing else.\nCALL_SITES: reckon/evidence.py:1665 compose_landed_record, reckon/evidence.py:1610 _fragment_body_bytes, reckon/crew/reports.py:2788 _fragment_plan_of\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_an_admission_pass_fills_free_slots.py passes in full at the delivered head (fallback-local-1795070706.log, 7 passed in 25.21s) and the commit adds no product code, so the green run rather than a repair is the deliverable the goal names.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate log scoped-gate-1795068396469106880.log measures the done_when's file on all_debug at the base revision with EXIT=0, but the head arm the manifest files (after_suite-plain-1795071814.log, fallback-local-1795070706.log) is a local worktree run, not the all_debug job the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's only path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html, inside the declared fragment scope, and it carries nothing beyond the run's own evidence.\nSCORE durability: 14\nJUSTIFICATION durability: the node adds no assertion, and the guard it relies on \u2014 tests/test_an_admission_pass_fills_free_slots.py:51-52, whose expectations are literals rather than values handed back to the code \u2014 was never exercised red, so nothing here shows the file reddens when the admission rule it measures is undone.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment is a bare <section id=\"qwnw-red-file-an-admission-pass-fills-free-slots-landing\"> with h2 paragraphs and a table, the shape the 404 siblings under docs/evidence/fragments/queued-work-needs-no-workaround/ use, and every element id begins with the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; its composition is owned already by reckon/evidence.py:1610 _fragment_body_bytes, which returns a bare-section fragment unchanged, and a search of docs/evidence/fragments/queued-work-needs-no-workaround/ found no prior account of this run.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html:17 non-blocking: the sentence \"Every command in the table was afterwards re-run at the run's committed head\" overstates the record \u2014 no scheduler log carries 378b7a4686 (the newest passing scoped gate, scoped-gate-1795069819195546764.log, runs at f9594a2be155, whose tree differs from the delivered head only in this fragment) and the head's declared-suite arm is a local run, so a reader cannot tell which of the three rows was measured by a scheduler job at the delivered revision.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html:36 non-blocking: the base local run is recorded as \"7 passed in 26.21s\" with the log cell reading \"node shell, EXIT=0\" and no path, so the figure that the first row rests on is a claim no reader can open; only the all_debug job at the same revision (scoped-gate-1795068396469106880.log) corroborates it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-fills-free-slots.html:55 non-blocking: the header \"The failures seen on a loaded host\" is offered where the done_when asked for the measure's negative control, but the two red logs it cites (local-rerun-1.log, single-2.log) show only the test's own 15-second deadline (tests/test_an_admission_pass_fills_free_slots.py:221) expiring and evidence no co-running pytest process, so the load attribution behind \"Two of five local repetitions failed\" rests on the worker's account rather than on the receipts.",
+  "review_run_id": "r-20261119T071938805665-review-of-qwnw-red-file-an-admission-pass-fills-free-slots-378b7a4686fb",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "378b7a4686fbb45b96a1c1c0d886b2d5996abb59",
+  "reviewed_run_id": "r-20261118T063451778934-qwnw-red-file-an-admission-pass-fills-free-slots",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T07:40:00Z",
+  "total": 103
+}

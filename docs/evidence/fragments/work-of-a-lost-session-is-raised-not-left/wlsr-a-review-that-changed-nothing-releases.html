@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence-fragment">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="fragment-node" content="wlsr-a-review-that-changed-nothing-releases">
+  <title>A review that changed no file releases cleanly</title>
+</head>
+<body>
+<article class="evidence-fragment" id="wlsr-a-review-that-changed-nothing-releases">
+  <h2>§13 — A review that changed no file releases cleanly</h2>
+
+  <p id="wlsr-a-review-that-changed-nothing-releases-which-half">Two halves had to agree before a
+  commitless review could release: the declaration reader, and the release
+  step that judges the field. The reader already existed and already
+  recognised the observed shapes. What was missing was the <em>release path
+  using it</em>: <code>landed_workspace_refusal</code> iterated the parsed
+  <code>commits</code> entries and resolved each as a revision. The list
+  reader leaves a prose declaration where a citation list would be, so
+  <code>none (read-only review run)</code> was asked of git as a revision and
+  refused with <code>manifest commit '…' does not resolve</code>. A bare
+  <code>none</code> survived only because the list reader empties a field that
+  holds nothing but an absence word.</p>
+
+  <p id="wlsr-a-review-that-changed-nothing-releases-repro">Reproduction at the
+  base revision, in a synthesised repository whose worktree sits clean on the
+  primary branch:</p>
+  <pre><code>none                                          -> ""
+none (read-only review run)                    -> "manifest commit '…' does not resolve"
+none — a read-only run has no commit to cite   -> "manifest commit '…' does not resolve"</code></pre>
+
+  <p id="wlsr-a-review-that-changed-nothing-releases-fix">The release step now
+  judges the field through
+  <code>_presented_commits_without_a_declaration</code>, the same reader
+  promotion uses, which returns no commits when a commitless role's field
+  declares an absence. All three observed spellings then release.</p>
+
+  <p id="wlsr-a-review-that-changed-nothing-releases-guards">The guards that must
+  survive do: a review worktree holding an uncommitted file is still refused,
+  naming the file, and an implement run whose manifest names a commit that
+  does not resolve is still refused.</p>
+
+  <p id="wlsr-a-review-that-changed-nothing-releases-measure"><strong>Measure.</strong>
+  <code>tests/test_a_review_that_changed_nothing_releases.py: 5 passed,
+  EXIT=0</code> at head. Negative control at the base revision: the first case
+  fails with the release refusal — <code>3 failed, 2 passed, EXIT=1</code>.
+  Adjacent release and promotion gates: <code>33 passed</code>.</p>
+</article>
+</body>
+</html>

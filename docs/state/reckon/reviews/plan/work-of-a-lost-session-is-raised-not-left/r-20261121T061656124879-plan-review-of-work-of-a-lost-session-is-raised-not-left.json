@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T06:18:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:240",
+      "id": "done_when-1",
+      "reason": "a \u00a726 worker will find a landed case red under its own required behaviour and must either weaken a \u00a76 requirement the plan never authorises changing or drop the fourth deliverable, so the plan needs to state whether \u00a76's no-owner case is superseded (and renamed to the no-session case) or whether the new naming is scoped to a path that leaves the shim's rule intact.",
+      "text": "\u00a726's fourth deliverable (\"a job reckon submits for a coordinator session with no run id names that session\") contradicts the landed \u00a76 case `test_a_submission_outside_any_run_adds_nothing` at `tests/test_a_scheduler_job_names_its_owner.py:163`, which submits with `session=SESSION, run=None` \u2014 a coordinator session with no run id \u2014 and asserts the comment is `None`; both go through `nested_launch.owner_comment`, which returns `\"\"` whenever `RECKON_RUN_ID` is absent, so the file cannot be green under both expectations without the plan saying which one changes",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "43f48118fa076fccb9208cb0f577158e32457e90",
+  "plan_fingerprint": "2baf7232a71073f4366deb9b167bc54cdca5fa24d389e1cde62baa468bf45bac",
+  "plan_slug": "work-of-a-lost-session-is-raised-not-left",
+  "plan_version": 64,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "bd8deb37960795cb804de4617d31fcafc4327d51",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "Section 26 now states that it replaces the landed expectation: the existing empty-comment case for a session with no run is rewritten to assert the session is named, and a submission with neither still adds nothing.",
+      "reason": "",
+      "when": "2026-11-21T06:31:42.242439+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "bd8deb37960795cb804de4617d31fcafc4327d51",
+      "commit_basis": "edit",
+      "note": "Section 26 now states that it replaces the landed expectation: the existing empty-comment case for a session with no run is rewritten to assert the session is named, and a submission with neither still adds nothing.",
+      "reason": "",
+      "when": "2026-11-21T06:31:42.242439+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-of-a-lost-session-is-raised-not-left/r-20261121T061656124879-plan-review-of-work-of-a-lost-session-is-raised-not-left.json",
+  "review_run_id": "r-20261121T061656124879-plan-review-of-work-of-a-lost-session-is-raised-not-left",
+  "reviewed_blob_sha": "5643e85ab8bd06b2ffb83107b53101f72f130c9b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited test modules `tests/test_a_scheduler_job_names_its_owner.py`, `tests/test_a_landed_head_is_not_landed_again.py` and `tests/test_worker_behaviour_is_the_same_on_every_harness.py` all exist, \u00a716 resolves as a section, and \u00a727's run id is given in full rather than truncated.",
+    "done_when": "a finding \u2014 \u00a726's done-when cannot be satisfied as written: its fourth deliverable requires the shim to name a session when no run id is present, and the landed \u00a76 case `tests/test_a_scheduler_job_names_its_owner.py:169` submits that exact shape and asserts no comment.",
+    "evidence_paths": "pass \u2014 every changed section's evidence is a test under `tests/` plus the run record's own gate log; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the new test filenames and the described behaviours are named by mechanism (`test_a_launch_records_its_nodes_role.py`, `test_a_resumed_launch_keeps_its_lane.py`, `test_a_message_reaches_a_seeded_inbox.py`), with no plan label, ticket number or version tag carried into a symbol or a file name.",
+    "reasoning": "pass \u2014 each stated root cause was checked against the tree and holds: `behaviour_role` defaults to `implement` at `reckon/_backends.py:3192` with no production caller passing it (\u00a725); the existing \u00a76 cases all hand `RECKON_SESSION_ID` in themselves at `tests/test_a_scheduler_job_names_its_owner.py:104` (\u00a726); `_backend_settings` rebuilds from a short field list with no `lane_document` and is called with `config=None` on the plain resume path at `reckon/crew/resumption.py:939` (\u00a728); `crew_tell` still branches on the dialect name at `reckon/crew_run_commands.py:2982` (\u00a729); and the equality test composes with `fence=False` at `tests/test_worker_behaviour_is_the_same_on_every_harness.py:48`, which does make the protections and write roots empty by construction (\u00a730).",
+    "single_goal": "pass \u2014 \u00a725 now carries only the recorded role; \u00a726's four deliverables are one capability (the scheduler job comment's owner provenance on one surface proven through four shapes); \u00a727, \u00a728, \u00a729 and \u00a730 each name one deliverable.",
+    "wiring": "pass \u2014 the declared waits (`s3`\u2192`s2`, `s4`\u2192`s2`,`s5`, `s5`\u2192`s2`, `s16`\u2192`s12`) all resolve to sections that exist, the followup `f-wlsr-001` restates exactly those waits, and \u00a728, \u00a729 and \u00a730 name no dependency because the upstream they build on (\u00a716) is declared done and has landed."
+  },
+  "section_digests": {
+    "_document": "cf268471c4e30d81e620325a2977af081a17b0a81f8e57f58691d60897b4b335",
+    "s1": "97d20596806fb031c34ba234b045b924725cca184c9388f84deb8af3eb261f80",
+    "s10": "6f44bf185ae0fc7e5f84b80cae1dcb50dd90023c3529bb6d1c3b410e5cd28b56",
+    "s11": "fa19054253211fb42f596e9c93dc65ceebd4a1aab844db1cb88dbd7d19ea621b",
+    "s12": "a864b5979050d34ceb0190d68bb129f05700640fec87e61674e144629f83a304",
+    "s13": "1ef1697f402f80e80931d4b5ebc2cc7b5809a3f6456ddef4669ad4089a89aae6",
+    "s14": "59df0cf0864078f32f7c9271b7e010f709b20c15735a3d96011098eadaa1e081",
+    "s15": "cf62f689211b44af7597aa45a4fec07ab06ff1ee61e47d0e5e3105f03bb0c281",
+    "s16": "6ae0e537f34a3d091c8552c4ed875f0082022dd873e2ac5036ef0ded0595a621",
+    "s17": "c06edbc8dfeb250470fb7dd3b41fa5a116791e56d12b27e32cd434fc2086135b",
+    "s18": "96c05bce6087ae1a3ee910220846ba1ec2847e3a7273b48c22e3dd9aecdcc422",
+    "s19": "6a73d4d2ca4bf3cbb6d7e90b8c3089e4be64e52827727988c69309062f74141e",
+    "s2": "26db713d5ea4030aa59a12228a900ca0ec942c80fd7c25ae2f23ce17c68e1cec",
+    "s20": "c5932b646d93f63d6bb200ccd9d622fb7068e270f01ef6e989265d7cde2bc89c",
+    "s21": "c5d6bfa9d6ac9335da56af60b650acc6f41bf7bb4d4a8750bf5141e26b5c50e6",
+    "s22": "a583f2deb2e87fcbe4a3a49bda90a7c9e46307856df9313fa8d347b57c5b030f",
+    "s23": "9dfec068439808ee048e58ef1e4e7dc8002bcb40cee464b25573d40eca78685d",
+    "s24": "7670046d7cddd47351903f17ba5b26f1b2bfbbcbda8bea2ab6ceb3dabab60455",
+    "s25": "4c1b3db805101f8bd62864669cf2a45db97f1d15357c17029ce046d786320679",
+    "s26": "11762fe818643dbb1b282898b031c2124565508cfd1df8845cf033669b8b7484",
+    "s27": "386e0d26905eb0d3fa0c5d4a363d9ff7f01ff8c0f4ab88802a1c342a505fb9c6",
+    "s28": "639ef90b7982af4336f066aa915a4e272b13765eaf556b0bbff0ee696cfe28d2",
+    "s29": "b5e6399bec15ce46966f01d95e20548270570f53e4b4ff24a6b24a08beae4d1b",
+    "s3": "36d2e2500f8d8b34f9a08006e3980de143b30d0d219a541fae72768d29dd88e7",
+    "s30": "83a8ecebde06ecff822faaff271d073fa3519bc6d0a7add822beac4eaaa5545f",
+    "s4": "4c9e804b0931d4eaa4cc0e387f126a2785223052e3f1bb082b948a2d149ecfb1",
+    "s5": "b9552e1d93227db666cbc1960a993d681197fc75b13e4c5b67dc1c3c11125496",
+    "s6": "e4c2c3412596e5b597b5ed69e381f8b6b8cb0f20ef095352896df0c66eb9c7e2",
+    "s7": "1fcb9877d1467576d37f1eb5e1b29ed55f5ddd8991ed8313cf145d20b69f73d9",
+    "s8": "146e3d4e2ba80e663cea4c0fba4083ccd453211522f93be9cacf5ad586f95cd0",
+    "s9": "69ef00a968d16bb6e2fc3751e4cf08b229e16c3dbaea7d2c74ef9cadf9f75459"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T06:24:51.644312+00:00",
+  "total": null
+}

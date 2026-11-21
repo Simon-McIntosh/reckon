@@ -144,8 +144,7 @@ def test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it
     )
     assert entry["session_model"] is None
     assert entry["sessions"] == {}
-    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
-    roster_before = roster_path.read_bytes()
+    roster_before = ledger.load_auxiliary("proj", repo)
 
     dispatched = _dispatch(home, repo, 1)
 
@@ -161,7 +160,7 @@ def test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it
     assert recorded["session_model"] == MEDIUM_AGENT["model"]
     assert recorded["agent"] == MEDIUM_AGENT
     assert ledger.member("proj", "worker-a", repo) == entry
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.load_auxiliary("proj", repo) == roster_before
 
 
 def test_bare_session_ignored_when_the_dispatched_model_moves_off_the_harness_default(

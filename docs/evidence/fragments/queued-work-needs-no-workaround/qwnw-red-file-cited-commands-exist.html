@@ -1,0 +1,87 @@
+<section id="qwnw-red-file-cited-commands-exist-landing">
+  <h2>A fenced command line is read up to its shell comment</h2>
+
+  <p><strong>What was red.</strong> <code>tests/test_cited_commands_exist.py</code>
+  failed one case at the base revision
+  <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code>:
+  <code>test_every_cited_command_and_flag_resolves</code> reported
+  <code>1 cited command(s) do not resolve</code>, naming
+  <code>skills/reckon-build/SKILL.md:284: unknown command processes whose
+  recorded owner is dead with ('processes')</code>. That line documents
+  <code>reckon crew census [--apply]</code> and then explains it in a shell
+  comment: "Lists reckon <em>processes</em> whose recorded owner is dead; with
+  <code>--apply</code>, stops exactly those, printing each." The walker read
+  the fenced line whole and split it at every standalone <code>reckon</code>,
+  so the prose inside the comment became a second citation whose first word is
+  the noun <code>processes</code>. The other three cases in the file passed, so
+  one cause covers the whole file: <code>citations=346 checked=344 planned=2
+  problems=1</code>.</p>
+
+  <p><strong>Verdict: test wrong, product unchanged.</strong> The CLI tree has
+  no <code>processes</code> verb and should not: the document cites one command
+  and the explanation is prose, not a second invocation. A fenced line is a
+  command, so a <code>#</code> that begins a word comments out the rest of it
+  and the walker now yields the line only up to that point. A <code>#</code>
+  inside a quoted argument or inside a word is not a comment and is kept, so an
+  argument that contains one is still read. Two tests pin the reading from both
+  sides and no assertion was deleted or weakened:
+  <code>test_a_fenced_lines_comment_is_not_read_as_a_citation</code> shows the
+  census line resolving as one citation carrying <code>--apply</code>, and
+  <code>test_a_second_command_on_a_fenced_line_is_still_read</code> shows two
+  commands sharing a line with no comment are still two, the unknown verb still
+  reported verbatim as <code>unknown command processes whose owner is dead
+  ('processes')</code>.</p>
+
+  <table id="qwnw-red-file-cited-commands-exist-arms">
+    <caption>Each arm ran as an <code>all_debug</code> job with
+    <code>SLURM_JOB_ID</code> unset in a scratch tree, and each log's first
+    lines name the revision, tree and command while its last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>the named file, base (negative control), job 1328805</td>
+        <td><code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code></td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head, job 1328809</td>
+        <td><code>179439e4c8893df82fb58123e05d2cbb56726bba</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>census suite, base, job 1328812</td>
+        <td><code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>census suite, head, job 1328826</td>
+        <td><code>179439e4c8893df82fb58123e05d2cbb56726bba</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the test files importing <code>reckon.crew.tombstones</code>,
+        base, job 1328837</td>
+        <td><code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code></td>
+        <td>4 failed, 64 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the test files importing <code>reckon.crew.tombstones</code>,
+        head, job 1328865</td>
+        <td><code>179439e4c8893df82fb58123e05d2cbb56726bba</code></td>
+        <td>3 failed, 67 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-cited-commands-exist-importarm"><strong>The importing
+  population adds no failure.</strong> Both arms run the same five files with
+  the same command, and the head arm runs two cases more because the named file
+  gained them: base reads 4 failed and 64 passed, head reads 3 failed and 67
+  passed. The difference is exactly the named file's own case, gone; the three
+  the head records are the base's three others, unchanged —
+  <code>test_crew_emit_sites_do_not_put_literal_success_beside_a_result</code>,
+  <code>test_complete_accept_path_updates_the_run_claim</code> and
+  <code>test_repair_and_check_successors_preserve_recorded_answers</code>.</p>
+
+  <p><strong>Logs.</strong> <code>negative-control.log</code> is the base run of
+  the named file carrying its failing id
+  <code>tests/test_cited_commands_exist.py::test_every_cited_command_and_flag_resolves</code>;
+  <code>head-gate.log</code> is the head run beside it;
+  <code>baseline-suite-arm.log</code> and <code>after-suite-arm.log</code> are the
+  declared suite form promotion compares
+  (<code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>, 58
+  passed on each); <code>import-arm-base.log</code> and
+  <code>import-head.log</code> are the population above. Each is an
+  <code>all_debug</code> job whose log ends in the <code>EXIT=</code> receipt.</p>
+</section>

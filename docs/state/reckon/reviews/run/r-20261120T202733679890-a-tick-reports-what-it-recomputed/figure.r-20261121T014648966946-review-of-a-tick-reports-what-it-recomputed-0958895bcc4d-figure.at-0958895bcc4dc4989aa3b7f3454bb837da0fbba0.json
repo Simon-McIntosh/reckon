@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T01:47:19Z",
+  "figures": {
+    "docs/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed-bytes-by-round.svg": {
+      "contrast": "pass \u2014 all tick labels, direct labels and legend text render near-black on white (glyph cores measured at 11-26 on a 0-255 scale against a 255 background), the explanatory annotation is #4a5568 and the blue subject annotation #2b6cb0, both comfortably legible; the light grey sweep-pass fill at #bdbdbd is the palest mark on the page but still clears white as a visible area (see the non-blocking finding on its lightness).",
+      "data_ink": "pass \u2014 the ink is two flat grey bar series, their numeric labels and two short annotations; no gradient, shadow, hatch or filled band is present, and the only decoration is a frameless legend in empty upper-right space.",
+      "decoration": "pass \u2014 no gridlines, no background shading or band, and the top and right spines are absent, leaving the left scale and the bottom axis as the only rules; measured on the PNG the top-right quadrant between the legend and the third group is blank white.",
+      "label_collision": "pass \u2014 measured on the 1400x720 rendered PNG the third group's text sits in four clear bands with gaps between them (blue annotation rows 550-566, 'one plan re-read' 596-608, '4 KiB' 624-638 and '884 B' 634-646, the last two separated in x at 1076-1120 and 1232-1281), so no label overlaps another label or the data; nothing is clipped \u2014 the lowest ink row is 713 of 719, giving 6 rows of clearance at the bottom for the two-line round label, and columns 0-3 and 1397-1399 are blank, so nothing is cut at either side.",
+      "legibility": "pass \u2014 three labelled rounds read at a glance: cold 81 KiB tick against 238 KiB sweep pass, unchanged zero for both with 'nothing changed: no bytes read' above them, and the rewritten-plan round 4 KiB tick with 884 B sweep pass, annotated 'extension of the bytes that arrived' and 'one plan re-read'. The y axis is titled 'bytes read by the pass [KiB]' with ticks at 0, 50, 100, 150, 200 and every bar carries its value directly above it, so no reader has to estimate a height.",
+      "table_form": "pass \u2014 the figure compares magnitudes across three rounds and two series, where the 238-versus-81 and 238-versus-0 ratios are the point; a table cannot show those ratios at a glance, and the fragment already carries a table of the same counts for a reader who wants the exact rows."
+    }
+  },
+  "findings": [
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The linear axis is required by the two exact-zero rows the figure exists to show, and both third-round values are stated directly above their bars in their own units, so the smallest bars are read from their labels without ambiguity.",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed-bytes-by-round.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "On the linear 0-238 KiB axis the third round's bars are near-invisible: the 884 B sweep-pass bar renders as a single row of pixels at the baseline and the 4 KiB tick bar as about nine rows, so that round's two magnitudes are read from the labelled numbers rather than from bar height. The scale is honest \u2014 two exact zeros in the same figure rule out a log axis \u2014 and both values are printed above the bars, so the datum is not lost."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The two neutral fills still separate tick from sweep pass in this render and every bar carries its own value above it, so the datum is legible without the fill; moving the sweep-pass fill to a feature colour is a palette decision for the figure family, owned by the style module that sets the figure-wide colours, not a defect in this figure.",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed_bytes.py",
+      "line": 68,
+      "severity": "non-blocking",
+      "summary": "The sweep-pass bars are filled #bdbdbd against the tick's #929292. The figure's headline datum (238 KiB) therefore sits in the palest mark on the page: at roughly 1.6:1 against white it is lighter than the #b0b0b0 that this project's figure guidance already rejected as fading out, and the two compared series are told apart by lightness alone rather than by one feature colour against a neutral. It reads on screen at this size, but it will wash out on a projector or a pale print."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The annotation states its meaning in words directly above the bar it names, so the blue is emphasis rather than an encoding a reader must decode; no series is confused by it.",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed_bytes.py",
+      "line": 104,
+      "severity": "non-blocking",
+      "summary": "The muted blue (#2b6cb0) is used for exactly one annotation, 'extension of the bytes that arrived', and appears in no legend entry, so nothing on the page tells a reader what blue signifies \u2014 it reads as an unexplained emphasis rather than as a third series. The sentence itself is clear and is written in the bar's colour role, so no reader is misled; the only cost is an unresolved colour."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261121T014648966946-review-of-a-tick-reports-what-it-recomputed-0958895bcc4d-figure",
+  "reviewed_base_sha": "df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6",
+  "reviewed_head_sha": "0958895bcc4dc4989aa3b7f3454bb837da0fbba0",
+  "reviewed_run_id": "r-20261120T202733679890-a-tick-reports-what-it-recomputed",
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:20:43.689235+00:00",
+  "total": null
+}

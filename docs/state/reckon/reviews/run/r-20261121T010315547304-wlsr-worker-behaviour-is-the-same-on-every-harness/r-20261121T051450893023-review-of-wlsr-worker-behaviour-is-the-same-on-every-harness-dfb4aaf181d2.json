@@ -1,0 +1,94 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run carried no armed suite pair (its dispatch declared FENCE SUITE unarmed: no test file lay in its write scope), so it records no baseline_suite/after_suite block. The only recorded suite evidence is gate-worker-behaviour.log at 77cedb1dd: 7 passed, EXIT=0. No failing test id is recorded against the head, so the added count is 0 and the id list is empty.",
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py",
+    "reckon/crew/dispatch_sessions.py",
+    "reckon/crew/resumption.py",
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/_backends.py:3284",
+    "reckon/flight.py:harness_home_files"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T05:15:36Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": 3512,
+      "severity": "non-blocking",
+      "summary": "behaviour_role defaults to 'implement' and no production call site supplies it, so every review launch records review_duty=True and landing_treatment='promoted-under-its-lane'.",
+      "text": "behaviour_role defaults to 'implement' and no production call site supplies it, so every review launch records review_duty=True and landing_treatment='promoted-under-its-lane'. node.role is already carried at reckon/crew/dispatch_batch.py:839 and reckon/crew/dispatch_sessions.py:1608; wiring it here is what makes the role-keyed fact true."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 3026,
+      "severity": "non-blocking",
+      "summary": "a live clive run now has a seeded run home and inbox hook, but the peer-message reachability test still branches on dialect == 'claude', so delivery to a clive run is refused by name.",
+      "text": "a live clive run now has a seeded run home and inbox hook, but the peer-message reachability test still branches on dialect == 'claude', so delivery to a clive run is refused by name. This is the \u00a712 row at crew_run_commands.py:3003 and it is the counterpart of the seeding this node repaired; the composed fact inbox_trigger='run-home-hook' is therefore not reachable through the command that delivers."
+    },
+    {
+      "file": "tests/test_worker_behaviour_is_the_same_on_every_harness.py",
+      "line": 48,
+      "severity": "non-blocking",
+      "summary": "the equality gate composes with fence=False, so fence_protections and write_roots are empty for every backend and their equality is asserted trivially.",
+      "text": "the equality gate composes with fence=False, so fence_protections and write_roots are empty for every backend and their equality is asserted trivially. Two of the dimensions \u00a716 names are therefore not exercised; a name-keyed fence difference would pass this gate."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": 3193,
+      "severity": "non-blocking",
+      "summary": "flight_config is never supplied in production and the resume rebuild drops lane_document, so a resumed launch records the backend name as its lane.",
+      "text": "flight_config is never supplied in production and the resume rebuild drops lane_document, so a resumed launch records the backend name as its lane. reckon/crew/dispatch_sessions.py:1089 merges only usable_input_window, model, effort and input_modalities from the configured backend, so two backends of one lane resumed would compare unequal on the lane fact while the fresh dispatch records their shared document."
+    },
+    {
+      "file": "reckon/crew/worker_behaviour.py",
+      "line": 72,
+      "severity": "non-blocking",
+      "summary": "lane_identity re-implements the lane-document resolution already held in drainer_serves_the_local_lane.",
+      "text": "lane_identity re-implements the lane-document resolution already held in drainer_serves_the_local_lane (reckon/crew/admission/selection.py:756-762): the same backends lookup, lane_document strip and realpath/expanduser expression now exists twice, so a change to how a lane is identified must be made in two places."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": 642,
+      "severity": "non-blocking",
+      "summary": "_seed_worker_mcp_exclusions reintroduces a filename-keyed branch inside the function the change de-named.",
+      "text": "_seed_worker_mcp_exclusions reintroduces a filename-keyed branch inside the function the change de-named: 'if mcp_config_file == \".claude.json\"' decides whether a missing config is left alone or created, so a dialect declaring an equivalent file under another name gets omp's create-empty behaviour. A declared attribute would carry the same fact without a literal."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all three commits against b14068f8d744b7963ba49179829402891d2c3bd5; it adds reckon/crew/worker_behaviour.py, gives Dialect settings_file/mcp_config_file/home_interface with clive declaring home_interface='claude', resolves the home layout and shipped home files through that interface, and extracts gate_admits_request.",
+    "done_when": "the done_when names tests/test_worker_behaviour_is_the_same_on_every_harness.py and records 7 passed EXIT=0 in gate-worker-behaviour.log, with both named controls captured red at EXIT=1.",
+    "goal": "the node's goal is that one node's treatment is stated once and keyed on the lane or the role; reckon/crew/worker_behaviour.py:114 composes it and reckon/_worker_fence.py:284 resolves a wrapper's home through the interface it declares rather than its name.",
+    "manifest": "read; it records each arm with its log, states the one neighbouring-suite failure as inode reuse under outside_scope, and names no terminal conflict.",
+    "write_paths": "the manifest declares eight paths and every path in the diff is inside them; nothing outside the declared set changed."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_behaviour_is_the_same_on_every_harness.py:159 asserts harness_home('clive') is not None and the seeded settings carry the inbox hook, which fails at base b14068f8d7 where harness_home('clive') returns None; the in-tree control at :95 varies run_directory and then asserts that same dimension.",
+    "evidence": "gate-worker-behaviour.log names its revision 77cedb1dd, its tree and its command and ends EXIT=0 with 7 passed, but tests/test_worker_behaviour_is_the_same_on_every_harness.py:48 composes with fence=False so fence_protections and write_roots are compared empty against empty.",
+    "fit": "the module mirrors the surrounding style of reckon/crew/admission/selection.py:730, but reckon/_worker_fence.py:642 reintroduces a filename-keyed branch inside the very function it de-named.",
+    "goal_fidelity": "reckon/crew/worker_behaviour.py:114 composes every named dimension once and keyed on lane and role, but reckon/_backends.py:3512 takes the role from a parameter no production caller sets, so every production launch records the implement duty.",
+    "reuse": "reckon/crew/worker_behaviour.py:72 lane_identity re-implements the lane-document resolution that reckon/crew/admission/selection.py:756-762 already holds inside drainer_serves_the_local_lane rather than extending it; harness_home_layout is a genuine new owner.",
+    "scope_discipline": "every path in the diff (reckon/_backends.py, reckon/_worker_fence.py, reckon/crew/admission/selection.py, reckon/crew/worker_behaviour.py, reckon/flight.py, the test, the fragment and the figure) is one of the eight declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one node's treatment \u2014 inbox delivery, shims, fence protections and write roots, review duty, admission, gate-hold and landing \u2014 is stated once and keyed on the lane or the role, never on a backend's name; reckon/crew/worker_behaviour.py:114 composes it and reckon/_worker_fence.py:284 resolves a wrapper's home through the interface it declares.\nVERDICT done_when: the done_when names tests/test_worker_behaviour_is_the_same_on_every_harness.py and the manifest records 7 passed, EXIT=0 in gate-worker-behaviour.log, with both named controls captured red at EXIT=1.\nVERDICT write_paths: the manifest declares eight paths; every path in the diff is inside them, and no path outside the declared set changed.\nVERDICT manifest: read; it records each arm with its log, states the one neighbouring-suite failure as inode reuse under outside_scope, and names no terminal conflict.\nVERDICT diff: read all three commits against b14068f8d744b7963ba49179829402891d2c3bd5; it adds reckon/crew/worker_behaviour.py, gives Dialect settings_file/mcp_config_file/home_interface with clive declaring home_interface='claude', resolves the home layout and shipped home files through that interface, and extracts gate_admits_request.\nCALL_SITES: reckon/crew/dispatching/launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/resumption.py, reckon/crew/admission/selection.py:admit_once, reckon/_backends.py:3284, reckon/flight.py:harness_home_files\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/worker_behaviour.py:114 composes every named dimension once and keyed on lane and role, but reckon/_backends.py:3512 takes the role from a parameter no production caller sets, so every production launch records the implement duty.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-worker-behaviour.log names its revision 77cedb1dd, its tree and its command and ends EXIT=0 with 7 passed, but tests/test_worker_behaviour_is_the_same_on_every_harness.py:48 composes with fence=False so fence_protections and write_roots are compared empty against empty.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is one of the eight declared write paths, and no unrelated file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_worker_behaviour_is_the_same_on_every_harness.py:159 asserts harness_home('clive') is not None and the seeded settings carry the inbox hook, which fails at base b14068f8d7 where harness_home('clive') returns None.\nSCORE fit: 15\nJUSTIFICATION fit: the module mirrors the surrounding style of reckon/crew/admission/selection.py:730, but reckon/_worker_fence.py:642 reintroduces a filename-keyed branch inside the function it de-named.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/worker_behaviour.py:72 lane_identity re-implements the lane-document resolution that reckon/crew/admission/selection.py:756-762 already holds.\nFINDING reckon/_backends.py:3512 non-blocking: behaviour_role defaults to 'implement' and no production call site supplies it, so every review launch records review_duty=True.\nFINDING reckon/crew_run_commands.py:3026 non-blocking: a live clive run now has a seeded run home and inbox hook, but the peer-message reachability test still branches on dialect == 'claude', so delivery to it is refused by name.\nFINDING tests/test_worker_behaviour_is_the_same_on_every_harness.py:48 non-blocking: the equality gate composes with fence=False, so fence_protections and write_roots are empty for every backend and their equality is asserted trivially.\nFINDING reckon/_backends.py:3193 non-blocking: flight_config is never supplied in production and the resume rebuild drops lane_document, so a resumed launch records the backend name as its lane.\nFINDING reckon/crew/worker_behaviour.py:72 non-blocking: lane_identity re-implements the lane-document resolution already held in drainer_serves_the_local_lane.\nFINDING reckon/_worker_fence.py:642 non-blocking: _seed_worker_mcp_exclusions reintroduces a filename-keyed branch inside the like-named function the change de-named.\n",
+  "review_run_id": "r-20261121T051450893023-review-of-wlsr-worker-behaviour-is-the-same-on-every-harness-dfb4aaf181d2",
+  "reviewed_base_sha": "b14068f8d744b7963ba49179829402891d2c3bd5",
+  "reviewed_head_sha": "dfb4aaf181d21d94c4d78d395a1a890739508051",
+  "reviewed_run_id": "r-20261121T010315547304-wlsr-worker-behaviour-is-the-same-on-every-harness",
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 15,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T05:24:01.417006+00:00",
+  "total": 92
+}

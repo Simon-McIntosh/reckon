@@ -1,0 +1,97 @@
+<section id="qwnw-red-file-a-worker-cannot-remove-another-runs-scratch-landing">
+  <h2>A worker cannot remove another run's scratch</h2>
+
+  <p><strong>What changed.</strong> One line of product behaviour was already
+  correct and one fixture was not. The fence seals the shared scratch root
+  read-only and re-binds only the run's own scratch directory writable after it,
+  so a sibling run's scratch is readable but cannot be removed. The executed
+  case of this node's test could not observe that, because the fixture let
+  pytest's temporary root decide where its synthetic tree lived: on a compute
+  node that root sits under <code>/tmp</code>, the fence seals the node tmp and
+  — with the run's scratch beneath it — mounts that scratch over
+  <code>/tmp</code>, so the fixture's stub read as absent inside the fence and
+  bwrap refused the exec before the stub ran at all.</p>
+
+  <p><strong>The reproduction, at base</strong>
+  (<code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>): the file ran
+  <code>1 failed, 2 passed</code>, the failure being
+  <code>tests/test_a_worker_cannot_remove_another_runs_scratch.py::test_a_fenced_run_cannot_remove_a_siblings_scratch</code>
+  with <code>FileNotFoundError</code> on
+  <code>…/runs/r-20261016T120000000000-under-test/results.txt</code> — the stub
+  never wrote its record. Composing the same fence by hand showed the receipt
+  behind it: <code>bwrap: execvp …/stub.sh: No such file or directory</code>,
+  because the composed argv carried <code>--bind …/reckon-crew-scratch</code>
+  over <code>/tmp</code> and the stub lived on the host tmp outside it.</p>
+
+  <p><strong>Verdict: the test, not the product.</strong> The node-tmp seal and
+  the mount of the run's scratch over the node tmp are the product's rule,
+  documented in <code>fence_argv</code>, <code>worker_tmp_mount_source</code> and
+  <code>node_tmp_seal_root</code>, and pinned by the node-tmp and store
+  suites. What the fixture needed was to stop depending on the host
+  <code>/tmp</code>. <code>Scratch.point_the_scratch_root</code> now pins
+  <code>NODE_TMP_ROOT</code> and <code>node_tmp_runtime_paths</code> inside its
+  <em>own</em> tree, beside the synthetic scratch root, exactly as those suites
+  already do. No assertion was deleted or weakened: the two shape assertions
+  and the executed refusal are unchanged, and the negative control still turns
+  the executed case red.</p>
+
+  <h3 id="qwnw-red-file-a-worker-cannot-remove-another-runs-scratch-measured">Measured</h3>
+
+  <p>Every arm is a batch job on <code>all_debug</code>, launched with
+  <code>SLURM_JOB_ID</code> unset, whose log's first lines name the revision,
+  tree, command and resolved <code>module.__file__</code>, and whose last line is
+  a bare <code>EXIT=&lt;code&gt;</code>. The measured head is
+  <code>0bb3d508c69b9d0137bcf6a5bccf2d1dd5b727d9</code>; the only commit after it
+  is this fragment's own text.</p>
+
+  <table id="qwnw-red-file-a-worker-cannot-remove-another-runs-scratch-arms">
+    <caption>Head and base arms of the node's own test file, and of the declared
+    suite; both arms of each pair name a full 40-character revision.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node test, base arm</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, extracted tree</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>node test, head arm</td>
+        <td><code>0bb3d508c69b9d0137bcf6a5bccf2d1dd5b727d9</code>, worktree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, extracted tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, head arm</td>
+        <td><code>0bb3d508c69b9d0137bcf6a5bccf2d1dd5b727d9</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control, <code>RECKON_TEST_SCRATCH_SEAL_NEGATIVE=1</code></td>
+        <td><code>0bb3d508c69b9d0137bcf6a5bccf2d1dd5b727d9</code>, worktree</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code> — the sibling <code>rm
+        -rf</code> exits 0 and the directory is gone, as the declared mutation
+        states</td></tr>
+    </tbody>
+  </table>
+
+  <p>The base tree is <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code> extracted
+  with <code>git archive</code> under the run directory and made a git repository
+  of its own (<code>dbba59636eca4b032fd453fbde4ab2e60c92b230</code>), because the
+  declared suite's census reads the tracked file list through git and the plain
+  archive first reported an empty inventory — 2 failed, 56 passed, a measurement
+  of the instrument rather than of the base.</p>
+
+  <p>The refusal the head arm observes, reproduced by hand at the head revision:
+  the fenced stub writes and deletes <code>probe</code> in its own scratch
+  (<code>own-write-delete-ok</code>), its <code>rm -rf</code> of the sibling
+  exits 1 with <code>rm: cannot remove '…/keep.txt': Read-only file system</code>,
+  and <code>keep.txt</code> is still there afterwards. The read-only overlay of
+  the scratch root is emitted as the 8th argv element and the own-scratch
+  <code>--bind</code> follows it.</p>
+
+  <p><strong>The gate tool itself could not run here.</strong>
+  <code>crew verify-gate --worker</code> and <code>crew suite run</code> both
+  resolved a command and submitted it, and both jobs died before pytest started:
+  the pytest log stayed empty and the scheduler log read
+  <code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on
+  /newroot/tmp/auto2I1S9T: No such file or directory</code> — the carried worker
+  fence re-entering on the compute node. The receipts above are therefore the
+  same commands submitted directly on <code>all_debug</code> with the carried
+  fence removed from the environment; the gate's own logs are kept beside them
+  and named in the manifest as scaffolding failures rather than test failures.</p>
+</section>

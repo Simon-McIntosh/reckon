@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_flight.py::test_committed_pydantic_model_matches_linkml_source"
+  ],
+  "added_failure_source": "measured by this review: logs/gate-base-flight.log (base arm, EXIT=0) and logs/gate-head-flight.log (head arm, EXIT=1), both in this review run's directory; the reviewed run armed no suite pair, so no baseline_suite/after_suite was available to derive from",
+  "base_log_revision": "5adc9f1c5ba84ba302ed4889cf20ee40b9463aed",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:132 admit_once -> _release.advance_waiting_requests",
+    "reckon/crew/admission/release.py:463 release pass -> advance_waiting_requests",
+    "reckon/crew/obligations.py:4887 _obligations_view (wait-idle and wait-retired-upstream duties)",
+    "reckon/crew/query.py:170 LIVE_CLASSIFICATION_FIELDS carries wait_class",
+    "reckon/crew/recovery_classification.py:2286 classify_pointer reads wait_detail and wait_class"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T05:08:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "wlsr-a-wait-that-cannot-resolve-is-removed",
+      "recorded_at": "2026-11-21T05:40:12.888869+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_flight_schema.py",
+      "line": "228",
+      "severity": "blocking",
+      "text": "blocking: the generated model is hand-edited and its LinkML source reckon/schema/flight.yaml was not, so tests/test_flight.py::test_committed_pydantic_model_matches_linkml_source passes at base 5adc9f1c5b and fails at head f743b68f74 (logs/gate-base-flight.log 2 passed EXIT=0 against logs/gate-head-flight.log 1 failed EXIT=1); docs/_shared/flight.schema.json and reckon/schema/flight-defaults.yaml, both declared write paths, still carry no stranded_wait, so the published schema rejects the setting and the next regeneration erases StrandedWaitConfig."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2154",
+      "severity": "non-blocking",
+      "text": "non-blocking: recent_upstream_retirements returns only the newest verdict-log record's retired list, and every later pass writes a record whose retired list is empty, so the wait-retired-upstream duty disappears before its owner reads it whenever any pass records a verdict or a landing in between."
+    },
+    {
+      "file": "tests/test_a_wait_that_cannot_resolve_is_removed.py",
+      "line": "162",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert pass_record[\"retired\"] == outcome[\"retired\"] compares the record against the very list the test passed into _pass_verdict_record, so it holds whatever the function does with the value; the adjacent `is not None` on line 161 is the assertion that guards the product change."
+    }
+  ],
+  "head_log_revision": "f743b68f740f9d38ab9aeda8504494aa5680c4e7",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all three commits against 5adc9f1c5b: the classification, its stamps, the retirement and idle-report paths, the obligations duties, the test file and the evidence fragment land inside the declared scope, except that reckon/_flight_schema.py is a generated file edited in place of its source.",
+    "done_when": "the done_when names tests/test_a_wait_that_cannot_resolve_is_removed.py; its eight cases cover the 500-hour progressing wait, the superseded-plan retirement with its reason, the absent-section retirement, the idle report once, the held stranded request and the lost owner's retirement, and the manifest records 8 passed EXIT=0 in gate.log and gate-final.log.",
+    "goal": "the node's goal is to class every awaiting-upstream request by what could release it; reckon/crew/stranded_wait.py:76-103 defines progressing, idle and stranded from the pass's own per-ref states and reckon/crew/admission/release.py:247-270 stamps wait_class and wait_detail on the request.",
+    "manifest": "read; it records commits a9b62cfb00, 07f33a806e and f743b68f74, the gate command it ran, 8 passed at both heads, the neighbour failure proven identical over an extracted base tree, the declared control's red log, and rubric lines for all six dimensions.",
+    "write_paths": "the declared paths are the fragment, a figure directory, eight reckon modules and the test, plus docs/_shared/flight.schema.json, reckon/schema/flight.yaml and reckon/schema/flight-defaults.yaml; the diff touches ten files, all inside the declared set, but the three flight-schema paths were left unedited while the generated reckon/_flight_schema.py was written by hand."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_that_cannot_resolve_is_removed.py:196-205 fails if a second pass rebuilds the retired request or records a second retirement, while line 162 compares the pass record against the same list passed into it.",
+    "evidence": "gate.log reads 8 passed EXIT=0 at 07f33a806e and gate-final.log the same at f743b68f74, and negative-control.log is a genuine red at 5adc9f1c5b, yet the gate set never ran tests/test_flight.py, which the change turns red.",
+    "fit": "reckon/_flight_schema.py:1 states the file is generated from reckon/schema/flight.yaml and must not be edited, and the change edits it directly.",
+    "goal_fidelity": "reckon/crew/admission/release.py:661-676 retires a stranded wait, 681-688 reports an idle one once and 717-736 leaves a held request alone, so all three classes act as the goal states, though the threshold the idle class reads is not declarable through the schema source.",
+    "reuse": "reckon/crew/stranded_wait.py:105-134 reuses _wait_refs._docs_for_project and _section_status on the states the readiness module already resolves, and the neighbouring wait-unresolvable duty at reckon/crew/obligations.py:371 covers a different case (a ref naming a run no project holds).",
+    "scope_discipline": "every path in the diff is inside the declared set, but reckon/schema/flight.yaml and its two siblings were declared write paths left untouched while reckon/_flight_schema.py:228 was edited by hand."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to class every awaiting-upstream request by what could release it; reckon/crew/stranded_wait.py:76-103 defines progressing, idle and stranded from the pass's own per-ref states and reckon/crew/admission/release.py:247-270 stamps wait_class and wait_detail on the request.\nVERDICT done_when: the done_when names tests/test_a_wait_that_cannot_resolve_is_removed.py; its eight cases cover the 500-hour progressing wait, the superseded-plan retirement with its reason, the absent-section retirement, the idle report once, the held stranded request and the lost owner's retirement, and the manifest records 8 passed EXIT=0 in gate.log and gate-final.log.\nVERDICT write_paths: the declared paths are the fragment, a figure directory, eight reckon modules and the test, plus docs/_shared/flight.schema.json, reckon/schema/flight.yaml and reckon/schema/flight-defaults.yaml; the diff touches ten files, all inside the declared set, but the three flight-schema paths were left unedited while the generated reckon/_flight_schema.py was written by hand.\nVERDICT manifest: read; it records commits a9b62cfb00, 07f33a806e and f743b68f74, the gate command it ran, 8 passed at both heads, the neighbour failure proven identical over an extracted base tree, the declared control's red log, and rubric lines for all six dimensions.\nVERDICT diff: read all three commits against 5adc9f1c5b: the classification, its stamps, the retirement and idle-report paths, the obligations duties, the test file and the evidence fragment land inside the declared scope, except that reckon/_flight_schema.py is a generated file edited in place of its source.\nCALL_SITES: reckon/crew/admission/selection.py:132 admit_once -> _release.advance_waiting_requests, reckon/crew/admission/release.py:463 release pass -> advance_waiting_requests, reckon/crew/obligations.py:4887 _obligations_view (wait-idle and wait-retired-upstream duties), reckon/crew/query.py:170 LIVE_CLASSIFICATION_FIELDS carries wait_class, reckon/crew/recovery_classification.py:2286 classify_pointer reads wait_detail and wait_class\nSCORE goal_fidelity: 17\nSCORE evidence: 15\nSCORE scope_discipline: 13\nSCORE durability: 16\nSCORE fit: 12\nSCORE reuse: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/release.py:661-676 retires a stranded wait, 681-688 reports an idle one once and 717-736 leaves a held request alone, so all three classes act as the goal states, though the threshold the idle class reads is not declarable through the schema source.\nJUSTIFICATION evidence: gate.log reads 8 passed EXIT=0 at 07f33a806e and gate-final.log the same at f743b68f74, and negative-control.log is a genuine red at 5adc9f1c5b, yet the gate set never ran tests/test_flight.py, which the change turns red.\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared set, but reckon/schema/flight.yaml and its two siblings were declared write paths left untouched while reckon/_flight_schema.py:228 was edited by hand.\nJUSTIFICATION durability: tests/test_a_wait_that_cannot_resolve_is_removed.py:196-205 fails if a second pass rebuilds the retired request or records a second retirement, while line 162 compares the pass record against the same list passed into it.\nJUSTIFICATION fit: reckon/_flight_schema.py:1 states the file is generated from reckon/schema/flight.yaml and must not be edited, and the change edits it directly.\nJUSTIFICATION reuse: reckon/crew/stranded_wait.py:105-134 reuses _wait_refs._docs_for_project and _section_status on the states the readiness module already resolves, and the neighbouring wait-unresolvable duty at reckon/crew/obligations.py:371 covers a different case (a ref naming a run no project holds).\nFINDING reckon/_flight_schema.py:228 blocking: the generated model is hand-edited and its LinkML source reckon/schema/flight.yaml was not, so tests/test_flight.py::test_committed_pydantic_model_matches_linkml_source passes at base 5adc9f1c5b and fails at head f743b68f74 (logs/gate-base-flight.log 2 passed EXIT=0 against logs/gate-head-flight.log 1 failed EXIT=1); docs/_shared/flight.schema.json and reckon/schema/flight-defaults.yaml, both declared write paths, still carry no stranded_wait, so the published schema rejects the setting and the next regeneration erases StrandedWaitConfig.\nFINDING reckon/crew/obligations.py:2154 non-blocking: recent_upstream_retirements returns only the newest verdict-log record's retired list, and every later pass writes a record whose retired list is empty, so the wait-retired-upstream duty disappears before its owner reads it whenever any pass records a verdict or a landing in between.\nFINDING tests/test_a_wait_that_cannot_resolve_is_removed.py:162 non-blocking: assert pass_record[\"retired\"] == outcome[\"retired\"] compares the record against the very list the test passed into _pass_verdict_record, so it holds whatever the function does with the value; the adjacent `is not None` on line 161 is the assertion that guards the product change.",
+  "review_run_id": "r-20261121T050755513141-review-of-wlsr-a-wait-that-cannot-resolve-is-removed-f743b68f740f",
+  "reviewed_base_sha": "5adc9f1c5ba84ba302ed4889cf20ee40b9463aed",
+  "reviewed_head_sha": "f743b68f740f9d38ab9aeda8504494aa5680c4e7",
+  "reviewed_run_id": "r-20261121T010257382729-wlsr-a-wait-that-cannot-resolve-is-removed",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T050755513141-review-of-wlsr-a-wait-that-cannot-resolve-is-removed-f743b68f740f"
+  },
+  "reviewer_run_id": "r-20261121T050755513141-review-of-wlsr-a-wait-that-cannot-resolve-is-removed-f743b68f740f",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 12,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T05:15:50.199894+00:00",
+  "total": 91
+}

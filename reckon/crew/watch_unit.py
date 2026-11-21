@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import json
 import os
 import re
 import signal
@@ -113,6 +114,124 @@ def record_producer_exit(
             "lease_lapsed_at": lease_lapsed_at,
         }
         write_json_atomically(runs.watch_registration_path(project), record)
+
+
+# The sibling suffix that carries one project's last failed producer start.
+# It sits beside the watch log rather than in the seat record because the
+# producer that fails at start never takes the seat, so a fact kept only there
+# would be absent in exactly the case it is needed for.
+PRODUCER_START_FAILURE_SUFFIX = ".start-failure.json"
+
+
+def watch_start_failure_path(project: str) -> Path:
+    """The file holding the last failed producer start's own words."""
+    log = watch_log_path(project)
+    return log.with_name(log.name.removesuffix(".log") + PRODUCER_START_FAILURE_SUFFIX)
+
+
+def read_producer_start_failure(project: str) -> dict[str, Any] | None:
+    """The last recorded failed start for one project, or None when none stands.
+
+    Unreadable is the same answer as absent: a record this reader cannot decode
+    says nothing about a producer, and a reader that raised instead would make a
+    damaged file stop every launch for the project.
+    """
+    try:
+        value = json.loads(
+            watch_start_failure_path(project).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(value, dict) or not value.get("message"):
+        return None
+    failed_at = value.get("failed_at")
+    if isinstance(failed_at, bool) or not isinstance(failed_at, (int, float)):
+        return None
+    return value
+
+
+def record_producer_start_failure(
+    project: str,
+    *,
+    pid: int | None,
+    status: int | None,
+    message: str,
+    attempts: int,
+    giving_up: bool,
+) -> dict[str, Any]:
+    """Record why a project's producer could not start, and drop its claim.
+
+    The record is written from the supervising wrapper, which is the only
+    process that sees the producer's own words before it exits, and it is read
+    by the obligations derivation and by the arming path. The registration is
+    cleared in the same call: a producer that has exited must not keep naming a
+    pid, and the lease instant is left where it stood rather than advanced,
+    because nothing renewed it.
+
+    A registration naming a different producer is left alone: a successor that
+    took the seat between the failure and this write owns the record, and this
+    call would otherwise erase a live claim.
+    """
+    failure = {
+        "project": project,
+        "failed_at": time.time(),
+        "pid": pid,
+        "exit_status": status,
+        "message": message,
+        "attempts": attempts,
+        "giving_up": bool(giving_up),
+        "log_path": str(watch_log_path(project)),
+    }
+    path = watch_start_failure_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomically(path, failure)
+    _forget_exited_producer(project, pid)
+    return failure
+
+
+def _forget_exited_producer(project: str, pid: int | None) -> None:
+    """Drop a registration's claim once the producer it names has exited."""
+    from reckon.crew import runs
+
+    if pid is None:
+        return
+    with exclusive_lock(runs.watch_registration_lock_path(project)):
+        record = runs.read_watch_registration(project)
+        if not record or str(record.get("pid")) != str(pid):
+            return
+        for key in ("pid", "pid_start_time", "host", "started_at"):
+            record.pop(key, None)
+        record["producer_start_failed_at"] = time.time()
+        write_json_atomically(runs.watch_registration_path(project), record)
+
+
+def _current_producer_start_failure(
+    project: str, *, watcher_live: bool
+) -> dict[str, Any] | None:
+    """The start failure that still stands for a project, if one does.
+
+    A failure stops standing when a producer is live, or when a later seat was
+    taken: the producer writes its lease renewal at the instant it takes the
+    seat, so a renewal newer than the failure is a producer that started after
+    it and the record is history rather than news.
+    """
+    failure = read_producer_start_failure(project)
+    if failure is None or watcher_live:
+        return None
+    from reckon.crew import runs
+
+    try:
+        lease = runs.watch_lease_renewed_at(project)
+    except (OSError, ValueError):
+        lease = None
+    if lease is not None and float(lease) > float(failure["failed_at"]):
+        return None
+    return failure
+
+
+def producer_start_failure(project: str) -> dict[str, Any] | None:
+    """The failed producer start a project stands behind now, or None."""
+    return watch_state(project).get("producer_start_failure")
 
 
 def watch_host_lease(project: str):
@@ -692,12 +811,21 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
             registration = {"project": project}
         registration.update(host=holder.host, pid=holder.pid, job=holder.job)
     watcher_live = _record_producer_running(registration, project=project)
+    start_failure = _current_producer_start_failure(project, watcher_live=watcher_live)
     return {
         "arming_line": arming_line,
         "attach_line": attach_line,
         "ensure_line": watcher_ensure_line(project),
         "unit": registration.get("unit"),
         "watcher_live": watcher_live,
+        # Whether a producer is armed for the project, said separately from
+        # liveness so a launch's own record carries the answer without a reader
+        # having to infer it from a process probe.
+        "producer_armed": watcher_live,
+        # The last failed start, while it still stands: the reason the project
+        # has no producer, kept where the launch record and the obligations
+        # derivation both read it.
+        "producer_start_failure": start_failure,
         "watcher": dict(registration),
         "session": session,
         "session_attached": attached,

@@ -26,6 +26,14 @@ RUN_ID = "r-review-first"
 ERROR = "ValueError: unreadable ledger row"
 
 
+def _without_ages(rows):
+    """Duty rows with the age each read derives from its own instant removed."""
+    return [
+        {key: value for key, value in row.items() if key != "age_seconds"}
+        for row in rows
+    ]
+
+
 @pytest.mark.parametrize("follower_live", [True, False])
 def test_failed_run_is_published_until_a_successful_sweep(
     review_runs, tmp_path, monkeypatch, follower_live
@@ -112,7 +120,11 @@ def test_failed_run_is_published_until_a_successful_sweep(
         pass_error = True
         later = moment + timedelta(seconds=20)
         assert beat.request(PROJECT, SESSION, moment=later, changed=True)
-        assert publish(later)["obligations"] == payload["obligations"]
+        retained = publish(later)["obligations"]
+        # Ages are measured from the read instant, so the retained duty is the
+        # same duty with a larger age rather than a byte-identical row.
+        assert _without_ages(retained) == _without_ages(payload["obligations"])
+        assert retained[0]["age_seconds"] == 20
 
         # Reopening the writer must retain the failure until a successful pass.
         store.close()

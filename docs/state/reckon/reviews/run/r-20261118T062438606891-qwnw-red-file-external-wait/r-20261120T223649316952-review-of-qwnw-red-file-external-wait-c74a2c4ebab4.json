@@ -1,0 +1,123 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1400 crew_check_manifest"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-external-wait-c74a2c4ebab4",
+      "recorded_at": "2026-11-20T23:00:38.677131+00:00"
+    },
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-external-wait-c74a2c4ebab4",
+      "recorded_at": "2026-11-20T23:00:37.422177+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-20T22:37:42Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-external-wait-c74a2c4ebab4",
+      "recorded_at": "2026-11-20T23:00:36.122580+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_fragment_revision_claim_agrees_with_its_log.py",
+      "line": "89",
+      "severity": "blocking",
+      "text": "blocking: the added file is red at the head it landed at. Extracting c74a2c4ebab410d754f4870c3dc9d441a5f79424 and running it gives 1 failed, 3 passed, EXIT=1 (test_a_stale_main_beside_its_cited_log_is_reported: assert 0 == 1), and the identical result at base 42fe90d0b0a46060bafde2490dda7d4002cda478, because the audit the module docstring says 'now compares' a prose revision claim against the cited log's header does not exist in the tree: `git grep 'on the same line that cites' c74a2c4 -- .` matches only this test file, and `git log 42fe90d0..c74a2c4 -- reckon/` is empty, so no product code changed at all. The commit message and the manifest both describe a repair that was verified in a dirty worktree and never committed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: changed_paths names reckon/crew/reports.py, which no commit in 42fe90d0..c74a2c4 touches; the check the run wrote lives only in an uncommitted worktree copy, which is why logs/fragment-citation-negative-control.log shows the finding text while the landed tree cannot produce it. Repair follows from the blocking finding: commit the reports.py change together with the test, or drop the path and the test."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head claim reads 'this run's six commits', but the delivered run has eight; logs/merged-head.log headers only fee6bfa2f4d0b96ec69b7e25106b0430e4c494de through 6580d20f0b7d74a20768bf576264e92bca1ca6df, so the fragment's head gate predates 2aa8b9a705344b73417462cec9f02915ecc5cfe3 and c74a2c4ebab410d754f4870c3dc9d441a5f79424 and no run records the gate at the tree this node delivers."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the file ends without a trailing newline, which 2aa8b9a705344b73417462cec9f02915ecc5cfe3 introduced by dropping the base file's closing newline; the diff carries it as 'No newline at end of file'."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:1400 audits a delivered manifest through crew_module.audit_manifest, the entry the added test calls, and reckon/crew.py:203 re-exports it; no product change reached either, so the test's only reachable path is the unchanged owner reckon/crew/reports.py:2928.",
+    "diff": "read 2aa8b9a705344b73417462cec9f02915ecc5cfe3 and c74a2c4ebab410d754f4870c3dc9d441a5f79424 against base 42fe90d0b0a46060bafde2490dda7d4002cda478: 2aa8b9a rewrites the fragment's head paragraph to leave the revision pair to the cited log's header and adds the plan meta block, c74a2c4 adds only tests/test_a_fragment_revision_claim_agrees_with_its_log.py, and `git log 42fe90d0..c74a2c4 -- reckon/` is empty, so the audit the test pins is absent from the landed tree.",
+    "done_when": "read prompt.txt's done_when; logs/base.log records 2 failed, 14 passed, EXIT=1 at 42fe90d0 and logs/merged-head.log records 16 passed, EXIT=0, both suite arms are recorded as inline JSON at 42fe90d0 and c74a2c4, and ruff check plus ruff format --check are clean on the added file \u2014 but the head gate ran in a manual clone (log header '# cwd: /tmp/qwnw-merged.1Et3ID/tree') rather than the all_debug job the done_when names, and its commit list stops two commits before the delivered head.",
+    "goal": "read prompt.txt:38, whose goal is tests/test_external_wait.py passing in full on the primary branch; logs/merged-head.log records 16 passed, EXIT=0, for that file on a clone of main 46602c8f plus the run's first six commits, and tests/test_external_wait.py is byte-identical to its base across the range, so that file's goal is met while the head run stops short of the delivered head.",
+    "manifest": "read manifest.md; it names eight commits, the 16-passed head gate, the 2-failed base arm and both suite arms as inline JSON, but its tests line claims '4 passed' for the added file where the landed file runs 1 failed, 3 passed, and changed_paths includes reckon/crew/reports.py which no commit in the range touches.",
+    "write_paths": "read the declared paths in prompt.txt (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment and figure directories); the two paths in the diff, tests/test_a_fragment_revision_claim_agrees_with_its_log.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, both lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fragment_revision_claim_agrees_with_its_log.py:89 asserts len(findings) == 1 for a stale main beside a cited log and reddens at both base and head because reckon/crew/reports.py:2928 carries no such comparison, so the file guards nothing that exists and its three green siblings only pin the absence of a finding.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/logs/merged-head.log records 16 passed, EXIT=0, at 6580d20f0b7d74a20768bf576264e92bca1ca6df's tree and manifest.md records '4 passed' for the added file, which the artefact at c74a2c4 contradicts at 1 failed, 3 passed, EXIT=1.",
+    "fit": "tests/test_a_fragment_revision_claim_agrees_with_its_log.py follows the fixture idiom of tests/test_a_manifest_evidence_is_checked.py:75 and is clean under ruff check and ruff format --check, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:25 drops its trailing newline.",
+    "goal_fidelity": "prompt.txt:38 names tests/test_external_wait.py, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:20 records its 16-passed head run, but that run replays six of the eight delivered commits, so the goal's head evidence does not cover the tree this node lands.",
+    "reuse": "the added test calls the existing owner reckon/crew/reports.py:2928 audit_manifest rather than introducing a second manifest reader, and a search over reckon/ for another fragment-citation or revision-claim check found none.",
+    "scope_discipline": "both paths in 42fe90d0..c74a2c4, tests/test_a_fragment_revision_claim_agrees_with_its_log.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, lie inside the declared write paths and no unrelated file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/prompt.txt:38, whose goal is tests/test_external_wait.py passing in full on the primary branch; logs/merged-head.log records 16 passed, EXIT=0, for that file on a clone of main 46602c8f plus the run's first six commits, and tests/test_external_wait.py is byte-identical to its base across the range, so that file's goal is met while the head run stops short of the delivered head.\nVERDICT done_when: read prompt.txt's done_when; logs/base.log records 2 failed, 14 passed, EXIT=1 at 42fe90d0 and logs/merged-head.log records 16 passed, EXIT=0, both suite arms are recorded as inline JSON at 42fe90d0 and c74a2c4, and ruff check plus ruff format --check are clean on the added file \u2014 but the head gate ran in a manual clone (log header '# cwd: /tmp/qwnw-merged.1Et3ID/tree') rather than the all_debug job the done_when names, and its commit list stops two commits before the delivered head.\nVERDICT write_paths: read the declared paths in prompt.txt (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment and figure directories); the two paths in the diff, tests/test_a_fragment_revision_claim_agrees_with_its_log.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, both lie inside them.\nVERDICT manifest: read manifest.md; it names eight commits, the 16-passed head gate, the 2-failed base arm and both suite arms as inline JSON, but its tests line claims '4 passed' for the added file where the landed file runs 1 failed, 3 passed, and changed_paths names reckon/crew/reports.py which no commit in the range touches.\nVERDICT diff: read 2aa8b9a705344b73417462cec9f02915ecc5cfe3 and c74a2c4ebab410d754f4870c3dc9d441a5f79424 against base 42fe90d0b0a46060bafde2490dda7d4002cda478; 2aa8b9a rewrites the fragment head paragraph to defer the revision pair to the cited log's header, c74a2c4 adds only tests/test_a_fragment_revision_claim_agrees_with_its_log.py, and `git log 42fe90d0..c74a2c4 -- reckon/` is empty so the audit the test pins never landed.\nCALL_SITES: reckon/crew_run_commands.py:1400 crew_check_manifest, reckon/crew.py:203 audit_manifest export\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: prompt.txt:38 names tests/test_external_wait.py, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:20 records its 16-passed head run, but that run replays six of the eight delivered commits.\nSCORE evidence: 4\nJUSTIFICATION evidence: manifest.md records '4 passed' for tests/test_a_fragment_revision_claim_agrees_with_its_log.py, which runs 1 failed, 3 passed, EXIT=1 at c74a2c4ebab410d754f4870c3dc9d441a5f79424, and the recorded head gate logs/merged-head.log stops at commit 6580d20f0b7d74a20768bf576264e92bca1ca6df.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both paths in 42fe90d0..c74a2c4, the test file and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, lie inside the declared write paths.\nSCORE durability: 2\nJUSTIFICATION durability: tests/test_a_fragment_revision_claim_agrees_with_its_log.py:89 asserts len(findings) == 1 and reddens at base as well as head because reckon/crew/reports.py:2928 carries no revision-claim comparison, so nothing landed is guarded.\nSCORE fit: 16\nJUSTIFICATION fit: tests/test_a_fragment_revision_claim_agrees_with_its_log.py follows the fixture idiom of tests/test_a_manifest_evidence_is_checked.py:75 and is clean under ruff, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:25 drops its trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added test calls the existing owner reckon/crew/reports.py:2928 audit_manifest instead of introducing a second manifest reader, and a search over reckon/ for a fragment-citation check found none.\nFINDING tests/test_a_fragment_revision_claim_agrees_with_its_log.py:89 blocking: the file is red at the head it landed at \u2014 1 failed, 3 passed, EXIT=1 at c74a2c4 and the same at base \u2014 because the audit comparison its docstring describes exists nowhere outside the test (`git grep 'on the same line that cites' c74a2c4 -- .` matches only the test) and `git log 42fe90d0..c74a2c4 -- reckon/` is empty.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md:9 non-blocking: changed_paths names reckon/crew/reports.py, which no commit in the range touches, the product half having been verified only in a dirty worktree.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:20 non-blocking: the head claim says 'this run's six commits' while the delivered run has eight, and logs/merged-head.log replays only fee6bfa2 through 6580d20, so the fragment's head gate predates this review's two commits.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:25 non-blocking: the file ends without a trailing newline, which commit 2aa8b9a introduced.",
+  "review_run_id": "r-20261120T223649316952-review-of-qwnw-red-file-external-wait-c74a2c4ebab4",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "c74a2c4ebab410d754f4870c3dc9d441a5f79424",
+  "reviewed_run_id": "r-20261118T062438606891-qwnw-red-file-external-wait",
+  "reviewed_worker_commits": [
+    "fee6bfa2f4d0b96ec69b7e25106b0430e4c494de",
+    "cc514e74832d8eba130df7f2b0d4060c4ea310bc",
+    "faeb4674f3aea9b853e3e823b7ba19b40a9871fc",
+    "1a3bd4e1ae42f201d8242ca5b4fe49e8f30588af",
+    "de7662e64491be4aa64221a40b36541ca749d0c8",
+    "6580d20f0b7d74a20768bf576264e92bca1ca6df",
+    "2aa8b9a705344b73417462cec9f02915ecc5cfe3",
+    "c74a2c4ebab410d754f4870c3dc9d441a5f79424"
+  ],
+  "scores": {
+    "durability": 2,
+    "evidence": 4,
+    "fit": 16,
+    "goal_fidelity": 11,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/after_suite-1795214084145892886.log",
+      "revision": "c74a2c4ebab410d754f4870c3dc9d441a5f79424"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/baseline_suite-1795214040776114416.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    },
+    "derivation": "added_failure_ids = after_suite.failure_ids minus baseline_suite.failure_ids; both arms record completed true, exit_status 0 and no failure ids, so added_failure_count is 0. The arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import the added test file, so the red test is outside both arms."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:52:29.130911+00:00",
+  "total": 73
+}

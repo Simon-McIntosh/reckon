@@ -390,7 +390,9 @@ def _arrange_dispatch_follower(
 
 def _named_brief(record: Mapping[str, Any]) -> str:
     """The stored brief a request carries, as the coordinator wrote its path."""
-    node = record.get("node") or {}
+    from reckon.crew import runs as runs_module
+
+    node = runs_module.node_definition(record)
     if not isinstance(node, Mapping):
         return ""
     return str(node.get("brief") or node.get("brief_path") or "").strip()

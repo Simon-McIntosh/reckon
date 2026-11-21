@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/station.py:467 SweepBeat._run calls on_report(project, session, report, counts)",
+    "reckon/crew/station.py:1129 Station.__init__ wires on_report to _record_sweep_report",
+    "reckon/crew/station.py:1655 Station service loop calls tick()",
+    "reckon/crew/obligation_snapshot.py:725 read_station_tick publishes last_sweep",
+    "reckon/crew/watch_unit.py:1214 read_station_tick consumer",
+    "reckon/_plan_html.py:2647 plan_text memoized kind, now counted",
+    "reckon/_plan_html.py:2659 parse_meta memoized kind, now counted",
+    "reckon/_backends.py:3827 _cached_stream_entry cache-hit record (stream_observation)",
+    "reckon/crew/recovery_watch.py:4253 take_parsed_stream_bytes, the persisted fleet-wide counter the same read feeds"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T01:47:07Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the structured suite arms record host 98dci4-clu-3141, a partition node, not the fleet node 98dci4-clu-3026; the wide arms carry no host header, but they show the same two failures at base and head; the caption overstates, the run does not",
+      "recorded_at": "2026-11-21T02:27:59.726300+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a full parse of an empty stream reads no bytes; leaving it uncounted under stream_observation does not hide work, and the memo kinds still count the recompute",
+      "recorded_at": "2026-11-21T02:28:10.149070+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed.html",
+      "line": "79",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms table caption claims 'Every arm ran on all_debug', but no arm log records a partition or an sbatch invocation (arm-run.sh runs pytest in place) and the harness scheduler sidecars beside the suite logs are empty, so the done_when's all_debug submission requirement is asserted rather than evidenced."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "4732",
+      "severity": "non-blocking",
+      "text": "non-blocking: _record_stream_read returns early when count <= 0, so a full parse of an empty stream records neither a recompute nor a parsed read, and a pass that parsed only empty streams reports nothing under stream_observation even though it already served the deliverable's 'answers recomputed' count for every memo kind."
+    }
+  ],
+  "head_log_revision": "f18c1375fbd585610b096e682ea5ad742a083af4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified nine production call sites across station.py, obligation_snapshot.py, watch_unit.py, _plan_html.py, _backends.py and recovery_watch.py.",
+    "diff": "read commit by commit from df8fba8b; fe3605f0f5 adds MemoCounts/counting/record_memo plus the stream kind, 479d260cca collapses the two tallies into _record_stream_read and drops the unused extends keyword, 407dec3ed5 keeps the private pass body's answer and moves the finish stamp into tick, a99cd14b16 stops a stageless pass publishing a duration, bf2b5fbc53 fixes the cohort stub, and 0958895bcc is the evidence-only final commit.",
+    "done_when": "tests/test_a_tick_reports_what_it_recomputed.py drives three rounds over 20 pointers, 20 streams and 20 plans; rounds.json reconciles with the evidence table (cold tick 83,318 B, cold sweep 243,205 B, unchanged 0/0, moved 4,096 B tick and 884 B sweep) and negative-control.log fails at base with EXIT=1, so the measure is gated and its result recorded; the node manifest states baseline_suite and after_suite both completed with 0 failures.",
+    "goal": "the node goal is that the last finished tick and the last finished sweep pass each publish what they served from cache, extended incrementally and recomputed in full with the bytes read; reckon/crew/station.py:462 and :1337 open file_memo.counting() around each pass and reckon/crew/obligation_snapshot.py:529-544 publishes last_sweep beside last_tick, so the deliverable is present.",
+    "manifest": "read; status complete, nine commits, baseline_suite df8fba8b (completed, 0 failures) and after_suite f18c1375fb (completed, 0 failures), the widened arms carry identical two failure ids on both sides, and negative_control_log names repair2-negative-control2.log with EXIT=1; it records no ruff result although the done_when asks for one.",
+    "write_paths": "the manifest's declared paths plus git diff --stat df8fba8b..0958895bcc list nine paths, every one inside the fence (file_memo.py, _backends.py, station.py, obligation_snapshot.py, the gate test, the pointer-cohort test, the evidence fragment and the figure script and SVG)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_reports_what_it_recomputed.py:197, :247, :262-264 and :282-292 each name a condition that reddens if the counts, the extension or the per-kind recompute regress, and negative controls A-D record the reverted commit that fails them.",
+    "evidence": "tests/test_a_tick_reports_just_recomputed.py:286 asserts each plan kind recomputed exactly once, and rounds.json reconciles with the published table, but the manifest records no ruff result and no arm log records the all_debug submission the done_when requires.",
+    "fit": "the code follows the surrounding idiom of reckon/crew/station.py:1140 and the ContextVar scope of reckon/file_memo.py:53, and introduces no plan, ticket or version label in a name or comment.",
+    "goal_fidelity": "reckon/crew/station.py:1337-1341 wraps the tick and :462-467 wraps the sweep pass so each report carries memo_counts, and reckon/file_memo.py:520 plus reckon/_backends.py:3862 record recomputed answers with their byte lengths.",
+    "reuse": "no per-pass counting owner existed; file_memo.py:113 extends the module's existing ContextVar-scoped region idiom and _backends.py:4724 extends the pre-existing _PARSED_STREAM_BYTES total rather than adding a second counter.",
+    "scope_discipline": "every one of the nine paths in df8fba8b..0958895bcc is a declared write path, and the two out-of-fence cohort fixes were made in reckon/crew/station.py rather than by editing peer test files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the last finished tick and the last finished sweep pass each publish what they served from cache, extended incrementally and recomputed in full with the bytes read; reckon/crew/station.py:462 and :1337 open file_memo.counting() around each pass and reckon/crew/obligation_snapshot.py:529-544 publishes last_sweep beside last_tick, so the deliverable is present.\nVERDICT done_when: tests/test_a_tick_reports_what_it_recomputed.py drives three rounds over 20 pointers, 20 streams and 20 plans; rounds.json reconciles with the evidence table (cold tick 83,318 B, cold sweep 243,205 B, unchanged 0/0, moved 4,096 B tick and 884 B sweep) and negative-control.log fails at base with EXIT=1, so the measure is gated and its result recorded; the node manifest states baseline_suite and after_suite both completed with 0 failures.\nVERDICT write_paths: the manifest's declared paths plus git diff --stat df8fba8b..0958895bcc list nine paths, every one inside the fence (file_memo.py, _backends.py, station.py, obligation_snapshot.py, the gate test, the pointer-cohort test, the evidence fragment and the figure script and SVG).\nVERDICT manifest: read; status complete, nine commits, baseline_suite df8fba8b (completed, 0 failures) and after_suite f18c1375fb (completed, 0 failures), the widened arms carry identical two failure ids on both sides, and negative_control_log names repair2-negative-control2.log with EXIT=1; it records no ruff result although the done_when asks for one.\nVERDICT diff: read commit by commit from df8fba8b; fe3605f0f5 adds MemoCounts/counting/record_memo plus the stream kind, 479d260cca collapses the two tallies into _record_stream_read and drops the unused extends keyword, 407dec3ed5 keeps the private pass body's answer and moves the finish stamp into tick, a99cd14b16 stops a stageless pass publishing a duration, bf2b5fbc53 fixes the cohort stub, and 0958895bcc is the evidence-only final commit.\nCALL_SITES: reckon/crew/station.py:467 SweepBeat._run calls on_report(project, session, report, counts), reckon/crew/station.py:1129 Station.__init__ wires on_report to _record_sweep_report, reckon/crew/station.py:1655 Station service loop calls tick(), reckon/crew/obligation_snapshot.py:725 read_station_tick publishes last_sweep, reckon/crew/watch_unit.py:1214 read_station_tick consumer, reckon/_plan_html.py:2647 plan_text memoized kind, now counted, reckon/_plan_html.py:2659 parse_meta memoized kind, now counted, reckon/_backends.py:3827 _cached_stream_entry cache-hit record (stream_observation), reckon/crew/recovery_watch.py:4253 take_parsed_stream_bytes, the persisted fleet-wide counter the same read feeds\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:1337-1341 wraps the tick and :462-467 wraps the sweep pass so each report carries memo_counts, and reckon/file_memo.py:520 plus reckon/_backends.py:3862 record recomputed answers with their byte lengths.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_tick_reports_just_recomputed.py:286 asserts each plan kind recomputed exactly once, and rounds.json reconciles with the published table, but the manifest records no ruff result and no arm log records the all_debug submission the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the nine paths in df8fba8b..0958895bcc is a declared write path, and the two out-of-fence cohort fixes were made in reckon/crew/station.py rather than by editing peer test files.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_tick_reports_what_it_recomputed.py:197, :247, :262-264 and :282-292 each name a condition that reddens if the counts, the extension or the per-kind recompute regress, and negative controls A-D record the reverted commit that fails them.\nSCORE fit: 19\nJUSTIFICATION fit: the code follows the surrounding idiom of reckon/crew/station.py:1140 and the ContextVar scope of reckon/file_memo.py:53, and introduces no plan, ticket or version label in a name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: no per-pass counting owner existed; file_memo.py:113 extends the module's existing ContextVar-scoped region idiom and _backends.py:4724 extends the pre-existing _PARSED_STREAM_BYTES total rather than adding a second counter.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed.html:79 non-blocking: the arms table caption claims 'Every arm ran on all_debug', but no arm log records a partition or an sbatch invocation (arm-run.sh runs pytest in place) and the harness scheduler sidecars beside the suite logs are empty, so the done_when's all_debug submission requirement is asserted rather than evidenced.\nFINDING reckon/_backends.py:4732 non-blocking: _record_stream_read returns early when count <= 0, so a full parse of an empty stream records neither a recompute nor a parsed read, and a pass that parsed only empty streams reports nothing under stream_observation even though it already served the deliverable's 'answers recomputed' count for every memo kind.\n",
+  "review_run_id": "r-20261121T014549933369-review-of-a-tick-reports-what-it-recomputed-0958895bcc4d",
+  "reviewed_base_sha": "df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6",
+  "reviewed_head_sha": "0958895bcc4dc4989aa3b7f3454bb837da0fbba0",
+  "reviewed_run_id": "r-20261120T202733679890-a-tick-reports-what-it-recomputed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T014549933369-review-of-a-tick-reports-what-it-recomputed-0958895bcc4d"
+  },
+  "reviewer_run_id": "r-20261121T014549933369-review-of-a-tick-reports-what-it-recomputed-0958895bcc4d",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:21:22.858274+00:00",
+  "total": 114
+}

@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:_launch_dispatch",
+    "reckon/crew/admission/launching.py:_launch_queued",
+    "reckon/crew/dispatch_sessions.py:resume_plan",
+    "reckon/crew/dispatch_sessions.py:change_lane",
+    "reckon/_backends.py:launch_plan",
+    "reckon/crew/worker_behaviour.py:compose_worker_behaviour",
+    "reckon/crew/recovery_watch.py:_pointer_role"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:33:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 2128,
+      "severity": "non-blocking",
+      "text": "change_lane threads behaviour_role=_pointer_role(record) but no case in tests/test_a_launch_records_its_nodes_role.py drives the lane-change route; the recorded negative control removed the argument from both session call sites and only the three resume cases reddened, so a regression dropping behaviour_role from change_lane stays green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T064816707136-wlsr-a-launch-records-its-nodes-role/manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "the recorded baseline_suite and after_suite arm logs (baseline_suite-git-arm.log, after_suite-git-arm.log) carry neither the header naming revision, tree, command and module.cwd nor a terminal EXIT= line, so a reader can read the arms' status only from the manifest JSON, not from the logs the manifest cites."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the direct dispatch, the queued admission launch, the resume, the lane change and launch_plan/compose_worker_behaviour reach the change, with _pointer_role the owner it now reads through.",
+    "diff": "read commit by commit from 65c0479b to 428c02cb: 64460aa966 and 476ffa0bce were reviewed at head 476ffa0bce; the gained f4b6287304 replaces the private _recorded_role with _pointer_role and adds the three investigate cases, and 428c02cbaf rewrites five lines of the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_launch_records_its_nodes_role.py covering a review node and an implement node on the direct, queued-admission and resume routes plus a negative control; the file at the head carries the 9 cases (three roles on each of the three routes) and the manifest records the gate and the red control.",
+    "goal": "the goal is that a launch records the role its dispatched node carried; the gained repair at reckon/crew/dispatch_sessions.py:1507,2128 keeps reading the role from the run's own record through _pointer_role, and worker_behaviour.py:67 plus dispatching/launch.py:772 were already carrying it at the previously reviewed head 476ffa0bce.",
+    "manifest": "read and complete: it records the scoped gate (67 passed, EXIT=0 at f4b6287304), the 58-passed base arm and 67-passed after arm, the 6-failed/3-passed negative control, and 0 added failures.",
+    "write_paths": "the delta this review is scoped to is the evidence fragment, reckon/crew/dispatch_sessions.py and tests/test_a_launch_records_its_nodes_role.py; the two gained commits f4b6287304 and 428c02cbaf touch exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the investigate cases added at tests/test_a_launch_records_its_nodes_role.py:69 redden under the recorded mutation (6 failed, 3 passed), but no case covers the lane-change route that reckon/crew/dispatch_sessions.py:2128 also changed.",
+    "evidence": "tests/test_a_launch_records_its_nodes_role.py's scoped gate reads 67 passed EXIT=0 at f4b6287304 (scoped-gate-1795246116977163672.log) and the arm logs, but those arm logs carry no revision header or terminal EXIT= line.",
+    "fit": "the change follows the module's existing idiom of a recorded dimension beside the others and a cross-module read of _pointer_role, the same import reckon/crew/promotion_scope.py:266 already makes.",
+    "goal_fidelity": "reckon/crew/worker_behaviour.py:67 records role in dimensions() and reckon/crew/dispatch_sessions.py:1507,2128 plus reckon/crew/dispatching/launch.py:772 thread it on every launch route.",
+    "reuse": "the repair deletes the private _recorded_role and reads _pointer_role, the read reckon/crew/recovery_watch.py:1003 already owns, so no capability is forked.",
+    "scope_discipline": "the gained commits touch only reckon/crew/dispatch_sessions.py, tests/test_a_launch_records_its_nodes_role.py and the evidence fragment, all inside the delta path list this review was scoped to."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a launch records the role of the node it was dispatched for; the gained repair at reckon/crew/dispatch_sessions.py:1507,2128 reads the role through _pointer_role and worker_behaviour.py:67 plus dispatching/launch.py:772 already record and thread it.\nVERDICT done_when: tests/test_a_launch_records_its_nodes_role.py carries the 9 cases covering review, implement and investigate nodes on the direct, queued-admission and resume routes and the manifest records the green gate plus the red-negative-control run.\nVERDICT write_paths: the delta path list (the evidence fragment, reckon/crew/dispatch_sessions.py and tests/test_a_launch_records_its_nodes_role.py) covers both gained commits f4b6287304 and 428c02cbaf with nothing outside it.\nVERDICT manifest: read; it is complete and records the 67-passed scoped gate at f4b6287304, the 58-passed base arm, the 67-passed after arm, the 6-failed/3-passed negative control and 0 added failures.\nVERDICT diff: read commit by commit from 65c0479b148e to 428c02cbaf; 64460aa966 and 476ffa0bce were prior-reviewed at 476ffa0bce, and the gained f4b6287304 swaps the private helper for _pointer_role and adds the three investigate cases while 428c02cbaf edits five lines of the fragment.\nCALL_SITES: reckon/crew/dispatching/launch.py:_launch_dispatch, reckon/crew/admission/launching.py:_launch_queued, reckon/crew/dispatch_sessions.py:resume_plan, reckon/crew/dispatch_sessions.py:change_lane, reckon/_backends.py:launch_plan, reckon/crew/worker_behaviour.py:compose_worker_behaviour, reckon/crew/recovery_watch.py:_pointer_role\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/worker_behaviour.py:67 records the role in dimensions() and reckon/crew/dispatch_sessions.py:1507,2128 plus reckon/crew/dispatching/launch.py:772 thread it on every launch route.\nSCORE evidence: 18\nJUSTIFICATION evidence: the scoped gate reads 67 passed EXIT=0 at f4b6287304 (scoped-gate-1795246116977163672.log), but the cited arm logs carry no revision header or terminal EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commits touch only reckon/crew/dispatch_sessions.py, tests/test_a_launch_records_its_nodes_role.py and the evidence fragment, all inside the delta path list.\nSCORE durability: 16\nJUSTIFICATION durability: the investigate cases at tests/test_a_launch_records_its_nodes_role.py:69 redden under the recorded mutation (6 failed, 3 passed), but no case covers the lane-change route changed at reckon/crew/dispatch_sessions.py:2128.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module idiom of a recorded dimension beside the others and reuses the _pointer_role import pattern reckon/crew/promotion_scope.py:266 already uses.\nSCORE reuse: 20\nJUSTIFICATION reuse: the repair deletes the private _recorded_role and reads _pointer_role, the read reckon/crew/recovery_watch.py:1003 already owns.\nFINDING reckon/crew/dispatch_sessions.py:2128 non-blocking: change_lane threads behaviour_role but no case drives the lane-change route, so dropping it there stays green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T064816707136-wlsr-a-launch-records-its-nodes-role/manifest.md:17 non-blocking: the cited baseline_suite and after_suite arm logs carry no revision header or terminal EXIT= line, so their status is readable only from the manifest JSON.\n",
+  "review_run_id": "r-20261121T073140773788-review-of-wlsr-a-launch-records-its-nodes-role-428c02cbaf85",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "428c02cbaf855d49bba8feb167f5320a0d0e8f8f",
+  "reviewed_run_id": "r-20261121T064816707136-wlsr-a-launch-records-its-nodes-role",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T07:40:43.250426+00:00",
+  "total": 112
+}

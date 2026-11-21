@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/budget.py:709",
+    "reckon/crew/dispatch_picker.py:304",
+    "reckon/crew/section_holds.py:127",
+    "reckon/crew/plan_review.py:4305",
+    "reckon/crew/recovery_watch.py:2508",
+    "reckon/crew/recovery_watch.py:3175",
+    "reckon/roadmap.py:1936",
+    "reckon/mcp_views.py:1786",
+    "reckon/mcp_views.py:4911",
+    "reckon/mcp_views.py:4942"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:50:48Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-activity-read-costs-what-was-active.html",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "the landing record's Measured table still names 0286810fff as the head arm and cites scoped-gate-1795049811700474600.log, so the delivered merge head 5c1f95f3 and its logs/merge-gate.log (5 passed EXIT=0) appear nowhere in the evidence a plan reader opens."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-activity-read-costs-what-was-active.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "the fragment states the head run is an all_debug job with SLURM_JOB_ID unset, but no artefact records either: logs/merge-gate.log's header names only revision, tree and command, and the run's logs directory holds no .scheduler sibling for the merge gate, so the clause is claimed rather than evidenced."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "the suite arms the manifest records (this file and tests/test_every_shared_home_lock_holds_across_nodes.py) import only reckon.interface_counts and name reckon/ledger.py solely as a census string, so after the merge added primary main's ledger and run_store code the done_when's arm over the test files that import what changed no longer covers the delivered delta."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1790",
+      "severity": "non-blocking",
+      "text": "_history_token recomposes the store-plus-archive change token that reckon/run_store.py:802 already owns for stored_run_payloads, reaching through the private _archive_path, so a change to the token's definition in its owner would leave this copy answering a different question than the store's readers."
+    }
+  ],
+  "head_log_revision": "5c1f95f3d49762731b7b54df75edaa50dd61ba45",
+  "item_verdicts": {
+    "call_sites": "traced the runtime readers that reach the changed functions: budget, the dispatch picker, section holds, the MCP views, roadmap, plan review and the recovery watch, listed on the CALL_SITES line.",
+    "diff": "read 3633c3b23fc7b21429cd746c76786548f7aee09b..5c1f95f3d49762731b7b54df75edaa50dd61ba45 in the two target files: 237 insertions and no deletions, all of it primary main's side of the merge (ledger.py +182, run_store.py +55), with the conflict resolved as the union of stored_run_exists and stored_run_signature.",
+    "done_when": "the done_when asks for the file passing at head, a base run, both suite arms recorded as inline JSON with full revisions, an arm over the tests that import the changed modules and a negative control; the manifest records base 5417b373 4 failed 1 passed EXIT=1, head 5c1f95f3 5 passed EXIT=0 and two 58-passed arms, but tests/test_staged_write_inventory.py:11 and tests/test_every_shared_home_lock_holds_across_nodes.py:30 import only reckon.interface_counts, so the arm does not cover the merged ledger and run_store code.",
+    "goal": "the node's goal is that tests/test_an_activity_read_costs_what_was_active.py passes in full on the primary branch; the gained delta is primary main's incremental reader merged in at reckon/ledger.py:1842 stored_history and reckon/run_store.py:937 stored_run_signature, the node's own stored_run_exists read survives at reckon/ledger.py:4448, and the file reads 5 passed EXIT=0 at the merge head.",
+    "manifest": "read in full; it is status complete, names commits 0286810fff, 3633c3b2 and 5c1f95f3, the head gate 5 passed EXIT=0 at 5c1f95f3, both suite arms 58 passed EXIT=0 at 5417b373 and 5c1f95f3, and no added failure.",
+    "write_paths": "the declared write paths are reckon, tests and the slug's evidence fragment and figure directory; the gained delta sits entirely in reckon/ledger.py and reckon/run_store.py, while the merge commit also carries 315 paths of primary main outside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_and_picker_history_read_what_changed.py asserts a repeated read decodes 0 rows against a 2000-row fixture and compares every answer with ledger.load, so restoring a whole-history decode reddens it, but the node's gate never ran that file.",
+    "evidence": "logs/merge-gate.log and logs/after-suite.log record 5 passed and 58 passed EXIT=0, but the two arm files name only reckon/interface_counts; the done_when's arm over the tests that import the changed modules is absent and no artefact records the all_debug or SLURM_JOB_ID clause.",
+    "fit": "reckon/ledger.py:1780 and :1842 follow the module's local run_store import and per-process memo idiom, and reckon/run_store.py:937 keeps the open/refuse-and-attach preamble the module repeats at :844 and :902.",
+    "goal_fidelity": "reckon/ledger.py:1842 stored_history and reckon/run_store.py:937 stored_run_signature are the gained delta and the node's membership read survives at reckon/ledger.py:4448, with tests/test_an_activity_read_costs_what_was_active.py reading 5 passed EXIT=0 at logs/merge-gate.log.",
+    "reuse": "reckon/run_store.py:937 reuses _open_readonly, _refuse_owed_migration and _read_attached_tables, but reckon/ledger.py:1790 recomposes the store-plus-archive change token that reckon/run_store.py:802 already owns instead of extending it.",
+    "scope_discipline": "the gained delta is reckon/ledger.py and reckon/run_store.py, both inside the declared reckon write path, while the merge commit also carries 315 primary-branch paths such as docs/plans/queued-work-needs-no-workaround.html that lie outside the declared set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_an_activity_read_costs_what_was_active.py passes in full on the primary branch; the gained delta is primary main's incremental reader that the merge at 5c1f95f3 brought in as reckon/ledger.py:1842 stored_history and reckon/run_store.py:937 stored_run_signature, and the node's own stored_run_exists read survives at reckon/ledger.py:4448.\nVERDICT done_when: the done_when asks for the file at head, a base run, both suite arms as inline JSON with full revisions, an arm over the tests importing the changed modules and a negative control; the manifest records base 5417b373 4 failed 1 passed EXIT=1, head 5c1f95f3 5 passed EXIT=0 and two 58-passed arms, but tests/test_staged_write_inventory.py:11 and tests/test_every_shared_home_lock_holds_across_nodes.py:30 import only reckon.interface_counts, so the arm does not cover the merged ledger and run_store code.\nVERDICT write_paths: the declared paths are reckon, tests, the slug's evidence fragment and figure directory; the gained delta sits entirely in reckon/ledger.py and reckon/run_store.py, while the merge commit also carries 315 primary-main paths outside that set.\nVERDICT manifest: read in full; status complete, commits 0286810fff, 3633c3b2 and 5c1f95f3, head gate 5 passed EXIT=0 at 5c1f95f3, both suite arms 58 passed EXIT=0 at 5417b373 and 5c1f95f3, no added failure.\nVERDICT diff: read 3633c3b23fc7b21429cd746c76786548f7aee09b..5c1f95f3d49762731b7b54df75edaa50dd61ba45 in the two target files, 237 insertions and no deletions, all of it primary main's side of the merge, the conflict resolved as the union of stored_run_exists and stored_run_signature.\nCALL_SITES: reckon/budget.py:709, reckon/crew/dispatch_picker.py:304, reckon/crew/section_holds.py:127, reckon/crew/plan_review.py:4305, reckon/crew/recovery_watch.py:2508, reckon/crew/recovery_watch.py:3175, reckon/roadmap.py:1936, reckon/mcp_views.py:1786, reckon/mcp_views.py:4911, reckon/mcp_views.py:4942\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1842 stored_history and reckon/run_store.py:937 stored_run_signature are the gained delta and the membership read survives at reckon/ledger.py:4448, with tests/test_an_activity_read_costs_what_was_active.py reading 5 passed EXIT=0 in logs/merge-gate.log.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/merge-gate.log and logs/after-suite.log record 5 passed and 58 passed EXIT=0, but the two arm files name only interface_counts, and no artefact records the all_debug or SLURM_JOB_ID clause the done_when carries.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the gained delta is reckon/ledger.py and reckon/run_store.py, inside the declared reckon path, while the merge carries 315 primary-main paths such as docs/plans/queued-work-needs-no-workaround.html outside the declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_budget_and_picker_history_read_what_changed.py asserts a repeated read decodes 0 rows over a 2000-row fixture and compares every answer with ledger.load, so restoring a whole-history decode reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1780 and :1842 follow the module's local run_store import and per-process memo idiom, and reckon/run_store.py:937 repeats the open and refuse-and-attach preamble the module uses at :844 and :902.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/run_store.py:937 reuses _open_readonly, _refuse_owed_migration and _read_attached_tables, but reckon/ledger.py:1790 recomposes the store-plus-archive token that reckon/run_store.py:802 already owns.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-activity-read-costs-what-was-active.html:54 non-blocking: the Measured table still names 0286810fff as the head arm and cites scoped-gate-1795049811700474600.log, so the delivered head 5c1f95f3 and its logs/merge-gate.log appear nowhere in the evidence a plan reader opens.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-activity-read-costs-what-was-active.html:34 non-blocking: the fragment states the head run is an all_debug job with SLURM_JOB_ID unset, but no artefact records either; logs/merge-gate.log names only revision, tree and command, and the logs directory holds no .scheduler sibling for the merge gate.\nFINDING tests/test_staged_write_inventory.py:11 non-blocking: the recorded suite arms import only reckon.interface_counts and name reckon/ledger.py solely as a census string, so the done_when's arm over the tests that import what changed no longer covers the ledger and run_store code the merge added.\nFINDING reckon/ledger.py:1790 non-blocking: _history_token recomposes the store-plus-archive change token that reckon/run_store.py:802 already owns for stored_run_payloads, reaching through the private _archive_path, so a change to the token in its owner would leave this copy answering a different question.",
+  "review_run_id": "r-20261119T162148920109-review-of-qwnw-red-file-an-activity-read-costs-what-was-active-5c1f95f3d497",
+  "reviewed_base_sha": "3633c3b23fc7b21429cd746c76786548f7aee09b",
+  "reviewed_head_sha": "5c1f95f3d49762731b7b54df75edaa50dd61ba45",
+  "reviewed_run_id": "r-20261118T054112767900-qwnw-red-file-an-activity-read-costs-what-was-active",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T162148920109-review-of-qwnw-red-file-an-activity-read-costs-what-was-active-5c1f95f3d497"
+  },
+  "reviewer_run_id": "r-20261119T162148920109-review-of-qwnw-red-file-an-activity-read-costs-what-was-active-5c1f95f3d497",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:07:42+00:00",
+  "total": 93
+}

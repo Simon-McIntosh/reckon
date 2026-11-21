@@ -120,7 +120,7 @@ def test_execution_measure_requires_a_capable_role_or_recorded_override(
             session="refused-session",
         ),
     )
-    refusal = json.loads(refused.output)
+    refusal = json.loads(refused.stdout)
     assert refused.exit_code == 2
     assert refusal["error"] == "not-dispatchable"
     assert "running a test suite" in refusal["detail"]
@@ -137,7 +137,7 @@ def test_execution_measure_requires_a_capable_role_or_recorded_override(
             session="capable-session",
         ),
     )
-    capable_record = json.loads(capable.output)
+    capable_record = json.loads(capable.stdout)
     assert capable.exit_code == 0
     assert capable_record["execution_fit"] == {
         "allowed": True,
@@ -157,7 +157,7 @@ def test_execution_measure_requires_a_capable_role_or_recorded_override(
     )
     override_args.append("--allow-execution-mismatch")
     overridden = runner.invoke(cli_module.main, override_args)
-    overridden_record = json.loads(overridden.output)
+    overridden_record = json.loads(overridden.stdout)
     assert overridden.exit_code == 0
     assert overridden_record["execution_fit"] == {
         "allowed": True,
@@ -170,6 +170,13 @@ def test_execution_measure_requires_a_capable_role_or_recorded_override(
     persisted = json.loads(crew.pointer_path(overridden_record["run_id"]).read_text())
     assert persisted["execution_fit"] == overridden_record["execution_fit"]
 
+    # A review run's promotion reads the run's own account of itself, so the
+    # worker's manifest has to be on disk before the completion is called.
+    override_manifest = isolated_home / "crew" / "runs" / "override.md"
+    override_manifest.write_text(
+        "node: override-node\nstatus: complete\ncommits: none\n",
+        encoding="utf-8",
+    )
     completed = crew.complete(
         overridden_record["run_id"],
         gate="passed",

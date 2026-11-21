@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/cli.py:504 registers crew_suite_run on the crew group",
+    "reckon/crew/prompts.py:863 composes `crew suite run --project <p> --run <run> --checkout-path <worktree> --partition ...` for every dispatched worker",
+    "reckon/crew/gate_watch.py:69 SUITE_RUN label passed to _gate_opened from within crew suite run's standing-suite branch"
+  ],
+  "completed_at": "2026-11-19T17:15:53Z",
+  "dispatched_at": "2026-11-19T16:59:11Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read commit by commit against e9dffe52: 2267b57 adds `_accept_a_matching_project(run_id, project)` at reckon/crew_run_commands.py:2224 plus the two sweep-table entries 'suite run' at tests/test_run_verbs_share_one_identity_grammar.py:101 and :140, and 1cbc5629 adds only the 51-line evidence fragment; three files, +54 lines, nothing outside the declared scope.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named product-wrong or test-wrong, no assertion deleted or weakened, an importer arm adding no failure on both arms with full 40-character revisions, and a red negative control; the manifest and the run directory carry all five \u2014 negative-control-1795043003208027640.log reads 2 failed, 33 passed, EXIT=1, and the importer arms import-arm-base-1795043042844452694.log and import-arm-head-2267b57b-1795043343724038786.log carry identical 22 FAILED ids and identical 512 passes, which I diffed.",
+    "goal": "The node goal is 'Make tests/test_run_verbs_share_one_identity_grammar.py pass in full on the primary branch'; the head gate log scoped-gate-1795043304162780502.log records '# revision: 1cbc56294a7157e1df0f46db122b18a8a42fe04e', 35 passed and EXIT=0, and my own re-run of that file against a tree extracted at 1cbc5629 ran the [suite run] parametrisation green.",
+    "manifest": "Read; it states 35 passed EXIT=0 at 1cbc5629 against 2 failed / 33 passed EXIT=1 at e9dffe52, names commits 2267b57 and 1cbc5629, records negative_control_log, and carries baseline_suite and after_suite as inline JSON with 40-character revisions and empty failure lists; its `tests:` line is the direct pytest command rather than the sbatch job wrapper, which the logs' own `# command:` headers carry.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every path in the diff is inside them \u2014 reckon/crew_run_commands.py:2224, tests/test_run_verbs_share_one_identity_grammar.py:101 and :140, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_run_verbs_share_one_identity_grammar.py pass in full; scoped-gate-1795043304162780502.log records '# revision: 1cbc56294a7157e1df0f46db122b18a8a42fe04e', 35 passed and EXIT=0, and my re-run of the file at 1cbc5629 ran the [suite run] parametrisation green.\nVERDICT done_when: the done_when asks for a green head run as an all_debug job with SLURM_JOB_ID unset, each cause named, no assertion deleted, an importer arm adding no failure with both revisions inline, and a red negative control; negative-control-1795043003208027640.log reads 2 failed, 33 passed, EXIT=1, and the importer arms carry identical 22 FAILED ids on e9dffe52 and 2267b57.\nVERDICT write_paths: declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every diff path is inside them (reckon/crew_run_commands.py:2224, tests/test_run_verbs_share_one_identity_grammar.py:101 and :140, and the fragment file).\nVERDICT manifest: read; it records 35 passed EXIT=0 at 1cbc5629 against 2 failed / 33 passed EXIT=1 at e9dffe52, names both commits, negative_control_log, and inline baseline_suite/after_suite with 40-character revisions, differing from the job log only in stating the inner pytest command instead of the sbatch wrapper.\nVERDICT diff: read commit by commit \u2014 2267b57 adds the helper call at reckon/crew_run_commands.py:2224 and the two sweep-table rows at tests/test_run_verbs_share_one_identity_grammar.py:101,140; 1cbc5629 adds only the 51-line fragment; three files, +54 lines, all declared.\nCALL_SITES: reckon/cli.py:504, reckon/crew/prompts.py:863, reckon/crew/gate_watch.py:69\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2224 routes the run id through _accept_a_matching_project before _suite_project_root, and a probe of the head tree answers \"--project 'sweep-other' disagrees with run ...\" where the base tree answers \"has no registered mount\" for both arms.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-1795043304162780502.log states its revision, the command, 35 passed and EXIT=0, with the red base arm beside it at negative-control-1795043003208027640.log:39-44.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the entire diff is reckon/crew_run_commands.py:2224, tests/test_run_verbs_share_one_identity_grammar.py:101,140 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main.html, all inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression by dropping the call at reckon/crew_run_commands.py:2224 leaves the verb's answer as \"has no registered mount\" \u2014 the answer I observed on the base tree \u2014 so the arm asserting DISAGREEMENT in tests/test_run_verbs_share_one_identity_grammar.py:219 reddens; the diff's own two lines are declarations that enable that pre-existing parametrisation.\nSCORE fit: 19\nJUSTIFICATION fit: the added call matches the sibling shape at reckon/crew_run_commands.py:1939, and the fragment follows docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-promotes-what-it-passed.html:1 with ids prefixed by the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the single owner at reckon/crew_dispatch_commands.py:108 and adds no definition; a capability search for a competing run/project cross-check found only that helper's call sites in reckon/crew_run_commands.py, reckon/crew_dispatch_commands.py and reckon/crew/resume.py.\n",
+  "review_run_id": "r-20261118T232005144898-review-of-qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main-1cbc56294a71",
+  "reviewed_base_sha": "e9dffe5259e14aac4f921e6ee6e63ce03e43ad86",
+  "reviewed_head_sha": "1cbc56294a7157e1df0f46db122b18a8a42fe04e",
+  "reviewed_run_id": "r-20261118T064007848543-qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:27:11.614927+00:00",
+  "total": 113
+}

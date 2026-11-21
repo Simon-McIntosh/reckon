@@ -1,0 +1,114 @@
+<section id="qwnw-red-file-crew-gate-log-agrees-at-current-main-landing">
+  <h3>§29 — the gate-log agreement cases read the verdict from the receipt's cited record</h3>
+  <p>The file's authority is <code>crew complete --wait</code>, so the completion reply is part
+  of this file's subject. Since <code>ba811581d3</code> that reply is bounded: it carries a link
+  to the outcome's record rather than the whole document, and an outcome too large for the reply
+  budget is written whole to the file the link names rather than being cut. The cases still read
+  the landed record in the reply itself, so the file went red while the gate-log rules it asserts
+  were never broken.</p>
+
+  <h4 id="qwnw-red-file-crew-gate-log-agrees-at-current-main-causes">Causes and verdicts</h4>
+  <table>
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps, and the repair</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>KeyError: 'record'</code> in the seven cases that read a landed promotion</td>
+        <td>test wrong</td>
+        <td>A completion receipt links the outcome instead of carrying it: the reply names
+            <code>record_path</code>, whose payload holds the promotion record under its
+            <code>record</code> key. The cases read that payload — resolved through the run's
+            archive, where a completed promotion moves the directory the file was written
+            into — and assert the same gate-log facts as before: the verdict, the exit status,
+            the command, and a preserved <code>gate.log</code> whose bytes equal the cited log's.</td>
+      </tr>
+      <tr>
+        <td><code>Found: no evidence the command ran</code> absent from <code>result.output</code>
+            in the three refusals whose text exceeds the reply budget</td>
+        <td>test wrong</td>
+        <td>A refusal is carried whole, but a reply over the budget is written to the file it
+            cites, so the text is one read away rather than in stdout. Those cases read the
+            refusal from the cited record, and their content assertions — the found shape, the
+            matched diagnostic with its one-based line number, and the resolving verb — are
+            unchanged.</td>
+      </tr>
+      <tr>
+        <td>Refusals short enough to fit the budget already printed in the reply</td>
+        <td>no weakening</td>
+        <td>They now read the same refusal through the same helper, so the assertion no longer
+            depends on the reply's length, which moves with the temporary path length.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>No assertion was deleted or weakened: the same 17 cases assert the same shapes, remedy text,
+  preserved log copy and pointer survival. Nothing under <code>reckon/</code> changed.</p>
+
+  <h4 id="qwnw-red-file-crew-gate-log-agrees-at-current-main-red">The base run of the named file, with its failing ids</h4>
+  <pre><code># revision: 96e3c4b8a3957e2624866e0dc773042892239333
+# tree: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/base-tree
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/base-tree
+# module: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/base-tree/reckon/__init__.py
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py
+# arm: base-96e3c4b8
+# slurm_job_id_env: 1319171
+FAILED tests/test_crew_gate_log_agrees.py::test_an_agreeing_recorded_exit_status_does_not_refuse
+FAILED tests/test_crew_gate_log_agrees.py::test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted
+FAILED tests/test_crew_gate_log_agrees.py::test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused[found-but-cannot-run]
+FAILED tests/test_crew_gate_log_agrees.py::test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused[not-found]
+FAILED tests/test_crew_gate_log_agrees.py::test_a_capture_recording_exit_127_for_the_diagnostic_is_still_refused
+FAILED tests/test_crew_gate_log_agrees.py::test_fixture_command_not_found_beside_a_passing_summary_is_accepted
+FAILED tests/test_crew_gate_log_agrees.py::test_positive_exit_record_outranks_command_not_found_text_in_runner_output[quoted-assertion]
+FAILED tests/test_crew_gate_log_agrees.py::test_positive_exit_record_outranks_command_not_found_text_in_runner_output[fixture-content]
+FAILED tests/test_crew_gate_log_agrees.py::test_promotion_whose_log_and_command_agree_lands_unchanged
+FAILED tests/test_crew_gate_log_agrees.py::test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected
+FAILED tests/test_crew_gate_log_agrees.py::test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion
+11 failed, 6 passed in 5.06s
+EXIT=1</code></pre>
+
+  <h4 id="qwnw-red-file-crew-gate-log-agrees-at-current-main-break">What broke it since the earlier repair</h4>
+  <p>The same file, unchanged, at the commit before the bounded-reply change and at the change
+  itself. The tree is a <code>git archive</code> of each revision, so it carries no git metadata
+  and its revision is named in the log header rather than read from the tree.</p>
+  <pre><code># revision: b5dda3fd06b6dfbad3c1eda77c8503a3d8af5fb6
+# tree: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/tree-b5dda3fd06
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/tree-b5dda3fd06
+# module: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/tree-b5dda3fd06/reckon/__init__.py
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py
+# arm: before-break
+# slurm_job_id_env: 1319171
+17 passed in 5.80s
+EXIT=0</code></pre>
+  <pre><code># revision: ba811581d35e1d384bd9e4b622f37f10fc92c998
+# tree: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/tree-ba811581d3
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/tree-ba811581d3
+# module: /tmp/reckon-crew-scratch/r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main/tree-ba811581d3/reckon/__init__.py
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py
+# arm: at-break
+# slurm_job_id_env: 1319171
+17 failed in 6.16s
+EXIT=1</code></pre>
+  <p>The whole file is red at <code>ba811581d3</code>; the later <code>96bade96e3</code> let a
+  single run's refusal be carried whole, which is why 6 of the 17 pass at the base revision and
+  the 11 above remain.</p>
+
+  <h4 id="qwnw-red-file-crew-gate-log-agrees-at-current-main-head">The head run, as a job on all_debug</h4>
+  <pre><code># revision: e399671a54a756877b0f9ad905525b7ef3c6f9d3
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees-at-current-main
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees-at-current-main
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees-at-current-main/reckon/__init__.py
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py
+# arm: head
+# job: 1327849 on all_debug host 98dci4-clu-3143.iter.org
+17 passed in 4.02s
+EXIT=0</code></pre>
+  <p>The gate ran on <code>all_debug</code> in the node's worktree with <code>SLURM_JOB_ID</code>
+  unset in the pytest environment, and its log is on shared storage beside this record.</p>
+
+  <h4 id="qwnw-red-file-crew-gate-log-agrees-at-current-main-arms">Arms and lint</h4>
+  <p>The base and head arms of the node's declared suite both ran on <code>all_debug</code>:
+  <code>96e3c4b8a3957e2624866e0dc773042892239333</code> exited 0 with no failures, and
+  <code>e399671a54a756877b0f9ad905525b7ef3c6f9d3</code> exited 0 with no failures — no failure
+  added against the file's base. <code>ruff check</code> reports nothing on the changed path;
+  <code>ruff format --check</code> reports one finding, the pre-existing wrapping of
+  <code>_assert_cites_the_recorded_copy</code>'s signature, which the base revision carries
+  unchanged.</p>
+</section>

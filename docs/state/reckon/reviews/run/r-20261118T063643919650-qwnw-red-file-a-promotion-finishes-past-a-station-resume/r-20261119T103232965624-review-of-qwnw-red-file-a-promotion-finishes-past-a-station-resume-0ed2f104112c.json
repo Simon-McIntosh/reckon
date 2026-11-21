@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:36:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-finishes-past-a-station-resume.html",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph claims every arm's log names its revision, tree and command and ends with an EXIT line, but the sandbox arm at line 24 has no log in the run directory, so that row rests on a transcript rather than a re-openable record."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-finishes-past-a-station-resume.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: both inline suite arms cite ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5 while the run head is 0ed2f104112c82d1f613c1857981d3f8a8d0d116, so the after arm was measured at the base rather than the head the suite fence asks it to name, and the delta is empty by construction instead of measured."
+    }
+  ],
+  "head_log_revision": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "The landed change is a documentation fragment no runtime path can reach, so there is no production call site of the change itself; the rule it records, reckon/crew/promotion.py:394 _retire_a_pointer_whose_attempt_ended, is called from reckon/crew/promotion.py:599.",
+    "diff": "Read the single commit 0ed2f10411 against ab67be8bb1ec: one new 66-line evidence fragment, no source or test change, inside the declared fragment path; its table at lines 24-35 lists four arms and lines 39-43 state the two suite arms share the base revision.",
+    "done_when": "The done-when requires the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; all_debug_target_test.log:1-3 names ab67be8bb1ec, the worktree and the command, line 5 reads two passed, line 6 reads EXIT=0, and all_debug_target_test.sh:2 unsets the variable, so the gate asserts the measure apart from both suite arms naming the base revision rather than head 0ed2f10411.",
+    "goal": "The goal is to make tests/test_a_promotion_finishes_past_a_station_resume.py pass in full on the primary branch; commit 0ed2f10411 changes no product or test file because the named file already passed at base ab67be8bb1ec, and all_debug job 1327333 reruns it green at that revision (all_debug_target_test.log:5 two passed).",
+    "manifest": "Read the run's manifest.md: status complete, commits 0ed2f10411, changed_paths the one fragment, tests the literal pytest command for the named file, test_logs naming all_debug_target_test.log and scoped-gate-1795019202106856856.log, baseline_suite and after_suite both at ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5 with exit_status 0 and failure_count 0, and negative_control_log the bare path.",
+    "write_paths": "The declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its html, and docs/figures/queued-work-needs-no-workaround, and the delivered diff touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-finishes-past-a-station-resume.html."
+  },
+  "justifications": {
+    "durability": "The fragment adds no assertion; the behaviour it records is guarded by tests/test_a_promotion_finishes_past_a_station_resume.py:163-207, and the recorded mutation arm at negative-control-mutation.log:4-6 reddens line 163 with EXIT=1 when reckon/crew/promotion.py:394 is rebound to the pre-feature refusal.",
+    "evidence": "all_debug_target_test.log:1-6 names revision ab67be8bb1ec, the worktree, the command and EXIT=0 after two passed, so the done-when's own job is recorded; but both inline suite arms sit at ab67be8bb1ec (fragment lines 39-43), so no arm measures head 0ed2f10411 and the delta is empty by construction.",
+    "fit": "The fragment follows the sibling idiom under docs/evidence/fragments/queued-work-needs-no-workaround/ (qwnw-a-commit-keyed-list-item-is-read-codex.html opens with a section carrying an id then an h2, and nests h3 elements with ids), and its ids carry the node slug alone.",
+    "goal_fidelity": "The goal is that tests/test_a_promotion_finishes_past_a_station_resume.py pass in full on the primary branch; commit 0ed2f10411 changes no source because the file already passed at ab67be8bb1ec, and all_debug_target_test.log:5 reads two passed at that revision with sacct job 1327333 on all_debug COMPLETED.",
+    "reuse": "The fragment adds no definition to fork; its placement is the one reckon/evidence.py:866 owns (docs/evidence/fragments/<plan>/<node>.html), which the 313 existing siblings in that directory already follow.",
+    "scope_discipline": "git diff ab67be8bb1ec..0ed2f10411 lists exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-finishes-past-a-station-resume.html, inside the node's declared fragment path, and nothing under reckon/, tests/ or docs/figures/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_promotion_finishes_past_a_station_resume.py pass in full on the primary branch; commit 0ed2f10411 touches no source because the file already passed at ab67be8bb1ec, and all_debug_target_test.log:5 reads two passed at that revision with sacct job 1327333 on all_debug COMPLETED.\nVERDICT done_when: the fence asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset and output on shared storage; all_debug_target_test.log:1-6 names revision ab67be8bb1ec, the worktree and the command, reads two passed and EXIT=0, so the gate asserts that measure.\nVERDICT write_paths: the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its html and docs/figures/queued-work-needs-no-workaround; the one delivered path is the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-finishes-past-a-station-resume.html, inside them.\nVERDICT manifest: read the run's manifest.md; it records status complete, commit 0ed2f10411, the literal pytest command, test_logs naming all_debug_target_test.log and scoped-gate-1795019202106856856.log, baseline_suite and after_suite both at ab67be8bb1ec with exit_status 0 and failure_count 0, and a bare negative_control_log path.\nVERDICT diff: read commit 0ed2f10411 against ab67be8bb1ec; one new 66-line evidence fragment, no source or test change, inside the declared fragment path, with its table at lines 24-35 listing four arms and lines 39-43 stating the two suite arms share the base revision.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the fragment at lines 4-8 states that no product change was needed, and all_debug_target_test.log:5 with sacct job 1327333 confirm two passed at ab67be8bb1ec.\nSCORE evidence: 15\nJUSTIFICATION evidence: all_debug_target_test.log:1-6 names revision ab67be8bb1ec and reads EXIT=0, but both inline suite arms sit at ab67be8bb1ec (fragment lines 39-43), so no arm measures head 0ed2f10411.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ab67be8bb1ec..0ed2f10411 lists exactly one path, the declared fragment, and nothing under reckon/, tests/ or docs/figures/.\nSCORE durability: 16\nJUSTIFICATION durability: the fragment adds no assertion; the guard it records at tests/test_a_promotion_finishes_past_a_station_resume.py:163-207 is shown falsifiable only by the recorded mutation arm at negative-control-mutation.log:4-6, which reddens line 163 with EXIT=1 when reckon/crew/promotion.py:394 is rebound to the pre-feature refusal.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the sibling idiom in docs/evidence/fragments/queued-work-needs-no-workaround/, whose qwnw-a-commit-keyed-list-item-is-read-codex.html opens with a section carrying an id then an h2, and its ids carry only the node slug.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fragment adds no definition and sits at the path reckon/evidence.py:866 owns, docs/evidence/fragments/<plan>/<node>.html, which the 313 existing siblings already follow.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-finishes-past-a-station-resume.html:14 non-blocking: the paragraph claims every arm's log names its revision, tree and command and ends with an EXIT line, but the sandbox arm at line 24 has no log in the run directory, so that row rests on a transcript rather than a re-openable record.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-finishes-past-a-station-resume.html:39 non-blocking: both inline suite arms cite ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5 while the run head is 0ed2f104112c82d1f613c1857981d3f8a8d0d116, so the after arm measures the base rather than the delivered head and its empty delta is true by construction instead of measured.",
+  "review_run_id": "r-20261119T103232965624-review-of-qwnw-red-file-a-promotion-finishes-past-a-station-resume-0ed2f104112c",
+  "reviewed_base_sha": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "reviewed_head_sha": "0ed2f104112c82d1f613c1857981d3f8a8d0d116",
+  "reviewed_run_id": "r-20261118T063643919650-qwnw-red-file-a-promotion-finishes-past-a-station-resume",
+  "reviewer_run_id": "r-20261119T103232965624-review-of-qwnw-red-file-a-promotion-finishes-past-a-station-resume-0ed2f104112c",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:11:25.627826+00:00",
+  "total": 107
+}

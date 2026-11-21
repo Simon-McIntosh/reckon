@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from collections import OrderedDict
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
@@ -36,6 +37,7 @@ from reckon.crew.runs import (
     _mutate_pointer,
     _utc_now,
     list_live,
+    node_field,
     read_pointer,
 )
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
@@ -883,7 +885,12 @@ def _readable_standing_review(review_run_id: str) -> Mapping[str, Any] | None:
         return None
 
 
-def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
+def _discard_stranded_review(
+    review_run_id: str,
+    *,
+    reason: str,
+    fields: Mapping[str, Any] | None = None,
+) -> str:
     """Discard a review pointer whose launch never spawned a worker.
 
     Returns a sentence recording what happened, for the reviewed run's own
@@ -891,7 +898,10 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     run directory when the run has one, and in the shared discards spool when it
     does not — a review whose launch never spawned a worker has no run directory
     to hold it. The reason is written onto whichever marker was written, because
-    the marker is the durable place a later reader asks why the pointer went. A
+    the marker is the durable place a later reader asks why the pointer went.
+    ``fields`` adds a caller's own facts to that same marker, so a retirement
+    whose departure needs more than a sentence writes them here rather than
+    reading the marker back and rewriting it. A
     discard that refuses or fails is reported rather than raised: the reflex is
     a sweep that must reach the rest of the fleet, and a pointer already gone
     is a release as much as one removed.
@@ -918,6 +928,8 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     if isinstance(data, Mapping):
         data = dict(data)
         data["reason"] = reason
+        if fields:
+            data.update(fields)
         try:
             runs._write_json(marker, data)
         except OSError:
@@ -1781,7 +1793,7 @@ def _judge_head_move(
         return None
     node = record.get("node") or {}
     goal = str(node.get("goal") or "")
-    done_when = str(node.get("done_when") or "")
+    done_when = str(runs.node_field(record, "done_when") or "")
     verdicts = review_need.judge(
         [
             review_need.Change(
@@ -1890,7 +1902,7 @@ def re_review_prediction(
             paths = _changed_paths_between(tree, prior_head, head)
     node = record.get("node") or {}
     goal = str(node.get("goal") or "")
-    done_when = str(node.get("done_when") or "")
+    done_when = str(runs.node_field(record, "done_when") or "")
     findings = review_module.normalised_findings(prior)
     prior_summary = {
         "review_run_id": str(prior.get("review_run_id") or ""),
@@ -3717,6 +3729,191 @@ def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     }
 
 
+# ── A refusal composed for the same inputs is not composed again ────────────
+# A review is composed for every awaiting run on every sweep, and its
+# composition asks questions whose answers move only when the run, its review
+# records or its lane do: a budget verdict over the lane's whole run history, a
+# roster snapshot, a scope read. Measured on 18 November, a sweep spent 34.2% of
+# the station's samples in this pass and 19.2% of them inside the composition
+# itself, on runs whose attempt had already been refused for the reason it was
+# refused on the previous pass.
+#
+# So a refinement remembers the refusal and the inputs that composition read,
+# and does not compose again while those inputs still hold the same values: the
+# run's own pointer, the records its review would be filed in, and the lane
+# documents its lanes publish their admission in. Those are three cheap reads
+# in place of one composition.
+#
+# Those three are not everything a refusal can rest on, though. The lane's
+# budget verdict is a projection over run history, the roster is a snapshot of
+# member health, and a plan subject's plan document is a file of its own: a
+# hold from any of them lifts without touching this run's pointer, records or
+# lanes, and nothing here would notice. So the memory is bounded in time as
+# well as in inputs — a refusal is trusted for a minute and then reached again,
+# which keeps the saving at one composition per awaiting run per minute instead
+# of one per sweep, while a review held on budget is composed again soon after
+# the hold lifts rather than never.
+#
+# The memory is per process — like the refusal line the station writes once per
+# identity — so a restarted station composes each run once more, which is the
+# safe direction: a composition that succeeds is what a run's review needs, and
+# a refusal names the condition a coordinator would have acted on anyway. A
+# refusal that names another run's claim is not remembered here at all, because
+# its cause is that run's record rather than this one's inputs, and
+# :func:`stored_claim_refusal` already answers it, on the sweep after the
+# holder releases.
+_REFUSED_COMPOSITIONS: OrderedDict[
+    str, tuple[tuple[Any, ...], dict[str, Any], float]
+] = OrderedDict()
+_REFUSED_COMPOSITIONS_LOCK = threading.Lock()
+_REFUSED_COMPOSITIONS_LIMIT = 4096
+#: The longest a remembered refusal is trusted with its inputs unchanged. A
+#: minute is about how long a budget hold or a roster wobble is worth trusting;
+#: it costs one composition per awaiting run per minute in place of one per
+#: sweep.
+_REFUSED_COMPOSITION_RETRY_SECONDS = 60.0
+
+
+def _file_identity(path: Path) -> tuple[Any, ...]:
+    """The stat identity of ``path``, or its absence, without raising.
+
+    A lane document that is absent is an identity in its own right: a lane that
+    starts publishing its admission must read as a changed input, so the
+    absence is returned as a value rather than as an error.
+    """
+    from reckon.file_memo import file_signature
+
+    try:
+        return file_signature(path)
+    except OSError:
+        return ("absent",)
+
+
+def _lane_admission_identity(
+    config: Mapping[str, Any] | None,
+) -> tuple[tuple[Any, ...], ...]:
+    """The identities of the lane documents the configured lanes publish.
+
+    A lane publishes its own admission in the JSON its ``lane_document`` names —
+    the running count against the ceiling it computed for itself — so a lane
+    draining or filling is a write to that file and nothing else. A backend
+    declaring no document is left out: it publishes no admission, and reading a
+    store here would be the composition's own work rather than a cheap read of
+    it.
+    """
+    backends = (config or {}).get("backends") or {}
+    if not isinstance(backends, Mapping):
+        return ()
+    parts: list[tuple[Any, ...]] = []
+    for name, settings in sorted(
+        (str(name), value) for name, value in backends.items()
+    ):
+        declared = ""
+        if isinstance(settings, Mapping):
+            declared = str(settings.get("lane_document") or "").strip()
+        if declared:
+            parts.append((name, declared, _file_identity(Path(declared).expanduser())))
+    return tuple(parts)
+
+
+def _review_record_identity(project: str, run_id: str) -> tuple[Any, ...]:
+    """The identities of the records this run's review would be filed among.
+
+    The store's own index answers per reviewed run, so another run's record
+    landing moves no part of this identity and this run's record landing moves
+    all of it — which is the difference between a sweep that recomposes one run
+    and one that recomposes the fleet.
+    """
+    if not (project and run_id):
+        return ()
+    from reckon.crew import review_records
+
+    try:
+        return review_records.review_entries_signature(project, run_id)
+    except (CrewError, OSError, ValueError):
+        # A store that cannot be read is not evidence that nothing changed, so
+        # the identity is one no remembered attempt can match: the composition
+        # runs again and reads the store itself.
+        return (("unreadable",),)
+
+
+def _composition_identity(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None
+) -> tuple[Any, ...]:
+    """The cheaply readable inputs a review composition for this run rests on."""
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    return (
+        run_id,
+        _file_identity(runs.pointer_path(run_id)),
+        _review_record_identity(project, run_id),
+        _lane_admission_identity(_resolved_review_config(project, config)),
+    )
+
+
+def _remember_composed_refusal(
+    record: Mapping[str, Any],
+    report: Mapping[str, Any],
+    *,
+    claim: Mapping[str, Any] | None,
+    config: Mapping[str, Any] | None,
+) -> None:
+    """Keep the refusal this pass composed against the inputs read for it.
+
+    The identity is taken after the refusal has been recorded on the pointer,
+    so the sweep that reads it next compares against the pointer the record
+    itself left behind.
+
+    A refusal that names another run's claim is not kept, and the claim comes
+    from the refusal itself rather than from the report: whether the holder
+    still fences its paths is that run's state, not one of this run's three
+    inputs, so a remembered refusal would outlive the release — the pointer,
+    this run's records and its lanes' admission would all still match, and the
+    run would never be composed again. The sweep composes instead and asks
+    :func:`stored_claim_refusal`, which reads the holder's own pointer.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id or claim:
+        return
+    identity = _composition_identity(record, config=config)
+    with _REFUSED_COMPOSITIONS_LOCK:
+        _REFUSED_COMPOSITIONS[run_id] = (identity, dict(report), time.monotonic())
+        _REFUSED_COMPOSITIONS.move_to_end(run_id)
+        while len(_REFUSED_COMPOSITIONS) > _REFUSED_COMPOSITIONS_LIMIT:
+            _REFUSED_COMPOSITIONS.popitem(last=False)
+
+
+def _settled_composed_refusal(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None
+) -> dict[str, Any] | None:
+    """The refusal this run's last composition reached, while its inputs hold.
+
+    ``None`` means this pass has to compose: nothing was refused for the run,
+    or one of the three inputs the refusal was decided on has moved since — its
+    pointer, its review records or its lanes' published admission — or the
+    refusal has stood longer than :data:`_REFUSED_COMPOSITION_RETRY_SECONDS`,
+    which is the bound that reaches it again when the hold it names rests on
+    something this identity does not watch, such as the lane's budget verdict,
+    the roster or a plan's own document. The report returned is the refusal the
+    composition produced, so a reader sees what it would have seen had the
+    composition run, and one key marks that no composition was spent reaching
+    it.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    with _REFUSED_COMPOSITIONS_LOCK:
+        remembered = _REFUSED_COMPOSITIONS.get(run_id)
+    if remembered is None:
+        return None
+    identity, report, composed_at = remembered
+    if identity != _composition_identity(record, config=config):
+        return None
+    if time.monotonic() - composed_at >= _REFUSED_COMPOSITION_RETRY_SECONDS:
+        return None
+    return {**report, "settled_refusal": True}
+
+
 def _attempt_ended_after(record: Mapping[str, Any], written_ns: int) -> bool:
     """Whether the attempt the pointer names ended and wrote this manifest.
 
@@ -3987,6 +4184,14 @@ def dispatch_review_for_run(
     held = stored_claim_refusal(record)
     if held is not None:
         return held
+    if not dry_run:
+        # The refusal a composition for this run already reached is not reached
+        # again while the run, its records and its lanes' admission hold the
+        # values that composition read. A preview composes regardless: it is
+        # asked to show what a dispatch would decide now.
+        settled = _settled_composed_refusal(record, config=config)
+        if settled is not None:
+            return settled
     text_report = _dispatch_text_review_for_run(
         record,
         config=config,
@@ -4030,7 +4235,7 @@ def _queued_pointer_names_directory(project: str, directory: Path) -> bool:
         return False
     target = Path(directory)
     for pointer in _list_live_records(project=project, phase="queued"):
-        brief = str((pointer.get("node") or {}).get("brief") or "").strip()
+        brief = str(node_field(pointer, "brief") or "").strip()
         if brief and Path(brief).parent == target:
             return True
     return False
@@ -4655,13 +4860,20 @@ def _dispatch_composed_review(
             reviewed_head=fields["head"],
             claim=claim,
         )
-        return {
+        report = {
             "run_id": run_id,
             "dispatched": False,
             "refused": True,
             "backend": backend,
             "reason": str(exc),
         }
+        # The composition this pass paid for is remembered against the inputs
+        # it read, so the next sweep over a run nothing has moved is answered
+        # from here rather than by composing the same refusal again. The
+        # refusal is recorded on the pointer first, because the pointer's own
+        # identity is one of those inputs.
+        _remember_composed_refusal(record, report, claim=claim, config=resolved)
+        return report
 
     review_run_id = str(launched.get("run_id") or "")
     record_re_review_prediction(record, fields, review_run_id)

@@ -1,0 +1,62 @@
+<section id="qwnw-red-file-a-live-worker-still-owes-its-review-landing">
+  <h2>A live worker's delivered run still owes its review</h2>
+
+  <p><strong>What changed. Only the test.</strong>
+  <code>tests/test_a_live_worker_still_owes_its_review.py</code> dispatched a
+  run, then committed the run's declared work on the repository's integration
+  branch and cited that commit to <code>crew complete</code>. The citation
+  guard reads reachability against the run's <em>worktree</em> head, never the
+  repository's — a rule the code has kept since the fix that reads a
+  citation's reachability in the run's own worktree, and the test predates it.
+  The fixture therefore failed before the review obligation the test is about
+  was ever reached.</p>
+
+  <p><strong>Reproduced at the base.</strong> The base arm of the node's own
+  file, run at <code>a7ac07a91d918a57176c0d218abc4ae06e7ebab0</code> with
+  <code>SLURM_JOB_ID</code> unset on <code>all_debug</code>, failed exactly
+  there:</p>
+
+  <pre id="qwnw-red-file-a-live-worker-still-owes-its-review-repro">E  reckon.crew.CrewError: run 'r-20261119T151758695684-node-a' cites
+   62628e561aaf3c15812ea6d680bad3248ae37d6f, which is not a commit this run
+   made beyond its base fb4c3f1540c0ff530a8fbe014b01b36917f4a8e6, the run's
+   work is what it committed on its own history
+FAILED tests/test_a_live_worker_still_owes_its_review.py::test_a_delivered_run_whose_worker_is_alive_owes_its_review
+EXIT=1</pre>
+
+  <p><strong>Verdict: the test was wrong, and only its fixture moved.</strong>
+  <code>_commit_work</code> now takes the tree as an argument and the case
+  passes the run's own worktree from the dispatch record, so the citation is
+  the commit the run made on its own line. Every assertion is kept as it was:
+  the refusal must say <code>no complete independent review is stored</code>,
+  must offer <code>crew dispatch --role review</code>, must name the
+  <code>running</code> classification, must not offer <code>crew observe</code>,
+  and the waived promotion must record its reason and remove the pointer. No
+  assertion was deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-a-live-worker-still-owes-its-review-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-live-worker-still-owes-its-review-arms">
+    <caption>Each arm is a log whose header names the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm (negative control)</td>
+        <td><code>a7ac07a91d</code>, extraction</td>
+        <td>1 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head arm (gate)</td>
+        <td><code>112e63f2d5</code>, scratch tree</td>
+        <td>1 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>a7ac07a91d</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, head arm</td>
+        <td><code>112e63f2d5</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm of the node's file passes at the revision this change
+  produced, and the base arm of the same file fails there with the
+  reproduction above, so the change, rather than a moved environment, is what
+  turned the case green.</p>
+</section>

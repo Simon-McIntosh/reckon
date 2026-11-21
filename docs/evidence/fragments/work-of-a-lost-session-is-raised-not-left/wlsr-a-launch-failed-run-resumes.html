@@ -1,0 +1,89 @@
+<section id="wlsr-a-launch-failed-run-resumes-landing">
+  <h2>A person's resume of a launch-failed run relaunches it; the sweep still refuses</h2>
+
+  <p><strong>What changed.</strong> <code>reckon crew resume --run</code> now relaunches a run
+  in phase <code>launch-failed</code> on the run's own recorded backend. The refusal that
+  protected the lift loop was written for the unqualified case: a launch that produced no
+  stream record has no session for a lift to continue, so repeating the exec every tick was
+  the loop the phase exists to stop. That reasoning holds for the sweep and not for a person,
+  and <code>resumption._resume</code> already received the distinction as
+  <code>coordinator=True</code> from the <code>crew resume</code> entry point — the same
+  function the sweep calls without it (the lane-change form calls
+  <code>change_lane</code> instead, which is how the 20 November dispatch relaunched a
+  launch-failed run without ever reaching this guard). The refusal now applies only where
+  <code>coordinator</code> is false. The hand-typed path clears the phase and the
+  <code>launch_failures</code> list before the launch, so the run no longer reads as the
+  attempt that failed and its attempt allowance is restored; the failure history survives in
+  the retired per-attempt records. The live view's next action for the phase now names the
+  plain command (<code>reckon crew resume --run &lt;id&gt;</code>) rather than a form that
+  carries a backend override. The phase is retired at the last point before the worker
+  is started, after every gate that can still decline the launch, so a resume the fleet
+  gate or a held claim refuses leaves the failure that stops the lift loop in place.</p>
+
+  <h3>Repair — the failure is retired only once the launch will happen</h3>
+
+  <p><strong>The defect.</strong> The first version cleared the phase and the failure list
+  at the top of <code>_resume</code>, before
+  <code>_refuse_a_launch_already_running</code>,
+  <code>supersede_a_held_repair_round</code>, <code>reserve_launch_attempt</code> and
+  <code>_require_fleet_gate_open</code> — four gates that can still decline the launch.
+  A resume refused at any of them, a paused lane most cheaply, left the pointer reading
+  <code>starting</code> with no failure the lift is refused by and no worker behind it,
+  which is exactly the state the phase exists to prevent. The clear now runs immediately
+  before the launcher, after the gate that can still refuse, and
+  <code>test_a_refused_resume_leaves_the_failure_for_the_lift_to_refuse</code> makes a
+  shut gate raise and then asserts the pointer still reads <code>launch-failed</code> with
+  its failure list and that the unqualified resume is still refused.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_launch_failed_run_resumes.py</code>, run in the fleet
+  allocation with the repository venv under
+  <code>PYTHONPATH</code> and <code>-p no:cacheprovider</code>. Each log's first line names
+  its revision and command, its last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head gate</td>
+        <td><code>e689315bb7</code> + this node</td>
+        <td><strong>4 passed</strong>, exit 0</td></tr>
+      <tr><td>base (the same test file copied into a <code>git archive</code> of the base)</td>
+        <td><code>e689315bb7</code></td>
+        <td><strong>2 failed, 1 passed</strong>, exit 1 — the declared negative control</td></tr>
+      <tr><td>neighbours (launch-failure and resume test files)</td>
+        <td><code>e689315bb7</code> + this node</td>
+        <td>1 failed, 13 passed, exit 1</td></tr>
+      <tr><td>the same neighbour test alone, at base</td>
+        <td><code>e689315bb7</code></td>
+        <td>1 failed, exit 1 — pre-existing, not this node</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The resume.</strong> A run recorded through the launcher's own
+    <code>_record_launch_failure</code> (backend exits <code>127</code> before writing a
+    stream record) is resumed with <code>coordinator=True</code>; the launcher seam is called,
+    the pointer reads <code>backend: alpha</code>, <code>phase: working</code>, a higher
+    <code>attempt</code>, and no <code>launch_failures</code>; a
+    <code>resume-*-advice.txt</code> record is written.</li>
+    <li><strong>The view.</strong> <code>recovery.classify_pointer</code> on the same record
+    classifies <code>launch-failed</code> and its <code>next_action</code> contains
+    <code>reckon crew resume --run &lt;id&gt;</code> and no <code>--backend</code>.</li>
+    <li><strong>The lift still refuses.</strong> The same run resumed without
+    <code>coordinator</code> raises <code>CrewError</code> naming the phase, and the launcher
+    seam records no call.</li>
+    <li><strong>A refused resume leaves the refusal.</strong> With the fleet
+    gate made to raise, a hand-typed resume raises and the pointer still reads
+    <code>launch-failed</code> with its failure list; the unqualified resume is then still
+    refused and the launcher seam records no call.</li>
+    <li><strong>The negative control.</strong> At the base revision the resume case fails with
+    the refusal verbatim — <em>run 'r-launch-failed-resumes' is in phase 'launch-failed':
+    &hellip; repair the launch &hellip; and resume it by hand, or complete it</em> — and the
+    view case fails because its next action names no resume command. Both red cases are the
+    two behaviours this node changes.</li>
+    <li><strong>What is not measured here.</strong> Whether a resumed run's canonical exit
+    record can still lead the classifier to re-read the phase as launch-failed is left to the
+    attempt-retirement path; this node's test asserts the pointer state the resume leaves.</li>
+  </ul>
+</section>

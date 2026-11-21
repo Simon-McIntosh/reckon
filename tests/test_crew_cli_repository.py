@@ -11,6 +11,11 @@ So this pins the command-line dispatch entry point itself: invoked with the
 working directory inside a second project's checkout and no ``--repo``, the
 worktree must belong to the first project's mount. A named ``--repo`` still
 reaches the library unchanged, which the library's own tests cover.
+
+The verb's answer goes to stdout as one JSON document and nowhere else: its
+human-readable progress, such as the notice that a run was created, goes to
+stderr. So the answer is read from ``result.stdout`` alone; ``result.output``
+is stdout and stderr interleaved and is not a document.
 """
 
 from __future__ import annotations
@@ -154,7 +159,8 @@ def test_a_command_line_dispatch_without_repo_cuts_from_the_mount(
 
     result = CliRunner().invoke(cli_module.main, _arguments())
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output)
+    assert "created run" in result.stderr
+    payload = json.loads(result.stdout)
 
     assert Path(payload["repo"]).resolve() == mounts["amber"].resolve()
     assert (

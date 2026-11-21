@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station_obligations.py:731 (publish calls refresh with prune_sweep_failures)",
+    "reckon/crew/station.py:699 (station tick publishes obligations)",
+    "reckon/crew/station.py:1406 (station publishes on the station beat)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T08:09:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_obligations.py",
+      "line": "132",
+      "severity": "non-blocking",
+      "text": "non-blocking: the row now belongs to the pointer's session but the stored entry is still keyed and replaced by the recording session, so a recorder's next completed sweep silently drops the failure out of the owner's obligations while the owner has not acted on it."
+    },
+    {
+      "file": "reckon/crew/station_obligations.py",
+      "line": "184",
+      "severity": "non-blocking",
+      "text": "non-blocking: the live pointer is decoded once per stored failure inside every due refresh, bypassing the per-run reader reckon/crew/open_run_index.py:633 and the once-per-sweep listing that the neighbouring fleet-state derivation pays to hold, so a long stored record costs a decode per failure on the station's hot path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061; 8537b293ed is the whole production change (+61/-2 in reckon/crew/station_obligations.py), and 4aa8e5f62c and f960d83e3e add and then amend only docs/evidence/fragments/queued-work-needs-no-workaround/s31.html, so the gated revision and the delivered head hold identical code.",
+    "done_when": "the node's done_when asks for three cases over a temporary station store, each from a failure written through record_sweep_report, plus a base negative control and an importer arm that adds no failure; tests/test_a_sweep_failure_is_owed_by_the_runs_session.py:160-191 is exactly those three cases and head-gate.log records \"3 passed\" and EXIT=0 for it.",
+    "goal": "the reviewed node's goal is \"a stored sweep failure raises its obligation row for the session the run's live pointer names now\" (dispatch-detail.json admit_request.node.goal); reckon/crew/station_obligations.py:465 groups the stored failures by each run's pointer session and :491 hands each session only its own group, and :731 is the sole path that raises sweep-failed rows (no other reader of the stored record exists under reckon/).",
+    "manifest": "read at the reviewed run's manifest.md; status complete, commits 8537b293ed, 4aa8e5f62c and f960d83e3e, and it states the gate at head 4aa8e5f62c as 3 passed against the base's 2 failed and 1 passed, naming head-gate.log and base-negative-control.log.",
+    "write_paths": "the declared paths are the s31 fragment, the figure directory, reckon/crew/station_obligations.py, the test file and .../qwnw-a-sweep-failure-is-owed-by-the-runs-session.html; the three paths the diff touches (docs/evidence/fragments/queued-work-needs-no-workaround/s31.html, reckon/crew/station_obligations.py, tests/test_a_sweep_failure_is_owed_by_the_runs_session.py) are inside them and nothing else changed."
+  },
+  "justifications": {
+    "durability": "reinstating the old grouping reddens tests/test_a_sweep_failure_is_owed_by_the_runs_session.py:164 (base log: assert [] == ['r-sweep-owner']) and :189, though no case pins what may clear a row once its carrier changes.",
+    "evidence": "head-gate.log records the 3 passed EXIT=0 gate and base-negative-control.log quotes the two red assertions at 7c481b65f2, but head-gate.log:1 still labels 4aa8e5f62c \"this run's delivered head\" while f960d83e3e is, so the delivery only reconciles because 4aa8e5f62c..f960d83e3e touches docs alone.",
+    "fit": "station_obligations.py:176 and :196 are private snake-case helpers in the module's docstring-first idiom and resolve the pointer through obligation_snapshot.live_pointer_path, the same call :170 already makes.",
+    "goal_fidelity": "station_obligations.py:465-491 republishes each stored failure under the session its run's live pointer names and selects sessions from that grouping, which is the row migration the goal names.",
+    "reuse": "station_obligations.py:184 decodes the live pointer per failure although reckon/crew/open_run_index.py:633 row_for_run and the per-pass listing at reckon/crew/obligations.py:184 own \"read a run's live pointer\", so it duplicates the owner's capability rather than extending it, though it does reuse the module's pointer-path idiom at :170.",
+    "scope_discipline": "every line of the diff sits in station_obligations.py:176-219 and :458-491, the new test file, or s31.html, all declared, and no unrelated file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is \"a stored sweep failure raises its obligation row for the session the run's live pointer names now\" (dispatch-detail.json admit_request.node.goal); reckon/crew/station_obligations.py:465 groups the stored failures by each run's pointer session and :491 hands each session only its own group, and :731 is the sole path that raises sweep-failed rows (no other reader of the stored record exists under reckon/).\nVERDICT done_when: the node's done_when asks for three cases over a temporary station store, each from a failure written through record_sweep_report, plus a base negative control and an importer arm that adds no failure; tests/test_a_sweep_failure_is_owed_by_the_runs_session.py:160-191 is exactly those three cases and head-gate.log records \"3 passed\" and EXIT=0 for it.\nVERDICT write_paths: the declared paths are the s31 fragment, the figure directory, reckon/crew/station_obligations.py, the test file and .../qwnw-a-sweep-failure-is-owed-by-the-runs-session.html; the three paths the diff touches (docs/evidence/fragments/queued-work-needs-no-workaround/s31.html, reckon/crew/station_obligations.py, tests/test_a_sweep_failure_is_owed_by_the_runs_session.py) are inside them and nothing else changed.\nVERDICT manifest: read at the reviewed run's manifest.md; status complete, commits 8537b293ed, 4aa8e5f62c and f960d83e3e, and it states the gate at head 4aa8e5f62c as 3 passed against the base's 2 failed and 1 passed, naming head-gate.log and base-negative-control.log.\nVERDICT diff: read commit by commit against 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061; 8537b293ed is the whole production change (+61/-2 in reckon/crew/station_obligations.py), and 4aa8e5f62c and f960d83e3e add and then amend only docs/evidence/fragments/queued-work-needs-no-workaround/s31.html, so the gated revision and the delivered head hold identical code.\nCALL_SITES: reckon/crew/station_obligations.py:731 (publish calls refresh with prune_sweep_failures), reckon/crew/station.py:699 (station tick publishes obligations), reckon/crew/station.py:1406 (station publishes on the station beat)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: station_obligations.py:465-491 republishes each stored failure under the session its run's live pointer names and selects sessions from that grouping, which is the row migration the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-gate.log records the 3 passed EXIT=0 gate and base-negative-control.log quotes the two red assertions at 7c481b65f2, but head-gate.log:1 still labels 4aa8e5f62c \"this run's delivered head\" while f960d83e3e is, so the delivery only reconciles because 4aa8e5f62c..f960d83e3e touches docs alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every line of the diff sits in station_obligations.py:176-219 and :458-491, the new test file, or s31.html, all declared, and no unrelated file is touched.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the old grouping reddens tests/test_a_sweep_failure_is_owed_by_the_runs_session.py:164 (base log: assert [] == ['r-sweep-owner']) and :189, though no case pins what may clear a row once its carrier changes.\nSCORE fit: 18\nJUSTIFICATION fit: station_obligations.py:176 and :196 are private snake-case helpers in the module's docstring-first idiom and resolve the pointer through obligation_snapshot.live_pointer_path, the same call :170 already makes.\nSCORE reuse: 13\nJUSTIFICATION reuse: station_obligations.py:184 decodes the live pointer per failure although reckon/crew/open_run_index.py:633 row_for_run and the per-pass listing at reckon/crew/obligations.py:184 own \"read a run's live pointer\", so it duplicates the owner's capability rather than extending it, though it does reuse the module's pointer-path idiom at :170.\nFINDING reckon/crew/station_obligations.py:132 non-blocking: the row now belongs to the pointer's session but the stored entry is still keyed and replaced by the recording session, so a recorder's next completed sweep silently drops the failure out of the owner's obligations while the owner has not acted on it.\nFINDING reckon/crew/station_obligations.py:184 non-blocking: the live pointer is decoded once per stored failure inside every due refresh, bypassing the per-run reader reckon/crew/open_run_index.py:633 and the once-per-sweep listing that the neighbouring fleet-state derivation pays to hold, so a long stored record costs a decode per failure on the station's hot path.",
+  "review_run_id": "r-20261120T075523350386-review-of-qwnw-a-sweep-failure-is-owed-by-the-runs-session-f960d83e3ee8",
+  "reviewed_base_sha": "7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061",
+  "reviewed_head_sha": "f960d83e3ee84a443552b6894b889f32ec9e2e79",
+  "reviewed_run_id": "r-20261119T045024367328-qwnw-a-sweep-failure-is-owed-by-the-runs-session",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T08:31:57.035370+00:00",
+  "total": 104
+}

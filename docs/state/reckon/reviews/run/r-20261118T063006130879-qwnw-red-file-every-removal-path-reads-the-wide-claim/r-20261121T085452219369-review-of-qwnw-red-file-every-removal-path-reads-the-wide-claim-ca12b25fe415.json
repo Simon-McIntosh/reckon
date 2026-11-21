@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T09:41:28Z",
+  "findings": [
+    {
+      "file": "tests/test_every_removal_path_reads_the_wide_claim.py",
+      "line": "171",
+      "severity": "blocking",
+      "text": "_removes_own_registration grants the exemption only when every identifier in the removal call is also named by a git worktree add call in the same body; c257d07f86 changed landing_measure.base_checkout to _release_worktree_whole(repo, target, run_id=\"landing-base\", trash_root=scratch), whose scratch is not among the registration call's names, so on the current primary base_checkout re-enters the scan with reads_wide False and both the set check at :337 and the following checks redden, leaving the node's goal unheld on the branch it lands on."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "a stray close-html tag ends the document before the section holding the three causes and their verdicts, so reckon/evidence.py:_fragment_body_bytes keeps only 816 of the fragment's 2000 body characters and the cause-and-verdict list never reaches the composed landed record; deleting that one line restores the full body."
+    }
+  ],
+  "head_log_revision": "ca12b25fe415b388afb87d093b7b17a1c779b058",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the diff was read commit by commit against 42fe90d0b0a46060bafde2490dda7d4002cda478; 7e4a0c0431 changes only the test module (+105/-3: WIDE_CLAIM becomes WIDE_CLAIMS, an own-registration exemption, one new driver and two control cases) and ca12b25fe4 only adds the 42-line evidence fragment, with no product source changed.",
+    "done_when": "the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, a base arm reproducing the red, a no-added-failure suite arm at both revisions and a negative control; the manifest and gate-head.log, base-arm.log, suite-baseline.log and suite-after.log record every one of them, gate-head.sh having been launched through srun --partition=all_debug under env -u SLURM_JOB_ID -u SLURM_JOBID.",
+    "goal": "the node's goal is that tests/test_every_removal_path_reads_the_wide_claim.py passes in full on the primary branch; the gate log reads 5 passed at ca12b25fe415b388afb87d093b7b17a1c779b058 and I reproduced it from a fresh git archive, but that scanner over the current primary discovers reckon/crew/landing_measure.py::base_checkout with reads_wide False, so the file would be red on the branch it lands on.",
+    "manifest": "the manifest was read in full; it names commits 7e4a0c0431 and ca12b25fe4, the literal gate command, four log paths, both suite arms as inline JSON at full 40-character revisions with 0 failures, three retry failures each attributed to scaffolding, and a landing line stating the three causes and their test-side verdicts.",
+    "write_paths": "the manifest declares reckon, tests, the plan's fragment directory and the node's fragment and figure paths; the delivered diff touches only tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html."
+  },
+  "justifications": {
+    "durability": "tests/test_every_removal_path_reads_the_wide_claim.py:371-383 and :399-407 redden if the launch-side spelling leaves WIDE_CLAIMS or the exemption widens or narrows, and :251-252 redden if promotion._release_measurement_worktree stops reading _live_pointer_worktrees, though the exemption rule at :171 is what the blocking finding shows does not hold on the branch this lands on.",
+    "evidence": "gate-head.log names revision ca12b25fe415b388afb87d093b7b17a1c779b058, the tree and the command and ends 5 passed with EXIT=0, base-arm.log names 42fe90d0b0a46060bafde2490dda7d4002cda478 and ends 1 failed, 2 passed with EXIT=1, and suite-baseline.log and suite-after.log both complete at 58 passed with EXIT=0.",
+    "fit": "the added helpers _is_registration_call, _names_in and _removes_own_registration at tests/test_every_removal_path_reads_the_wide_claim.py:147-171 follow the module-level ast-helper style of _is_removal_call at :120 and _references at :141, while the fragment wrapper at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:20 is malformed.",
+    "goal_fidelity": "tests/test_every_removal_path_reads_the_wide_claim.py passes 5 of 5 at ca12b25fe415 in a clean git-archive tree, but the same landed scanner run over the current primary discovers reckon/crew/landing_measure.py::base_checkout again with reads_wide False, so the file the goal names would be red on the branch it lands on.",
+    "reuse": "a capability search over reckon/ and tests/helpers/ for an existing scanner of worktree-removal or worktree-registration call sites found none (ast.parse appears in reckon/clones.py:175 and reckon/served_code.py:268 for other capabilities), so the added predicates extend the scan this test file already owns.",
+    "scope_discipline": "git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..ca12b25fe415b388afb87d093b7b17a1c779b058 names only tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html, both inside the manifest's declared write paths, and no product source changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_every_removal_path_reads_the_wide_claim.py passes in full on the primary branch; the gate log reads 5 passed at ca12b25fe415b388afb87d093b7b17a1c779b058 and I reproduced it from a fresh git archive, but that scanner over the current primary discovers reckon/crew/landing_measure.py::base_checkout with reads_wide False, so the file would be red on the branch it lands on.\nVERDICT done_when: the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, a base arm reproducing the red, a no-added-failure suite arm at both revisions and a negative control; the manifest and gate-head.log, base-arm.log, suite-baseline.log and suite-after.log record every one of them, gate-head.sh having been launched through srun --partition=all_debug under env -u SLURM_JOB_ID -u SLURM_JOBID.\nVERDICT write_paths: the manifest declares reckon, tests, the plan's fragment directory and the node's fragment and figure paths; the delivered diff touches only tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html.\nVERDICT manifest: the manifest was read in full; it names commits 7e4a0c0431 and ca12b25fe4, the literal gate command, four log paths, both suite arms as inline JSON at full 40-character revisions with 0 failures, three retry failures each attributed to scaffolding, and a landing line stating the three causes and their test-side verdicts.\nVERDICT diff: the diff was read commit by commit against 42fe90d0b0a46060bafde2490dda7d4002cda478; 7e4a0c0431 changes only the test module (+105/-3) and ca12b25fe4 only adds the 42-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: tests/test_every_removal_path_reads_the_wide_claim.py passes 5 of 5 at ca12b25fe415 in a clean git-archive tree, but the same landed scanner over the current primary discovers reckon/crew/landing_measure.py::base_checkout again with reads_wide False, so the file the goal names would be red on the branch it lands on.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log names revision ca12b25fe415b388afb87d093b7b17a1c779b058 and the command and ends 5 passed with EXIT=0, base-arm.log names 42fe90d0b0a46060bafde2490dda7d4002cda478 and ends 1 failed, so its result is recorded rather than claimed.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every path in git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..ca12b25fe415b388afb87d093b7b17a1c779b058 lies inside the manifest's declared write paths.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_every_removal_path_reads_the_wide_claim.py:371-383 and :399-407 redden on reinstating the launch-side or exemption regression, but the exemption rule at :171 does not hold on the branch the node lands on.\nSCORE fit: 15\nJUSTIFICATION fit: the added helpers at tests/test_every_removal_path_reads_the_wide_claim.py:147-171 follow the module-level ast-helper style of _is_removal_call at :120, while the fragment's wrapper at line 20 is malformed.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over reckon/ and tests/helpers/ found no existing scanner of worktree-removal or registration call sites, so the added predicates extend the scan this test file already owns.\nFINDING tests/test_every_removal_path_reads_the_wide_claim.py:171 blocking: _removes_own_registration grants the exemption only when every identifier in the removal call is also named by a git worktree add call in the same body, so c257d07f86's _release_worktree_whole(..., trash_root=scratch) in base_checkout breaks the subset and base_checkout re-enters the scan with reads_wide False.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:20 non-blocking: a stray close-html tag ends the document before the section holding the three causes, so reckon/evidence.py:_fragment_body_bytes keeps only 816 of the fragment's 2000 body characters and the cause-and-verdict list never reaches the composed landed record.\n",
+  "review_run_id": "r-20261121T085452219369-review-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-ca12b25fe415",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "ca12b25fe415b388afb87d093b7b17a1c779b058",
+  "reviewed_run_id": "r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261121T085452219369-review-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-ca12b25fe415",
+  "scores": {
+    "durability": 11,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:07:19.161297+00:00",
+  "total": 92
+}

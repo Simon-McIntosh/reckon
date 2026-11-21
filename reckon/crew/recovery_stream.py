@@ -8,6 +8,7 @@ from statistics import median
 from typing import Any, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
+from reckon._worker_fence import BackendError
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     WAITING_REQUEST_PHASES,
@@ -88,7 +89,16 @@ def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
     key = _completion_stamp_key(record)
     if key is not None and key in _COMPLETION_STAMPS:
         return _COMPLETION_STAMPS[key]
-    stamp = _terminal_stream_data(record).completed_at
+    try:
+        stamp = _terminal_stream_data(record).completed_at
+    except BackendError:
+        # A stream its backend's dialect refuses carries no finish stamp this
+        # reader can take. A pointer moved to another harness keeps the stream
+        # its first harness wrote, and the refusal used to leave every
+        # classification of that run, and with it the whole pass that was
+        # classifying the project. The answer is not kept, so the stamp is
+        # read again once the pointer and its stream agree.
+        return None
     if key is not None:
         if len(_COMPLETION_STAMPS) >= _COMPLETION_STAMPS_LIMIT:
             _COMPLETION_STAMPS.clear()
@@ -179,13 +189,31 @@ def _lane_rate_contributions(
     the caller drops a row when the window's start passes it. None means the
     read failed, which the caller treats as a reason to widen the read once. If
     the failure was a genuine defect, the fallback returns None too.
+
+    Inside a derivation the rows come from the history the derivation's own pass
+    already read, bounded to the same instant by the rule the index applies.
+    Both readers then name one ledger file through one decode rather than
+    decoding one index twice for one derivation's answer. Outside a derivation
+    there is no history to share, and this bounded read is what keeps a
+    long-lived monitor from decoding a whole history it will not use.
     """
     from reckon import ledger as ledger_module
+    from reckon.crew import obligations as obligations_module
 
-    try:
-        rows = ledger_module.load(project, activity_since=activity_since)[0]["runs"]
-    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
-        return None
+    shared = obligations_module.derivation_run_rows(project)
+    if shared is None:
+        try:
+            rows = ledger_module.load(project, activity_since=activity_since)[0]["runs"]
+        except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
+            return None
+    else:
+        rows = [
+            row
+            for row in shared
+            if isinstance(row, Mapping)
+            and (moment := ledger_module.run_activity_seconds(row)) is not None
+            and moment >= activity_since
+        ]
     contributions: _LaneRateContributions = {}
     for row in rows:
         if not isinstance(row, Mapping):

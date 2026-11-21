@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:829",
+    "reckon/crew/admission/launching.py:861",
+    "reckon/crew/admission/launching.py:922",
+    "reckon/crew/admission/selection.py:42",
+    "reckon/crew/recovery_classification.py:1497"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T08:36:44Z",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": "1441",
+      "severity": "non-blocking",
+      "text": "non-blocking: settle_quiet_after_seconds reads the settle namespace and its docstring promises a layer can retune it without a code change, but the namespace is declared nowhere in reckon/schema/flight.yaml, reckon/_flight_schema.py or docs/_shared/flight.schema.json, so unknown_key_paths reports 'settle' and validate_layer(strict=True) refuses it as 'Extra inputs are not permitted' \u2014 a layer that sets settle.quiet_after_hours is rejected by `reckon flight --check` even though the value works at load; the code arrived through this merge from primary, not from the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from 97674dad7c12a717205f955148f6a0c4cc0ce0df to ebf71a3d514c83e27cbf5943870ffe63be8049ea; within the five scoped paths the gain is primary's lost_session and stranded_wait config blocks (reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json), primary's settle reader and harness-home interface fallback (reckon/flight.py:1441, :445), and primary's lost-session retirement in reckon/crew/admission/selection.py:164; the merge resolved flight.py by keeping both the node's launch_failure_limit declarations (reckon/flight.py:196-201) and primary's settle declarations (:203-209), with both readers present (:1348, :1441).",
+    "done_when": "the done_when asks for three behaviours \u2014 a relative brief launching from an unrelated directory, an absent brief refused before storage, and a request past its launch limit staying launch-failed with its failure text; tests/test_a_relative_brief_launches_from_any_directory.py:94, :112 and :175 assert each, plus the below-limit re-queue at :197. The absent-brief refusal is pre-existing code, not reimplemented.",
+    "goal": "the node's goal is that a request stores its brief so every launcher resolves the same file, and that a request past its launch-failure limit stops being re-queued; reckon/crew/dispatch_plan.py:554 makes the stored path absolute against the request's repository, and reckon/crew/admission/launching.py:922-925 leaves a run launch-failed past flight.queue_launch_failure_limit (reckon/flight.py:1348). The reviewed gain adds no behaviour of the node's own: ebf71a3d51 is a merge of primary into the node's branch, and it preserves both of the node's declarations unchanged.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory/manifest.md; it records the scoped gate green, both suite arms at 0 failures (baseline at 3ab436fe, after arm at ebf71a3d51), the merge repair note, and the negative control at 3ab436fe reading 3 failed, 2 passed with EXIT=1; the cited logs were opened and their last lines read.",
+    "write_paths": "the node's own two commits touch only files inside the twelve declared paths; the reviewed gain adds a merge commit of primary (d803b5ccf0) whose 218-path delivery is main's content, and the only conflict it resolved was reckon/flight.py, itself a declared path."
+  },
+  "justifications": {
+    "durability": "tests/test_a_relative_brief_launches_from_any_directory.py:192 fails if the limit branch at reckon/crew/admission/launching.py:922-925 is removed, and tests/test_a_live_reading_with_no_process_is_settled.py fails if the settle declarations at reckon/flight.py:203-209 are dropped, so neither half of the merge can regress silently.",
+    "evidence": "the after_merge_suite log at ebf71a3d514c83e27cbf5943870ffe63be8049ea reports 63 passed and EXIT=0 against the manifest's baseline arm at 3ab436fe with 0 failures, exactly the zero-delta the suite pair needs.",
+    "fit": "the merge's added declarations follow the existing namespace idiom (reckon/flight.py:196-209 sits in the same queue constants block and uses the same reader shape as queue_max_requests), and primary's LostSessionConfig and StrandedWaitConfig match the generated-model style of their neighbours in reckon/schema/flight.yaml.",
+    "goal_fidelity": "the merged tree in this gain keeps both settings and both readers \u2014 reckon/flight.py:196-209 declares launch_failure_limit and settle side by side and :1348 and :1441 read each \u2014 so the node's dispatch behaviour at reckon/crew/dispatch_plan.py:829 is unchanged by the merge.",
+    "reuse": "settle_quiet_after_seconds at reckon/flight.py:1441 extends the same config-accessor family as admission_pass_budget_seconds and queue_launch_failure_limit rather than forking a reader, and the harness-home fallback at reckon/flight.py:445 extends the existing shipped_harness_home_files owner via _DIALECTS.home_interface; searching reckon/ for a relative-brief path resolver found none outside dispatch_plan, and the new config blocks have no existing owner.",
+    "scope_discipline": "the node's committed change stays inside the declared paths and the reviewed gain's primary content arrives through the merge rather than a node edit; the one conflict resolved is reckon/flight.py:196-209, a declared path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a request stores its brief so every launcher resolves the same file, and that a request past its launch-failure limit stops being re-queued; reckon/crew/dispatch_plan.py:554 makes the stored path absolute against the request's repository, and reckon/crew/admission/launching.py:922-925 leaves a run launch-failed past flight.queue_launch_failure_limit (reckon/flight.py:1348). The reviewed gain adds no behaviour of the node's own: ebf71a3d51 is a merge of primary into the node's branch, and it preserves both of the node's declarations unchanged.\nVERDICT done_when: the done_when asks for three behaviours \u2014 a relative brief launching from an unrelated directory, an absent brief refused before storage, and a request past its launch limit staying launch-failed with its failure text; tests/test_a_relative_brief_launches_from_any_directory.py:94, :112 and :175 assert each, plus the below-limit re-queue at :197. The absent-brief refusal is pre-existing code, not reimplemented.\nVERDICT write_paths: the node's own two commits touch only files inside the twelve declared paths; the reviewed gain adds a merge commit of primary (d803b5ccf0) whose 218-path delivery is main's content, and the only conflict it resolved was reckon/flight.py, itself a declared path.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory/manifest.md; it records the scoped gate green, both suite arms at 0 failures (baseline at 3ab436fe, after arm at ebf71a3d51), the merge repair note, and the negative control at 3ab436fe reading 3 failed, 2 passed with EXIT=1; the cited logs were opened and their last lines read.\nVERDICT diff: read commit by commit from 97674dad7c12a717205f955148f6a0c4cc0ce0df to ebf71a3d514c83e27cbf5943870ffe63be8049ea; within the five scoped paths the gain is primary's lost_session and stranded_wait config blocks (reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json), primary's settle reader and harness-home interface fallback (reckon/flight.py:1441, :445), and primary's lost-session retirement in reckon/crew/admission/selection.py:164; the merge resolved flight.py by keeping both the node's launch_failure_limit declarations (reckon/flight.py:196-201) and primary's settle declarations (:203-209), with both readers present (:1348, :1441).\nCALL_SITES: reckon/crew/dispatch_plan.py:829, reckon/crew/admission/launching.py:861, reckon/crew/admission/launching.py:922, reckon/crew/admission/selection.py:42, reckon/crew/recovery_classification.py:1497\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the merged tree in this gain keeps both settings and both readers \u2014 reckon/flight.py:196-209 declares launch_failure_limit and settle side by side and :1348 and :1441 read each \u2014 so the node's dispatch behaviour at reckon/crew/dispatch_plan.py:829 is unchanged by the merge.\nSCORE evidence: 19\nJUSTIFICATION evidence: the after_merge_suite log at ebf71a3d514c83e27cbf5943870ffe63be8049ea reports 63 passed and EXIT=0 against the manifest's baseline arm at 3ab436fe with 0 failures, exactly the zero-delta the suite pair needs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the node's committed change stays inside the declared paths and the reviewed gain's primary content arrives through the merge rather than a node edit; the one conflict resolved is reckon/flight.py:196-209, a declared path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_relative_brief_launches_from_any_directory.py:192 fails if the limit branch at reckon/crew/admission/launching.py:922-925 is removed, and tests/test_a_live_reading_with_no_process_is_settled.py fails if the settle declarations at reckon/flight.py:203-209 are dropped, so neither half of the merge can regress silently.\nSCORE fit: 19\nJUSTIFICATION fit: the merge's added declarations follow the existing namespace idiom (reckon/flight.py:196-209 sits in the same queue constants block and uses the same reader shape as queue_max_requests), and primary's LostSessionConfig and StrandedWaitConfig match the generated-model style of their neighbours in reckon/schema/flight.yaml.\nSCORE reuse: 19\nJUSTIFICATION reuse: settle_quiet_after_seconds at reckon/flight.py:1441 extends the same config-accessor family as admission_pass_budget_seconds and queue_launch_failure_limit rather than forking a reader, and the harness-home fallback at reckon/flight.py:445 extends the existing shipped_harness_home_files owner via _DIALECTS.home_interface; searching reckon/ for a relative-brief path resolver found none outside dispatch_plan, and the new config blocks have no existing owner.\nFINDING reckon/flight.py:1441 non-blocking: settle_quiet_after_seconds reads the settle namespace and its docstring promises a layer can retune it without a code change, but the namespace is declared nowhere in reckon/schema/flight.yaml, reckon/_flight_schema.py or docs/_shared/flight.schema.json, so unknown_key_paths reports 'settle' and validate_layer(strict=True) refuses it as 'Extra inputs are not permitted' \u2014 a layer that sets settle.quiet_after_hours is rejected by `reckon flight --check` even though the value works at load; the code arrived through this merge from primary, not from the node.",
+  "review_run_id": "r-20261121T083503343663-review-of-qwnw-a-relative-brief-launches-from-any-directory-ebf71a3d514c",
+  "reviewed_base_sha": "97674dad7c12a717205f955148f6a0c4cc0ce0df",
+  "reviewed_head_sha": "ebf71a3d514c83e27cbf5943870ffe63be8049ea",
+  "reviewed_run_id": "r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T09:08:58.963046+00:00",
+  "total": 111
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1364",
+    "reckon/crew/promotion.py:3849",
+    "reckon/crew/promotion_checks.py:2797"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:23:58Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment's last gate arm is the merged head 4046b427 while the revision being promoted is 4e12196, whose own run lives only in logs/head-node-test-final.log and the manifest, so a reader of the fragment cannot tie a green arm to the commit that lands."
+    }
+  ],
+  "head_log_revision": "4e1219658f7e51b6145acf3d7d05a3cd17053145",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against the gained base 7ccc2142 - 4046b427 resolves the single conflicted path reckon/crew/promotion_evidence.py by keeping main's worktree-guarded canonical_head read and this branch's shadow early return placed after the citation loop and before the declared-roots clause, with no conflict markers in the delivered file, and 4e12196 adds six lines to the fragment.",
+    "done_when": "the done_when asks for a green head run on all_debug with output on shared storage, a base arm, an importer arm adding no failure, and the base run as the negative control; the gained commits add the merged-head gate (logs/head-node-test-merged.log, revision 4046b427, 5 passed, EXIT=0), the delivered-head gate (logs/head-node-test-final.log, revision 4e12196, 5 passed, EXIT=0) and the merged importing arm (logs/head-importer-arm-merged.log, 1 failed, 139 passed, EXIT=1, the same pre-existing id the base arm carries), all from all_debug jobs.",
+    "goal": "the source node's goal is that tests/test_crew_shadow_paths.py passes in full on the primary branch, and the gained merge 4046b427 keeps both intents in reckon/crew/promotion_evidence.py:437-493 while the delivered head 4e12196 reads 5 passed with EXIT=0 in logs/head-node-test-final.log.",
+    "manifest": "read; status complete, commits 15e05c95, 7ccc2142, 4046b427 and 4e12196, after_suite revision 4e12196 with logs/head-node-test-final.log at 0 failures, baseline_suite 1 failure at 42fe90d0, and the merge resolution named under evidence_inputs.",
+    "write_paths": "the source fence is reckon, tests, the section's evidence-fragment directory and its per-node fragment; the two gained commits change only reckon/crew/promotion_evidence.py (the merge resolution) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html, the reviewed base 7ccc2142 being the prior reviewed head."
+  },
+  "justifications": {
+    "durability": "the merged exemption at reckon/crew/promotion_evidence.py:491-493 is exercised by tests/test_crew_shadow_paths.py::test_two_effort_arms_on_one_backend_keep_separate_patches, whose base run reddens exactly there, but no committed test asserts a non-shadow commitless run is still refused, so widening the exemption to a bare return stays green and the prior review's finding at this line stands.",
+    "evidence": "both gained arms carry their revision and EXIT lines in logs/head-node-test-merged.log and logs/head-node-test-final.log, but the fragment cites only the merged head while the promoted revision is 4e12196.",
+    "fit": "the exemption imports _is_shadow inside _require_commits_beyond_base at reckon/crew/promotion_evidence.py:491, the same in-function import idiom the neighbouring _declared_manifest_commits and _delivered_revision imports use at lines 434-435, and the merge keeps main's docstring order.",
+    "goal_fidelity": "logs/head-node-test-final.log at revision 4e12196 reads 5 passed with EXIT=0, so the goal's named file is green at the delivered head after the merge.",
+    "reuse": "the exemption calls reckon/crew/promotion_scope.py:1160 _is_shadow, the repository's single shadow predicate, and the merge takes _record_worktree from reckon/crew/promotion_release.py rather than writing a second worktree test.",
+    "scope_discipline": "the node's own gained edits are the single conflicted file reckon/crew/promotion_evidence.py plus the six-line fragment addition, while the remaining paths of the merge commit arrive from primary main rather than from this node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_crew_shadow_paths.py passes in full on the primary branch, and the gained merge 4046b427 keeps both intents in reckon/crew/promotion_evidence.py:437-493 while the delivered head 4e12196 reads 5 passed with EXIT=0 in logs/head-node-test-final.log.\nVERDICT done_when: the done_when asks for a green head run on all_debug with output on shared storage, a base arm, an importer arm adding no failure, and the base run as the negative control; the gained commits add the merged-head gate (logs/head-node-test-merged.log, revision 4046b427, 5 passed, EXIT=0), the delivered-head gate (logs/head-node-test-final.log, revision 4e12196, 5 passed, EXIT=0) and the merged importing arm (logs/head-importer-arm-merged.log, 1 failed, 139 passed, EXIT=1, the same pre-existing id the base arm carries), all from all_debug jobs.\nVERDICT write_paths: the source fence is reckon, tests, the section's evidence-fragment directory and its per-node fragment; the two gained commits change only reckon/crew/promotion_evidence.py (the merge resolution) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html, the reviewed base 7ccc2142 being the prior reviewed head.\nVERDICT manifest: read; status complete, commits 15e05c95, 7ccc2142, 4046b427 and 4e12196, after_suite revision 4e12196 with logs/head-node-test-final.log at 0 failures, baseline_suite 1 failure at 42fe90d0, and the merge resolution named under evidence_inputs.\nVERDICT diff: read commit by commit against the gained base 7ccc2142 - 4046b427 resolves the single conflicted path reckon/crew/promotion_evidence.py by keeping main's worktree-guarded canonical_head read and this branch's shadow early return placed after the citation loop and before the declared-roots clause, with no conflict markers in the delivered file, and 4e12196 adds six lines to the fragment.\nCALL_SITES: reckon/crew/promotion.py:1364, reckon/crew/promotion.py:3849, reckon/crew/promotion_checks.py:2797\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: logs/head-node-test-final.log at revision 4e12196 reads 5 passed with EXIT=0, so the goal's named file is green at the delivered head after the merge.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gained arms carry their revision and EXIT lines in logs/head-node-test-merged.log and logs/head-node-test-final.log, but the fragment cites only the merged head while the promoted revision is 4e12196.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node's own gained edits are the single conflicted file reckon/crew/promotion_evidence.py plus the six-line fragment addition, while the remaining paths of the merge commit arrive from primary main rather than from this node.\nSCORE durability: 15\nJUSTIFICATION durability: the merged exemption at reckon/crew/promotion_evidence.py:491-493 is exercised by tests/test_crew_shadow_paths.py::test_two_effort_arms_on_one_backend_keep_separate_patches, whose base run reddens exactly there, but no committed test asserts a non-shadow commitless run is still refused, so widening the exemption to a bare return stays green and the prior review's finding at this line stands.\nSCORE fit: 18\nJUSTIFICATION fit: the exemption imports _is_shadow inside _require_commits_beyond_base at reckon/crew/promotion_evidence.py:491, the same in-function import idiom the neighbouring _declared_manifest_commits and _delivered_revision imports use at lines 434-435, and the merge keeps main's docstring order.\nSCORE reuse: 20\nJUSTIFICATION reuse: the exemption calls reckon/crew/promotion_scope.py:1160 _is_shadow, the repository's single shadow predicate, and the merge takes _record_worktree from reckon/crew/promotion_release.py rather than writing a second worktree test.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html:19 non-blocking: the fragment's last gate arm is the merged head 4046b427 while the revision being promoted is 4e12196, whose own run lives only in logs/head-node-test-final.log and the manifest, so a reader of the fragment cannot tie a green arm to the commit that lands.\n",
+  "review_run_id": "r-20261119T150735825349-review-of-qwnw-red-file-crew-shadow-paths-4e1219658f7e",
+  "reviewed_base_sha": "7ccc214268619f35fed483da35a36a94d83999ef",
+  "reviewed_head_sha": "4e1219658f7e51b6145acf3d7d05a3cd17053145",
+  "reviewed_run_id": "r-20261118T063113406183-qwnw-red-file-crew-shadow-paths",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T150735825349-review-of-qwnw-red-file-crew-shadow-paths-4e1219658f7e"
+  },
+  "reviewer_run_id": "r-20261119T150735825349-review-of-qwnw-red-file-crew-shadow-paths-4e1219658f7e",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:51:27.247961+00:00",
+  "total": 110
+}

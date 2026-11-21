@@ -1,0 +1,115 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "The diff adds no assertion; the only predicate that can regress is the pre-existing leak check, which fails when tests/conftest.py stops clearing the four crew-host variables, and logs/negative-control-fixture-bypassed.log records exactly that failure with the fixture bypassed.",
+      "limit": "A docs-only change cannot redden any suite; the green log shows the file was already green, not that this node preserved it.",
+      "location": "tests/test_the_suite_clears_the_follower_environment.py:95"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:_fragment_href",
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/crew/reports.py:_fragment_plan_of"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:28:48Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-suite-clears-the-follower-environment.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the heading reads 'The named file at head, as an all_debug job', but the log quoted beneath it at :7 cites revision 42fe90d0b0a46060bafde2490dda7d4002cda478, the base, and no run at the delivered head 50da297b29badb695a566b19999984f58a39802f is recorded, so the record labels a base-revision run as the head run its done_when asked for."
+    },
+    {
+      "file": "manifest.md",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed run's manifest.md states status complete and one changed path but records no tests, test_logs, baseline_suite or after_suite field, so the gate that the done_when names cannot be re-run from the manifest and is evidenced only by logs/named-check-head.log and logs/negative-control-fixture-bypassed.log in the run's logs directory."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified reckon/evidence.py:_fragment_href, reckon/evidence.py:compose_landed_record and reckon/crew/reports.py:_fragment_plan_of, the runtime code that resolves and composes a fragment at this path.",
+    "diff": "Read commit 50da297b29badb695a566b19999984f58a39802f against its parent 42fe90d0b0a46060bafde2490dda7d4002cda478: one commit adding one evidence fragment, no product or test line.",
+    "done_when": "The node's done_when asks for the file green in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; logs/named-check-head.log records job 1329414, 3 passed, EXIT=0, at base 42fe90d0b0a46060bafde2490dda7d4002cda478 rather than at head 50da297b29badb695a566b19999984f58a39802f, and the reviewed manifest carries no suite arms.",
+    "goal": "The source pointer's node.goal in live/r-20261118T062627950759-qwnw-red-file-the-suite-clears-the-follower-environment.json requires tests/test_the_suite_clears_the_follower_environment.py green on the named branch; the delivered record adds no product or test line and its log logs/named-check-head.log shows 3 passed at base 42fe90d0b0a46060bafde2490dda7d4002cda478, so the file is green and the work the goal names needed no repair.",
+    "manifest": "The reviewed run's manifest.md:5-6 states status complete and the single changed path but records no tests, test_logs, baseline_suite or after_suite field, so the gate is evidenced only by the run's logs directory.",
+    "write_paths": "The pointer's node.write_paths lists docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-suite-clears-the-follower-environment.html; the range 42fe90d0b0a46060bafde2490dda7d4002cda478..50da297b29badb695a566b19999984f58a39802f changes only that path, +30 lines."
+  },
+  "justifications": {
+    "durability": "No assertion was added; the predicate that reddens when the guard regresses is the pre-existing tests/test_the_suite_clears_the_follower_environment.py:95 assertion, and logs/negative-control-fixture-bypassed.log shows it red with the conftest fixture bypassed.",
+    "evidence": "logs/named-check-head.log (job 1329414, 3 passed, EXIT=0) and logs/negative-control-fixture-bypassed.log (1 failed, EXIT=1) are readable at 42fe90d0b0a46060bafde2490dda7d4002cda478, but manifest.md records neither and the landed fragment at line 5 labels that base run as being at head.",
+    "fit": "The fragment follows the sibling record shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-gate-names-its-arms.html:1-8 and is named for the node it records, matching the path reckon/evidence.py:_fragment_href resolves.",
+    "goal_fidelity": "The delivered work matches the pointer's node.goal at its log's revision 42fe90d0b0a46060bafde2490dda7d4002cda478, but no run at the delivered head 50da297b29badb695a566b19999984f58a39802f is recorded.",
+    "reuse": "The diff adds no function, class or module; it writes a file in the existing evidence-fragment form that reckon/evidence.py:compose_landed_record and reckon/crew/reports.py:_fragment_plan_of already own, so no capability is forked.",
+    "scope_discipline": "git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..50da297b29badb695a566b19999984f58a39802f contains exactly the declared fragment path and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source pointer's node.goal in live/r-20261118T062627950759-qwnw-red-file-the-suite-clears-the-follower-environment.json requires tests/test_the_suite_clears_the_follower_environment.py green on the named branch; the delivered record adds no product or test line and its log logs/named-check-head.log shows 3 passed at base 42fe90d0b0a46060bafde2490dda7d4002cda478.\nVERDICT done_when: the node's done_when asks for the file green in full at head as an all_debug job with SLURM_JOB_ID unset; logs/named-check-head.log records job 1329414, 3 passed, EXIT=0, at base 42fe90d0b0a46060bafde2490dda7d4002cda478 rather than at head 50da297b29badb695a566b19999984f58a39802f, and the reviewed manifest carries no suite arms.\nVERDICT write_paths: the pointer's node.write_paths lists docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-suite-clears-the-follower-environment.html, and the range 42fe90d0b0a46060bafde2490dda7d4002cda478..50da297b29badb695a566b19999984f58a39802f changes only that path.\nVERDICT manifest: manifest.md:5-6 states status complete and the single changed path but records no tests, test_logs, baseline_suite or after_suite field, so the gate is evidenced only by the run's logs directory.\nVERDICT diff: one commit 50da297b29badb695a566b19999984f58a39802f against its parent 42fe90d0b0a46060bafde2490dda7d4002cda478 adds one evidence fragment, +30 lines, no product or test line.\nCALL_SITES: reckon/evidence.py:_fragment_href, reckon/evidence.py:compose_landed_record, reckon/crew/reports.py:_fragment_plan_of\nSCORE goal_fidelity: 18\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 15\nSCORE fit: 18\nSCORE reuse: 20\n",
+  "review_method": "Read-only review of the source pointer, manifest, gate and negative-control logs and the landed diff; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T034617241257-review-of-qwnw-red-file-the-suite-clears-the-follower-environment-50da297b29ba",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "50da297b29badb695a566b19999984f58a39802f",
+  "reviewed_run_id": "r-20261118T062627950759-qwnw-red-file-the-suite-clears-the-follower-environment",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "source_commits": [
+    "50da297b29badb695a566b19999984f58a39802f"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062627950759-qwnw-red-file-the-suite-clears-the-follower-environment/after_suite-1795059393323512459.log",
+      "observed_summary": "58 passed in 38.26s",
+      "revision": "50da297b29badb695a566b19999984f58a39802f"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062627950759-qwnw-red-file-the-suite-clears-the-follower-environment/baseline_suite-1795059348364553042.log",
+      "observed_summary": "58 passed in 36.92s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    },
+    "named_gate": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -rfE tests/test_the_suite_clears_the_follower_environment.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062627950759-qwnw-red-file-the-suite-clears-the-follower-environment/logs/named-check-head.log",
+      "observed_summary": "3 passed in 81.89s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    },
+    "negative_control": {
+      "command": "env RECKON_SESSION_HOST_SETTLE=1 RECKON_FOLLOWER_OWNER='{\"pid\": 4242, \"start_time\": \"999.0\"}' RECKON_FOLLOWER_IMAGE_COMMIT=0000000000000000000000000000000000000000 RECKON_FOLLOWER_SOURCE_ROOT=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-the-suite-clears-the-follower-environment PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q --noconftest -rfE tests/test_the_suite_clears_the_follower_environment.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_the_suite_clears_the_follower_environment.py::test_the_follower_session_is_absent_in_this_process"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062627950759-qwnw-red-file-the-suite-clears-the-follower-environment/logs/negative-control-fixture-bypassed.log",
+      "observed_summary": "1 failed, 2 passed in 83.90s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:59:55.099431+00:00",
+  "total": 105
+}

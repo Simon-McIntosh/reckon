@@ -193,6 +193,20 @@ QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
 QUEUE_REPICK_AFTER_SECONDS_KEY = "repick_after_seconds"
 DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
+# How many failed launches in a row one queued request takes before it stops
+# being re-queued and stays ``launch-failed`` with its last failure. A request
+# that cannot launch — a brief no launcher can read, a command that is absent —
+# would otherwise cycle through release, refusal and re-queue for ever.
+QUEUE_LAUNCH_FAILURE_LIMIT_KEY = "launch_failure_limit"
+DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT = 3
+
+# How long a run whose launch step has left the scheduler may keep writing
+# before it is read as a worker that ended without delivering. The bound is in
+# hours because it is measured against a stream that has stopped: a run still
+# thinking, or between two slow tool calls, must never be settled for it.
+SETTLE_KEY = "settle"
+SETTLE_QUIET_AFTER_HOURS_KEY = "quiet_after_hours"
+DEFAULT_SETTLE_QUIET_AFTER_HOURS = 6.0
 # The points one session may place on its unlaunched requests at once. A
 # session spends the budget it is given, so the bound is declared here with the
 # rest of the queue namespace rather than fixed in code. A layer that sets no
@@ -419,7 +433,18 @@ def harness_home_files(
         declared = backend.get(HARNESS_HOME_FILES)
         if isinstance(declared, Iterable) and not isinstance(declared, (str, bytes)):
             return [dict(entry) for entry in declared if isinstance(entry, Mapping)]
-    return [dict(entry) for entry in shipped_harness_home_files().get(dialect_name, [])]
+    shipped = shipped_harness_home_files()
+    entries = shipped.get(dialect_name)
+    if entries is None:
+        # A wrapper speaking another harness's interface reads the same files:
+        # resolve the interface it declares rather than leaving it unseeded and
+        # silently losing the hooks and instruction files the harness needs.
+        from reckon._backends import _DIALECTS
+
+        dialect = _DIALECTS.get(dialect_name)
+        interface = getattr(dialect, "home_interface", None)
+        entries = shipped.get(interface) if interface else []
+    return [dict(entry) for entry in entries]
 
 
 def shipped_harness_home_adjacent_files() -> dict[str, list[dict[str, Any]]]:
@@ -450,10 +475,15 @@ def harness_home_adjacent_files(dialect_name: str) -> list[dict[str, Any]]:
     per-backend: the file it names is harness state the harness itself writes,
     so a backend has nothing to override.
     """
-    return [
-        dict(entry)
-        for entry in shipped_harness_home_adjacent_files().get(dialect_name, [])
-    ]
+    shipped = shipped_harness_home_adjacent_files()
+    entries = shipped.get(dialect_name)
+    if entries is None:
+        from reckon._backends import _DIALECTS
+
+        dialect = _DIALECTS.get(dialect_name)
+        interface = getattr(dialect, "home_interface", None)
+        entries = shipped.get(interface) if interface else []
+    return [dict(entry) for entry in entries]
 
 
 def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
@@ -1315,6 +1345,28 @@ def queue_max_requests(config: Mapping[str, Any] | None) -> int:
     return int(value)
 
 
+def queue_launch_failure_limit(config: Mapping[str, Any] | None) -> int:
+    """How many failed launches in a row a request takes before it stops.
+
+    A queued request whose launch keeps failing without reaching a model is
+    re-queued so a transient cause costs one pass. A cause that never clears
+    would otherwise cycle it through release, refusal and re-queue for ever,
+    so past this many failures in a row the request stays ``launch-failed``,
+    carrying the last failure, where its coordinator can see it. Read from the
+    resolved config's ``queue`` namespace with the same fallbacks as
+    :func:`queue_max_requests`.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    value = (
+        queue.get(QUEUE_LAUNCH_FAILURE_LIMIT_KEY, DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT)
+        if isinstance(queue, Mapping)
+        else DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT
+    )
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        return DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT
+    return int(value)
+
+
 def queue_repick_after_seconds(config: Mapping[str, Any] | None) -> int:
     """How long a router-chosen route may stand before launch picks again.
 
@@ -1384,6 +1436,30 @@ def admission_pass_budget_seconds(config: Mapping[str, Any] | None) -> float:
     if not math.isfinite(seconds) or seconds <= 0:
         return DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
     return seconds
+
+
+def settle_quiet_after_seconds(config: Mapping[str, Any] | None) -> float:
+    """How long a run's stream must be still before its absence means an end.
+
+    A run that holds a live-looking phase with no worker behind it is settled
+    once its launch step has left the scheduler and its stream has not grown for
+    longer than this bound. The bound is far longer than the launch window a
+    fresh dispatch gets, because this reading concludes that nothing will ever
+    write again: a run that is only slow, or thinking without printing, must not
+    be settled for it. Read from the resolved config's ``settle`` namespace, so
+    a host or project layer retunes it without a code change; a config that
+    declares no such key, or a value that is not a positive number, falls back
+    to the shipped default rather than disabling the reading.
+    """
+    settle = (config or {}).get(SETTLE_KEY)
+    value = (
+        settle.get(SETTLE_QUIET_AFTER_HOURS_KEY, DEFAULT_SETTLE_QUIET_AFTER_HOURS)
+        if isinstance(settle, Mapping)
+        else DEFAULT_SETTLE_QUIET_AFTER_HOURS
+    )
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        return float(DEFAULT_SETTLE_QUIET_AFTER_HOURS) * 3600.0
+    return float(value) * 3600.0
 
 
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:

@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T04:10:40Z",
+  "findings": [
+    {
+      "file": "tests/test_concurrent_dispatch_of_one_node.py",
+      "line": "162",
+      "severity": "non-blocking",
+      "text": "non-blocking: the setup assertion requires the ambient crew home to hold zero live runs for this node, so any pre-existing stale pointer for the fixture errors all eight cases before the case runs; the done_when asks only that entries be equal before and after, which tolerates a row that was already there. The base arm's eight errors are exactly this assertion firing on r-20261117T093219874690-node-one-worktree, and the head's green depended on that pointer being retired by the coordinator. Comparing the after list against the before list would keep the leak caught without turning external state into a failure of this case."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan section's deliverable is to isolate the test that writes into the real crew home and assert the real live directory gained nothing, retiring the stray pointer; tests/test_concurrent_dispatch_of_one_node.py:117-164 now asks the crew run module for the ambient home's live runs and asserts none is one this fixture minted, and the pointer r-20261117T093219874690-node-one-worktree is recorded retired by crew discard in the manifest's evidence_inputs.\nVERDICT done_when: the done_when assigns the owning test file passing with an added entry-equality assertion and crew view live returning no runs; gate-real-live.log records 8 passed EXIT=0 at 4da0fb44, after-suite.log records 66 passed EXIT=0, negative-control.log records 1 passed 8 errors EXIT=1 at the same head, and view-live-concurrent-dispatch-fixture.json records runs [] pointer_count 0.\nVERDICT write_paths: the declared set is the test file, an evidence fragment and a figure directory; the diff e689315..4da0fb44 touches only tests/test_concurrent_dispatch_of_one_node.py, inside the declared set.\nVERDICT manifest: read; it records status complete, five commits, base suite 58 passed 8 errors at e689315 and after suite 66 passed at 4da0fb44, the focused gate, the negative control and the guard-rule comparison, and I re-read those logs' headers and EXIT lines and they agree with it.\nVERDICT diff: read commit by commit over e689315..4da0fb44 including the gained commit 4da0fb44; the fixture drops the hand-rolled traces_naming scan and the REAL_LIVE path literal, resolves the ambient home through tests/conftest.py:1148 real_store_home, and asks reckon.crew.runs.list_live for the listing under a temporary RECKON_HOME, matching records by the run id that ends in the node.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_concurrent_dispatch_of_one_node.py:154-160 reads the real home's live runs and keeps only ids ending in the node, so a leak by this case is what the assertion reports.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-real-live.log:1 names revision 4da0fb44 and its last line is EXIT=0 with 8 passed, and negative-control.log:1-70 shows the landed assertion at :164 failing on a minted pointer with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is tests/test_concurrent_dispatch_of_one_node.py, which is in the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows tests/test_concurrent_dispatch_of_one_node.py:164 reddening with 'Left contains one more item' once both RECKON_HOME overrides are removed, and the assertion reads an independent source rather than any value the case passed in.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_concurrent_dispatch_of_one_node.py:117-164 follows the autouse-fixture idiom of tests/test_member_friction.py:60-110 and carries no plan, stage or bug label in its names or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta deletes its private directory scan and calls reckon.crew.runs.list_live at tests/test_concurrent_dispatch_of_one_node.py:158, the owner of pointer listing and decoding, and takes the home from tests/conftest.py:1148 real_store_home; a search of tests/conftest.py and tests/ for an existing temporary-ambient-home helper found none.\nFINDING tests/test_concurrent_dispatch_of_one_node.py:162 non-blocking: the setup assertion requires the ambient crew home to hold zero live runs for this node, so any pre-existing stale pointer for the fixture errors all eight cases at setup regardless of the case's behaviour, where the done_when asks only that the entry count be equal before and after; base-suite.log shows all eight base errors were this assertion firing on the stray pointer that had to be retired before the head arm could pass.",
+  "review_run_id": "r-20261121T040903022631-review-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-4da0fb449572",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "4da0fb449572672548be8a1d535d92ef825e0c6c",
+  "reviewed_run_id": "r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T04:30:00Z",
+  "total": 110
+}

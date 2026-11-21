@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-ack-after-promotion-landing">
+  <h2>A retained-tree acknowledgement fixture owes the duty it defers</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_ack_after_promotion.py</code>
+  registered its retained worktree at the primary branch's own head and left it
+  clean. The held-worktree derivation drops every tree a landing has already
+  left, so the promoted run raised no duty at all, and the acknowledgement the
+  file exists to exercise had nothing to defer. Two of the file's four cases
+  failed on that first assertion, before any acknowledgement was written:</p>
+
+  <pre id="qwnw-red-file-ack-after-promotion-repro"><code>FAILED tests/test_ack_after_promotion.py::test_a_promoted_remainder_is_acknowledged_and_leaves_the_stop_path
+  assert _owed(before) == [RUN_ID]
+E  AssertionError: assert [] == ['r-20261003T...ed-remainder']
+FAILED tests/test_ack_after_promotion.py::test_the_duty_returns_once_the_acknowledgement_expires
+E  assert [] != []
+2 failed, 2 passed in 2.19s
+EXIT=1</code></pre>
+
+  <p><strong>Verdict: the test was wrong, the product was right.</strong> The
+  fixture predates the rule its sibling states — a tree with nothing unmerged
+  owes no held-worktree duty, because the derivation drops a tree a landing has
+  already emptied. The fixture's helper now commits to the retained tree, which
+  is the work a landing would carry, and its docstring names the rule it keeps.
+  No assertion was deleted or weakened: the duty is shown owed before it is
+  excused, then deferred, then returned on expiry, then the refusal path and the
+  untouched-repository case run as before.</p>
+
+  <h3 id="qwnw-red-file-ack-after-promotion-arms">Measured</h3>
+
+  <table id="qwnw-red-file-ack-after-promotion-results">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control, base run</td>
+        <td><code>28fbf2bc2f</code>, extraction</td>
+        <td>2 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head run, all_debug job</td>
+        <td><code>fd2313dd58</code>, scratch tree</td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm's failing ids are the two named above.</p>
+</section>

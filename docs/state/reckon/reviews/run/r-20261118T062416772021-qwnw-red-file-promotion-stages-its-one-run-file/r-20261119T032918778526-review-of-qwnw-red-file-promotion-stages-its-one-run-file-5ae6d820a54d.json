@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own recorded arms: manifest baseline_suite names logs/base-suite.log at 42fe90d0b0a4 with 58 passed EXIT=0 and no FAILED line, after_suite names logs/head-suite.log at 5ae6d820a54d with 58 passed EXIT=0 and no FAILED line, so the head-minus-base failure set difference is empty (0).",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3899 (crew_complete declares --wait: carry out promotion in this call)",
+    "reckon/crew_run_commands.py:3467 (the completion record written at record_path carries the full result)",
+    "reckon/crew_run_commands.py:3473-3483 (the stdout report keeps a fixed key set and points at record_path)",
+    "reckon/crew/promotion.py:3197,3204 (the receipt carries record and release)",
+    "reckon/crew/promotion_scope.py:3275-3283 (landing check carries the unstaged list)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:23:03Z",
+  "findings": [
+    {
+      "file": "tests/test_promotion_stages_its_one_run_file.py",
+      "line": "210",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added comment states completion answers compactly because a run's full outcome is larger than the reply bound; the reply report drops release and record because reckon/crew_run_commands.py:3473-3483 keeps a fixed key set, and the size-based compaction at reckon/crew_run_commands.py:3509 applies only to multi-run batch replies, so the stated cause is wrong while the behaviour the code relies on (reading the record at record_path) is right."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s): the complete verb's --wait option, the completion record it writes, the compact stdout report that links it, the receipt's record and release keys, and the landing check's unstaged list.",
+    "diff": "read dec5fcfc87 and 5ae6d820a5 against base 42fe90d0b0a46060bafde2490dda7d4002cda478: two paths, 44 insertions and 4 deletions; the test adds --wait to the complete invocation and reads release/record from the file payload[\"record_path\"] names, and the new fragment records the arms and the three causes.",
+    "done_when": "the done_when names tests/test_promotion_stages_its_one_run_file.py passing in full as a job on all_debug with SLURM_JOB_ID unread, each cause listed with a product-or-test verdict, and an importer arm with no added failure; logs/head-target.log runs on partition all_debug with 3 passed EXIT=0, logs/base-target.log shows the same case 2 failed EXIT=1, and both suite arms are 58 passed EXIT=0.",
+    "goal": "the node goal is that tests/test_promotion_stages_its_one_run_file.py passes in full; logs/head-target.log records 3 passed EXIT=0 at 5ae6d820a54da4ad940c7217d9b31544f05b20b2 and the manifest's landing line names the same result, so the goal is met.",
+    "manifest": "read; it records status complete, commits dec5fcfc87 and 5ae6d820a5, head target 3 passed EXIT=0, base target 2 failed 1 passed EXIT=1, both suite arms 58 passed EXIT=0, names five log paths I opened, and attributes the three causes to the test with no product change.",
+    "write_paths": "the declared paths are reckon, tests, the evidence-fragment directory, the fragment itself and a figures directory; the diff touches only tests/test_promotion_stages_its_one_run_file.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-stages-its-one-run-file.html, both inside them."
+  },
+  "justifications": {
+    "durability": "the guarded defect is live at base: logs/base-target.log fails test_complete_commits_one_run_file_per_promotion[False] and [True] with files == ['docs/state/reckon/index.json'], and the same assertion at tests/test_promotion_stages_its_one_run_file.py:199-201 reddens whenever --wait is removed, since the head-arm run file is never committed and only index.json shows in diff-tree.",
+    "evidence": "the gate names tests/test_promotion_stages_its_one_run_file.py and logs/head-target.log records 3 passed EXIT=0 at the reviewed head, with the base arm and both suite arms logged at their own revisions.",
+    "fit": "the additions follow the file's own idiom of a CliRunner invocation with explanatory comments at tests/test_promotion_stages_its_one_run_file.py:185-213 and reuse its existing _git, _observe_writes and ledger.serialize_run helpers.",
+    "goal_fidelity": "logs/head-target.log records 3 passed EXIT=0 at 5ae6d820a54da4ad940c7217d9b31544f05b20b2, which is the node's stated goal.",
+    "reuse": "the diff adds no function, class or module; it edits one existing case and adds one evidence fragment, so a search of reckon/crew for a second run-file assertion helper found nothing to extend and nothing duplicated.",
+    "scope_discipline": "only tests/test_promotion_stages_its_one_run_file.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-stages-its-one-run-file.html changed, and both sit inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_promotion_stages_its_one_run_file.py passes in full; logs/head-target.log records 3 passed EXIT=0 at 5ae6d820a54da4ad940c7217d9b31544f05b20b2 and the manifest's landing line names the same result, so the goal is met.\nVERDICT done_when: the done_when names the file, an all_debug job with SLURM_JOB_ID unset, the arm structure and the importer arm; logs/head-target.log runs on partition all_debug with 3 passed EXIT=0 at the head while logs/base-target.log shows the same case 2 failed 1 passed EXIT=1 at base.\nVERDICT write_paths: the declared paths are reckon, tests, the evidence-fragment directory, the fragment itself and a figures directory; the diff touches only tests/test_promotion_stages_its_one_run_file.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-stages-its-one-run-file.html, both inside them.\nVERDICT manifest: read; it records status complete, two commits, head target 3 passed EXIT=0, base target 2 failed EXIT=1, both suite arms 58 passed EXIT=0, five log paths I opened, and the three causes attributed to the test with no product change.\nVERDICT diff: read commit by commit dec5fcfc87 and 5ae6d820a5 against base 42fe90d0b0a46060bafde2490dda7d4002cda478; two paths, 44 insertions and 4 deletions, the test adds --wait and reads release and record from the file payload[\"record_path\"] links, and the fragment records the arms.\nCALL_SITES: reckon/crew_run_commands.py:3899, reckon/crew_run_commands.py:3467, reckon/crew_run_commands.py:3473, reckon/crew/promotion.py:3197, reckon/crew/promotion_scope.py:3275\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: logs/head-target.log records 3 passed EXIT=0 at 5ae6d820a54da4ad940c7217d9b31544f05b20b2, which is the node's stated goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names tests/test_promotion_stages_its_one_run_file.py and logs/head-target.log records 3 passed EXIT=0 at the reviewed head, with the base arm and both suite arms logged at their own revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only tests/test_promotion_stages_its_one_run_file.py and the section's evidence fragment changed, and both sit inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: logs/base-target.log fails test_complete_commits_one_run_file_per_promotion[False] and [True] with files == ['docs/state/reckon/index.json'], which is exactly what tests/test_promotion_stages_its_one_run_file.py:199-201 reports when --wait is absent.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding CliRunner-and-comment idiom at tests/test_promotion_stages_its_one_run_file.py:185-213 and reuse its _git, _observe_writes and ledger.serialize_run helpers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the search of reckon/crew for an existing run-file assertion helper found none to extend and nothing duplicated.\nFINDING tests/test_promotion_stages_its_one_run_file.py:210 non-blocking: the added comment states completion answers compactly because a run's full outcome is larger than the reply bound; reckon/crew_run_commands.py:3473-3483 drops release and record through a fixed key set instead, and the size compaction at reckon/crew_run_commands.py:3509 applies only to multi-run batch replies, so the stated cause is wrong while the behaviour relied on is right.",
+  "review_node": "review-of-qwnw-red-file-promotion-stages-its-one-run-file-5ae6d820a54d",
+  "review_run_id": "r-20261119T032918778526-review-of-qwnw-red-file-promotion-stages-its-one-run-file-5ae6d820a54d",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "5ae6d820a54da4ad940c7217d9b31544f05b20b2",
+  "reviewed_run_id": "r-20261118T062416772021-qwnw-red-file-promotion-stages-its-one-run-file",
+  "reviewer": {
+    "backend": "local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T032918778526-review-of-qwnw-red-file-promotion-stages-its-one-run-file-5ae6d820a54d"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "reuse_search": "no definition added",
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:00:42.484744+00:00",
+  "total": 116
+}

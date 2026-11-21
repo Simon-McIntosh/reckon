@@ -38,6 +38,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import obligation_snapshot, review_records, station_store
 
@@ -46,6 +47,14 @@ from reckon.crew import obligation_snapshot, review_records, station_store
 # and a newly due duty show. This is the snapshot producer's own floor cadence,
 # kept as one number so the station and the producer do not drift.
 REFRESH_FLOOR_SECONDS = obligation_snapshot.FLOOR_TICK_SECONDS
+
+# What bounds a derivation nothing has moved: the fleet state is built from the
+# live pointers, run manifests and plans, which change on the scale of minutes
+# while a station ticks every second, so an unmoved fleet is re-derived on this
+# interval rather than on every tick. It is the floor above by value and named
+# apart so the gate that reads a change and the gate that reads a clock are not
+# mistaken for one another.
+FLEET_STATE_INTERVAL_SECONDS = REFRESH_FLOOR_SECONDS
 
 # The export is rewritten at most this often. A station ticks every second and
 # a fleet can move on several ticks in a row; a reader off the node needs the
@@ -75,6 +84,7 @@ class _Memory:
     at: datetime
     identity: str = ""
     heartbeat: str = ""
+    inputs: dict[str, Any] | None = None
 
 
 _REFRESHES: dict[tuple[str, str], _Memory] = {}
@@ -163,6 +173,52 @@ def _ended_sweep_failures(
     return kept
 
 
+def _live_pointer_owner(run_id: str) -> str:
+    """The session a run's live pointer names now, or "" where it names none.
+
+    A run whose pointer is gone or unreadable has no owner to be read: the
+    failure it recorded is then owed by nobody, which is what keeps a stored
+    entry from raising a row in whichever session happens to hold the record.
+    """
+    try:
+        text = obligation_snapshot.live_pointer_path(run_id).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    try:
+        document = json.loads(text)
+    except ValueError:
+        return ""
+    if not isinstance(document, Mapping):
+        return ""
+    return str(document.get("session") or "")
+
+
+def _sweep_failures_by_owner(
+    failures_by_session: Mapping[str, Any],
+) -> dict[str, list[Mapping[str, Any]]]:
+    """Group stored failures under the session each run's pointer names now.
+
+    The stored record is keyed by the session whose sweep wrote the failure,
+    and that entry outlives a change of the run's owner: a session hands a run
+    to another, or a sweep records a failure with no session at all. A row's
+    command acts on the run, so the session that can act on it is the one the
+    run's live pointer names, whichever session the record keeps it under. A
+    failure whose pointer names no session raises nothing and stays stored.
+    """
+    grouped: dict[str, list[Mapping[str, Any]]] = {}
+    for failures in failures_by_session.values():
+        if not isinstance(failures, list):
+            continue
+        for failure in failures:
+            if not isinstance(failure, Mapping):
+                continue
+            owner = _live_pointer_owner(str(failure.get("run_id") or ""))
+            if not owner:
+                continue
+            grouped.setdefault(owner, []).append(failure)
+    return grouped
+
+
 def _ledger_holds_run(run_id: str, project: str, roots: Mapping[str, Path]) -> bool:
     """Whether a promoted record for this run stands beside the project's ledger."""
     from reckon.crew import runs
@@ -203,6 +259,14 @@ def prune_sweep_failures(store: Any, project: str) -> dict[str, Any]:
 def _with_sweep_failures(
     payload: Mapping[str, Any], failures: Iterable[Mapping[str, Any]]
 ) -> dict[str, Any]:
+    """Raise each stored failure as one row of this payload's session's row.
+
+    ``failures`` is the set the payload's own session owes, which is the
+    session the run's live pointer names: :func:`_sweep_failures_by_owner` is
+    the one grouping that decides it, so a caller hands over its own group
+    rather than the stored record, whose keys are sweep authors and outlive a
+    change of owner.
+    """
     rows = list(payload.get("obligations") or ())
     project = str(payload.get("project") or "")
     for failure in _ended_sweep_failures(failures, project=project):
@@ -289,6 +353,71 @@ def stored_identity(row: Mapping[str, Any] | None) -> str:
     return str(payload.get("identity") or "")
 
 
+def _file_identity(path: Any) -> list[int] | None:
+    """What one file's write moves, in the memo store's own identity.
+
+    The identity is ``file_memo``'s rather than a second copy of the same
+    fields: one place defines what a write changes, so a reader here and a
+    reader of a memo answer each other's guarantee for free.
+    """
+    try:
+        return list(file_memo.file_signature(str(path)))
+    except (OSError, TypeError, ValueError):
+        return None
+
+
+def fleet_state_footprint(store: Any, project: str) -> dict[str, Any]:
+    """A cheap identity of the inputs one fleet-state derivation reads.
+
+    The derivation is built from three things: the live pointers, each run's
+    manifest, and the project's plans. Each is read here by a cheaper reading of
+    the same input — the pointer's stored signature, one stat per manifest, one
+    stat per plan — so a tick can tell whether the derivation has anything new
+    to read without paying for the derivation itself.
+
+    A pointer's signature is the one the station's own ingest recorded when the
+    pointer last moved, so an unchanged pointer costs no read and no decode. A
+    manifest and a plan move when a worker delivers and when a plan is edited,
+    and neither is re-derived by rules of its own before that write, so each is
+    stamped here. A reading that cannot be taken is ``None`` and compares
+    unreadable against a reading that was, so an unreadable tree makes the
+    derivation due rather than keeping it away.
+    """
+    from reckon.crew import plan_review
+
+    pointers: list[Any] | None = []
+    manifests: list[Any] | None = []
+    try:
+        rows = store.pointer_rows()
+        fields = store.pointer_fields()
+    except Exception:  # noqa: BLE001 - an unreadable store is not "unchanged"
+        pointers = None
+        manifests = None
+        rows = []
+        fields = {}
+    for row in rows:
+        if str(row.get("project") or "") != project:
+            continue
+        run_id = str(row.get("run_id") or row.get("path") or "")
+        pointers.append([run_id, str(row.get("signature") or "")])
+        record = fields.get(str(row.get("path") or "")) or {}
+        manifest = record.get("manifest_path")
+        if manifest:
+            manifests.append([run_id, _file_identity(manifest)])
+    try:
+        plans, _failed = plan_review._project_plan_paths(project)
+        plan_stamps: list[Any] | None = sorted(
+            [str(slug), _file_identity(path)] for slug, path in plans
+        )
+    except Exception:  # noqa: BLE001 - an unreadable tree is not "unchanged"
+        plan_stamps = None
+    return {
+        "pointers": None if pointers is None else sorted(pointers),
+        "manifests": None if manifests is None else sorted(manifests),
+        "plans": plan_stamps,
+    }
+
+
 def refresh(
     store: Any,
     *,
@@ -296,8 +425,9 @@ def refresh(
     changed: bool = True,
     now: datetime | None = None,
     sweep_failures: Mapping[str, Any] | None = None,
+    inputs: dict[str, Any] | None = None,
 ) -> list[str]:
-    """Derive and store each live session's obligations when the fleet moved.
+    """Derive and store each live session's obligations when an input moved.
 
     Returns the sessions whose stored row was rewritten. A row whose derived
     identity equals the stored one is left exactly as it stands -- its
@@ -310,18 +440,31 @@ def refresh(
     memory = _REFRESHES.get(key)
     sweep_failures = sweep_failures or {}
     sweep_record = json.dumps(sweep_failures, sort_keys=True)
+    footprint = fleet_state_footprint(store, project) if inputs is None else inputs
+    # A derivation is owed when an input it reads has moved, or when the
+    # interval has passed since the last one, whichever comes first. The clock
+    # is what bounds a change this gate does not see: a reading that cannot be
+    # taken is None and compares unequal to one that was, so an unreadable tree
+    # makes the derivation due rather than keeping it away.
     due = (
         (memory is not None and memory.identity != sweep_record)
         or changed
         or memory is None
-        or (instant - memory.at).total_seconds() >= REFRESH_FLOOR_SECONDS
+        or footprint is None
+        or memory.inputs != footprint
+        or (instant - memory.at).total_seconds() >= FLEET_STATE_INTERVAL_SECONDS
     )
     if not due:
         return []
 
     registrations = follower_rows(project)
+    # A stored failure is a duty of the session its run's pointer names, not of
+    # the session whose sweep recorded it: the record outlives a change of
+    # owner, and a row raised in a session that cannot act on the run is one it
+    # can only acknowledge until the next sweep raises it again.
+    owned = _sweep_failures_by_owner(sweep_failures)
     sessions = sorted(
-        set(sweep_failures)
+        set(owned)
         | {
             str(row.get("session") or "")
             for row in registrations
@@ -345,7 +488,7 @@ def refresh(
         for session in sessions:
             payload = _with_sweep_failures(
                 obligation_snapshot.payload_for(state, session),
-                sweep_failures.get(session, ()),
+                owned.get(session, ()),
             )
             identity = payload_identity(payload)
             stored = store.read_obligation(session)
@@ -387,7 +530,7 @@ def refresh(
                 )
             except Exception:  # noqa: BLE001 - one session's rewrite costs one session
                 _report_failure(project, "absent-snapshot")
-    _REFRESHES[key] = _Memory(at=instant, identity=sweep_record)
+    _REFRESHES[key] = _Memory(at=instant, identity=sweep_record, inputs=footprint)
     return written
 
 
@@ -573,9 +716,17 @@ def publish(
         submit(project, home=home, changed=changed, moment=now)
         return None
     pending = False
+    # One reading of the inputs serves both the stale marking and the gate, so
+    # a tick costs one footprint however many of them ask.
+    inputs = fleet_state_footprint(store, project)
     try:
         pending = _publish_pending(
-            store, project=project, home=home, changed=changed, now=now
+            store,
+            project=project,
+            home=home,
+            changed=changed,
+            now=now,
+            inputs=inputs,
         )
         refresh(
             store,
@@ -583,6 +734,7 @@ def publish(
             changed=changed,
             now=now,
             sweep_failures=prune_sweep_failures(store, project),
+            inputs=inputs,
         )
     except Exception:  # noqa: BLE001 - one project's input costs one pass
         _report_failure(project, "refresh")
@@ -603,6 +755,7 @@ def _publish_pending(
     home: str | Path,
     changed: bool,
     now: datetime | None,
+    inputs: dict[str, Any] | None = None,
 ) -> bool:
     """Keep the last answer dated and stale while a due refresh reads inputs.
 
@@ -615,10 +768,13 @@ def _publish_pending(
 
     instant = _utc_now() if now is None else now
     memory = _REFRESHES.get((str(store.root), project))
+    inputs = fleet_state_footprint(store, project) if inputs is None else inputs
     if (
         not changed
         and memory is not None
-        and (instant - memory.at).total_seconds() < REFRESH_FLOOR_SECONDS
+        and inputs is not None
+        and memory.inputs == inputs
+        and (instant - memory.at).total_seconds() < FLEET_STATE_INTERVAL_SECONDS
     ):
         return False
     marked = False

@@ -1,0 +1,63 @@
+<section id="qwnw-red-file-manifest-commit-forms-node">
+<h2>Manifest commit forms: a presented entry is read by the ids it carries</h2>
+<p>At base <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> the node
+file <code>tests/test_manifest_commit_forms.py</code> failed two of its
+eight cases: <code>test_each_commit_form_promotes_without_editing[list]</code>
+and <code>[json]</code>. Both write a manifest entry of the form
+<code>&lt;id&gt; &lt;subject&gt;</code>, an accepted spelling the ledger's
+own commit reader already resolves.</p>
+<pre># tree: scratch-base (git archive at 42fe90d0b0a46060bafde2490dda7d4002cda478)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_manifest_commit_forms.py
+FAILED ...::test_each_commit_form_promotes_without_editing[list]
+  the citation '46ac314 test: record candidate, with details' presented
+  for this promotion names no commit in the run's tree
+FAILED ...::test_each_commit_form_promotes_without_editing[json]
+  presents '8b1942a test: record candidate, with details ...'
+  as a commit, but that identifier does not resolve to a commit object
+2 failed, 6 passed
+EXIT=1</pre>
+<p>Cause: the presentation guard, the gate-evidence coverage sets and the
+revision choice resolved a presentation entry whole, while the ledger's
+<code>_declared_manifest_commits</code> and <code>_resolve_commits</code>
+read the same entry by the ids it carries. The product was wrong; the test
+states the rule the field already declares.</p>
+</section>
+
+<section id="qwnw-red-file-manifest-commit-forms-head">
+<h2>Head: the same file passes in full</h2>
+<pre># revision: 857b8298b87b2a514b816c8dd8c2202266dd5ca1
+# command: PYTHONPATH=. .venv/bin/python -m pytest -q tests/test_manifest_commit_forms.py
+........                     [100%]
+8 passed in 8.78s
+EXIT=0</pre>
+<p>The presentation guard and coverage sets in
+<code>reckon/crew/promotion_evidence.py</code> now delegate to
+<code>promotion_scope._entry_commits</code>, the revision choice passing the
+resolver's own <code>strict=True</code> through that one reader.</p>
+</section>
+
+<section id="qwnw-red-file-manifest-commit-forms-arms">
+<h2>Armed suite over this node's declared tests</h2>
+<p>Both arms run the node's declared files —
+<code>tests/test_staged_write_inventory.py</code> and
+<code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — each in a
+tree checked out at its own revision, with the command
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code>
+resolved over that tree.</p>
+<pre>baseline 42fe90d0b0a46060bafde2490dda7d4002cda478: 2 failed, 56 passed
+  EXIT=1
+  FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner
+  FAILED tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write
+after (this head): 58 passed
+  EXIT=0</pre>
+</section>
+
+<section id="qwnw-red-file-manifest-commit-forms-instrument">
+<h2>Instrument note: the scheduler route refused every job</h2>
+<p><code>crew verify-gate --command</code>, <code>crew suite run</code> and a
+bare <code>sbatch --wrap</code> all came back with
+<code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T</code>; one earlier
+gate at <code>857b8298</code> did run on host 3142 (58 passed, EXIT=0), so
+the runs above were taken in place on this allocation with the same
+commands and the same interpreter.</p>
+</section>

@@ -1,0 +1,76 @@
+<section id="qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed-landing">
+  <h2>A scope refusal names the paths it parsed</h2>
+
+  <p><strong>What was red.</strong> At the base revision
+  <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>
+  the named file read <code>1 failed, 4 passed</code>, the failure being
+  <code>test_a_space_separated_changed_paths_is_reported_as_one_joined_item</code>:
+  it asserted that the separation-finding list held one finding, against an
+  empty list (<code>assert 0 == 1</code>). One cause.</p>
+
+  <p><strong>Cause and verdict — test wrong.</strong> The case encoded the
+  reading that predates the entry reader. The guarded list fields
+  (<code>_GUARDED_LIST_KEYS</code>, which include <code>changed_paths</code>)
+  are split entry by entry in <code>_normalise_manifest_fields</code> by
+  <code>_split_entry_tokens</code>, so a value whose whitespace-separated tokens
+  are each entry-shaped is read as those several entries. The audit therefore
+  never receives one joined item from <code>changed_paths</code>, and the
+  comma-separation branch of <code>_write_scope_findings</code> is unreachable
+  from the field — which the file's own last case already pinned in prose. The
+  behaviour is asserted product-side too:
+  <code>tests/test_a_manifest_is_read_in_the_shapes_workers_write.py</code>
+  holds <code>changed_paths: reckon/crew/reports.py tests/test_x.py</code> to be
+  two entries. The case now asserts the rule the code keeps: the parsed entries
+  are the three declared paths, no separation or scope finding is raised, and
+  the audit is <code>ok</code>. No assertion was deleted or weakened — the
+  audit's acceptance is asserted together with the reading that earns it.</p>
+
+  <p>The one product change is prose: <code>_write_scope_findings</code>'s
+  docstring still described the pre-split reading as the live one, so it now
+  states the guard as a guard for a caller that hands the function a joined
+  item.</p>
+
+  <h3 id="qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed-measured">Measured</h3>
+
+  <p>The file arm extracts the revision with <code>git archive</code> into the
+  run directory and runs it as an <code>all_debug</code> job submitted with
+  <code>sbatch --wait</code>; each log's first lines name the revision, tree,
+  <code>module.__file__</code> and the working directory, and its last line is
+  the bare <code>EXIT=&lt;code&gt;</code> receipt. The base arm extracts
+  <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, the arm revision the
+  worktree held when the brief was composed.</p>
+
+  <table id="qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed-arms">
+    <caption>Every arm is a committed revision measured on
+    <code>all_debug</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head</td>
+        <td><code>939e86f494e1</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base (negative control)</td>
+        <td><code>5b0a1f537ef9</code></td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the scoped worker gate over the named file, head</td>
+        <td><code>939e86f494e1</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>5b0a1f537ef9</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>939e86f494e1</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed-control">Negative control</h3>
+
+  <p>The same file at the base revision, same job instrument, same tree layout:
+  the one failing id is
+  <code>test_a_space_separated_changed_paths_is_reported_as_one_joined_item</code>,
+  <code>E AssertionError: []</code> where it asserted
+  <code>len(separation) == 1</code>. That id is absent from the head arm, whose
+  five cases pass — the case was renamed and rewritten to the rule the code
+  keeps, so the red reading could not be carried forward by editing its
+  expectation alone.</p>
+</section>

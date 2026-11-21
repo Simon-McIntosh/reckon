@@ -1,0 +1,90 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "assert_published_inside_the_limit fails if the reading is published after the sweep step rather than at the head of the pass (the red arm measured 15.6 seconds against 8); the journal assertion fails if the sweep's completion row is not written before the pass ends it; assert not stale.exists() fails if the sweep never removes the entry.",
+      "independence": "The latency is the difference between the test's own clock taken before the child starts and the utc the production pass wrote into its record; the journal rows are parsed from the file the production sweep wrote.",
+      "limit": "The reading is compared against a clock taken before bash has started, so slow process startup is charged to the pass; the real reclaim work runs under the same 2-second step bound the case uses to demonstrate an overrun.",
+      "location": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:426-444"
+    },
+    {
+      "conditions_for_failure": "The case fails if the pass aborts on the failing sample-test-processes step before reaching the sweep (journal empty), if the reading is published last (red arm: 13.8 seconds against 8), or if the reading record is left stale by the failed step.",
+      "independence": "The journal and the published reading are production artefacts; the 'Permission denied' line is emitted by the test's own STUB_SHIM, so that assertion shows only that the step was invoked.",
+      "limit": "The stub fails one step, so a pass that swallowed the failure silently would still satisfy the assertion set as long as it kept going and published.",
+      "location": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:447-462"
+    },
+    {
+      "conditions_for_failure": "The assertion fails when the published crew_scratch census names the orphan as retained (removed falsy) after the sweep ran; it holds when the census omits the orphan row entirely.",
+      "independence": "The census is read from the record production wrote, compared against the path the test created.",
+      "limit": "A regression that stopped recording the removed entry at all passes this assertion, so it guards a retained row rather than a recorded removal.",
+      "location": "tests/test_unowned_scratch_is_reclaimed.py:198-201"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "bin/fleet-health:139 sample-node-disk publishes the reading at the head of a pass",
+    "bin/fleet-health:143 sample-test-processes step the permission-error case drives through STUB_SHIM",
+    "bin/fleet-health:213 reclaim-node-scratch step both new cases bound",
+    "reckon/crew/fleet_supervisor.py:712 sample_node_disk",
+    "reckon/crew/fleet_supervisor.py:739 reclaim_node_scratch",
+    "reckon/crew/fleet_supervisor.py:761 published_node_disk_sample"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:24:07Z",
+  "findings": [
+    {
+      "file": "tests/test_unowned_scratch_is_reclaimed.py",
+      "line": "198",
+      "severity": "non-blocking",
+      "text": "non-blocking: the restated census assertion is `not any(path == orphan and not removed)`, which passes vacuously when the published crew_scratch census carries no row for the orphan at all, so a sweep that stops stating its removal satisfies the assertion written to prove it states one; asserting the row is present with a truthy removed value would keep the crew scratch census as the record the comment claims it is."
+    },
+    {
+      "file": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py",
+      "line": "231",
+      "severity": "non-blocking",
+      "text": "non-blocking: sweep_case runs the real reclaim work under FLEET_STEP_BOUND_SECONDS = 2 (bin/fleet-health:213 applies that bound to reclaim-node-scratch) before the stub lingers, so on the loaded node this case is about the real sweep can be killed mid-journal and fail the completeness assertion for a reason the case is meant to exclude; give the real sweep a bound above its own work and below SWEEP_SLEEP."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read 68d13e40..0ca74c48 commit by commit: one commit, 0ca74c4869, 2 files, +117 -1 \u2014 109 lines of new helpers and cases in tests/test_a_loaded_node_publishes_a_current_disk_reading.py and the restated census assertion at tests/test_unowned_scratch_is_reclaimed.py:194-202; no production file changed.",
+    "done_when": "The plan's done-when names tests/test_a_loaded_node_publishes_a_current_disk_reading.py with three clauses plus a negative control (docs/plans/queued-work-needs-no-workaround.html:357); the run's scoped-gate-1795207783634877178.log and after_suite-1795207939993953745.log both record revision 0ca74c48 with 0 failures on a run whose command includes tests/test_unowned_scratch_is_reclaimed.py, but no artefact records the all_debug partition name or a ruff format --check receipt for this commit.",
+    "goal": "The node goal is that a loaded node still publishes a current disk reading (docs/plans/queued-work-needs-no-workaround.html:357); the incremental commit 0ca74c48 adds tests/test_a_loaded_node_publishes_a_current_disk_reading.py:364-462, whose two cases hold the reading published before a sweep that outruns its bound (:426-444) and before a step that dies on a permission error (:447-462); the review's own goal is the record, not code.",
+    "manifest": "Read the source manifest: status complete, commits 0ca74c48 and 68d13e40, plus the tests line naming the scoped-gate pytest command, the after_suite arm revision 0ca74c48 exit 0 with 0 failures, and a negative-control-head.log recorded at 0ca74c48 with 4 failed, 1 passed under a base-ordering bin/fleet-health.",
+    "write_paths": "The source manifest declares nine write paths including bin/fleet-health, reckon/crew/fleet_supervisor.py, reckon/hooks/coordinator_obligations.py, tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py; the incremental commit touches only the two test files, both inside that list."
+  },
+  "justifications": {
+    "durability": "negative-control-head.log:148-150 records both new cases failing against a base-ordering bin/fleet-health (15.6 and 13.8 seconds against the 8-second limit), so each added assertion reddens on the regression it guards; the restated assertion at tests/test_unowned_scratch_is_reclaimed.py:198 also holds when the census carries no row for the orphan, which is why this is not 20.",
+    "evidence": "after_suite-1795207939993953745.log:1-7 records revision 0ca74c48 and 87 passed with EXIT=0, but neither that log nor the run directory carries a receipt for the plan's all_debug and ruff format --check clauses.",
+    "fit": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:376,406,414 add module-level helpers in the file's existing helper idiom, but leave them unannotated where the neighbouring helpers at :113 and :166 are typed.",
+    "goal_fidelity": "tests/test_a_loaded_node_publishes_a_current_disk_reading.py:426-444 asserts publication inside the reader's limit while the sweep lingers past the bound, and :447-462 asserts it while a step fails, which is the deliverable the node's goal states.",
+    "reuse": "No owner exists for a removal-journal reader: the path is a local at reckon/crew/fleet_supervisor.py:634 and tests/test_unowned_scratch_is_reclaimed.py:96 inlines the read, so journal_rows is the first helper and the cases reuse sandbox from tests/test_fleet_health.py:99 and Publications from this file.",
+    "scope_discipline": "The single commit touches only tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py:194-202, both declared write paths of the source node."
+  },
+  "notes": "Read artefacts only; the reviewed head 0ca74c48 is not an ancestor of this worktree's base (merge-base 28fbf2bc), so the landed files were read with git show 0ca74c48:<path> and the diff 68d13e40..0ca74c48. added_failure_count is read from the reviewed run's own arms: baseline_suite-1795207894606006143.log 82 passed, after_suite-1795207939993953745.log 87 passed, both EXIT=0, so 0 added failures.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a loaded node still publishes a current disk reading (docs/plans/queued-work-needs-no-workaround.html:357); the incremental commit 0ca74c48 adds tests/test_a_loaded_node_publishes_a_current_disk_reading.py:364-462, whose two cases hold the reading published before a sweep that outruns its bound (:426-444) and before a step that dies on a permission error (:447-462).\nVERDICT done_when: The plan's done-when names tests/test_a_loaded_node_publishes_a_current_disk_reading.py with three clauses plus a negative control; the scoped-gate and after_suite logs record revision 0ca74c48 with 0 failures, but no artefact records the all_debug partition or a ruff format --check receipt.\nVERDICT write_paths: The source manifest declares nine write paths; the incremental commit touches only tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py:194-202, both declared.\nVERDICT manifest: Read; it states status complete at 0ca74c48, the scoped-gate command, and both suite arms exit 0 with zero failures beside a red negative control.\nVERDICT diff: One commit, 0ca74c4869, 2 files, +117 -1, entirely test code inside the declared paths.\nCALL_SITES: bin/fleet-health:139, bin/fleet-health:143, bin/fleet-health:213, reckon/crew/fleet_supervisor.py:712, reckon/crew/fleet_supervisor.py:739, reckon/crew/fleet_supervisor.py:761\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_loaded_node_publishes_a_current_disk_reading.py:426-444 holds the reading published inside the limit while the sweep lingers past its bound.\nSCORE evidence: 15\nJUSTIFICATION evidence: after_suite-1795207939993953745.log:1-7 records revision 0ca74c48 and 87 passed with EXIT=0, but no receipt covers the all_debug and ruff format clauses.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py:194-202 changed, both declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control-head.log:148-150 shows both new cases failing against the base ordering, while tests/test_unowned_scratch_is_reclaimed.py:198 also passes when the census omits the orphan row.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers at tests/test_a_loaded_node_publishes_a_current_disk_reading.py:376,406,414 are unannotated where the file's neighbours at :113 and :166 are typed.\nSCORE reuse: 18\nJUSTIFICATION reuse: journal_rows is the first journal reader (the path is a local at reckon/crew/fleet_supervisor.py:634) and the cases reuse sandbox at tests/test_fleet_health.py:99 and Publications in this file.\nFINDING tests/test_unowned_scratch_is_reclaimed.py:198 non-blocking: the restated census assertion is `not any(path == orphan and not removed)`, which also holds when the published crew_scratch census carries no row for the orphan at all, so a sweep that stops stating its removal satisfies the assertion written to prove it states one.\nFINDING tests/test_a_loaded_node_publishes_a_current_disk_reading.py:231 non-blocking: the real reclaim work shares the 2-second step bound the case uses for its overrun, so on a loaded node it can be killed mid-journal.\n",
+  "review_run_id": "r-20261120T210813697448-review-of-qwnw-a-loaded-node-publishes-a-current-disk-reading-0ca74c486961",
+  "reviewed_base_sha": "68d13e40de278d26b49a6965366c65f3a96404fd",
+  "reviewed_head_sha": "0ca74c48696177789eba4fdc7153d58c38fbaef9",
+  "reviewed_run_id": "r-20261119T184810689491-qwnw-a-loaded-node-publishes-a-current-disk-reading",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T21:46:40.046571+00:00",
+  "total": 103,
+  "verdicts": {
+    "diff": "Read 68d13e40..0ca74c48 commit by commit: one commit, 0ca74c4869, 2 files, +117 -1 \u2014 109 lines of new helpers and cases in tests/test_a_loaded_node_publishes_a_current_disk_reading.py and the restated census assertion at tests/test_unowned_scratch_is_reclaimed.py:194-202; no production file changed.",
+    "done_when": "The plan's done-when names tests/test_a_loaded_node_publishes_a_current_disk_reading.py with three clauses plus a negative control (docs/plans/queued-work-needs-no-workaround.html:357); the run's scoped-gate-1795207783634877178.log and after_suite-1795207939993953745.log both record revision 0ca74c48 with 0 failures on a run whose command includes tests/test_unowned_scratch_is_reclaimed.py, but no artefact records the all_debug partition name or a ruff format --check receipt for this commit.",
+    "goal": "The node goal is that a loaded node still publishes a current disk reading (docs/plans/queued-work-needs-no-workaround.html:357); the incremental commit 0ca74c48 adds tests/test_a_loaded_node_publishes_a_current_disk_reading.py:364-462, whose two cases hold the reading published before a sweep that outruns its bound (:426-444) and before a step that dies on a permission error (:447-462); the review's own goal is the record, not code.",
+    "manifest": "Read the source manifest: status complete, commits 0ca74c48 and 68d13e40, plus the tests line naming the scoped-gate pytest command, the after_suite arm revision 0ca74c48 exit 0 with 0 failures, and a negative-control-head.log recorded at 0ca74c48 with 4 failed, 1 passed under a base-ordering bin/fleet-health.",
+    "write_paths": "The source manifest declares nine write paths including bin/fleet-health, reckon/crew/fleet_supervisor.py, reckon/hooks/coordinator_obligations.py, tests/test_a_loaded_node_publishes_a_current_disk_reading.py and tests/test_unowned_scratch_is_reclaimed.py; the incremental commit touches only the two test files, both inside that list."
+  }
+}

@@ -63,6 +63,7 @@ def _stub_subscriber():
     stub = SimpleNamespace(history=[], path=SimpleNamespace(reported={}))
     stub.poll = lambda: next(rows, [])
     stub.flush = list
+    stub.drain = list
     stub.wake = lambda **kwargs: station_subscriber.StationSubscriber.wake(
         stub, **kwargs
     )

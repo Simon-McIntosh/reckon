@@ -1,0 +1,71 @@
+<section id="qwnw-red-file-one-raw-text-section-reader-landing">
+  <h2>One raw-text section reader takes its identity from the parser</h2>
+
+  <p><strong>What changed.</strong> The write-paths audit in
+  <code>reckon/doccheck.py</code> walked the parsed document's own
+  <code>h2</code> and <code>p</code> elements. The census holds heading
+  walking in <code>reckon/_plan_html.py</code> alone, so a second walker was
+  reported. The walk also spelled each section's identity itself and scanned
+  every paragraph after the first heading.</p>
+
+  <p>The audit now takes each authored section, its canonical identity and its
+  extent from <code>_plan_html.authored_section_headings</code>. It skips a
+  card and scans that section's own slice, so the identity compared against the
+  parsed sections is the one the readers resolve.</p>
+
+  <p>The store held the plan attribute as two literals of its own: the
+  child-count diagnostic's marker and the projection's owned-region predicate.
+  The counter now takes the marker as a parameter and the projection reads
+  <code>_plan_html.RECKON_ATTRIBUTE</code>, so the attribute name has one owner.</p>
+
+  <p>The one test-side change names a file rather than a rule. The census of
+  <code>data-reckon</code> owners no longer lists the store. The heading census
+  exempts <code>reckon/crew/runs.py::_is_binary_receipt</code>: it probes a
+  binary byte, and the rule follows the .h5 suffix literal beside it as an h5
+  heading. No assertion was deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-one-raw-text-section-reader-measured">Measured</h3>
+
+  <p>Each arm is a log whose first lines name the revision, tree and command and
+  whose last line is a bare <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table id="qwnw-red-file-one-raw-text-section-reader-arms">
+    <caption>Each arm ran the file list resolved over its own tree.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>2 failed, 30 passed, <code>EXIT=1</code></td></tr>
+    <tr><td>the node's file, all_debug job</td>
+        <td><code>045cdcb0f704ded66bb3e7a1c16fd4087e8c2342</code></td>
+        <td>32 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, baseline</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after</td>
+        <td><code>045cdcb0f704ded66bb3e7a1c16fd4087e8c2342</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the doccheck-importing arm, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>1 failed, 520 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the doccheck-importing arm, head</td>
+        <td><code>045cdcb0f704ded66bb3e7a1c16fd4087e8c2342</code></td>
+        <td>1 failed, 520 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the importer arm's delta</td>
+        <td>base against head</td>
+        <td>0 added failures, same single id</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-one-raw-text-section-reader-control">Negative control</h3>
+
+  <p>At the base revision
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> the file reads
+  <code>2 failed, 30 passed</code>. The heading case reports
+  <code>reckon/doccheck.py::_write_paths_sentence_findings</code> at lines 1080
+  and 1081 beside <code>reckon/crew/runs.py::_is_binary_receipt</code>, and the
+  markup case reports <code>data-reckon</code> also owned by
+  <code>reckon/_store.py</code>. Both pass at the head. The red log is
+  <code>negative-control-base.log</code> in the run directory, whose failing id
+  list is the one above.</p>
+</section>

@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:46:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": 714,
+      "severity": "non-blocking",
+      "text": "the rewritten _png_twin_findings_in_run_commits re-implements the base-vs-head twin capability already owned by reckon/crew/reports.py:1926 (_png_twin_findings_for_base), which computes added-since-base intersected with the committed HEAD and already skips a PNG added then removed; the two surfaces now select candidates by different rules (cited commits versus base..HEAD), so crew check --manifest can charge a PNG that promotion would pass; no scope extension to reports.py was requested."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": 646,
+      "severity": "non-blocking",
+      "text": "the added _is_ancestor re-implements the ancestry test owned by reckon/crew/merge.py:1305 (and replicated at reckon/velocity.py:713), giving the repository a third copy of a capability it already owns."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": 636,
+      "severity": "non-blocking",
+      "text": "the diff removed the docstring from _commit_holds_path, leaving a private helper described only by its name while its new siblings in the same block carry docstrings."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the twin check refuses only on the tree at the run's reviewed head; reckon/crew/promotion_checks.py:668 _reviewed_head resolves that head and :714 _png_twin_findings_in_run_commits charges only a PNG the head holds and the base did not.\nVERDICT done_when: the done_when names tests/test_the_figure_twin_check_reads_the_head_tree.py with an added-then-removed twin, a head-still-holds-twin refusal, and a negative control; the file carries all three, and the manifest records 8 passed plus the negative control failing test_a_twin_removed_before_the_head_passes_with_only_the_add_cited with EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_scope.py, reckon/crew/promotion_evidence.py, tests/test_the_figure_twin_check_reads_the_head_tree.py, docs/evidence/fragments/queued-work-needs-no-workaround/s40.html and reckon/crew/promotion_checks.py; the diff touches only promotion_checks.py and the test file, both declared, and the manifest explains the scope/evidence modules needed no edit.\nVERDICT manifest: read; it states the gate ran green, both suite arms green (baseline 0 failures, after 0 failures) and the negative control red (1 failed, 7 passed), and its tests line names the pytest command.\nVERDICT diff: read both commits against 3ab436fe; promotion_checks.py replaces the per-commit-additions twin walk with a head-tree read backed by _reviewed_head and _recorded_base_revision, and the new 317-line test builds a temporary repository under RECKON_HOME.\nCALL_SITES: reckon/crew/promotion.py:complete (line 1408), reckon/crew/reports.py:3092\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:714 reads the head tree and skips a PNG already at the base, matching the section endpoint, though it narrows candidates to cited commits, which is stricter than the literal tree diff.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the gate, the after arm at 85825a4b (0 failures), the baseline arm at 3ab436fe (0 failures), and the negative control's failing id with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delivered diff is confined to reckon/crew/promotion_checks.py and tests/test_the_figure_twin_check_reads_the_head_tree.py, both in the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: test_a_twin_removed_before_the_head_passes_with_only_the_add_cited fails on the pre-change per-commit-additions implementation (negative-control.log names it with EXIT=1) and test_a_twin_still_at_the_head_is_charged_whatever_else_is_cited guards the permissive direction.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/promotion_checks.py:639 imports _record_worktree inside _record_worktree_head while sibling private imports sit in the module's bottom block at line 3681, and :636 lost the docstring from _commit_holds_path.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion_checks.py:714 re-implements the base-vs-head twin rule already owned by reckon/crew/reports.py:1926 (_png_twin_findings_for_base); see the findings.\n",
+  "review_run_id": "r-20261121T074536665083-review-of-qwnw-the-figure-twin-check-reads-the-head-tree-85825a4b7e01",
+  "reviewed_base_sha": "3ab436fe38858d361bdd38ee97ab437d867b2043",
+  "reviewed_head_sha": "85825a4b7e01070b4a6edef09b22853df25aec7f",
+  "reviewed_run_id": "r-20261120T204947437230-qwnw-the-figure-twin-check-reads-the-head-tree",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:33:37.869857+00:00",
+  "total": 96
+}

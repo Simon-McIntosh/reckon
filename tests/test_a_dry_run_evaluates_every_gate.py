@@ -125,7 +125,10 @@ def _invoke(repo: Path, *, node: str, dry_run: bool, extra: list[str] | None = N
 
 
 def _payload(result) -> dict:
-    return json.loads(result.output.splitlines()[0])
+    # The command writes its one JSON document on stdout and its progress
+    # notice ("reckon: created run ...") on stderr; click's combined output
+    # puts that notice first on a live dispatch.
+    return json.loads(result.stdout.splitlines()[0])
 
 
 def test_a_dry_run_refuses_an_unreviewed_plan_where_the_launch_does(

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s30">
+  <meta name="plan-verdict" content="pass">
+  <title>The harness equality test compares fences with the fence composed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-the-equality-test-composes-the-fence-landing" data-node="wlsr-the-equality-test-composes-the-fence" data-reckon="landed" data-when="2026-11-21">
+  <h2>The harness equality test compares fences with the fence composed</h2>
+  <p>The lane-equality test composed every local backend's launch with the fence off, so the two dimensions §16 names — the fence protections and the write roots — were empty for every backend and equal by construction. It now composes each launch with <code>fence=True</code> and a run home under the case's own temporary tree, so the launch is composed exactly as production composes it and the comparison reads the protections the fence actually produced.</p>
+  <p>The case skips on a host without the fence program, with the reason stated: there no launch composes a fence at all, and comparing two sets that are empty for the same wrong reason is not the check. The skip reads <code>reckon._worker_fence.fence_program()</code>, the same resolver a dispatch uses, so the skip and the refusal name one condition.</p>
+  <p>The comparison helper now names every differing dimension and both of its values rather than only reporting that two treatments differ. That is what lets the declared negative control bite: with one backend's composed fence given an extra write root, the first case fails with <code>fence_protections</code> and <code>write_roots</code> printed on both sides, and the extra root's absolute path in the message.</p>
+  <p>Gate: <code>tests/test_worker_behaviour_is_the_same_on_every_harness.py</code> with <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — 66 passed, exit 0, at the run's head. The base arm over <code>65c0479b14</code> reads 65 passed, exit 0; the one-test difference is the added negative-control case.</p>
+  <p>Negative control, measured: with <code>_treatments</code> handing <code>omp-local</code> an extra write root, the first case reads <code>FAILED</code>, exit 1, and the assertion reports the extra path — <code>backend 'omp-local' treats one node differently from 'clive' on fence_protections: (...) -> (..., '/…/extra'); write_roots: (...) -> (..., '/…/extra')</code>.</p>
+</article>
+</body>
+</html>

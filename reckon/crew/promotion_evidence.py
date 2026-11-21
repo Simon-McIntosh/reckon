@@ -23,6 +23,7 @@ from reckon import (
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
+    role_may_write_repository_paths,
 )
 from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
@@ -387,6 +388,32 @@ def _declared_repository_roots(
     )
 
 
+def _integration_brings_the_run(
+    tree: Path, revision: str, run_head: str | None
+) -> bool:
+    """Report whether ``revision`` is a merge that carries the run's own head.
+
+    A run's work can reach the record inside an integration merge: a
+    coordinator merges the run's head, so the merge names the run's head as one
+    of its parents. The scope measurement charges that merge the content it
+    brought relative to its first parent — the run's work — so the content it
+    charges is bounded by what the citation itself carries.
+
+    Being merely descended from the run's head is not enough. A later commit on
+    the same branch, or a merge someone else made on top of it, also descends
+    from the run's head while bringing content this run never touched, and
+    charging its first-parent diff to this run would record another writer's
+    work as the run's own. Only the merge that names the run's head as a parent
+    is admitted; every other commit outside the run's history stays foreign.
+    """
+    if not run_head:
+        return False
+    parents = _commit_parents(tree, revision)
+    if len(parents) < 2:
+        return False
+    return run_head in parents
+
+
 def _require_commits_beyond_base(
     run_id: str,
     record: Mapping[str, Any],
@@ -407,12 +434,31 @@ def _require_commits_beyond_base(
     The comparison is made in the run's own tree, so a citation that resolves
     to an abbreviated revision still equals the base it names, and a citation
     that resolves nowhere is left to the guard whose refusal names the
-    repository it consulted rather than answered here with this one. The tree
-    is the one the record names, read the way every other reader reads it: a
-    record that names no readable directory is not measured here rather than
-    measured against whatever repository the promotion happens to run in. A
-    tree git cannot read, or a base that does not resolve in it, leaves the
-    guard silent: an unmeasured citation is not a defect in the citation.
+    repository it consulted rather than answered here with this one. A tree git
+    cannot read, or a base that does not resolve in it, leaves the guard
+    silent: an unmeasured citation is not a defect in the citation.
+
+    Reachability is asked about the run's *worktree* head, never the
+    repository's. A released worktree is read through the repository that
+    shares its object store, and that repository's head follows the integration
+    branch: a run whose tree is already gone therefore reads as an unmerged
+    branch when measured against it, and the commit the run made was refused
+    after the tree it belonged to no longer existed. With no worktree to read,
+    the observable question is the one the base answers — the citation is the
+    run's work if it descends from the base the run was dispatched against.
+
+    Uncommitted declared work is only a defect for a run whose deliverable
+    belongs in a commit. A shadow run asserts no code and is refused a
+    citation by its own guard, so uncommitted work in its tree is the evidence
+    itself: the landing writes it into the run's shadow patch, which is what a
+    later reader measures. Refusing its row would leave the comparison arm with
+    its evidence in no artifact at all rather than in no commit.
+
+    An integration merge that names the run's own head as one of its parents is
+    the run's work too: the merge is the commit that carried it, and the scope
+    measurement charges it the content it brought relative to its first parent.
+    A commit merely descended from the run's head is not admitted, because what
+    it brought is not bounded by what the run did.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
@@ -424,7 +470,15 @@ def _require_commits_beyond_base(
     from reckon.crew.promotion_scope import _declared_manifest_commits
     from reckon.crew.queue_landing import _delivered_revision
 
-    canonical_head = _commit_canonical_id(tree, "HEAD")
+    # Only the run's own worktree answers whether a citation is on the run's
+    # line. A record whose worktree is gone is read through the repository
+    # that shares its object store, whose head follows the integration branch,
+    # so a head read there refuses the run's own commit as an unmerged branch.
+    canonical_head = (
+        _commit_canonical_id(tree, "HEAD")
+        if _record_worktree(record) is not None
+        else None
+    )
     # A history-derived presentation must not hide a foreign manifest citation.
     # Reachable merge imports are valid citations but not owned commit records.
     citations = dict.fromkeys(
@@ -446,9 +500,12 @@ def _require_commits_beyond_base(
                 "run. Cite the commit the run committed on top of the base, or "
                 "pass --no-commit '<why>' when it produced none"
             )
+        carries_the_run = _integration_brings_the_run(tree, canonical, canonical_head)
         predates_base = _revision_is_ancestor(tree, canonical, canonical_base)
-        outside_history = canonical_head is not None and not _revision_is_ancestor(
-            tree, canonical, canonical_head
+        outside_history = (
+            canonical_head is not None
+            and not carries_the_run
+            and not _revision_is_ancestor(tree, canonical, canonical_head)
         )
         if (
             predates_base
@@ -466,6 +523,13 @@ def _require_commits_beyond_base(
                 "or pass --no-commit '<why>' when it produced none"
             )
     if commits:
+        return
+    if _is_shadow(record):
+        # A shadow's deliverable is its retained patch, not a commit, so its
+        # tree holding uncommitted work is the shadow's normal state rather
+        # than work the release step would take with the worktree: the
+        # landing writes the patch before the tree is released, which is where
+        # a shadow's work is kept.
         return
     roots = _declared_repository_roots(record, tree=tree)
     if not roots:
@@ -544,6 +608,26 @@ def _commit_canonical_id(root: Path, revision: str) -> str | None:
     if not root.is_dir():
         return None
     return _resolve_commit(root, revision) or None
+
+
+def _entry_commit_ids(root: Path, entry: str) -> list[str]:
+    """The commits one citation entry names, read by the entry reader.
+
+    A presented entry is a manifest entry, so a citation is the ids it carries:
+    a bare id, an id followed by the subject it was committed under, several
+    ids separated by spaces or commas, and a ``commit: <id>`` list item all
+    name what their ids name. The grammar has one home in ``promotion_scope``,
+    which reads it beside the manifest field, and asking it here keeps a
+    promotion's presentation from refusing a form the ledger accepts.
+    """
+    from reckon.crew.promotion_scope import _entry_commits
+
+    return _entry_commits(root, entry)
+
+
+def _entry_names_a_commit(root: Path, entry: str) -> bool:
+    """Whether one citation entry names at least one commit in the store."""
+    return bool(_entry_commit_ids(root, entry))
 
 
 def _commit_resolves_in(root: Path, revision: str) -> bool:
@@ -1009,6 +1093,14 @@ def require_resolvable_presentation(
     "promotion-requested"}`` and queued the value the boundary check cannot
     resolve.
 
+    Every entry is read the way the ledger's commits field is: a citation is
+    the ids it carries, so a worker's ``<id> <subject>`` log line, an entry
+    holding several ids, and a ``commit: <id>`` list item all resolve. The two
+    readers disagreeing refused a form the manifest field accepts: at the base
+    revision a list entry reading ``e980cfa test: record candidate`` answered
+    "presents ... as a commit, but that identifier does not resolve" while the
+    manifest's own reader resolved the same entry.
+
     The refusal stays silent when the run's tree cannot be read, so a citation
     is never refused for a store nobody was able to ask about.
     """
@@ -1016,7 +1108,7 @@ def require_resolvable_presentation(
     tree = _run_commit_directory(record) if cited else None
     if tree is None:
         return
-    unresolved = [entry for entry in cited if _commit_canonical_id(tree, entry) is None]
+    unresolved = [entry for entry in cited if not _entry_names_a_commit(tree, entry)]
     if unresolved:
         raise _unresolved_presentation_refusal(run_id, tree, unresolved)
 
@@ -1146,9 +1238,7 @@ def _require_gate_evidence(
             # report is not written.
             return None
         unresolved_presented = [
-            candidate
-            for candidate in presented
-            if _commit_canonical_id(tree, candidate) is None
+            entry for entry in presented if not _entry_names_a_commit(tree, entry)
         ]
         # A commitless declaration the declaration parser recognises means the
         # run presents no commits rather than a value that names nothing: a
@@ -1162,12 +1252,12 @@ def _require_gate_evidence(
         resolving_declared = {
             canonical
             for candidate in declared
-            if (canonical := _commit_canonical_id(tree, candidate)) is not None
+            for canonical in _entry_commit_ids(tree, candidate)
         }
         resolving_presented = {
             canonical
             for candidate in presented
-            if (canonical := _commit_canonical_id(tree, candidate)) is not None
+            for canonical in _entry_commit_ids(tree, candidate)
         }
         # A manifest commit is short only when nothing the presentation names
         # covers it. Each presented commit covers itself and every commit in
@@ -1277,13 +1367,20 @@ def _require_worktree_at_its_base(run_id: str, record: Mapping[str, Any]) -> Non
     A review run is exempt because its worktree is the reviewed node's tree,
     checked out at the reviewed head rather than at the base the review was
     dispatched against: the head is the reviewed work, not a commit the review
-    made, and the pointer carries it by design. The review's deliverable is the
-    stored record, so measuring its tree against the review's base would refuse
-    every review promoted with a passing gate.
+    made, and the pointer carries it by design. Its deliverable is the stored
+    record rather than a commit, so measuring its tree against the review's
+    base would refuse every review promoted with a passing gate. A role that
+    may not write repository paths is exempt for the same reason: it only reads
+    the tree it grades, so a head above the run's base is the work under
+    verification rather than work of its own. A role that may write the
+    repository keeps the guard.
     """
+    from reckon.crew.recovery import _pointer_role
     from reckon.crew.recovery_review_delivery import _is_review_run
 
     if _is_review_run(record):
+        return
+    if not role_may_write_repository_paths(_pointer_role(record)):
         return
     base = str(record.get("base_sha") or "").strip()
     worktree = _record_worktree(record)
@@ -1604,7 +1701,7 @@ def _log_failure_count(log_text: str) -> int | None:
     if log_format == "ctest":
         log_ids = review_module.gate_log_failure_ids(log_text)
         return None if log_ids is None else len(log_ids)
-    return review_module.pytest_summary_failure_count(log_text)
+    return review_module.pytest_summary_failure_total(log_text)
 
 
 def _text_the_receipt_describes(log_text: str) -> str:
@@ -1618,7 +1715,13 @@ def _text_the_receipt_describes(log_text: str) -> str:
     and there the labels are one gate rather than successive attempts:
     inherited failures in an earlier label belong to the receipt even when the
     final label is clean, so the whole log is what the receipt describes.
+    A per-file pytest gate runs one process per file and appends every run into
+    one log, marked by :func:`reckon.crew.review.per_file_gate_runs`; its files
+    are one gate as well, so a file that failed before one that passed belongs
+    to the receipt and the whole log is read.
     """
+    if review_module.per_file_gate_runs(log_text) is not None:
+        return log_text
     if review_module._gate_log_format(log_text) == "ctest":
         return log_text
     return review_module.last_run_text(log_text)
@@ -1797,10 +1900,10 @@ def _require_gate_log_agrees(
       has filed contradictory evidence.
     * a receipt figure the log does not agree with — the ``after_suite`` arm
       naming this log, when its failure count differs from the failed plus
-      errored figure of the log's last run in that log's own format, or its
-      failure ids differ from the ids of the log's last run in either
-      direction. Both are read from the last run, the one whose status the
-      tail records.
+      errored figure the log states in its own format, or its failure ids
+      differ from the ids the log reports in either direction. Both are read
+      from the run the receipt describes: the last attempt at a suite, or
+      every marked file of a per-file gate, or every label of a ctest gate.
     * no evidence the command ran — a line carrying the shell's own
       command-not-found diagnostic, when the log carries nothing that shows a
       command did run, states the command never executed. A runner log may
@@ -1818,7 +1921,9 @@ def _require_gate_log_agrees(
       better named by it than by the record the capture never reached.
     * a pytest gate whose last run reached no pytest summary — such a run did
       not finish, so its tail states a status for a suite that never reported
-      one. A command that does not run pytest is not held to a pytest summary.
+      one. A per-file gate is held the same way for every file it marks: a
+      file that reached no summary leaves the gate unmeasured. A command that
+      does not run pytest is not held to a pytest summary.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -1892,18 +1997,19 @@ def _require_gate_log_agrees(
             "the log reports, or re-run the gate into its own log"
         )
     command = str(gate_check.get("command") or "").strip()
-    if _command_runs_pytest(gate_check.get("command") or ""):
-        last_run = review_module.last_run_text(log_text)
-        if review_module.pytest_summary_failure_count(last_run) is None:
-            raise CrewError(
-                f"run {run_id!r} asserts gate 'passed' but its cited log "
-                f"{log_path!r} reaches no pytest summary for a command that "
-                f"runs pytest ({command!r}): the run stopped before its own "
-                "result, so its exit record states a status for a suite that "
-                "never reported one. Found: a pytest gate whose last run "
-                "reached no pytest summary. Finish the run and cite its log, "
-                "or cite the command that produced the run the log records"
-            )
+    if (
+        _command_runs_pytest(gate_check.get("command") or "")
+        and review_module.pytest_summary_failure_total(log_text) is None
+    ):
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' but its cited log "
+            f"{log_path!r} reaches no pytest summary for a command that "
+            f"runs pytest ({command!r}): the run stopped before its own "
+            "result, so its exit record states a status for a suite that "
+            "never reported one. Found: a pytest gate whose last run "
+            "reached no pytest summary. Finish the run and cite its log, "
+            "or cite the command that produced the run the log records"
+        )
 
 
 _SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
@@ -2406,6 +2512,8 @@ from reckon.crew.promotion_release import (
 from reckon.crew.promotion_scope import (
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
+    _commit_parents,
+    _is_shadow,
     _merge_revisions,
     _repository_scope_paths,
     _revision_is_ancestor,

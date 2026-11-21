@@ -1,0 +1,77 @@
+<section id="qwnw-red-file-append-run-writes-one-run-file-landing">
+  <h2>Appending a run writes one run file</h2>
+
+  <p><strong>What was red.</strong> The file failed on the primary branch for
+  two causes, both a test encoding a rule the ledger stopped keeping rather
+  than a regression in the product. Each cause was reproduced at the base
+  revision before anything was edited, in the log cited under
+  <a href="#qwnw-red-file-append-run-writes-one-run-file-arms">arms</a>.</p>
+
+  <p><strong>Cause 1 — a byte-scan miss decodes nothing. Verdict: the test was
+  wrong about which append it was measuring.</strong>
+  <code>test_byte_scan_miss_never_parses_aggregate_or_opens_other_run</code>
+  runs the fixture's empty store, so the append in question is the project's
+  first stored row. Since <code>_complete_store_from_ledger</code> (commit
+  <code>57edff12f41ec24500093f48fc7fbf570983d4f4</code>, 18 November) seeding
+  the store from committed history is that first row's job, and the import
+  necessarily decodes the aggregate it seeds from — a different read from the
+  duplicate check. The test now stores one row for the project first, so the
+  append under test is an ordinary one and the assertion it makes is exactly
+  the one it was written for: a byte-scan miss on the duplicate check decodes
+  nothing and opens no other run's file. Mutating the product's byte scan away
+  makes it fail with the test's own message, so the guard still fires.</p>
+
+  <p><strong>Cause 2 — a failed store write is a refusal. Verdict: the test was
+  wrong about the store's authority.</strong>
+  <code>test_index_lag_observes_failed_insert_without_rebuilding</code>
+  expected a failed <code>run_store.append</code> to return
+  <code>{"status": "failed"}</code> with the run file left behind, so lag could
+  observe it. Commit
+  <code>7a8fdac445a60e9913e5bda85d38cf08b1240560</code> (15 November) made the
+  store the authority: an append whose store write fails refuses and takes back
+  the run file, so no refused insert leaves a run file the store lacks and the
+  lag it asserted can no longer arise from an append. The test now asserts the
+  rule the code keeps — the refusal names the store path, the injected cause
+  and the repair verb, and neither store keeps the row — and keeps every
+  unrebuilding assertion by writing the lagging run file by hand, which is the
+  only way that state now arises. Mutating the refusal back into a failure
+  payload makes it fail as <code>DID NOT RAISE LedgerError</code>.</p>
+
+  <p>No assertion was deleted or weakened: the byte-scan assertion, the
+  no-other-run-opened assertion, the two repeated lag readings, and the
+  no-rebuild and byte-stable store checks all remain, and the refusal assertions
+  are stronger than the failure payload they replace.</p>
+
+  <h3 id="qwnw-red-file-append-run-writes-one-run-file-arms">Measured</h3>
+
+  <p>Each arm's log names the revision, the tree and the command on its header
+  lines and ends with a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-append-run-writes-one-run-file-arms-table">
+    <caption>The negative control is the base run of the named file; the head
+    run is the same file after the repair, submitted as a job on
+    <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset for pytest.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, named file (negative control)</td>
+        <td><code>d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a</code></td>
+        <td>2 failed, 15 passed, <code>EXIT=1</code> — failing ids
+        <code>test_byte_scan_miss_never_parses_aggregate_or_opens_other_run</code>,
+        <code>test_index_lag_observes_failed_insert_without_rebuilding</code></td></tr>
+      <tr><td>head, named file</td>
+        <td><code>c83ef27f721dd4265749597fecd1501a70022a82</code></td>
+        <td>17 passed, <code>EXIT=0</code>, job <code>1330964</code> on
+        <code>all_debug</code></td></tr>
+      <tr><td>base, declared suite</td>
+        <td><code>d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head, declared suite</td>
+        <td><code>c83ef27f721dd4265749597fecd1501a70022a82</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The change touches no product source, so <code>reckon/</code> is
+  byte-identical between the two revisions and any file that imports the
+  ledger is unchanged by this node in either direction.</p>
+</section>

@@ -13,6 +13,8 @@ from .shared import (
     _RETRY_HOLD_VERDICTS,
     ADMISSION_RETRY_BACKOFF_CAP_SECONDS,
     ADMISSION_RETRY_BACKOFF_SECONDS,
+    AWAITING_UPSTREAM_PHASE,
+    QUEUED_PHASE,
     RECORDED_HOLD_FIELD,
     REVIEW_ROLE,
     Any,
@@ -1070,43 +1072,201 @@ def _retire_landed_review(
     )
     result["obligations"].append({"run_id": run_id, "detail": detail})
     if runs.pointer_path(run_id).is_file():
-        _record_retirement(pointer, subject=subject, moment=moment, outcome=outcome)
+        _record_retirement(
+            pointer,
+            record={
+                "verdict": "retired-landed-review",
+                "reason": (
+                    f"its subject {subject!r} was promoted before the review "
+                    f"was admitted: {outcome}"
+                ),
+                "landed_subject": subject,
+                "recorded_at": moment.isoformat(),
+            },
+        )
         return f"{subject}: {outcome}"
     return subject
 
 
 def _record_retirement(
-    pointer: Mapping[str, Any], *, subject: str, moment: datetime, outcome: str
+    pointer: Mapping[str, Any], *, record: Mapping[str, Any]
 ) -> None:
-    """Record a retirement on a request whose pointer could not be removed.
+    """Record one retirement on a request whose pointer could not be removed.
 
     A discard that refused or failed leaves the pointer where it was, so the
-    retirement is written onto it: the next pass finds the subject promoted
-    again and retires it again, and a reader of the request sees why rather
-    than only that it is still queued.
+    retirement is written onto it: a later pass retries it, and a reader of the
+    request sees why rather than only that it is still queued. Every retirement
+    writes through here, with its own record payload, so the stamp a reader
+    finds is shaped the same whatever retired the request.
     """
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return
-    record = {
-        "verdict": "retired-landed-review",
-        "reason": (
-            f"its subject {subject!r} was promoted before the review was "
-            f"admitted: {outcome}"
-        ),
-        "landed_subject": subject,
-        "recorded_at": moment.isoformat(),
-    }
 
     def stamp(current: dict[str, Any]) -> dict[str, Any]:
-        current[RECORDED_HOLD_FIELD] = record
-        current["reason"] = record["reason"]
+        current[RECORDED_HOLD_FIELD] = dict(record)
+        current["reason"] = record.get("reason")
         return current
 
     try:
         runs._mutate_pointer(run_id, stamp)
     except CrewError:
         return
+
+
+def _lost_session_review_answer(
+    pointer: Mapping[str, Any],
+    *,
+    lost_reads: Any,
+) -> Mapping[str, Any] | None:
+    """The answer that retires this request, or ``None`` when it stays.
+
+    Only a review request whose owning session reads lost is retired here. A
+    review's own record names the session that owes it, and a session nothing
+    has heard for the threshold is one no reader is left behind: composing or
+    launching its review creates work that can only be refused, and the duty is
+    carried into the decision raised for the session rather than dropped. An
+    implement request is never touched: that work is raised as one decision for
+    the operator to adopt or retire, and retiring it here would remove the work
+    the decision lists.
+    """
+
+    node = pointer.get("node") or {}
+    if str(node.get("role") or "") != REVIEW_ROLE:
+        return None
+    session = str(pointer.get("session") or "")
+    if not session:
+        return None
+    answer = lost_reads.answer(session, str(pointer.get("project") or ""))
+    return answer if answer.get("lost") else None
+
+
+def _lost_session_rule(answer: Mapping[str, Any]) -> str:
+    """The rule sentence a retirement records, from the configured threshold."""
+
+    from .. import lost_sessions as _lost_sessions
+
+    threshold = _lost_sessions.lost_session_after_hours()
+    last_heard = answer.get("last_heard_at")
+    return (
+        "the request's session was last heard at "
+        f"{last_heard or '<no dated record>'} and nothing has heard it for "
+        f"longer than lost_session.after_hours ({threshold:g}h), so its "
+        "reviews are retired rather than composed or launched"
+    )
+
+
+def _retire_lost_session_review(
+    pointer: Mapping[str, Any],
+    answer: Mapping[str, Any],
+    *,
+    moment: datetime,
+    result: dict[str, Any],
+) -> tuple[bool, str]:
+    """Discard a review request whose session is lost, and say whether it went.
+
+    The departure names the lost session, the instant it was last heard and the
+    rule, on the discard record every reader of a departure already asks for.
+    It is written through the same discard path every stranded review uses, with
+    the extra facts passed as fields rather than a second writer kept beside it.
+    The answer's first element is true only once the pointer is gone: a discard
+    that refuses leaves the request where it was, the next pass tries again, and
+    this pass must not report a retirement that never happened.
+    """
+
+    from reckon.crew import recovery_review_dispatch
+
+    run_id = str(pointer.get("run_id") or "")
+    session = str(answer.get("session") or pointer.get("session") or "")
+    reason = (
+        f"retired without launching: {_lost_session_rule(answer)}; session "
+        f"{session!r} owns this review and nobody is left to read it"
+    )
+    outcome = recovery_review_dispatch._discard_stranded_review(
+        run_id,
+        reason=reason,
+        fields={
+            "lost_session": session,
+            "last_heard_at": answer.get("last_heard_at"),
+            "rule": _lost_session_rule(answer),
+        },
+    )
+    detail = (
+        f"review {run_id!r} was retired without launching: its session "
+        f"{session!r} was last heard at {answer.get('last_heard_at')}"
+    )
+    if runs.pointer_path(run_id).is_file():
+        detail = f"{detail}; {outcome}"
+        _record_retirement(
+            pointer,
+            record={
+                "verdict": "retired-lost-session",
+                "reason": f"{_lost_session_rule(answer)}: {outcome}",
+                "lost_session": session,
+                "last_heard_at": answer.get("last_heard_at"),
+                "recorded_at": moment.isoformat(),
+            },
+        )
+        result["obligations"].append({"run_id": run_id, "detail": detail})
+        return False, detail
+    result["obligations"].append({"run_id": run_id, "detail": detail})
+    return True, detail
+
+
+def _retire_lost_session_reviews(
+    live: Sequence[Mapping[str, Any]],
+    *,
+    lost_reads: Any,
+    moment: datetime,
+    result: dict[str, Any],
+) -> tuple[list[str], list[str]]:
+    """Retire every review request of a lost session on this pass.
+
+    The pass retires a request in ``queued`` or ``awaiting-upstream``: both are
+    requests the fleet still holds and would otherwise keep attempting. A request
+    the operator has already discarded, or one that has left the fleet, is
+    absent from ``live`` and so is not visited twice.
+
+    Returns the requests that were retired and the ones whose discard refused.
+    The second list is the caller's: a request the discard could not remove is
+    still queued, and it must not be launched on this pass either -- launching it
+    is exactly what the retirement exists to prevent.
+    """
+
+    from . import verdicts as verdicts_module
+
+    retired: list[str] = []
+    refused: list[str] = []
+    for pointer in tuple(live):
+        phase = str(pointer.get("phase") or "")
+        if phase not in (QUEUED_PHASE, AWAITING_UPSTREAM_PHASE):
+            continue
+        answer = _lost_session_review_answer(pointer, lost_reads=lost_reads)
+        if answer is None:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        went, detail = _retire_lost_session_review(
+            pointer, answer, moment=moment, result=result
+        )
+        if not went:
+            # The discard refused, so the request is still queued and the next
+            # pass retries it. Reporting it retired here would tell the pass's
+            # reader that a request left the fleet when it did not; the refusal
+            # is named in the obligation and on the pointer instead, and the
+            # caller leaves the request out of this pass's launches.
+            refused.append(run_id)
+            continue
+        retired.append(run_id)
+        result["verdicts"].append(
+            verdicts_module._verdict_row(
+                pointer,
+                allowance=None,
+                allowance_source="",
+                verdict="retired-lost-session",
+                detail=detail,
+            )
+        )
+    return retired, refused
 
 
 def _until_changed_hold(

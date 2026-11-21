@@ -156,6 +156,26 @@ def _row(run: dict) -> dict:
     )
 
 
+def _counts(**figures: int) -> dict:
+    """The fleet counters for a fixture whose rows carry no promotion request.
+
+    The three buckets travel beside the promotion queue's own figures, which
+    the delivery fold measures from the same rows rather than deriving as
+    buckets. A parked run carries delivery evidence and nothing queued, so the
+    payload reports a measured zero and no oldest request; the expected dict
+    names those figures instead of leaving them unpinned.
+    """
+    return {
+        "working": 0,
+        "blocked": 0,
+        "unpromoted": 0,
+        "promotion_queued": 0,
+        "oldest_promotion_position": None,
+        "oldest_promotion_requested_at": None,
+        **figures,
+    }
+
+
 # ── The age is the stream's, not the manifest's ───────────────────────────
 
 
@@ -188,12 +208,7 @@ def test_a_stale_manifest_over_a_fresh_stream_is_not_in_alarm() -> None:
     )
     assert snapshot["state"] == "waiting"
     assert snapshot["state"] != "wait-aged"
-    assert recovery._fleet_counts({run["run_id"]: snapshot}) == {
-        "working": 0,
-        "blocked": 0,
-        "unpromoted": 0,
-        "waiting": 1,
-    }
+    assert recovery._fleet_counts({run["run_id"]: snapshot}) == _counts(waiting=1)
 
 
 def test_a_wait_stale_in_both_reads_is_in_alarm() -> None:
@@ -219,12 +234,7 @@ def test_a_wait_stale_in_both_reads_is_in_alarm() -> None:
         run, moment=NOW_SECONDS, stall_seconds=STALE_AFTER_SECONDS
     )
     assert snapshot["state"] == "wait-aged"
-    assert recovery._fleet_counts({run["run_id"]: snapshot}) == {
-        "working": 0,
-        "blocked": 0,
-        "unpromoted": 0,
-        "waiting": 1,
-    }
+    assert recovery._fleet_counts({run["run_id"]: snapshot}) == _counts(waiting=1)
 
 
 # ── The probe must be able to fail ────────────────────────────────────────

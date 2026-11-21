@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-obligations-hook-reads-the-snapshot-7bc3ba71e57d",
+      "recorded_at": "2026-11-19T21:43:00.738342+00:00"
+    },
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-obligations-hook-reads-the-snapshot-7bc3ba71e57d",
+      "recorded_at": "2026-11-19T21:42:59.028689+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-obligations-hook-reads-the-snapshot-7bc3ba71e57d",
+      "recorded_at": "2026-11-19T21:43:01.772710+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-19T21:09:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-obligations-hook-reads-the-snapshot-7bc3ba71e57d",
+      "recorded_at": "2026-11-19T21:42:58.042532+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 201,
+      "severity": "blocking",
+      "text": "deferrals_recorded skips any file without a top-level 'acknowledgement' key, but a promoted run's deferral is written by reckon/crew/runs.py:2993 as {'run_id','project',**deferral} with deferral keys reason/until/recorded_at (runs.py:2733-2741), so a promoted deferral is invisible here; reapply_acknowledgements then takes its early return at reckon/hooks/coordinator_obligations.py:1855 and the stop blocks on a duty the coordinator excused. Probe at head: _deferral_files saw ['run-promoted.json'] and deferrals_recorded('prok') returned False, while adding a live pointer carrying 'acknowledgement' returned True."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1298,
+      "severity": "non-blocking",
+      "text": "_age_of_instant and refresh_overdue_remedy are alias assignments with no reader left in the head tree (grep over reckon/ and tests/ at 7bc3ba71 finds only the two assignment lines), so two dead exports imply this module still owns a render that obligation_snapshot.refresh_overdue_remedy now owns."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062423234538-qwnw-red-file-obligations-hook-reads-the-snapshot/manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the recorded gate is tests/test_staged_write_inventory.py plus tests/test_every_shared_home_lock_holds_across_nodes.py, not the done_when's tests/test_obligations_hook_reads_the_snapshot.py, so the manifest's gate receipt cannot be re-run to assert the measure; the named file's run at logs/head-node.log (9 passed, EXIT=0) carries no host or SLURM job line for the all_debug requirement, no evidence fragment was written for the base failing ids, and the manifest lists no per-cause verdict for the three fixes the done_when asks for."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 351,
+      "severity": "non-blocking",
+      "text": "station_runtime_candidate now copies the candidate order owned by reckon/crew/dispatch_watch.py:581 body for body, and station_database_name at 384 copies station_store.DATABASE_NAME (reckon/crew/station_store.py:58); these copy rather than extend their owners. The copy is forced because the hook loads this module by path, and both are pinned against the owners by tests/test_obligations_read_the_station.py:195 and :205."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal is stated at prompt.txt as making tests/test_obligations_hook_reads_the_snapshot.py pass in full on the primary branch; the landed diff replaces three crew-facade imports on the hook's read path and the recorded head run logs 9 passed, but it adds a deferral regression at reckon/crew/obligation_snapshot.py:201.\nVERDICT done_when: node.json's done_when requires the file green as an all_debug job with SLURM_JOB_ID unset, base and head runs logged in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-hook-reads-the-snapshot.html, and clean ruff on changed paths; the manifest records tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py instead, logs/head-node.log shows the named file at 9 passed EXIT=0 with no job or host line, and that fragment does not exist in 7bc3ba71, while ruff check and ruff format --check on the four changed paths report the same findings as at 42fe90d0 and none new.\nVERDICT write_paths: the dispatch declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-hook-reads-the-snapshot.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-obligations-hook-reads-the-snapshot; all four changed files lie inside them.\nVERDICT manifest: read at manifest.md; it records commit 7bc3ba71e57d0f88f87ea2a7db168ee42a33e1fe, both suite arms with full 40-character revisions and zero failures, a base negative-control log (2 failed, 7 passed) and note, but its tests: and test_logs: name a different gate and it carries no per-cause verdict.\nVERDICT diff: read 42fe90d0b0a46060bafde2490dda7d4002cda478..7bc3ba71e57d0f88f87ea2a7db168ee42a33e1fe commit by commit; one commit touches four files, moving the overdue-remedy render into obligation_snapshot, restating the station runtime candidate order and database name, adding the deferral early return, and adding one live-run fixture line to the hook test.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:reapply_acknowledgements, reckon/crew/obligation_snapshot.py:station_snapshot, reckon/crew/obligations.py:_overdue_remedy\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the head run of tests/test_obligations_hook_reads_the_snapshot.py logs 9 passed EXIT=0 at 7bc3ba71, which is the goal, but reckon/crew/obligation_snapshot.py:201 changes stop behaviour on a promoted deferral as a side effect.\nSCORE evidence: 9\nJUSTIFICATION evidence: manifest.md:11 records a gate over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, while the done_when's node file appears only in logs/head-node.log with no all_debug job line and no evidence fragment at the path node.json names.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: all four changed paths (reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_hook_reads_the_snapshot.py) sit inside the declared reckon and tests scope, with only two dead aliases and one formatting-only hunk as surplus.\nSCORE durability: 7\nJUSTIFICATION durability: tests/test_obligations_hook_reads_the_snapshot.py:305 asserts \"reckon.crew\" not in the loaded module set, which would redden if the facade returned, but no test in the diff or in the node's gate exercises the promoted branch of reckon/hooks/coordinator_obligations.py:1855, which the probe shows wrong.\nSCORE fit: 13\nJUSTIFICATION fit: reckon/crew/obligations.py:1296-1299 assigns private names out of a sibling module, leaving two aliases with no reader, where the surrounding idiom is a documented repetition with a pinning test.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:351 and :384 copy the candidate order and database name owned by reckon/crew/dispatch_watch.py:581 and reckon/crew/station_store.py:58 rather than extending them, though both copies are pinned by tests/test_obligations_read_the_station.py:195 and :205.\nFINDING reckon/crew/obligation_snapshot.py:201 blocking: deferrals_recorded cannot see a promoted run's deferral because runs.py:2993 writes {run_id, project, **deferral} with no 'acknowledgement' key, so the early return at coordinator_obligations.py:1855 leaves an excused duty in the stop list; probe showed the file seen and the answer False.\nFINDING reckon/crew/obligations.py:1298 non-blocking: the _age_of_instant and refresh_overdue_remedy aliases are dead in the head tree and misstate which module owns the render.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062423234538-qwnw-red-file-obligations-hook-reads-the-snapshot/manifest.md:11 non-blocking: the recorded gate is not the done_when's test, the head run is not evidenced as an all_debug job, and the required evidence fragment and per-cause verdicts are missing.\nFINDING reckon/crew/obligation_snapshot.py:351 non-blocking: the station candidate order and database name are copies of reckon/crew/dispatch_watch.py:581 and reckon/crew/station_store.py:58, pinned by tests/test_obligations_read_the_station.py:195 and :205.",
+  "review_run_id": "r-20261119T050823135302-review-of-qwnw-red-file-obligations-hook-reads-the-snapshot-7bc3ba71e57d",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "7bc3ba71e57d0f88f87ea2a7db168ee42a33e1fe",
+  "reviewed_run_id": "r-20261118T062423234538-qwnw-red-file-obligations-hook-reads-the-snapshot",
+  "scores": {
+    "durability": 7,
+    "evidence": 9,
+    "fit": 13,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:26:28+00:00",
+  "total": 65
+}

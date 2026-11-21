@@ -224,6 +224,8 @@ class FlightConfig(ConfiguredBaseModel):
     capability_raise: CapabilityRaise | None = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
     worktree: WorktreeConfig | None = Field(default=None)
     session_scratch: SessionScratchConfig | None = Field(default=None, description="""Per-session scratch bound and aggregate share of the local disk.""")
+    lost_session: LostSessionConfig | None = Field(default=None, description="""When a coordinator session that nothing has heard from reads as lost. The block is declared here so a host or project layer retunes the threshold without a code change; the derivation reads it from the resolved config.""")
+    stranded_wait: StrandedWaitConfig | None = Field(default=None, description="""How long a request waiting on an upstream that nobody is building may stand before its owner is told once. The block is declared here so a host or project layer retunes the threshold without a code change; the admission pass reads it from the resolved config.""")
     summary: SummaryConfig | None = Field(default=None)
     ticker: TickerConfig | None = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
     domain: DomainConfig | None = Field(default=None, description="""The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour.""")
@@ -273,6 +275,7 @@ class QueueConfig(ConfiguredBaseModel):
     Project-wide queue depth and fair-use weights.
     """
     max_requests: int | None = Field(default=None, description="""Maximum queued non-review requests in one project. The runtime default is 500 when no layer sets this value.""", ge=1)
+    launch_failure_limit: int | None = Field(default=None, description="""How many failed launches in a row one queued request takes before it stops being re-queued and stays `launch-failed`, carrying the last failure. The runtime default is 3 when no layer sets this value.""", ge=1)
     project_weights: dict[str, Union[float, ProjectWeight]] | None = Field(default=None, description="""Positive fair-use weight for each project sharing the local queue. Projects without a declared weight have equal weight of one.""")
     repick_after_seconds: int | None = Field(default=None, description="""How long a route the router chose may stand before the request is picked again at launch. A request released sooner keeps the route it was given, so a brief wait costs no second pick. The runtime default is 60 when no layer sets this value.""", ge=0)
     priority_budget: int | None = Field(default=None, description="""The priority points one session may place on its unlaunched requests at once. A submission through crew dispatch, a batch entry or crew review, and a later crew queue reprioritise, spends them; points return when the request launches, is dropped or is discarded, and a reprioritise of a delivered run spends them again until that run lands or is discarded. A submission or change that would push the session's unlaunched points past this figure is refused, naming the points in use and the requests holding them. Absent means priority is uncounted.""", ge=0)
@@ -755,6 +758,20 @@ class SessionScratchConfig(ConfiguredBaseModel):
     orphan_grace_seconds: int | None = Field(default=None, description="""Minimum inactivity in seconds before an unowned crew scratch tree can be removed. Live run pointers and processes holding the tree always protect it. Defaults to two hours.""", ge=1)
 
 
+class LostSessionConfig(ConfiguredBaseModel):
+    """
+    How long a coordinator session may go unheard before it is read as lost. Its reviews are retired and its implement work is raised once it is, so the threshold is a layer's decision rather than a constant of the code.
+    """
+    after_hours: float | None = Field(default=None, description="""Hours a coordinator session may go unheard before it reads as lost. The derivation dates a session from the last instant the session was heard -- a follower lease, a session-host record, or a coordinator process carrying its id -- and never from the age of any one process. Defaults to 72.""", ge=0)
+
+
+class StrandedWaitConfig(ConfiguredBaseModel):
+    """
+    How long an idle wait may stand before its owner is told. A wait whose upstream nobody is building is the owner's to know about, and telling them once is a layer's decision about work rather than a constant of the code.
+    """
+    report_after_hours: float | None = Field(default=None, description="""Hours a request waiting on an upstream that no run or request is building may stand before it appears once in its owner's obligations. A wait whose upstream can never land is retired whatever this figure is, and a wait is never removed for its age alone. Defaults to 72.""", ge=0)
+
+
 class SummaryConfig(ConfiguredBaseModel):
     """
     When and how workers report.
@@ -847,6 +864,8 @@ LiftConfig.model_rebuild()
 FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
 SessionScratchConfig.model_rebuild()
+LostSessionConfig.model_rebuild()
+StrandedWaitConfig.model_rebuild()
 SummaryConfig.model_rebuild()
 TickerConfig.model_rebuild()
 DomainConfig.model_rebuild()

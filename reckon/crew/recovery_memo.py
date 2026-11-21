@@ -24,6 +24,7 @@ from .recovery_liveness import (
     ATTEMPT_RECORD_NAME,
     EXIT_RECORD_NAME,
     WORKER_RECORD_NAME,
+    _run_home_holds_records,
 )
 
 
@@ -179,11 +180,9 @@ def _write_classification_memo(
     """Persist one run's memo in its directory, atomically and best-effort.
 
     The memo is a cache written by a read, so it never brings a run's home into
-    being: a directory that is absent or empty is not yet the run's home, and a
-    memo written into it would make it one — leaving a run directory behind a
-    pointer that never had any, which a discard then finds a marker's place in,
-    reading a deliberate discard for a pointer that only ever vanished. A
-    directory that already holds the run's records is left to keep its memo.
+    being: :func:`_run_home_holds_records` is the one rule for that, shared
+    with the launcher observation the same read may write. A directory that
+    already holds the run's records is left to keep its memo.
 
     Every reader of the live fleet shares these files, so the write lands
     through a rename: a reader either sees the previous memo or this one, never
@@ -193,7 +192,7 @@ def _write_classification_memo(
     path = _classification_memo_path(record)
     if path is None:
         return
-    if not path.parent.is_dir() or not any(path.parent.iterdir()):
+    if not _run_home_holds_records(path.parent):
         return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
@@ -669,13 +668,27 @@ def _read_review_once(
     reports to the next reader, and two readers that miss at once -- the review
     reflex on its own thread beside the tick -- cannot race on the cache's own
     structure.
+
+    The files the answer was read past travel with it. A reader meets a record
+    mid-write by skipping it, and a held answer serves the next reader without
+    that read: the file is still unreadable, so the findings the read collected
+    are noted again wherever the answer is served, into whatever region is open
+    then. Without them a later derivation of the same fleet reports no finding
+    at all and its duties disagree with the ones a sweep of the same files
+    publishes.
+
+    This key is the run's classification inputs rather than the store's current
+    entries, so an answer held here outlives a record being deleted. The replay
+    is what keeps that honest: a finding is noted only while the file it names
+    is still there. :func:`reckon.crew.review_records.memoised_read` is the
+    holder, shared with the callers whose keys do name the store's entries.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
         return reader()
     digest = _classification_key(_review_read_inputs(record, tree=tree))
-    return file_memo.memoized_key(
+    return memoised_read(
         "stored_review_answer", (project, run_id, *selector, digest), reader
     )
 
@@ -996,6 +1009,7 @@ from .review_records import (  # noqa: E402
     _record_identity,
     _store_paths,
     _tick_store,
+    memoised_read,
     review_run_record_names,
     review_store_tick,
 )

@@ -228,11 +228,15 @@ def test_the_held_set_equals_the_whole_ledger_derivation(fleet: Path) -> None:
     assert held["r-20261001T090000000000-alpha-holds"]["age_seconds"] == 600
 
 
-# The mixed states a held tree can be recorded in. Two runs of one node whose
-# completion order reverses their dispatch order, and a tie on the completion
-# stamp, are the orderings the two sources disagree about. A run whose node id
-# differs from the tree's directory name is a state no run-id token names, so
-# only the record's own retention reaches the tree.
+# The mixed states a held tree can be recorded in. A row the aggregate carries
+# alone is read while the store holds none, and a row the aggregate gains after
+# the store was completed reaches no reader until the next promotion completes
+# the store, so those two states and the run whose own file names the tree are
+# what the split leaves behind. Two runs of one node whose completion order
+# reverses their dispatch order, and a tie on the completion stamp, are the
+# orderings the stored history is read in. A run whose node id differs from the
+# tree's directory name is a state no run-id token names, so only the record's
+# own retention reaches the tree.
 MIXED_STATES = (
     "aggregate-only",
     "per-run-only",
@@ -255,32 +259,34 @@ def _build_case(root: Path, case: str) -> str:
         _append(root, _produced(early, "alpha-holds", worktree=tree))
         return early
     if case == "file-and-aggregate-row":
-        # The newer run has no file, the aggregate carries it, and the ledger
-        # attributes the tree to it.
+        # The split's file names the tree, and the aggregate gains a newer row
+        # for it after the store was completed. The store answers the project's
+        # history once it holds a row for the project, so a pending aggregate
+        # row reaches no reader until the next promotion completes the store,
+        # and the whole-ledger read and the derivation both attribute the tree
+        # to the run whose file the split wrote.
         _append(root, _produced(early, "alpha-holds", worktree=tree))
         _publish_aggregate_only(root, [_produced(late, "alpha-holds", worktree=tree)])
-        return late
+        carried = {
+            str(row.get("run_id"))
+            for row in ledger._load_aggregate(PROJECT, root)[0]["runs"]
+        }
+        assert carried == {late}, carried
+        return early
     if case == "completion-reverses-dispatch":
-        _append(
-            root,
-            _produced(
-                early,
-                "alpha-holds",
-                worktree=tree,
-                completed_at=OBSERVED_AT - timedelta(minutes=10),
-            ),
-        )
-        _publish_aggregate_only(
-            root,
-            [
+        # The two rows complete in the reverse of the order their run ids were
+        # minted, so the completion order the history is read in, and not the
+        # dispatch order, decides which record holds the tree.
+        for run_id, minutes in ((late, 60), (early, 10)):
+            _append(
+                root,
                 _produced(
-                    late,
+                    run_id,
                     "alpha-holds",
                     worktree=tree,
-                    completed_at=OBSERVED_AT - timedelta(minutes=60),
-                )
-            ],
-        )
+                    completed_at=OBSERVED_AT - timedelta(minutes=minutes),
+                ),
+            )
         return early
     if case == "completed-at-tie":
         for run_id in (early, late):

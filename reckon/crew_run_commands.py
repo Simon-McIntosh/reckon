@@ -10,6 +10,7 @@ from typing import Any
 import click
 
 from reckon.crew.gate_watch import SUITE_RUN, VERIFY_GATE
+from reckon.crew.harness_sessions import live_sessions as _harness_live_sessions
 from reckon.crew.tombstones import tombstone_command
 from reckon.crew_dispatch_commands import (
     _accept_a_matching_project,
@@ -597,6 +598,36 @@ def crew_decision_record(record_file, pretty):
     try:
         record = json.load(record_file)
         _emit({"ok": True, "decision": record_decision(record)}, pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
+@crew_decision.command(name="answer")
+@click.option("--id", "record_id", required=True, help="The decision to answer.")
+@click.option(
+    "--answers",
+    "answers_file",
+    required=True,
+    help=(
+        'JSON object keyed by run id: {"run": {"action": "adopt", '
+        '"session": "live-session"}} or '
+        '{"run": {"action": "retire"}}. Pass an inline object, a readable '
+        "file holding one, or - for standard input."
+    ),
+)
+@click.option("--by", "answered_by", default="", help="Who answered the decision.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_answer(record_id, answers_file, answered_by, pretty):
+    """Answer a raised decision per record: adopt into a live session or retire."""
+    from reckon.crew.lost_session_work import answer_decision, read_answers
+
+    try:
+        answers = read_answers(answers_file, stream=click.get_text_stream("stdin"))
+        _emit(
+            answer_decision(record_id, answers, answered_by=answered_by),
+            pretty,
+        )
     except (OSError, ValueError, TypeError) as exc:
         _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
         raise click.exceptions.Exit(1) from exc
@@ -2221,6 +2252,7 @@ def crew_suite_run(project, run_id, partition, timeout_seconds, checkout_path, p
     from reckon.crew import standing_suite
 
     if run_id:
+        _accept_a_matching_project(run_id, project)
         root = _suite_project_root(project, checkout_path)
         try:
             pointer = standing_suite.worker_context(run_id, project, root)
@@ -2918,6 +2950,20 @@ def _codex_inbox_override_gap(argv: Any) -> str | None:
     return "neither the inbox hook override nor its trust override"
 
 
+def _inbox_settings_file(dialect_name: str) -> str | None:
+    """The settings file a dialect's harness reads, or None when it reads none.
+
+    Read from the dialect table rather than listed here, because the launch
+    composes the inbox route from the same field: a wrapper that speaks another
+    harness's interface inherits it, so a check that enumerated names itself
+    would refuse a run whose launch did seed a hook the harness reads.
+    """
+    from reckon._backends import _DIALECTS
+
+    dialect = _DIALECTS.get(dialect_name)
+    return getattr(dialect, "settings_file", None)
+
+
 @crew.command(name="tell")
 @click.option(
     "--run",
@@ -2943,21 +2989,28 @@ def crew_tell(run_id, message, project, pretty):
     read the inbox, rather than reported queued: a message written where nothing
     reads it is exactly the false clearance this channel exists to remove.
 
-    Reachability is decided per dialect, and each dialect's test is the artifact
-    that dialect's harness actually reads. A Claude-dialect run is reached
-    through the inbox hook in its own run home's settings file, and nothing
-    re-seeds the home of a run already launched. A codex run is reached through
-    the hook and trust overrides composed onto its launch argv, so the argv its
-    run directory recorded for the attempt running now is the test: the live
-    pointer carries no argv field at all, and a run launched before those
-    overrides existed carries none of them whatever the flight layer composes
-    now. Every other dialect is refused, naming why.
+    Reachability is decided by the route the run's harness interface reads, and
+    each route's test is the artifact that route leaves behind. A harness whose
+    interface reads a settings group is reached through the inbox hook in its
+    own run home's settings file, and nothing re-seeds the home of a run already
+    launched. A codex-dialect run is reached through the hook and trust
+    overrides composed onto its launch argv, so the argv its run directory
+    recorded for the attempt running now is the test: the live pointer carries
+    no argv field at all, and a run launched before those overrides existed
+    carries none of them whatever the flight layer composes now. A harness
+    declaring neither route reads its inbox only on a later resume, so a live
+    run on it is refused, naming the inbox that nothing would read.
     """
     import json as _json
 
     from reckon._worker_fence import harness_home
     from reckon.crew import recovery_liveness
     from reckon.crew.runs import read_pointer
+    from reckon.crew.worker_behaviour import (
+        INBOX_ARGV_OVERRIDE,
+        INBOX_RUN_HOME_HOOK,
+        inbox_trigger_for,
+    )
     from reckon.hooks import install, worker_inbox
 
     if not message.strip():
@@ -2985,48 +3038,50 @@ def crew_tell(run_id, message, project, pretty):
             "directory to write an inbox into"
         )
     run_directory = Path(manifest_path).expanduser().parent
-    if dialect == "codex":
+    inbox = run_directory / worker_inbox.INBOX_DIRNAME
+    # The route is the harness interface's, read from the same statement the
+    # launch seeds from, so a run whose home was seeded is never refused for
+    # the name its dialect happens to carry.
+    trigger = inbox_trigger_for(dialect, _inbox_settings_file(dialect))
+    if trigger == INBOX_ARGV_OVERRIDE:
         gap = _codex_inbox_override_gap(_run_recorded_argv(record))
         if gap is not None:
             raise click.ClickException(
-                f"run {run_id} is a codex-dialect run. The inbox hook is "
-                "registered in Claude-dialect run homes only; a codex run is "
-                "reached through the hook override and its trust override on "
-                "the argv its run directory records for the attempt running "
-                f"now, and that argv carries {gap}. Such a run was launched "
+                f"run {run_id} is live but the launch argv its run directory "
+                f"records carries {gap}, so nothing would read a message "
+                f"written to its inbox ({inbox}). Such a run was launched "
                 "before the overrides existed, and a live run's argv is never "
-                "recomposed; queue the message "
-                "for a run dispatched from now on, or steer this one on its "
-                "next turn"
+                "recomposed; queue the message for a run dispatched from now "
+                "on, or steer this one on its next turn"
             )
-    elif dialect == "claude":
+    elif trigger == INBOX_RUN_HOME_HOOK:
         if record.get("fenced") is not True:
             raise click.ClickException(
                 f"run {run_id} is not fenced (its record says fenced: "
                 f"{record.get('fenced')!r}), so it runs from the operator's own "
-                "harness home, which carries no inbox hook for this run; a "
-                "message written there would be read as queued and delivered "
-                "to nobody"
+                "harness home, which carries no inbox hook for this run: its "
+                f"inbox ({inbox}) would be written where nothing delivers it"
             )
         home = harness_home(dialect, run_directory)
-        settings = None if home is None else home / "settings.json"
+        settings_name = _inbox_settings_file(dialect) or "settings.json"
+        settings = None if home is None else home / settings_name
         if settings is None or not install.settings_carry_worker_inbox(settings):
             where = "no run home" if home is None else f"the run home {home}"
             raise click.ClickException(
                 f"run {run_id} is live but {where} carries no PostToolUse entry "
                 f"for reckon's inbox hook ({install.WORKER_INBOX_SCRIPT_NAME}), "
-                "so nothing would deliver this message. Such a run was launched "
-                "before the hook was seeded, and a live run's home is never "
-                "re-seeded; queue the message for a run dispatched from now on, "
-                "or steer this one on its next turn"
+                f"so nothing would read its inbox ({inbox}). Such a run was "
+                "launched before the hook was seeded, and a live run's home is "
+                "never re-seeded; queue the message for a run dispatched from "
+                "now on, or steer this one on its next turn"
             )
     else:
         raise click.ClickException(
-            f"run {run_id} is a {dialect or 'unknown'}-dialect run, and this "
-            "channel reaches only Claude-dialect runs, through their run home's "
-            "inbox hook, and codex runs, through the hook and trust overrides "
-            "on their launch argv; there is no hook to deliver a message here, "
-            "so write nothing and steer the run another way"
+            f"run {run_id} is a {dialect or 'unknown'}-dialect run whose "
+            "harness reads no inbox hook while it is live, so its inbox "
+            f"({inbox}) would be written where nothing reads it; the message "
+            "reaches such a run only on its next resume. Steer it another way, "
+            "or queue the message for a run that carries a hook"
         )
     written = worker_inbox.write_message(message, run_directory)
     _emit(
@@ -3506,6 +3561,7 @@ def _complete_many(run_ids, parameters):
                 "ok",
                 "run_id",
                 "phase",
+                "driven",
                 "pointer_removed",
                 "ledger_path",
                 "merged",
@@ -4484,7 +4540,7 @@ def crew_record_merge(
         raise click.ClickException(str(exc)) from exc
     pending_landing.clear_pending(run_id)
     _emit_crew_result(
-        {"ok": True, "run_id": run_id, "recorded_merge": merge_revision, **result},
+        {"run_id": run_id, "recorded_merge": merge_revision, **result},
         pretty,
     )
 
@@ -5369,43 +5425,9 @@ def _budget_reset_reach() -> dict[str, Any]:
     }
 
 
-#: Where the harness keeps one record per live session; a test points it at a
-#: directory of its own so nothing reads this host's real sessions.
-HARNESS_SESSIONS_DIR_ENV = "RECKON_HARNESS_SESSIONS_DIR"
-
-
 def _live_harness_sessions() -> list[tuple[str, str]]:
-    """Every live harness session as (session id, name), from its own records.
-
-    Each record names the session's process, and a record whose process has
-    ended is a session that has gone. Records this host cannot read are
-    skipped rather than guessed at.
-    """
-    import json
-
-    directory = Path(
-        os.environ.get(HARNESS_SESSIONS_DIR_ENV) or Path.home() / ".claude" / "sessions"
-    )
-    sessions: list[tuple[str, str]] = []
-    try:
-        records = sorted(directory.glob("*.json"))
-    except OSError:
-        return sessions
-    for path in records:
-        try:
-            record = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if not isinstance(record, dict):
-            continue
-        session_id = str(record.get("sessionId") or "")
-        pid = record.get("pid")
-        if not session_id or not isinstance(pid, int):
-            continue
-        if not Path(f"/proc/{pid}").exists():
-            continue
-        sessions.append((session_id, str(record.get("name") or session_id)))
-    return sessions
+    """Every live harness session as (session id, name), from its own records."""
+    return _harness_live_sessions()
 
 
 def _budget_reset_payload(

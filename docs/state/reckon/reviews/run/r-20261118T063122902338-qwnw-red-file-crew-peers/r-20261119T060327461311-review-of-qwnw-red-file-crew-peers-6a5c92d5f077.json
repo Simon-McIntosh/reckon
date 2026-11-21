@@ -1,0 +1,97 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:_claim_shares_overlap",
+    "reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict",
+    "reckon/crew/runs.py:_shared_write_paths",
+    "reckon/crew/runs.py:DEFAULT_EXCLUSIVE_PATHS"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:00:51Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_peers.py",
+      "line": "209",
+      "severity": "non-blocking",
+      "text": "non-blocking: the file now asserts the artifact rule but nothing asserts the rule that replaced the old one - the pair at :104 and :112 claims package/definition.py and package/caller.py, files a merge reconciles, so a revert that fenced mergeable source paths again would leave this test green, and a fourth dispatch naming package/definition.py that must be admitted would guard the rule the change encodes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: measurement_module and measurement_cwd name /tmp/mcintos-landing-e525ed85de9e-65O69c/tree, the tree of scoped-gate-1795065926703470640.log at revision 5c2589afd2a8, while test_logs names scoped-gate-1795066591318148402.log whose header tree is /tmp/mcintos-landing-f68c6ee2e9b2 at revision 6a5c92d5f0, so the record pairs a gate log with a module path measured in a different execution."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the baseline_suite and after_suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither tests/test_crew_peers.py nor any module this node changed, and the node changed no product module at all, so the declared arm over the test files that import the change measured a population the change cannot reach and its zero says nothing about the change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read both commits against base 3fef705d24b5 - 5c2589afd2 edits only tests/test_crew_peers.py, adding the ARTIFACT constant at :40, a variadic at :88 and the retargeted refusal at :223 while keeping the runs-dir and peer-list assertions, and 6a5c92d5f0 adds only the 81-line evidence fragment; no product module changed and no assertion was deleted or weakened.",
+    "done_when": "The done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, each cause judged product-or-test, the base run's failing ids logged in the fragment, suite arms at full 40-character revisions, and no new ruff finding; the head gate log, its receipt naming partition all_debug, negative-control-base.log at EXIT=1 and the fragment's arm table answer most of that, and the two gaps are the findings below.",
+    "goal": "The node goal asks that tests/test_crew_peers.py pass in full on the primary branch; the landed pair retargets the refusal case at an artifact path, and scoped-gate-1795066591318148402.log:7 records 4 passed at 6a5c92d5f0, so only the promotion merge stands between that and the branch.",
+    "manifest": "Read; manifest.md states status complete, the gate command with 4 passed, the base control at 1 failed and 3 passed, and zero-failure suite arms, but manifest.md:12 pairs test_logs with a measurement_module from a different run and manifest.md:16 measures two test files the change cannot reach.",
+    "write_paths": "The node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its HTML record, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew-peers; the diff 3fef705d24b5..6a5c92d5f0 touches only tests/test_crew_peers.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-peers.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "the refusal assertion at tests/test_crew_peers.py:221 is shown able to fail by negative-control-base.log's reproduction on the old target, but nothing in the file guards the sharing rule that replaced it, so re-fencing mergeable source paths would leave the test green.",
+    "evidence": "scoped-gate-1795066591318148402.log:7 and negative-control-base.log's EXIT=1 with its named failing id are recorded arms of the right population, but baseline_suite-1795066670017535048.log exercises two test files that import nothing this node changed.",
+    "fit": "tests/test_crew_peers.py:37-40 keeps the file's module-constant idiom and states the rule the constant encodes, matching CONFIG at :24.",
+    "goal_fidelity": "tests/test_crew_peers.py:223 now aims the refusal at the artifact path the code really fences and scoped-gate-1795066591318148402.log:7 records 4 passed at head 6a5c92d5f0, so the goal's end state waits only on the merge into the branch.",
+    "reuse": "the added names are a test-local artifact path and a variadic helper argument, and the rule they exercise is owned by reckon/crew/runs.py:DEFAULT_EXCLUSIVE_PATHS, which lists docs/figures/ at :2280 rather than being reimplemented.",
+    "scope_discipline": "the only paths in 3fef705d24b5..6a5c92d5f0 are tests/test_crew_peers.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-peers.html, both declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal asks that tests/test_crew_peers.py pass in full on the primary branch; the landed pair retargets the refusal case at an artifact path, and scoped-gate-1795066591318148402.log:7 records 4 passed at 6a5c92d5f0, so only the promotion merge stands between that and the branch.\nVERDICT done_when: The done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, each cause judged product-or-test, the base run's failing ids logged in the fragment, suite arms at full 40-character revisions, and no new ruff finding; the head gate log, its receipt naming partition all_debug, negative-control-base.log at EXIT=1 and the fragment's arm table answer most of that, and the two gaps are the findings below.\nVERDICT write_paths: The node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its HTML record, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew-peers; the diff 3fef705d24b5..6a5c92d5f0 touches only tests/test_crew_peers.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-peers.html, both inside that scope.\nVERDICT manifest: Read; manifest.md states status complete, the gate command with 4 passed, the base control at 1 failed and 3 passed, and zero-failure suite arms, but manifest.md:12 pairs test_logs with a measurement_module from a different run and manifest.md:16 measures two test files the change cannot reach.\nVERDICT diff: Read both commits against base 3fef705d24b5 - 5c2589afd2 edits only tests/test_crew_peers.py, adding the ARTIFACT constant at :40, a variadic at :88 and the retargeted refusal at :223 while keeping the runs-dir and peer-list assertions, and 6a5c92d5f0 adds only the 81-line evidence fragment; no product module changed and no assertion was deleted or weakened.\nCALL_SITES: reckon/crew/dispatch_claims.py:_claim_shares_overlap, reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict, reckon/crew/runs.py:_shared_write_paths, reckon/crew/runs.py:DEFAULT_EXCLUSIVE_PATHS\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_peers.py:223 now aims the refusal at the artifact path the code really fences and scoped-gate-1795066591318148402.log:7 records 4 passed at head 6a5c92d5f0, so the goal's end state waits only on the merge into the branch.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795066591318148402.log:7 and negative-control-base.log's EXIT=1 with its named failing id are recorded arms of the right population, but baseline_suite-1795066670017535048.log exercises two test files that import nothing this node changed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only paths in 3fef705d24b5..6a5c92d5f0 are tests/test_crew_peers.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-peers.html, both declared.\nSCORE durability: 16\nJUSTIFICATION durability: the refusal assertion at tests/test_crew_peers.py:221 is shown able to fail by negative-control-base.log's reproduction on the old target, but nothing in the file guards the sharing rule that replaced it, so re-fencing mergeable source paths would leave the test green.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_crew_peers.py:37-40 keeps the file's module-constant idiom and states the rule the constant encodes, matching CONFIG at :24.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added names are a test-local artifact path and a variadic helper argument, and the rule they exercise is owned by reckon/crew/runs.py:DEFAULT_EXCLUSIVE_PATHS, which lists docs/figures/ at :2280 rather than being reimplemented.\nFINDING tests/test_crew_peers.py:209 non-blocking: the file now asserts the artifact rule but nothing asserts the rule that replaced the old one - the pair at :104 and :112 claims package/definition.py and package/caller.py, files a merge reconciles, so a revert that fenced mergeable source paths again would leave this test green, and a fourth dispatch naming package/definition.py that must be admitted would guard the rule the change encodes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/manifest.md:12 non-blocking: measurement_module and measurement_cwd name /tmp/mcintos-landing-e525ed85de9e-65O69c/tree, the tree of scoped-gate-1795065926703470640.log at revision 5c2589afd2a8, while test_logs names scoped-gate-1795066591318148402.log whose header tree is /tmp/mcintos-landing-f68c6ee2e9b2 at revision 6a5c92d5f0, so the record pairs a gate log with a module path measured in a different execution.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/manifest.md:16 non-blocking: the baseline_suite and after_suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither tests/test_crew_peers.py nor any module this node changed, and the node changed no product module at all, so the declared arm over the test files that import the change measured a population the change cannot reach and its zero says nothing about the change.",
+  "review_method": "Read-only review of the source node's own manifest, gate logs and the landed diff; no suite re-run, no mutation experiment and no repository file changed.",
+  "review_run_id": "r-20261119T060327461311-review-of-qwnw-red-file-crew-peers-6a5c92d5f077",
+  "reviewed_base_sha": "3fef705d24b5996b1845683bbc85659a3d2a9777",
+  "reviewed_head_sha": "6a5c92d5f0775519c23733091ab7381a1f107c3b",
+  "reviewed_run_id": "r-20261118T063122902338-qwnw-red-file-crew-peers",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "5c2589afd2a84dcb8cebcaaa1b9445c2c8109001",
+    "6a5c92d5f0775519c23733091ab7381a1f107c3b"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/after_suite-1795066712935500607.log",
+      "revision": "6a5c92d5f0775519c23733091ab7381a1f107c3b"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/baseline_suite-1795066670017535048.log",
+      "revision": "3fef705d24b5996b1845683bbc85659a3d2a9777"
+    },
+    "head_gate_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/scoped-gate-1795066591318148402.log",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063122902338-qwnw-red-file-crew-peers/negative-control-base.log"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:28:36.455030+00:00",
+  "total": 111
+}

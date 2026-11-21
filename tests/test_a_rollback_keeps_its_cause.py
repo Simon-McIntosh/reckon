@@ -7,11 +7,12 @@ stopped the dispatch is only reachable by re-running it by hand. These cases
 inject a launch failure, inject a removal failure, and require the launch
 failure to be what surfaces with the removal failure still visible on it.
 
-The roster half is the same shape one layer down: a member row carrying a
-captured session — the resumable id a run reported — is the tool's own
-bookkeeping rather than another author's pending registration, so it must not
-refuse the named commit that records a registration. A change to what a member
-*is* still must.
+The roster half is the same shape one layer down. The roster is a store-backed
+record that no mutation commits, so a member row carrying a captured session —
+the resumable id a run reported — is the tool's own bookkeeping: it must survive
+the next registration, a registration must write only the row it names, and a
+write computed from a view read before another author's change is refused by
+name rather than applied over it.
 """
 
 from __future__ import annotations
@@ -149,11 +150,6 @@ def _failing_removal(repository, path: str) -> None:
     )
 
 
-def _roster_at_head(repository: Path) -> list[dict]:
-    envelope = json.loads(_git(repository, "show", f"HEAD:{ROSTER}"))
-    return envelope["data"]["members"]
-
-
 def test_the_launch_failure_survives_its_own_rollback(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
@@ -234,41 +230,55 @@ def test_the_rollback_releases_its_own_claim_before_removing(
 
 
 def _capture_the_session(repository: Path) -> None:
-    """Leave an uncommitted capture — and nothing else — on the roster."""
-    data, version = ledger.load(PROJECT, repository)
-    data["members"][0].update(
-        {
-            "session_id": SESSION,
-            "session_model": "some-model",
-            "sessions": {"some-model": SESSION},
-        }
-    )
-    ledger.write(PROJECT, data, version, repository)
+    """Record a captured session on the roster, as a run reporting one does."""
+    data, version = ledger.load_auxiliary(PROJECT, repository)
+    for row in data["members"]:
+        if str(row.get("id")) == "worker-a":
+            row.update(
+                {
+                    "session_id": SESSION,
+                    "session_model": "some-model",
+                    "sessions": {"some-model": SESSION},
+                }
+            )
+    ledger.write_members(PROJECT, data["members"], version, repository)
+
+
+def _roster(repository: Path) -> dict[str, dict]:
+    return {str(row["id"]): row for row in ledger.members(PROJECT, repository)}
+
+
+def _roster_status(repository: Path) -> str:
+    return _git(repository, "status", "--porcelain", "--", ROSTER)
 
 
 def test_a_capture_only_ledger_admits_a_registration(tmp_path: Path) -> None:
-    """A captured session is the tool's bookkeeping, not a pending registration."""
+    """A captured session is bookkeeping, not a pending registration.
+
+    The roster is store-backed: the capture writes no committed path, and the
+    registration that follows it is admitted without dropping the row it does
+    not name or the session on it.
+    """
     repository = _repository(tmp_path)
     ledger.register_member(
         PROJECT, "worker-a", harness="alpha", root=repository, commit=True
     )
     _capture_the_session(repository)
-    assert _git(repository, "status", "--porcelain", "--", ROSTER) == f"M {ROSTER}"
-    assert ledger.member(PROJECT, "worker-a", root=repository)["session_id"] == SESSION
+    assert _roster_status(repository) == ""
 
     entry = ledger.register_member(
         PROJECT, "worker-b", harness="alpha", root=repository, commit=True
     )
 
     assert entry["id"] == "worker-b"
-    assert _git(repository, "status", "--porcelain", "--", ROSTER) == ""
-    rows = {str(row["id"]): row for row in _roster_at_head(repository)}
+    assert _roster_status(repository) == ""
+    rows = _roster(repository)
     assert sorted(rows) == ["worker-a", "worker-b"]
     assert rows["worker-a"]["session_id"] == SESSION
 
 
-def test_a_real_member_change_still_refuses_a_registration(tmp_path: Path) -> None:
-    """A row that is not what it was committed as is another author's write."""
+def test_a_registration_leaves_another_members_change_alone(tmp_path: Path) -> None:
+    """A registration writes the row it names and leaves the others alone."""
     repository = _repository(tmp_path)
     ledger.register_member(
         PROJECT, "worker-a", harness="alpha", root=repository, commit=True
@@ -276,23 +286,37 @@ def test_a_real_member_change_still_refuses_a_registration(tmp_path: Path) -> No
     _capture_the_session(repository)
     ledger.register_member(PROJECT, "worker-a", harness="beta", root=repository)
 
-    with pytest.raises(ledger.LedgerError) as excinfo:
-        ledger.register_member(
-            PROJECT, "worker-b", harness="alpha", root=repository, commit=True
-        )
+    ledger.register_member(
+        PROJECT, "worker-b", harness="alpha", root=repository, commit=True
+    )
 
-    assert "uncommitted member registration(s): worker-a" in str(excinfo.value)
-    assert sorted(row["id"] for row in _roster_at_head(repository)) == ["worker-a"]
+    rows = _roster(repository)
+    assert sorted(rows) == ["worker-a", "worker-b"]
+    assert rows["worker-a"]["harness"] == "beta"
 
 
-def test_a_new_uncommitted_member_still_refuses_a_registration(tmp_path: Path) -> None:
+def test_a_stale_roster_view_refuses_a_registration(tmp_path: Path) -> None:
+    """A write from a stale roster view is refused, not applied over a change.
+
+    The version pair is what stops one author's write from erasing another's: a
+    registration carrying a view read before a member changed is refused by
+    name, and the row it would have added is absent afterwards.
+    """
     repository = _repository(tmp_path)
-    ledger.register_member(PROJECT, "internal-a", harness="alpha", root=repository)
+    ledger.register_member(
+        PROJECT, "worker-a", harness="alpha", root=repository, commit=True
+    )
+    stale, version = ledger.load_auxiliary(PROJECT, repository)
+
+    ledger.register_member(PROJECT, "worker-a", harness="beta", root=repository)
+    stale_members = [
+        *stale["members"],
+        {"id": "worker-c", "harness": "alpha", "role": "implement"},
+    ]
 
     with pytest.raises(ledger.LedgerError) as excinfo:
-        ledger.register_member(
-            PROJECT, "public-b", harness="alpha", root=repository, commit=True
-        )
+        ledger.write_members(PROJECT, stale_members, version, repository)
 
-    assert "uncommitted member registration(s): internal-a" in str(excinfo.value)
-    assert ledger.member(PROJECT, "public-b", root=repository) is None
+    assert "roster version changed" in str(excinfo.value)
+    assert ledger.member(PROJECT, "worker-c", root=repository) is None
+    assert _roster(repository)["worker-a"]["harness"] == "beta"

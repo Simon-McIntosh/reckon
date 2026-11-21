@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:2758",
+    "reckon/crew/dispatch.py:468",
+    "reckon/crew/dispatching/_imports.py:710"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T03:25:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_refused_lane_change_leaves_the_pointer.py",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "NEGATIVE_CONTROL_MUTATION is defined and never referenced anywhere in the module, and its value quotes another node's mutation (\"Restoring the old first-harness session lookup makes ordinary resume refuse\"); the comment above it says it is printed verbatim as the red log's first line, but this node's red logs (negative-control.log, repair-negative-control.log) begin with a '# revision:' header, so the constant is dead code carrying a statement that does not describe any log the node produced. This was raised in the previous review of this node and the repair commit did not touch it."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 1841,
+      "severity": "non-blocking",
+      "text": "The receipt branch attributes any growth in launch_failures between the record read at change_lane's entry and the read taken after the spawn to the move just made. A reap or classification pass that appends a launch failure for the previous attempt's worker inside that window (dispatch_launch.py:307 appends from a reaper, dispatch_sessions.py:321 from the classification path) is indistinguishable from a failure of this spawn, so a lane change that did start a worker can be refused and left on the old backend. The docstring's claim that the comparison 'isolates the one this move caused' is stronger than the count comparison can support; matching on the receipt's recorded_at or stream_path against this attempt's log_path would."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the production path is reckon/crew_run_commands.py:2758, the crew resume --backend door, which reaches change_lane through reckon/crew/dispatch.py:468 and reckon/crew/dispatching/_imports.py:710 and emits the returned dict; it does not post-process the pointer itself, so a refused result changes nothing on disk.",
+    "diff": "read both commits against ff3bb24bcf: b91a44211d adds _lane_change_launch_failure and _refused_lane_change_result plus the early return and a 381-line test module, and b1bbf77fbebc adds the spawn-liveness and no-stream branch with a second-attempt test; nothing outside the two expected paths changed.",
+    "done_when": "the done_when names tests/test_a_refused_lane_change_leaves_the_pointer.py covering an accepted launch with no worker, a move refused before launch, a move whose worker starts, and the lane-change record written only in the last case; all four cases exist in the module and the manifest records the run at b1bbf77f as 62 passed, EXIT=0 in after-suite.log.",
+    "goal": "the node's goal is that a lane change whose launch starts no worker leaves the run pointer's backend, attempt, agent and dialect unchanged and returns a result naming why; reckon/crew/dispatch_sessions.py:1809 reads the pointer after the spawn and reckon/crew/dispatch_sessions.py:2215 returns _refused_lane_change_result instead of committing the move.",
+    "manifest": "read at the reviewed run's manifest.md: it reports status complete, the two commits b91a44211d and b1bbf77fbebc, a baseline arm of 58 passed at ff3bb24bcf, an after arm of 62 passed at b1bbf77f, and a repair negative control failing at the pre-repair head; the logs it cites carry those figures and a bare EXIT line.",
+    "write_paths": "the node declared four paths; the delivered diff touches exactly reckon/crew/dispatch_sessions.py and tests/test_a_refused_lane_change_leaves_the_pointer.py, both declared, and the two docs paths (fragment and figures) carry nothing in this diff."
+  },
+  "justifications": {
+    "durability": "the declared negative control is real (negative-control.log fails the accepted-launch case at ff3bb24bcf with the backend moved) and the repair's own control (repair-negative-control.log) fails the second-attempt case at b91a44211d, so both landed branches redden on reinstating the regression; the phase-transition branch at reckon/crew/dispatch_sessions.py:1844 is the one path no test distinguishes, and it is redundant today because every writer that sets LAUNCH_FAILED_PHASE also appends a receipt (dispatch_launch.py:364, dispatch_sessions.py:323).",
+    "evidence": "baseline-suite.log (58 passed at ff3bb24bcf) and after-suite.log (62 passed at b1bbf77f) each open with revision, tree, cwd, command and module.__file__ and end in a bare EXIT=0, and the two red logs record the failures that justify the guard, so the manifest's figures reconcile with the logs it names.",
+    "fit": "the two helpers at reckon/crew/dispatch_sessions.py:1809 follow the module's mechanism-named, docstringed style with no plan or ticket identifier, but tests/test_a_refused_lane_change_leaves_the_pointer.py:43 still carries a dead constant quoting another node's mutation beside a comment that misdescribes the red log's first line.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:1848 asks the launch path's own no-worker question (process gone, stream never begun) beside the receipt and phase checks, so a second lane change on a run already in the launch-failed phase is refused too and the four fields stay on the source attempt; the move still commits when the worker starts, as tests/test_a_refused_lane_change_leaves_the_pointer.py:359 asserts.",
+    "reuse": "the guard reads the owner's existing facts rather than adding a parallel notion of a failed start: _stream_began is imported from reckon/crew/dispatch_launch.py:1914, and LAUNCH_FAILED_PHASE, process_alive and the launch_failures receipt are reused, though the no-worker question is re-derived at reckon/crew/dispatch_sessions.py:1848 rather than exposed by the launch path's own _record_launch_failure.",
+    "scope_discipline": "every path in the delivered diff (reckon/crew/dispatch_sessions.py and tests/test_a_refused_lane_change_leaves_the_pointer.py) is inside the node's declared write paths and carries nothing the goal does not imply; the docs fragment and figure paths the node declared are simply absent."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261121T032502185022-review-of-wlsr-a-refused-lane-change-leaves-the-pointer-b1bbf77fbebc",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "b1bbf77fbebc836758fa08577823eed73eb746fd",
+  "reviewed_run_id": "r-20261121T010317352713-wlsr-a-refused-lane-change-leaves-the-pointer",
+  "rubric": "landed",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:35:43.612246+00:00",
+  "total": 105
+}

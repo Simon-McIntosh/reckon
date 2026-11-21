@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:3508",
+    "reckon/crew/dispatch_sessions.py:1474",
+    "reckon/crew/dispatch_sessions.py:2099",
+    "reckon/crew/resumption.py:691",
+    "reckon/crew/dispatching/launch.py:752"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:13:34Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_behaviour_is_the_same_on_every_harness.py",
+      "line": 93,
+      "severity": "non-blocking",
+      "summary": "_assert_one_treatment re-derives the differing-dimension computation that reckon/crew/worker_behaviour.py:162 behave_identically owns, rather than building on it; the two can drift."
+    },
+    {
+      "file": "tests/test_worker_behaviour_is_the_same_on_every_harness.py",
+      "line": 99,
+      "severity": "non-blocking",
+      "summary": "The comparison iterates only the reference backend's keys and uses treatment.get, so a dimension present only in a non-reference backend would be missed; the previous full-dict equality caught that. Not reachable today because WorkerBehaviour.dimensions() returns a fixed key set."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three commits against 65c0479b14; +112/-12 across the two declared paths, no production source changed.",
+    "done_when": "the case at :110-130 asserts non-empty and equal protections and write roots per backend; :81-91 skips with a stated reason when fence_program() is absent; :133-150 is the negative control naming the extra root; after_suite-1795244852815776931.log reads 66 passed at a7761f0d7f.",
+    "goal": "tests/test_worker_behaviour_is_the_same_on_every_harness.py:91-130 composes every local backend with fence=True and a fence_home and compares the fence_protections and write_roots it produced.",
+    "manifest": "read; status complete, records scoped gate 66 passed, base arm 65 passed, and negative control 1 failed/7 passed EXIT=1, with revisions a7761f0d and 65c0479b.",
+    "write_paths": "the diff touches only the declared test file and evidence fragment; the declared figures directory is unused and nothing outside the three declared paths changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: tests/test_worker_behaviour_is_the_same_on_every_harness.py:91-130 composes every local backend with fence=True and a fence_home and compares the fence_protections and write_roots it produced.\nVERDICT done_when: the case asserts non-empty and equal protections and write roots per backend, skips with a stated reason when fence_program() is absent, and carries the negative control naming the extra root; after_suite-1795244852815776931.log reads 66 passed at a7761f0d7f.\nVERDICT write_paths: every path in the diff is inside the declared test file and evidence fragment; the declared figures directory is unused.\nVERDICT manifest: read; status complete, records the scoped gate 66 passed, base 65 passed and negative control 1 failed/7 passed EXIT=1 with revisions.\nVERDICT diff: read all three commits against 65c0479b14; +112/-12 across the two declared paths, only the test and its evidence fragment changed.\nCALL_SITES: reckon/_backends.py:3508, reckon/crew/dispatch_sessions.py:1474, reckon/crew/dispatch_sessions.py:2099, reckon/crew/resumption.py:691, reckon/crew/dispatching/launch.py:752\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_worker_behaviour_is_the_same_on_every_harness.py:105-130 composes each backend with the fence and compares its real protections and write roots.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head arm after_suite-1795244852815776931.log reads 66 passed at a7761f0d and the negative-control.log fails naming the extra root.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_worker_behaviour_is_the_same_on_every_harness.py and its evidence fragment, both declared. \nSCORE durability: 15\nJUSTIFICATION durability: tests/test_worker_behaviour_is_the_same_on_every_harness.py:127-131 fails if a composed fence yields empty protections or write roots, and :133-150 proves the comparison names a differing root, but the skip branch itself is untested.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers _require_fence_program and _assert_one_treatment name their mechanism and follow the surrounding test style at tests/test_worker_behaviour_is_the_same_on_every_harness.py:8-25.\nSCORE reuse: 14\nJUSTIFICATION reuse: tests/test_worker_behaviour_is_the_same_on_every_harness.py:93-108 re-derives reckon/crew/worker_behaviour.py:162 behave_identically's differing-dimension computation rather than building on it.\nFINDING tests/test_worker_behaviour_is_the_same_on_every_harness.py:93 non-blocking: _assert_one_treatment duplicates the differing-dimension capability owned by reckon/crew/worker_behaviour.py:162 behave_identically rather than extending it.\nFINDING tests/test_worker_behaviour_is_the_same_on_every_harness.py:99 non-blocking: iterating only the reference's keys with treatment.get would miss a dimension present only in a non-reference backend, weakening the previous full-dict equality; unreachable today because dimensions() returns a fixed key set.",
+  "review_run_id": "r-20261121T071304238618-review-of-wlsr-the-equality-test-composes-the-fence-a7761f0d7f16",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "a7761f0d7f168c9ac2ee17184afbdbad635f48bf",
+  "reviewed_run_id": "r-20261121T064859074438-wlsr-the-equality-test-composes-the-fence",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T07:23:03.468371+00:00",
+  "total": 102
+}

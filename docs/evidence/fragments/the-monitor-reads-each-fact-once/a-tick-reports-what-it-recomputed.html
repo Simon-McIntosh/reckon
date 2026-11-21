@@ -1,0 +1,139 @@
+<section id="a-tick-reports-what-it-recomputed-landing">
+  <h2>A finished pass reports what it recomputed</h2>
+
+  <p><strong>What changed.</strong> The station published what it had observed and
+  never what it had paid to observe it, so a quiet pass and a pass that re-parsed
+  the whole fleet read identically. Every tick and every sweep pass now runs
+  inside one counting scope and publishes the answers it served under
+  <code>memo_counts</code> on its own record: <code>last_tick</code> for the last
+  finished tick, <code>last_sweep</code> for the last finished sweep pass, each
+  keyed by memo kind with <code>cached</code>, <code>extended</code>,
+  <code>recomputed</code> and the <code>bytes_read</code> the recomputed and
+  extended answers read.</p>
+
+  <p><strong>The counts cover every file-backed memo kind</strong> the passes
+  read: the plan and pointer parses and the mount, flight-layer and resource
+  identifications the station and the sweep pass derive, and
+  <code>stream_observation</code>, the backend stream summary, which grows by the
+  bytes a stream gained rather than by a whole re-read. A path that cannot be
+  stat'ed reads no bytes, so it is counted for nothing, and a derivation another
+  thread runs while the scope is open is not attributed to it, because a tick
+  sharing an interpreter with a sweep pass must report only its own work.</p>
+
+  <p><strong>The tick's scope opens outside its operational read</strong>, which
+  lists the live pointers and decodes one record per run. That listing was the
+  whole reason the first measured tick read 7,661 bytes of pointer text; a scope
+  opened inside it would have reported a cold tick as having read nothing.</p>
+
+  <p><strong>Each parsed read is recorded once, at one call site.</strong> A
+  stream read lands in two tallies: the fleet-wide count of parsed stream bytes
+  and the pass-level memo record. They describe the same bytes, so one function
+  writes both and every read reaches it through the same call, and the totals
+  cannot drift apart as two statements beside a reader could. That keeps
+  incremental reading in exactly one place: <code>memoized</code> has no
+  incremental mode of its own — an answer it does not serve from cache is a full
+  recompute of the file's length — and the backend stream scan, the only reader
+  that resumes from where it stopped, records its extension itself.</p>
+
+  <h3 id="a-tick-reports-what-it-recomputed-measured">Measured</h3>
+
+  <p>The gate test drives three rounds over a temporary crew home holding 20 live
+  pointers, 20 worker streams and 20 plan files, one sweep pass after each tick.
+  Freezing the process-wide memos before the first round makes it cold. Between
+  the second and third rounds one plan file is rewritten and one stream gains a
+  record of exactly 4,096 bytes.</p>
+
+  <table id="a-tick-reports-what-it-recomputed-rounds">
+    <caption>Bytes each pass reported reading, from the census the rounds
+    recorded (<code>rounds.json</code> beside the run's manifest).</caption>
+    <thead><tr><th>round</th><th>pass</th><th>bytes read</th><th>what it read</th></tr></thead>
+    <tbody>
+      <tr><td>cold</td><td>tick</td><td>83,318</td>
+        <td>20 pointer records, 19 stream scans, the mount and flight
+        registries, one stream observation</td></tr>
+      <tr><td>cold</td><td>sweep pass</td><td>243,205</td>
+        <td>20 plans, decoded through four memo kinds</td></tr>
+      <tr><td>unchanged</td><td>tick</td><td><strong>0</strong></td>
+        <td>every kind answered from cache</td></tr>
+      <tr><td>unchanged</td><td>sweep pass</td><td><strong>0</strong></td>
+        <td>every kind answered from cache</td></tr>
+      <tr><td>one plan, one 4 KiB stream</td><td>tick</td><td>4,096</td>
+        <td>exactly one <code>extended</code> stream observation;
+        <code>recomputed</code> zero</td></tr>
+      <tr><td>one plan, one 4 KiB stream</td><td>sweep pass</td><td>884</td>
+        <td>the rewritten plan, twice: 442 bytes each for
+        <code>parse_meta</code> and <code>plan_text</code>; no stream bytes
+        parsed and nothing else recomputed</td></tr>
+    </tbody>
+  </table>
+
+  <img alt="Grouped bars of bytes each pass read in three rounds: the cold round 81 KiB in the tick and 238 KiB in the sweep pass, the unchanged round zero for both, and the round with one plan rewritten and one 4 KiB stream grown 4 KiB in the tick and 884 bytes in the sweep pass." src="/reckon/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed-bytes-by-round.svg">
+
+  <p>A plan is answered through more than one memo kind, so the round that
+  rewrites one plan reports two recomputes rather than one. The test asserts
+  the count of each: every plan kind appears exactly once, at the rewritten
+  plan's length, no other kind appears at all, and the tick — which reads the
+  stream, not the plan — recomputes nothing.</p>
+
+  <table id="a-tick-reports-what-it-recomputed-arms">
+    <caption>Every arm ran on <code>all_debug</code>; each log opens with its
+    revision and literal command and ends with a bare
+    <code>EXIT=&lt;code&gt;</code> line.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>fenced suite: the promoted-pointer cohort, the staged-write
+        inventory and the shared-home lock</td><td><code>df8fba8b</code></td>
+        <td>62 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>fenced suite, plus the new gate test</td>
+        <td><code>f18c1375fb</code></td><td>63 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>widened suite: every test that imports the station, 46 files</td>
+        <td><code>df8fba8b</code></td>
+        <td>2 failed, 286 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>widened suite, 47 files</td><td><code>f18c1375fb</code></td>
+        <td>2 failed, 287 passed, <code>EXIT=1</code> &mdash; the same two failure
+        ids as the base arm, so <strong>no failure was added</strong>; one needs
+        a station that reloads a node-local image and the other a stream decode
+        the scratch tree does not reproduce, and neither reaches the rows this
+        section adds</td></tr>
+      <tr><td>negative control: the gate test against the base tree</td>
+        <td><code>df8fba8b</code> plus the test file</td>
+        <td>1 failed, <code>EXIT=1</code> &mdash; the tick's record carries no
+        <code>memo_counts</code> there</td></tr>
+      <tr><td>promoted-pointer cohort, which stubs the sweep's report hook</td>
+        <td><code>d992690a</code> then <code>bf2b5fbc</code></td>
+        <td>2 failed, 2 passed at <code>d992690a</code>: the three-parameter stub
+        raised <code>TypeError: &lt;lambda&gt;() takes 3 positional arguments but
+        4 were given</code> inside the sweep and was swallowed with the pass;
+        4 passed once the stub names the fourth parameter</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>A pass's report hook gained the counts, so every caller states
+  them.</strong> <code>SweepBeat</code> hands its report hook the pass's memo
+  counts beside the report. One existing cohort test stubbed that hook with
+  three parameters and appended nothing, so its own assertions read an empty
+  list and two of its tests failed at this head while reporting no error. The
+  stub names the fourth parameter now; the reverted run reproduces the two
+  failures with the same <code>TypeError</code>.</p>
+
+  <p><strong>The narrow arm could not have found the second break.</strong> Moving
+  the finished-tick record into <code>tick</code> also changed what the private
+  pass body answers: it returned the published rows and the finish time as a
+  pair, where a caller had always received the rows. Two tests in a cohort file
+  that stands in for the pass body returned the rows and made the unpacking
+  raise; a third, once that was fixed, made the record read a slowest stage
+  from a pass that had entered none. Both are fixed — the pass body keeps its
+  old answer and <code>tick</code> stamps the finish itself, and a pass that
+  measured no stage publishes no duration. Neither file is among the three the
+  round named, which is why the widened arm is the one that reports them.</p>
+
+  <p><strong>The negative control fails for the right reason.</strong> Against a
+  tree extracted at the base revision with the new test copied in, the reading
+  exists and the station ticks, but no record carries a <code>memo_counts</code>
+  key, so the first assertion that a finished tick reported its counts is the one
+  that fails.</p>
+
+  <p><strong>Not done here.</strong> The reference-rate buckets stay for a later
+  section, and the reading keeps everything else it carried: only the two
+  <code>memo_counts</code> blocks are new.</p>
+</section>

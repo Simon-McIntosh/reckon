@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-901f7b54fb3b",
+      "recorded_at": "2026-11-21T04:10:13.459520+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T03:21:04Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_concurrent_dispatch_of_one_node.py",
+      "line": "138",
+      "severity": "non-blocking",
+      "text": "non-blocking: fixture_pointers re-implements tests/test_member_friction.py:76 _fixture_writes_under's live-directory filename scan rather than extending the owner; the prior review named this duplication and the delta changed only the matching rule, not the fork."
+    },
+    {
+      "file": "gate-real-live.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the focused gate's header names revision 097c7c3b, yet the manifest artifacts line states it ran at head 901f7b54; the focused arm was not rerun on the repair commit, so a reader reconciling the receipt with the head is misled."
+    },
+    {
+      "file": "tests/test_concurrent_dispatch_of_one_node.py",
+      "line": "151",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert len(after) == len(before) is dead given assert before == [] at :148 -- before is always empty there, so both post-yield assertions reduce to after == []."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (plan \u00a79) is to isolate the test that writes into the real crew home and assert the real live directory gains nothing; the delta replaces the content-needle guard in tests/test_concurrent_dispatch_of_one_node.py:121-145 with a filename-suffix match and resolves the ambient home through tests/conftest.py:1148 real_store_home, so a peer pointer that merely quotes the fixture identifiers no longer fires the guard.\nVERDICT done_when: the done_when names the owning test file passing with an added equal-entry assertion and crew view live returning no runs; after-suite.log records 66 passed EXIT=0 at 901f7b54 covering the target file, negative-control.log records 1 passed 8 errors EXIT=1 at 901f7b54 naming a minted pointer, and view-live-concurrent-dispatch-fixture.json records runs [] with pointer_count 0.\nVERDICT write_paths: the declared set is the test file, an evidence fragment and a figure directory; the delta 097c7c3b..901f7b54 touches only tests/test_concurrent_dispatch_of_one_node.py, inside the declared set.\nVERDICT manifest: read; records status complete, four commits, the suite pair with base e689315 at 58 passed 8 errors and head 901f7b54 at 66 passed, plus the negative-control and comparison arms -- but its artifacts line mislabels gate-real-live.log as running at 901f7b54 when that log's own header names 097c7c3b.\nVERDICT diff: read commit by commit over e689315..901f7b54 and, for the gained work only, 097c7c3b..901f7b54; the sole gained commit 901f7b54 drops the _config_home and traces_naming imports, takes the ambient home from real_store_home, and matches live pointers by the -<node>.json filename suffix instead of by contents.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_concurrent_dispatch_of_one_node.py:135-145 now matches a live pointer by its filename suffix, so the run's own pointer that quotes \"node-one-worktree\" in its body is no longer reported as a leak.\nSCORE evidence: 14\nJUSTIFICATION evidence: after-suite.log:1-7 records 66 passed EXIT=0 at 901f7b54 and negative-control.log:1-360 records 8 errors EXIT=1 at 901f7b54, but gate-real-live.log:1 names 097c7c3b while the manifest states that arm ran at 901f7b54.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta 097c7c3b..901f7b54 changes only tests/test_concurrent_dispatch_of_one_node.py, which is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log shows tests/test_concurrent_dispatch_of_one_node.py:148 failing at setup with a minted r-...,-node-one-worktree.json once both RECKON_HOME overrides are removed, and guard-rule-comparison.log shows the filename rule sparing a peer that quotes the identifiers.\nSCORE fit: 16\nJUSTIFICATION fit: the delta follows the module's autouse-fixture idiom and reuses tests/conftest.py:1148, though the docstring near :128 cites \"the crew-home isolation guard beside this one\" without naming the owning file.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_concurrent_dispatch_of_one_node.py:138-145 re-implements the filename scan of crew/live owned by tests/test_member_friction.py:76 _fixture_writes_under instead of extending it, although the delta does repair the duplicated real_store_home resolution.\nFINDING tests/test_concurrent_dispatch_of_one_node.py:138 non-blocking: fixture_pointers re-implements tests/test_member_friction.py:76 _fixture_writes_under's live-directory filename scan rather than extending the owner; the prior review named this duplication and the delta changed only the matching rule, not the fork.\nFINDING gate-real-live.log:1 non-blocking: the focused gate's header names revision 097c7c3b, yet the manifest artifacts line states it ran at head 901f7b54; the focused arm was not rerun on the repair commit, so a reader reconciling the receipt with the head is misled.\nFINDING tests/test_concurrent_dispatch_of_one_node.py:151 non-blocking: assert len(after) == len(before) is dead given assert before == [] at :148 -- before is always empty there, so both post-yield assertions reduce to after == [].",
+  "review_run_id": "r-20261121T031958617287-review-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-901f7b54fb3b",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "901f7b54fb3b9ef12580a7d14851fc432e63c128",
+  "reviewed_run_id": "r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:26:12Z",
+  "total": 89
+}

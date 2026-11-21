@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-title" content="The work of a lost session is raised, not left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s21">
+  <meta name="plan-commits" content="e1d03bc8b1">
+  <meta name="plan-recorded-at" content="2026-11-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,merge,suite-arms,labelled">
+  <title>Crew merge reads labelled suite arms — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="wlsr-crew-merge-reads-labelled-suites" data-reckon="landed" data-when="2026-11-21">
+
+  <h2>Crew merge reads labelled suite arms</h2>
+
+  <p>Commit <code>e1d03bc8b1</code> teaches the merge's suite guard to read arms
+  recorded per label. A run armed on more than one population writes
+  <code>baseline_suite_UNIT</code> beside <code>after_suite_UNIT</code> and
+  <code>baseline_suite_VALIDATION</code> beside <code>after_suite_VALIDATION</code>,
+  and writes no unlabelled pair at all. The manifest parser typed only
+  <code>baseline_suite</code> and <code>after_suite</code>, so the labelled arms
+  arrived as raw text that the delta evaluation could not read, and a promoted,
+  passing run was refused for the two top-level fields it had in fact supplied
+  under other names.</p>
+
+  <p id="wlsr-crew-merge-reads-labelled-suites-mechanism">Two changes hold it
+  up. <code>reckon/crew/reports.py</code> types every suite-arm key the manifest
+  actually records, so a labelled arm keeps the type it had in an unlabelled one.
+  <code>reckon/crew/promotion_records.py</code> takes a labelled manifest down
+  its own path: each label's baseline is compared with that same label's after
+  arm, never with another population's, which is why one population's failures
+  cannot be laundered against a different population's clean run. A label
+  missing either side is refused naming the missing field; a label whose after
+  arm names a failure its baseline does not is refused naming the label and the
+  id. An unlabelled manifest takes exactly the path it took before.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li><strong>The declared measure.</strong>
+    <code>tests/test_crew_merge_reads_labelled_suites.py</code> runs
+    <code>4 passed</code>. It covers the three cases the section names: two
+    labelled pairs each adding nothing merge, and the change lands on the
+    repository's <code>main</code> with the origin ref moved to match; a second
+    label whose after arm adds <code>tests/test_unit.py::test_new_behaviour</code>
+    is refused with <em>after_suite_validation names failures its
+    baseline_suite_validation does not</em>, carrying the id in
+    <code>added_failure_ids</code>; and a label carrying only its baseline is
+    refused with <code>missing_fields == ["after_suite_unit"]</code>. A fourth
+    case asserts the clean delta reports both labels with an empty added set.
+    Log: <code>gate-head.log</code> in the run directory.</li>
+    <li><strong>The negative control the node declares, executed and logged.</strong>
+    The same test file, run at the base revision <code>ff3bb24bcf</code> in a
+    scratch tree with the landing's own measurement unavailable, fails
+    <code>test_two_clean_labelled_pairs_merge</code> with the refusal
+    <em>armed promotion requires complete baseline and after suite evidence;
+    missing baseline_suite, after_suite</em> and exits <code>EXIT=1</code>. That
+    is the defect reproducing at the unmodified tree, not a passing test being
+    re-described. Log: <code>negative-control-base.log</code>.</li>
+    <li><strong>Ruff.</strong> <code>ruff check</code> passes and
+    <code>ruff format --check</code> reports the three staged files already
+    formatted, so the change adds no finding and no formatting drift.</li>
+  </ul>
+
+  <p id="wlsr-crew-merge-reads-labelled-suites-not-done"><strong>Not done here, by
+  scope.</strong> The labelled path judges each pair's completeness and its added
+  failure ids. It deliberately does not re-check that a labelled arm's
+  <code>revision</code> and <code>command</code> agree with the unlabelled pair or
+  with the run's head the way the unlabelled path does, because a labelled
+  manifest has no unlabelled arm to compare against and the deliverable asks for
+  the missing-side and added-failure judgements alone. A manifest mixing an
+  unlabelled pair with labelled ones takes the unlabelled path, where the labelled
+  arms are typed and carried but not judged.</p>
+
+</article>
+</body>
+</html>

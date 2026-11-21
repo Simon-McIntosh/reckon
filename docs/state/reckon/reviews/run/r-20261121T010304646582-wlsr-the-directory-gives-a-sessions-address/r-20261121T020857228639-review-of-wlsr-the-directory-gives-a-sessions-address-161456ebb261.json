@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:565",
+    "reckon/mcp_views.py:4473",
+    "reckon/crew_run_commands.py:5311",
+    "reckon/crew/dispatch_watch.py:1073",
+    "reckon/crew/dispatch_watch.py:1154",
+    "reckon/crew/session_host.py:774"
+  ],
+  "completed_at": "2026-11-21T02:28:35.764415+00:00",
+  "dispatched_at": "2026-11-21T02:09:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/harness_sessions.py",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "non-blocking: reachability is taken from the bare pid via process_alive, so a session whose record's pid has since been reused by another process reads reachable true while it has gone; the repository already joins a harness record's own procStart to the process table for exactly this reason at reckon/crew/fleet_migrate.py:170-178, and this reader also re-implements that file's session-record reader rather than extending it, so the guard is both available and beside the point where it is needed."
+    },
+    {
+      "file": "tests/test_the_directory_gives_a_sessions_address.py",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_a_live_record_wins_over_the_one_a_resume_left_behind cannot fail on the preference it names, because both fixture records omit startedAt and the dead record's filename (2147483647.json) sorts before the live record's, so a last-wins loop without _preference at all produces the same live name and the assertion passes; giving the dead record a newer startedAt (or a later-sorting filename) would make the flag load-bearing."
+    },
+    {
+      "file": "docs/plans/work-of-a-lost-session-is-raised-not-left.html",
+      "line": "126",
+      "severity": "non-blocking",
+      "text": "non-blocking: section 11 asks for the name for each session that owns a live record, and a session with a harness record but no run whose stream carries an observed messaging_socket_path gets no transport entry and therefore no name, which the manifest records under outside_scope; it is the plan's own no-second-address-field constraint that forces the choice, so it is the plan owner's to restate rather than a defect in this diff."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call sites: the CLI and MCP readers of the directory view, the budget-reset reach reader, and the dispatch-watch host lookup and its two callers.",
+    "diff": "read the single commit 161456ebb2 against e689315bb7: it adds reckon/crew/harness_sessions.py, attaches it in directory.py, repoints dispatch_watch.py's directory read and crew_run_commands' live-session reader at it, and adds the gate test plus one import move.",
+    "done_when": "the done_when names tests/test_the_directory_gives_a_sessions_address.py with three cases; that file's four cases at lines 92-116 assert a live record's name and true flag, a dead record's name and false flag, and nulls for both; the manifest records the run and gate.log shows 4 passed in 3.42s with EXIT=0 at 161456ebb2.",
+    "goal": "the node's goal is the directory view naming each session by the address peers message it, and reckon/crew/directory.py:763-780 attaches harness_sessions.addresses() onto every transport entry the row already carries, which is the plan section's named surface rather than a second field.",
+    "manifest": "read the manifest at the reviewed run's directory: it records status complete, commits 161456ebb2, the literal gate command, gate/negative-control/related logs, a waived-free negative control note, and rubric lines for all six dimensions.",
+    "write_paths": "read the node's eight declared paths; all six paths in the diff (directory.py, dispatch_watch.py, harness_sessions.py, crew_run_commands, and the two test files) are inside them, and the declared evidence fragment and figures directories were not written, which is a subset rather than an escape."
+  },
+  "justifications": {
+    "durability": "tests/test_the_directory_gives_a_sessions_address.py:105-107 fails when the harness record is removed, as the negative control shows, but the resume case at line 134 does not discriminate the live-record preference.",
+    "evidence": "gate.log's header names revision 161456ebb2 and its last line is EXIT=0 over 4 passed, and negative-control.log reddens the first case at tests/test_the_directory_gives_a_sessions_address.py:103 with EXIT=1.",
+    "fit": "reckon/crew/harness_sessions.py:29-60 names the directory, the env override and the reader by what they do, and reuses reckon/crew/process_liveness.py:process_alive rather than spelling a new liveness probe.",
+    "goal_fidelity": "reckon/crew/directory.py:774-780 writes name and reachable onto each transport entry in reckon/crew/directory.py:766-771, which is the entry the plan named.",
+    "reuse": "reckon/crew/harness_sessions.py:46-64 re-reads the harness session records that reckon/crew/fleet_migrate.py:136 has read since before this change, without extending it.",
+    "scope_discipline": "git diff e689315bb7..161456ebb2 touches only the six declared source and test paths and no plan, state or figure path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the directory view naming each session by the address peers message it; reckon/crew/directory.py:763-780 attaches harness_sessions.addresses() onto the transport entry the row already carries, the surface section 11 names.\nVERDICT done_when: the done_when names tests/test_the_directory_gives_a_sessions_address.py with three cases; its four cases assert the live/died/absent results and gate.log records 4 passed in 3.42s with EXIT=0 at 161456ebb2.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff is inside them and no out-of-scope file was touched.\nVERDICT manifest: read; it states the gate command, the 4-passed result, the red negative control, the related 38-passed regression run, and commits 161456ebb2.\nVERDICT diff: read commit 161456ebb2 against base e689315bb7: one new module, three call-site edits and one import move, inside the declared paths.\nCALL_SITES: reckon/crew_run_commands.py:565 (crew directory), reckon/mcp_views.py:4473 (MCP board read), reckon/crew_run_commands.py:5311 (_budget_reset_payload), reckon/crew/dispatch_watch.py:1073 (_owning_session_host_fifo), reckon/crew/dispatch_watch.py:1154 and reckon/crew/session_host.py:774\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:774-780 writes name and reachable onto each transport entry in reckon/crew/directory.py:766-771, which is the entry the plan named.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log's header names revision 161456ebb2 and its last line is EXIT=0 over 4 passed, and negative-control.log reddens the first case at tests/test_the_directory_gives_a_sessions_address.py:103 with EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff e689315bb7..161456ebb2 touches only the six declared source and test paths and no plan, state or figure path.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_directory_gives_a_sessions_address.py:105-107 fails when the harness record is removed, as the negative control shows, but the resume case at line 134 does not discriminate the live-record preference.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/harness_sessions.py:29-60 names the directory, the env override and the reader by what they do, and reuses reckon/crew/process_liveness.py:process_alive rather than spelling a new liveness probe.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/harness_sessions.py:46-64 re-reads the harness session records that reckon/crew/fleet_migrate.py:136 has read since before this change, without extending it.\nFINDING reckon/crew/harness_sessions.py:91 non-blocking: non-blocking: reachability is taken from the bare pid via process_alive, so a session whose record's pid has since been reused by another process reads reachable true while it has gone; the repository already joins a harness record's own procStart to the process table for exactly this reason at reckon/crew/fleet_migrate.py:170-178, and this reader also re-implements that file's session-record reader rather than extending it, so the guard is both available and beside the point where it is needed.\nFINDING tests/test_the_directory_gives_a_sessions_address.py:134 non-blocking: non-blocking: test_a_live_record_wins_over_the_one_a_resume_left_behind cannot fail on the preference it names, because both fixture records omit startedAt and the dead record's filename (2147483647.json) sorts before the live record's, so a last-wins loop without _preference at all produces the same live name and the assertion passes; giving the dead record a newer startedAt (or a later-sorting filename) would make the flag load-bearing.\nFINDING docs/plans/work-of-a-lost-session-is-raised-not-left.html:126 non-blocking: non-blocking: section 11 asks for the name for each session that owns a live record, and a session with a harness record but no run whose stream carries an observed messaging_socket_path gets no transport entry and therefore no name, which the manifest records under outside_scope; it is the plan's own no-second-address-field constraint that forces the choice, so it is the plan owner's to restate rather than a defect in this diff.\n",
+  "review_checks": [],
+  "review_run_id": "r-20261121T020857228639-review-of-wlsr-the-directory-gives-a-sessions-address-161456ebb261",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "161456ebb2615d82137603e8bc6ed7a562bedd4c",
+  "reviewed_run_id": "r-20261121T010304646582-wlsr-the-directory-gives-a-sessions-address",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:28:35.764415+00:00",
+  "total": 100
+}

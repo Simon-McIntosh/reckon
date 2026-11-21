@@ -38,6 +38,102 @@ _Identity = _Signature | str
 #: one read would otherwise rebuild the whole document's view on every call.
 _CACHE: OrderedDict[tuple[str, str, Hashable], tuple[Any, ...]] = OrderedDict()
 _LOCK = threading.Lock()
+# The bounded maps a caller holds state in. ``clear`` empties them with the
+# memo, so a test asking for a cold read gets one.
+_MAPS: list[Any] = []
+
+# How one answer was produced, for a caller measuring what a pass paid for.
+# ``cached`` is a value the memo already held, ``extended`` a derivation folded
+# from the bytes a file gained, and ``recomputed`` a parse run again in full
+# because the file it describes moved. A file parse has no incremental fold, so
+# every file-backed kind answers ``cached`` or ``recomputed``; the stream
+# reader in :mod:`reckon._backends` is the one kind that extends.
+ANSWER_CACHED = "cached"
+ANSWER_EXTENDED = "extended"
+ANSWER_RECOMPUTED = "recomputed"
+
+_ANSWERS = (ANSWER_CACHED, ANSWER_EXTENDED, ANSWER_RECOMPUTED)
+
+
+class MemoCounts:
+    """Per-kind counts of the answers one measured pass was served.
+
+    A pass that must show whether it did work opens a :func:`counting` scope,
+    and every file-backed :func:`memoized` answer served inside it, plus every
+    stream observation recorded through :func:`record_memo`, is counted here
+    under its kind. ``bytes_read`` is the bytes the answer had to read from disk
+    to be produced — the file's size for a full parse, the grown prefix for an
+    incremental extension, and nothing for a value the memo already held. A
+    path that cannot be stat'ed reads no bytes at all, so it is not counted:
+    the reading describes what a pass read from disk, and an answer composed
+    from a file that is not there read nothing.
+
+    Only the work asked for on the scope's own thread is counted. A derivation
+    another thread runs while the pass is open is another pass's work, and a
+    station that attributed it here would report a tick paying for its
+    neighbours.
+    """
+
+    __slots__ = ("_kinds",)
+
+    def __init__(self) -> None:
+        self._kinds: dict[str, dict[str, int]] = {}
+
+    def record(self, kind: str, outcome: str, bytes_read: int = 0) -> None:
+        """Count one answer of ``kind``, produced by ``outcome``."""
+        if outcome not in _ANSWERS:
+            raise ValueError(f"not a memo outcome: {outcome!r}")
+        entry = self._kinds.setdefault(
+            kind,
+            {
+                ANSWER_CACHED: 0,
+                ANSWER_EXTENDED: 0,
+                ANSWER_RECOMPUTED: 0,
+                "bytes_read": 0,
+            },
+        )
+        entry[outcome] += 1
+        if bytes_read > 0:
+            entry["bytes_read"] += int(bytes_read)
+
+    def summary(self) -> dict[str, dict[str, int]]:
+        """A copy of every kind's counts, so a reader cannot change them."""
+        return {kind: dict(counts) for kind, counts in self._kinds.items()}
+
+
+# The scope a pass opened, so an answer is charged to the pass that asked for
+# it rather than to whatever else the process happens to be doing. A ContextVar
+# rather than a process global: a tick and a sweep pass measuring at the same
+# time each count their own answers, and a thread that opens no scope records
+# nothing.
+_COUNTS: ContextVar[MemoCounts | None] = ContextVar("file_memo_counts", default=None)
+
+
+@contextlib.contextmanager
+def counting() -> Iterator[MemoCounts]:
+    """Open a scope that counts every memo answer served inside it."""
+    counts = MemoCounts()
+    token = _COUNTS.set(counts)
+    try:
+        yield counts
+    finally:
+        _COUNTS.reset(token)
+
+
+def record_memo(kind: str, outcome: str, bytes_read: int = 0) -> None:
+    """Count one answer under ``kind`` when a measuring scope is open."""
+    counts = _COUNTS.get()
+    if counts is not None:
+        counts.record(kind, outcome, bytes_read)
+
+
+def file_bytes(path: Path | str) -> int:
+    """The file's size, or zero when it cannot be stat'ed."""
+    try:
+        return os.stat(path).st_size
+    except OSError:
+        return 0
+
 
 # A read-only region in which a memoised value is shared rather than copied.
 # Within the region each document is stat'ed once, decoded once, and handed to
@@ -367,6 +463,7 @@ def memoized[T](
     variant: Hashable = None,
     mutable: bool = False,
     by_content: bool = False,
+    identity: _Identity | None = None,
 ) -> T:
     """Return ``compute()`` for ``path``, reusing it while the file is unchanged.
 
@@ -378,6 +475,14 @@ def memoized[T](
     byte-identical content at two paths is parsed once. Every caller that does
     not ask for it keeps the stat signature and pays no hash.
 
+    ``identity`` is for a caller that has already observed the file: the stat
+    signature — or the digest, under ``by_content`` — of the bytes its
+    ``compute`` reads. The value is then answered only from what was stored
+    under that identity, and stored only while the file still reports it, so a
+    rename landing between the caller's read and this store leaves nothing
+    behind for the file's next identity to be answered with. A caller that
+    supplies none is stat'ed here.
+
     Inside a :func:`read_only_region` the value is stat'ed and decoded once and
     handed to the caller as a read-only view of it, so mutating what is read is
     refused; ``mutable=True`` asks for a mutable copy at that hand-over, for a
@@ -386,29 +491,50 @@ def memoized[T](
 
     region = _REGION.get()
     if by_content:
-        try:
-            identity: _Identity = content_digest(path)
-        except OSError:
-            return compute()
+        if identity is None:
+            try:
+                identity = content_digest(path)
+            except OSError:
+                return compute()
         key = (kind, f"content:{identity}", variant)
     else:
-        try:
-            identity = file_signature(path)
-        except OSError:
-            return compute()
+        if identity is None:
+            try:
+                identity = file_signature(path)
+            except OSError:
+                return compute()
         key = (kind, os.fspath(path), variant)
     if region is not None and key in region:
+        record_memo(kind, ANSWER_CACHED)
         return _handout(region[key], mutable)  # type: ignore[return-value]
     with _LOCK:
         entry = _CACHE.get(key)
         if entry is not None and entry[0] == identity:
             _CACHE.move_to_end(key)
             value = entry[1]
+            record_memo(kind, ANSWER_CACHED)
             if region is not None:
                 region[key] = entry[2]
                 return _handout(region[key], mutable)  # type: ignore[return-value]
             return copy.deepcopy(value)  # type: ignore[return-value]
+    record_memo(kind, ANSWER_RECOMPUTED, file_bytes(path))
     value = compute()
+    try:
+        unchanged = (
+            content_digest(path) == identity
+            if by_content
+            else file_signature(path) == identity
+        )
+    except OSError:
+        unchanged = False
+    if not unchanged:
+        # A write or a rename landed while the value was computed, so what was
+        # computed describes the bytes read at ``identity`` rather than what is
+        # on disk now. It is handed to this caller — computing it again would
+        # only repeat the same race — and stored under neither.
+        if region is not None:
+            return _handout([value, None], mutable)  # type: ignore[return-value]
+        return value
     if region is not None:
         # One stat and one decode for the region: the computed value is stored
         # itself, the region hands a read-only view of it on from here, so a
@@ -422,23 +548,14 @@ def memoized[T](
                 _CACHE.popitem(last=False)
         region[key] = cell
         return _handout(region[key], mutable)  # type: ignore[return-value]
-    try:
-        unchanged = (
-            content_digest(path) == identity
-            if by_content
-            else file_signature(path) == identity
-        )
-    except OSError:
-        unchanged = False
-    if unchanged:
-        # A write that landed mid-parse leaves the entry unstored, so the
-        # next reader parses the new bytes rather than a torn read.
-        stored = copy.deepcopy(value)
-        with _LOCK:
-            _CACHE[key] = (identity, stored, [stored, None])
-            _CACHE.move_to_end(key)
-            while len(_CACHE) > _MAX_ENTRIES:
-                _CACHE.popitem(last=False)
+    # A write that landed mid-parse leaves the entry unstored, so the next
+    # reader parses the new bytes rather than a torn read.
+    stored = copy.deepcopy(value)
+    with _LOCK:
+        _CACHE[key] = (identity, stored, [stored, None])
+        _CACHE.move_to_end(key)
+        while len(_CACHE) > _MAX_ENTRIES:
+            _CACHE.popitem(last=False)
     return value
 
 
@@ -464,8 +581,71 @@ def memoized_key[T](kind: str, key: Hashable, compute: Callable[[], T]) -> T:
     return value
 
 
+class BoundedMap[V]:
+    """A bounded, least-recently-used map that shares the memo's lock.
+
+    :func:`memoized` and :func:`memoized_key` answer a value from a key, so a
+    caller whose state has to be read and then replaced had nowhere to keep it
+    but a second cache of its own, with its own bound and its own lock. This is
+    the container for that state: the same lock guards it, the same least
+    recently used entry goes first, and :func:`clear` empties it with the rest
+    of the memo — ``file_memo.clear()`` therefore empties every cache in the
+    process, which is what a test that asks for a cold read means.
+
+    The value is stored and handed back as it is rather than copied: a map
+    holds state its owner replaces, not a derivation a later reader must not
+    alter. A caller that hands what it stores to a reader copies it there.
+    """
+
+    __slots__ = ("_entries", "_limit", "_name")
+
+    def __init__(self, name: str, limit: str | int) -> None:
+        self._name = name
+        self._limit = max(1, int(limit))
+        self._entries: OrderedDict[Hashable, V] = OrderedDict()
+
+    def __len__(self) -> int:
+        with _LOCK:
+            return len(self._entries)
+
+    def get(self, key: Hashable) -> V | None:
+        """The value held for ``key``, marked as the most recently used."""
+        with _LOCK:
+            if key not in self._entries:
+                return None
+            self._entries.move_to_end(key)
+            return self._entries[key]
+
+    def put(self, key: Hashable, value: V) -> None:
+        """Keep ``value`` for ``key``, dropping the oldest entry past the bound."""
+        with _LOCK:
+            self._entries[key] = value
+            self._entries.move_to_end(key)
+            while len(self._entries) > self._limit:
+                self._entries.popitem(last=False)
+
+    def clear(self) -> None:
+        """Empty this map."""
+        with _LOCK:
+            self._entries.clear()
+
+
+def bounded_map[V](name: str, *, limit: str | int) -> BoundedMap[V]:
+    """A bounded map for one kind of state, emptied by :func:`clear`.
+
+    ``limit`` is the most entries this map keeps; the least recently used one
+    goes first, so a process that reads many subjects keeps a fixed number.
+    """
+    helper: BoundedMap[V] = BoundedMap(name, limit)
+    with _LOCK:
+        _MAPS.append(helper)
+    return helper
+
+
 def clear() -> None:
-    """Drop every memoised parse."""
+    """Drop every memoised parse and every bounded map."""
 
     with _LOCK:
         _CACHE.clear()
+        for helper in _MAPS:
+            helper._entries.clear()

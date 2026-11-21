@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own gate logs read on disk: baseline_suite-1795120067778962136.log at 28fbf2bc2fe2b reads 58 passed with EXIT=0 and no FAILED line, and after_suite-1795120142579727449.log at d7846c73e51c reads 58 passed with EXIT=0 and no FAILED line, so the set difference is empty (0). The manifest's baseline_suite line is malformed JSON, so the arms were read from the log paths the fragment itself cites.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:854 _fragment_href",
+    "reckon/evidence.py:1610 _fragment_body_bytes",
+    "reckon/evidence.py:1664 composed evidence record"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-97de208c74fc",
+      "recorded_at": "2026-11-20T21:35:36.602836+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-20T20:39:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "the fragment says the reconciliation passes on reconcile-after.log, but reconcile-after.log holds a FAIL line and no PASS line; the check does pass when rerun against the delivered fragment beside a well-formed manifest copy"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "cites gate-all_debug-20261120T081552Z.log which is absent from the run directory; only its .scheduler sibling exists"
+    },
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "baseline_suite is malformed JSON with a literal newline in the command and an unterminated exit_status string, so the reconciler cannot parse the baseline arm"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 97de208c74 against base 28fbf2bc2fe2b; one new HTML fragment, 25 lines, and 13 insertions/10 deletions over the gained commit",
+    "done_when": "both suite arms and the importer arm are recorded green at base and head, the mutation log shows six failing ids and EXIT=1, and the all_debug clause is recorded unmet rather than claimed",
+    "goal": "the node goal's passing run is delivered as the evidence fragment, with the file green at both base and head and the repair commits named",
+    "manifest": "read; complete but its baseline_suite value is malformed JSON at line 18",
+    "write_paths": "read the declared paths; the diff is the one fragment inside them"
+  },
+  "justifications": {
+    "durability": "no repository test checks a fragment's figures against its cited logs, and the run-directory reconciler is blocked by manifest.md:18",
+    "evidence": "named-file-head-d7846c73e51c6845e1da7ba4341751c89744c7ea.log:1-3 records revision, host and partition sun, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:24 cites a red reconcile-after.log as proof of a pass",
+    "fit": "the fragment follows the shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-prompt-carries-the-declaration.html:1-12",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 quotes 6 passed in 1.06s at head d7846c73e51c, the figure named-file-head-d7846c73e51c6845e1da7ba4341751c89744c7ea.log:4 records",
+    "reuse": "the diff adds no definition; reckon/evidence.py:1610 composes the fragment and no cited-log reconciliation owner exists",
+    "scope_discipline": "the diff adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html, inside the declared write paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver, as such, the passing run of a test file that was already green because another node's repair reached it; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:2-3 and :7 record the named file green at base 28fbf2bc2fe2b (6 passed in 0.33s) and at head d7846c73e51c (6 passed in 1.06s), and :3 names the repair commits 3137d29618 and e35585e5ae, both of which resolve and touch reckon/crew/prompts.py and the named test file.\nVERDICT done_when: the section asks for the file green at head as an all_debug job, each cause with a verdict, an importer arm adding no failure, and a negative control; manifest.md records both suite arms (58 passed, EXIT=0) and the importer arm (46 passed at both revisions), mutant-run.log records six failing ids and EXIT=1, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:13 records the node's all_debug clause as unmet with the bwrap refusal rather than claiming it.\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment and its figure path; the delivered diff touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html, inside them.\nVERDICT manifest: read in full; it names commits d7846c73e51c and 97de208c74f, the head gate command and log with EXIT=0, both suite arms and the mutation log, but its line 18 baseline_suite value is not parseable JSON.\nVERDICT diff: read 28fbf2bc2fe2b..97de208c74f and the gained commit d7846c73e5..97de208c74f; the change is the one 25-line fragment (13 insertions and 10 deletions across the repair), changing no source, test or figure.\nCALL_SITES: reckon/evidence.py:854 _fragment_href, reckon/evidence.py:1610 _fragment_body_bytes, reckon/evidence.py:1664 composed evidence record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 quotes 6 passed in 1.06s at head d7846c73e51c, which the head log named-file-head-d7846c73e51c6845e1da7ba4341751c89744c7ea.log:4 itself records.\nSCORE evidence: 11\nJUSTIFICATION evidence: the head log named-file-head-d7846c73e51c6845e1da7ba4341751c89744c7ea.log:1-3 records revision, host, job 1319168 and partition sun, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:24 cites reconcile-after.log as a passing proof and that log holds a FAIL line and no PASS line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html, one file inside the declared write paths.\nSCORE durability: 6\nJUSTIFICATION durability: the change adds no assertion and no repository test checks a fragment's figures against the logs it cites; the only guard is the run-directory script reconcile-fragment.py, which cannot run against the malformed manifest.md:18 as delivered.\nSCORE fit: 17\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:1-24 follows the section, heading, table and pre shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-prompt-carries-the-declaration.html:1-12 and names no plan or sprint identifier in its content.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; a capability search over reckon/ found no owner for cited-log reconciliation, and reckon/evidence.py:1610 composes the fragment rather than being forked by it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:24 non-blocking: the fragment states the reconciliation \"passes on this one (reconcile-before.log, reconcile-after.log)\", but reconcile-after.log holds one FAIL line (\"mutant-run.log: '6 failed in 1.79s' is not stated beside the 28fbf2bc2fe2 it belongs to\") and no PASS or EXIT line, so the cited proof of a pass is a red log; rerun against the delivered fragment beside a well-formed manifest copy it does pass, so the claim is true in substance and only its evidence citation is wrong.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:13 non-blocking: the scheduler paragraph cites gate-all_debug-20261120T081552Z.log among three refusal logs, and that file does not exist in the run directory; only its sidecar gate-all_debug-20261120T081552Z.log.scheduler does, so one of the three named proofs cannot be opened at the path the record names as delivered.\nFINDING manifest.md:18 non-blocking: the baseline_suite value is not valid JSON, carrying a literal newline inside the command string and an unterminated \"exit_status: 0} fragment, so json.loads fails at char 68 and the reconciler stops before reading any log; a record whose baseline arm cannot be parsed is unreadable as declared, and this repair round exists to make exactly that reconciliation reproducible.\n",
+  "review_run_id": "r-20261120T203710759733-review-of-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-97de208c74fc",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "97de208c74fcf7c962b92c8ef272d372234a532c",
+  "reviewed_run_id": "r-20261118T054310379573-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies",
+  "scores": {
+    "durability": 6,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T20:58:01.000000+00:00",
+  "total": 92
+}

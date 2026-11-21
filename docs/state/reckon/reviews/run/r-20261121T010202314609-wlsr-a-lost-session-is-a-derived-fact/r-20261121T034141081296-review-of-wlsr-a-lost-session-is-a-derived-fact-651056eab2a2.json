@@ -1,0 +1,79 @@
+{
+  "added_failure_basis": "derived from the reviewed run's own arms: baseline-suite.log is 58 passed with EXIT=0; after-suite.log is 66 passed with EXIT=0 (the 8 gate cases plus the same 58). Zero failures at either arm, so no added failure id exists.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:161 admit_once lost-session tally, reached from reckon/crew/admission/service.py:472 and :537",
+    "reckon/crew/directory.py:846 LostSessionReads, reached from reckon/crew_run_commands.py:567, reckon/mcp_views.py:4511 and reckon/crew/plan_coordinator.py:233",
+    "reckon/crew/admission/service.py:248 _READ_SOURCES registration of session_lost"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T03:43:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/lost_sessions.py",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "live_process_sessions re-implements the repository's session-id process scan at reckon/crew/process_liveness.py:291 _session_process_pids with the same whole-argument match, uid filter and ancestor exclusion; it duplicates rather than extends or wraps that owner, and two copies will drift on whether a session is alive."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "72",
+      "severity": "non-blocking",
+      "text": "the fixture writes created_at as a float epoch, which production never writes (reckon/crew/dispatch_claims.py:982 stores _utc_now() as an ISO Z string), so _oldest_record_instant at reckon/crew/lost_sessions.py:137 returns None for every fixture session and the plan's never-registered clause has no assertion."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "261",
+      "severity": "non-blocking",
+      "text": "the node's worktree holds an uncommitted ninth case forbidding a second process-start reader; the landed head does not carry it, so promoting the committed head drops the only guard the reuse repair has."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact/manifest.md",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite cite angle-bracket placeholders (cd <base tree for e689315bb7>, cd <node worktree at 651056eab2>) and the logs they name carry no revision, tree or command header, so neither arm can be re-run from the record."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the derivation's reaches at the reviewed head: admit_once's tally block at selection.py:161-174 reached from service.py:472 and :537, LostSessionReads at directory.py:846 reached from crew_run_commands.py:567, mcp_views.py:4511 and plan_coordinator.py:233, and the _READ_SOURCES row at service.py:248.",
+    "diff": "commit 651056eab2 removes process_started_at and the unused parse_utc and service imports and rewrites the ten-day case to read gc._process_start_epoch over a real process then make both start-time readers raise; 20 insertions, 77 deletions, three files.",
+    "done_when": "each of the six named cases is asserted in tests/test_a_lost_session_is_a_derived_fact.py (98-110, 197-203, 234-261, 113-127 and 140-174, 264-286, 289-311) and gate.log records 8 passed with EXIT=0 at revision 651056eab2.",
+    "goal": "plan section 2 requires one function answering whether a coordinator session is lost from the last instant it was heard, carried by directory and the admit pass with a flight setting; reckon/crew/lost_sessions.py:290 session_lost answers it and the delta since e9d4f446 changes no reading it makes.",
+    "manifest": "read; status complete, three commits, gate_result 8 passed EXIT=0, negative_control_log mutation-process-age.log, baseline 58 passed and after 66 passed with EXIT=0 each, but the suite commands carry angle-bracket placeholders and the cited suite logs carry no header.",
+    "write_paths": "the delta e9d4f446..651056eab2 touches exactly reckon/crew/admission/selection.py, reckon/crew/lost_sessions.py and tests/test_a_lost_session_is_a_derived_fact.py, all inside the eleven declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lost_session_is_a_derived_fact.py:252-256 makes both start-time readers raise and mutation-process-age.log reddens the case, but the never-registered clause at lost_sessions.py:137 has no assertion because the fixture at tests/test_a_lost_session_is_a_derived_fact.py:72 writes created_at in a shape production never writes.",
+    "evidence": "tests/test_a_lost_session_is_a_derived_fact.py:289-311 reads the bound from the pass's own receipt and gate.log records the run, but the suite arms at manifest.md:56-58 cite placeholder commands and their logs carry no revision or command header.",
+    "fit": "the delta's helpers follow the module idiom and the new case names no plan or ticket label, while the pre-existing I001 import finding at reckon/crew/admission/selection.py:3 and tests/test_a_lost_session_is_a_derived_fact.py:19 is unchanged from the base.",
+    "goal_fidelity": "reckon/crew/lost_sessions.py:290 answers lost, lost_since and last_heard_at from the last instant heard, and a probe with a production-shaped ISO created_at read an 80-hour never-registered session as lost.",
+    "reuse": "reckon/crew/lost_sessions.py:61 live_process_sessions duplicates reckon/crew/process_liveness.py:291 _session_process_pids rather than extending it, so the delta removed one duplicated reader while leaving a second copy of the same capability.",
+    "scope_discipline": "git diff e9d4f446b8..651056eab2 changes only the three declared paths, 20 insertions against 77 deletions, with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan section 2 of work-of-a-lost-session-is-raised-not-left -- one function answering whether a coordinator session is lost from the last instant it was heard, carried by the directory view and the admit pass with a flight setting; reckon/crew/lost_sessions.py:290 session_lost answers it, and the delta since e9d4f446 changes no reading it makes.\nVERDICT done_when: the done_when's six cases are each asserted in tests/test_a_lost_session_is_a_derived_fact.py -- 71 h/73 h boundary at 98-110, a running process at 197-203, the ten-day process at 234-261, the setting at 113-127 and 140-164 with the broken layer at 167-174, the three directory fields at 264-286, and the at-most-six-reads bound at 289-311 -- and gate.log records 8 passed with EXIT=0 at revision 651056eab2.\nVERDICT write_paths: the node declared eleven paths; the delta e9d4f446..651056eab2 touches exactly reckon/crew/admission/selection.py, reckon/crew/lost_sessions.py and tests/test_a_lost_session_is_a_derived_fact.py, all three declared.\nVERDICT manifest: read; status complete, three commits, gate_result \"8 passed, EXIT=0\", negative_control_log mutation-process-age.log, baseline 58 passed and after 66 passed with EXIT=0 each, but both suite command lines carry angle-bracket placeholders and neither cited suite log carries a header.\nVERDICT diff: read commit by commit; 651056eab2 removes process_started_at and the unused parse_utc and service imports, and rewrites the ten-day case to read gc._process_start_epoch over a real process and then make both of the repository's start-time readers raise.\nCALL_SITES: reckon/crew/admission/selection.py:161 admit_once lost-session tally, reached from reckon/crew/admission/service.py:472 and :537; reckon/crew/directory.py:846 LostSessionReads, reached from reckon/crew_run_commands.py:567, reckon/mcp_views.py:4511 and reckon/crew/plan_coordinator.py:233; reckon/crew/admission/service.py:248 _READ_SOURCES registration of session_lost\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/lost_sessions.py:290 answers lost, lost_since and last_heard_at from the last instant heard, and a probe with a production-shaped ISO created_at read an 80-hour never-registered session as lost.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_lost_session_is_a_derived_fact.py:289-311 reads the bound from the pass's own receipt and gate.log records the run, but the suite arms at manifest.md:56-58 cite placeholder commands and their logs at baseline-suite.log and after-suite.log carry no revision or command header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff e9d4f446b8..651056eab2 changes only the three declared paths, 20 insertions against 77 deletions, with no unrelated edit.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_lost_session_is_a_derived_fact.py:252-256 makes both start-time readers raise and mutation-process-age.log reddens the case, but the never-registered clause at lost_sessions.py:137 has no assertion because the fixture at tests/test_a_lost_session_is_a_derived_fact.py:72 writes created_at in a shape production never writes.\nSCORE fit: 16\nJUSTIFICATION fit: the delta's helpers follow the module idiom and the new case names no plan or ticket label, while the pre-existing I001 import finding at reckon/crew/admission/selection.py:3 and tests/test_a_lost_session_is_a_derived_fact.py:19 is unchanged from the base.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/lost_sessions.py:61 live_process_sessions duplicates reckon/crew/process_liveness.py:291 _session_process_pids rather than extending it, so the delta removed one duplicated reader while leaving a second copy of the same capability.\nFINDING reckon/crew/lost_sessions.py:61 non-blocking: live_process_sessions re-implements the repository's session-id process scan at reckon/crew/process_liveness.py:291 _session_process_pids with the same whole-argument match, the same uid filter and the same ancestor exclusion, so two copies now answer whether a session is alive and will drift; it duplicates rather than extends or wraps that owner.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:72 non-blocking: the fixture writes created_at as a float epoch, which production never writes (reckon/crew/dispatch_claims.py:982 stores _utc_now() as an ISO Z string), so _oldest_record_instant at reckon/crew/lost_sessions.py:137 returns None for every fixture session and the plan's \"a session that has never registered a follower is dated from its oldest live record\" clause has no assertion; deleting that fallback leaves all eight cases green.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:261 non-blocking: the node's worktree still holds an uncommitted ninth case forbidding a second process-start reader, and the landed head does not carry it, so promoting the committed head drops the only guard the reuse repair has.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact/manifest.md:56 non-blocking: baseline_suite and after_suite cite \"cd <base tree for e689315bb7>\" and \"cd <node worktree at 651056eab2>\" as angle-bracket placeholders, and baseline-suite.log and after-suite.log hold only the pytest progress line, the summary and EXIT=0 with no revision, tree or command header, so neither arm can be re-run from the record.\n",
+  "review_run_id": "r-20261121T034141081296-review-of-wlsr-a-lost-session-is-a-derived-fact-651056eab2a2",
+  "reviewed_base_sha": "e9d4f446b8bf14dc44c857589a539742ab2691aa",
+  "reviewed_head_sha": "651056eab2a2461397b5a29ea8aef48b25df5bff",
+  "reviewed_run_id": "r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T034141081296-review-of-wlsr-a-lost-session-is-a-derived-fact-651056eab2a2"
+  },
+  "reviewer_run_id": "r-20261121T034141081296-review-of-wlsr-a-lost-session-is-a-derived-fact-651056eab2a2",
+  "scope_note": "Delta review: the base is the head the prior review read (e9d4f446b8); the node's own base is e689315bb7. The three changed paths are exactly the repair commit 651056eab2.",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T04:03:09.793047+00:00",
+  "total": 87
+}

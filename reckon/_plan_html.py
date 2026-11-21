@@ -1756,6 +1756,31 @@ def read_state_file(path: Path) -> dict:
     return memoized("read_state", path, lambda: read_state_and_text_file(path)[0])
 
 
+def read_readable_state_file(path: Path) -> dict:
+    """Return isolated semantic state, refusing a file whose bytes cannot be read.
+
+    ``read_state_file`` reports an unreadable file as an empty document, because
+    the shared text read turns an ``OSError`` into ``""``. A caller that derives
+    a count from the document cannot tell that reading from a plan declaring no
+    sections, so it asks for this read instead and lets the error out: the plan
+    inventory is unknown rather than shorter. The readability read is memoised
+    against the file's stat identity, so an unchanged plan costs one read per
+    bytes change rather than one per caller.
+    """
+    from reckon.file_memo import memoized
+
+    text = memoized(
+        "readable_plan_text", path, lambda: path.read_text(encoding="utf-8")
+    )
+    state, shared_text = read_state_and_text_file(path)
+    if shared_text != text:
+        # The shared parse is a read taken while the file was unreadable, so it
+        # holds an empty document rather than these bytes; derive from the bytes
+        # just read instead of reporting an empty plan.
+        return read_state(text)
+    return state
+
+
 def read_state_and_text_file(path: Path) -> tuple[dict, str]:
     """Return a plan's semantic state and the exact text it was parsed from.
 

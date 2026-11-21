@@ -1,0 +1,79 @@
+{
+  "added_failure_basis": "the reviewed run's own arms are baseline_suite.log (58 passed, EXIT=0, completed at e689315bb7) and after_suite.log (62 passed, EXIT=0, completed at 6c896536e1); differencing the two adds no failing id. The single failure in the neighbour arm, tests/test_crew_launch_failure.py::test_a_launch_that_wrote_a_turn_is_not_a_launch_failure, reproduces identically at the base archive in gate-neighbour-base.log (1 failed, EXIT=1) and is pre-existing, not added by this change.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "armed": false,
+  "base_log_revision": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2786 crew_resume -> _resume(coordinator=True)",
+    "reckon/crew/resumption.py:3022 sweep -> _resume (no coordinator)",
+    "reckon/crew/recovery_repair_dispatch.py:179 repair round -> _resume (no coordinator)",
+    "reckon/crew/recovery_repair_dispatch.py:2094 repair round -> _resume (no coordinator)",
+    "reckon/mcp.py:3209 MCP crew resume -> _resume (no coordinator)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T03:01:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "2202",
+      "severity": "non-blocking",
+      "text": "_clear_launch_failure(run_id) now runs after _require_fleet_gate_open() at :2190, but the launcher it precedes, _spawn at :1778, calls _require_fleet_gate_open() again at :1797. A lane that pauses between the outer gate and that inner gate therefore still leaves the pointer at phase starting with launch_failures and detail popped and no worker behind it \u2014 the residual form of the defect this repair removes, reachable through the same LanePaused path. The test patches resumption._require_fleet_gate_open on the outer call only and cannot observe the inner one, so the claimed ordering property ('every gate that can still decline the launch has run') is asserted for four gates and not the fifth. The narrow window makes this non-blocking, but the clear belongs where no gate follows it, or _spawn's exception arm must restore the launch failure."
+    },
+    {
+      "file": "tests/test_a_launch_failed_run_resumes.py",
+      "line": "99",
+      "severity": "non-blocking",
+      "text": "assert resumed['backend'] == 'alpha' is not independent of the value under test: 'alpha' is supplied by the fixture's _stopped_pointer(backend='alpha') and _resume/record_resumption never write the pointer's backend field (dispatch_sessions.py:2671-2750 lists every key it updates and backend is not among them), so the assertion holds whatever backend the resumed attempt actually launches on. The goal's central claim, 'launches a fresh attempt on the run's own backend', is therefore unguarded at the launch; the fake launcher's plan argument is never inspected for its backend. The assertion would redden only if the clear or the pointer rewrite dropped the field, which is not the property it is labelled for."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "3209",
+      "severity": "non-blocking",
+      "text": "the MCP resume door calls resumption_module._resume without coordinator=True, so an operator resuming a launch-failed run through MCP still receives the 'resume it by hand' refusal while reckon crew resume --run launches it. The landed change introduces that divergence: before it both doors refused. The distinction the change makes is 'a person asked' versus 'an unattended sweep', and the MCP call is a person; keying it on which entry point was used leaves the two doors disagreeing about one run. Carried from the prior review round and unchanged by the repair commit."
+    }
+  ],
+  "head_log_revision": "6c896536e1",
+  "item_verdicts": {
+    "call_sites": "verified five production call sites: the CLI crew resume passes coordinator=True, the sweep and both repair-dispatch calls pass it false (correct for an unattended loop), and the MCP resume door passes it false and so still refuses a launch-failed run, which the third finding records.",
+    "diff": "read commit by commit against e689315bb7: 9c418b0682 adds _clear_launch_failure, narrows the launch-failure refusal on coordinator, rewrites the view's action and adds the test module; 6c896536e1 moves the clear from ahead of the gates to immediately before the launcher, adds the refused-resume case and records the repair in the fragment; nothing outside the declared paths changed.",
+    "done_when": "the done_when names tests/test_a_launch_failed_run_resumes.py covering the resume-on-its-own-backend case and the view's next action; gate-head.log names revision 6c896536e1 and records '4 passed' EXIT=0, gate-negative-control.log records '2 failed, 1 passed' EXIT=1 with the refusal quoted, and repair-negative-control.log records '1 failed, 3 passed' EXIT=1 with the old ordering restored, so the gate asserts the measure and its base behaviour.",
+    "goal": "the node's goal is that a plain crew resume relaunch a run in phase launch-failed on its own backend and that the view's next action name that command; reckon/crew/resumption.py:2118-2120 now refuses the phase only when coordinator is false and :2199-2203 clears the phase on the hand-typed path immediately before the launch, while reckon/crew/recovery_classification.py:2954-2959 makes the action the plain command, so the delivered behaviour is the goal.",
+    "manifest": "read; status complete, commits 9c418b0682 and 6c896536e1, changed_paths the four landed files, the gate command quoted literally, test_logs naming the head, negative-control, neighbour and repair logs, baseline_suite and after_suite arms both completed at their own revisions, and failure_attribution recording the one pre-existing neighbour failure reproduced at base.",
+    "write_paths": "the declared paths are the landing fragment, the figures directory, reckon/crew/recovery_classification.py, reckon/crew/resumption.py and tests/test_a_launch_failed_run_resumes.py; git diff e689315bb7..6c896536e1 touches four of those and nothing else, and no figure was written because the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "the repair's ordering guard (tests/test_a_launch_failed_run_resumes.py:130-177) reddens when the clear is moved back ahead of the gates, as repair-negative-control.log shows, but the backend assertion at :99 cannot redden on a launch-backend regression (dispatch_sessions.py:2671-2750 never writes backend) and the fifth gate inside _spawn at resumption.py:1797 is untested.",
+    "evidence": "gate-head.log names revision 6c896536e1 with '4 passed' EXIT=0, gate-negative-control.log records '2 failed, 1 passed' EXIT=1 with the refusal verbatim, and repair-negative-control.log reddens exactly the refused-resume case with the ordering restored, so both behaviours are recorded rather than claimed.",
+    "fit": "reckon/crew/resumption.py:1728-1747 follows the module's _pointer_lock/read_pointer/_write_json idiom with a mechanism-named helper and no plan or ticket identifier, though the coordinator parameter now carries a second meaning (a person's command) alongside superseding a held repair round.",
+    "goal_fidelity": "reckon/crew/resumption.py:2118-2120 gates the refusal on 'not coordinator' and :2199-2203 retires the phase for the hand-typed path, so crew resume --run launches a fresh attempt on the run's recorded backend as the goal states.",
+    "reuse": "no owner for clearing a launch failure exists \u2014 the only writers of launch_failures, dispatch_launch.py:364-367, dispatch_sessions.py:329-331 and admission/launching.py:872-873, all append and none clears \u2014 so the helper is the first implementation of the capability and it reuses the pointer helpers rather than forking a store.",
+    "scope_discipline": "every path in the e689315bb7..6c896536e1 diff is one of the declared write paths, and the change writes no plan, sprint or state file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plain crew resume relaunch a run in phase launch-failed on its own backend and that the view's next action name that command; reckon/crew/resumption.py:2118-2120 now refuses the phase only when coordinator is false and :2199-2203 clears the phase on the hand-typed path immediately before the launch, while reckon/crew/recovery_classification.py:2954-2959 makes the action the plain command, so the delivered behaviour is the goal.\nVERDICT done_when: the done_when names tests/test_a_launch_failed_run_resumes.py covering the resume-on-its-own-backend case and the view's next action; gate-head.log names revision 6c896536e1 and records '4 passed' EXIT=0, gate-negative-control.log records '2 failed, 1 passed' EXIT=1 with the refusal quoted, and repair-negative-control.log records '1 failed, 3 passed' EXIT=1 with the old ordering restored, so the gate asserts the measure and its base behaviour.\nVERDICT write_paths: the declared paths are the landing fragment, the figures directory, reckon/crew/recovery_classification.py, reckon/crew/resumption.py and tests/test_a_launch_failed_run_resumes.py; git diff e689315bb7..6c896536e1 touches four of those and nothing else, and no figure was written because the done-when names no artifact.\nVERDICT manifest: read; status complete, commits 9c418b0682 and 6c896536e1, changed_paths the four landed files, the gate command quoted literally, test_logs naming the head, negative-control, neighbour and repair logs, baseline_suite and after_suite arms both completed at their own revisions, and failure_attribution recording the one pre-existing neighbour failure reproduced at base.\nVERDICT diff: read commit by commit against e689315bb7: 9c418b0682 adds _clear_launch_failure, narrows the launch-failure refusal on coordinator, rewrites the view's action and adds the test module; 6c896536e1 moves the clear from ahead of the gates to immediately before the launcher, adds the refused-resume case and records the repair in the fragment; nothing outside the declared paths changed.\nCALL_SITES: reckon/crew_run_commands.py:2786 crew_resume -> _resume(coordinator=True), reckon/crew/resumption.py:3022 sweep -> _resume (no coordinator), reckon/crew/recovery_repair_dispatch.py:179 repair round -> _resume (no coordinator), reckon/crew/recovery_repair_dispatch.py:2094 repair round -> _resume (no coordinator), reckon/mcp.py:3209 MCP crew resume -> _resume (no coordinator)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:2118-2120 gates the refusal on 'not coordinator' and :2199-2203 retires the phase for the hand-typed path, so crew resume --run launches a fresh attempt on the run's recorded backend as the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log names revision 6c896536e1 with '4 passed' EXIT=0, gate-negative-control.log records '2 failed, 1 passed' EXIT=1 with the refusal verbatim, and repair-negative-control.log reddens exactly the refused-resume case with the ordering restored, so both behaviours are recorded rather than claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the e689315bb7..6c896536e1 diff is one of the declared write paths, and the change writes no plan, sprint or state file.\nSCORE durability: 15\nJUSTIFICATION durability: the repair's ordering guard (tests/test_a_launch_failed_run_resumes.py:130-177) reddens when the clear is moved back ahead of the gates, as repair-negative-control.log shows, but the backend assertion at :99 cannot redden on a launch-backend regression (dispatch_sessions.py:2671-2750 never writes backend) and the fifth gate inside _spawn at resumption.py:1797 is untested.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/resumption.py:1728-1747 follows the module's _pointer_lock/read_pointer/_write_json idiom with a mechanism-named helper and no plan or ticket identifier, though the coordinator parameter now carries a second meaning (a person's command) alongside superseding a held repair round.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for clearing a launch failure exists \u2014 the only writers of launch_failures, dispatch_launch.py:364-367, dispatch_sessions.py:329-331 and admission/launching.py:872-873, all append and none clears \u2014 so the helper is the first implementation of the capability and it reuses the pointer helpers rather than forking a store.\nFINDING reckon/crew/resumption.py:2202 non-blocking: _clear_launch_failure(run_id) now runs after _require_fleet_gate_open() at :2190, but the launcher it precedes, _spawn at :1778, calls _require_fleet_gate_open() again at :1797. A lane that pauses between the outer gate and that inner gate therefore still leaves the pointer at phase starting with launch_failures and detail popped and no worker behind it \u2014 the residual form of the defect this repair removes, reachable through the same LanePaused path. The test patches resumption._require_fleet_gate_open on the outer call only and cannot observe the inner one, so the claimed ordering property ('every gate that can still decline the launch has run') is asserted for four gates and not the fifth. The narrow window makes this non-blocking, but the clear belongs where no gate follows it, or _spawn's exception arm must restore the launch failure.\nFINDING tests/test_a_launch_failed_run_resumes.py:99 non-blocking: assert resumed['backend'] == 'alpha' is not independent of the value under test: 'alpha' is supplied by the fixture's _stopped_pointer(backend='alpha') and _resume/record_resumption never write the pointer's backend field (dispatch_sessions.py:2671-2750 lists every key it updates and backend is not among them), so the assertion holds whatever backend the resumed attempt actually launches on. The goal's central claim, 'launches a fresh attempt on the run's own backend', is therefore unguarded at the launch; the fake launcher's plan argument is never inspected for its backend. The assertion would redden only if the clear or the pointer rewrite dropped the field, which is not the property it is labelled for.\nFINDING reckon/mcp.py:3209 non-blocking: the MCP resume door calls resumption_module._resume without coordinator=True, so an operator resuming a launch-failed run through MCP still receives the 'resume it by hand' refusal while reckon crew resume --run launches it. The landed change introduces that divergence: before it both doors refused. The distinction the change makes is 'a person asked' versus 'an unattended sweep', and the MCP call is a person; keying it on which entry point was used leaves the two doors disagreeing about one run. Carried from the prior review round and unchanged by the repair commit.",
+  "review_run_id": "r-20261121T025954494844-review-of-wlsr-a-launch-failed-run-resumes-6c896536e1a0",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "6c896536e1a054a8dfea1fb18e33336dc876ba9b",
+  "reviewed_run_id": "r-20261121T010259981964-wlsr-a-launch-failed-run-resumes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T025954494844-review-of-wlsr-a-launch-failed-run-resumes-6c896536e1a0"
+  },
+  "reviewer_run_id": "r-20261121T025954494844-review-of-wlsr-a-launch-failed-run-resumes-6c896536e1a0",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:19:03.220190+00:00",
+  "total": 106
+}

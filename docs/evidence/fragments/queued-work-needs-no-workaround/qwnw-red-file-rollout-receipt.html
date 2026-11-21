@@ -1,0 +1,64 @@
+<section id="qwnw-red-file-rollout-receipt-landing">
+  <h2>A rollout-receipt file that fails everywhere: three cases read the machine</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_rollout_receipt.py</code>
+  failed three of its twenty-two cases at revision
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> in a clean checkout and
+  on this host, every time and for one shared reason: each case reads state the
+  repository under test does not carry. None of the three is a product defect —
+  <code>read_rollout_receipt</code> answered each situation correctly, with
+  <code>Unmeasured.MISSING_ROLLOUT</code> for a rollout that is not on this
+  machine, so no product rule was repaired.</p>
+
+  <table id="qwnw-red-file-rollout-receipt-causes">
+    <caption>Each cause, the observation that names it, and its verdict.</caption>
+    <thead><tr><th>case</th><th>observed at base</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_real_ledger_sessions_fit_the_reported_context_window</code></td>
+        <td><code>FileNotFoundError</code> on
+        <code>docs/state/reckon/crew.json</code>, an untracked runtime file no
+        checkout carries</td>
+        <td>test wrong</td></tr>
+      <tr><td><code>test_real_rollouts_report_in_band_model_share</code></td>
+        <td><code>AssertionError: no real rollouts under ~/.codex/sessions</code>:
+        the client home resolves under the process <em>and</em> is outside the
+        repository under test</td>
+        <td>test wrong</td></tr>
+      <tr><td><code>test_real_named_rollout_cumulative_beats_naive_single_readings</code></td>
+        <td><code>AssertionError</code> on the record for the named session:
+        <code>read_rollout_receipt</code> answered
+        <code>Unmeasured.MISSING_ROLLOUT</code>, because the rollout the case
+        names lives under one client home and is no repository's fixture</td>
+        <td>test wrong</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each case now builds the ledger, the rollouts and the record shapes it
+  <em>satisfies</em> in a temporary root and points the reader at that root with
+  <code>monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)</code>,
+  which the rest of the file already does. No assertion was deleted or weakened.</p>
+
+  <p>The one addition is arithmetic taken from the fixture the case builds:
+  <code>cumulative == readings[0] + (last - readings[1])</code> for the three
+  readings <code>[24_495_394, 1_644_077, 900_000]</code> it writes as one
+  compacted run spanning two resets. That is the fold the case already
+  exercised through <code>!= last</code>, <code>!= max</code> and
+  <code>&gt; last</code>, now stated as the one value it must produce. No
+  assertion was deleted or weakened.</p>
+
+  <p>The base run is the candidate log at
+  <code>~/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/logs/base-tests-test_rollout_receipt.log</code>.
+  The head run is the gate log named in the manifest; both are plain logs whose
+  first lines name revision, tree and command and whose last line is a bare
+  <code>EXIT=&lt;code&gt;</code>. The three failing ids at base, verbatim from that log:
+  <code>test_real_ledger_sessions_fit_the_reported_context_window</code>,
+  <code>test_real_rollouts_report_in_band_model_share</code> and
+  <code>test_real_named_rollout_cumulative</code>.</p>
+
+  <h3 id="qwnw-red-file-rollout-receipt-arms">Measured</h3>
+  <p>Arm 1 — the named file at base <code>42fe90d0b0</code>: 3 failed, 19
+  passed, <code>EXIT=1</code>. Arm 2 — the named file at head
+  <code>86a34ba83c</code> as an <code>all_debug</code> job: 22 passed, <code>EXIT=0</code>.</p>
+  <p>Arm 3 — the eighteen test files importing <code>reckon.crew.rollout</code>: 3 failed, 192 passed at base; 195 passed, <code>EXIT=0</code> at head.</p>
+  <p>Arm 4 — the suite the project arms (<code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>): 58 passed on each arm, <code>EXIT=0</code> both.</p>
+</section>

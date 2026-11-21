@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_backends.py:3336",
+    "reckon/nested_launch.py:673",
+    "reckon/nested_launch.py:789",
+    "reckon/nested_launch.py:960"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T09:54:30Z",
+  "evidence_limits": [
+    "The reviewed run's suite arms ran on 98dci4-clu-3141.iter.org, not the rigel the done_when's last clause names.",
+    "The reviewed delta is one merge commit; it adds no test, so durability rests on the composed-recipe test landed at 7284cc1622 and on repair-negative-control.log, which the reviewer read but did not re-run.",
+    "The merged head's only re-executed instrument was ruff format --check and ruff check over the commit's blobs; the pytest arm at 6639c2eedc is read from after_suite-1795168303057152979.log and was not re-run."
+  ],
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": 2398,
+      "severity": "non-blocking",
+      "text": "the merge conflict resolution left the comment introducing temp_overlay unindented at column 0 inside fence_argv's recipe dict, so ruff format --check reports the file would be reformatted at 6639c2eedc although both parents 7284cc1622 and 41f23c5546 are clean; the file is a declared write path and the change adds a formatting finding the project's commit rule forbids."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "after_suite still names revision 7284cc1622 after the repair round merged primary into 6639c2eedc, so the manifest's own head arm is stale; the arm that does cover the merged head, after_suite-1795168303057152979.log (61 passed, EXIT=0, revision 6639c2eedc), is cited nowhere in the manifest."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read 7284cc1622..6639c2eedc commit by commit (a single merge commit): against primary it adds the temp_overlay recipe field and the task bootstrap's overlay log plus absent-source refusal, and against the run head it carries primary's shim shields; its conflict resolution left one comment at column 0 in reckon/_worker_fence.py:2398.",
+    "done_when": "done_when requires a one-test gate on all_debug ending EXIT=0 naming the node, a refusal naming an unbindable directory, base-revision arms, and (final clause) arms run on rigel; the manifest records scoped-gate-1795121430498485799.log at 98dci4-clu-3141.iter.org with 1 passed and EXIT=0, and both suite arms ran on 98dci4-clu-3141, not rigel.",
+    "goal": "dispatch-detail.json's node goal is \"A gate run starts inside the worker sandbox on a compute node\"; the only commit the run gained since the review at 7284cc1622 is merge 6639c2eedc, which keeps the run's temp_overlay field beside primary main's scheduler-shim work in reckon/_worker_fence.py:2404 and reckon/nested_launch.py:673.",
+    "manifest": "manifest.md:5 states status complete and its baseline_suite/after_suite name 28fbf2bc2f and 7284cc1622 with 0 failures and EXIT=0, but the after_suite names the pre-merge head while the merged head 6639c2eedc has an uncited arm, after_suite-1795168303057152979.log, 61 passed EXIT=0.",
+    "write_paths": "the seven declared paths (dispatch-detail.json) include reckon/_worker_fence.py and reckon/nested_launch.py, and the run-side delta inside the merge touches only those two production files plus the plan and evidence inherited from primary."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gate_run_starts_inside_the_sandbox.py's composed-recipe test decodes the carried recipe through fence_argv and reddens with KeyError 'temp_overlay' when reckon/_worker_fence.py:2404 is removed, as repair-negative-control.log records at 1 failed, 2 passed, EXIT=1.",
+    "evidence": "the head arm ordered by the done_when is tests/test_a_gate_run_starts_inside_the_sandbox.py, and after_suite-1795168303057152979.log records it at 6639c2eedc with 61 passed EXIT=0, but manifest.md:16 still cites 7284cc1622 and no arm ran on rigel as the done_when states.",
+    "fit": "reckon/_worker_fence.py:2398 sits at column 0 inside the recipe dict, so ruff format --check fails on that file at 6639c2eedc though it passes on both parents.",
+    "goal_fidelity": "reckon/nested_launch.py:673 reads temp_overlay from the carried recipe and reckon/_worker_fence.py:2404 emits it, so the merged head still composes the temp bind the goal names.",
+    "reuse": "the merge adds no definition at all \u2014 it reuses worker_tmp_mount_source at reckon/_worker_fence.py:2222, primary's scheduler_shields at :1942, and the existing _TASK_REENTRY substitution at reckon/nested_launch.py:776.",
+    "scope_discipline": "the run-side production delta inside 6639c2eedc is confined to reckon/_worker_fence.py:2396-2411 and reckon/nested_launch.py:84-755, both declared paths, and the rest of the merge's 147 paths are primary's own commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json's node goal is \"A gate run starts inside the worker sandbox on a compute node\"; the only commit the run gained since the review at 7284cc1622 is merge 6639c2eedc, which keeps the run's temp_overlay field beside primary main's scheduler-shim work in reckon/_worker_fence.py:2404 and reckon/nested_launch.py:673.\nVERDICT done_when: done_when requires a one-test gate on all_debug ending EXIT=0 naming the node, a refusal naming an unbindable directory, base-revision arms, and (final clause) arms run on rigel; the manifest records scoped-gate-1795121430498485799.log at 98dci4-clu-3141.iter.org with 1 passed and EXIT=0, and both suite arms ran on 98dci4-clu-3141, not rigel.\nVERDICT write_paths: the seven declared paths (dispatch-detail.json) include reckon/_worker_fence.py and reckon/nested_launch.py, and the run-side delta inside the merge touches only those two production files plus the plan and evidence inherited from primary.\nVERDICT manifest: manifest.md:5 states status complete and its baseline_suite/after_suite name 28fbf2bc2f and 7284cc1622 with 0 failures and EXIT=0, but the after_suite names the pre-merge head while the merged head 6639c2eedc has an uncited arm, after_suite-1795168303057152979.log, 61 passed EXIT=0.\nVERDICT diff: read 7284cc1622..6639c2eedc commit by commit (a single merge commit): against primary it adds the temp_overlay recipe field and the task bootstrap's overlay log plus absent-source refusal, and against the run head it carries primary's shim shields; its conflict resolution left one comment at column 0 in reckon/_worker_fence.py:2398.\nCALL_SITES: reckon/_backends.py:3336, reckon/nested_launch.py:673, reckon/nested_launch.py:789, reckon/nested_launch.py:960\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:673 reads temp_overlay from the carried recipe and reckon/_worker_fence.py:2404 emits it, so the merged head still composes the temp bind the goal names.\nSCORE evidence: 12\nJUSTIFICATION evidence: the head arm ordered by the done_when is tests/test_a_gate_run_starts_inside_the_sandbox.py, and after_suite-1795168303057152979.log records it at 6639c2eedc with 61 passed EXIT=0, but manifest.md:16 still cites 7284cc1622 and no arm ran on rigel as the done_when states.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the run-side production delta inside 6639c2eedc is confined to reckon/_worker_fence.py:2396-2411 and reckon/nested_launch.py:84-755, both declared paths, and the rest of the merge's 147 paths are primary's own commits.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_gate_run_starts_inside_the_sandbox.py's composed-recipe test decodes the carried recipe through fence_argv and reddens with KeyError 'temp_overlay' when reckon/_worker_fence.py:2404 is removed, as repair-negative-control.log records at 1 failed, 2 passed, EXIT=1.\nSCORE fit: 12\nJUSTIFICATION fit: reckon/_worker_fence.py:2398 sits at column 0 inside the recipe dict, so ruff format --check fails on that file at 6639c2eedc though it passes on both parents.\nSCORE reuse: 20\nJUSTIFICATION reuse: the merge adds no definition at all \u2014 it reuses worker_tmp_mount_source at reckon/_worker_fence.py:2222, primary's scheduler_shields at :1942, and the existing _TASK_REENTRY substitution at reckon/nested_launch.py:776.\nFINDING reckon/_worker_fence.py:2398 non-blocking: the merge conflict resolution left the comment introducing temp_overlay unindented at column 0 inside fence_argv's recipe dict, so ruff format --check reports the file would be reformatted at 6639c2eedc although 7284cc1622 and 41f23c5546 are both clean; the file is a declared write path and the change adds a formatting finding the project's commit rule forbids.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/manifest.md:16 non-blocking: after_suite still names revision 7284cc1622 after the repair round merged primary into 6639c2eedc, so the manifest's own head arm is stale; the arm that does cover the merged head, after_suite-1795168303057152979.log (61 passed, EXIT=0, revision 6639c2eedc), is cited nowhere in the manifest.",
+  "review_run_id": "r-20261120T095306891262-review-of-qwnw-a-gate-run-starts-inside-the-sandbox-6639c2eedc6e",
+  "reviewed_base_sha": "7284cc16222edb17bf5d04088ead20af5a5a0eb7",
+  "reviewed_head_sha": "6639c2eedc6e043136178673bbe5c6268159adb4",
+  "reviewed_run_id": "r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 12,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "baseline": {
+      "exit": 0,
+      "failed": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/baseline_suite-1795164088495286382.log",
+      "passed": 58,
+      "revision": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+      "summary": "58 passed in 37.03s"
+    },
+    "head": {
+      "exit": 0,
+      "failed": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/after_suite-1795164164373610374.log",
+      "passed": 61,
+      "revision": "7284cc16222edb17bf5d04088ead20af5a5a0eb7",
+      "summary": "61 passed in 37.84s"
+    },
+    "merged_head_uncited": {
+      "exit": 0,
+      "failed": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/after_suite-1795168303057152979.log",
+      "passed": 61,
+      "revision": "6639c2eedc6e043136178673bbe5c6268159adb4",
+      "summary": "61 passed in 41.00s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T10:04:00.811843+00:00",
+  "total": 97
+}

@@ -169,7 +169,9 @@ def test_a_refusal_missing_a_mark_does_not_reach_the_arm(home, tmp_path) -> None
     # The gate declines on either half being absent, and the decline is what
     # keeps it from swallowing the neighbours. A bad model id is the closest
     # shape: a synthetic message with a zero-token error result, but no prompt
-    # length refusal, so it stays a crash.
+    # length refusal, so it stays a crash — and a crash is the reading the
+    # premature-end arm gives a single turn that ended on an error, because
+    # continuing it would send the same request again.
     other = _write_stream(
         tmp_path / "r-other.jsonl",
         [
@@ -181,11 +183,13 @@ def test_a_refusal_missing_a_mark_does_not_reach_the_arm(home, tmp_path) -> None
     row = recovery.classify_pointer(
         _pointer(home, "r-other", other), now_seconds=time.time()
     )
-    assert row["classification"] == "abandoned"
+    assert row["classification"] == "failed"
+    assert row["classification"] != "refused-at-admission"
 
     # The mirror half: the result marks without the synthetic message. Nothing
-    # names the client substitution, so no reading is available and the run
-    # keeps its ordinary dead-process classification.
+    # names the client substitution, so the admission arm declines; the result
+    # record still says the turn ended on an error, so the run is named for
+    # that error rather than folded into the vanished bucket.
     worked = _write_stream(
         tmp_path / "r-worked.jsonl",
         [
@@ -206,7 +210,8 @@ def test_a_refusal_missing_a_mark_does_not_reach_the_arm(home, tmp_path) -> None
     row = recovery.classify_pointer(
         _pointer(home, "r-worked", worked), now_seconds=time.time()
     )
-    assert row["classification"] == "abandoned"
+    assert row["classification"] == "failed"
+    assert row["classification"] != "refused-at-admission"
 
 
 def test_a_live_process_with_those_marks_still_reads_running(home, tmp_path) -> None:
@@ -229,8 +234,10 @@ def test_a_live_process_with_those_marks_still_reads_running(home, tmp_path) -> 
 
 
 def test_an_in_harness_run_with_those_marks_is_not_refused(home, tmp_path) -> None:
-    # The gate reads a cli run's stream only. An in-harness run has no stream
-    # for the classifier to read, so its reading is unchanged.
+    # The gate reads a cli run's stream only, so an in-harness run carrying the
+    # same stream is never called refused at admission. The pointer's log_path
+    # is still read, whatever the launch, so the single turn that ended on an
+    # error is named as that error.
     stream = _write_stream(
         tmp_path / "r-harness.jsonl",
         [
@@ -243,14 +250,17 @@ def test_an_in_harness_run_with_those_marks_is_not_refused(home, tmp_path) -> No
 
     row = recovery.classify_pointer(pointer, now_seconds=time.time())
 
-    assert row["classification"] == "abandoned"
+    assert row["classification"] == "failed"
+    assert row["classification"] != "refused-at-admission"
 
 
-def test_every_other_classification_is_unchanged(home, tmp_path) -> None:
-    # The existing arms report what they reported before this classification:
-    # a vanished worker, a bad-model crash, a refused lane, an unreadable
-    # manifest and a worker-reported failure each keep their own label, so the
-    # new branch can be seen not to have swallowed a neighbour.
+def test_the_admission_reading_takes_nothing_from_its_neighbours(
+    home, tmp_path
+) -> None:
+    # Each neighbour keeps the label its own reading gives it — a vanished
+    # worker abandoned, an unreadable manifest unreadable, a worker-reported
+    # failure failed — so the admission branch can be seen not to have
+    # swallowed one.
     vanished = _write_stream(tmp_path / "r-gone.jsonl", [{"type": "turn.started"}])
     unreadable_manifest = home / "manifests" / "r-unreadable.md"
     unreadable_manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -284,12 +294,13 @@ def test_every_other_classification_is_unchanged(home, tmp_path) -> None:
         assert row["classification"] == expected
 
     # The same holds for the recorded fixtures the existing gate rests on: the
-    # bad-model crash is still a crash, and a metered lane refusal is still a
-    # block rather than any reading this change produces.
+    # bad-model crash is still a crash — the premature-end arm names the error
+    # the only turn carried — and a metered lane refusal is still a block
+    # rather than any reading this change produces.
     crash = _pointer(home, "r-crash", BACKEND_FIXTURES / "claude-failed-turn.jsonl")
     assert (
         recovery.classify_pointer(crash, now_seconds=time.time())["classification"]
-        == "abandoned"
+        == "failed"
     )
     refused = _pointer(
         home,

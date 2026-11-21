@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2481 crew gc handler calling crew_module.garbage_collect",
+    "reckon/crew/gc.py:909 garbage_collect",
+    "reckon/crew/gc.py:714 the scoped-keep branch the repaired case now pins"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:23:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_released_worktree_takes_its_index.py",
+      "id": "fb84502ce9feb85b",
+      "line": "232",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added scoped-keep assertions at lines 231-233 restate the rule already pinned by tests/test_gc_sweeps_ledger_indexes.py:183-184 (action == keep, project == unknown) over the same gc entry shape, so the rule now has two independent pins over different fixtures; a future change to the scoped-keep branch now reddens two test modules, and the second pin buys coverage of this file's own fixture rather than new behaviour."
+    }
+  ],
+  "head_log_revision": "c66f692acdc0a94c5f7e053158af02e539a7dab1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the one production path that reaches the change, reckon/crew_run_commands.py:2481 calling crew_module.garbage_collect, into reckon/crew/gc.py:909 and the scoped-keep branch at reckon/crew/gc.py:714 that the repaired case now pins.",
+    "diff": "Read both commits against b24fe95a: e59ebb2001 keeps the scoped call's row and reason assertions and replaces its one stale 'removed is True' expectation with keep/project/removed/is_file assertions plus the same original assertions moved onto an unscoped pass (+18 -1), and c66f692a adds the 66-line fragment recording the reproduction, the arms and the negative control; no product file changed.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job, a first red run at base, a named cause with a product-wrong or test-wrong verdict, no assertion deleted or weakened, both suite arms as inline JSON at full 40-character revisions, the base red log beside the head log in the named fragment, and ruff clean on the changed paths; the manifest carries each of them (base-arm-node-test-b24fe95a.log 1 failed/4 passed EXIT=1 quoting the base id, the all_debug verify-gate at c66f692a 5 passed EXIT=0, evidence_inputs naming 'verdict is test wrong, no product change', baseline_suite and after_suite both 0 failed at full shas, both rows in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-worktree-takes-its-index.html, and a ruff run over the changed path in the stream), though the two armed suite files import nothing the change touches so that clause is satisfied vacuously rather than measured against an importer.",
+    "goal": "The node goal is to make tests/test_a_released_worktree_takes_its_index.py pass in full; the file passes 5 of 5 at c66f692a (scoped-gate-1795069640357048347.log records '5 passed', EXIT=0) and an independent git archive of c66f692a under $TMPDIR re-ran the file to 5 passed, where b24fe95a fails one id at tests/test_a_released_worktree_takes_its_index.py:224.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063613685961-qwnw-red-file-a-released-worktree-takes-its-index/manifest.md; status complete, commits e59ebb2001294e841e661dbf434325fe510f6ebf and c66f692acdc0a94c5f7e053158af02e539a7dab1, changed_paths the two landed files, tests the literal pytest command, test_logs naming the scoped gate, both suite logs and the mutation log, baseline_suite and after_suite completed with 0 failures at full revisions, and exactly one landing line.",
+    "write_paths": "The manifest declares reckon, tests, the queued-work-needs-no-workaround fragment directory and its named fragment, and the figure directory for this slug; git diff b24fe95a789c82cd33f22a912b4dbbf94d5e2193..c66f692acdc0a94c5f7e053158af02e539a7dab1 touches only tests/test_a_released_worktree_takes_its_index.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-worktree-takes-its-index.html, both inside that fence."
+  },
+  "justifications": {
+    "durability": "negative-control-mutated-scoped-keep.log mutates reckon/crew/gc.py:714 to skip the scoped-keep branch and the added assertion at tests/test_a_released_worktree_takes_its_index.py:232 reddens with 'prune' != 'keep' (1 failed, 4 passed, EXIT=1), though the sibling assertion at :233 cannot fail independently of it because gc.py clears 'removed' only on the unlink path the keep branch skips.",
+    "evidence": "The done_when's clauses are recorded and reproducible \u2014 I re-ran b24fe95a from git archive to '1 failed, 4 passed' at tests/test_a_released_worktree_takes_its_index.py:224 and c66f692a to '5 passed', and added_failures_from_gate_logs over the two suite logs yields (0, []) \u2014 but the arm-over-importers clause is met only vacuously because no test imports the changed test module.",
+    "fit": "The case keeps the file's repository fixture and _publish_index helper and the repository's docstring-plus-assertion style at tests/test_a_released_worktree_takes_its_index.py:209, adds no symbol, and the fragment mirrors its sibling files under docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal_fidelity": "tests/test_a_released_worktree_takes_its_index.py passes 5 of 5 at c66f692acdc0a94c5f7e053158af02e539a7dab1 (scoped-gate-1795069640357048347.log, EXIT=0) and an independent extraction re-ran to 5 passed, where b24fe95a fails at line 224, so only the 'on the primary branch' half waits on promotion.",
+    "reuse": "The diff adds no function, class or module; the capability stays owned by reckon/crew/gc.py:714 and the repaired case reuses that owner's own report fields, the only duplication being the assertion restatement filed as a non-blocking finding.",
+    "scope_discipline": "git diff b24fe95a..c66f692a lists exactly tests/test_a_released_worktree_takes_its_index.py (+18 -1) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-worktree-takes-its-index.html (new, +66), both inside the declared paths, with no product file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make tests/test_a_released_worktree_takes_its_index.py pass in full; the file passes 5 of 5 at c66f692a (scoped-gate-1795069640357048347.log records '5 passed', EXIT=0) and an independent git archive of c66f692a under $TMPDIR re-ran the file to 5 passed, where b24fe95a fails one id at tests/test_a_released_worktree_takes_its_index.py:224.\nVERDICT done_when: The done_when asks for the file green at head as an all_debug job, a first red run at base, a named cause with a product-wrong or test-wrong verdict, no assertion deleted or weakened, both suite arms as inline JSON at full 40-character revisions, the base red log beside the head log in the named fragment, and ruff clean on the changed paths; the manifest carries each of them (base-arm-node-test-b24fe95a.log 1 failed/4 passed EXIT=1 quoting the base id, the all_debug verify-gate at c66f692a 5 passed EXIT=0, evidence_inputs naming 'verdict is test wrong, no product change', baseline_suite and after_suite both 0 failed at full shas, both rows in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-worktree-takes-its-index.html, and a ruff run over the changed path in the stream), though the two armed suite files import nothing the change touches so that clause is satisfied vacuously rather than measured against an importer.\nVERDICT write_paths: The manifest declares reckon, tests, the queued-work-needs-no-workaround fragment directory and its named fragment, and the figure directory for this slug; git diff b24fe95a789c82cd33f22a912b4dbbf94d5e2193..c66f692acdc0a94c5f7e053158af02e539a7dab1 touches only tests/test_a_released_worktree_takes_its_index.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-worktree-takes-its-index.html, both inside that fence.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063613685961-qwnw-red-file-a-released-worktree-takes-its-index/manifest.md; status complete, commits e59ebb2001294e841e661dbf434325fe510f6ebf and c66f692acdc0a94c5f7e053158af02e539a7dab1, changed_paths the two landed files, tests the literal pytest command, test_logs naming the scoped gate, both suite logs and the mutation log, baseline_suite and after_suite completed with 0 failures at full revisions, and exactly one landing line.\nVERDICT diff: Read both commits against b24fe95a: e59ebb2001 keeps the scoped call's row and reason assertions and replaces its one stale 'removed is True' expectation with keep/project/removed/is_file assertions plus the same original assertions moved onto an unscoped pass (+18 -1), and c66f692a adds the 66-line fragment recording the reproduction, the arms and the negative control; no product file changed.\nCALL_SITES: reckon/crew_run_commands.py:2481 crew gc handler calling crew_module.garbage_collect, reckon/crew/gc.py:909 garbage_collect, reckon/crew/gc.py:714 the scoped-keep branch the repaired case now pins\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_released_worktree_takes_its_index.py passes 5 of 5 at c66f692acdc0a94c5f7e053158af02e539a7dab1 (scoped-gate-1795069640357048347.log, EXIT=0) and an independent extraction re-ran to 5 passed, where b24fe95a fails at line 224, so only the 'on the primary branch' half waits on promotion.\nSCORE evidence: 17\nJUSTIFICATION evidence: The done_when's clauses are recorded and reproducible \u2014 I re-ran b24fe95a from git archive to '1 failed, 4 passed' at tests/test_a_released_worktree_takes_its_index.py:224 and c66f692a to '5 passed', and added_failures_from_gate_logs over the two suite logs yields (0, []) \u2014 but the arm-over-importers clause is met only vacuously because no test imports the changed test module.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff b24fe95a..c66f692a lists exactly tests/test_a_released_worktree_takes_its_index.py (+18 -1) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-worktree-takes-its-index.html (new, +66), both inside the declared paths, with no product file touched.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-mutated-scoped-keep.log mutates reckon/crew/gc.py:714 to skip the scoped-keep branch and the added assertion at tests/test_a_released_worktree_takes_its_index.py:232 reddens with 'prune' != 'keep' (1 failed, 4 passed, EXIT=1), though the sibling assertion at :233 cannot fail independently of it because gc.py clears 'removed' only on the unlink path the keep branch skips.\nSCORE fit: 19\nJUSTIFICATION fit: The case keeps the file's repository fixture and _publish_index helper and the repository's docstring-plus-assertion style at tests/test_a_released_worktree_takes_its_index.py:209, adds no symbol, and the fragment mirrors its sibling files under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no function, class or module; the capability stays owned by reckon/crew/gc.py:714 and the repaired case reuses that owner's own report fields, the only duplication being the assertion restatement filed as a non-blocking finding.\nFINDING tests/test_a_released_worktree_takes_its_index.py:232 non-blocking: the added scoped-keep assertions at lines 231-233 restate the rule already pinned by tests/test_gc_sweeps_ledger_indexes.py:183-184 (action == keep, project == unknown) over the same gc entry shape, so the rule now has two independent pins over different fixtures; a future change to the scoped-keep branch now reddens two test modules, and the second pin buys coverage of this file's own fixture rather than new behaviour.\n",
+  "review_run_id": "r-20261119T064151749266-review-of-qwnw-red-file-a-released-worktree-takes-its-index-c66f692acdc0",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "c66f692acdc0a94c5f7e053158af02e539a7dab1",
+  "reviewed_run_id": "r-20261118T063613685961-qwnw-red-file-a-released-worktree-takes-its-index",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T064151749266-review-of-qwnw-red-file-a-released-worktree-takes-its-index-c66f692acdc0"
+  },
+  "reviewer_run_id": "r-20261119T064151749266-review-of-qwnw-red-file-a-released-worktree-takes-its-index-c66f692acdc0",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:40:55.000000+00:00",
+  "total": 114
+}

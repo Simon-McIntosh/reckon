@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:20:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "2307",
+      "severity": "non-blocking",
+      "text": "non-blocking: cancel_placed_step is only called in the non-foreign branch, so a placed run whose record is foreign and whose launcher host is gone leaves its scheduler step running and reports no surviving step."
+    },
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": "831",
+      "severity": "non-blocking",
+      "text": "non-blocking: _listed_step_ids duplicates the step-id query already owned by reckon/crew/fleet_migrate.py:632 _worker_steps and repeated inline in signal_pending_step_client at process_signal.py:747."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010319443824-wlsr-a-stop-ends-the-step/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line carries an unsubstituted <worktree> placeholder, so promotion reads a template rather than the literal command that ran."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that `crew stop` ends a placed worker's scheduler step as well as its process and records a surviving step; reckon/crew/dispatch_sessions.py:2350 calls cancel_placed_step and reckon/crew/process_signal.py:866 ends the step by the id the run itself wrote.\nVERDICT done_when: the done_when names tests/test_a_stop_ends_the_step.py with three cases; logs/gate-1.log records 3 passed EXIT=0, and logs/related.log shows the same four failing ids at head as logs/base-delta.log does at base.\nVERDICT write_paths: the manifest declares the evidence fragment, the figures directory, dispatch_sessions.py, process_signal.py, resumption.py and the test file; git diff ff3bb24bc..34b1a75e54 touches four of those and nothing else.\nVERDICT manifest: read; it reports the pytest gate (with a <worktree> placeholder), cites gate-1.log, related.log and base-delta.log, and states the negative-control mutation.\nVERDICT diff: read commit 34b1a75e54 against its parent ff3bb24bc; four files changed, all inside the declared paths, adding one step-listing helper, a stop-time step cancel and a resume refusal.\nCALL_SITES: reckon/crew/dispatch_sessions.py:terminate, reckon/crew/dispatch_sessions.py:resume_plan, reckon/crew/resumption.py:_launcher_refusal, reckon/crew/resumption.py:_observed_end_refusal\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2350 and reckon/crew/process_signal.py:866 end the step by the id the run wrote, but the call sits in the non-foreign branch at dispatch_sessions.py:2307 so a foreign placed run never reaches it.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-1.log records 3 passed EXIT=0 for tests/test_a_stop_ends_the_step.py run at ff3bb24bc with the change uncommitted, and the manifest tests line at manifest.md:25 carries a <worktree> placeholder rather than the literal command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ff3bb24bc..34b1a75e54 changes only reckon/crew/dispatch_sessions.py, reckon/crew/process_signal.py, reckon/crew/resumption.py and tests/test_a_stop_ends_the_step.py, all declared.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_stop_ends_the_step.py:165 fails with the step still listed once the cancel is removed (logs/negative-control.log EXIT=1), and :169 and :194 assert record fields against fixture-derived literals.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/process_signal.py:831 follows the module's bounded-subprocess idiom and names no plan or ticket, though its docstrings are heavier than the surrounding one-liners.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/process_signal.py:831 re-implements the job step-id listing already owned by reckon/crew/fleet_migrate.py:632 _worker_steps and repeated inline at process_signal.py:747.\nFINDING reckon/crew/dispatch_sessions.py:2307 non-blocking: cancel_placed_step is only called in the non-foreign branch, so a placed run whose record is foreign and whose launcher host is gone leaves its scheduler step running and reports no surviving step.\nFINDING reckon/crew/process_signal.py:831 non-blocking: _listed_step_ids duplicates the step-id query already owned by reckon/crew/fleet_migrate.py:632 _worker_steps and repeated inline in signal_pending_step_client at process_signal.py:747.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010319443824-wlsr-a-stop-ends-the-step/manifest.md:25 non-blocking: the tests line carries an unsubstituted <worktree> placeholder, so promotion reads a template.\n",
+  "review_run_id": "r-20261121T021843631870-review-of-wlsr-a-stop-ends-the-step-34b1a75e54ba",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "34b1a75e54baf8822f5062949019c6042c00a1f7",
+  "reviewed_run_id": "r-20261121T010319443824-wlsr-a-stop-ends-the-step",
+  "rubric": "landed_node",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:37:37.814081+00:00",
+  "total": 100
+}

@@ -1,0 +1,60 @@
+<section id="qwnw-red-file-a-promoted-live-run-does-not-reannounce-landing">
+<h3>The file passes; its one red case was a fixture that cited an unlanded head</h3>
+<p><code>tests/test_a_promoted_live_run_does_not_reannounce.py</code> was red on the primary branch at <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>: 1 failed, 1 passed.</p>
+<p>One cause accounted for it, and it was the test encoding a reading the product deliberately replaced. Since <code>111949d634</code> a promoted run reads <em>promoted</em> only once its primary branch carries the delivered head; a row whose head no branch carries is a landing still owed and reads <code>complete</code> until the merge. The fixture pointed the pointer at an empty directory that is no git repository and cited <code>HEAD</code> as the delivered commit, so the head could not be placed on a branch and the run read <code>complete</code>. No product line changed here, and no assertion was deleted or weakened.</p>
+
+<h4 id="qwnw-red-file-a-promoted-live-run-does-not-reannounce-cause">Cause and verdict</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>The fixture's checkout was an empty directory and its ledger row cited <code>HEAD</code>, so the head could not be placed on a branch</td>
+<td>1 of 2 — <code>test_a_promoted_live_run_is_held_and_announced_once</code> read <code>AssertionError: assert 'complete' == 'promoted'</code> on its precondition, so the held-run path the file exists to exercise was never reached</td>
+<td><strong>test wrong</strong> — the file's subject is that a promoted run whose live pointer remains is held rather than re-announced as <code>dispatched</code>, and <code>promoted</code> has never been that word's prerequisite. The fixture now seeds the checkout the pointer names with one commit on its primary branch and cites that commit on the ledger row, which is the landed shape the assertion describes. The transitions the file asserts — one <code>completed_unpromoted</code> to <code>promoted</code> announcement followed by silence, and the report-only <code>recorded</code> case — are unchanged.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-a-promoted-live-run-does-not-reannounce-negative-control">Negative control: the base revision's own run</h4>
+<p>The verbatim capture is <code>node-gate-base-5b0a1f537e.log</code> in this run's directory, job 1328591 on <code>all_debug</code> with the measured command's <code>SLURM_JOB_ID</code> unset. Its header and closing lines:</p>
+<pre>
+# revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
+# host: 98dci4-clu-3142.iter.org
+# tree: /tmp/mcintos-node-gate-7mIWRD/tree
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promoted_live_run_does_not_reannounce.py
+# SLURM_JOB_ID at launch: 1328591 (unset for the measured command)
+F.
+FAILED tests/test_a_promoted_live_run_does_not_reannounce.py::test_a_promoted_live_run_is_held_and_announced_once
+1 failed, 1 passed in 0.63s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-a-promoted-live-run-does-not-reannounce-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<p>The verbatim capture is <code>node-gate-head-b5da12e062.log</code> in this run's directory, job 1328590. Its header and closing lines:</p>
+<p>The test blob at that revision is byte-identical to the delivered head — <code>git diff b5da12e062..HEAD -- tests/test_a_promoted_live_run_does_not_reannounce.py</code> is empty — and the commits after it add only this fragment.</p>
+<pre>
+# revision: b5da12e06224adc82e4218460329c6d458d13d1f
+# host: 98dci4-clu-3143.iter.org
+# tree: /tmp/mcintos-node-gate-SjH2sB/tree
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promoted_live_run_does_not_reannounce.py
+# SLURM_JOB_ID at launch: 1328590 (unset for the measured command)
+..
+2 passed in 0.61s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-a-promoted-live-run-does-not-reannounce-arms">Suite arms: the armed command, resolved over each arm's own tree</h4>
+<p>The run's armed command resolves, from a write scope that names the <code>tests</code> directory rather than a test file, to the project's two declared census tests, which both trees hold.</p>
+<table>
+<thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>baseline</td><td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td><td>58 passed, exit 0</td></tr>
+<tr><td>after</td><td><code>5f9ba27bd0e0edec96f5217015718aaa4438bf79</code></td><td>58 passed, exit 0</td></tr>
+</tbody>
+</table>
+<p>The commit after the after arm adds only this fragment, which neither census test reads, so the arm still holds (a commit touching no path the suite imports does not invalidate it).</p>
+<p>No failure is added against the base. The changed file is not among either arm's files, and the diff adds and deletes no product line, so no test of a module that imports a changed module is reachable from it.</p>
+
+<h4 id="qwnw-red-file-a-promoted-live-run-does-not-reannounce-composed-calls">The composed gate calls could not run under this worker's fence</h4>
+<p><code>crew verify-gate --worker</code> and <code>crew suite run</code> were attempted first, and each submitted job re-entered this worker's fence and its <code>bwrap</code> could not bind the fence's mounted-over node tmp (<code>Can't bind mount /oldroot/tmp/... on /newroot/tmp/...</code>), leaving a log with no <code>EXIT=</code> receipt (<code>scoped-gate-1795045095450526455.log</code>, <code>scoped-gate-1795045334804870523.log</code>, <code>baseline_suite-1795046381299786487.log</code>, <code>after_suite-1795046384483596688.log</code> in this run's directory). The arms above are the same commands resolved over each arm's own tree, submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID -u RECKON_WORKER_FENCE sbatch</code> and carrying no inherited fence recipe, which is what let the same jobs start. Each log opens with its revision, host, tree, imported module, working directory and literal command, and ends with its own <code>EXIT=</code> line; the scratch each job ran in is the job's own <code>/tmp</code> extraction of that revision, deleted when the job ended.</p>
+</section>

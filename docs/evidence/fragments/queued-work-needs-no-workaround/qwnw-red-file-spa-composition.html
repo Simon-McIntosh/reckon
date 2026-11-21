@@ -1,0 +1,39 @@
+<section id="qwnw-red-file-spa-composition-landing">
+<h3>A test file red on the primary branch passes</h3>
+<p><code>tests/test_spa_composition.py</code> reported two failing cases at base
+<code>d9b857e053a77af65ab77aad9d78f3ef3d3bb28a</code> (<code>2 failed, 12 passed</code>,
+<code>EXIT=1</code>) and reports <code>14 passed in 49.57s</code> (<code>EXIT=0</code>) at head
+<code>7def72950a29e5cd2123626e0b873391cd6bfc21</code>. Both runs are <code>sbatch --wait</code> jobs on
+<code>all_debug</code> (both logs' headers name host <code>98dci4-clu-3141.iter.org</code>), each in a
+scratch tree at its own revision, with the job environment built from every variable that does not start
+with <code>SLURM_</code> or <code>SBATCH_</code> (<code>partition_submission</code> in
+<code>reckon/crew/landing_measure.py</code>), so <code>SLURM_JOB_ID</code> is unset inside the job. Both
+logs are on shared storage under the run directory.</p>
+<p>Every cause was in the cases, none in the product, and no product file changes. The sprint surface reads
+the served module state through an optional chain since the fix that keeps the view mounted across the
+index's first paint: <code>M?.review</code>, <code>M?.inventory</code>, <code>M?.ready_set</code>. Three
+assertions still pinned the unguarded spellings and so failed against a surface that behaves correctly.</p>
+<table>
+<thead><tr><th>Assertion at base</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td><code>const review = M.review || null</code> in <code>test_sprint_surface_consumes_composed_review_without_a_review_fetch</code></td><td>test wrong: the surface reads <code>M?.review</code>; the rule (the composed review is consumed, not fetched) still holds, and <code>fetch(`/review</code> stays absent.</td></tr>
+<tr><td><code>sprintStateRows(allSprints, M.inventory)</code> in the same case</td><td>test wrong: the state rows project <code>const inventory = M?.inventory || []</code>; the repaired case names the guarded read and the row call it feeds.</td></tr>
+<tr><td><code>M.ready_set</code> in <code>test_ready_lanes_replace_the_status_board_and_consume_served_readiness</code></td><td>test wrong: the lane rows consume <code>readyLaneRows(M?.ready_set, sprints, inventory)</code>; the repaired case names that call site.</td></tr>
+</tbody>
+</table>
+<p>No assertion was deleted or weakened: each stale literal became the expression the surface keeps, the
+inventory assertion became two (the guarded read and the row call it feeds), and the readiness assertion
+now names the call site rather than a bare member access.</p>
+</section>
+<section id="qwnw-red-file-spa-composition-arms">
+<h3>Where the evidence is</h3>
+<p>Base arm <code>d9b857e053a77af65ab77aad9d78f3ef3d3bb28a</code>, command
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_composition.py</code>,
+<code>2 failed, 12 passed</code>, <code>EXIT=1</code>, failing ids
+<code>tests/test_spa_composition.py::test_sprint_surface_consumes_composed_review_without_a_review_fetch</code>
+and <code>tests/test_spa_composition.py::test_ready_lanes_replace_the_status_board_and_consume_served_readiness</code>
+(log <code>negative-control-1795089129478280764.log</code>). Head arm
+<code>7def72950a29e5cd2123626e0b873391cd6bfc21</code>, same command, <code>14 passed in 49.57s</code>,
+<code>EXIT=0</code> (log <code>scoped-gate-1795089050779708579.log</code>). Both logs sit under
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054325967299-qwnw-red-file-spa-composition/</code>.</p>
+</section>

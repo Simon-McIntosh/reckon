@@ -1,0 +1,136 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "digests": {
+        "s32": "c2a4656f828a35e50fab53bf69592cb3038cc94524f47e489fc6ac94f6ea9a60"
+      },
+      "reason": "the edits since the review are the ones its findings asked for",
+      "units": [
+        "s32"
+      ],
+      "when": "2026-11-21T09:01:39.871517+00:00"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T08:36:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:281",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on this cause writes a test whose two sides are one constant and finds nothing to repair, whereas naming the shape that was actually filed would point it at the fold that already exists in `with_figure_verdicts`.",
+      "text": "\u00a732's cause says the brief and the gate disagree about the keys, but both resolve to the same six names: the composed figure brief is `reckon/crew/prompts/figure_review.md`, whose six bullets are `legibility`, `data_ink`, `decoration`, `contrast`, `table_form`, `label_collision` (:26\u2013:36), and the gate that names missing figure measures reads `review_module.FIGURE_REVIEW_ITEMS`, which is exactly that tuple (`reckon/crew/review.py:462\u2013469`), through `_figure_missing_measures` (`reckon/crew/recovery_review_subject.py:1890\u20131894`) \u2014 so at this revision a record filed under the brief's own keys cannot be refused for missing them; whatever refused the nova record was a record shape (flat versus per-figure) or a brief other than this one, and neither is described",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:283",
+      "id": "done_when-1",
+      "reason": "a done-when with no case that fails at base cannot show the guard fires, which is the whole reason the kernel asks for a negative control and here the control mutates the fixture rather than exercising the unfixed behaviour.",
+      "text": "\u00a732's three cases all hold on the base revision: the first compares the brief's six names with `FIGURE_REVIEW_ITEMS`, which are build-identical lists today; the second files a record under those keys, which the delivery contract accepts; the third files one under other keys, which `_figure_missing_measures` already refuses naming each item \u2014 so the passing suite evidences no change, and the only reddening event the section declares is the negative control editing the brief",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "573fbcc761471b783fc6a63bf6418e6eb3a87e4a",
+  "plan_fingerprint": "d3a29b944661e9797a5afbde5ae0d49ebf8fc7802ac7c1739cc30fe7afc5a11b",
+  "plan_slug": "work-of-a-lost-session-is-raised-not-left",
+  "plan_version": 88,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "eb9a864493d9e3c14747e16ec8c8ba812587c46e",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the cause was read from the stored nova record: it carries six verdict lines under rubric_lines and no rubric_items, which is the only key the gate reads; section 32 is rewritten on that",
+      "reason": "",
+      "when": "2026-11-21T08:59:29.003855+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "eb9a864493d9e3c14747e16ec8c8ba812587c46e",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the first case is now the nova record's shape, which the base revision refuses as lacking all six",
+      "reason": "",
+      "when": "2026-11-21T09:00:10.051091+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "eb9a864493d9e3c14747e16ec8c8ba812587c46e",
+      "commit_basis": "edit",
+      "note": "the first case is now the nova record's shape, which the base revision refuses as lacking all six",
+      "reason": "",
+      "when": "2026-11-21T09:00:10.051091+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "eb9a864493d9e3c14747e16ec8c8ba812587c46e",
+      "commit_basis": "edit",
+      "note": "the cause was read from the stored nova record: it carries six verdict lines under rubric_lines and no rubric_items, which is the only key the gate reads; section 32 is rewritten on that",
+      "reason": "",
+      "when": "2026-11-21T08:59:29.003855+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-of-a-lost-session-is-raised-not-left/r-20261121T083351141640-plan-review-of-work-of-a-lost-session-is-raised-not-left.json",
+  "review_run_id": "r-20261121T083351141640-plan-review-of-work-of-a-lost-session-is-raised-not-left",
+  "reviewed_blob_sha": "eb26b7713ee1aad9ec2c346913917c0388e65ab1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_a_lost_sessions_work_is_raised.py` named by \u00a733 exists; \u00a732's named file is the deliverable the node creates, and neither section cites a plan, section or commit that fails to resolve.",
+    "done_when": "a finding \u2014 `\u00a732`'s gate cannot fail on the unfixed tree: its first two cases are already true at this revision, so only the negative control, which mutates the brief itself, can make it fail.",
+    "evidence_paths": "pass \u2014 both sections make their evidence a test file under `tests/`, a durable path, and \u00a732's deliverable file does not yet exist, which is what a not-yet-built node looks like.",
+    "naming": "pass \u2014 the two test filenames name the behaviour (`a_figure_review_is_filed_with_the_keys_the_gate_reads`, `a_lost_sessions_work_is_raised`) and carry no plan label, section id or ticket number.",
+    "reasoning": "a finding \u2014 \u00a732's stated root cause, that the figure reviewer \"answered the rubric\u2026 under different keys\", is not the mechanism this tree shows: the brief and the gate read the same six names from one source.",
+    "single_goal": "pass \u2014 `\u00a732` delivers one endpoint (a figure review accepted by the snapshot gate), and `\u00a733` one (an inline answer accepted, a non-file value refused naming the three forms).",
+    "wiring": "pass \u2014 the two new declarations `s32` and `s33` in the plan's `plan-section-declarations` name no upstream whose output they consume, and both are independent of the sections landed since; `s33` writes into `tests/test_a_lost_sessions_work_is_raised.py`, which `s31` already finished, so no wait is owed."
+  },
+  "section_digests": {
+    "_document": "7461b80b139321415d38558ed60d0fec9aa7e04de012b2169981e9d706dd3464",
+    "s1": "97d20596806fb031c34ba234b045b924725cca184c9388f84deb8af3eb261f80",
+    "s10": "6f44bf185ae0fc7e5f84b80cae1dcb50dd90023c3529bb6d1c3b410e5cd28b56",
+    "s11": "fa19054253211fb42f596e9c93dc65ceebd4a1aab844db1cb88dbd7d19ea621b",
+    "s12": "a864b5979050d34ceb0190d68bb129f05700640fec87e61674e144629f83a304",
+    "s13": "1ef1697f402f80e80931d4b5ebc2cc7b5809a3f6456ddef4669ad4089a89aae6",
+    "s14": "59df0cf0864078f32f7c9271b7e010f709b20c15735a3d96011098eadaa1e081",
+    "s15": "cf62f689211b44af7597aa45a4fec07ab06ff1ee61e47d0e5e3105f03bb0c281",
+    "s16": "6ae0e537f34a3d091c8552c4ed875f0082022dd873e2ac5036ef0ded0595a621",
+    "s17": "c06edbc8dfeb250470fb7dd3b41fa5a116791e56d12b27e32cd434fc2086135b",
+    "s18": "96c05bce6087ae1a3ee910220846ba1ec2847e3a7273b48c22e3dd9aecdcc422",
+    "s19": "6a73d4d2ca4bf3cbb6d7e90b8c3089e4be64e52827727988c69309062f74141e",
+    "s2": "26db713d5ea4030aa59a12228a900ca0ec942c80fd7c25ae2f23ce17c68e1cec",
+    "s20": "c5932b646d93f63d6bb200ccd9d622fb7068e270f01ef6e989265d7cde2bc89c",
+    "s21": "c5d6bfa9d6ac9335da56af60b650acc6f41bf7bb4d4a8750bf5141e26b5c50e6",
+    "s22": "a583f2deb2e87fcbe4a3a49bda90a7c9e46307856df9313fa8d347b57c5b030f",
+    "s23": "9dfec068439808ee048e58ef1e4e7dc8002bcb40cee464b25573d40eca78685d",
+    "s24": "7670046d7cddd47351903f17ba5b26f1b2bfbbcbda8bea2ab6ceb3dabab60455",
+    "s25": "4c1b3db805101f8bd62864669cf2a45db97f1d15357c17029ce046d786320679",
+    "s26": "e677269532745780aebfa69e03405a40516c7ec42bf2342680777eefbcf3ae96",
+    "s27": "386e0d26905eb0d3fa0c5d4a363d9ff7f01ff8c0f4ab88802a1c342a505fb9c6",
+    "s28": "639ef90b7982af4336f066aa915a4e272b13765eaf556b0bbff0ee696cfe28d2",
+    "s29": "b5e6399bec15ce46966f01d95e20548270570f53e4b4ff24a6b24a08beae4d1b",
+    "s3": "36d2e2500f8d8b34f9a08006e3980de143b30d0d219a541fae72768d29dd88e7",
+    "s30": "83a8ecebde06ecff822faaff271d073fa3519bc6d0a7add822beac4eaaa5545f",
+    "s31": "1bf6b2617335a7b21314fe5d80000f6857386db43762386dd1c490ded298823f",
+    "s32": "87f46fec536c168dacadbc535de4570b4518b4f887353fcdc9f18386429b86cb",
+    "s33": "6f2c43b3b33212f54c220c17de474d2c4d4ee3b042c7bd8d625d54a8975bd36d",
+    "s4": "4c9e804b0931d4eaa4cc0e387f126a2785223052e3f1bb082b948a2d149ecfb1",
+    "s5": "b9552e1d93227db666cbc1960a993d681197fc75b13e4c5b67dc1c3c11125496",
+    "s6": "e4c2c3412596e5b597b5ed69e381f8b6b8cb0f20ef095352896df0c66eb9c7e2",
+    "s7": "1fcb9877d1467576d37f1eb5e1b29ed55f5ddd8991ed8313cf145d20b69f73d9",
+    "s8": "146e3d4e2ba80e663cea4c0fba4083ccd453211522f93be9cacf5ad586f95cd0",
+    "s9": "69ef00a968d16bb6e2fc3751e4cf08b229e16c3dbaea7d2c74ef9cadf9f75459"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:52:20.697005+00:00",
+  "total": null
+}

@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own arms: baseline_suite (manifest.md:17, revision 42fe90d0b0, EXIT=1, completed true) names tests/test_drain_week_view.py::test_week_view_counts_each_request_and_uses_the_last_admission_verdict and tests/test_drain_week_view.py::test_recent_launch_of_a_landed_request_uses_the_worker_stamp; after_suite (manifest.md:18, revision 0b54305d4d, EXIT=0, completed true) carries failure_count 0 and an empty id list, and drain-week-head3.log:9 reads \"5 passed in 6.24s\". The difference is empty. The instrument is shown able to see a failure present: drain-week-base.log's own summary line reads \"2 failed, 3 passed in 6.09s\" and its FAILED lines name both ids, so the empty head list is a measured zero rather than a silent one.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "week[\"plans\"][\"north\"][\"phases\"] == {... \"landed\": 6 ...} and week[\"project\"][\"landings_24h\"] == 6",
+      "fails_if": "Deleting the _settle(landings) call makes both red: the base arm at 42fe90d0b0 records exactly these two cases failing with {'landed': 0} != {'landed': 6}, so the pairing of seeded store rows to counted landings is what the assertion moves on, not a value the test passed to itself.",
+      "file": "tests/test_drain_week_view.py",
+      "independent": true,
+      "line": 103
+    },
+    {
+      "assertion": "week[\"project\"][\"landings_24h\"] == 1 and week[\"plans\"][\"north\"][\"launches_24h\"] == 1",
+      "fails_if": "Dropping _settle([landed]) at :246 reproduces the base failure \"assert 0 == 1\"; the expected 1 is a literal derived from one recent completed_at the fixture built, while the observed value comes back through runs.drain, so the two sides are independent.",
+      "file": "tests/test_drain_week_view.py",
+      "independent": true,
+      "line": 246
+    }
+  ],
+  "assertion_independence": "The change adds no assertion line at all: the two commits touching tests/test_drain_week_view.py only add _settle (:29-41) and call it at :103 and :246, and the assertions the reviewed fragment cites moved from red to green without being edited. Neither guarded assertion compares a value against the same variable the test handed in \u2014 the expected counts are literals (6, 1) and the observed values return through runs.drain \u2014 and the base arm is the reinstated regression proving both redden when the seeded evidence is withdrawn.",
+  "call_sites": [
+    "reckon/crew/runs.py:_drain_week_view",
+    "reckon/crew/recovery_classification.py:_promoted_awaiting_merge",
+    "reckon/crew/recovery_classification.py:_delivered_head",
+    "reckon/crew/pending_landing.py:_promotion_evidence",
+    "reckon/run_store.py:append"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:22:41Z",
+  "evidence_limits": [
+    "No suite re-run: the recorded base and head arms and their EXIT lines were read rather than re-executed, so the verdict rests on drain-week-base.log and drain-week-head3.log, not on an observation of my own.",
+    "No test was modified to test its own guard: the base arm supplied by the reviewed run is the reinstated regression, and I did not check out the reviewed head to re-run it.",
+    "The head log's scratch tree is a bare /tmp path (/tmp/qwnw-drain-week-head3/tree) on a compute node, so the tree itself is not re-readable; the log that names it is on shared storage, which is what the done_when required."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_drain_week_view.py",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: _settle resolves its store through run_store.store_path(), which follows RECKON_HOME, so its writes stay inside the repository only because both callers take the queue_home fixture; a caller that omits queue_home would write the operator's real crew/run_store.db outside the repository, and nothing in the helper asserts its isolation."
+    },
+    {
+      "file": "tests/test_drain_week_view.py",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the seeded row carries only run_id and plan, so _delivered_head returns a read row with no promoted_revision or commits and _promoted_awaiting_merge settles it on the delivered-nothing branch at reckon/crew/recovery_classification.py:1212-1215; neither case exercises a landing whose head reaches primary, so a regression in _head_on_primary_branch or in the promoted_revision read leaves both green."
+    },
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for an arm over the test files that import what changed, and no test in tests/ or reckon/ names tests/test_drain_week_view.py, yet the manifest records neither the arm nor the fact that the clause is vacuous, so a skipped clause is indistinguishable from a clause that could not apply."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all four commits against 42fe90d0b0 \u2014 20f96fd159 changes only tests/test_drain_week_view.py (+25/-16, a _settle helper plus two fixture call sites, no assertion line added, removed or reworded), 3cc1d50721 adds the 71-line evidence fragment, and 31bcc3f18b and 0b54305d4d each rewrite two fragment rows to cite the head arm by manifest.",
+    "done_when": "the done_when asks for a head job on all_debug with SLURM_JOB_ID unset and its output on shared storage, a base-first arm, a verdict per cause, no deleted or weakened assertion, an arm over test files that import the change, and the base ids logged beside the head run; drain-week-base.log:1-5 and drain-week-head3.log:1-6 carry \"# slurm-job-id: unset\" headers under the run directory, manifest.md:17-18 records baseline_suite and after_suite as inline JSON with 40-character revisions and completed arms, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-drain-week-view.html:20-26 quotes the two failing ids, and the diff touches no assertion line \u2014 no importer arm is recorded.",
+    "goal": "the node's goal is \"Make tests/test_drain_week_view.py pass in full on the primary branch\"; drain-week-head3.log records \"5 passed in 6.24s\" with EXIT=0 at 0b54305d4d0c, and drain-week-base.log records the same file \"2 failed, 3 passed\" with EXIT=1 at 42fe90d0b0.",
+    "manifest": "read the reviewed run's manifest.md; it reads status complete with four commit ids, baseline_suite at manifest.md:17 (42fe90d0b0, exit 1, 2 failing ids, completed true, log path present) and after_suite at :18 (0b54305d4d, exit 0 and no failing ids), a test-wrong verdict with no product change, and a negative_control_log naming drain-week-base.log.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and its qwnw-red-file-drain-week-view.html) and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-drain-week-view; the diff's two paths, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-drain-week-view.html and tests/test_drain_week_view.py, are both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_drain_week_view.py pass in full on the primary branch\"; drain-week-head3.log records \"5 passed in 6.24s\" with EXIT=0 at 0b54305d4d0c, and drain-week-base.log records the same file \"2 failed, 3 passed\" with EXIT=1 at 42fe90d0b0.\nVERDICT done_when: the done_when asks for a head job on all_debug with SLURM_JOB_ID unset and its output on shared storage, a base-first arm, a verdict per cause, no deleted or weakened assertion, an arm over test files that import the change, and the base ids logged beside the head run; drain-week-base.log:1-5 and drain-week-head3.log:1-6 carry \"# slurm-job-id: unset\" headers under the run directory, manifest.md:17-18 records baseline_suite and after_suite as inline JSON with 40-character revisions and completed arms, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-drain-week-view.html:20-26 quotes the two failing ids, and the diff touches no assertion line \u2014 no importer arm is recorded.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and its qwnw-red-file-drain-week-view.html) and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-drain-week-view; the diff's two paths, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-drain-week-view.html and tests/test_drain_week_view.py, are both inside them.\nVERDICT manifest: read the reviewed run's manifest.md; it reads status complete with four commit ids, baseline_suite at manifest.md:17 (42fe90d0b0, exit 1, 2 failing ids, completed true, log path present) and after_suite at :18 (0b54305d4d, exit 0 and no failing ids), a test-wrong verdict with no product change, and a negative_control_log naming drain-week-base.log.\nVERDICT diff: read all four commits against 42fe90d0b0 \u2014 20f96fd159 changes only tests/test_drain_week_view.py (+25/-16, a _settle helper plus two fixture call sites, no assertion line added, removed or reworded), 3cc1d50721 adds the 71-line evidence fragment, and 31bcc3f18b and 0b54305d4d each rewrite two fragment rows to cite the head arm by manifest.\nCALL_SITES: reckon/crew/runs.py:_drain_week_view, reckon/crew/recovery_classification.py:_promoted_awaiting_merge, reckon/crew/recovery_classification.py:_delivered_head, reckon/crew/pending_landing.py:_promotion_evidence, reckon/run_store.py:append\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the change makes tests/test_drain_week_view.py green at the delivered head (drain-week-head3.log:9 \"5 passed\"), and the only clause it leaves unmeasured is that the green state is on the primary branch, which landing measures rather than the node.\nSCORE evidence: 17\nJUSTIFICATION evidence: manifest.md:17-18 records complete arms with EXIT lines and 40-character revisions whose logs exist, but no arm over the test files importing the change is recorded and none states the clause is vacuous.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both diff paths, tests/test_drain_week_view.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-drain-week-view.html, sit inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: restoring the pre-change fixture by deleting the _settle call at tests/test_drain_week_view.py:103 reproduces exactly the two failures drain-week-base.log records, but :39 seeds a row with no head so the ancestry branch at reckon/crew/recovery_classification.py:1216 is never exercised by these cases.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_drain_week_view.py:29-41 follows the module's fixture-helper idiom with a docstring in the same prose register as _request at :43, and ruff check and ruff format --check pass on the file at head.\nSCORE reuse: 20\nJUSTIFICATION reuse: _settle at tests/test_drain_week_view.py:37 calls the capability owner reckon/run_store.py:append rather than writing rows itself; a search of tests/ and reckon/ for an existing store-seeding helper found none (tests/conftest.py carries no run-store fixture, and the other seeders use RunStore._RUNS_INSERT for row-shape work).\nFINDING tests/test_drain_week_view.py:37 non-blocking: _settle resolves its store through run_store.store_path(), which follows RECKON_HOME, so its writes stay inside the repository only because both callers take the queue_home fixture; a caller that omits queue_home would write the operator's real crew/run_store.db outside the repository, and nothing in the helper asserts its isolation.\nFINDING tests/test_drain_week_view.py:39 non-blocking: the seeded row carries only run_id and plan, so _delivered_head returns a read row with no promoted_revision or commits and _promoted_awaiting_merge settles it on the delivered-nothing branch at reckon/crew/recovery_classification.py:1212-1215; neither case exercises a landing whose head reaches primary, so a regression in _head_on_primary_branch or in the promoted_revision read leaves both green.\nFINDING manifest.md:20 non-blocking: the done_when asks for an arm over the test files that import what changed, and no test in tests/ or reckon/ names tests/test_drain_week_view.py, yet the manifest records neither the arm nor the fact that the clause is vacuous, so a skipped clause is indistinguishable from a satisfied one.",
+  "reuse_search": {
+    "capabilities": [
+      "seeding a run-store row",
+      "recording a landing's promotion evidence",
+      "settling a run so the drain counts it"
+    ],
+    "judgement": "No owner exists for seeding a test run store with settled landings: tests/conftest.py carries no run-store fixture and the two other tests that write store rows (tests/test_an_activity_read_costs_what_was_active.py:44 and tests/test_plan_selected_store_read_is_bounded.py:58) insert raw rows through run_store._RUNS_INSERT to shape a schema, which is a different capability. The added helper extends the one owner of a record write, reckon/run_store.py:append, rather than forking a second way to write the store.",
+    "owners_opened": [
+      "reckon/run_store.py:append (public append of one run record to the default store)",
+      "reckon/run_store.py:RunStore.append (the class-level write the module function wraps)",
+      "tests/conftest.py (no run-store or landing fixture)"
+    ]
+  },
+  "review_run_id": "r-20261119T032906197640-review-of-qwnw-red-file-drain-week-view-0b54305d4d0c",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "0b54305d4d0c84b7c3d076044787abfd8146a6f5",
+  "reviewed_run_id": "r-20261118T062447584352-qwnw-red-file-drain-week-view",
+  "reviewed_worker_commits": [
+    "20f96fd1593f178f6216f7f60f32d746d1a4549c",
+    "3cc1d50721a3d4fe20ba4fe347b262e7e28f096e",
+    "31bcc3f18b8d603ad895f080e91d617466b21570",
+    "0b54305d4d0c84b7c3d076044787abfd8146a6f5"
+  ],
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:05:00.000000+00:00",
+  "total": 110
+}

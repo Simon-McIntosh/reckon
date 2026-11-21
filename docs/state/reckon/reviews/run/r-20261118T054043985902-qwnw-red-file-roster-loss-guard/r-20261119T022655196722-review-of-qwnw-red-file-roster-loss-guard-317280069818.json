@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite at 5417b373ff (logs/arm-5417b373ff9230f07c1c8f403632835808fffc15.log) reads '58 passed' EXIT=0 with no FAILED line, after_suite at 3172800698188f (logs/arm-3172800698188f3cd6c20669b66c914942dcaa3b.log) reads '58 passed' EXIT=0 with no FAILED line, so the failure-id set difference is empty (0).",
+  "base_log_revision": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:3152-3177 (_write_state judges the aggregate's own members for a non-projected payload)",
+    "reckon/ledger.py:2456 (write_members refuses a dropped member)",
+    "reckon/crew_run_commands.py:1720,1772 (load_aggregate then ledger.write)",
+    "reckon/crew/promotion_gate.py:1278,1325 (load-derived payload written back as a run update)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:27:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-roster-loss-guard.html",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "the Measured line names a head run at 60ebc2ac8f, but the all_debug job that produced '14 passed' (job 1329087, logs/head-roster-job.log) carries no revision, tree or command header and was submitted from the brief's template command without unsetting SLURM_JOB_ID, so the done_when's 'as a job on all_debug with SLURM_JOB_ID unset' clause and the head revision are asserted by manifest prose rather than by the log."
+    }
+  ],
+  "head_log_revision": "3172800698188f3cd6c20669b66c914942dcaa3b",
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit: 60ebc2ac8f replaces the fixture's register_member seeding with _seed_roster (ledger.write) and its load() payload with load_aggregate across ten guard cases without changing an assertion, and 3172800698 adds the 19-line evidence fragment; no product file changes.",
+    "done_when": "the done_when asks for the named file green as an all_debug job with SLURM_JOB_ID unset, a base run with a product-wrong or test-wrong verdict per cause, two suite arms as inline JSON with 40-character revisions, and the negative control beside the head run; logs/base-roster-run.log reads 9 failed, 5 passed EXIT=1 at 5417b373ff, both arm logs read 58 passed EXIT=0, the fragment records the base failure ids, and the SLURM_JOB_ID-unset half is recorded only in the manifest.",
+    "goal": "the node goal is that tests/test_roster_loss_guard.py passes in full at head; logs/head-roster-job.log reads '14 passed' EXIT=0 for that file and tests/test_roster_loss_guard.py:41-65 seeds the aggregate roster the guard judges.",
+    "manifest": "read; it records status complete, commits 60ebc2ac8f3f1373cd8964b5f0e17e4421437092 and 3172800698188f3cd6c20669b66c914942dcaa3b, base 9 failed of 14, head 14 passed, both suite arms 58 passed EXIT=0 as inline JSON with 40-character revisions, and the negative-control log path, all of which the logs on disk bear out.",
+    "write_paths": "the declared paths are reckon, tests and the fragment paths; the diff 5417b373ff..3172800698 touches only tests/test_roster_loss_guard.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-roster-loss-guard.html."
+  },
+  "justifications": {
+    "durability": "the base run at logs/base-roster-run.log is this change reversed and reads 9 failed of 14, and logs/mutation-no-drop-comparison.log reads 7 failed with dropped_member_ids returning no ids, so the file reddens if either the seeding or the guard regresses.",
+    "evidence": "logs/base-roster-run.log reads '9 failed, 5 passed' EXIT=1 at 5417b373ff and logs/head-roster-job.log reads '14 passed' EXIT=0, but that head log carries no revision, tree or command header, so the all_debug-with-SLURM_JOB_ID-unset clause of the done_when is carried by the manifest line rather than by the log.",
+    "fit": "the added helper at tests/test_roster_loss_guard.py:41 follows the file's existing _register helper in signature, docstring shape and PROJECT constant, carries a fixed created date and no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_roster_loss_guard.py:86-87 and the nine sibling guard cases read their payload from ledger.load_aggregate and logs/head-roster-job.log reads '14 passed' EXIT=0, so the named file passes at the head the run committed.",
+    "reuse": "searched tests/conftest.py and the sibling ledger tests for a shared aggregate-roster seeding helper and found none (tests/conftest.py defines no ledger writer; tests/test_ledger_write_cannot_shrink.py:48 _seed is file-local), and the helper calls ledger.write, the owner of writing the aggregate.",
+    "scope_discipline": "git diff --stat 5417b373ff..3172800698 lists two files, tests/test_roster_loss_guard.py and the evidence fragment, both inside the declared write paths and neither a product hunk."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T022655196722-review-of-qwnw-red-file-roster-loss-guard-317280069818",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "3172800698188f3cd6c20669b66c914942dcaa3b",
+  "reviewed_run_id": "r-20261118T054043985902-qwnw-red-file-roster-loss-guard",
+  "reviewer_run_id": "r-20261119T022655196722-review-of-qwnw-red-file-roster-loss-guard-317280069818",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:09:51.939501+00:00",
+  "total": 109
+}

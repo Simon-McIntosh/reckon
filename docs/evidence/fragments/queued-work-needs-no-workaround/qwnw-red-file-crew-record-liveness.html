@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Record liveness test file: base red, head green</title>
+</head>
+<body>
+<main class="plan-doc">
+<section id="qwnw-red-file-crew-record-liveness-cause">
+<h2>The cause, and the verdict</h2>
+<p>The named file failed at the base revision on one case, <code>test_no_module_decides_record_liveness_with_a_bare_pid</code>.</p>
+<p><strong>Verdict: product wrong.</strong> The offender was <code>local_liveness</code> in <code>reckon/crew/recovery_liveness.py</code>, which handed <code>record["pid"]</code> to the bare pid primitive in the arm that settles a stop predating exit receipts.</p>
+</section>
+<section id="qwnw-red-file-crew-record-liveness-negative-control">
+<h2>Negative control: the base run, with its failing id</h2>
+<p>Base revision <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, run over a <code>git archive</code> extraction of that revision, same interpreter and environment as the head run.</p>
+<pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# tree: /tmp/reckon-crew-scratch/r-20261118T063119471468-qwnw-red-file-crew-record-liveness/qwnw-liveness-base-2 (git archive extraction of the base revision)
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063119471468-qwnw-red-file-crew-record-liveness/qwnw-liveness-base-2
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_record_liveness.py
+# module under test: /tmp/reckon-crew-scratch/r-20261118T063119471468-qwnw-red-file-crew-record-liveness/qwnw-liveness-base-2/reckon/crew/recovery_liveness.py
+..F......                                                                [100%]
+FAILED tests/test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid - assert {'recovery_li...cord': True}]} == {}
+1 failed, 8 passed in 2.66s
+EXIT=1</pre>
+</section>
+<section id="qwnw-red-file-crew-record-liveness-head">
+<h2>Head run: the named file passes in full, on all_debug</h2>
+<p>Head <code>e65dc54e0477ed60c4f0dda74b735de6cca26628</code>, as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> cleared inside the job; output on shared storage.</p>
+<pre># job: 1329763 on 98dci4-clu-3142 partition all_debug
+# SLURM_JOB_ID inside this job: unset
+# revision: e65dc54e0477ed60c4f0dda74b735de6cca26628
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-record-liveness
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-record-liveness
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_record_liveness.py
+.........                                                                [100%]
+9 passed in 2.05s
+EXIT=0</pre>
+</section>
+<section id="qwnw-red-file-crew-record-liveness-arms">
+<h2>The import arm adds no failure</h2>
+<p>The twenty-five test files that import <code>recovery_liveness</code> or <code>record_process_alive</code> ran at the base revision and at the head with the same interpreter. Both arms carry the same four failing ids, all of them already failed at the base, so the change adds no failure. The declared suite's two arms are recorded in the manifest as <code>baseline_suite</code> and <code>after_suite</code>.</p>
+</section>
+</main>
+</body>
+</html>

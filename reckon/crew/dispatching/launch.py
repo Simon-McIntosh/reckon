@@ -763,6 +763,13 @@ def _launch_dispatch(
                         fence_config=config,
                         worker_mcp_set=node.mcp_set,
                         fence_waiver=fence_waiver or None,
+                        # The role the node was dispatched for decides whether
+                        # delivery owes a review and how its work is landed, so
+                        # it is carried into the launch's recorded treatment
+                        # here. Read from the node, never defaulted: a review
+                        # launch left at the default would land as an implement
+                        # run and owe a review of its own.
+                        behaviour_role=node.role,
                         # A node with no declared write paths is free of its
                         # whole worktree, so the paths git cannot merge are
                         # what its fence must seal; a declared node seals none

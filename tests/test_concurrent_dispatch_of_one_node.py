@@ -22,6 +22,7 @@ and takes the path, while a living holder still refuses.
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import json
 import os
@@ -35,14 +36,13 @@ import pytest
 
 from reckon import crew
 from reckon.crew.runs import list_live
-from tests.real_home_traces import traces_naming
+from tests.conftest import real_store_home
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "concurrent-dispatch-fixture"
 NODE_ID = "node-one-worktree"
 SESSION = "session-concurrent-dispatch"
-REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
 CONFIG: dict[str, Any] = {
     "default_backend": "alpha",
@@ -115,14 +115,53 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
 
 @pytest.fixture(autouse=True)
 def real_live_directory_is_not_a_fixture_target() -> None:
-    """No case may write this fixture's pointer into the real crew home."""
+    """No case may write this fixture's pointer into the real crew home.
 
-    def fixture_pointers() -> list[str]:
-        return traces_naming(REAL_LIVE.parent, ("live",), (PROJECT, NODE_ID))
+    The ``RECKON_HOME`` override in ``home`` is what keeps the case inside its
+    own tree, and this guard proves it held. The home searched is the one
+    ``real_store_home`` resolves with ``RECKON_HOME`` removed: that
+    is where a case would write if its override were absent, including a legacy
+    ``~/docs-server`` install, so the guard watches the directory a leak would
+    actually reach rather than a path literal that only matches one layout.
 
-    assert fixture_pointers() == []
+    The identifiers are compared against the run id the pointer records, not
+    against its text: a run id ends in the node it dispatches, so a pointer
+    this case minted reads ``r-<stamp>-<node>``. Searching text cannot make
+    that claim — a peer's pointer quotes plan wording and node descriptions,
+    so a substring search fires on a dispatch that has nothing to do with this
+    case, while the id is minted here and nowhere else.
+
+    The listing is the crew run module's own: pointing ``RECKON_HOME`` at the
+    real home for the duration of the read is how ``real_store_home`` reaches
+    it, so the guard asks the module that owns the pointer format rather than
+    scanning the directory itself.
+    """
+
+    ambient_home = real_store_home()
+
+    @contextlib.contextmanager
+    def reading_the_ambient_home():
+        override = os.environ.get("RECKON_HOME")
+        os.environ["RECKON_HOME"] = str(ambient_home)
+        try:
+            yield
+        finally:
+            if override is None:
+                os.environ.pop("RECKON_HOME", None)
+            else:
+                os.environ["RECKON_HOME"] = override
+
+    def fixture_runs() -> list[str]:
+        with reading_the_ambient_home():
+            return sorted(
+                str(record["run_id"])
+                for record in list_live()
+                if str(record.get("run_id") or "").endswith(f"-{NODE_ID}")
+            )
+
+    assert fixture_runs() == []
     yield
-    assert fixture_pointers() == []
+    assert fixture_runs() == []
 
 
 def _node(config_home: Path) -> crew.TaskNode:

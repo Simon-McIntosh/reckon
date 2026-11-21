@@ -497,6 +497,26 @@ def _two_session_fleet(home: Path) -> dict[str, dict]:
     }
 
 
+def _no_queue_counts(*, working: int, blocked: int, unpromoted: int) -> dict:
+    """The counters payload for a fleet with no promotion request queued.
+
+    The three buckets travel beside the promotion queue's own figures, which
+    the delivery fold measures from the same rows rather than deriving as
+    buckets. A fleet whose rows carry delivery evidence and nothing queued
+    reports a measured zero and no oldest request, so the expected payload
+    names those figures instead of leaving them unpinned; a reader adding the
+    buckets up adds the three that are buckets.
+    """
+    return {
+        "working": working,
+        "blocked": blocked,
+        "unpromoted": unpromoted,
+        "promotion_queued": 0,
+        "oldest_promotion_position": None,
+        "oldest_promotion_requested_at": None,
+    }
+
+
 def test_dead_process_never_counts_as_working_at_any_phase(home) -> None:
     # A run whose process is gone must leave the working bucket no matter which
     # phase its pointer last held, the starting phase the measured incident
@@ -748,8 +768,10 @@ def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
         ),
     }
     counts = recovery._fleet_counts(snapshots)
-    assert counts == {"working": 1, "blocked": 1, "unpromoted": 1}
-    assert sum(counts.values()) == len(snapshots)
+    assert counts == _no_queue_counts(working=1, blocked=1, unpromoted=1)
+    assert counts["working"] + counts["blocked"] + counts["unpromoted"] == len(
+        snapshots
+    )
 
 
 def test_fleet_counts_scope_to_the_session_the_reader_follows(home) -> None:
@@ -760,13 +782,13 @@ def test_fleet_counts_scope_to_the_session_the_reader_follows(home) -> None:
     # fell back to the fleet changes the digits and fails here.
     snapshots = _two_session_fleet(home)
     scoped = recovery._fleet_counts(snapshots, session="mine")
-    assert scoped == {"working": 1, "blocked": 0, "unpromoted": 0}
+    assert scoped == _no_queue_counts(working=1, blocked=0, unpromoted=0)
     peers = recovery._fleet_counts(snapshots, session="old-a")
-    assert peers == {"working": 1, "blocked": 1, "unpromoted": 0}
+    assert peers == _no_queue_counts(working=1, blocked=1, unpromoted=0)
     fleet = recovery._fleet_counts(snapshots)
-    assert fleet == {"working": 2, "blocked": 1, "unpromoted": 0}
+    assert fleet == _no_queue_counts(working=2, blocked=1, unpromoted=0)
     assert scoped != fleet
-    assert sum(fleet.values()) == len(snapshots)
+    assert fleet["working"] + fleet["blocked"] + fleet["unpromoted"] == len(snapshots)
 
 
 def test_an_unowned_snapshot_stays_counted_for_a_scoped_reader(home) -> None:
@@ -785,9 +807,9 @@ def test_an_unowned_snapshot_stays_counted_for_a_scoped_reader(home) -> None:
         ),
     }
     scoped = recovery._fleet_counts(snapshots, session="mine")
-    assert scoped == {"working": 2, "blocked": 0, "unpromoted": 0}
+    assert scoped == _no_queue_counts(working=2, blocked=0, unpromoted=0)
     fleet = recovery._fleet_counts(snapshots)
-    assert fleet == {"working": 2, "blocked": 1, "unpromoted": 0}
+    assert fleet == _no_queue_counts(working=2, blocked=1, unpromoted=0)
 
 
 def test_a_followers_trailing_figures_count_only_the_session_it_was_given(
@@ -1730,11 +1752,15 @@ def test_a_live_run_with_no_manifest_classifies_from_liveness(home) -> None:
     assert row["manifest_present"] is False
 
 
-def test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path(home) -> None:
+def test_refusal_held_pointer_snapshots_as_waiting_in_the_ticker_path(home) -> None:
+    # A run refused on a usage limit is held by a stop that lifts itself at the
+    # declared reset, so the row draws the waiting word and counts there; what
+    # the case keeps is that a refusal reads as the hold it is rather than as a
+    # crash, which the abandoned arm beside it measures on the same path.
     pointer = _cli_pointer(home, "r-refused", "codex-usage-limit.jsonl")
     snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
-    assert snapshot["state"] == "blocked"
-    assert snapshot["state"] in recovery.FLEET_BLOCKED_STATES
+    assert snapshot["state"] == "waiting"
+    assert snapshot["state"] in recovery.FLEET_WAITING_STATES
     assert "usage-limit" in snapshot["detail"]
     crash = _cli_pointer(home, "r-crash", "codex-failed-turn.jsonl")
     crash_snapshot = recovery._watch_snapshot(

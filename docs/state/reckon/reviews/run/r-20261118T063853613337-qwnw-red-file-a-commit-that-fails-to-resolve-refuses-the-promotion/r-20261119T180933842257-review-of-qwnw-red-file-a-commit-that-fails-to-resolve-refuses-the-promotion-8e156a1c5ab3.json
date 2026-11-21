@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:15:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-commit-that-fails-to-resolve-refuses-the-promotion.html",
+      "line": 40,
+      "severity": "non-blocking",
+      "text": "the negative-control paragraph names logs/base-target.log and scoped-gate-1795111015428793245.log as 'both under the run directory' without naming which run, so a reader of the composed plan record cannot resolve either path."
+    },
+    {
+      "file": "manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "the reviewed run's own artifacts line cites the two suite arms as 2 x 58 passed evidence, but the command those arms ran names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, files no part of this change reaches, so the pair establishes no blast radius for the fixture edit."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal (prompt.txt:38) is that tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py passes in full on the primary branch, and the gate log scoped-gate-1795111015428793245.log:6-7 records '8 passed in 3.71s' at 7b1dcf0160 with EXIT=0 on partition all_debug.\nVERDICT done_when: the done_when (prompt.txt:243) asks for the file passing in full as an all_debug job, a base run with its failing ids, both suite arms as inline JSON and ruff clean; the manifest records the gate (partition all_debug, revision 7b1dcf0160, exit 0), the base arm in logs/base-target.log ('1 failed, 7 passed', EXIT=1 at eb5383455237), the two arms at 58 passed each, and a ruff claim I re-verified on the reviewed blob (ruff check and ruff format --check both exit 0).\nVERDICT write_paths: the node declared reckon, tests and the fragment/figure paths under docs; the diff eb5383455237..8e156a1c5ab3 touches only tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-commit-that-fails-to-resolve-refuses-the-promotion.html.\nVERDICT manifest: read: it states the target file went 1 failed/7 passed at eb53834 to 8 passed at 7b1dcf0, names its three commits, its gate command and five logs on disk, and 'crew check --manifest' on it returns ok with no findings.\nVERDICT diff: read commit by commit \u2014 7b1dcf0 replaces the fixture log literal 'focused check passed\\nEXIT=0' with a pytest summary tail and a three-line comment stating the rule for why, and 910d108/8e156a1c add the 43-line evidence fragment naming the base red case and both arm logs; no assertion is added, deleted or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: scoped-gate-1795111015428793245.log:6-7 shows all 8 cases of tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py passing at the landed head, which is exactly the goal prompt.txt:38 states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's tests line is the literal command the gate log scoped-gate-1795111015428793245.log:5 records, but the two recorded suite arms in manifest.md:19-20 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, files no part of this change can reach, and the done_when's ruff result is claimed rather than logged.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is the fixture literal and comment at tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py:109-113 plus the evidence fragment, all inside the declared tests and docs fragment paths.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the fixture literal at tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py:113 reddens test_the_fourth_commit_is_promoted_when_every_citation_resolves on the promotion evidence check, which logs/base-target.log:4-10 shows happening at eb5383455237 with '1 failed, 7 passed' and EXIT=1; the guard is the pre-existing case rather than a new assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the added comment at tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py:109-111 states the rule in the same explanatory idiom as the module docstring above it, and the fragment follows the section/h2/table shape of its sibling fragments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; I searched tests/helpers (git.py, landing_repository.py) and tests/conftest.py for an existing gate-log synthesis helper to reuse for the fixture literal and found none, and the fragment composes nothing the repository already owns.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-commit-that-fails-to-resolve-refuses-the-promotion.html:40 non-blocking: the negative-control paragraph names logs/base-target.log and scoped-gate-1795111015428793245.log as 'both under the run directory' without naming which run, so a reader of the composed plan record cannot resolve either path.\nFINDING manifest.md:21 non-blocking: the reviewed run's own artifacts line cites the two suite arms as 2 x 58 passed evidence, but the command those arms ran names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, files no part of this change reaches, so the pair establishes no blast radius for the fixture edit.",
+  "review_run_id": "r-20261119T180933842257-review-of-qwnw-red-file-a-commit-that-fails-to-resolve-refuses-the-promotion-8e156a1c5ab3",
+  "reviewed_base_sha": "eb5383455237f61036c7a3d193eb0f987c843af3",
+  "reviewed_head_sha": "8e156a1c5ab3233dc65130f7bae10e36a9379462",
+  "reviewed_run_id": "r-20261118T063853613337-qwnw-red-file-a-commit-that-fails-to-resolve-refuses-the-promotion",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:40:00.000000+00:00",
+  "total": 114
+}

@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3977 crew_complete command dispatch into _complete_many"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:38:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite.html",
+      "line": 32,
+      "severity": "non-blocking",
+      "summary": "the fragment claims both node-file head runs record SLURM_JOB_ID unset in their header lines, but scoped-gate-1795102140773901949.log and scoped-gate-1795103355447005905.log carry the command `env PYTHONPATH=. sh -c '...'` with no unset, and reckon/crew/landing_measure.py:887 strips only the submitter's SLURM_* so sbatch's SLURM_JOB_ID is set inside the job; the done_when's unset condition is unproven, though the file reads no SLURM variable so the 8-passed result stands",
+      "text": "the fragment claims both node-file head runs record SLURM_JOB_ID unset in their header lines, but scoped-gate-1795102140773901949.log and scoped-gate-1795103355447005905.log carry the command `env PYTHONPATH=. sh -c '...'` with no unset, and reckon/crew/landing_measure.py:887 strips only the submitter's SLURM_* so sbatch's SLURM_JOB_ID is set inside the job; the done_when's unset condition is unproven, though the file reads no SLURM variable so the 8-passed result stands"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite.html",
+      "line": 44,
+      "severity": "non-blocking",
+      "summary": "the Measured table labels d6e73e47f0df as the node-file head, which is not the head that landed, and the arm at eca5858ad0 exists only in the source manifest's test_logs, so the durable record a reader opens does not carry the head-revision run the done_when asks for",
+      "text": "the Measured table labels d6e73e47f0df as the node-file head, which is not the head that landed, and the arm at eca5858ad0 exists only in the source manifest's test_logs, so the durable record a reader opens does not carry the head-revision run the done_when asks for"
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 3474,
+      "severity": "non-blocking",
+      "summary": "the done_when requires ruff check and ruff format --check to report nothing new on the changed paths, and neither the manifest nor any run log records that run, so that half of the measure is claimed rather than shown",
+      "text": "the done_when requires ruff check and ruff format --check to report nothing new on the changed paths, and neither the manifest nor any run log records that run, so that half of the measure is claimed rather than shown"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "three commits read against base d8baf52ad2: d6e73e47 adds the driven key to the reply key tuple in reckon/crew_run_commands.py, 36e89018 adds the 70-line evidence fragment, eca5858ad0 rewrites one line of that fragment",
+    "done_when": "the done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset, two importing-file suite arms, a negative control, and ruff on the changed paths; the file arm and both suite arms are logged at 8 passed and 58 passed with EXIT=0, the negative control is logged, but no head log shows SLURM_JOB_ID unset and no ruff result is recorded",
+    "goal": "the source node.goal asks that tests/test_a_landing_judges_the_head_by_its_suite.py pass in full; the one-line addition at reckon/crew_run_commands.py:3474 puts driven into the bounded reply key tuple, and that file reads 8 passed EXIT=0 at head eca5858ad0a4 in scoped-gate-1795103355447005905.log",
+    "manifest": "the source manifest states status complete, names the three commits d6e73e47, 36e89018 and eca5858ad0, records the scoped gate at 8 passed EXIT=0 at eca5858ad0 and the two suite arms at 58 passed each, and cites negative-control-base.log",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite; the delivered diff d8baf52ad2..eca5858ad0 touches only reckon/crew_run_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite.html"
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_judges_the_head_by_its_suite.py:360 asserts outcome.get(\"driven\") is True on the CLI reply, which is the value under test rather than the True the test passed in, and negative-control-base.log shows that assertion reddening at d8baf52ad2 on exactly the removed tuple entry",
+    "evidence": "scoped-gate-1795103355447005905.log records 8 passed EXIT=0 at eca5858ad0 and negative-control-base.log records 1 failed 7 passed EXIT=1 at d8baf52ad2, but neither head log shows SLURM_JOB_ID unset and no ruff run is recorded",
+    "fit": "reckon/crew_run_commands.py:3474 extends the existing report key tuple and reuses the record's own field name driven rather than inventing a parallel name",
+    "goal_fidelity": "reckon/crew_run_commands.py:3474 carries driven into the bounded reply, the marker reckon/crew_run_commands.py:4211 already writes into the record, and the named file reads 8 passed at head",
+    "reuse": "searched for an owner of reply assembly and found _emit_completion_reply at reckon/crew_run_commands.py:64 already forwarding whole dicts while _complete_many's key tuple at :3467 is the bounded path; the change extends that owner and adds no helper",
+    "scope_discipline": "both paths in the d8baf52ad2..eca5858ad0 diff lie inside the declared reckon and docs/evidence/fragments/queued-work-needs-no-workaround paths, and no test or unrelated code moved"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node.goal asks that tests/test_a_landing_judges_the_head_by_its_suite.py pass in full on the primary branch; reckon/crew_run_commands.py:3474 adds driven to the bounded reply key tuple, the marker reckon/crew_run_commands.py:4211 already writes into the record, and the named file reads 8 passed EXIT=0 at head eca5858ad0 in scoped-gate-1795103355447005905.log.\nVERDICT done_when: the done_when asks for the file at head as an all_debug job with SLURM_JOB_ID unset, two importing-file suite arms with full revisions, the base run as negative control, and ruff clean on the changed paths; the file arm reads 8 passed and both suite arms 58 passed with EXIT=0 (baseline_suite-1795103415931602934.log, after_suite-1795103459050210253.log), negative-control-base.log holds the base red, but no head log shows SLURM_JOB_ID unset and no ruff record exists.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite; the delivered d8baf52ad2..eca5858ad0 diff touches only reckon/crew_run_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite.html, both inside them.\nVERDICT manifest: the source manifest states complete, names commits d6e73e47, 36e89018 and eca5858ad0, records the scoped gate at 8 passed EXIT=0 at eca5858ad0, the two suite arms at 58 passed each, and negative-control-base.log, and its changed_paths list matches the two files the diff touches.\nVERDICT diff: read the three commits against base d8baf52ad2 - d6e73e47 adds one key to the report tuple in reckon/crew_run_commands.py, 36e89018 adds the 70-line evidence fragment, eca5858ad0 rewrites one line of that fragment; no test file is touched and no assertion is deleted or weakened.\nCALL_SITES: reckon/crew_run_commands.py:3977 crew_complete command dispatch into _complete_many\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3474 carries driven into the bounded reply the marker at reckon/crew_run_commands.py:4211 already sets, and the named file reads 8 passed at head.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795103355447005905.log records 8 passed EXIT=0 at eca5858ad0 and negative-control-base.log records 1 failed 7 passed EXIT=1 at d8baf52ad2, but neither head log shows SLURM_JOB_ID unset and no ruff run is recorded anywhere I read.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both paths in the d8baf52ad2..eca5858ad0 diff lie inside the declared reckon and docs/evidence/fragments/queued-work-needs-no-workaround paths, with nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_landing_judges_the_head_by_its_suite.py:360 asserts outcome.get(\"driven\") is True against a reply the test does not supply, and negative-control-base.log shows it redden at d8baf52ad2 on exactly the tuple entry the change adds.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_run_commands.py:3474 extends the existing report key tuple and reuses the record's own field name driven rather than inventing a second spelling.\nSCORE reuse: 20\nJUSTIFICATION reuse: searched reply assembly and found reckon/crew_run_commands.py:64 already forwarding whole dicts on the single-run path while the bounded tuple at :3467 owns the multi-run reply; the change extends that owner and adds no helper.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite.html:32 non-blocking: the fragment claims both node-file head runs record SLURM_JOB_ID unset in their header lines, but scoped-gate-1795102140773901949.log and scoped-gate-1795103355447005905.log carry the command `env PYTHONPATH=. sh -c '...'` with no unset, and reckon/crew/landing_measure.py:887 strips only the submitter's SLURM_* so sbatch's SLURM_JOB_ID is set inside the job; the done_when's unset condition is unproven, though the file reads no SLURM variable so the 8-passed result stands.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-judges-the-head-by-its-suite.html:44 non-blocking: the Measured table labels d6e73e47f0df as the node-file head, which is not the head that landed, and the arm at eca5858ad0 exists only in the source manifest's test_logs, so the durable record a reader opens does not carry the head-revision run the done_when asks for.\nFINDING reckon/crew_run_commands.py:3474 non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths, and neither the manifest nor any run log records that run, so that half of the measure is claimed rather than shown.",
+  "review_method": "Read-only review of the source node record, its manifest, its recorded gate and suite logs, and the three commits against base d8baf52ad2; no suite rerun, no mutation experiment, no worktree write.",
+  "review_run_id": "r-20261119T155745445514-review-of-qwnw-red-file-a-landing-judges-the-head-by-its-suite-eca5858ad0a4",
+  "reviewed_base_sha": "d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72",
+  "reviewed_head_sha": "eca5858ad0a4f99371d0cfc667f9ef764846da67",
+  "reviewed_run_id": "r-20261118T063823708467-qwnw-red-file-a-landing-judges-the-head-by-its-suite",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063823708467-qwnw-red-file-a-landing-judges-the-head-by-its-suite/after_suite-1795103459050210253.log",
+      "revision": "eca5858ad0a4f99371d0cfc667f9ef764846da67",
+      "summary": "58 passed in 37.07s"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063823708467-qwnw-red-file-a-landing-judges-the-head-by-its-suite/baseline_suite-1795103415931602934.log",
+      "revision": "d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72",
+      "summary": "58 passed in 35.59s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:52:57.838022+00:00",
+  "total": 111
+}
