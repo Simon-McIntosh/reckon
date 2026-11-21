@@ -685,6 +685,18 @@ def _parent_process(pid: int) -> int | None:
     return read_parent(pid)
 
 
+def _owned_by_another_user(pid: int) -> bool:
+    """Whether the kernel reports ``pid`` as owned by a user other than this one.
+
+    False when the owner cannot be read: an unreadable owner establishes
+    nothing, so the caller keeps treating the process as one it failed to see.
+    """
+    try:
+        return os.stat(f"/proc/{pid}").st_uid != os.getuid()
+    except OSError:
+        return False
+
+
 class AncestryIncompleteError(Exception):
     """The ancestor search stopped before the top of the process tree.
 
@@ -705,6 +717,7 @@ def ancestry_fence(
     pid: int | None = None,
     environment_of: Callable[[int], dict[str, str] | None] = _process_environment,
     parent_of: Callable[[int], int | None] = _parent_process,
+    owned_by_another_user: Callable[[int], bool] | None = None,
 ) -> dict[str, str]:
     """The fence the submitting process tree carries, read from the kernel.
 
@@ -720,6 +733,8 @@ def ancestry_fence(
     :class:`AncestryIncompleteError` rather than returning empty: it cannot answer
     "no fence", and a coordinator is reached only by actually arriving there.
     """
+    if owned_by_another_user is None:
+        owned_by_another_user = _owned_by_another_user
     current = os.getpid() if pid is None else pid
     seen = {current}
     for _ in range(ANCESTRY_BOUND):
@@ -739,6 +754,11 @@ def ancestry_fence(
             )
         seen.add(parent)
         environment = environment_of(parent)
+        if environment is None and owned_by_another_user(parent):
+            # A fence is started by the submitting user, so a process another
+            # user owns (the host's init, a scheduler daemon) cannot carry it:
+            # the walk has left this user's tree, which is its top.
+            return {}
         if environment is None:
             raise AncestryIncompleteError(
                 f"the environment of parent process {parent} could not be read"
