@@ -216,6 +216,13 @@ capability_raise:
   raised_reasoning: deep
   raised_verification: strict
 
+# How long a run whose launch step has left the scheduler may keep a live-looking
+# phase before it is settled as a worker that ended without delivering. Hours,
+# because the reading concludes nothing will write again: a run still thinking
+# must not be settled for a short quiet spell.
+settle:
+  quiet_after_hours: 6.0
+
 worktree:
   cleanup: conservative
   node_tmp_reserve_bytes: 8589934592

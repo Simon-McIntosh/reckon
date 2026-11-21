@@ -193,6 +193,13 @@ QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
 QUEUE_REPICK_AFTER_SECONDS_KEY = "repick_after_seconds"
 DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
+# How long a run whose launch step has left the scheduler may keep writing
+# before it is read as a worker that ended without delivering. The bound is in
+# hours because it is measured against a stream that has stopped: a run still
+# thinking, or between two slow tool calls, must never be settled for it.
+SETTLE_KEY = "settle"
+SETTLE_QUIET_AFTER_HOURS_KEY = "quiet_after_hours"
+DEFAULT_SETTLE_QUIET_AFTER_HOURS = 6.0
 # The points one session may place on its unlaunched requests at once. A
 # session spends the budget it is given, so the bound is declared here with the
 # rest of the queue namespace rather than fixed in code. A layer that sets no
@@ -1384,6 +1391,30 @@ def admission_pass_budget_seconds(config: Mapping[str, Any] | None) -> float:
     if not math.isfinite(seconds) or seconds <= 0:
         return DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
     return seconds
+
+
+def settle_quiet_after_seconds(config: Mapping[str, Any] | None) -> float:
+    """How long a run's stream must be still before its absence means an end.
+
+    A run that holds a live-looking phase with no worker behind it is settled
+    once its launch step has left the scheduler and its stream has not grown for
+    longer than this bound. The bound is far longer than the launch window a
+    fresh dispatch gets, because this reading concludes that nothing will ever
+    write again: a run that is only slow, or thinking without printing, must not
+    be settled for it. Read from the resolved config's ``settle`` namespace, so
+    a host or project layer retunes it without a code change; a config that
+    declares no such key, or a value that is not a positive number, falls back
+    to the shipped default rather than disabling the reading.
+    """
+    settle = (config or {}).get(SETTLE_KEY)
+    value = (
+        settle.get(SETTLE_QUIET_AFTER_HOURS_KEY, DEFAULT_SETTLE_QUIET_AFTER_HOURS)
+        if isinstance(settle, Mapping)
+        else DEFAULT_SETTLE_QUIET_AFTER_HOURS
+    )
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        return float(DEFAULT_SETTLE_QUIET_AFTER_HOURS) * 3600.0
+    return float(value) * 3600.0
 
 
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:
