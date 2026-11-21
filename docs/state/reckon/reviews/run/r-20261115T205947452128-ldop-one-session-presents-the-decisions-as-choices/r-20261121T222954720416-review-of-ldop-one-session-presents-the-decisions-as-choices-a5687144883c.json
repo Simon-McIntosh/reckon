@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:614 crew_decision_present",
+    "reckon/crew_run_commands.py:644 crew_decision_choose",
+    "reckon/crew_run_commands.py:671 crew_decision_release",
+    "reckon/crew/lead_decisions.py:467 read_decisions (held_work_order)"
+  ],
+  "completed_at": "2026-11-21T22:50:24Z",
+  "dispatched_at": "2026-11-21T22:31:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/lead_presentation.py",
+      "line": 325,
+      "severity": "non-blocking",
+      "text": "ask_path re-implements the readable-slug-plus-8-hex-digest naming of reckon/crew/decision_answers.py:49 _claim_name (lines 57-59) instead of extending or wrapping that owner, so two copies of the same naming rule must be kept in step and the promotion clone detector will see the copy."
+    },
+    {
+      "file": "docs/evidence/fragments/lead-decisions-reach-one-place/ldop-one-session-presents-the-decisions-as-choices.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The section done_when names docs/evidence/fragments/lead-decisions-reach-one-place/s4.html as the rehearsal record and no s4.html exists at the reviewed head, so a reader following the plan's link finds no record even though the content landed under the node slug as this fragment."
+    },
+    {
+      "file": "tests/test_one_session_presents_the_decisions_as_choices.py",
+      "line": 153,
+      "severity": "non-blocking",
+      "text": "No added assertion reads a choice's question or context, and measure/rehearsal-final.json's presented rows carry neither field, so a regression dropping context from lead_presentation.py:98 choice() would leave the whole gate green while the done_when's 'each presented with ... context' fails."
+    },
+    {
+      "file": "tests/test_one_session_presents_the_decisions_as_choices.py",
+      "line": 243,
+      "severity": "non-blocking",
+      "text": "`assert result.exit_code in (0, 1)` is satisfied by a presentation that errors, and the payload check is skipped on exit 1, so the verb's output is untested on exactly the path where a regression would show."
+    },
+    {
+      "file": "tests/test_one_session_presents_the_decisions_as_choices.py",
+      "line": 131,
+      "severity": "non-blocking",
+      "text": "The two-presenter test calls present() sequentially, while decision_answers.claim_presentation is a read-then-write with no lock, so a regression that lets two simultaneous presents both claim one decision would leave this test green."
+    }
+  ],
+  "item_verdicts": {},
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"deliver lead-decisions-reach-one-place \u00a74: one session presents the decisions as choices\"; skills/reckon-select/SKILL.md:1 defines that skill and reckon/crew_run_commands.py:614-690 registers the three verbs it runs, so the landed change is the one presenting session the goal names.\nVERDICT done_when: the done_when asks for contract tests with the skill listed beside the others, a recorded fleet rehearsal with at least three decisions from two projects and each answer recorded and released, a two-presenter exactly-once test, a ready-before-plan-block test with absent fields, and a base negative control logged to docs/evidence/fragments/lead-decisions-reach-one-place/s4.html; tests/test_select_skill_contract.py and tests/test_one_session_presents_the_decisions_as_choices.py assert the rest and the rehearsal sits at docs/evidence/fragments/lead-decisions-reach-one-place/ldop-one-session-presents-the-decisions-as-choices.html:1 \u2014 no s4.html exists at the head.\nVERDICT write_paths: the declared scope is reckon, tests, skills, the fragment directory, the node's fragment file and the figures path; git diff --stat 130892970e..a5687144883c lists nine files (reckon/crew/lead_presentation.py, reckon/crew/lead_decisions.py, reckon/crew/decision_answers.py, reckon/crew_run_commands.py, skills/reckon-select/SKILL.md, skills/reckon-build/SKILL.md, tests/test_one_session_presents_the_decisions_as_choices.py, tests/test_select_skill_contract.py and the fragment), all inside it.\nVERDICT manifest: read in full; it records the four commits, nine changed paths, the gate `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_session_presents_the_decisions_as_choices.py tests/test_select_skill_contract.py` as 10 passed, both armed arms as 58 passed at 130892970e and a5687144883c, and measure/negative-control.log as 4 failed EXIT=1 at base.\nVERDICT diff: read commit by commit against 130892970e \u2014 a1df55a2 adds reckon/crew/lead_presentation.py with choice/present/choose/release plus the three verbs; 23da0a84 lifts held_work_order out of read_decisions and re-sorts merged per-project reads; 81b39dc9 adds survey/ask_path/survey wiring, the skill and its contract tests; a5687144 adds the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:614 crew_decision_present, reckon/crew_run_commands.py:644 crew_decision_choose, reckon/crew_run_commands.py:671 crew_decision_release, reckon/crew/lead_decisions.py:467 read_decisions (held_work_order)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/lead_presentation.py:196 present() claims each offerable decision for one session and returns it as a choice with repository, session, plan, section, options and releases.\nSCORE evidence: 14\nJUSTIFICATION evidence: baseline_suite-1795299904199937475.log:8 and after_suite-1795299947411205017.log:8 both read 58 passed and the two test files ran green, but the done_when's named record docs/evidence/fragments/lead-decisions-reach-one-place/s4.html does not exist at a5687144883c.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only 130892970e..a5687144883c lies inside the declared write paths, and the diff carries no file the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_session_presents_the_decisions_as_choices.py:131 reddens if the claim or the merge re-sort is removed (the recorded merge-sort mutation fails it), while lines 153 and 243 leave question/context and an erroring CLI unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/lead_presentation.py:24 imports crew_home from run_paths and writes claims through decision_answers.claim_presentation, following the module layout of reckon/crew/lead_decisions.py:1.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/lead_presentation.py:325 duplicates the safe-filename-and-digest logic that reckon/crew/decision_answers.py:49 _claim_name already owns.\nFINDING reckon/crew/lead_presentation.py:325 non-blocking: ask_path re-implements the readable-slug-plus-8-hex-digest naming of reckon/crew/decision_answers.py:49 _claim_name (lines 57-59) instead of extending or wrapping that owner, so two copies of the same naming rule must be kept in step and the promotion clone detector will see the copy.\nFINDING docs/evidence/fragments/lead-decisions-reach-one-place/ldop-one-session-presents-the-decisions-as-choices.html:1 non-blocking: the section done_when names docs/evidence/fragments/lead-decisions-reach-one-place/s4.html as the rehearsal record and no s4.html exists at the reviewed head, so a reader following the plan's link finds no record even though the content landed under the node slug as this fragment.\nFINDING tests/test_one_session_presents_the_decisions_as_choices.py:153 non-blocking: no added assertion reads a choice's question or context, and measure/rehearsal-final.json's presented rows carry neither field, so a regression dropping context from lead_presentation.py:98 choice() would leave the whole gate green while the done_when's \"each presented with ... context\" fails.\nFINDING tests/test_one_session_presents_the_decisions_as_choices.py:243 non-blocking: `assert result.exit_code in (0, 1)` is satisfied by a presentation that errors, and the payload check is skipped on exit 1, so the verb's output is untested on exactly the path where a regression would show.\nFINDING tests/test_one_session_presents_the_decisions_as_choices.py:131 non-blocking: the two-presenter test calls present() sequentially, while decision_answers.claim_presentation is a read-then-write with no lock, so a regression that lets two simultaneous presents both claim one decision would leave this test green.\n",
+  "review_run_id": "r-20261121T222954720416-review-of-ldop-one-session-presents-the-decisions-as-choices-a5687144883c",
+  "reviewed_base_sha": "130892970e904f7352b96ab87d17c83fcee24aff",
+  "reviewed_head_sha": "a5687144883cfc16f0d71dd7478a6913d1a92f5a",
+  "reviewed_run_id": "r-20261115T205947452128-ldop-one-session-presents-the-decisions-as-choices",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T22:56:03.148928+00:00",
+  "total": 92
+}
