@@ -3237,9 +3237,8 @@ def _commit_branch_writes(
             },
         )
 
-    committed, _retries = _run_waiting_out_a_held_index_lock(
-        checkout,
-        lambda _attempt: _git(
+    def commit_by_pathspec() -> subprocess.CompletedProcess:
+        return _git(
             checkout,
             "commit",
             "--only",
@@ -3250,7 +3249,26 @@ def _commit_branch_writes(
             "--",
             *(str(p) for p in targets),
             check=False,
-        ),
+        )
+
+    def commit_staged_writes(_attempt: int) -> subprocess.CompletedProcess:
+        # While an earlier attempt waited on a peer's index lock, that peer's
+        # index write can have dropped a path this landing added, and a commit
+        # by pathspec refuses a path the index no longer knows. Such a refusal
+        # stages the paths again and commits once more.
+        result = commit_by_pathspec()
+        if result.returncode != 0 and "did not match any file" in result.stderr:
+            restaged = _git(
+                checkout, "add", "--", *(str(p) for p in targets), check=False
+            )
+            if restaged.returncode != 0:
+                return restaged
+            result = commit_by_pathspec()
+        return result
+
+    committed, _retries = _run_waiting_out_a_held_index_lock(
+        checkout,
+        commit_staged_writes,
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         on_retry=record_commit_retry,
