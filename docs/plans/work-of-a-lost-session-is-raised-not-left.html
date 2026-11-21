@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="queued-work-needs-no-workaround">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;work-of-a-lost-session-is-raised-not-left#s2&quot;],&quot;s4&quot;:[&quot;work-of-a-lost-session-is-raised-not-left#s2&quot;,&quot;work-of-a-lost-session-is-raised-not-left#s5&quot;],&quot;s5&quot;:[&quot;work-of-a-lost-session-is-raised-not-left#s2&quot;],&quot;s16&quot;:[&quot;work-of-a-lost-session-is-raised-not-left#s12&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -101,7 +101,7 @@
     <p><strong>Negative control.</strong> At the base revision the resume case must fail with the refusal.</p>
 
     <h2 id="s8">§8 — The source of a not-yours row against a run's own owner is found</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>The nova coordinator of session <code>0f4fa699-2444-4d93-b978-9931302ff6f8</code> reported on 20 November that its own held run, <code>r-20261118T185447788898-cached-point-program</code>, appears in its obligations five to seven times with the reason &ldquo;Not this session's run: owner session 0f4fa699&rdquo;, which is its own session id. The content review found that no code under <code>reckon/</code>, <code>tests/</code> or <code>docs/ui/</code> emits that text, so where it comes from is not known. The run is held on the lead's instruction as evidence and must not be promoted, resumed, landed or collected; this section reads its records and changes none of them, and changes no product source.</p>
     <p><strong>Deliverable.</strong> A research record, <code>docs/research/a-not-yours-row-against-a-runs-own-owner.html</code>, that names where the text is written (a stored acknowledgement, a hook, the harness or reckon source, with the path and the record), reproduces the repeated row from the stored state, and says whether a repair belongs in this repository. Where it does, the record ends with the endpoint for a new section of this plan.</p>
     <p><strong>Done when.</strong> The record exists, passes <code>reckon audit-doc</code>, quotes the stored record or source line that carries the text with its path, and shows the command and output that list the run more than once for its own owner.</p>
@@ -115,7 +115,7 @@
     <p><strong>Negative control.</strong> With the isolation removed from the case, the added assertion must fail.</p>
 
     <h2 id="s10">§10 — The git shims are read from a path the worker's node holds</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>The admit service runs from a code image on its own node's local disk, and a worker it launches may run on another node that holds no such image. The scheduler shim directory was corrected for this on 20 November after it refused every such launch. The git shim directory is derived the same way; it is only placed on the worker's search path, so on the other node it is silently absent and the worker runs without the git shim.</p>
     <p><strong>Deliverable.</strong> The git shim directory a launch names is on storage every node shares whenever the launching process runs from a code image, by the same rule the scheduler shim directory follows, and one test states that rule for both.</p>
     <p><strong>Owner.</strong> One function answers for both shim directories: the one that already carries the image rule. The git shim directory is not given a copy of that rule.</p>
@@ -123,7 +123,7 @@
     <p><strong>Negative control.</strong> At the base revision the two image cases for the git shim directory must fail.</p>
 
     <h2 id="s11">§11 — The directory view gives each session's address</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>On 20 November a session id on a pointer was mapped to a messageable peer by reading the harness's session files by hand. Fourteen messages sent that way settled most of the day's open questions within the hour.</p>
     <p><strong>Deliverable.</strong> The crew <code>directory</code> view carries, for each session that owns a live record, the name another session uses to message it, carried on the session's existing transport entry, from which its reachability now is read.</p>
     <p><strong>Owner and surface.</strong> The directory view already carries a transport entry per coordinator, read from each run's stream. The peer name is attached to that entry and reachability is derived from it; no second address field and no separate flag is added beside it.</p>
@@ -138,7 +138,7 @@
     <p><strong>Negative control.</strong> The record includes the fleet-gate hold in <code>reckon/crew/admission/selection.py</code>, which compares a queued pointer's backend with the configured <code>local_backend</code> by name, a site known before the search began; a search that does not return it is not the search the record claims.</p>
 
     <h2 id="s13">§13 — A review that changed no file releases cleanly</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>A read-only review writes its manifest's commits field as prose, for example &ldquo;none — read-only review&rdquo; or &ldquo;none (review of an authored plan; no repository file changed)&rdquo;. The release step resolves that text as a revision, fails, and the run is classified blocked or unreadable with &ldquo;workspace release refused: manifest commit '…' does not resolve&rdquo;. Five review runs of the power_convertor session on 19 and 20 November, a review of an mctb run and this plan's own content review all ended that way with their records stored. <code>crew complete --gate not-run --wait</code> then fails on &ldquo;commits missing&rdquo; unless an outcome is passed.</p>
     <p><strong>Deliverable.</strong> A review run whose record is stored and whose worktree holds no change releases its workspace and is recorded without a refusal, whatever its manifest writes where a commit would go, and <code>crew complete</code> for such a run needs no outcome text to stand in for commits.</p>
     <p><strong>Owner.</strong> A reader that recognises a commitless role's declaration of no commits already exists. The release path must judge the field through that reader, and the reader must recognise the three spellings observed on 19 and 20 November; the first investigation of the node states which of the two was missing.</p>
@@ -198,14 +198,14 @@
     <p><strong>Negative control.</strong> At the base revision the first case must fail with the head unmerged.</p>
 
     <h2 id="s21">§21 — crew merge reads a manifest whose suites are labelled</h2>
-<section data-reckon="section" data-id="s21" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s21" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>The same run's manifest carries its suite arms per label, as <code>baseline_suite_UNIT</code>, <code>after_suite_VALIDATION</code> and so on, each with zero added failures. <code>crew merge</code> refused it for want of top-level <code>baseline_suite</code> and <code>after_suite</code> fields, so a promoted, passing run could not be merged through the verb.</p>
     <p><strong>Deliverable.</strong> <code>crew merge</code> accepts a manifest whose suite arms are labelled, judging each label's pair as it judges the unlabelled pair, and refuses only where a label's pair is missing a side or adds a failure.</p>
     <p><strong>Done when.</strong> <code>tests/test_crew_merge_reads_labelled_suites.py</code> passes, covering: a manifest with two labelled pairs, each adding nothing, merges; one whose second label adds a failure is refused naming the label and the id; and one whose label has a baseline and no after arm is refused naming the missing side.</p>
     <p><strong>Negative control.</strong> At the base revision the first case must fail with the missing-field refusal.</p>
 
     <h2 id="s22">§22 — A landing-refused duty clears when the run's head is on the primary branch</h2>
-<section data-reckon="section" data-id="s22" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s22" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>After that run's head was merged, the coordinator's obligations still listed it as landing-refused, nine and a half hours old.</p>
     <p><strong>Deliverable.</strong> A landing-refused duty is dropped from the obligations view once the run's head is an ancestor of the primary branch.</p>
     <p><strong>Owner.</strong> The duty is raised where obligations are built from the pointer classification, and it is cleared there by the same landed-elsewhere reading §15 acts on.</p>
@@ -213,7 +213,7 @@
     <p><strong>Negative control.</strong> With the head left unmerged in the first case, the second read must still list the duty.</p>
 
     <h2 id="s23">§23 — A run's stream is read by the harness that wrote each attempt</h2>
-<section data-reckon="section" data-id="s23" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s23" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p>The run §17 describes holds six attempts written by one harness and a pointer naming another. Every read that folds its stream through the pointer's dialect is refused: <code>crew complete</code> died on it, and the admission service's review sweep failed for the whole project on every pass until the sweep was made to record the refusal on the one run.</p>
     <p><strong>Deliverable.</strong> Each attempt's stream is folded by the dialect of the harness that wrote it, whatever backend the pointer names now, so <code>crew complete</code>, <code>crew observe</code> and the views read a run that has changed harness and report the spend of every attempt.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py</code> passes, covering: a run with attempts written by two harnesses folds each attempt and reports the summed spend of both; <code>crew complete</code> with a failed gate records such a run; <code>crew observe</code> on it returns its state without a dialect refusal; the live view lists it with the spend of both harnesses; and a run written by one harness reads as it does today.</p>
@@ -262,17 +262,35 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261121T010303468308-wlsr-the-git-shims-follow-the-shared-checkout" data-who="reckon-build" data-when="2026-11-21T01:53:49.215Z">
     <div class="r-comment-body"><p>The git shim directory now names the checkout a published reload image was published from: the image rule moved into reckon.nested_launch.shims_beside(module_file, directory), and both shim_directory() and worker_git_shim.worker_shim_directory() ask it. Gate: 8 passed at the landed revision; negative control at e689315bb7: 2 failed, 6 passed (the two git image cases). Neighbouring shim suites: 24 passed.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261121T020857228639-review-of-wlsr-the-directory-gives-a-sessions-address-161456ebb261" data-who="reckon-build" data-when="2026-11-21T02:32:25.369Z">
+    <div class="r-comment-body"><p>The reviewed node lands on the evidence it recorded: its gate log shows 4 passed with EXIT=0 at 161456ebb2 and its negative control reddens the first case with EXIT=1, so the add is sound; scores are goal_fidelity 17, evidence 17, scope_discipline 19, durability 15, fit 19, reuse 13, and all three findings are non-blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261121T010304646582-wlsr-the-directory-gives-a-sessions-address" data-who="reckon-build" data-when="2026-11-21T02:03:48.223Z">
+    <div class="r-comment-body"><p>The directory view now carries each session's peer name and a reachable flag on the transport entry it already holds, read from the harness's own session records: a live harness process reads true, an ended one keeps its name and reads false, and a session with no record reads null for both — 4 gate cases pass, with the negative control showing the first case fails once the fixture's harness record is removed.</p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261121T014914539977-review-of-wlsr-a-review-that-changed-nothing-releases-ed05be2f9f7b" data-who="reckon-build" data-when="2026-11-21T02:08:51.407Z">
     <div class="r-comment-body"><p>Independent review of r-20261121T010306766051-wlsr-a-review-that-changed-nothing-releases at head ed05be2f9f7baf5ec60c3e7bce8e4d1042ede917 (base e689315bb74ca1efdd63eee69d7a55ed9b235a0e): parsed record, all six dimensions scored, added_failure_count 0, one non-blocking finding on the fragment's unbacked "33 passed" claim.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261121T010306766051-wlsr-a-review-that-changed-nothing-releases" data-who="reckon-build" data-when="2026-11-21T01:40:49.022Z">
     <div class="r-comment-body"><p>A review that changed nothing now releases: the release step judges the manifest's commits field through the commitless declaration reader, so all three observed prose spellings release and read recorded instead of refusing with "manifest commit '…' does not resolve"; head gate 5 passed EXIT=0, base arm 3 failed/2 passed EXIT=1.</p></div>
 </div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819" data-who="reckon-build" data-when="2026-11-21T02:32:46.987Z">
+    <div class="r-comment-body"><p>review verdict for r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole stored parsed at review-records/r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole.at-26582d83f81960a3b5b62a288aefbde07f928905.json; total 108, no blocking findings, two non-blocking findings recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261121T021843631870-review-of-wlsr-a-stop-ends-the-step-34b1a75e54ba" data-who="reckon-build" data-when="2026-11-21T02:34:03.673Z">
+    <div class="r-comment-body"><p>Review stored for run r-20261121T010319443824-wlsr-a-stop-ends-the-step at head 34b1a75e54 (base ff3bb24bcf): parsed record, six dimensions scored 17/20, 15/20, 20/20, 18/20, 18/20, 12/20, added_failure_count 0, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261121T021711341646-review-of-wlsr-a-lost-session-is-a-derived-fact-8ce55925051e" data-who="reckon-build" data-when="2026-11-21T02:37:46.006Z">
+    <div class="r-comment-body"><p>A parsed review of r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact at e689315bb7..8ce5592505 scores all six dimensions (goal_fidelity 18, evidence 11, scope_discipline 15, durability 9, fit 16, reuse 18) with one blocking and four non-blocking findings.</p></div>
+</div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261121T020528136728-review-of-wlsr-crew-merge-reads-labelled-suites-01b7af4e52c5" data-who="reckon-build" data-when="2026-11-21T02:31:28.895Z">
     <div class="r-comment-body"><p>Reviewed wlsr-crew-merge-reads-labelled-suites at head 01b7af4e52 against base ff3bb24bcf: goal met and gate re-run 4 passed, six dimensions scored 17/17/17/12/16/9, four non-blocking findings, 0 added suite failures.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261121T010321811834-wlsr-crew-merge-reads-labelled-suites" data-who="reckon-build" data-when="2026-11-21T02:05:08.453Z">
     <div class="r-comment-body"><p>crew merge now judges a manifest's suite arms per label</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261121T010322862965-wlsr-a-landing-refused-duty-clears-on-merge" data-who="reckon-build" data-when="2026-11-21T02:07:57.242Z">
+    <div class="r-comment-body"><p>The obligations pass now withdraws a landing-refused duty once the run's head is an ancestor of the resolved checkout's primary branch, reading ancestry the way the departure reader does and reading a broken probe as unlanded; gate tests/test_a_landing_refused_duty_clears_on_merge.py reports 3 passed, and at the base revision the merged-head read still lists the duty.</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261121T020642094174-review-of-wlsr-a-stream-is-read-by-the-harness-that-wrote-it-2d86351c9e57" data-who="reckon-build" data-when="2026-11-21T02:30:16.001Z">
     <div class="r-comment-body"><p>Reviewed r-20261121T010324473288 at ff3bb24bcf..2d86351c9e: the landed fold names each attempt's writer from its own event vocabulary, the gate reads 5 passed and the base control 4 failed; scores goal 19, evidence 16, scope 16, durability 17, fit 18, reuse 13, with three non-blocking findings (duplicated vocabulary table, an overstated negative-control cause, and spend assertions that measure metering rather than the change).</p></div>
@@ -286,32 +304,14 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261121T010258718236-wlsr-a-scheduler-job-names-its-owner" data-who="reckon-build" data-when="2026-11-21T01:47:54.664Z">
     <div class="r-comment-body"><p>The sbatch, srun and salloc shims now add the submitting run id and its coordinator session id to the job's comment field, keeping any comment the caller supplied and adding nothing when no run is in the environment; the gate tests/test_a_scheduler_job_names_its_owner.py tests/test_nested_launch.py tests/test_an_absolute_scheduler_call_runs_fenced.py reports 26 passed.</p></div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261121T021015515647-review-of-wlsr-a-launch-failed-run-resumes-9c418b068230" data-who="reckon-build" data-when="2026-11-21T02:34:05.568Z">
+    <div class="r-comment-body"><p>reviewed r-20261121T010259981964-wlsr-a-launch-failed-run-resumes at 9c418b0682 against base e689315bb7 — the plain `crew resume --run` now relaunches a launch-failed run on its own backend and the view names it, but the phase is cleared at resumption.py:2131 before every gate that can still refuse the launch, so a resume refused by a paused lane strips the state that stops the lift loop.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261121T015554174666-review-of-wlsr-the-source-of-a-not-yours-row-956185c17096" data-who="reckon-build" data-when="2026-11-21T02:21:29.599Z">
     <div class="r-comment-body"><p>The review of run r-20261121T010301059303-wlsr-the-source-of-a-not-yours-row at base e689315bb74ca1efdd63eee69d7a55ed9b235a0e and head 956185c1709670b962e5cf8eeb3f4badf460765a is stored as a parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 20, durability 8, fit 18, reuse 20, with two non-blocking findings (a quoted recorded_at that does not match the stored pointer, and no figure for the seven-against-one comparison); the landed research record and its landing fragment answer plan §8 and hold no blocking defect.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261121T010301059303-wlsr-the-source-of-a-not-yours-row" data-who="reckon-build" data-when="2026-11-21T01:52:24.660Z">
     <div class="r-comment-body"><p>The research record `docs/research/a-not-yours-row-against-a-runs-own-owner.html` names the phrase's writer and shows its repetition: `reckon crew view obligations --project nova --session 0f4fa699-...` lists the held run `r-20261118T185447788898-cached-point-program` in 7 rows (6 sweep-failed + 1 deferred blocked) while the same command for session c042a637 lists its held run in 1 row, and the record proposes a repair endpoint.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261121T020857228639-review-of-wlsr-the-directory-gives-a-sessions-address-161456ebb261" data-who="reckon-build" data-when="2026-11-21T02:32:25.369Z">
-    <div class="r-comment-body"><p>The reviewed node lands on the evidence it recorded: its gate log shows 4 passed with EXIT=0 at 161456ebb2 and its negative control reddens the first case with EXIT=1, so the add is sound; scores are goal_fidelity 17, evidence 17, scope_discipline 19, durability 15, fit 19, reuse 13, and all three findings are non-blocking.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261121T010304646582-wlsr-the-directory-gives-a-sessions-address" data-who="reckon-build" data-when="2026-11-21T02:03:48.223Z">
-    <div class="r-comment-body"><p>The directory view now carries each session's peer name and a reachable flag on the transport entry it already holds, read from the harness's own session records: a live harness process reads true, an ended one keeps its name and reads false, and a session with no record reads null for both — 4 gate cases pass, with the negative control showing the first case fails once the fixture's harness record is removed.</p></div>
-</div>
-<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819" data-who="reckon-build" data-when="2026-11-21T02:32:46.987Z">
-    <div class="r-comment-body"><p>review verdict for r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole stored parsed at review-records/r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole.at-26582d83f81960a3b5b62a288aefbde07f928905.json; total 108, no blocking findings, two non-blocking findings recorded.</p></div>
-</div>
-<div class="r-comment" data-section="s7" data-id="c-run-r-20261121T021015515647-review-of-wlsr-a-launch-failed-run-resumes-9c418b068230" data-who="reckon-build" data-when="2026-11-21T02:34:05.568Z">
-    <div class="r-comment-body"><p>reviewed r-20261121T010259981964-wlsr-a-launch-failed-run-resumes at 9c418b0682 against base e689315bb7 — the plain `crew resume --run` now relaunches a launch-failed run on its own backend and the view names it, but the phase is cleared at resumption.py:2131 before every gate that can still refuse the launch, so a resume refused by a paused lane strips the state that stops the lift loop.</p></div>
-</div>
-<div class="r-comment" data-section="s19" data-id="c-run-r-20261121T021843631870-review-of-wlsr-a-stop-ends-the-step-34b1a75e54ba" data-who="reckon-build" data-when="2026-11-21T02:34:03.673Z">
-    <div class="r-comment-body"><p>Review stored for run r-20261121T010319443824-wlsr-a-stop-ends-the-step at head 34b1a75e54 (base ff3bb24bcf): parsed record, six dimensions scored 17/20, 15/20, 20/20, 18/20, 18/20, 12/20, added_failure_count 0, three non-blocking findings.</p></div>
-</div>
-<div class="r-comment" data-section="s2" data-id="c-run-r-20261121T021711341646-review-of-wlsr-a-lost-session-is-a-derived-fact-8ce55925051e" data-who="reckon-build" data-when="2026-11-21T02:37:46.006Z">
-    <div class="r-comment-body"><p>A parsed review of r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact at e689315bb7..8ce5592505 scores all six dimensions (goal_fidelity 18, evidence 11, scope_discipline 15, durability 9, fit 16, reuse 18) with one blocking and four non-blocking findings.</p></div>
-</div>
-<div class="r-comment" data-section="s22" data-id="c-run-r-20261121T010322862965-wlsr-a-landing-refused-duty-clears-on-merge" data-who="reckon-build" data-when="2026-11-21T02:07:57.242Z">
-    <div class="r-comment-body"><p>The obligations pass now withdraws a landing-refused duty once the run&#x27;s head is an ancestor of the resolved checkout&#x27;s primary branch, reading ancestry the way the departure reader does and reading a broken probe as unlanded; gate tests/test_a_landing_refused_duty_clears_on_merge.py reports 3 passed, and at the base revision the merged-head read still lists the duty.</p></div>
 </div>
 </section>
 </main>
