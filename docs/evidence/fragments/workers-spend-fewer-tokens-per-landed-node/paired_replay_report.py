@@ -27,9 +27,23 @@ from pathlib import Path
 REPO = Path(__file__).resolve()
 PLAN = "workers-spend-fewer-tokens-per-landed-node"
 FRAGMENT = Path("docs/evidence/fragments") / PLAN
-ASSIGNMENT = FRAGMENT / "paired-replay-assignment.json"
+ASSIGNMENT_FILES = [
+    "paired-replay-assignment.json",
+    "paired-replay-assignment-2.json",
+]
+ASSIGNMENT = FRAGMENT / ASSIGNMENT_FILES[0]
 OBSERVATIONS = FRAGMENT / "paired-replay-observations.json"
 RECORD = FRAGMENT / "paired-replay-report.html"
+ARCHIVE = Path("docs/evidence/archive") / f"{PLAN}-landed.html"
+POOLED_SECTION = "s8-pooled-local-record"
+LEAD_DECISION = "2026-11-20"
+NEGATIVE_CONTROL = {
+    "run_id": "r-negative-control-unlisted-plan",
+    "node": "replay-clive-unlisted-plan-s1",
+    "plan": "a-plan-the-producer-does-not-name",
+    "gate": "passed",
+    "base_sha": "0" * 40,
+}
 FIXTURE = Path("docs/research/fixtures/codex-refused-patch-stream.jsonl")
 ARMS = ["clive", "clive-anchored", "clive-replicate", "omp-local", "codex", "codex-anchored"]
 BASELINES = {
@@ -46,16 +60,11 @@ FIXTURE_REFUSAL = re.compile(r"apply_patch verification failed", re.IGNORECASE)
 ANCHORED_EDIT = "mcp__reckon-anchored-edit__edit_anchored"
 ANCHORED_READ = "mcp__reckon-anchored-edit__read_anchored"
 STORE_QUERY = "SELECT detail FROM run_details WHERE run_id = ?"
-PLAN_ABBREV = {
-    "the-monitor-shows-the-work-it-watches": "mon",
-    "the-crew-does-its-own-bookkeeping": "bk",
-    "lane-and-model-routing": "lane",
-    "a-seat-held-elsewhere-is-not-restarted": "seat",
-    PLAN: "ab",
-}
-NODE_ARM = re.compile(
-    r"^replay-(clive-anchored|clive-replicate|clive|omp-local|codex-anchored|codex)"
-    r"-(mon|bk|lane|seat|ab)-s(\d+)$"
+LOCAL_ARMS = ["clive", "clive-anchored", "omp-local", "clive-replicate"]
+STOPPED_ARMS = {"codex", "codex-anchored"}
+REPLAY_NODE = re.compile(
+    r"^replay-(clive-anchored|clive-replicate|omp-local|codex-anchored|codex|clive)"
+    r"-(.+)-s(\d+)$"
 )
 
 
@@ -411,13 +420,46 @@ def store_rows(db_path: Path) -> dict[str, dict]:
         )
         for row in cursor:
             payload = json.loads(row["payload"])
-            node = str(payload.get("node") or "")
-            if not NODE_ARM.match(node):
-                continue
             rows[row["run_id"]] = payload
     finally:
         connection.close()
     return rows
+
+
+def load_assignments(repo: Path) -> list[dict]:
+    return [
+        json.loads((repo / FRAGMENT / name).read_text()) for name in ASSIGNMENT_FILES
+    ]
+
+
+def named_plans(assignments: list[dict]) -> list[str]:
+    """Every plan the committed assignments draw a section from."""
+    plans: list[str] = []
+    for assignment in assignments:
+        for section in assignment["sections"]:
+            if section["plan"] not in plans:
+                plans.append(section["plan"])
+    return plans
+
+
+def excluded_sections(assignments: list[dict]) -> set[tuple[str, str]]:
+    names: set[tuple[str, str]] = set()
+    for assignment in assignments:
+        for entry in assignment.get("exclusions") or []:
+            if "plan" in entry and "section" in entry:
+                names.add((entry["plan"], entry["section"]))
+    return names
+
+
+def pooled_sections(assignments: list[dict]) -> list[dict]:
+    excluded = excluded_sections(assignments)
+    sections: list[dict] = []
+    for assignment in assignments:
+        for section in assignment["sections"]:
+            if (section["plan"], section["section"]) in excluded:
+                continue
+            sections.append(section)
+    return sections
 
 
 def store_detail(db_path: Path, run_id: str) -> dict:
@@ -446,40 +488,113 @@ def effort_hours(repo: Path, plan: str, section: str) -> float | None:
 # --- measurement ----------------------------------------------------------
 
 
-def measure(repo: Path, root: Path, db_path: Path) -> dict:
-    assignment = json.loads((repo / ASSIGNMENT).read_text())
+def excluded_run(
+    run_id: str, payload: dict, plan: dict | str, section_id: str, declared: str, reason: str
+) -> dict:
+    return {
+        "run_id": run_id,
+        "plan": plan,
+        "section": section_id,
+        "declared_arm": declared,
+        "arm": "excluded",
+        "membership_reason": reason,
+        "backend": str(payload.get("backend") or declared),
+        "gate": payload.get("gate"),
+        "outcome": payload.get("outcome"),
+        "base_sha": payload.get("base_sha"),
+        "commits": payload.get("commits") or [],
+        "attempts": 1,
+        "anchored_edit_launches": [],
+        "effort_hours": None,
+        "stored_input": None,
+        "launch_inputs": [],
+        "launches": 0,
+        "stream_input": None,
+        "rollout_input": None,
+        "rollouts": 0,
+        "landed": False,
+        "input": None,
+        "output": None,
+        "peak": None,
+        "tool_calls": 0,
+        "edits": 0,
+        "edit_failures": 0,
+        "anchored_reads": 0,
+        "anchored_edits": 0,
+        "terminal_records": 0,
+        "output_measured": False,
+    }
+
+
+def measure(
+    repo: Path, root: Path, db_path: Path, fixture_rows: list[dict] | None = None
+) -> dict:
+    assignments = load_assignments(repo)
+    plans = named_plans(assignments)
+    sections = {
+        (section["plan"], section["section"]): section
+        for section in pooled_sections(assignments)
+    }
     observations = (
         json.loads((repo / OBSERVATIONS).read_text())
         if (repo / OBSERVATIONS).exists()
         else {"observations": []}
     )
     stored = store_rows(db_path)
+    for row in fixture_rows or []:
+        stored[str(row["run_id"])] = row
+    stored[NEGATIVE_CONTROL["run_id"]] = dict(NEGATIVE_CONTROL)
     by_section: dict[tuple[str, str], dict[str, dict]] = {}
     runs = []
-    for run_id, payload in stored.items():
+    for run_id in sorted(stored):
+        payload = stored[run_id]
         node = str(payload.get("node") or "")
-        match = NODE_ARM.match(node)
+        match = REPLAY_NODE.match(node)
         if not match:
             continue
-        declared, _abbrev, section = match.groups()
+        declared = match.group(1)
+        section_id = main_section(match.group(3))
         plan = str(payload.get("plan") or "")
-        if plan not in PLAN_ABBREV:
+        if plan not in plans:
+            runs.append(
+                excluded_run(
+                    run_id,
+                    payload,
+                    plan,
+                    section_id,
+                    declared,
+                    "the run's plan "
+                    + repr(plan)
+                    + " is not one of the plans the producer names ("
+                    + ", ".join(plans)
+                    + "); the section is listed as excluded rather than dropped",
+                )
+            )
+            continue
+        if (plan, section_id) not in sections:
+            runs.append(
+                excluded_run(
+                    run_id,
+                    payload,
+                    plan,
+                    section_id,
+                    declared,
+                    "the section is not drawn by any committed assignment; it is listed as "
+                    "excluded rather than dropped",
+                )
+            )
             continue
         run_dir = resolve_run_dir(root, run_id)
         if run_dir is None:
             runs.append(
-                {
-                    "run_id": run_id,
-                    "plan": plan,
-                    "section": main_section(section),
-                    "declared_arm": declared,
-                    "arm": "excluded",
-                    "membership_reason": "no run directory on this host",
-                    "backend": str(payload.get("backend") or declared),
-                    "gate": payload.get("gate"),
-                    "base_sha": payload.get("base_sha"),
-                    "input": None,
-                }
+                excluded_run(
+                    run_id,
+                    payload,
+                    plan,
+                    section_id,
+                    declared,
+                    "no run directory on this host",
+                )
             )
             continue
         attempts = attempt_records(run_dir)
@@ -526,7 +641,6 @@ def measure(repo: Path, root: Path, db_path: Path) -> dict:
             totals["output_measured"] = totals["output_measured"] or rollouts["output"] is not None
         detail = store_detail(db_path, run_id)
         stored_tokens = (detail.get("budget") or {}).get("tokens") or {}
-        section_id = main_section(section)
         run = {
             "run_id": run_id,
             "plan": plan,
@@ -554,7 +668,10 @@ def measure(repo: Path, root: Path, db_path: Path) -> dict:
         runs.append(run)
         by_section.setdefault((plan, section_id), {})[arm] = run
     return {
-        "assignment": assignment,
+        "assignment": assignments[0],
+        "assignments": assignments,
+        "plans": plans,
+        "sections": pooled_sections(assignments),
         "observations": observations,
         "runs": runs,
         "by_section": by_section,
@@ -810,6 +927,404 @@ def pair_table(pairs: list[dict]) -> str:
         "<th>Baseline run</th><th>Baseline input</th><th>Arm minus baseline</th>"
         "</tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
     )
+
+
+def render_pooled(data: dict, result: dict, check: dict) -> str:
+    """The pooled §8 section: both assignments, every plan they draw from."""
+    ids = POOLED_SECTION
+    arms = result["arms"]
+    same_arm = result["same_arm"]
+    sections = data["sections"]
+    local_runs = [r for r in data["runs"] if r["arm"] in LOCAL_ARMS]
+    codex_runs = [r for r in data["runs"] if r["arm"] in STOPPED_ARMS]
+    excluded = [r for r in data["runs"] if r["arm"] == "excluded"]
+    negative = [r for r in excluded if r["run_id"] == NEGATIVE_CONTROL["run_id"]]
+    excluded = [r for r in excluded if r["run_id"] != NEGATIVE_CONTROL["run_id"]]
+    plans = data["plans"]
+
+    by_plan: dict[str, dict] = {plan: {"sections": 0, "local": 0, "codex": 0} for plan in plans}
+    for section in sections:
+        by_plan.setdefault(section["plan"], {"sections": 0, "local": 0, "codex": 0})
+        by_plan[section["plan"]]["sections"] += 1
+    for run in local_runs:
+        by_plan.setdefault(run["plan"], {"sections": 0, "local": 0, "codex": 0})
+        by_plan[run["plan"]]["local"] += 1
+    for run in codex_runs:
+        by_plan.setdefault(run["plan"], {"sections": 0, "local": 0, "codex": 0})
+        by_plan[run["plan"]]["codex"] += 1
+
+    plan_rows = []
+    for plan in plans:
+        figures = by_plan[plan]
+        plan_rows.append(
+            "<tr><td><code>"
+            + html.escape(plan)
+            + "</code></td><td>"
+            + str(figures["sections"])
+            + "</td><td>"
+            + str(figures["local"])
+            + "</td><td>"
+            + str(figures["codex"])
+            + "</td></tr>"
+        )
+
+    arm_rows = []
+    arm_rows.append(
+        "<tr><td><code>clive</code></td><td>baseline</td><td>"
+        + str(len(sections))
+        + "</td><td>"
+        + str(arms["clive"]["runs"])
+        + "</td><td>"
+        + rate(arms["clive"]["passed"], arms["clive"]["runs"])
+        + "</td><td>"
+        + tokens(arms["clive"]["input_total"])
+        + "</td><td>"
+        + tokens(arms["clive"]["input_per_passed"])
+        + "</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>baseline</td></tr>"
+    )
+    for arm in ["clive-anchored", "omp-local"]:
+        treatment = result["treatments"][arm]
+        primary = treatment["primary"]
+        arm_rows.append(
+            "<tr><td><code>"
+            + arm
+            + "</code></td><td>treatment</td><td>"
+            + str(primary["count"])
+            + "</td><td>"
+            + str(arms[arm]["runs"])
+            + "</td><td>"
+            + rate(arms[arm]["passed"], arms[arm]["runs"])
+            + "</td><td>"
+            + tokens(arms[arm]["input_total"])
+            + "</td><td>"
+            + tokens(arms[arm]["input_per_passed"])
+            + "</td><td>"
+            + tokens(primary["mean_difference"])
+            + "</td><td>"
+            + percent(primary["relative"])
+            + "</td><td>"
+            + tokens(primary["low"])
+            + " to "
+            + tokens(primary["high"])
+            + "</td><td><strong>"
+            + treatment["verdict"]
+            + "</strong></td></tr>"
+        )
+    arm_rows.append(
+        "<tr><td><code>clive-replicate</code></td><td>same-arm control</td><td>"
+        + str(same_arm["count"])
+        + "</td><td>"
+        + str(arms["clive-replicate"]["runs"])
+        + "</td><td>"
+        + rate(arms["clive-replicate"]["passed"], arms["clive-replicate"]["runs"])
+        + "</td><td>"
+        + tokens(arms["clive-replicate"]["input_total"])
+        + "</td><td>"
+        + tokens(arms["clive-replicate"]["input_per_passed"])
+        + "</td><td>"
+        + tokens(same_arm["mean_difference"])
+        + "</td><td>"
+        + percent(same_arm["relative"])
+        + "</td><td>"
+        + tokens(same_arm["low"])
+        + " to "
+        + tokens(same_arm["high"])
+        + "</td><td>spread, not a treatment</td></tr>"
+    )
+
+    codex_rows = []
+    for arm in ["codex", "codex-anchored"]:
+        figures = arms[arm]
+        codex_rows.append(
+            "<tr><td><code>"
+            + arm
+            + "</code></td><td>"
+            + str(figures["runs"])
+            + "</td><td>"
+            + rate(figures["passed"], figures["runs"])
+            + "</td><td>"
+            + tokens(figures["input_total"])
+            + "</td><td>"
+            + tokens(figures["input_per_passed"])
+            + "</td><td><strong>stopped</strong> &mdash; the codex arms were stopped on "
+            + LEAD_DECISION
+            + " and their remaining replays were never run; these are partial results, "
+            "not a verdict</td></tr>"
+        )
+
+    metric_rows = []
+    for arm in LOCAL_ARMS:
+        figures = arms[arm]
+        metric_rows.append(
+            "<tr><td><code>"
+            + arm
+            + "</code></td><td>"
+            + fmt(figures["tool_calls_per_run"])
+            + "</td><td>"
+            + fmt(figures["output_per_run"])
+            + ("" if figures["output_measured"] else "*")
+            + "</td><td>"
+            + fmt(figures["peak_mean"])
+            + "</td><td>"
+            + rate(figures["edit_failures"], figures["edits"])
+            + "</td><td>"
+            + str(figures["anchored_edits"])
+            + " / "
+            + str(figures["anchored_reads"])
+            + "</td></tr>"
+        )
+
+    exclusion_rows = [
+        "<tr><td><code>"
+        + run["run_id"]
+        + "</code></td><td>"
+        + html.escape(str(run["plan"]))
+        + "#"
+        + run["section"]
+        + "</td><td>"
+        + html.escape(run["membership_reason"])
+        + "</td></tr>"
+        for run in excluded
+    ]
+    for assignment in data["assignments"]:
+        for entry in assignment.get("exclusions") or []:
+            if "section" in entry:
+                name = entry["plan"] + "#" + entry["section"]
+            else:
+                name = "codex arms (" + ", ".join(entry.get("arms") or []) + ")"
+            exclusion_rows.append(
+                "<tr><td>&mdash;</td><td>"
+                + html.escape(name)
+                + "</td><td>"
+                + html.escape(str(entry.get("reason") or ""))
+                + "</td></tr>"
+            )
+
+    codex_sections = sorted({run["plan"] + "#" + run["section"] for run in codex_runs})
+    if negative:
+        negative_text = (
+            "<p id=\""
+            + ids
+            + "-negative-result\">The producer was given a fixture replay row whose plan it "
+            "does not name (<code>"
+            + html.escape(negative[0]["run_id"])
+            + "</code>, plan <code>"
+            + html.escape(str(negative[0]["plan"]).rstrip("\n"))
+            + "</code>) and <strong>listed it as excluded with its reason</strong>, rather than "
+            "dropping it: "
+            + html.escape(negative[0]["membership_reason"])
+            + ". With the silent drop restored in a scratch copy, the row is absent.</p>"
+        )
+        negative_listed = "1"
+    else:
+        negative_text = (
+            "<p id=\""
+            + ids
+            + "-negative-result\"><strong>The negative control is not met:</strong> the fixture "
+            "row whose plan the producer does not name was dropped rather than listed.</p>"
+        )
+        negative_listed = "0"
+    codex_note = (
+        str(len(codex_runs))
+        + " codex runs were recorded before the stop, over "
+        + str(len(codex_sections))
+        + " of the "
+        + str(len(sections))
+        + " sections: "
+        + ", ".join(codex_sections)
+        + ". No codex replay is counted in the pooled local table, and no codex verdict is drawn."
+    )
+
+    failed = [r for r in local_runs if not r["landed"]]
+    failed_note = (
+        str(len(failed))
+        + " of the "
+        + str(len(local_runs))
+        + " local runs did not reach a passed gate."
+        if failed
+        else "Every one of the " + str(len(local_runs)) + " local runs reached a passed gate."
+    )
+
+    assignment_names = ", ".join(
+        html.escape(ASSIGNMENT_FILES[index])
+        for index in range(len(data["assignments"]))
+    )
+    assignment_seeds = ", ".join(str(a["seed"]) for a in data["assignments"])
+
+    values = {
+        "IDS": ids,
+        "PLANS": ", ".join("<code>" + html.escape(plan) + "</code>" for plan in plans),
+        "PLAN_ROWS": "".join(plan_rows),
+        "SECTIONS": str(len(sections)),
+        "LOCAL_RUNS": str(len(local_runs)),
+        "LOCAL_ARMS": str(len(LOCAL_ARMS)),
+        "ARM_ROWS": "".join(arm_rows),
+        "CODEX_ROWS": "".join(codex_rows),
+        "CODEX_NOTE": codex_note,
+        "METRIC_ROWS": "".join(metric_rows),
+        "NEGATIVE_TEXT": negative_text,
+        "NEGATIVE_LISTED": negative_listed,
+        "EXCLUSION_ROWS": "".join(exclusion_rows)
+        or "<tr><td>&mdash;</td><td>&mdash;</td><td>Nothing is excluded.</td></tr>",
+        "SAME_ARM_COUNT": str(same_arm["count"]),
+        "SAME_ARM_MEAN": tokens(same_arm["mean_difference"]),
+        "SAME_ARM_RELATIVE": percent(same_arm["relative"]),
+        "SAME_ARM_BASELINE_MEAN": tokens(same_arm["baseline_mean"]),
+        "SAME_ARM_LOW": tokens(same_arm["low"]),
+        "SAME_ARM_HIGH": tokens(same_arm["high"]),
+        "BOOTSTRAP": format(BOOTSTRAP, ","),
+        "FAILED": failed_note,
+        "QUERY": html.escape(
+            " / ".join(a["population_query"] for a in data["assignments"])
+        ),
+        "ASSIGNMENTS": assignment_names,
+        "SEEDS": assignment_seeds,
+        "DRAWN": " + ".join(str(len(a["sections"])) for a in data["assignments"]),
+        "COMMAND": html.escape(result.get("command") or "the command is recorded in the log"),
+        "PRODUCER": str(FRAGMENT / "paired_replay_report.py"),
+        "LEAD_DECISION": LEAD_DECISION,
+        "CLIVE_RATE": rate(check["clive_edit_failures"], check["clive_edit_calls"]),
+        "CLIVE_RUNS": str(check["clive_runs"]),
+        "FIXTURE_FOUND": str(check["fixture_found"]),
+        "FIXTURE_RECORDS": str(check["fixture_records"]),
+        "STORE_MATCHES": str(check["store_matches"]),
+        "STORE_COMPARED": str(check["store_compared"]),
+    }
+    page = POOLED_TEMPLATE
+    for key, value in values.items():
+        page = page.replace("{{" + key + "}}", value)
+    return page
+
+
+POOLED_TEMPLATE = """  <section id="{{IDS}}" data-evidence-origin="append">
+    <h2>&sect;8 — the pooled local record and the lead's decision</h2>
+    <p id="{{IDS}}-summary">The verdict population is the paired replay: every section drawn
+    by both committed assignments, {{ASSIGNMENTS}} (seeds {{SEEDS}}), replayed from one base
+    revision per section by every local arm. The two assignments drew {{DRAWN}} sections
+    together, and <strong>{{SECTIONS}}</strong> of them were dispatched and replayed, carrying
+    <strong>{{LOCAL_RUNS}}</strong> local runs across the <strong>{{LOCAL_ARMS}}</strong> local
+    arms. This record pools them for the first time: the earlier record read the first
+    assignment alone, and the plan list it carried did not name
+    <code>a-landing-never-waits-on-a-shared-index</code>, so its <code>s10</code> was dropped
+    silently. The producer now names every plan the assignments draw from — {{PLANS}} — and a
+    replay row whose plan it does not name is listed under exclusions with its reason rather
+    than dropped.</p>
+
+    <h3 id="{{IDS}}-plans">The plans the record draws from</h3>
+    <table>
+      <thead><tr><th>Plan</th><th>Sections</th><th>Local runs</th><th>Codex runs (stopped)</th></tr></thead>
+      <tbody>{{PLAN_ROWS}}</tbody>
+    </table>
+
+    <h3 id="{{IDS}}-table">The pooled local per-arm table, over all {{SECTIONS}} replayed sections</h3>
+    <p id="{{IDS}}-table-note">Each treatment is paired with <code>clive</code> on every section
+    that carries both runs; the interval is a {{BOOTSTRAP}}-draw paired bootstrap over sections,
+    seeded, at 90%. A treatment is <strong>adopt</strong> only when its mean paired cumulative
+    input falls by at least 5%, its interval is separated from the same-arm spread, and its gate
+    pass rate does not fall. {{FAILED}}</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Role</th><th>Sections paired</th><th>Runs</th>
+      <th>Gate passed</th><th>Cumulative input</th><th>Input per gate-passed run</th>
+      <th>Mean paired &Delta; vs clive</th><th>Relative</th><th>90% interval</th>
+      <th>Verdict</th></tr></thead>
+      <tbody>{{ARM_ROWS}}</tbody>
+    </table>
+
+    <h3 id="{{IDS}}-same-arm">The same-arm control</h3>
+    <p id="{{IDS}}-same-arm-note">The replicate clive run paired with clive on each of the
+    <strong>{{SAME_ARM_COUNT}}</strong> sections is the spread a same-arm comparison already
+    shows: mean paired difference <strong>{{SAME_ARM_MEAN}} ({{SAME_ARM_RELATIVE}} of the
+    baseline's paired mean {{SAME_ARM_BASELINE_MEAN}})</strong>, 90% interval
+    <strong>{{SAME_ARM_LOW}} to {{SAME_ARM_HIGH}}</strong>. A treatment whose interval overlaps
+    this spread is reported not separated.</p>
+
+    <h3 id="{{IDS}}-metrics">&sect;8's per-arm metrics, pooled</h3>
+    <table>
+      <thead><tr><th>Arm</th><th>Tool calls / run</th><th>Output / run</th>
+      <th>Peak context</th><th>Edit failures / calls</th>
+      <th><code>edit_anchored</code> / <code>read_anchored</code></th></tr></thead>
+      <tbody>{{METRIC_ROWS}}</tbody>
+    </table>
+
+    <h3 id="{{IDS}}-codex">The codex arms, partial and stopped</h3>
+    <table>
+      <thead><tr><th>Arm</th><th>Runs recorded</th><th>Gate passed</th>
+      <th>Cumulative input</th><th>Input per gate-passed run</th><th>Status</th></tr></thead>
+      <tbody>{{CODEX_ROWS}}</tbody>
+    </table>
+    <p id="{{IDS}}-codex-note">{{CODEX_NOTE}}</p>
+
+    <h3 id="{{IDS}}-exclusions">Excluded from the record, with the reason</h3>
+    <p id="{{IDS}}-negative">Negative control: a replay row whose plan the producer does not
+    name appears here as an excluded section with its reason, rather than being dropped as
+    <code>land s10</code> was before this section. The row is listed by the same path a real
+    unlisted row takes.</p>
+    {{NEGATIVE_TEXT}}
+    <table>
+      <thead><tr><th>Run</th><th>Section</th><th>Reason</th></tr></thead>
+      <tbody>{{EXCLUSION_ROWS}}</tbody>
+    </table>
+
+    <h3 id="{{IDS}}-query">The query and its literal command</h3>
+    <p id="{{IDS}}-query-note">The population query, text as committed in each assignment:
+    <code>{{QUERY}}</code></p>
+    <p>The producer is committed at <code>{{PRODUCER}}</code>; the record is computed on the
+    <code>all_debug</code> partition, never on the fleet node, and its log sits in the run
+    directory, starts with the revision and this literal command, and ends in its own exit
+    status:</p>
+    <pre><code>{{COMMAND}}</code></pre>
+
+    <h3 id="{{IDS}}-controls">&sect;8's controls, pooled</h3>
+    <table>
+      <thead><tr><th>Control</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Positive, local: the edit-failure rate over the baseline clive arm is of the
+        same order as &sect;1's 11.2%</td><td>{{CLIVE_RATE}} over the {{CLIVE_RUNS}}
+        baseline clive runs.</td></tr>
+        <tr><td>Positive, codex: the edit-failure parser finds the refusal in the recorded
+        stream known to contain a refused patch</td><td>{{FIXTURE_FOUND}} refusal found in
+        {{FIXTURE_RECORDS}} fixture records, so a zero for a codex arm is a zero.</td></tr>
+        <tr><td>Instrument: each run's stored cumulative input reproduces a launch's own
+        figure</td><td>{{STORE_MATCHES}} of {{STORE_COMPARED}} runs reproduce a launch's
+        figure exactly.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="{{IDS}}-decision">The lead's decision</h3>
+    <p id="{{IDS}}-decision-body"><strong>Lead decision, {{LEAD_DECISION}}.</strong> On the
+    pooled local record the lead decided: the local lane stays on native clive; the anchored
+    edit tool is removed from reckon (&sect;18), because its lower edit-failure rate changed
+    no gate outcome and cost input; the omp pilot is not adopted and the host flight stops
+    routing to it, its code staying in place; and the codex arms are stopped, their replays
+    not run. No further flight default is changed by this record.</p>
+  </section>
+"""
+
+
+def write_archive(repo: Path, path: Path, section: str) -> bool:
+    """Splice the pooled section into the cumulative landed record.
+
+    Every other section is left byte-identical: the archive is cumulative
+    evidence, spliced rather than rewritten, so a later reader still sees each
+    earlier section's landing.
+    """
+    target = repo / path
+    text = target.read_text()
+    block = "\n" + section.rstrip("\n") + "\n"
+    pattern = re.compile(
+        r'\n  <section id="' + re.escape(POOLED_SECTION) + r'"[^>]*>.*?</section>\n',
+        re.DOTALL,
+    )
+    if pattern.search(text):
+        updated = pattern.sub(block, text, count=1)
+    elif "\n</main>" in text:
+        updated = text.replace("\n</main>", block + "\n</main>", 1)
+    else:
+        raise SystemExit("archive splice found neither the pooled section nor the </main> anchor")
+    if updated == text:
+        return False
+    target.write_text(updated)
+    return True
 
 
 def render(data: dict, result: dict, check: dict) -> str:
@@ -1350,17 +1865,42 @@ if __name__ == "__main__":
     parser.add_argument("--root", type=Path, default=Path.home() / ".config/reckon/crew")
     parser.add_argument("--run-store", type=Path, default=None)
     parser.add_argument("--json", action="store_true")
-    parser.add_argument("--write", action="store_true", help="write the evidence record")
+    parser.add_argument("--write", action="store_true", help="write the standalone record")
+    parser.add_argument(
+        "--write-archive",
+        action="store_true",
+        help="splice the pooled section into the landed archive record",
+    )
+    parser.add_argument("--archive", type=Path, default=None)
+    parser.add_argument(
+        "--fixture-run",
+        type=Path,
+        default=None,
+        help=(
+            "a JSON file holding replay store rows to include as if read from the "
+            "store; the negative control supplies a row whose plan the producer "
+            "does not name"
+        ),
+    )
     parser.add_argument("--command", default="", help="the literal command that ran")
     args = parser.parse_args()
     repo = args.repo.resolve()
     db = args.run_store or (Path.home() / ".config/reckon/crew/run_store.db")
-    data = measure(repo, args.root, db)
+    fixture_rows = None
+    if args.fixture_run:
+        loaded = json.loads(args.fixture_run.read_text())
+        fixture_rows = loaded["runs"] if isinstance(loaded, dict) else loaded
+    data = measure(repo, args.root, db, fixture_rows)
     result = analysis(data)
     result["command"] = args.command
     check = controls(data, repo)
     if args.json:
         print(json.dumps({"analysis": result, "controls": check}, indent=1, default=str))
+    elif args.write_archive:
+        path = args.archive or ARCHIVE
+        changed = write_archive(repo, path, render_pooled(data, result, check))
+        verb = "wrote" if changed else "left byte-identical"
+        print(verb + " the pooled section of " + str(repo / path))
     elif args.write:
         (repo / RECORD).write_text(render(data, result, check))
         print("wrote " + str(repo / RECORD))
