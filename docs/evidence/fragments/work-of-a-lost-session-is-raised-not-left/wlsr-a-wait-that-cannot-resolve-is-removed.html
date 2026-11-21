@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s5">
+  <meta name="plan-verdict" content="pass">
+  <title>A wait that cannot resolve is removed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-a-wait-that-cannot-resolve-is-removed-landing" data-node="wlsr-a-wait-that-cannot-resolve-is-removed" data-reckon="landed" data-when="2026-11-21">
+  <h2>A wait that cannot resolve is removed</h2>
+  <p>A request stored <code>awaiting-upstream</code> was one condition in the live view. A wait on an upstream that had been superseded hours earlier read the same as a wait on work that was landing, and neither the request's owner nor a reader of the fleet could tell them apart. The admission pass now classes each waiting request from the per-ref states it already resolves, in <code>reckon/crew/stranded_wait.py</code>, and stamps the answer on the request as <code>wait_class</code> beside the free-text <code>wait_detail</code> the live view already shows.</p>
+  <table>
+    <thead><tr><th>Class</th><th>What it means</th><th>What the pass does</th></tr></thead>
+    <tbody>
+      <tr><td><code>progressing</code></td><td>An upstream section has a live run or a queued request.</td><td>Nothing, however long the wait has stood.</td></tr>
+      <tr><td><code>idle</code></td><td>Every unlanded upstream is still declared open and none has a run or a request.</td><td>After <code>stranded_wait.report_after_hours</code> (72 by default) the wait appears once in its owner's obligations, naming the sections nobody is building.</td></tr>
+      <tr><td><code>stranded</code></td><td>An upstream it names can never land: the plan is absent, is closed, superseded or abandoned with the section not done, or no longer carries the section.</td><td>The request is retired on the pass that finds it, with a discard record naming the upstream and why, and its owner's obligations carry the retirement once.</td></tr>
+    </tbody>
+  </table>
+  <p>The class is a value on the wait state the readiness module computes rather than a second resolution: <code>resolve_waits</code> reads it from the same per-ref states the request's phase comes from, so a request can never be advancing and stranded at once. The class adds one live-view field in <code>reckon/crew/query.py</code> and one flight setting in <code>reckon/_flight_schema.py</code>, with the account a reader shows derived from the class rather than parsed back out of the refs.</p>
+  <p>Three rules bound what the pass may do. A wait is never removed for its age alone; only the stranded class is retired, and an idle wait is reported rather than touched. A request a coordinator holds with <code>crew queue hold</code> keeps its hold whatever its class, because the hold is a decision about the work rather than a reading of the upstream. A plan that exists but does not parse is withheld rather than stranded, because retiring work on the strength of a failed read would discard a request a working read would have released.</p>
+  <p>Gate: <code>tests/test_a_wait_that_cannot_resolve_is_removed.py</code> reads 8 passed, exit 0, at head <code>07f33a806e</code> (<code>gate.log</code>). The neighbouring wait, release and obligation modules read 70 passed and 1 failed, exit 1 (<code>neighbour-tests.log</code>); the one failure is <code>tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>, which fails identically over an extracted base tree at <code>5adc9f1c5b</code> — a watch lock written by the read — so the node's delta there is zero.</p>
+  <p>The declared control holds. With the upstream plan left <em>active</em> instead of superseded, the retirement case fails where it should: <code>assert [row["run_id"] for row in outcome["retired"]] == ["r-waiting"]</code> reports <code>[] == ['r-waiting']</code> (<code>negative-control.log</code>, exit 1). A request naming a section its plan does not carry cannot be queued at all, since the queue refuses a wait on a missing section; the case is exercised the way it arises in practice, by dropping the declaration from a plan the request already waits on.</p>
+  <p>One defect was found and fixed while proving the retirement path. The pass marked its round changed when it retired a request, which sent a second round over a pointer that no longer existed; the retired phase is now carried on the pass's own copy so a later round skips it, and a second pass over the same repository is asserted to rebuild nothing and to record no second retirement.</p>
+</article>
+</body>
+</html>
