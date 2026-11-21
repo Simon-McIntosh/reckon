@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -274,8 +274,14 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261121T010306766051-wlsr-a-review-that-changed-nothing-releases" data-who="reckon-build" data-when="2026-11-21T01:40:49.022Z">
     <div class="r-comment-body"><p>A review that changed nothing now releases: the release step judges the manifest's commits field through the commitless declaration reader, so all three observed prose spellings release and read recorded instead of refusing with "manifest commit '…' does not resolve"; head gate 5 passed EXIT=0, base arm 3 failed/2 passed EXIT=1.</p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261121T023959007510-review-of-wlsr-a-refused-lane-change-leaves-the-pointer-b91a44211dc7" data-who="reckon-build" data-when="2026-11-21T02:48:32.066Z">
+    <div class="r-comment-body"><p>review of r-20261121T010317352713 at head b91a44211dc75f83008b1726453ff35da1efcf1f from base ff3bb24bcf916047144aadb4c3fc0315e9687219, status parsed, scores goal_fidelity 13 evidence 19 scope_discipline 19 durability 15 fit 14 reuse 17, added_failure_count 0, one blocking finding on dispatch_sessions.py:2194 and two non-blocking on the new test module.</p></div>
+</div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819" data-who="reckon-build" data-when="2026-11-21T02:32:46.987Z">
     <div class="r-comment-body"><p>review verdict for r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole stored parsed at review-records/r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole.at-26582d83f81960a3b5b62a288aefbde07f928905.json; total 108, no blocking findings, two non-blocking findings recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole" data-who="reckon-build" data-when="2026-11-21T02:04:56.068Z">
+    <div class="r-comment-body"><p>landing: `reckon/crew/promotion_evidence.py::_text_the_receipt_describes` and the readers it feeds (`_receipt_mismatches` via `_require_gate_log_agrees`, `_head_arm_log_failure_ids` via `_require_verdict_matches_exit_status`) now read a cited suite log through `reckon/crew/review.py::gate_log_failure_ids`, which unions every marked `# file:` run, so a landing whose base and head logs fail the same ids reads as zero added and proceeds, and one adding an id in a middle file names it. No second reader was written: the per-file union already existed and is called from the landing path.</p></div>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261121T021843631870-review-of-wlsr-a-stop-ends-the-step-34b1a75e54ba" data-who="reckon-build" data-when="2026-11-21T02:34:03.673Z">
     <div class="r-comment-body"><p>Review stored for run r-20261121T010319443824-wlsr-a-stop-ends-the-step at head 34b1a75e54 (base ff3bb24bcf): parsed record, six dimensions scored 17/20, 15/20, 20/20, 18/20, 18/20, 12/20, added_failure_count 0, three non-blocking findings.</p></div>
@@ -315,9 +321,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261121T023705178692-review-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-097c7c3b8598" data-who="reckon-build" data-when="2026-11-21T02:48:00.078Z">
     <div class="r-comment-body"><p>reviewed e689315bb74ca1efdd63eee69d7a55ed9b235a0e..097c7c3b8598c154d90d595812fd87012623ecdc; scores goal_fidelity 15, evidence 16, scope_discipline 18, durability 11, fit 16, reuse 4; one blocking finding (the NODE_ID needle fires on a peer run's live pointer) and two non-blocking (duplicated real_store_home/_fixture_writes_under; stale revision label on negative-control.log)</p></div>
-</div>
-<div class="r-comment" data-section="s17" data-id="c-run-r-20261121T023959007510-review-of-wlsr-a-refused-lane-change-leaves-the-pointer-b91a44211dc7" data-who="reckon-build" data-when="2026-11-21T02:48:32.066Z">
-    <div class="r-comment-body"><p>review of r-20261121T010317352713 at head b91a44211dc75f83008b1726453ff35da1efcf1f from base ff3bb24bcf916047144aadb4c3fc0315e9687219, status parsed, scores goal_fidelity 13 evidence 19 scope_discipline 19 durability 15 fit 14 reuse 17, added_failure_count 0, one blocking finding on dispatch_sessions.py:2194 and two non-blocking on the new test module.</p></div>
 </div>
 </section>
 </main>
