@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import json
 import multiprocessing
 import os
@@ -203,6 +204,31 @@ def test_a_delayed_supervisor_refuses_a_recovered_attempt(tmp_path, monkeypatch,
         dispatch_launch._supervisor_spawn_worker(spec)
     assert stream.read_text() == "retained stream\n"
     assert not (directory / "worker.json").exists()
+
+
+def test_a_launch_supersedes_the_stamp_a_pointer_already_names(tmp_path, monkeypatch):
+    """A pointer stamp older than this launch's own is the launch it replaces.
+
+    A resume starts its supervisor before it rewrites the pointer, so the
+    pointer still carries the dispatch-time instant at the attempt number the
+    reservation keeps. That stamp names a launch this one has taken over, not
+    another launch made after it, so the worker must start; refusing on it
+    leaves the run unlaunchable.
+    """
+    directory = spawn_fixtures.queued_run.__wrapped__(tmp_path, monkeypatch)
+    spec = spawn_fixtures._spec(directory)
+    # The spec's own start is 2026-11-07T00:00:00Z, so this pointer stamp is
+    # measured against it as an earlier launch's identity.
+    spawn_fixtures._rewrite_pointer(attempt_started_at="2026-11-01T00:00:00Z")
+
+    pid = dispatch_launch._supervisor_spawn_worker(spec)
+    try:
+        assert pid > 0, "the launch was refused on a stamp it supersedes"
+        worker = json.loads((directory / "worker.json").read_text(encoding="utf-8"))
+        assert worker["pid"] == pid, "the admitted launch wrote no worker record"
+    finally:
+        with contextlib.suppress(OSError):
+            os.kill(pid, signal.SIGTERM)
 
 
 @pytest.mark.parametrize("owner", ["live-local", "foreign"])
