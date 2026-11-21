@@ -104,12 +104,26 @@ def test_a_head_carried_but_a_change_dropped_is_reported_and_not_settled(
     assert runs.pointer_path(RUN).exists()
     assert settled_delivery["counters"].promotion_requests == 0
     assert all(
-        entry.get("status") != "landed-elsewhere"
-        for entry in result.get("skipped", [])
+        entry.get("status") != "landed-elsewhere" for entry in result.get("skipped", [])
     )
     reported = [entry for entry in result["obligations"] if entry["run_id"] == RUN]
     assert reported, result
     assert path in reported[0]["guard"]
+
+
+def test_a_head_that_added_nothing_is_not_settled(
+    settled_delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A head that is an ancestor because the run added nothing is not a landed
+    # delivery: its base is its head, and the ordinary path owns it.
+    head = str(settled_delivery["head"])
+    repo = Path(settled_delivery["repo"])
+    pointer = runs.read_pointer(RUN)
+    verdict, _detail = queue_landing._primary_carries_the_delivery(
+        {**pointer, "base_sha": head}, head, _git(repo, "rev-parse", "HEAD")
+    )
+
+    assert verdict == "not-carried"
 
 
 def test_a_replay_that_exits_with_no_log_records_its_own_failure(

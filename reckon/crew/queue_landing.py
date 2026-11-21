@@ -105,9 +105,17 @@ def _primary_carries_the_delivery(
         refusals = merge.surviving_change_refusals(repo, primary, markers)
     except (OSError, merge.MergeError, landing_measure.BaseCheckoutError) as exc:
         return "unverified", f"the run's changed paths could not be read: {exc}"
+    if not markers:
+        # A head with no change of its own — the run added nothing beyond its
+        # base — is an ancestor of the primary for a reason other than a landed
+        # delivery, so it keeps the ordinary path.
+        return "not-carried", "the run delivered no change of its own"
     if refusals:
         return "removed", "; ".join(refusals)
     return "carried", ""
+
+
+def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
     """Read current ownership, not the live-set snapshot used for selection."""
     try:
         runs.read_pointer(run_id)
