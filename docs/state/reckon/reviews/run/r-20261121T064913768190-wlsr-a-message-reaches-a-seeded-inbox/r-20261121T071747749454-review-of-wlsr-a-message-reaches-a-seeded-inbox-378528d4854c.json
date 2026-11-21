@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2956",
+    "reckon/crew/watch_unit.py:698",
+    "reckon/crew/ticker.py:3843",
+    "reckon/hooks/worker_message_guard.py:62"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:18:17Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-a-message-reaches-a-seeded-inbox-378528d4854c",
+      "recorded_at": "2026-11-21T07:41:21.995281+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html",
+      "line": 25,
+      "severity": "blocking",
+      "text": "The gate table records 42 passed (node check), 38 passed (base suite) and 42 passed (after suite) while the three logs it cites by name record 62, 58 and 62 passed; a durable landing record whose counts disagree with its own logs misstates the evidence a later reader relies on, and the same 42/38/42 figures appear in the reviewed manifest's artifacts line."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew_run_commands.py:2956 registers the crew tell command, and reckon/crew/watch_unit.py:698, reckon/crew/ticker.py:3843 and reckon/hooks/worker_message_guard.py:62 compose the invocation text the change now accepts for more runs.",
+    "diff": "Read 65c0479b14..378528d485 commit by commit: 984b79dd1e changes reckon/crew_run_commands.py and four test files, 378528d485 adds the evidence fragment; no file outside the declared paths.",
+    "done_when": "The done_when names tests/test_a_message_reaches_a_seeded_inbox.py with three cases; the file at the reviewed head carries all three (lines 86, 109, 131) and I ran it: 4 passed, EXIT=0.",
+    "goal": "The node goal is that a message reaches a live run whose launch seeded an inbox whatever its harness; reckon/crew_run_commands.py:2956-3090, and the landed change implements exactly that by reading the dialect's settings_file.",
+    "manifest": "Read the reviewed manifest; it records the two commits, the base and after suite arms with zero failures, and a base-revision control that fails with the harness-named refusal, but its artifacts line quotes 42/38/42 passed where the cited logs record 62/58/62.",
+    "write_paths": "Read the manifest's declared paths and the coordinator's scope; all five changed paths are declared, and the two extra test files were repaired only to pass the settings_file the launch passes."
+  },
+  "justifications": {
+    "durability": "tests/test_a_message_reaches_a_seeded_inbox.py:104 fails against the base revision with the harness-named refusal (negative-control-base.log), so the first case is a guard rather than a green assertion.",
+    "evidence": "The gate at tests/test_a_message_reaches_a_seeded_inbox.py covers all three done_when cases and the recorded arms are green, but the landing fragment's gate table at docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html:25-27 records counts that disagree with the logs it cites.",
+    "fit": "reckon/crew_run_commands.py:2956-2968 reads _DIALECTS and its settings_file through a private lookup, the same idiom reckon/flight.py:435 and reckon/_worker_fence.py:296 already use.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3050-3080 decides reachability from inbox_trigger_for over the dialect table, so a clive-dialect run whose launch seeded the hook queues and a run with no hook is refused naming its inbox (tests/test_a_message_reaches_a_seeded_inbox.py:86,109,131).",
+    "reuse": "The route decision extends the owner reckon/crew/worker_behaviour.py:97 inbox_trigger_for and the _DIALECTS table rather than restating a route table, so no capability is forked.",
+    "scope_discipline": "Every path in the 65c0479b14..378528d485 diff is inside the declared write paths, and the only product change is reckon/crew_run_commands.py:2956-3090."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261121T071747749454-review-of-wlsr-a-message-reaches-a-seeded-inbox-378528d4854c",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "378528d4854c7607ad410939b716482b249ec4c6",
+  "reviewed_run_id": "r-20261121T064913768190-wlsr-a-message-reaches-a-seeded-inbox",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T07:25:51.769535+00:00",
+  "total": 110
+}
