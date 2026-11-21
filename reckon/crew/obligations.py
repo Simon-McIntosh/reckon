@@ -2707,7 +2707,7 @@ def _selected_review(
         str(tree or ""),
         review_records.review_entries_signature(project, run_id),
     )
-    return file_memo.memoized_key(
+    return review_records.memoised_read(
         "obligation_review_selection",
         key,
         lambda: recovery.select_review_for_head(project, run_id, head, tree=tree),
@@ -4274,7 +4274,7 @@ def stored_review_for_run(
     """
     head, tree = recovery._review_head_and_tree(pointer)
     if not head:
-        return file_memo.memoized_key(
+        return review_records.memoised_read(
             "obligation_headless_review",
             (project, run_id, review_records.review_entries_signature(project, run_id)),
             lambda: (
@@ -4305,7 +4305,7 @@ def _review_is_hot(
     superseding this one, read from the store's own rows so a by-head selection
     cannot hide a later round.
     """
-    later = file_memo.memoized_key(
+    later = review_records.memoised_read(
         "obligation_review_rounds",
         (project, run_id, review_records.review_entries_signature(project, run_id)),
         lambda: [
@@ -4360,7 +4360,7 @@ def _sub_floor_items_by_session(
         if not run_id:
             continue
         signature = review_records.review_entries_signature(project, run_id)
-        newest = file_memo.memoized_key(
+        newest = review_records.memoised_read(
             "obligation_review_presence",
             (project, run_id, signature),
             lambda run_id=run_id: review_module.read_review(project, run_id),
