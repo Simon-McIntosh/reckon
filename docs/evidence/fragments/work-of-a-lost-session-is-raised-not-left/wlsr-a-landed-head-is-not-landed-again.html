@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s15">
+  <meta name="plan-verdict" content="pass">
+  <title>A landed head is not landed again | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-a-landed-head-is-not-landed-again-landing" data-node="wlsr-a-landed-head-is-not-landed-again" data-reckon="landed" data-when="2026-11-21">
+  <h2>A landed head is not landed again</h2>
+  <p>A delivered run whose reviewed head the primary branch already carries used to be measured, gated and handed to promotion like any other. The landing pass now asks first, in <code>_primary_carries_the_delivery</code> beside the delivery loop in <code>reckon/crew/queue_landing.py</code>, and settles such a run through the integrated release path: the pointer is retired, its workspace released, and no promotion request or gate replay is spent on work the branch already contains.</p>
+  <figure>
+    <img src="/reckon/figures/work-of-a-lost-session-is-raised-not-left/landed-head-decision.svg" alt="A reviewed head that is not an ancestor takes the ordinary path; an ancestor head is settled only if it is strictly behind the tip, the run added a change of its own, and every changed path survives on the branch.">
+    <figcaption>The three questions the pass asks before it settles a delivery. The middle row is what keeps a head that is merely an ancestor, and a head whose change the branch dropped, on the ordinary path.</figcaption>
+  </figure>
+  <p>The condition is narrower than ancestry. A head that is the branch's own tip is its own candidate, not a delivery merged into history; a head that sits behind the tip only because the run added nothing has no delivery to carry, and no change markers to check. Both keep the ordinary path. So does a head whose ancestry or changed paths cannot be read, which is reported as unverified rather than settled on a guess. The check itself is the merge reader's: <code>merge.change_markers</code> from the run's recorded base, then <code>merge.surviving_change_refusals</code> against the primary tip, so a path that was added, deleted, modified or replaced is judged the same way the merge path judges it.</p>
+  <p>A head that is carried while a path it changed has since left the branch is not settled. It is recorded as a refusal naming the surviving-change refusal, and it appears in the pass's obligations so a coordinator sees it, with the pointer held so the run stays visible.</p>
+  <p>The second half of the node is in <code>reckon/crew/promotion_gate.py</code>. A replay that exits non-zero and writes no log used to publish that exit status as the run's integrated verdict. It now writes the log first, and when there is no log to open it records <code>integrated_verdict: not-run</code> beside a <code>replay_failure</code> naming the exit status, leaving the run's base verdict untouched and the pass not ok. A replay that exits zero with no log still passes; the absence of evidence is charged to the replay only when the replay failed.</p>
+  <p>Gate: <code>tests/test_a_landed_head_is_not_landed_again.py</code> with the three landing modules, <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — 90 passed, exit 0, at head <code>eec644f89f</code> (<code>gate-head.log</code>). The node's own four cases read 4 passed, exit 0 (<code>gate-node-head.log</code>).</p>
+  <p>The base arm over <code>ff3bb24bcf</code>, materialised as an extracted tree, reads 84 passed and 2 failed, exit 1 (<code>gate-base.log</code>). Both failures are <code>tests/test_staged_write_inventory.py</code>, whose fixture reads the repository's tracked file list from git and finds no repository in a plain extraction — the census observed zero files. They are environmental, not a delta: the node's change adds no staged write, and both pass at the head revision.</p>
+  <p>The declared control holds. The node's test file over the base tree reads 4 failed, exit 1 (<code>gate-base-node.log</code>), and the first case fails exactly where declared: <code>assert counters.promotion_requests == 0</code> reports 1, one promotion requested for a head the branch already carried.</p>
+  <p>The narrowing is pinned by its own control. Over a tree carrying the un-narrowed condition the node's file reads 3 passed and 1 failed, exit 1 (<code>pre-narrow-node.log</code>): the case whose base equals its head, which the un-narrowed predicate settles and the narrowed one hands to the ordinary path.</p>
+  <p>One correction to the run's own earlier record. An earlier pass reported that the settlement short-circuited three landing modules and left 18 of their tests red. Measured here, those failures came from a displaced definition line — <code>_landed_elsewhere</code>'s <code>def</code> had been absorbed into the new helper, so every call raised <code>NameError</code>: 15 failed, 13 passed over the three modules, every failure that name (<code>pre-narrow.log</code>). Restoring the definition, with the condition still un-narrowed, reads 28 passed, exit 0. No fixture in those modules was changed, and the narrowing itself fixed none of those failures.</p>
+</article>
+</body>
+</html>
