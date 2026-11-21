@@ -18,7 +18,7 @@ from click.testing import CliRunner
 
 from reckon import ledger
 from reckon.cli import main
-from reckon.crew.promotion_records import _evaluate_suite_delta
+from reckon.crew.promotion_records import _evaluate_suite_delta, labelled_suite_pairs
 from reckon.crew.runs import _write_json, pointer_path
 from tests.helpers.git import git
 from tests.helpers.landing_repository import _write_origin_and_checkout
@@ -231,3 +231,34 @@ def test_a_label_missing_its_after_arm_is_refused_naming_the_missing_side(tmp_pa
 
     assert raised.value.missing_fields == ["after_suite_unit"]
     assert "after_suite_unit" in str(raised.value).lower()
+
+
+def test_a_suite_annotation_is_not_read_as_a_label():
+    """A result sentence or a log path beside the arms opens no pair.
+
+    Workers write plain annotations under the same prefix as their arms. Read
+    as labels, each is a pair with nothing on either side, and a run whose
+    unlabelled arms are complete is refused for a label it never recorded.
+    """
+    manifest = {
+        "baseline_suite": "cd <base tree>; pytest -q tests/test_one.py",
+        "baseline_suite_result": "58 passed, EXIT=0, log baseline-suite.log",
+        "after_suite": "cd <node worktree>; pytest -q tests/test_one.py",
+        "after_suite_result": "67 passed, EXIT=0, log after-suite.log",
+        "after_suite_log": "/durable/after-suite.log",
+        "after_suite_note": "run on the debug partition",
+    }
+
+    assert labelled_suite_pairs(manifest) == []
+
+
+def test_an_annotation_beside_labelled_arms_leaves_the_labels_alone():
+    revision = "a" * 40
+    manifest = {
+        **_two_clean_pairs(revision, "/durable/suite.log"),
+        "after_suite_note": "both labels ran on the debug partition",
+    }
+
+    labels = [label for label, _, _ in labelled_suite_pairs(manifest)]
+
+    assert labels == ["UNIT", "VALIDATION"]
