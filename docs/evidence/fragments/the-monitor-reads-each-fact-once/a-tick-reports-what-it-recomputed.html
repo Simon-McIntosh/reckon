@@ -25,6 +25,16 @@
   whole reason the first measured tick read 7,661 bytes of pointer text; a scope
   opened inside it would have reported a cold tick as having read nothing.</p>
 
+  <p><strong>Each parsed read is recorded once, at one call site.</strong> A
+  stream read lands in two tallies: the fleet-wide count of parsed stream bytes
+  and the pass-level memo record. They describe the same bytes, so one function
+  writes both and every read reaches it through the same call, and the totals
+  cannot drift apart as two statements beside a reader could. That keeps
+  incremental reading in exactly one place: <code>memoized</code> has no
+  incremental mode of its own — an answer it does not serve from cache is a full
+  recompute of the file's length — and the backend stream scan, the only reader
+  that resumes from where it stopped, records its extension itself.</p>
+
   <h3 id="a-tick-reports-what-it-recomputed-measured">Measured</h3>
 
   <p>The gate test drives three rounds over a temporary crew home holding 20 live
@@ -60,9 +70,10 @@
   <img alt="Grouped bars of bytes each pass read in three rounds: the cold round 81 KiB in the tick and 238 KiB in the sweep pass, the unchanged round zero for both, and the round with one plan rewritten and one 4 KiB stream grown 4 KiB in the tick and 884 bytes in the sweep pass." src="/reckon/figures/the-monitor-reads-each-fact-once/a-tick-reports-what-it-recomputed/recomputed-bytes-by-round.svg">
 
   <p>A plan is answered through more than one memo kind, so the round that
-  rewrites one plan reports two recomputes rather than one; what the test
-  asserts is that every recomputed answer read exactly the rewritten plan's
-  length, so nothing outside that plan was re-read.</p>
+  rewrites one plan reports two recomputes rather than one. The test asserts
+  the count of each: every plan kind appears exactly once, at the rewritten
+  plan's length, no other kind appears at all, and the tick — which reads the
+  stream, not the plan — recomputes nothing.</p>
 
   <table id="a-tick-reports-what-it-recomputed-arms">
     <caption>Every arm ran on <code>all_debug</code>; each log opens with its
@@ -70,13 +81,21 @@
     <code>EXIT=&lt;code&gt;</code> line.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>baseline suite</td><td><code>df8fba8b</code></td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>after suite</td><td><code>fe3605f0</code></td>
-        <td>59 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>scoped gate</td><td><code>fe3605f0</code></td>
-        <td>59 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>negative control: the same test against the base tree</td>
+      <tr><td>fenced suite: the promoted-pointer cohort, the staged-write
+        inventory and the shared-home lock</td><td><code>df8fba8b</code></td>
+        <td>62 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>fenced suite, plus the new gate test</td>
+        <td><code>a99cd14b</code></td><td>63 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>widened suite: every test that imports the station, 46 files</td>
+        <td><code>df8fba8b</code></td>
+        <td>3 failed, 285 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>widened suite, 47 files</td><td><code>a99cd14b</code></td>
+        <td>3 failed, 286 passed, <code>EXIT=1</code> &mdash; the same three
+        failure ids as the base arm, so <strong>no failure was added</strong>;
+        each needs a station that reloads a node-local image or a blocked tick
+        beating past its stale window, and none reaches the rows this section
+        adds</td></tr>
+      <tr><td>negative control: the gate test against the base tree</td>
         <td><code>df8fba8b</code> plus the test file</td>
         <td>1 failed, <code>EXIT=1</code> &mdash; the tick's record carries no
         <code>memo_counts</code> there</td></tr>
@@ -96,6 +115,17 @@
   list and two of its tests failed at this head while reporting no error. The
   stub names the fourth parameter now; the reverted run reproduces the two
   failures with the same <code>TypeError</code>.</p>
+
+  <p><strong>The narrow arm could not have found the second break.</strong> Moving
+  the finished-tick record into <code>tick</code> also changed what the private
+  pass body answers: it returned the published rows and the finish time as a
+  pair, where a caller had always received the rows. Two tests in a cohort file
+  that stands in for the pass body returned the rows and made the unpacking
+  raise; a third, once that was fixed, made the record read a slowest stage
+  from a pass that had entered none. Both are fixed — the pass body keeps its
+  old answer and <code>tick</code> stamps the finish itself, and a pass that
+  measured no stage publishes no duration. Neither file is among the three the
+  round named, which is why the widened arm is the one that reports them.</p>
 
   <p><strong>The negative control fails for the right reason.</strong> Against a
   tree extracted at the base revision with the new test copied in, the reading
