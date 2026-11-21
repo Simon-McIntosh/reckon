@@ -88,7 +88,7 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
 
-    repo = tmp_path / "repo"
+    repo = tmp_path / "checkout"
     plans = repo / "docs" / "plans"
     plans.mkdir(parents=True)
     (plans / "fixture.html").write_text(_plan_document(), encoding="utf-8")
@@ -99,7 +99,8 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     _git(repo, "add", "seed.txt", "docs")
     _git(repo, "commit", "-q", "-m", "chore: seed")
     (config_home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(repo)}), encoding="utf-8"
+        json.dumps({PROJECT: str(repo / "docs")}),
+        encoding="utf-8",
     )
     return config_home, repo
 
@@ -123,7 +124,14 @@ def _dead_pid() -> int:
 
 
 def _write_path(repo: Path) -> str:
-    return str(repo / "docs" / "work.txt")
+    """A generated-state path, which a textual merge cannot reconcile.
+
+    A source path is admitted concurrently under a project that declares no
+    sharing policy, so it cannot demonstrate a claim. Generated state is one of
+    the classes that always fences, which keeps the negative control measuring
+    the claim rather than the sharing policy.
+    """
+    return "docs/state/held.json"
 
 
 def _done_when() -> str:
@@ -168,22 +176,32 @@ def _stopped_run(
         "run_id": STOPPED_RUN,
         "project": PROJECT,
         "repo": str(repo),
+        "session": SESSION,
         "worktree": str(worktree),
         "base_sha": base,
+        "head": head,
         "pid": pid,
-        "phase": "starting",
+        "phase": "working",
         "attempt": 1,
-        "node": {"id": STOPPED_NODE, "write_paths": [_write_path(repo)]},
+        "node": {
+            "id": STOPPED_NODE,
+            "plan": "fixture",
+            "section": SECTION,
+            "time_budget": "20m",
+            "write_paths": [_write_path(repo)],
+        },
     }
     crew._write_json(pointer_path(STOPPED_RUN), pointer)
     return {"pointer": pointer, "worktree": worktree, "base": base, "head": head}
 
 
-def _dry_dispatch(config_home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+def _dry_dispatch(config_home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[int, dict[str, Any]]:
     """The fresh node's dispatch preview over the same path, launching nothing.
 
-    The preview runs the launch's own live-claim check, so its admission
-    verdict is the verdict a real dispatch would reach.
+    The preview runs the launch's own live-claim check, so its verdict is the
+    verdict a real dispatch would reach. It returns the exit code and the last
+    JSON record the call printed: a refusal carries ``scope-conflict`` and the
+    conflicting run, an admission the resolved plan.
     """
     monkeypatch.setattr(
         crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: CONFIG
@@ -216,9 +234,20 @@ def _dry_dispatch(config_home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
             SESSION,
             "--repo",
             str(repo),
+            "--no-watch",
         ],
     )
-    return json.loads(result.output.strip().splitlines()[-1])
+    payload: dict[str, Any] = {}
+    for line in reversed(result.output.splitlines()):
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        break
+    return result.exit_code, payload
 
 
 def test_without_the_release_the_fresh_dispatch_is_refused(
@@ -228,12 +257,12 @@ def test_without_the_release_the_fresh_dispatch_is_refused(
     config_home, repo = home
     _stopped_run(config_home, repo, tmp_path)
 
-    payload = _dry_dispatch(config_home, repo, monkeypatch)
+    exit_code, payload = _dry_dispatch(config_home, repo, monkeypatch)
 
-    assert payload["admission"]["state"] == "refused"
-    assert payload["admission"]["error"] == "scope-conflict"
-    assert payload["admission"]["conflicting_run_id"] == STOPPED_RUN
-    assert payload["admission"]["conflicting_node_id"] == STOPPED_NODE
+    assert exit_code == 7, payload
+    assert payload["error"] == "scope-conflict"
+    assert payload["conflicting_run_id"] == STOPPED_RUN
+    assert payload["conflicting_node_id"] == STOPPED_NODE
 
 
 def _release(reason: str = "its worker is gone and promotion cannot take it"):
@@ -254,8 +283,9 @@ def test_the_release_admits_a_fresh_dispatch_and_keeps_every_commit(
     assert released["kept_head"] == stopped["head"]
     assert released["commits"] == list(reversed(commits_before.splitlines()))
 
-    payload = _dry_dispatch(config_home, repo, monkeypatch)
-    assert payload["admission"]["state"] == "admitted"
+    exit_code, payload = _dry_dispatch(config_home, repo, monkeypatch)
+    assert exit_code == 0, payload
+    assert "error" not in payload, payload
 
     assert Path(stopped["worktree"]).is_dir()
     assert _git(stopped["worktree"], "rev-parse", "HEAD") == stopped["head"]
