@@ -41,9 +41,9 @@ ANSWERED_DUTY_KIND = "decision-answered"
 #: beside the questions rather than among them.
 PLAN_ANSWER_KIND = "plan-answer"
 
-#: A held request returns to the phase its hold interrupted.
+#: A held request returns to the phase its hold interrupted; the phases a
+#: request may return to are the one its own hold record names.
 HELD_PHASE = "held"
-RELEASE_FROM_PHASES = ("queued", "awaiting-upstream")
 
 
 def _claim_name(decision_id: str) -> str:
@@ -220,40 +220,23 @@ def answer_decision(
             decision_id, parts, session=session, choice=choice, note=note
         )
     record = _read_question(decision_id)
-    if record.get("answered_at"):
-        raise ValueError(
-            f"decision {decision_id!r} was answered at {record['answered_at']}"
-        )
-    owner = str(record.get("session") or "")
-    if owner and owner == session:
-        raise ValueError(
-            f"session {session!r} owns decision {decision_id!r}, so it cannot "
-            "answer it: only the lead, through the presenting session"
-        )
-    values = [str(option["value"]) for option in record.get("options") or ()]
-    if choice not in values:
-        raise ValueError(f"choice {choice!r} is not one of {values}")
-    held = _held_behind(str(record.get("project") or ""), decision_id)
-    answered_at = datetime.now(UTC).isoformat()
-    record.update(
-        choice=choice,
-        held_requests=held,
-        answered_at=answered_at,
-        answered_by=session,
-        answer_note=str(note or "").strip(),
-        answer_via="presenting-session",
-    )
-    from reckon._store import write_json_atomically
-    from reckon.crew.lead_decisions import decision_path
+    from reckon.crew.lead_decisions import store_answer
 
-    write_json_atomically(decision_path(decision_id), record, fsync_directory=True)
+    held = _held_behind(str(record.get("project") or ""), decision_id)
+    record = store_answer(
+        decision_id,
+        choice=choice,
+        note=note,
+        session=session,
+        held_requests=held,
+    )
     presentation_path(decision_id).unlink(missing_ok=True)
     _append_answer_row(
         project=str(record["project"]),
         decision_id=decision_id,
         choice=choice,
         session=session,
-        at=answered_at,
+        at=str(record["answered_at"]),
     )
     return record
 
@@ -468,26 +451,31 @@ def release_answered_holds(live: list[dict[str, Any]]) -> list[str]:
     so the next pass finds nothing to do. One pointer that cannot be read is
     skipped rather than ending the pass, and is retried by the next one.
     """
-    from reckon.crew.queue_edit import _change_hold
+    from reckon.crew.queue_edit import release
 
-    held = {
-        str(pointer.get("run_id") or "")
+    pointers = {
+        str(pointer.get("run_id") or ""): pointer
         for pointer in live
         if str(pointer.get("phase") or "") == HELD_PHASE
     }
     released: list[str] = []
     for answer in answered_decisions():
         for run_id in answer["held_requests"]:
-            if not run_id or run_id not in held:
+            pointer = pointers.get(run_id)
+            if pointer is None:
                 continue
             try:
-                _change_hold(
-                    run_id,
-                    release=True,
-                    reason=f"the lead answered {answer['decision_id']}",
+                changed = release(
+                    run_id, reason=f"the lead answered {answer['decision_id']}"
                 )
             except Exception:  # noqa: BLE001, S112 - retried by the next pass
                 continue
-            held.discard(run_id)
+            # The pass goes on to read these pointers, so the released phase is
+            # written back here as well as to the file it was read from: a
+            # request whose pointer still reads `held` in memory is a request
+            # this pass would judge as held after it released it.
+            pointer["phase"] = str(changed["released"][0]["phase"])
+            pointer.pop("queue_hold", None)
+            del pointers[run_id]
             released.append(run_id)
     return released

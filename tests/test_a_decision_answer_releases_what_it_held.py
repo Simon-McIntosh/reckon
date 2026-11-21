@@ -128,17 +128,17 @@ def test_an_answer_stores_the_choice_and_helped_requests_leave_hold(crew_home):
     _held_pointer(home, "run-a", decision["id"])
     _held_pointer(home, "run-b", decision["id"])
 
-    saved = _answer(decision["id"], choice="route", note="take the second route")
+    _answer(decision["id"], choice="route", note="take the second route")
 
-    assert saved["choice"] == "route"
-    assert saved["answer_note"] == "take the second route"
-    assert saved["answered_at"]
+    # The store is the assertion: the returned record is what the caller passed
+    # in plus one time, so comparing it with the input proves nothing about
+    # whether the answer was written.
     stored = json.loads(
         (home / "crew" / "decisions" / f"{decision['id']}.json").read_text()
     )
     assert stored["choice"] == "route"
     assert stored["answer_note"] == "take the second route"
-    assert stored["answered_at"] == saved["answered_at"]
+    assert stored["answered_at"]
 
     rows = _monitor_rows(PROJECT)
     assert len(rows) == 1
@@ -256,3 +256,38 @@ def test_a_plan_decision_is_locked_in_its_plan_and_releases(crew_home):
     released = advance_waiting_requests(runs.list_live())
     assert released["released"] == ["plan-request"]
     assert runs.read_pointer("plan-request")["phase"] == "queued"
+
+
+def test_the_released_phase_reaches_the_pass_that_released_it(crew_home):
+    home, _ = crew_home
+    decision = _question(held=("run-a",))
+    _held_pointer(home, "run-a", decision["id"])
+    _answer(decision["id"], choice="route")
+
+    live = runs.list_live()
+    assert [pointer["phase"] for pointer in live] == ["held"]
+    released = decision_answers.release_answered_holds(live)
+
+    assert released == ["run-a"]
+    # The pass judges the request it just released in the same walk, so the
+    # in-memory pointer must carry the released phase, not the held one.
+    assert live[0]["phase"] == "queued"
+    assert "queue_hold" not in live[0]
+
+
+def test_the_answer_store_refuses_an_option_the_question_never_offered(crew_home):
+    home, _ = crew_home
+    decision = _question(held=("run-a",))
+    _held_pointer(home, "run-a", decision["id"])
+    path = home / "crew" / "decisions" / f"{decision['id']}.json"
+    before = path.read_text(encoding="utf-8")
+
+    decision_answers.claim_presentation(decision["id"], session=PRESENTER)
+    with pytest.raises(ValueError, match="is not one of"):
+        decision_answers.answer_decision(
+            decision["id"], session=PRESENTER, choice="teleport"
+        )
+
+    assert path.read_text(encoding="utf-8") == before
+    assert _monitor_rows(PROJECT) == []
+    assert runs.read_pointer("run-a")["phase"] == "held"

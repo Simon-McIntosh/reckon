@@ -8,7 +8,7 @@ rather than requests that have launched or disappeared since recording.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -152,6 +152,47 @@ def record_decision(record: Mapping[str, Any]) -> dict[str, Any]:
     }
     write_json_atomically(decision_path(data["id"]), data, fsync_directory=True)
     return data
+
+
+def store_answer(
+    decision_id: str,
+    *,
+    choice: str,
+    note: str,
+    session: str,
+    held_requests: Iterable[str],
+) -> dict[str, Any]:
+    """Persist the lead's answer onto one recorded question and return it.
+
+    This module owns the question record, so the one writer of an answer lives
+    here beside the writer of the question itself: a reader that asks how a
+    decision's answer is stored has one function to read, and a change to the
+    record's shape has one writer to update.
+    """
+    record = json.loads(decision_path(decision_id).read_text(encoding="utf-8"))
+    if str(record.get("answered_at") or ""):
+        raise ValueError(
+            f"decision {decision_id!r} was answered at {record['answered_at']}"
+        )
+    values = [str(option["value"]) for option in record.get("options") or ()]
+    if choice not in values:
+        raise ValueError(f"choice {choice!r} is not one of {values}")
+    owner = str(record.get("session") or "")
+    if owner and owner == session:
+        raise ValueError(
+            f"session {session!r} owns decision {decision_id!r}, so it cannot "
+            "answer it: only the lead, through the presenting session"
+        )
+    record.update(
+        choice=choice,
+        held_requests=[str(run) for run in held_requests],
+        answered_at=datetime.now(UTC).isoformat(),
+        answered_by=session,
+        answer_note=str(note or "").strip(),
+        answer_via="presenting-session",
+    )
+    write_json_atomically(decision_path(decision_id), record, fsync_directory=True)
+    return record
 
 
 def _request_identity(pointer: Mapping[str, Any]) -> tuple[str, str]:
