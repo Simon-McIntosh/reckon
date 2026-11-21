@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own arm logs read on disk: baseline_suite-1795120067778962136.log records '# revision: 28fbf2bc2fe2b27addcf04248210222f2115c1ee' at line 2 and '58 passed in 43.20s' with zero FAILED lines and EXIT=0; after_suite-1795276918826865857.log records '# revision: 2fde72509bb6e2adecf25943d7b5aed20e446a24' at line 1 and '58 passed in 41.22s' with zero FAILED lines and EXIT=0, so the set difference is empty (0).",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1391 crew_check_manifest -> reports.audit_manifest",
+    "reckon/crew/reports.py:3129 audit_manifest -> _fragment_reconciliation_findings",
+    "reckon/crew/reports.py:2067 _fragment_reconciliation_findings -> fragment_reconcile.reconcile",
+    "reckon/crew/fragment_reconcile.py:186 main (the module's CLI entry)",
+    "reckon/crew/review.py:2623 pytest_summary_failure_count -> pytest_summary_line, called from reckon/crew/promotion_evidence.py:1628 and :1918",
+    "reckon/crew/review.py:2684 and :2687 last_run_text -> pytest_summary_failure_count"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T20:14:24Z",
+  "findings": [
+    {
+      "file": "tests/test_a_fragment_reconciles_with_its_cited_logs.py",
+      "line": "206",
+      "severity": "non-blocking",
+      "text": "the case named 'test_a_manifest_written_as_json_is_read_like_any_other' asserts 'reconcile(fragment, manifest) == []' over a fragment whose figures already match the logs, and a reverted text-scan reader (the shape at 129ba0a9c6) finds no arm line in a manifest written as one JSON object, cites no logs and returns [] as well, so the assertion stays true under the very regression it was added to catch; it guards nothing, and the JSON arm reading at reckon/crew/fragment_reconcile.py:89-112 is covered by no assertion that fails when that branch is removed."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the paragraph states 'each log names the revision it ran at on its first line', but scoped-gate-1795119913014369160.log:1 and baseline_suite-1795120067778962136.log:1 are the srun fence notice with '# revision:' on line 2, so two of the record's own cited logs do not carry the header shape it describes; the reconciler's reader deliberately skips that notice (reckon/crew/fragment_reconcile.py:68-72), which makes the prose, not the check, the part that is wrong."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 28fbf2bc2fe2..a73559a7ae2d commit by commit; the three commits gained since the stored review at 50dae45e6c3c are 129ba0a9c6 (arms and result lines read through reports.parse_manifest and the new review.pytest_summary_line), 2fde72509b (the presence-guard case tightened to that branch's own words plus a docstring correction) and a73559a7ae (the fragment's scheduler and negative-control paragraphs rewritten to the logs on disk), all inside the declared paths.",
+    "done_when": "the done_when asks for the named file green in full as an all_debug job beside an import arm, and the manifest's gate log gate-two-file-2fde72509bb6e2adecf25943d7b5aed20e446a24.log records '58 passed' for the arm pair plus '14 passed in 0.58s' for the two files, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:16 reports the all_debug clause refused by the fence, so the arm pair is measured and the scheduler job is not.",
+    "goal": "the reviewed goal makes tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pass in full on the primary branch, and the gained commits add the fragment reconciliation check rather than touching that file; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 records the file green at base 28fbf2bc2fe2 and head 2fde72509bb6.",
+    "manifest": "read; manifest.md:5 records status complete, :15 the two-file gate command, and :21-22 baseline_suite at 28fbf2bc2fe2 and after_suite at 2fde72509bb6 with 58 passed in each, and manifest.md:6 cites the four negative-control logs that now exist in the run directory.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html; every path in the five-path diff lies inside those roots (reckon/crew/fragment_reconcile.py, reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_fragment_reconciles_with_its_cited_logs.py, the fragment html)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fragment_reconciles_with_its_cited_logs.py:183 fails if the call at reckon/crew/reports.py:3129 is removed (negative-control-call-site.log shows the findings list going empty), and :113-115 and :132-135 each redden on their branch (negative-control-summary.log, negative-control-proximity.log), but :206 does not redden on the JSON-reading regression it is named for.",
+    "evidence": "manifest.md:15 records the two-file gate and manifest.md:21-22 the 58-passed arm pair, both logs are on disk with EXIT=0, and the fragment at :16 reports the done_when's all_debug job refused rather than measured, so the gate measures the arms but not the scheduler clause.",
+    "fit": "reckon/crew/fragment_reconcile.py:37-45 imports the gate audit's own readers and passes private names as the surrounding crew modules already do, and no added name breaks the repository's naming rules.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 records the goal's file green at both revisions, and the gained work lands the reconciliation check the record at :2 describes rather than a repair to that file.",
+    "reuse": "the earlier duplicate result-line scan and manifest text scan are gone: reckon/crew/fragment_reconcile.py:75 reads review.pytest_summary_line, :92 reads reports.parse_manifest, and :72 reads the gate audit's header reader; a search over reckon/ for an existing proximity-window helper found none, so no capability is forked.",
+    "scope_discipline": "every path in the diff sits inside the declared reckon, tests and fragment roots, and the review.py extraction at reckon/crew/review.py:2585 is the de-duplication the previous review's reuse finding asked for, not new scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal makes tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pass in full on the primary branch, and the gained commits add the fragment reconciliation check rather than touching that file; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 records the file green at base 28fbf2bc2fe2 and head 2fde72509bb6.\nVERDICT done_when: the done_when asks for the named file green in full as an all_debug job beside an import arm, and the manifest's gate log gate-two-file-2fde72509bb6e2adecf25943d7b5aed20e446a24.log records '58 passed' for the arm pair plus '14 passed in 0.58s' for the two files, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:16 reports the all_debug clause refused by the fence, so the arm pair is measured and the scheduler job is not.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html; every path in the five-path diff lies inside those roots (reckon/crew/fragment_reconcile.py, reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_fragment_reconciles_with_its_cited_logs.py, the fragment html).\nVERDICT manifest: read; manifest.md:5 records status complete, :15 the two-file gate command, and :21-22 baseline_suite at 28fbf2bc2fe2 and after_suite at 2fde72509bb6 with 58 passed in each, and manifest.md:6 cites the four negative-control logs that now exist in the run directory.\nCALL_SITES: reckon/crew_run_commands.py:1391 crew_check_manifest -> reports.audit_manifest, reckon/crew/reports.py:3129 audit_manifest -> _fragment_reconciliation_findings, reckon/crew/reports.py:2067 _fragment_reconciliation_findings -> fragment_reconcile.reconcile, reckon/crew/fragment_reconcile.py:186 main (the module's CLI entry), reckon/crew/review.py:2623 pytest_summary_failure_count -> pytest_summary_line (called from reckon/crew/promotion_evidence.py:1628 and :1918)\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 records the goal's file green at both revisions, and the gained work lands the reconciliation check the record at :2 describes rather than a repair to that file.\nSCORE evidence: 13\nJUSTIFICATION evidence: manifest.md:15 records the two-file gate and manifest.md:21-22 the 58-passed arm pair, both logs are on disk with EXIT=0, and the fragment at :16 reports the done_when's all_debug job refused rather than measured, so the gate measures the arms but not the scheduler clause.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff sits inside the declared reckon, tests and fragment roots, and the review.py extraction at reckon/crew/review.py:2585 is the de-duplication the previous review's reuse finding asked for, not new scope.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_fragment_reconciles_with_its_cited_logs.py:183 fails if the call at reckon/crew/reports.py:3129 is removed (negative-control-call-site.log shows the findings list going empty), and :113-115 and :132-135 each redden on their branch (negative-control-summary.log, negative-control-proximity.log), but :206 does not redden on the JSON-reading regression it is named for.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/fragment_reconcile.py:37-45 imports the gate audit's own readers and passes private names as the reviewer of the crew modules already does, and no added name breaks the repository's naming rules.\nSCORE reuse: 19\nJUSTIFICATION reuse: the earlier duplicate result-line scan and manifest text scan are gone: reckon/crew/fragment_reconcile.py:75 reads review.pytest_summary_line, :92 reads reports.parse_manifest, and :72 reads the gate audit's header reader; a search over reckon/ for an existing proximity-window helper found none, so no capability is forked.\nVERDICT diff: read 28fbf2bc2fe2..a73559a7ae2d commit by commit; the three commits gained since the stored review at 50dae45e6c3c are 129ba0a9c6 (arms and result lines read through reports.parse_manifest and the new review.pytest_summary_line), 2fde72509b (the presence-guard case tightened to that branch's own words plus a docstring correction) and a73559a7ae (the fragment's scheduler and negative-control paragraphs rewritten to the logs on disk), all inside the declared paths.\nFINDING tests/test_a_fragment_reconciles_with_its_cited_logs.py:206 non-blocking: the case named 'test_a_manifest_written_as_json_is_read_like_any_other' asserts 'reconcile(fragment, manifest) == []' over a fragment whose figures already match the logs, and a reverted text-scan reader finds no arm line in a manifest written as one JSON object, cites no logs and returns [] as well, so the assertion stays true under the regression it was added to catch and the JSON arm reading at reckon/crew/fragment_reconcile.py:89-112 is guarded by nothing.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:12 non-blocking: the paragraph states 'each log names the revision it ran at on its first line', but scoped-gate-1795119913014369160.log:1 and baseline_suite-1795120067778962136.log:1 are the srun fence notice with '# revision:' on line 2, so two of the record's own cited logs do not carry the header shape it describes; the reconciler's reader deliberately skips that notice at reckon/crew/fragment_reconcile.py:68-72.",
+  "review_run_id": "r-20261121T201213030764-review-of-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-a73559a7ae2d",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "a73559a7ae2d1e53bb234712571de240d1d66720",
+  "reviewed_run_id": "r-20261118T054310379573-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies",
+  "rubric": "text",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T20:28:31.747052+00:00",
+  "total": 93
+}

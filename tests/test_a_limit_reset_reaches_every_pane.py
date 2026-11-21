@@ -46,7 +46,11 @@ SESSION_B = "s-other"
 GROUP = "claude-sub"
 PROJECTS = ("alpha", "beta")
 NOW = datetime(2026, 10, 14, 18, 30, tzinfo=UTC)
-WIDE = 208
+# A pane wide enough to hold the counter block and the reset clause entire: the
+# block carries one cell per bucket plus the promotion and stuck figures, and
+# the cases below assert the clause survives to the reader, so the fixture
+# widens with the block rather than the assertions loosening.
+WIDE = 212
 
 
 def _listing(directory: Path) -> list[str]:

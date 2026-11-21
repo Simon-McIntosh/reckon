@@ -5,7 +5,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 import time
 import tomllib
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -353,12 +352,10 @@ def seed_harness_home(
     adjacent_declaration: Iterable[Mapping[str, Any]] = (),
     resume_session: str | None = None,
     worker_mcp_servers: Iterable[str] | None = None,
-    anchored_edit: bool = False,
-    anchored_edit_roots: Iterable[str | Path] = (),
     settings_file: str | None = None,
     mcp_config_file: str | None = None,
     mcp_refusal_list: bool = False,
-) -> bool:
+) -> None:
     """Create a run's harness home carrying what its harness reads there.
 
     A harness that starts in a bare directory loads neither the operator's
@@ -400,15 +397,11 @@ def seed_harness_home(
     configuration governs this launch — a bare composition with no flight
     layer — and then no record is written, because a project the configuration
     never named is not a project whose servers this run is dropping.
-
-    Return whether this seed registered the anchored edit server and allowed
-    both tools. Only a fresh Claude-shaped home with flight configuration can
-    enable it; existing settings and resumed sessions keep their own state.
     """
     home.mkdir(parents=True, exist_ok=True)
     declared = harness_home_layout(dialect_name)
     if declared is None:
-        return False
+        return
     # An existing settings.json belongs to the run that wrote it, so the MCP
     # record is written only into a file this seed creates. A resumed run keeps
     # its own file, which already carries the record written when the run home
@@ -417,8 +410,6 @@ def seed_harness_home(
     settings_path = None if settings_file is None else home / settings_file
     settings_preexisting = settings_path is not None and settings_path.exists()
     allowed_servers = set(worker_mcp_servers or ())
-    if anchored_edit:
-        allowed_servers.add("reckon-anchored-edit")
     source_home = Path(operator_home) / declared[2]
     for entry in declaration or ():
         relative = entry.get("path")
@@ -451,10 +442,6 @@ def seed_harness_home(
         and worker_mcp_servers is not None
     ):
         _seed_worker_mcp_settings(settings_path, worker_mcp_servers)
-        if anchored_edit and not resume_session:
-            _seed_anchored_edit(home, anchored_edit_roots)
-            return True
-    return False
 
 
 class WorkerMcpServersError(ValueError):
@@ -663,10 +650,8 @@ def claude_worker_mcp_config(
     home: Path,
     worktree: Path,
     project_servers: Iterable[str] | None,
-    *,
-    anchored_edit: bool = False,
 ) -> str:
-    """Compose only flight-declared servers and the backend's anchored editor.
+    """Compose only the flight-declared servers, filtered by the allowlist.
 
     Strict MCP configuration confines discovery to this process's declarations.
     Both user and project declarations are filtered by the same allowlist.
@@ -684,8 +669,6 @@ def claude_worker_mcp_config(
         for name, config in (project.get("mcpServers") or {}).items()
         if name in allowed
     )
-    if anchored_edit and "reckon-anchored-edit" in (user.get("mcpServers") or {}):
-        servers["reckon-anchored-edit"] = user["mcpServers"]["reckon-anchored-edit"]
     return json.dumps({"mcpServers": servers})
 
 
@@ -732,36 +715,6 @@ def codex_worker_mcp_flags(
     if profile_overrides:
         flags += ["-c", "profiles={" + profile_overrides + "}"]
     return flags
-
-
-def _seed_anchored_edit(home: Path, roots: Iterable[str | Path]) -> None:
-    """Register the run-scoped server and allow its two tools in seeded settings."""
-    config_path = home / ".claude.json"
-    config = dict(_load_json_mapping(config_path) or {})
-    config["mcpServers"] = {
-        **config.get("mcpServers", {}),
-        "reckon-anchored-edit": {
-            "type": "stdio",
-            "command": sys.executable,
-            "args": [
-                "-m",
-                "reckon.anchored_edit",
-                *(word for root in roots for word in ("--root", str(root))),
-            ],
-        },
-    }
-    _write_private_json(config_path, config)
-    path = home / "settings.json"
-    settings = dict(_load_json_mapping(path) or {})
-    permissions = dict(settings.get("permissions") or {})
-    allowed = list(permissions.get("allow") or [])
-    for tool in ("read_anchored", "edit_anchored"):
-        name = f"mcp__reckon-anchored-edit__{tool}"
-        if name not in allowed:
-            allowed.append(name)
-    permissions["allow"] = allowed
-    settings["permissions"] = permissions
-    _write_private_json(path, settings)
 
 
 def _merge_harness_entry(

@@ -1,0 +1,97 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1666d19f7744d3cbbb272f620e38427ad9738472",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1476 launch_plan",
+    "reckon/crew/dispatch_sessions.py:2105 launch_plan",
+    "reckon/crew/dispatching/launch.py:752 launch_plan",
+    "reckon/crew/resumption.py:702 launch_plan",
+    "reckon/capabilities.py:504 _event_write_targets",
+    "reckon/crew/dispatch_launch.py:3625 _supervisor_spec reads plan.anchored_edit (broken until the anchored-launch-record-s18 sibling lands)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T20:55:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the landing order is enforced by a coordinator hold: this node is held until anchored-launch-record-s18, which removes the dispatch_launch reads, has landed",
+      "recorded_at": "2026-11-21T21:24:31.400787+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "anchored-flight-key-s18",
+      "recorded_at": "2026-11-21T21:24:36.586788+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the live code over the node's five code and test paths is grep-clean; only the literal grep command quoted in the evidence fragment names the key, so the substance of the done-when holds",
+      "recorded_at": "2026-11-21T21:24:42.451062+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "3625",
+      "severity": "non-blocking",
+      "text": "removing LaunchPlan.anchored_edit and .anchored_edit_reason makes _supervisor_spec raise AttributeError on every dispatch that composes a supervisor spec until the sibling anchored-launch-record-s18 node removes the read at :3625-3626; the two must land together, and the manifest and evidence fragment disclose the coupling under outside_scope."
+    },
+    {
+      "file": "tests/test_worker_mcp_allowlist.py",
+      "line": "137",
+      "severity": "non-blocking",
+      "text": "the replacement test passes no anchored_edit key, so it guards an unconditional re-add of the server or --disallowedTools but not a re-added branch gated on backend.get(\"anchored_edit\"); the only arm that exercises the key is the uncommitted negative-control scratch test, so the removal's key-ignoring behaviour has no committed guard."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-backends-s18.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "the done-when's 'a grep over this node's write paths finds nothing' is measured only in flag-grep.log over the five code and test paths, while this declared write path itself quotes the literal anchored_edit in its grep command; the live code is clean, so the substance holds and only the literal measure is scoped narrower than the done-when states."
+    }
+  ],
+  "head_log_revision": "201447f399770adcb67027a006e31a0c6b935974",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 78fa4487cc (source and test removal) and 201447f399 (evidence fragment) against 1666d19f77; six files, +107/-240, all inside the declared scope, with the codex observation reduced to file_change counting and the test fixtures renamed to drop the key.",
+    "done_when": "the done_when names a five-file pytest gate adding no failure against a base, run on all_debug one arm at a time; the manifest records base 103 passed at 1666d19f77 and head 103 passed at 78fa4487cc, both EXIT=0, plus a grep receipt with a positive control (46 matches at base, 0 at head) and a negative control at 2 failed EXIT=1, so the gate asserts the measure apart from a ruff line the manifest never logged.",
+    "goal": "the goal is that _backends.py and capabilities.py stop reading, resolving or forwarding the anchored_edit flag; the reviewed head deletes every flag branch, the LaunchPlan anchored treatment fields, ANCHORED_EDIT_SERVER, _count_anchored_tool_items, the codex _anchored_edit_flags argv builder and the claude --disallowedTools Edit MultiEdit branch in reckon/_backends.py, plus the _anchored_edit_target reader in reckon/capabilities.py:416, so no launch composes the retired treatment.",
+    "manifest": "read; status complete, commits 78fa4487cc and 201447f399, changed_paths matches the diff, the tests line is the literal five-file pytest command, test_logs names the baseline, after and scoped-gate logs plus the negative control, baseline_suite and after_suite record zero failures, and outside_scope names the dispatch_launch and peer-file couplings.",
+    "write_paths": "the diff touches exactly the six declared paths (reckon/_backends.py, reckon/capabilities.py, the three test files, the evidence fragment) and nothing else; the declared figure directory is unused and the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_mcp_allowlist.py:137 launches with no anchored key, so it fails only on an unconditional reintroduction and passes a re-added branch gated on backend.get(\"anchored_edit\"), while the arm that exercises the key lives only in the uncommitted negative-control scratch test.",
+    "evidence": "baseline_suite-1795293473754996525.log reads 103 passed EXIT=0 at 1666d19f77 and after_suite-1795293548691556798.log reads 103 passed EXIT=0 at 78fa4487cc, and flag-grep.log carries a positive control of 46 matches at base, but the done-when's ruff check has no logged receipt and the grep covers five code paths rather than all declared write paths.",
+    "fit": "the changed comments in reckon/_backends.py describe the mechanism without a plan, sprint or ticket identifier, and the added test name test_no_launch_withholds_the_editing_tools and fixture names clive-spare/codex-spare describe what they are.",
+    "goal_fidelity": "reckon/_backends.py at the reviewed head carries no anchored_edit read, LaunchPlan field or argv branch, and reckon/capabilities.py:416 lost _anchored_edit_target, so both modules named by the goal no longer resolve or forward the flag.",
+    "reuse": "the change only deletes and simplifies, folding the removed _count_anchored_tool_items file_change arm inline at reckon/_backends.py:1617 rather than forking a second counter, and adds no definition duplicating an existing capability.",
+    "scope_discipline": "git diff --stat 1666d19f77..201447f399 lists only the six declared paths, and the module, flight-key, fence, prompt and dispatch removals are named under outside_scope rather than touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that _backends.py and capabilities.py stop reading, resolving or forwarding the anchored_edit flag; the reviewed head deletes every flag branch, the LaunchPlan anchored treatment fields, ANCHORED_EDIT_SERVER, _count_anchored_tool_items, the codex _anchored_edit_flags argv builder and the claude --disallowedTools Edit MultiEdit branch in reckon/_backends.py, plus the _anchored_edit_target reader in reckon/capabilities.py:416, so no launch composes the retired treatment.\nVERDICT done_when: the done_when names a five-file pytest gate adding no failure against a base, run on all_debug one arm at a time; the manifest records base 103 passed at 1666d19f77 and head 103 passed at 78fa4487cc, both EXIT=0, plus a grep receipt with a positive control (46 matches at base, 0 at head) and a negative control at 2 failed EXIT=1, so the gate asserts the measure apart from a ruff line the manifest never logged.\nVERDICT write_paths: the diff touches exactly the six declared paths (reckon/_backends.py, reckon/capabilities.py, the three test files, the evidence fragment) and nothing else; the declared figure directory is unused and the done-when names no artifact.\nVERDICT manifest: read; status complete, commits 78fa4487cc and 201447f399, changed_paths matches the diff, the tests line is the literal five-file pytest command, test_logs names the baseline, after and scoped-gate logs plus the negative control, baseline_suite and after_suite record zero failures, and outside_scope names the dispatch_launch and peer-file couplings.\nVERDICT diff: read 78fa4487cc (source and test removal) and 201447f399 (evidence fragment) against 1666d19f77; six files, +107/-240, all inside the declared scope, with the codex observation reduced to file_change counting and the test fixtures renamed to drop the key.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1476 launch_plan, reckon/crew/dispatch_sessions.py:2105 launch_plan, reckon/crew/dispatching/launch.py:752 launch_plan, reckon/crew/resumption.py:702 launch_plan, reckon/capabilities.py:504 _event_write_targets, reckon/crew/dispatch_launch.py:3625 _supervisor_spec reads plan.anchored_edit (broken until the anchored-launch-record-s18 sibling lands)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py at the reviewed head carries no anchored_edit read, LaunchPlan field or argv branch, and reckon/capabilities.py:416 lost _anchored_edit_target, so both modules named by the goal no longer resolve or forward the flag.\nSCORE evidence: 16\nJUSTIFICATION evidence: baseline_suite-1795293473754996525.log reads 103 passed EXIT=0 at 1666d19f77 and after_suite-1795293548691556798.log reads 103 passed EXIT=0 at 78fa4487cc, and flag-grep.log carries a positive control of 46 matches at base, but the done-when's ruff check has no logged receipt and the grep covers five code paths rather than all declared write paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1666d19f77..201447f399 lists only the six declared paths, and the module, flight-key, fence, prompt and dispatch removals are named under outside_scope rather than touched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_worker_mcp_allowlist.py:137 launches with no anchored key, so it fails only on an unconditional reintroduction and passes a re-added branch gated on backend.get(\"anchored_edit\"), while the arm that exercises the key lives only in the uncommitted negative-control scratch test.\nSCORE fit: 19\nJUSTIFICATION fit: the changed comments in reckon/_backends.py describe the mechanism without a plan, sprint or ticket identifier, and the added test name test_no_launch_withholds_the_editing_tools and fixture names clive-spare/codex-spare describe what they are.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change only deletes and simplifies, folding the removed _count_anchored_tool_items file_change arm inline at reckon/_backends.py:1617 rather than forking a second counter, and adds no definition duplicating an existing capability.\nFINDING reckon/crew/dispatch_launch.py:3625 non-blocking: removing LaunchPlan.anchored_edit and .anchored_edit_reason makes _supervisor_spec raise AttributeError on every dispatch that composes a supervisor spec until the sibling anchored-launch-record-s18 node removes the read at :3625-3626; the two must land together, and the manifest and evidence fragment disclose the coupling under outside_scope.\nFINDING tests/test_worker_mcp_allowlist.py:137 non-blocking: the replacement test passes no anchored_edit key, so it guards an unconditional re-add of the server or --disallowedTools but not a re-added branch gated on backend.get(\"anchored_edit\"); the only arm that exercises the key is the uncommitted negative-control scratch test, so the removal's key-ignoring behaviour has no committed guard.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-backends-s18.html:41 non-blocking: the done-when's 'a grep over this node's write paths finds nothing' is measured only in flag-grep.log over the five code and test paths, while this declared write path itself quotes the literal anchored_edit in its grep command; the live code is clean, so the substance holds and only the literal measure is scoped narrower than the done-when states.",
+  "review_run_id": "r-20261121T205310290068-review-of-anchored-backends-s18-201447f39977",
+  "reviewed_base_sha": "1666d19f7744d3cbbb272f620e38427ad9738472",
+  "reviewed_head_sha": "201447f399770adcb67027a006e31a0c6b935974",
+  "reviewed_run_id": "r-20261121T201903595274-anchored-backends-s18",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T205310290068-review-of-anchored-backends-s18-201447f39977"
+  },
+  "reviewer_run_id": "r-20261121T205310290068-review-of-anchored-backends-s18-201447f39977",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T21:23:08.253702+00:00",
+  "total": 107
+}

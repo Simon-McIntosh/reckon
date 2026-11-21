@@ -1,0 +1,119 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T22:04:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/admission/release.py:641",
+      "id": "reuse_search-1",
+      "reason": "otherwise \u00a75 rebuilds a retirement path that already exists and leaves the actual misclassification unfixed.",
+      "text": "\u00a75's endpoint (\"a stored request in the phase that says its upstream can no longer land is retired by the admit pass\") is already built: `_retire_stranded` runs on exactly that class and writes a discard record naming the upstream and reason; the two cited requests were classed IDLE (`reckon/crew/stranded_wait.py:80`), so the defect is in `stranded_wait.section_cannot_land` (`reckon/crew/stranded_wait.py:86`), which sees only plan-absent/terminal/no-such-section and cannot see a section of a live plan that nothing may queue; the node must extend that predicate, not add a second retirement path",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_batch.py:777",
+      "id": "reuse_search-2",
+      "reason": "the brief must say \"extend queue_plan and requests.py\", which the plan's own account of the endpoint cannot say and a node would otherwise duplicate the enumeration.",
+      "text": "\u00a77 and \u00a78 propose queueing a plan's implementable sections in the admit pass, but `queue_plan` already enumerates them via `_plan_html.derive_section_todos`, and `dispatch_plan.py`/`queue_batch` already store requests with their waits; the work is for the admit pass to call that owner for reviewed plans, not enumerate sections a second time; \u00a73's dispatch-width field should also extend the existing request record fields (`launch_kind etc)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/stranded_wait.py:25",
+      "id": "reuse_search-3",
+      "reason": "a node that recomputes liveness will disagree with the pass that stamped the pointer, and the plan's own \"two counts wherever a count is given\" names two surfaces a single helper must serve.",
+      "text": "\u00a76 asks for waiting counts split into \"advancing\" and \"nothing is building toward\", which is `stranded_wait.PROGRESSING`/`IDLE`/`STRANDED`; `admission/release.py:267` already stamps `wait_class` and `wait_detail` on every waiting pointer, so the split is a read of recorded state across both count owners (`reckon/crew/queue_view.py:265` and `reckon/crew/lane_document.py:477`), not a new derivation",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:1",
+      "id": "reuse_search-4",
+      "reason": "this changes the brief's reuse map but not the plan's endpoint, which is correctly stated as an obligation naming plan, count and command.",
+      "text": "\u00a74's \"obligation on its owner\" already has an owner mechanism: session obligations (`obligation_snapshot.payload_for`, driven by `station_obligations.py`) carries typed duties such as `section_obligations.DECLARATION_DUTY_KIND`; \u00a74 should add one duty kind with its own reason vocabulary, not a parallel listing",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/dispatch_batch.py:790",
+      "id": "deep_module-1",
+      "reason": "the plan must state one answer (\"a plan the service may queue\") as the shared predicate that \u00a74, \u00a77 and \u00a78 all consume, or the sections will contradict each other.",
+      "text": "the same predicate \"may this plan's sections be queued\" appears three times with three different reason sets: \u00a74 (\"review round answered, not held by an open decision, owned by a live session\"), \u00a77 (\"review answered, no open decision, not held by name, project switch on\") and \u00a78 (\"declared implementable, no live request, sits in a plan the service may queue\"); three implementations will drift and a plan will be queued by one path and reported held by another",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/stranded_wait.py:80",
+      "id": "thin_wrapper-1",
+      "reason": "the done-when should assert the pane renders the recorded classes, and the plan should say the split is recorded once and rendered twice rather than derived in the pane.",
+      "text": "\u00a76's rendered fault (\"a lane with no running work and a non-zero second count draws that count as a fault\") is a thin presentation layer over `wait_class`: the fault condition is exactly `waiting{IDLE} > 0 and running == 0`, which `admission/release.py` already computes and stamps; the wrapper adds no derivation the owner lacks",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_coordinator.py:256",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a79 must extend the coordinator resolver (or name why the ledger derivation cannot carry an adopted session) rather than writing ownership a third way.",
+      "text": "\u00a79 adds a third plan-ownership record: `plan-owner` meta (a person) and `resolve_plan_coordinators` (a session derived from the ledger) already exist, and \u00a79 stamps an \"adoption\" with session and instant onto the plan; a second resolver over a second store will disagree with the ledger-derived coordinator the whole-plan queue already uses (`dispatch_batch.py:801` reads `resolve_plan_coordinators` for ownership), so a plan could be adopted by one session and refused as another's by the queue; the second `adopt` verb also sits beside `lost_session_work.py:36 ADOPT`, which already means \"move a run to a live session\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_coordinator.py:201",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a74 and \u00a79 otherwise implement the same ownership question twice and report a plan both unowned and adopted.",
+      "text": "the census of ownership derivations the design must reconcile: `plan-owner` meta read at `plan_coordinator.py:201`, the two coordinator facts joined at `plan_coordinator.py:256`, plan-scoped request history in `dispatch_batch.py:801`, and the new \u00a79 adoption record; \u00a74's \"owned by no live session is listed as unowned\" is \u00a79's subject, so the two sections must read one resolver",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:82",
+      "id": "interface_budget-1",
+      "reason": "the section must name what it retires (e.g. fold hold-by-name and the existing coordinator queue hold into one) or say why nothing can be.",
+      "text": "\u00a77 adds three interface families without accounting for any: a new flight setting (project switch, a fourth slot family beside `stranded_wait.report_after_hours`), a hold-by-name plan state, and at least one new refusal reason (\"listed with the one reason that holds it\"); of 535 cli_options, 15 mcp_views and 25 refusal_families nothing is retired or merged",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:96",
+      "id": "interface_budget-2",
+      "reason": "a new verb plus two refusals added to 535/25 with nothing retired is surface the plan must justify or reduce.",
+      "text": "\u00a79 adds a CLI verb (adopt) and at least two refusal families (outside the session's sprints; plan owned by a live session) with no retirement named, while `plan_coordinator` and `lost_session_work` already carry ownership commands and adopt semantics that could be extended",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cc319ebcb51891faf82a4be61b31069d686d9b68",
+  "plan_fingerprint": "2c32726b8fc8c538c88c44bf13ef2b3684714d1595443134e4f3fbf436baba9c",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261121T220244226438-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "8f13b05d0a873bbf799099f041057b4ad73ffbf6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the \"may the service queue this plan\" predicate is spelled three times across \u00a74 (obligation), \u00a77 (service queueing) and \u00a78 (upstream queueing), each with its own reasons, instead of one resolver the three read.",
+    "duplicate_owner": "a finding \u2014 \u00a79 records plan ownership a third way (an adoption stamped on the plan) beside `plan_coordinator.resolve_plan_coordinators` and the `plan-owner` meta, and adds a second `adopt` verb beside the run-level one in `lost_session_work.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 3146, cli_options 535, mcp_views 15, refusal_families 25; \u00a77 adds a flight setting, a hold-by-name and a refusal-reason family, and \u00a79 adds a CLI verb and two refusal families, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a75/\u00a76/\u00a77 each propose machinery reckon already carries: `reckon/crew/stranded_wait.py` classifies waits, `reckon/crew/admission/release.py` already retires a stranded one, `reckon/crew/dispatch_batch.py:777 queue_plan` already enumerates and queues a plan's implementable sections, and `reckon/crew/plan_coordinator.py:256` already resolves a plan's owning session.",
+    "thin_wrapper": "a finding \u2014 \u00a76's waiting-count split would re-derive \"is anything building toward this wait\" beside `stranded_wait.classify`, whose `wait_class` is already stamped on every pointer."
+  },
+  "section_digests": {
+    "_document": "06efae08dd00c949c0bde0cee66e10753771cc4f722a032b1c87ff6acf6e4c39",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "072e525acac0eebf1bfbc75f216687e5dea2b9318687210153ae22b8296dbd9e",
+    "s4": "1fe8ec78c1acc206d7c851dae37a93866c66d22b3436bb0ad3047d709e525a90",
+    "s5": "240ce358809d631a4859792a2d3a70c4eea1d942edb243ca440f44b70f6b7f4d",
+    "s6": "6e8492474b3eefba9051c5e9dc353856693810abce0a8fd10ee27a503d6e5f68",
+    "s7": "aa1f12bb780ed827f65804aa31551819102217d19762b591bc794fec588a8347",
+    "s8": "3ee95818a96359161c86d28581b22d1a36de86987491b8f381ef4b86c7b80bed",
+    "s9": "4b76fa38099968ea757884c34ae6b08fb0d12e97e2e436459589b03e1a35e5e9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T22:14:47.805065+00:00",
+  "total": null
+}

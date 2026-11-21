@@ -182,6 +182,109 @@
     <p>Run <code>r-20261111T021111296714-armed-suite-collectible-tests</code> (local lane), landed at <code>fcec1e7f5b06</code>. One predicate, <code>is_collectible_test_path</code>, narrows every pytest argument list to pytest's default collection rule (<code>test_*.py</code>, <code>*_test.py</code>), and <code>_node_test_files</code>, <code>_landing_test_files</code> and the worker-facing <code>_suite_gate_prompt_body</code> all use it; <code>is_test_path</code> stays the dispatch trigger, so a node writing a fixture still owes a negative control. A scope holding a test, a JSONL fixture, <code>conftest.py</code>, a helper and an <code>x.test.py</code> now names only the test. Removing the narrowing fails the mixed-scope test by naming the fixture. Review 109/120; armed arms base 51, head 59 passed.</p>
   </section>
 
+  <section id="s8-pooled-local-record" data-evidence-origin="append">
+    <h2>&sect;8 — the pooled local record and the lead's decision</h2>
+    <p id="s8-pooled-local-record-summary">The verdict population is the paired replay: every section drawn
+    by both committed assignments, paired-replay-assignment.json, paired-replay-assignment-2.json (seeds 20261116, 20261117), replayed from one base
+    revision per section by every local arm. The two assignments drew 10 + 10 sections
+    together, and <strong>18</strong> of them were dispatched and replayed, carrying
+    <strong>72</strong> local runs across the <strong>4</strong> local
+    arms. This record pools them for the first time: the earlier record read the first
+    assignment alone, and the plan list it carried did not name
+    <code>a-landing-never-waits-on-a-shared-index</code>, so its <code>s10</code> was dropped
+    silently. The producer now names every plan the assignments draw from — <code>lane-and-model-routing</code>, <code>workers-spend-fewer-tokens-per-landed-node</code>, <code>the-monitor-shows-the-work-it-watches</code>, <code>a-seat-held-elsewhere-is-not-restarted</code>, <code>the-crew-does-its-own-bookkeeping</code>, <code>a-landing-never-waits-on-a-shared-index</code> — and a
+    replay row whose plan it does not name is listed under exclusions with its reason rather
+    than dropped.</p>
+
+    <h3 id="s8-pooled-local-record-plans">The plans the record draws from</h3>
+    <table>
+      <thead><tr><th>Plan</th><th>Sections</th><th>Local runs</th><th>Codex runs (stopped)</th></tr></thead>
+      <tbody><tr><td><code>lane-and-model-routing</code></td><td>2</td><td>8</td><td>2</td></tr><tr><td><code>workers-spend-fewer-tokens-per-landed-node</code></td><td>3</td><td>12</td><td>5</td></tr><tr><td><code>the-monitor-shows-the-work-it-watches</code></td><td>7</td><td>28</td><td>11</td></tr><tr><td><code>a-seat-held-elsewhere-is-not-restarted</code></td><td>1</td><td>4</td><td>2</td></tr><tr><td><code>the-crew-does-its-own-bookkeeping</code></td><td>4</td><td>16</td><td>7</td></tr><tr><td><code>a-landing-never-waits-on-a-shared-index</code></td><td>1</td><td>4</td><td>1</td></tr></tbody>
+    </table>
+
+    <h3 id="s8-pooled-local-record-table">The pooled local per-arm table, over all 18 replayed sections</h3>
+    <p id="s8-pooled-local-record-table-note">Each treatment is paired with <code>clive</code> on every section
+    that carries both runs; the interval is a 10,000-draw paired bootstrap over sections,
+    seeded, at 90%. A treatment is <strong>adopt</strong> only when its mean paired cumulative
+    input falls by at least 5%, its interval is separated from the same-arm spread, and its gate
+    pass rate does not fall. Every one of the 72 local runs reached a passed gate.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Role</th><th>Sections paired</th><th>Runs</th>
+      <th>Gate passed</th><th>Cumulative input</th><th>Input per gate-passed run</th>
+      <th>Mean paired &Delta; vs clive</th><th>Relative</th><th>90% interval</th>
+      <th>Verdict</th></tr></thead>
+      <tbody><tr><td><code>clive</code></td><td>baseline</td><td>18</td><td>18</td><td>100.0% (18/18)</td><td>407.39M</td><td>22.63M</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>baseline</td></tr><tr><td><code>clive-anchored</code></td><td>treatment</td><td>18</td><td>18</td><td>100.0% (18/18)</td><td>426.56M</td><td>23.70M</td><td>1.07M</td><td>+4.7%</td><td>-2.43M to 4.47M</td><td><strong>not adopt: the paired-difference interval overlaps the same-arm interval, so the arm is not separated from the spread a same-arm comparison already has</strong></td></tr><tr><td><code>omp-local</code></td><td>treatment</td><td>18</td><td>18</td><td>100.0% (18/18)</td><td>378.42M</td><td>21.02M</td><td>-1.61M</td><td>-7.1%</td><td>-3.62M to 0.16M</td><td><strong>not adopt: the paired-difference interval overlaps the same-arm interval, so the arm is not separated from the spread a same-arm comparison already has</strong></td></tr><tr><td><code>clive-replicate</code></td><td>same-arm control</td><td>18</td><td>18</td><td>100.0% (18/18)</td><td>441.74M</td><td>24.54M</td><td>1.91M</td><td>+8.4%</td><td>-1.83M to 5.84M</td><td>spread, not a treatment</td></tr></tbody>
+    </table>
+
+    <h3 id="s8-pooled-local-record-same-arm">The same-arm control</h3>
+    <p id="s8-pooled-local-record-same-arm-note">The replicate clive run paired with clive on each of the
+    <strong>18</strong> sections is the spread a same-arm comparison already
+    shows: mean paired difference <strong>1.91M (+8.4% of the
+    baseline's paired mean 22.63M)</strong>, 90% interval
+    <strong>-1.83M to 5.84M</strong>. A treatment whose interval overlaps
+    this spread is reported not separated.</p>
+
+    <h3 id="s8-pooled-local-record-metrics">&sect;8's per-arm metrics, pooled</h3>
+    <table>
+      <thead><tr><th>Arm</th><th>Tool calls / run</th><th>Output / run</th>
+      <th>Peak context</th><th>Edit failures / calls</th>
+      <th><code>edit_anchored</code> / <code>read_anchored</code></th></tr></thead>
+      <tbody><tr><td><code>clive</code></td><td>181</td><td>58,476*</td><td>180,215</td><td>21.8% (138/632)</td><td>0 / 0</td></tr><tr><td><code>clive-anchored</code></td><td>189</td><td>68,269*</td><td>184,048</td><td>3.9% (19/490)</td><td>477 / 300</td></tr><tr><td><code>omp-local</code></td><td>176</td><td>69,406</td><td>185,281</td><td>19.5% (86/440)</td><td>0 / 0</td></tr><tr><td><code>clive-replicate</code></td><td>194</td><td>70,221*</td><td>184,957</td><td>23.8% (138/581)</td><td>0 / 0</td></tr></tbody>
+    </table>
+
+    <h3 id="s8-pooled-local-record-codex">The codex arms, partial and stopped</h3>
+    <table>
+      <thead><tr><th>Arm</th><th>Runs recorded</th><th>Gate passed</th>
+      <th>Cumulative input</th><th>Input per gate-passed run</th><th>Status</th></tr></thead>
+      <tbody><tr><td><code>codex</code></td><td>14</td><td>57.1% (8/14)</td><td>132.74M</td><td>10.03M</td><td><strong>stopped</strong> &mdash; the codex arms were stopped on 2026-11-20 and their remaining replays were never run; these are partial results, not a verdict</td></tr><tr><td><code>codex-anchored</code></td><td>14</td><td>71.4% (10/14)</td><td>104.28M</td><td>8.93M</td><td><strong>stopped</strong> &mdash; the codex arms were stopped on 2026-11-20 and their remaining replays were never run; these are partial results, not a verdict</td></tr></tbody>
+    </table>
+    <p id="s8-pooled-local-record-codex-note">28 codex runs were recorded before the stop, over 16 of the 18 sections: a-landing-never-waits-on-a-shared-index#s10, a-seat-held-elsewhere-is-not-restarted#s24, lane-and-model-routing#s59, the-crew-does-its-own-bookkeeping#s1, the-crew-does-its-own-bookkeeping#s6, the-crew-does-its-own-bookkeeping#s7, the-crew-does-its-own-bookkeeping#s9, the-monitor-shows-the-work-it-watches#s101, the-monitor-shows-the-work-it-watches#s115, the-monitor-shows-the-work-it-watches#s130, the-monitor-shows-the-work-it-watches#s135, the-monitor-shows-the-work-it-watches#s139, the-monitor-shows-the-work-it-watches#s87, workers-spend-fewer-tokens-per-landed-node#s11, workers-spend-fewer-tokens-per-landed-node#s5, workers-spend-fewer-tokens-per-landed-node#s9. No codex replay is counted in the pooled local table, and no codex verdict is drawn.</p>
+
+    <h3 id="s8-pooled-local-record-exclusions">Excluded from the record, with the reason</h3>
+    <p id="s8-pooled-local-record-negative">Negative control: a replay row whose plan the producer does not
+    name appears here as an excluded section with its reason, rather than being dropped as
+    <code>land s10</code> was before this section. The row is listed by the same path a real
+    unlisted row takes.</p>
+    <p id="s8-pooled-local-record-negative-result">The producer was given a fixture replay row whose plan it does not name (<code>r-negative-control-unlisted-plan</code>, plan <code>a-plan-the-producer-does-not-name</code>) and <strong>listed it as excluded with its reason</strong>, rather than dropping it: the run&#x27;s plan &#x27;a-plan-the-producer-does-not-name&#x27; is not one of the plans the producer names (lane-and-model-routing, workers-spend-fewer-tokens-per-landed-node, the-monitor-shows-the-work-it-watches, a-seat-held-elsewhere-is-not-restarted, the-crew-does-its-own-bookkeeping, a-landing-never-waits-on-a-shared-index); the section is listed as excluded rather than dropped. With the silent drop restored in a scratch copy, the row is absent.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Section</th><th>Reason</th></tr></thead>
+      <tbody><tr><td>&mdash;</td><td>workers-spend-fewer-tokens-per-landed-node#s4</td><td>the local lane&#x27;s dispatch refused the first s4 replay on context fit: estimated 306578 usable input tokens against a 230144 token window, dominated by reckon/crew/dispatch_launch.py, docs/_shared/flight.schema.json and reckon/_backends.py in its write paths. Every local arm (clive, clive-anchored, omp-local, clive replicate) has that window, so the section cannot be paired and is excluded for all six arms before any of its replays ran.</td></tr><tr><td>&mdash;</td><td>lane-and-model-routing#s53</td><td>the local lane&#x27;s dispatch refused the first lane s53 replay (order 79, clive-replicate) on context fit: estimated 231351 usable input tokens against a 230144 token window, dominated by reckon/crew_run_commands.py (66503 tokens) and reckon/crew/routing.py (52399 tokens) in its write paths. Every local arm (clive, clive-anchored, clive-replicate, omp-local) shares that window, so the section has no local pair; it is excluded whole, as s14 excluded s4, and none of its replays was dispatched.</td></tr><tr><td>&mdash;</td><td>codex arms (codex, codex-anchored, codex-replicate)</td><td>lead decision 2026-11-20: the codex arms are stopped. The codex lane was at 100% of its seven-day window until 2026-11-22T20:41Z, and after the pooled local record the lead kept the local lane on native clive and removed the anchored tool, so the codex-anchored comparison measures nothing that will be adopted. These replays were never run; orders 93 and 96 were dropped from the queue before launching.</td></tr></tbody>
+    </table>
+
+    <h3 id="s8-pooled-local-record-query">The query and its literal command</h3>
+    <p id="s8-pooled-local-record-query-note">The population query, text as committed in each assignment:
+    <code>implement ledger rows in the run store whose session is 829e5a4a-6870-4aec-876d-ba2efb1b5ecf, whose plan is one of the six named in the section, whose gate is passed and whose last listed commit is an ancestor of origin/main; grouped by (plan, section); base is the parent of the section&#x27;s earliest landed commit by commit time / implement ledger rows in the run store whose session is 829e5a4a-6870-4aec-876d-ba2efb1b5ecf, whose plan is one of the six named in the section, whose gate is passed and whose last listed commit is an ancestor of origin/main; grouped by (plan, section); base is the dispatch base (base_sha) of the section&#x27;s earliest original run, the rule the first assignment&#x27;s base_correction adopted; excluding measurement runs, every section the first assignment drew and every section it excluded</code></p>
+    <p>The producer is committed at <code>docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py</code>; the record is computed on the
+    <code>all_debug</code> partition, never on the fleet node, and its log sits in the run
+    directory, starts with the revision and this literal command, and ends in its own exit
+    status:</p>
+    <pre><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python3 docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py --repo . --write-archive</code></pre>
+
+    <h3 id="s8-pooled-local-record-controls">&sect;8's controls, pooled</h3>
+    <table>
+      <thead><tr><th>Control</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Positive, local: the edit-failure rate over the baseline clive arm is of the
+        same order as &sect;1's 11.2%</td><td>21.8% (138/632) over the 18
+        baseline clive runs.</td></tr>
+        <tr><td>Positive, codex: the edit-failure parser finds the refusal in the recorded
+        stream known to contain a refused patch</td><td>1 refusal found in
+        5 fixture records, so a zero for a codex arm is a zero.</td></tr>
+        <tr><td>Instrument: each run's stored cumulative input reproduces a launch's own
+        figure</td><td>95 of 96 runs reproduce a launch's
+        figure exactly.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="s8-pooled-local-record-decision">The lead's decision</h3>
+    <p id="s8-pooled-local-record-decision-body"><strong>Lead decision, 2026-11-20.</strong> On the
+    pooled local record the lead decided: the local lane stays on native clive; the anchored
+    edit tool is removed from reckon (&sect;18), because its lower edit-failure rate changed
+    no gate outcome and cost input; the omp pilot is not adopted and the host flight stops
+    routing to it, its code staying in place; and the codex arms are stopped, their replays
+    not run. No further flight default is changed by this record.</p>
+  </section>
+
 </main>
 </body>
 </html>

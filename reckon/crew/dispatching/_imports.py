@@ -189,7 +189,6 @@ from reckon.crew.prompts import (
     compose_prompt as compose_prompt,
     domain_rules_block as domain_rules_block,
     time_fence_statement as time_fence_statement,
-    with_anchored_edit_instruction as _with_anchored_edit_instruction,
 )
 
 
