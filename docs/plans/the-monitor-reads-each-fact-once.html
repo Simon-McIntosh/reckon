@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="566">
+<meta name="plan-version" content="567">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -2058,6 +2058,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s111" data-id="c-run-r-20261121T221547411923-review-of-mrfo-a-disposal-names-an-unpromoted-review-534ee5f9c3d0" data-who="reckon-build" data-when="2026-11-21T22:40:47.082Z">
+    <div class="r-comment-body"><p>An independent review of run r-20261121T213436207874-mrfo-a-disposal-names-an-unpromoted-review at base 4a5ec5081e3 head 534ee5f9c3 scores 17/19/20/18/19/5 over goal_fidelity/evidence/scope_discipline/durability/fit/reuse (total 98) with 0 added failures and three non-blocking findings: a duplicated record-selection loop, an echo-only assertion, and a pointer-less refusal that offers `reckon crew observe` while saying to promote.</p></div>
 </div>
 </section>
 </main>

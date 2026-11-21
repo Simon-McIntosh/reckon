@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_dispose",
+    "reckon/crew/recovery_classification.py:_promotion_command",
+    "reckon/crew/review.py:run_review_record_directory"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T22:18:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "2903",
+      "severity": "non-blocking",
+      "text": "`filed_unpromoted_review_record` duplicates the capability `_records_naming_this_review` at reckon/crew/review.py:4171 already owns instead of extending or wrapping it, and drops the owner's optional rubric filter."
+    },
+    {
+      "file": "tests/test_a_disposal_names_an_unpromoted_review.py",
+      "line": "241",
+      "severity": "non-blocking",
+      "text": "the assertion compares the receipt against the `--node` value the test itself passed in, so it moves with its own input rather than an independent source."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "948",
+      "severity": "non-blocking",
+      "text": "with no readable review-run pointer the refusal says \"Promote that review run first:\" and then names `reckon crew observe --run <review>`, which does not promote the run (probed at 534ee5f9c3)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "one additive commit, read commit by commit against 4a5ec5081e3.",
+    "done_when": "the named test file passes at the head and fails at the base on the declared arm; all four logs are recorded with revisions, literal commands and EXIT= lines.",
+    "goal": "the deliverable is met for a review run with a live pointer; the pointer-less case composes a non-promoting command.",
+    "manifest": "read; it records the three changed paths, the scoped gate, both suite arms and the negative control, and states its test results.",
+    "write_paths": "the diff stays inside three of the five declared write paths."
+  },
+  "justifications": {
+    "durability": "removing the fall-through at reckon/crew_run_commands.py:1215 reddens both new arms, as negative-control.log shows at the base revision, though tests/test_a_disposal_names_an_unpromoted_review.py:241 asserts an echo of the value the test itself passed in.",
+    "evidence": "the scoped gate log at 534ee5f9c3 records 61 passed with a closing EXIT=0, and negative-control.log's first arm fails at 4a5ec5081e3 on the no-record refusal.",
+    "fit": "`_unpromoted_named_review_refusal` sits beside `_no_named_review_record_refusal` in reckon/crew_run_commands.py and reuses `_promotion_command` as reckon/crew/queue_landing.py:2399 does.",
+    "goal_fidelity": "reckon/crew_run_commands.py:1208-1226 refuses with the right diagnosis in the live-pointer case, but reckon/crew_run_commands.py:946-957 composes `reckon crew observe --run <review>` when the review run's pointer is gone while the message claims to be offering a promotion.",
+    "reuse": "reckon/crew/review_records.py:2903 re-implements the record-selection loop that reckon/crew/review.py:4171 `_records_naming_this_review` already owns rather than calling it.",
+    "scope_discipline": "the diff's three paths are exactly three of the declared write paths in the manifest, and nothing outside them changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's deliverable is that a disposal naming a review run whose record is filed in the reviewed run's directory but absent from the project's review store is refused saying so and carrying the promoting command; reckon/crew_run_commands.py:1208-1226 adds a fall-through to that filed copy in the `--review` branch and emits `_unpromoted_named_review_refusal`, which names the state and composes the promoting command through `_promotion_command`.\nVERDICT done_when: the done_when names tests/test_a_disposal_names_an_unpromoted_review.py with three arms; the manifest records the scoped gate at 534ee5f9c3 (61 passed), the baseline arm at 4a5ec5081e3 (58 passed) and the after arm at 534ee5f9c3 (61 passed), each log carrying its revision, the literal command and a closing `EXIT=0`; the declared negative control at 4a5ec5081e3 shows the first arm failing with the no-record refusal (2 failed, 1 passed, `EXIT=1`), and I re-ran the named file once at the reviewed head (3 passed in 1.14s).\nVERDICT write_paths: the declared paths are reckon/crew_run_commands.py, reckon/crew/review_records.py, tests/test_a_disposal_names_an_unpromoted_review.py plus a docs evidence fragment and a figures directory; the diff adds to the first three only, and no undeclared file changes.\nVERDICT manifest: read; it claims status complete, names the three changed paths, records the scoped gate 61 passed and both suite arms 58/61 with no failure ids, cites the negative-control log, and its evidence_inputs quote the new refusal text and its single composition through `_promotion_command`.\nVERDICT diff: read commit by commit against 4a5ec5081e3; one commit (534ee5f9c3) adds `filed_unpromoted_review_record` (review_records.py +40), `_unpromoted_named_review_refusal` and the dispose fall-through (crew_run_commands.py +50), and a 260-line test file; the change is additive and leaves the existing no-record refusal intact.\nCALL_SITES: reckon/crew_run_commands.py:crew_dispose (the `crew dispose --review` path), reckon/crew/recovery_classification.py:_promotion_command (composed for the offered remedy), reckon/crew/review.py:run_review_record_directory\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:1208-1226 refuses with the right diagnosis in the live-pointer case, but reckon/crew_run_commands.py:946-957 composes \"reckon crew observe --run <review>\" when the review run's pointer is gone while the sentence still says \"Promote that review run first\".\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate log at 534ee5f9c3 records 61 passed with a closing EXIT=0, and the negative-control.log first arm fails at 4a5ec5081e3 on the no-record refusal, so the measure is shown to fail before the change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three paths are exactly three of the declared write paths in the manifest, and nothing outside them changed.\nSCORE durability: 18\nJUSTIFICATION durability: removing the fall-through at reckon/crew_run_commands.py:1215 reddens both new arms, as negative-control.log shows at the base revision, though tests/test_a_disposal_names_an_unpromoted_review.py:241 asserts an echo of the `--node` value the test itself passed in. \nSCORE fit: 19\nJUSTIFICATION fit: `_unpromoted_named_review_refusal` sits beside `_no_named_review_record_refusal` in reckon/crew_run_commands.py and reuses `_promotion_command` as reckon/crew/queue_landing.py:2399 and reckon/crew/obligations.py:1013 already do.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/review_records.py:2903 re-implements the record-selection loop that reckon/crew/review.py:4171 `_records_named_this_review` already owns rather than calling it.\nFINDING reckon/crew/review_records.py:2903 non-blocking: `filed_unpromoted_review_record` duplicates the capability `_records_naming_this_review` at reckon/crew/review.py:4171 already owns (iterating `run_review_record_directory(...).glob(\"*.json\")`, parsing each, and requiring both `review_run_id` and `reviewed_run_id` to match) instead of extending or wrapping it; the copy also drops the owner's optional rubric filter, so a `--rubric`-qualified lookup can be told \"not yet promoted\" by a record of another rubric.\nFINDING tests/test_a_disposal_names_an_unpromoted_review.py:241 non-blocking: `assert receipt[\"disposition\"] == f\"folded:{FOLD_NODE}\"` compares the receipt against the very `--node` value the test passed on the command line, so it moves with the input rather than with an independent source and would not catch a receipt that echoed the wrong node back; the arm's real guard is the `exit_code == 0` assertion beside it.\nFINDING reckon/crew_run_commands.py:948 non-blocking: when the named review run has no readable pointer, `read_pointer` raises and the code passes `{}` to `_promotion_command`, which returns `reckon crew observe --run <review>` (probed at 534ee5f9c3 with an absent pointer), so the refusal says \"Promote that review run first:\" and then names a command that does not promote it.\n",
+  "review_run_id": "r-20261121T221547411923-review-of-mrfo-a-disposal-names-an-unpromoted-review-534ee5f9c3d0",
+  "reviewed_base_sha": "4a5ec5081e3dbac8d523e4d6a1b1d5261ec61410",
+  "reviewed_head_sha": "534ee5f9c3d0dfb957d608960e6c21511c75f1a1",
+  "reviewed_run_id": "r-20261121T213436207874-mrfo-a-disposal-names-an-unpromoted-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T22:30:00+00:00",
+  "total": 98
+}
