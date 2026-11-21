@@ -168,6 +168,45 @@ def record_decision(record: Mapping[str, Any]) -> dict[str, Any]:
     return data
 
 
+def recorded_decision(decision_id: str) -> dict[str, Any]:
+    """Read one recorded question, refusing it unless a hold may cite it.
+
+    A hold that waits on the lead cites a record rather than restating the
+    question, so the record has to be one the lead can answer: present, an
+    object, not answered sound or withdrawn, and carrying every field the
+    recorder requires — a question, its context, its owner and the two to four
+    options with one recommended. The check is the recorder's own, run against
+    the file as it stands now, so a hand-edited record is refused by the rule
+    that admitted it and the refusal names the field at fault.
+    """
+    path = decision_path(decision_id)
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(
+            f"no decision {decision_id!r} is recorded; record one with "
+            "`crew decision record --record -` first"
+        ) from exc
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"decision {decision_id!r} cannot be read: {exc}") from exc
+    if not isinstance(record, Mapping):
+        raise TypeError(f"decision {decision_id!r} is not a JSON object")
+    if str(record.get("id") or "") != decision_id:
+        raise ValueError(
+            f"decision {decision_id!r} carries id {record.get('id')!r}, so the "
+            "file does not name the decision it was cited as"
+        )
+    withdrawn_by = str(record.get("withdrawn_by") or "").strip()
+    if withdrawn_by:
+        raise ValueError(
+            f"decision {decision_id!r} was withdrawn by {withdrawn_by!r} and "
+            "holds nothing"
+        )
+    if str(record.get("answered_at") or "").strip():
+        raise ValueError(f"decision {decision_id!r} is already answered")
+    return validate_decision(record)
+
+
 def record_decision_at(
     record: Mapping[str, Any],
     *,

@@ -53,6 +53,29 @@ WAITING_PHASES: tuple[str, ...] = ("queued", "awaiting-upstream", "held")
 #: The node fields an edit may replace beside the steering text.
 EDITABLE_NODE_FIELDS: tuple[str, ...] = ("done_when", "write_paths", "time_budget")
 
+#: The one target a hold may name as what the request waits on. A hold on the
+#: lead's word is the only hold that must carry a decision record: its answer
+#: releases the request, so the question has to outlive the session that placed
+#: the hold. Every other hold is a coordinator's to release and is unchanged.
+LEAD_WAIT = "lead"
+
+#: The fields a decision record needs before a hold may cite it, in the order a
+#: caller omitting several is told about them. The recorder enforces the same
+#: set when the record is written; a hold re-asks it because the file on disk
+#: is a plain file that can be edited after the record was made, and a hold
+#: citing an incomplete record would sit behind a question the lead cannot
+#: answer.
+HOLD_RECORD_FIELDS: tuple[str, ...] = (
+    "question",
+    "context",
+    "project",
+    "session",
+    "plan",
+    "section",
+    "options",
+    "recommended",
+)
+
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
@@ -830,7 +853,56 @@ def _selected_requests(
     return selected
 
 
-def _change_hold(run_id: str, *, release: bool, reason: str) -> dict[str, Any]:
+def _lead_hold_record(awaiting: str, decision: str) -> str:
+    """The decision id a hold cites, or a refusal naming what a record needs.
+
+    A hold that names the lead as what it waits on cannot be released by the
+    coordinator who placed it: the lead's answer is what releases it. So the
+    question and its choices are read from a recorded decision rather than from
+    the hold, and a hold naming the lead without one is refused here, before
+    any pointer is written. Holds naming anything else carry no record.
+
+    The cited record is asked for every field a lead needs to answer it — the
+    recorder's own rule, re-run against the file as it stands now: an options
+    list shorter than two or longer than four, or a recommendation naming no
+    option, is the field at fault and the refusal says which.
+    """
+    target = str(awaiting or "").strip()
+    identifier = str(decision or "").strip()
+    if target and target.lower() != LEAD_WAIT:
+        raise CrewError(
+            f"a hold names {target!r} as what it waits on, but the only named "
+            f"hold target is {LEAD_WAIT!r}; leave it unnamed for a coordinator's "
+            "own hold"
+        )
+    if not identifier:
+        if not target:
+            return ""
+        raise CrewError(
+            "a hold that waits on the lead carries a decision record naming "
+            + ", ".join(HOLD_RECORD_FIELDS)
+            + "; record it with `crew decision record --record -` and cite it "
+            "with --decision, or state another reason for the hold"
+        )
+    from reckon.crew.lead_decisions import recorded_decision
+
+    try:
+        recorded_decision(identifier)
+    except (TypeError, ValueError) as exc:
+        raise CrewError(
+            f"cannot hold for the lead on decision {identifier!r}: {exc}"
+        ) from exc
+    return identifier
+
+
+def _change_hold(
+    run_id: str,
+    *,
+    release: bool,
+    reason: str,
+    awaiting: str = "",
+    decision: str = "",
+) -> dict[str, Any]:
     from reckon._timestamps import parse_utc
     from reckon.crew import runs
 
@@ -856,7 +928,19 @@ def _change_hold(run_id: str, *, release: bool, reason: str) -> dict[str, Any]:
             current["queue_released_at"] = ended.isoformat()
         else:
             if phase == "held":
-                return {"run_id": run_id, "phase": phase, "unchanged": True}
+                if not awaiting and not decision:
+                    return {"run_id": run_id, "phase": phase, "unchanged": True}
+                hold_record = dict(current.get("queue_hold") or {})
+                hold_record.update(_hold_target(awaiting=awaiting, decision=decision))
+                current["queue_hold"] = hold_record
+                runs._write_json(runs.pointer_path(run_id), current)
+                return {
+                    "run_id": run_id,
+                    "phase": phase,
+                    "reason": str(hold_record.get("reason") or ""),
+                    "awaits": hold_record.get("awaits", ""),
+                    "decision_id": hold_record.get("decision_id", ""),
+                }
             if phase not in ("queued", "awaiting-upstream"):
                 raise CrewError(
                     f"cannot hold request {run_id!r}: it is {phase or 'unrecorded'}; "
@@ -866,10 +950,30 @@ def _change_hold(run_id: str, *, release: bool, reason: str) -> dict[str, Any]:
                 "prior_phase": phase,
                 "started_at": _now(),
                 "reason": reason,
+                **_hold_target(awaiting=awaiting, decision=decision),
             }
             current["phase"] = "held"
         runs._write_json(runs.pointer_path(run_id), current)
-    return {"run_id": run_id, "phase": current["phase"], "reason": reason}
+    hold_record = current.get("queue_hold") or {}
+    return {
+        "run_id": run_id,
+        "phase": current["phase"],
+        "reason": reason,
+        "awaits": hold_record.get("awaits", ""),
+        "decision_id": hold_record.get("decision_id", ""),
+    }
+
+
+def _hold_target(*, awaiting: str, decision: str) -> dict[str, str]:
+    """The naming a hold carries beside its reason: what it waits on and why."""
+    target: dict[str, str] = {}
+    target_value = str(awaiting or "").strip().lower()
+    if target_value:
+        target["awaits"] = target_value
+    identifier = str(decision or "").strip()
+    if identifier:
+        target["decision_id"] = identifier
+    return target
 
 
 def hold(
@@ -879,6 +983,8 @@ def hold(
     session: str | None = None,
     reason: str = "",
     project: str | None = None,
+    awaiting: str = "",
+    decision: str = "",
 ) -> dict[str, Any]:
     """Pause waiting requests without losing their brief, waits or priority.
 
@@ -888,10 +994,22 @@ def hold(
     unusable exactly when a coordinator needs to shrink the queue the pass is
     working through. The launch re-reads the request's phase before it starts
     the run, so a request held while a pass is deciding is not launched by it.
+
+    A hold that names the lead as what it waits on is refused unless it cites a
+    complete decision record, and the check runs before any pointer is written
+    so a refused hold holds nothing. Every other hold is unchanged.
     """
+    identifier = _lead_hold_record(awaiting, decision)
     ids = _selected_requests(run_id, plan, session, project, release=False)
     changed = [
-        _change_hold(identifier, release=False, reason=reason) for identifier in ids
+        _change_hold(
+            request,
+            release=False,
+            reason=reason,
+            awaiting=awaiting,
+            decision=identifier,
+        )
+        for request in ids
     ]
     return {"held": changed, "count": len(changed)}
 

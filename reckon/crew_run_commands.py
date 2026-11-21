@@ -3263,16 +3263,24 @@ def crew_queue_drop(run_id, reason, project, pretty):
     _emit_crew_result(result, pretty)
 
 
-def _queue_hold_change(verb, run_id, plan, session, reason, project, pretty):
+def _queue_hold_change(
+    verb, run_id, plan, session, reason, project, pretty, awaiting="", decision=""
+):
     from reckon.crew import queue_edit
     from reckon.crew.node import CrewError
 
     if run_id:
         _accept_a_matching_project(run_id, project)
+    arguments = {
+        "plan": plan,
+        "session": session,
+        "reason": reason,
+        "project": project,
+    }
+    if verb == "hold":
+        arguments.update(awaiting=awaiting, decision=decision)
     try:
-        result = getattr(queue_edit, verb)(
-            run_id, plan=plan, session=session, reason=reason, project=project
-        )
+        result = getattr(queue_edit, verb)(run_id, **arguments)
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
@@ -3284,12 +3292,39 @@ def _queue_hold_change(verb, run_id, plan, session, reason, project, pretty):
 @click.option("--session", default=None, help="Hold this session's waiting requests.")
 @click.option("--reason", default="", help="Why these requests are paused.")
 @click.option(
+    "--awaiting",
+    default=None,
+    type=click.Choice(["lead"]),
+    help=(
+        "What the hold waits on. Naming the lead requires --decision: the lead's "
+        "answer is what releases the request, so its question has to be recorded."
+    ),
+)
+@click.option(
+    "--decision",
+    "decision_id",
+    default="",
+    help="Recorded decision a lead hold cites, from `crew decision record`.",
+)
+@click.option(
     "--project", default=None, help="Project owning the request; cross-checks it."
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_queue_hold(run_id, plan, session, reason, project, pretty):
+def crew_queue_hold(
+    run_id, plan, session, reason, project, pretty, awaiting, decision_id
+):
     """Pause one waiting request, a plan's requests or a session's requests."""
-    _queue_hold_change("hold", run_id, plan, session, reason, project, pretty)
+    _queue_hold_change(
+        "hold",
+        run_id,
+        plan,
+        session,
+        reason,
+        project,
+        pretty,
+        awaiting=awaiting or "",
+        decision=decision_id,
+    )
 
 
 @crew_queue.command(name="release")

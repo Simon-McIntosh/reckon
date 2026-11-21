@@ -1,0 +1,270 @@
+# revision: 5417b373ff9230f07c1c8f403632835808fffc15
+# tree: /tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/reckon-base-ldop-s2 (git archive of the base revision, with this node's test file copied in)
+# command: PYTHONPATH=/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/reckon-base-ldop-s2 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_hold_on_the_leads_word_carries_its_decision.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/reckon-base-ldop-s2
+#
+# The base tree has no way to name what a hold waits on, so a hold placed for the lead is accepted with no record.
+# Reproduction against the base tree, temporary crew home:
+#   CliRunner().invoke(main, ["crew","queue","hold","--run","lead-request","--reason","the lead chooses"])
+#   exit: 0
+#   {"count": 1, "held": [{"phase": "held", "reason": "the lead chooses", "run_id": "lead-request"}], "ok": true}
+#   pointer phase: held
+#   queue_hold: {'prior_phase': 'queued', 'reason': 'the lead chooses', 'started_at': ...} (no decision cited)
+#
+FFFFFF.FF                                                                [100%]
+=================================== FAILURES ===================================
+______ test_a_complete_record_is_accepted_and_the_read_holds_the_request _______
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_a_complete_record_is_acce0/config')
+
+    def test_a_complete_record_is_accepted_and_the_read_holds_the_request(
+        decision_home: Path,
+    ) -> None:
+        _request(decision_home, "lead-request")
+        decision = record_decision(_record())
+    
+>       result = queue_edit.hold(
+            "lead-request",
+            reason="the lead chooses the transport",
+            awaiting="lead",
+            decision=decision["id"],
+        )
+E       TypeError: hold() got an unexpected keyword argument 'awaiting'
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:121: TypeError
+___________ test_a_plan_hold_binds_every_held_request_to_its_record ____________
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_a_plan_hold_binds_every_h0/config')
+
+    def test_a_plan_hold_binds_every_held_request_to_its_record(
+        decision_home: Path,
+    ) -> None:
+        _request(decision_home, "section-request")
+        _request(decision_home, "queued-request")
+        decision = record_decision(_record())
+    
+>       queue_edit.hold(
+            plan="transport",
+            reason="the lead chooses",
+            awaiting="lead",
+            decision=decision["id"],
+        )
+E       TypeError: hold() got an unexpected keyword argument 'awaiting'
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:147: TypeError
+_________ test_a_lead_hold_with_no_record_is_refused_and_holds_nothing _________
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_a_lead_hold_with_no_recor0/config')
+
+    def test_a_lead_hold_with_no_record_is_refused_and_holds_nothing(
+        decision_home: Path,
+    ) -> None:
+        _request(decision_home, "lead-request")
+    
+        with pytest.raises(CrewError) as caught:
+>           queue_edit.hold("lead-request", reason="the lead chooses", awaiting="lead")
+E           TypeError: hold() got an unexpected keyword argument 'awaiting'
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:173: TypeError
+____ test_an_incomplete_record_is_refused_naming_the_field[record0-options] ____
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_an_incomplete_record_is_r0/config')
+record = {'options': [{'value': 'route', 'label': 'Use the second route'}]}
+field = 'options'
+
+    @pytest.mark.parametrize(
+        "record, field",
+        [
+            ({"options": [{"value": "route", "label": "Use the second route"}]}, "options"),
+            (
+                {
+                    "options": [
+                        {"value": "wait", "label": "Wait"},
+                        {"value": "route", "label": "Route"},
+                        {"value": "split", "label": "Split"},
+                        {"value": "hold", "label": "Hold"},
+                        {"value": "other", "label": "Other"},
+                    ]
+                },
+                "options",
+            ),
+            ({"recommended": ""}, "recommended"),
+        ],
+    )
+    def test_an_incomplete_record_is_refused_naming_the_field(
+        decision_home: Path, record: dict[str, Any], field: str
+    ) -> None:
+        _request(decision_home, "lead-request")
+        identifier = _malformed(decision_home, "hand-edited", **record)
+    
+        with pytest.raises(CrewError) as caught:
+>           queue_edit.hold(
+                "lead-request",
+                reason="the lead chooses",
+                awaiting="lead",
+                decision=identifier,
+            )
+E           TypeError: hold() got an unexpected keyword argument 'awaiting'
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:209: TypeError
+____ test_an_incomplete_record_is_refused_naming_the_field[record1-options] ____
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_an_incomplete_record_is_r1/config')
+record = {'options': [{'value': 'wait', 'label': 'Wait'}, {'value': 'route', 'label': 'Route'}, {'value': 'split', 'label': 'Split'}, {'value': 'hold', 'label': 'Hold'}, {'value': 'other', 'label': 'Other'}]}
+field = 'options'
+
+    @pytest.mark.parametrize(
+        "record, field",
+        [
+            ({"options": [{"value": "route", "label": "Use the second route"}]}, "options"),
+            (
+                {
+                    "options": [
+                        {"value": "wait", "label": "Wait"},
+                        {"value": "route", "label": "Route"},
+                        {"value": "split", "label": "Split"},
+                        {"value": "hold", "label": "Hold"},
+                        {"value": "other", "label": "Other"},
+                    ]
+                },
+                "options",
+            ),
+            ({"recommended": ""}, "recommended"),
+        ],
+    )
+    def test_an_incomplete_record_is_refused_naming_the_field(
+        decision_home: Path, record: dict[str, Any], field: str
+    ) -> None:
+        _request(decision_home, "lead-request")
+        identifier = _malformed(decision_home, "hand-edited", **record)
+    
+        with pytest.raises(CrewError) as caught:
+>           queue_edit.hold(
+                "lead-request",
+                reason="the lead chooses",
+                awaiting="lead",
+                decision=identifier,
+            )
+E           TypeError: hold() got an unexpected keyword argument 'awaiting'
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:209: TypeError
+__ test_an_incomplete_record_is_refused_naming_the_field[record2-recommended] __
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_an_incomplete_record_is_r2/config')
+record = {'recommended': ''}, field = 'recommended'
+
+    @pytest.mark.parametrize(
+        "record, field",
+        [
+            ({"options": [{"value": "route", "label": "Use the second route"}]}, "options"),
+            (
+                {
+                    "options": [
+                        {"value": "wait", "label": "Wait"},
+                        {"value": "route", "label": "Route"},
+                        {"value": "split", "label": "Split"},
+                        {"value": "hold", "label": "Hold"},
+                        {"value": "other", "label": "Other"},
+                    ]
+                },
+                "options",
+            ),
+            ({"recommended": ""}, "recommended"),
+        ],
+    )
+    def test_an_incomplete_record_is_refused_naming_the_field(
+        decision_home: Path, record: dict[str, Any], field: str
+    ) -> None:
+        _request(decision_home, "lead-request")
+        identifier = _malformed(decision_home, "hand-edited", **record)
+    
+        with pytest.raises(CrewError) as caught:
+>           queue_edit.hold(
+                "lead-request",
+                reason="the lead chooses",
+                awaiting="lead",
+                decision=identifier,
+            )
+E           TypeError: hold() got an unexpected keyword argument 'awaiting'
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:209: TypeError
+______________ test_the_cli_refuses_a_lead_hold_without_a_record _______________
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_the_cli_refuses_a_lead_ho0/config')
+
+    def test_the_cli_refuses_a_lead_hold_without_a_record(decision_home: Path) -> None:
+        _request(decision_home, "lead-request")
+    
+        result = CliRunner().invoke(
+            cli.main,
+            [
+                "crew",
+                "queue",
+                "hold",
+                "--run",
+                "lead-request",
+                "--reason",
+                "the lead chooses",
+                "--awaiting",
+                "lead",
+            ],
+        )
+    
+        assert result.exit_code != 0, result.output
+>       assert "decision record" in result.output
+E       assert 'decision record' in "Usage: main crew queue hold [OPTIONS]\nTry 'main crew queue hold --help' for help.\n\nError: No such option '--awaiting'.\n"
+E        +  where "Usage: main crew queue hold [OPTIONS]\nTry 'main crew queue hold --help' for help.\n\nError: No such option '--awaiting'.\n" = <Result SystemExit(2)>.output
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:253: AssertionError
+__________________ test_the_cli_records_a_complete_lead_hold ___________________
+
+decision_home = PosixPath('/tmp/reckon-crew-scratch/r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision/pytest-of-mcintos/pytest-3/test_the_cli_records_a_complet0/config')
+
+    def test_the_cli_records_a_complete_lead_hold(decision_home: Path) -> None:
+        _request(decision_home, "lead-request")
+        decision = record_decision(_record())
+    
+        result = CliRunner().invoke(
+            cli.main,
+            [
+                "crew",
+                "queue",
+                "hold",
+                "--run",
+                "lead-request",
+                "--reason",
+                "the lead chooses",
+                "--awaiting",
+                "lead",
+                "--decision",
+                decision["id"],
+            ],
+        )
+>       assert result.exit_code == 0, result.output
+E       AssertionError: Usage: main crew queue hold [OPTIONS]
+E         Try 'main crew queue hold --help' for help.
+E         
+E         Error: No such option '--awaiting'.
+E         
+E       assert 2 == 0
+E        +  where 2 = <Result SystemExit(2)>.exit_code
+
+tests/test_a_hold_on_the_leads_word_carries_its_decision.py:278: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_a_complete_record_is_accepted_and_the_read_holds_the_request - TypeError: hold() got an unexpected keyword argument 'awaiting'
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_a_plan_hold_binds_every_held_request_to_its_record - TypeError: hold() got an unexpected keyword argument 'awaiting'
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_a_lead_hold_with_no_record_is_refused_and_holds_nothing - TypeError: hold() got an unexpected keyword argument 'awaiting'
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_an_incomplete_record_is_refused_naming_the_field[record0-options] - TypeError: hold() got an unexpected keyword argument 'awaiting'
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_an_incomplete_record_is_refused_naming_the_field[record1-options] - TypeError: hold() got an unexpected keyword argument 'awaiting'
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_an_incomplete_record_is_refused_naming_the_field[record2-recommended] - TypeError: hold() got an unexpected keyword argument 'awaiting'
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_the_cli_refuses_a_lead_hold_without_a_record - assert 'decision record' in "Usage: main crew queue hold [OPTIONS]\nTry 'main crew queue hold --help' for help.\n\nError: No such option '--awaiting'.\n"
+ +  where "Usage: main crew queue hold [OPTIONS]\nTry 'main crew queue hold --help' for help.\n\nError: No such option '--awaiting'.\n" = <Result SystemExit(2)>.output
+FAILED tests/test_a_hold_on_the_leads_word_carries_its_decision.py::test_the_cli_records_a_complete_lead_hold - AssertionError: Usage: main crew queue hold [OPTIONS]
+  Try 'main crew queue hold --help' for help.
+  
+  Error: No such option '--awaiting'.
+  
+assert 2 == 0
+ +  where 2 = <Result SystemExit(2)>.exit_code
+8 failed, 1 passed in 0.42s
+EXIT=1

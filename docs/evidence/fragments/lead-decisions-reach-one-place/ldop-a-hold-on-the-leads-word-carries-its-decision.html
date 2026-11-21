@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<title>A hold on the lead's word carries its decision</title>
+</head>
+<body>
+<main>
+<h1 id="ldop-a-hold-on-the-leads-word-carries-its-decision-title">A hold on the lead's word carries its decision</h1>
+
+<p id="ldop-a-hold-on-the-leads-word-carries-its-decision-change"><strong>What changed.</strong>
+A queue hold now records what it waits on. Naming <code>lead</code> requires a
+decision recorded through <code>crew decision record</code>: the hold refuses
+before any pointer is written when no record is cited, when the cited record is
+already answered, when it cannot be read, or when the question, context, owner or the
+two-to-four options with one recommendation are missing, and the refusal names
+the field at fault. The bound decision id travels on the request's
+<code>queue_hold</code>, so the decision read shows that record holding the
+request. A hold naming any other reason is unchanged and needs no record.</p>
+
+<p id="ldop-a-hold-on-the-leads-word-carries-its-decision-check"><strong>Measure.</strong>
+Nine tests in <code>tests/test_a_hold_on_the_leads_word_carries_its_decision.py</code>
+against a temporary crew home: a complete record is accepted and the read shows
+it holding the request by name; a plan-wide hold binds every waiting request to
+the same record; no record is refused naming the required fields and leaves the
+pointer queued; a record with one option, five options or no recommendation is
+refused naming <code>options</code> or <code>recommended</code> and holds
+nothing; another stated reason holds without a record; and the CLI refuses and
+accepts the same two cases as the API. Neighbouring suites
+(<code>tests/test_queue_hold_release.py</code>,
+<code>tests/test_a_held_request_names_its_hold.py</code>,
+<code>tests/test_lead_decision_read.py</code>) stay green, including the
+CLI/MCP document parity case.</p>
+
+<p id="ldop-a-hold-on-the-leads-word-carries-its-decision-control"><strong>Negative control.</strong>
+At base revision 5417b373 the hold API has no way to name the lead at the time
+of the hold, so <code>crew queue hold --run lead-request --reason "the lead
+chooses"</code> is accepted, exits 0 and leaves the pointer held with
+<code>queue_hold.reason</code> and no decision. The red run is
+<code>docs/evidence/fragments/lead-decisions-reach-one-place/s2.html</code>
+(8 failing ids, <code>EXIT=1</code>).</p>
+</main>
+</body>
+</html>
