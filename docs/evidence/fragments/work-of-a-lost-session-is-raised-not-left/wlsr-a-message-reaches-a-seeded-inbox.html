@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s29">
+  <meta name="plan-verdict" content="pass">
+  <title>A message reaches a seeded inbox | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-a-message-reaches-a-seeded-inbox-landing" data-node="wlsr-a-message-reaches-a-seeded-inbox" data-reckon="landed" data-when="2026-11-21">
+  <h2>A message reaches a seeded inbox</h2>
+  <p><code>crew tell</code> decided whether a live run could be reached by a list of dialect names: <code>codex</code> on its argv overrides, <code>claude</code> on its run home's settings, and every other name refused. A harness that speaks another harness's interface — the local lane's clive wrapper is one — is seeded the same run home and inbox hook, but its record is not the name <code>claude</code>, so a message to it was refused although the hook that would deliver it was on disk.</p>
+  <p>The decision now follows the route the harness interface declares, read from <code>inbox_trigger_for</code> — the same statement <code>compose_worker_behaviour</code> composes each launch from — and tests that route's artifact. A settings-group route is admitted when the run home's settings file carries the inbox hook; an argv-override route is admitted when the recorded argv carries both the hook and its trust record; a harness declaring neither route reads its inbox only on a later resume, so a live run on it is refused. Every refusal names the inbox path, so the directory a message would have been lost in is in the operator's hands rather than only the name that was rejected.</p>
+  <h3>Gates</h3>
+  <table class="r-table">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>node check</td><td><code>984b79dd1e</code></td><td>42 passed, exit 0</td><td><code>scoped-gate-1795244848855394650.log</code></td></tr>
+      <tr><td>base suite</td><td><code>65c0479b14</code></td><td>38 passed, exit 0</td><td><code>baseline_suite-1795244934082842765.log</code></td></tr>
+      <tr><td>after suite</td><td><code>984b79dd1e</code></td><td>42 passed, exit 0</td><td><code>after_suite-1795245008872324197.log</code></td></tr>
+      <tr><td>base revision, node case</td><td>tree at <code>65c0479b14</code></td><td>1 failed, 3 deselected, exit 1</td><td><code>negative-control-base.log</code></td></tr>
+    </tbody>
+  </table>
+  <h3>The control</h3>
+  <p>The node's own file copied into a tree materialised at <code>65c0479b14</code>, with the production source at that revision, fails its first case with the refusal the change removes:</p>
+  <pre><code>Error: run r-20261121T070000000000-seeded-inbox is a clive-dialect run, and this
+channel reaches only Claude-dialect runs, through their run home's inbox hook,
+and codex runs, through the hook and trust overrides on their launch argv; there
+is no hook to deliver a message here, so write nothing and steer the run another way</code></pre>
+  <p>At the head the same case queues: the message lands in the run directory's <code>inbox</code> and the command reports <code>queued_for_next_tool_call</code> with the inbox and receipt paths.</p>
+  <h3>What the sweep found beside it</h3>
+  <p>Two existing inbox test helpers seeded a run home without the settings file the launch passes, so they exercised a home whose hook was never written, and six cases in <code>tests/test_worker_inbox.py</code> plus two in <code>tests/test_crew_tell_codex.py</code> were red at the base revision for that reason. They pass the settings file now, which is what production seeding passes, and the case that asserted the codex refusal's old wording matches the refusal it now produces. The whole inbox family reads 59 passed, 2 skipped.</p>
+</article>
+</body>
+</html>
