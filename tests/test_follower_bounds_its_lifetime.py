@@ -886,7 +886,10 @@ def test_a_refusal_names_every_unmet_follower_condition_and_the_one_command(
         result = CliRunner().invoke(cli.main, _dispatch_arguments(repo, session))
 
     assert result.exit_code == 8, result.output
-    payload = json.loads(result.output)
+    # The refusal document is the command's stdout, and every notice about
+    # the run it named rides stderr; CliRunner.output mixes the two streams,
+    # so the document is read from the channel the command documents.
+    payload = json.loads(result.stdout)
     assert payload["ok"] is False
     assert payload["error"] == "watcher-required"
     detail = str(payload["detail"])
@@ -940,7 +943,10 @@ def test_a_launch_that_carries_no_delivery_still_needs_the_producer(
         result = CliRunner().invoke(cli.main, _dispatch_arguments(repo, session))
 
     assert result.exit_code == 8, result.output
-    payload = json.loads(result.output)
+    # The refusal document is the command's stdout, and every notice about
+    # the run it named rides stderr; CliRunner.output mixes the two streams,
+    # so the document is read from the channel the command documents.
+    payload = json.loads(result.stdout)
     assert payload["ok"] is False
     assert payload["error"] == "watcher-required"
     detail = str(payload["detail"])
