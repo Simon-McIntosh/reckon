@@ -1,0 +1,46 @@
+<section id="wlsr-a-figure-review-is-complete-by-its-verdict-lines-landing">
+  <h2>A figure review stated as verdict lines is complete</h2>
+
+  <p><strong>What changed.</strong> A figure reviewer writes one
+  <code>RUBRIC &lt;item&gt;: &lt;verdict&gt;</code> line per rubric item, in the
+  form the figure brief asks for, and may also store a
+  <code>rubric_verdicts</code> summary map, but not the
+  <code>rubric_items</code> map the completeness rule read. Such a record was
+  refused at promotion naming every item it had just answered. The verdict
+  lines are now a second spelling of the same measurement:
+  <code>figure_line_verdicts</code> parses them and
+  <code>figure_rubric_verdicts</code> folds an item into the item map only when
+  the map does not already answer it, so a record carrying either shape is
+  judged by one rule. The completeness reader
+  <code>_figure_missing_measures</code> is unchanged in what it asks and now
+  reads the folded map.</p>
+
+  <h3 id="wlsr-a-figure-review-is-complete-by-its-verdict-lines-measured">Measured</h3>
+
+  <p>The stored record from review run
+  <code>r-20261121T011408037143-review-of-icm-iron-field-source-a0479e6acdd7-figure</code>
+  carries seven <code>RUBRIC</code> lines (the six figure items plus
+  <code>caption_not_title_repeat</code>) and no <code>rubric_items</code>. At
+  the base revision it reported all six items missing; at the head it reports
+  none. The five-line case reports exactly <code>label_collision</code>, the
+  one line withheld.</p>
+
+  <table id="wlsr-a-figure-review-is-complete-by-its-verdict-lines-arms">
+    <caption>Each arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control</td>
+        <td><code>2189513</code></td>
+        <td>2 failed, 11 passed, <code>EXIT=1</code>; the six-line case fails
+        with <code>Left contains 6 more items, first extra item:
+        'legibility'</code></td></tr>
+      <tr><td>baseline suite</td>
+        <td><code>2189513</code></td>
+        <td>0 failures, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite</td>
+        <td><code>9af100b</code></td>
+        <td>13 passed, 0 failures, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+</section>
