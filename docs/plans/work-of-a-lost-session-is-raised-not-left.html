@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -298,6 +298,9 @@
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261121T032502185022-review-of-wlsr-a-refused-lane-change-leaves-the-pointer-b1bbf77fbebc" data-who="reckon-build" data-when="2026-11-21T03:30:49.123Z">
     <div class="r-comment-body"><p>Review of r-20261121T010317352713-wlsr-a-refused-lane-change-leaves-the-pointer at head b1bbf77f from base ff3bb24bcf: status parsed, scores goal_fidelity 18 evidence 19 scope_discipline 19 durability 17 fit 15 reuse 17, added_failure_count 0, two non-blocking findings (a dead quoting constant at test file line 43 carried over from the prior review, and a receipt-count attribution weakness at dispatch_sessions.py:1841); the prior blocking finding is closed.</p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261121T010317352713-wlsr-a-refused-lane-change-leaves-the-pointer" data-who="reckon-build" data-when="2026-11-21T03:21:02Z">
+    <div class="r-comment-body"><p>A lane change whose spawn returns a pid but starts no worker leaves the run&#x27;s backend, attempt, agent, dialect and lane-change history exactly as the source attempt left them, and returns ok=false with a reason; the no-worker fact is read from the spawn itself (process gone, stream never begun) as well as from the launch-failure receipt, so a second attempt on a run already in the launch-failed phase is refused too. Gate 4 passed; the pre-repair head fails the second-attempt case with the backend moved to &#x27;codex&#x27;.</p></div>
+</div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819" data-who="reckon-build" data-when="2026-11-21T02:32:46.987Z">
     <div class="r-comment-body"><p>review verdict for r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole stored parsed at review-records/r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole.at-26582d83f81960a3b5b62a288aefbde07f928905.json; total 108, no blocking findings, two non-blocking findings recorded.</p></div>
 </div>
@@ -370,7 +373,7 @@ head.</p></div>
     <div class="r-comment-body"><p>reviewed land the head-keyed review record for r-20261121T010259981964-wlsr-a-launch-failed-run-resumes at 6c896536e1: scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 15, fit 16, reuse 20 for 106/120; zero added failures; three non-blocking findings (the clear still precedes _spawn's own fleet gate, the backend assertion at the test is not independent, and the MCP resume door keeps the old refusal).</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261121T010259981964-wlsr-a-launch-failed-run-resumes" data-who="reckon-build" data-when="2026-11-21T02:48:55Z">
-    <div class="r-comment-body"><p>`crew resume --run` on a run in phase `launch-failed` now launches a fresh attempt on the run&#x27;s own recorded backend with the attempt allowance restored, and retires the phase and its failure list only at the last point before the worker is started — after the in-flight refusal, the held repair round, the attempt reservation and the fleet gate — so a resume any of those declines leaves the failure that stops the lift loop in place; the live view&#x27;s next action for the phase names that plain command rather than one carrying a backend override.</p></div>
+    <div class="r-comment-body"><p>`crew resume --run` on a run in phase `launch-failed` now launches a fresh attempt on the run's own recorded backend with the attempt allowance restored, and retires the phase and its failure list only at the last point before the worker is started — after the in-flight refusal, the held repair round, the attempt reservation and the fleet gate — so a resume any of those declines leaves the failure that stops the lift loop in place; the live view's next action for the phase names that plain command rather than one carrying a backend override.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261121T015554174666-review-of-wlsr-the-source-of-a-not-yours-row-956185c17096" data-who="reckon-build" data-when="2026-11-21T02:21:29.599Z">
     <div class="r-comment-body"><p>The review of run r-20261121T010301059303-wlsr-the-source-of-a-not-yours-row at base e689315bb74ca1efdd63eee69d7a55ed9b235a0e and head 956185c1709670b962e5cf8eeb3f4badf460765a is stored as a parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 20, durability 8, fit 18, reuse 20, with two non-blocking findings (a quoted recorded_at that does not match the stored pointer, and no figure for the seven-against-one comparison); the landed research record and its landing fragment answer plan §8 and hold no blocking defect.</p></div>
