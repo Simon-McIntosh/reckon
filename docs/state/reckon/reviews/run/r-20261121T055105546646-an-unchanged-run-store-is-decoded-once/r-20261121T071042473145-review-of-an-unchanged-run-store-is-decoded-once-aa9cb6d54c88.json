@@ -20,6 +20,13 @@
   ],
   "completed_at": "",
   "dispatched_at": "2026-11-21T07:11:24Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the claim is wrong only for asyncio tasks created after a synchronous read, which inherit the context; the station and every reader of the run store are threaded, not async, so no task shares a cache in practice; the comment is worth correcting in a later pass",
+      "recorded_at": "2026-11-21T07:28:45.100856+00:00"
+    }
+  },
   "findings": [
     {
       "file": "reckon/run_store.py",
