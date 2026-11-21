@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Every removal path reads the wide claim — the scan learns the spellings the code keeps</title>
+</head>
+<body>
+<article class="r-frag" id="qwnw-red-file-every-removal-path-reads-the-wide-claim">
+<h1>Every removal path reads the wide claim</h1>
+<p class="r-frag-lead">The named test file was red on the primary branch. The
+cause is the instrument, not the product: three removal paths exist that the
+scan did not know how to judge, and every one of them already protects a live
+pointer's tree.</p>
+
+<h2 id="qwnw-red-file-every-removal-path-reads-the-wide-claim-base">Base arm, red</h2>
+<p><code>tests/test_every_removal_path_reads_the_wide_claim.py</code> at
+<code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, on all_debug with
+<code>SLURM_JOB_ID</code> unset: <strong>1 failed, 2 passed</strong>,
+<code>EXIT=1</code>. Failing id: <code>test_no_removal_path_decides_liveness_from_the_phase_gated_claim</code>.</p>
+</html>
+<section id="qwnw-red-file-every-removal-path-reads-the-wide-claim-causes">
+<h2>Cause and verdict, test or product</h2>
+<ol>
+<li><code>reckon/crew/promotion.py::_release_measurement_worktree</code> —
+<strong>test</strong>. A removal path with no driver in the table. It already
+reads <code>_live_pointer_worktrees</code> and withholds a tree another live
+run names; the table gains its driver.</li>
+<li><code>reckon/crew/routing.py::_remove_worktree</code> — <strong>test</strong>.
+It reads <code>_launch_pointer_worktrees</code>, the wide claim taken from a
+launch's own side; the scan did not recognise that spelling.</li>
+<li><code>reckon/crew/landing_measure.py::base_checkout</code> — <strong>test</strong>.
+It registers a scratch tree with <code>git worktree add</code> and removes that
+same tree; the path is generated in that body and never handed to a pointer.</li>
+</ol>
+<p>The scan's population is otherwise unchanged, and every path it still finds
+must be driven against a parked run's tree and must read the wide claim and not
+the phase-gated one. No assertion was deleted or weakened; two control cases
+pin both spellings and both arms of the exemption.</p>
+</section>
+</article>
+</body>
+</html>
