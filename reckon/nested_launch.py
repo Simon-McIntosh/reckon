@@ -449,26 +449,30 @@ def real_binary(
     return real_executable(tool, path, skipped=[shim_dir])
 
 
-def shim_directory() -> Path:
-    """The shim directory a launched worker can read, wherever it runs.
+def shims_beside(module_file: Path, directory: str) -> Path:
+    """The shims directory beside the module at ``module_file``.
 
-    The directory is derived from this module's location, with one exception.
+    The directory is derived from the module's location, with one exception.
     A service that reloads itself imports the package from a published reload
     image, and an image lives on the launching node's local disk and never
     travels between nodes. A worker placed on another node is handed this
     directory twice — on its search path, and as the source of the mounts that
-    put a shim in front of each scheduler binary — and a mount whose source the
-    worker's node does not hold refuses the launch outright. The shim also
-    looks for its interpreter in the environment beside its own checkout, which
-    an image does not carry.
+    put a shim in front of each tool — and a mount whose source the worker's
+    node does not hold refuses the launch outright. A shim also looks for its
+    interpreter in the environment beside its own checkout, which an image
+    does not carry.
 
     So a process running from an image names the shims of the checkout the
     image was published from: the root its launcher carried, or else the
     checkout that owns the running interpreter's environment. Either is on the
     storage every node shares. An image whose checkout cannot be found keeps
     its own directory, which is still right for a worker on the same node.
+
+    Both shim families a launch hands a worker ask here, so the rule is stated
+    once: the scheduler shims through :func:`shim_directory`, the git shims
+    through :func:`reckon.worker_git_shim.worker_shim_directory`.
     """
-    own = Path(__file__).resolve().parent / "host_shims"
+    own = module_file.resolve().parent / directory
     from reckon.checkout_trust import published_reload_image
 
     if not published_reload_image(own.parent.parent):
@@ -479,10 +483,15 @@ def shim_directory() -> Path:
     ):
         if not root:
             continue
-        candidate = (Path(root) / "reckon" / "host_shims").resolve()
+        candidate = (Path(root) / "reckon" / directory).resolve()
         if candidate != own and candidate.is_dir():
             return candidate
     return own
+
+
+def shim_directory() -> Path:
+    """The scheduler shims a launched worker can read, wherever it runs."""
+    return shims_beside(Path(__file__), "host_shims")
 
 
 # The bubblewrap options a composed fence is built from, grouped by what they
