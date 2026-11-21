@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite-1795256183134292349.log at 5417b373 records '58 passed in 35.10s' with EXIT=0 and no failure ids; after_suite-1795256226488149526.log at 9082924167 records '58 passed in 38.04s' with EXIT=0 and no failure ids; the set difference is empty, so 0 added failures.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/queue_edit.py:887 (_lead_hold_record imports and calls recorded_decision)",
+    "reckon/crew_run_commands.py:3266 (_queue_hold_change forwards awaiting and decision to queue_edit hold)",
+    "reckon/crew_run_commands.py:3314 (crew_queue_hold CLI passes --awaiting/--decision)",
+    "reckon/mcp_crew_actions.py:171 (queue-hold maps awaiting and decision)",
+    "reckon/mcp.py:2973 (queue-hold forwards awaiting and decision to crew_queue_hold)",
+    "reckon/crew/lost_session_work.py:151 (_identity resolves plan and section through request_identity)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T10:21:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/lead_decisions.py",
+      "line": "200",
+      "severity": "non-blocking",
+      "text": "non-blocking: the withdrawn_by refusal the merge resolution adds to recorded_decision carries no assertion anywhere in tests/ \u2014 no test file names withdrawn_by, and tests/test_the_read_sorts_each_decision_into_its_own_list.py:238 _hold_behind writes queue_hold.decision_id straight onto the pointer instead of calling queue_edit.hold, so reinstating the pre-merge body leaves the 70-test scoped gate green."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s) reaching recorded_decision, request_identity and the --awaiting/--decision wiring at the reviewed head",
+    "diff": "read 66544fbf..9082924167 for the two named files and the merge's --cc combined diff: the resolution keeps main's record_decision_at/close_decision_at/request_identity beside the branch's recorded_decision, adds the withdrawn_by refusal at lead_decisions.py:200-204 and promotes _request_identity to request_identity at lead_decisions.py:251, and reckon/crew_run_commands.py has no conflict hunk, its 79 changed lines all arriving from main.",
+    "done_when": "the done_when asks for temporary-crew-home cases (complete record accepted and listed, incomplete or absent record refused naming the missing field and holding nothing, another stated reason accepted with no record) plus a base-revision negative control logged to s2.html; the gained commit changes neither the test module nor the fragment, and scoped-gate-1795256134088396592.log at 9082924167 records '70 passed in 5.67s' over six files including tests/test_a_hold_on_the_leads_word_carries_its_decision.py.",
+    "goal": "the node's goal is that a hold naming the lead as what it waits on carries the decision record that releases it; the gained increment touches only reckon/crew/lead_decisions.py and reckon/crew_run_commands.py, and at 9082924167 reckon/crew/queue_edit.py:887-890 runs every cited record through lead_decisions.py:171 recorded_decision, so a lead hold cannot exist behind a missing, answered or withdrawn record.",
+    "manifest": "read; it records status complete, commits e0c5bad1 66544fbf 9082924167, the 70-passed scoped gate, and both 58-passed suite arms, and after_suite-1795256226488149526.log carries '# revision: 90829241671638ce064dc6f3c803050f09149f35', '58 passed in 38.04s' and 'EXIT=0' as the manifest claims.",
+    "write_paths": "the manifest declares reckon, tests and the two lead-decisions evidence paths; the gained commit's own contribution is confined to reckon/crew/lead_decisions.py and reckon/crew_run_commands.py, both inside the declared 'reckon' path, and every other path in 66544fbf..9082924167 arrived from primary main's f0642ab81b."
+  },
+  "justifications": {
+    "durability": "no assertion fails if the withdrawn_by refusal at reckon/crew/lead_decisions.py:200 is reverted, because tests/test_the_read_sorts_each_decision_into_its_own_list.py:238 bypasses queue_edit.hold and no test in tests/ names withdrawn_by, so the gained guard is carried by the merge and not by the suite.",
+    "evidence": "the manifest records scoped-gate-1795256134088396592.log as 70 passed at 9082924167 and after_suite-1795256226488149526.log as 58 passed with EXIT=0, but no artefact names the all_debug partition the done_when requires and the gained guard is measured by no gate.",
+    "fit": "the added refusal follows the file's own guard idiom at reckon/crew/lead_decisions.py:195 (a str(x or '').strip() read followed by a ValueError naming the identity), and the promoted request_identity reuses the public-name form of record_decision_at above it.",
+    "goal_fidelity": "the gained resolution keeps the hold's citation check (reckon/crew/lead_decisions.py:171) reachable from reckon/crew/queue_edit.py:887 and adds nothing that weakens it, so the node's deliverable still holds at the reviewed head.",
+    "reuse": "the gained resolution adds no definition of its own: it extends recorded_decision and promotes _request_identity to request_identity at reckon/crew/lead_decisions.py:251 so that reckon/crew/lost_session_work.py:151 and the store's own reader resolve one identity statement rather than two.",
+    "scope_discipline": "the node's own hunks sit at reckon/crew/lead_decisions.py:200 and :251 inside the declared 'reckon' path; the remaining paths in the range are main's content carried by the merge, which is what integrating f0642ab81b means."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a hold naming the lead as what it waits on carries the decision record that releases it; the gained increment touches only reckon/crew/lead_decisions.py and reckon/crew_run_commands.py, and at 9082924167 reckon/crew/lead_decisions.py:171 recorded_decision is what reckon/crew/queue_edit.py:887-890 runs on every cited record, so a lead hold cannot exist behind a missing, answered or withdrawn record.\nVERDICT done_when: the done_when asks for temporary-crew-home cases plus a base-revision negative control logged to s2.html; the gained commit changes neither the test module nor the fragment, and scoped-gate-1795256134088396592.log at 9082924167 records 70 passed over six files including tests/test_a_hold_on_the_leads_word_carries_its_decision.py.\nVERDICT write_paths: the manifest declares reckon, tests and two lead-decisions evidence paths; the gained commit's own contribution is confined to reckon/crew/lead_decisions.py and reckon/crew_run_commands.py inside 'reckon', and the rest of 66544fbf..9082924167 arrived from main's f0642ab81b.\nVERDICT manifest: read; it records status complete, commits e0c5bad1 66544fbf 9082924167, a 70-passed scoped gate, and after_suite-1795256226488149526.log carries '# revision: 90829241671638ce064dc6f3c803050f09149f35', '58 passed in 38.04s' and 'EXIT=0'.\nVERDICT diff: read 66544fbf..9082924167 for the two named files and the merge's combined diff; the resolution keeps main's record_decision_at/close_decision_at/request_identity beside the branch's recorded_decision, adds the withdrawn_by refusal at lead_decisions.py:200-204, promotes _request_identity to request_identity at lead_decisions.py:251, and reckon/crew_run_commands.py has no conflict hunk.\nCALL_SITES: reckon/crew/queue_edit.py:887 (_lead_hold_record calls recorded_decision), reckon/crew_run_commands.py:3266 (_queue_hold_change forwards awaiting and decision), reckon/crew_run_commands.py:3314 (crew_queue_hold CLI passes --awaiting/--decision), reckon/mcp_crew_actions.py:171 (queue-hold maps awaiting and decision), reckon/mcp.py:2973 (queue-hold forwards awaiting and decision), reckon/crew/lost_session_work.py:151 (_identity resolves plan and section through request_identity)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained resolution keeps the hold's citation check at reckon/crew/lead_decisions.py:171 reachable from reckon/crew/queue_edit.py:887 and adds nothing that weakens it.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records scoped-gate-1795256134088396592.log as 70 passed at 9082924167 and after_suite-1795256226488149526.log as 58 passed with EXIT=0, but no artefact names the all_debug partition the done_when requires.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the node's own hunks sit at reckon/crew/lead_decisions.py:200 and :251 inside the declared 'reckon' path and the rest of the range is main's content carried by the merge.\nSCORE durability: 10\nJUSTIFICATION durability: no assertion fails if the withdrawn_by refusal at reckon/crew/lead_decisions.py:200 is reverted, since tests/test_the_read_sorts_each_decision_into_its_own_list.py:238 bypasses queue_edit.hold and no test in tests/ names withdrawn_by.\nSCORE fit: 18\nJUSTIFICATION fit: the added refusal follows the guard idiom at reckon/crew/lead_decisions.py:195 and the promoted request_identity uses the public-name form of record_decision_at above it.\nSCORE reuse: 19\nJUSTIFICATION reuse: the gained resolution adds no definition of its own and promotes _request_identity to request_identity at reckon/crew/lead_decisions.py:251 so reckon/crew/lost_session_work.py:151 and the store's reader resolve one identity statement.\nFINDING reckon/crew/lead_decisions.py:200 non-blocking: the withdrawn_by refusal the merge resolution adds to recorded_decision carries no assertion anywhere in tests/ -- no test file names withdrawn_by, and tests/test_the_read_sorts_each_decision_into_its_own_list.py:238 _hold_behind writes queue_hold.decision_id straight onto the pointer instead of calling queue_edit.hold, so reinstating the pre-merge body leaves the 70-test scoped gate green.\n",
+  "review_node": "review-of-ldop-a-hold-on-the-leads-word-carries-its-decision-908292416716",
+  "review_run_id": "r-20261121T102007936613-review-of-ldop-a-hold-on-the-leads-word-carries-its-decision-908292416716",
+  "reviewed_base_sha": "66544fbf4354d33d03c402176d620d974d5d6752",
+  "reviewed_head_sha": "90829241671638ce064dc6f3c803050f09149f35",
+  "reviewed_run_id": "r-20261115T205820688124-ldop-a-hold-on-the-leads-word-carries-its-decision",
+  "scores": {
+    "durability": 10,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:36:38.030966+00:00",
+  "total": 100
+}
