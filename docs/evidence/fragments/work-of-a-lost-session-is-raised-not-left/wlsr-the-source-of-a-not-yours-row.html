@@ -1,55 +1,37 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="docs-project" content="reckon">
-  <meta name="reckon-type" content="evidence">
-  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
-  <meta name="plan-title" content="Where the not-yours obligation row comes from">
-  <title>Where the not-yours obligation row comes from</title>
-</head>
-<body>
-  <main class="plan-doc">
-    <header>
-      <p class="eyebrow">Evidence</p>
-      <h1 id="wlsr-heading">Where the not-yours obligation row comes from</h1>
-      <p class="lead">
-        The row text is operator prose stored in a run's deferral and copied
-        onto the row by one line, not an owner comparison; the repetition
-        beside it is a stored sweep list that appends without dedupe.
-      </p>
-    </header>
+<section id="wlsr-the-source-of-a-not-yours-row-landing">
+  <h2>Where the not-yours obligation row comes from</h2>
 
-    <section id="wlsr-source">
-      <h2>Source of the row</h2>
-      <p>
-        The phrase lives in the run's live pointer at
-        <code>~/.config/reckon/crew/live/r-20261118T185447788898-cached-point-program.json</code>
-        under <code>acknowledgement.reason</code>, beside a
-        <code>session</code> field carrying the very id the reason calls
-        somebody else's. <code>reckon/crew/obligations.py:1899</code> copies
-        the stored string onto the duty row; <code>reckon/crew/resumption.py:3153</code>
-        appends one sweep-failure entry per pass without collapsing by run id,
-        which is where the repeated rows come from.
-      </p>
-      <p>
-        Full account: <code>docs/research/a-not-yours-row-against-a-runs-own-owner.html</code>.
-      </p>
-    </section>
+  <p><strong>What was found.</strong> The reason text
+  &ldquo;Not this session's run: owner session 0f4fa699&rdquo; is not derived
+  by any owner comparison. It is operator prose stored as
+  <code>acknowledgement.reason</code> on the run's live pointer,
+  <code>~/.config/reckon/crew/live/r-20261118T185447788898-cached-point-program.json</code>,
+  recorded 2026-11-19T04:30:39Z and expiring 2026-11-21T12:00:00Z. One line
+  copies it onto every deferred duty row,
+  <code>reckon/crew/obligations.py:1899</code>; the writer takes it from the
+  caller's free-text <code>--reason</code>, <code>reckon/crew/runs.py:3065</code>.
+  The claim is stale rather than computed: the same pointer's top-level
+  <code>session</code> is <code>0f4fa699-2444-4d93-b978-9931302ff6f8</code>, the
+  id the reason disowns. A second stored deferral carries the same wording,
+  which shows the phrase is reached for by hand.</p>
 
-    <section id="wlsr-measure">
-      <h2>Measure</h2>
-      <p>
-        <code>reckon crew view obligations --project nova --session 0f4fa699-2444-4d93-b978-9931302ff6f8</code>
-        lists <code>r-20261118T185447788898-cached-point-program</code> in
-        <strong>7</strong> rows (six <code>sweep-failed</code>, one deferred
-        <code>blocked</code>). The same command for session
-        <code>c042a637-16e6-44bd-9cd2-b340a6f891dc</code> lists its held run
-        <code>r-20261115T225256900468-dina-flattop-rerun</code> in
-        <strong>1</strong> row.
-      </p>
-    </section>
-  </main>
-</body>
-</html>
+  <p><strong>The repetition is separate.</strong>
+  <code>reckon/crew/resumption.py:3153</code> appends one owed-review entry per
+  sweep pass to a stored list without collapsing entries by run id, and
+  <code>reckon/crew/station_obligations.py:272</code> raises one row per entry.
+  That one belongs in this repository; the phrase does not.</p>
+
+  <p><strong>Measure.</strong>
+  <code>reckon crew view obligations --project nova --session
+  0f4fa699-2444-4d93-b978-9931302ff6f8</code> listed the held run in
+  <strong>7</strong> rows (six <code>sweep-failed</code>, one deferred
+  <code>blocked</code>) when read at 2026-11-21T01:19Z; the same command for
+  session <code>c042a637-16e6-44bd-9cd2-b340a6f891dc</code> listed its held run
+  <code>r-20261115T225256900468-dina-flattop-rerun</code> in <strong>1</strong>
+  row.</p>
+
+  <p><strong>Records.</strong> The full account and the proposed repair
+  endpoint are in
+  <code>docs/research/a-not-yours-row-against-a-runs-own-owner.html</code>;
+  the two view captures and their count log sit in the run directory.</p>
+</section>
