@@ -31,6 +31,19 @@ def _git(repo: Path, *arguments: str) -> str:
     ).stdout.strip()
 
 
+class _Tree:
+    """A prepared base checkout, for the base-arm reader the pass calls."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+
+    def __enter__(self) -> Path:
+        return self._path
+
+    def __exit__(self, *_exc) -> None:
+        return None
+
+
 class _Counters:
     """The two things a settled delivery must never cost."""
 
@@ -55,6 +68,12 @@ def settled_delivery(delivery_case, tmp_path: Path, monkeypatch: pytest.MonkeyPa
     # and are exercised elsewhere; a checkpoint settles in this repository
     # without an origin to publish to.
     monkeypatch.setattr(review_landing, "finish_landing", lambda *a, **k: "")
+    # The ordinary landing path reads the base checkout through git; the
+    # fixture's own repository stands in for it so a pass that does not settle
+    # reaches its measurement instead of failing on a missing repository.
+    monkeypatch.setattr(
+        landing_measure, "base_checkout", lambda repo, sha, timeout=0.0: _Tree(repo)
+    )
     counters = _Counters()
 
     def counting_promotion(*_args, **_kwargs):
