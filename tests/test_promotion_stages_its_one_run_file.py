@@ -185,6 +185,9 @@ def test_complete_commits_one_run_file_per_promotion(
                     str(gate_log),
                     "--completed-at",
                     "2026-01-01T00:00:01Z",
+                    # The CLI queues a request by default; --wait keeps the
+                    # synchronous promotion this case measures.
+                    "--wait",
                 ],
             )
             run_file = state / "runs" / f"{run_id}.json"
@@ -206,7 +209,11 @@ def test_complete_commits_one_run_file_per_promotion(
             assert payload["ledger_path"] == str(run_file)
             assert payload["pointer_removed"] is True
             assert not pointer.exists()
-            assert payload["release"]["worktree_released"] is True
+            # Completion answers with a compact receipt because a run's full
+            # outcome is larger than the reply bound, so the release it
+            # recorded is read from the record that receipt links.
+            receipt = json.loads(Path(payload["record_path"]).read_text())
+            assert receipt["release"]["worktree_released"] is True
             assert not worktree.exists()
             row = json.loads(run_file.read_text())
             assert row["run_id"] == run_id
@@ -215,16 +222,17 @@ def test_complete_commits_one_run_file_per_promotion(
             # carries it and the persisted row cannot.
             recorded_release = {
                 key: value
-                for key, value in payload["release"].items()
+                for key, value in receipt["release"].items()
                 if key != "landing_check"
             }
             assert row["release"] == recorded_release
-            assert payload["release"]["landing_check"] == {
+            assert receipt["release"]["landing_check"] == {
                 "ok": True,
                 "reversals": [],
                 "mismatched": [],
+                "unstaged": [],
             }
-            assert row == payload["record"]
+            assert row == receipt["record"]
             assert run_file.read_text() == ledger.serialize_run(row)
             assert (
                 _git(repo, "show", f"HEAD:{run_file.relative_to(repo)}")
