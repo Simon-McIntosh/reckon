@@ -242,13 +242,19 @@ def test_an_adopt_naming_a_session_with_no_live_process_is_refused(
     )
 
 
-def test_an_answer_naming_a_vanished_run_returns_the_decision_error(
-    admit_repo: Path,
+def test_an_adopt_of_a_vanished_run_returns_the_decision_error(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from click.testing import CliRunner
 
     from reckon.cli import main
+    from reckon.crew import lost_sessions
 
+    # The adopter is live, so the refusal is the vanished run's own and not the
+    # liveness check's: the answer names a run whose pointer has gone.
+    monkeypatch.setattr(
+        lost_sessions, "live_process_sessions", lambda sessions: {"live-adopter"}
+    )
     _config, resolve = _config_for()
     _pointers(admit_repo)
     _admit(resolve, _launcher([]))
@@ -257,7 +263,9 @@ def test_an_answer_naming_a_vanished_run_returns_the_decision_error(
     result = CliRunner().invoke(
         main,
         ["crew", "decision", "answer", "--id", record["id"], "--answers", "-"],
-        input=json.dumps({"r-vanished": {"action": "retire"}}),
+        input=json.dumps(
+            {"r-vanished": {"action": "adopt", "session": "live-adopter"}}
+        ),
     )
 
     assert result.exit_code == 1, result.output
