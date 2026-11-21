@@ -603,6 +603,39 @@ def crew_decision_record(record_file, pretty):
         raise click.exceptions.Exit(1) from exc
 
 
+@crew_decision.command(name="answer")
+@click.option("--id", "record_id", required=True, help="The decision to answer.")
+@click.option(
+    "--answers",
+    "answers_file",
+    required=True,
+    type=click.File("r"),
+    help=(
+        'JSON object keyed by run id: {"run": {"action": "adopt", '
+        '"session": "live-session"}} or '
+        '{"run": {"action": "retire"}}. Use - for stdin, or pass the '
+        "object inline."
+    ),
+)
+@click.option("--by", "answered_by", default="", help="Who answered the decision.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_answer(record_id, answers_file, answered_by, pretty):
+    """Answer a raised decision per record: adopt into a live session or retire."""
+    import json
+
+    from reckon.crew.lost_session_work import answer_decision
+
+    try:
+        answers = json.load(answers_file)
+        _emit(
+            answer_decision(record_id, answers, answered_by=answered_by),
+            pretty,
+        )
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
 @crew.command(name="view")
 @click.argument("name", required=False, default="summary")
 @click.option("--project", default=None, help="Project whose read view to serve.")
