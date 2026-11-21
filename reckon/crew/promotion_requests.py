@@ -58,6 +58,9 @@ ERRORS = frozenset({FAILED, REFUSED})
 # pointer is no longer the coordinator's to answer: the phase records that the
 # request is settled, and the file is kept so the refusal stays readable.
 SETTLED = "promotion-settled"
+# The kinds that ask for a run's own promotion, and so are the ones a delivery
+# the primary branch already carries can settle in place of a gate replay.
+SETTLEABLE_KINDS = frozenset({"command", "complete"})
 
 # How long the drain waits for a wakeup before looking for requests another
 # process queued. A freed slot wakes it immediately, so this only bounds the
@@ -623,9 +626,67 @@ def _execute_command(options: Mapping[str, Any]) -> dict[str, Any]:
     return replies[-1]
 
 
+def _carried_delivery_settlement(
+    request: Mapping[str, Any], pointer: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Settle a promotion whose delivery the primary branch already carries.
+
+    A coordinator re-request, or a sweep's hand-off, for a run whose reviewed
+    head and changed paths are on the primary branch and whose ledger row is
+    written asks for work that is done. Running the promotion again could only
+    replay its gate at a revision that already carries the delivery, which
+    refuses a run with nothing left to do and leaves its pointer live. The
+    pointer is retired through the release path a completed merge uses instead,
+    so the ledger keeps its one row and the verdict that row recorded.
+
+    Answers an empty mapping whenever the delivery is not proved carried, so
+    every other request — a head off the branch, a changed path the branch no
+    longer holds, a run with no row — takes the ordinary promotion path.
+    """
+    from reckon.crew import queue_landing
+
+    run_id = str(request["run_id"])
+    try:
+        row = queue_landing._ledger_row(pointer, run_id)
+    except CrewError:
+        return {}
+    if row is None:
+        return {}
+    head = queue_landing._promoted_row_head(pointer, run_id)
+    if not head:
+        return {}
+    carried, _detail = queue_landing._primary_carries_the_delivery(
+        pointer, head, queue_landing._primary_revision(pointer)
+    )
+    if carried != "carried":
+        return {}
+    status, refusal = queue_landing.settle_a_carried_delivery(pointer, row)
+    if status != queue_landing.CARRIED_SETTLED:
+        raise CrewError(
+            "the primary branch carries this run's delivery but its workspace "
+            f"could not be released: {refusal}"
+        )
+    return {
+        "run_id": run_id,
+        "project": str(request.get("project") or ""),
+        "promoted": True,
+        "settled": "landed-elsewhere",
+        "record": row,
+    }
+
+
 def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
     run_id = str(request["run_id"])
     options = request.get("options") or {}
+    if request["kind"] in SETTLEABLE_KINDS:
+        try:
+            pointer = runs.read_pointer(run_id)
+        except CrewError:
+            pointer = None
+        if pointer is not None:
+            settled = _carried_delivery_settlement(request, pointer)
+            if settled:
+                return settled
     if request["kind"] == "landing-group":
         from reckon.crew_run_commands import _complete_landing_group
 
