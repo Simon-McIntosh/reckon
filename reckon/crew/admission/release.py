@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-
+from .. import stranded_wait as _stranded_wait
 from . import launching as _launching
 from . import readiness as _readiness
 from . import reviews as _reviews
@@ -31,7 +31,9 @@ from .shared import (
     Path,
     Sequence,
     TaskNode,
+    datetime,
     normalize_section,
+    parse_utc,
     runs,
     time,
 )
@@ -117,19 +119,26 @@ def _live_runs_on(
     only the section's name.
     """
     wanted: set[tuple[str, str]] = set()
+    wanted_runs: set[str] = set()
     for ref in refs:
+        if str(ref).startswith(REQUEST_REF_PREFIX):
+            named = str(ref)[len(REQUEST_REF_PREFIX) :].strip()
+            if named:
+                wanted_runs.add(named)
+            continue
         key = _release_section_key(str(ref), project)
         if key is not None:
             wanted.add((key[1], key[2]))
-    if not wanted:
+    if not wanted and not wanted_runs:
         return []
     working: list[str] = []
     for pointer in live:
         run_id = str(pointer.get("run_id") or "")
         if not run_id or run_id == exclude:
             continue
+        named = run_id in wanted_runs
         section = _section_key(pointer)
-        if section is None or (section[0], section[1]) not in wanted:
+        if not named and (section is None or (section[0], section[1]) not in wanted):
             continue
         phase = str(pointer.get("phase") or "")
         if phase in LANDED_RUN_PHASES or _discarded(run_id):
@@ -219,17 +228,47 @@ def resolve_waits(
         for ref in refs
     ]
     if isinstance(pointer, dict):
-        pointer["upstream_obligations"] = list(dict.fromkeys(issues))
+        obligations = list(dict.fromkeys(issues))
         # A request that stays waiting names the run whose work it waits for.
         # The section it waits on can own several runs, and one of them having
         # failed is not the section's end while another is still on its way: a
         # reader that saw only the section's name could not tell the two apart.
-        pointer["upstream_live"] = _live_runs_on(
+        working = _live_runs_on(
             refs,
             live,
             project=owner_project,
             exclude=str(pointer.get("run_id") or ""),
         )
+        # The pointer is this pass's copy of the row, so the obligations land
+        # where the loop that persists them reads them, and a shared view
+        # reaching this writer raises rather than being quietly dropped.
+        pointer["upstream_obligations"] = obligations
+        pointer["upstream_live"] = working
+        # What could release this request, read from the same per-ref states the
+        # phase is resolved from: an upstream that can never land, work still on
+        # its way, or a wait nobody is building.
+        stranded_reasons: list[str] = []
+        unlanded: list[str] = []
+        for ref, state in zip(refs, states, strict=False):
+            if state == SATISFIED:
+                continue
+            reason = _stranded_wait.section_cannot_land(
+                ref,
+                project=owner_project,
+                docs_dir=Path(docs_dir) if docs_dir is not None else None,
+                inventory=inventory,
+            )
+            if reason:
+                stranded_reasons.append(reason)
+                continue
+            key = _release_section_key(ref, owner_project)
+            if key is not None:
+                unlanded.append(f"{key[1]}#{key[2]}")
+        wait_class, wait_detail = _stranded_wait.classify(
+            stranded=stranded_reasons, working=working, unlanded=unlanded
+        )
+        pointer["wait_class"] = wait_class
+        pointer["wait_detail"] = wait_detail
     if ABANDONED in states:
         return BLOCKED_UPSTREAM_PHASE
     if all(state == SATISFIED for state in states):
@@ -345,7 +384,12 @@ def _release_waiters(
         for ref in landed
         if not project or _release_section_key(ref, project) is None
     }
-    pointers = list(live if live is not None else runs.list_live())
+    # A listing hands out the memo's read-only view, and this pass derives a
+    # phase and two obligation fields onto each candidate it releases, so the
+    # candidates are copied first.
+    pointers = [
+        dict(pointer) for pointer in (live if live is not None else runs.list_live())
+    ]
     shared = cache if cache is not None else {}
     promoted: list[str] = []
     blocked: list[str] = []
@@ -533,45 +577,51 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     readiness read walking the tree again. Both close before the pass returns,
     so a landing that merges while the pass runs is seen by the next one.
     """
-    from reckon.crew import decision_answers
-
     with _readiness.plan_read_scopes():
-        released = decision_answers.release_answered_holds(live)
-        moved = _advance_waiting_requests(live)
-    return {**moved, "released": released}
+        return _advance_waiting_requests(live)
 
 
 def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     candidates = [
-        pointer
-        for pointer in live
-        if str(pointer.get("phase") or "") in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE)
+        (row, dict(row))
+        for row in live
+        if str(row.get("phase") or "") in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE)
     ]
     if not candidates:
-        return {"promoted": [], "blocked": [], "obligations": []}
+        return {"promoted": [], "blocked": [], "obligations": [], "retired": []}
     cache: dict[str, Any] = {}
     # One plan read per pass, shared by every request it derives for.
     derived_cache: dict[tuple[str, str, str, tuple[str, ...], bool], list[str]] = {}
     # One mount-registry read per pass, shared by every ref it resolves.
     mount = _wait_refs._mount_view()
-    for pointer in candidates:
+    for _row, pointer in candidates:
         try:
             _rederive_waits(pointer, cache=derived_cache, live=live, mount=mount)
         except Exception:  # noqa: BLE001, S112 - one unreadable request cannot end the pass
             continue
     promoted: list[str] = []
     blocked: list[str] = []
+    retired: list[dict[str, Any]] = []
     obligations: dict[str, str] = {}
+    moment = _service._now()
+    report_after = _stranded_wait.report_after_hours()
+    # Each candidate is (the caller's row, the copy this pass derives and
+    # stamps); a resolved copy is mirrored onto its row, so a caller reading
+    # its own rows sees the phase the pass recorded, exactly as it did when
+    # the pass wrote the row itself. The copy is what keeps the record a
+    # listing handed out — the memo's view — out of every write here.
     for _round in range(len(candidates) + 1):
         dead = _dead_sections(live)
         changed = False
-        for pointer in candidates:
+        for row, pointer in candidates:
             phase = str(pointer.get("phase") or "")
             if phase not in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE):
                 continue
+            waiting = phase in WAITING_UPSTREAM_PHASES
             docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
             previous_issues = list(pointer.get("upstream_obligations") or ())
             previous_live = list(pointer.get("upstream_live") or ())
+            previous_class = str(pointer.get("wait_class") or "")
             run_id = str(pointer.get("run_id") or "")
             target = _resolve_and_move(
                 pointer,
@@ -584,20 +634,63 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
             )
             issues = list(pointer.get("upstream_obligations") or ())
             working = list(pointer.get("upstream_live") or ())
+            wait_class = str(pointer.get("wait_class") or "")
+            wait_detail = str(pointer.get("wait_detail") or "")
+            if (
+                waiting
+                and wait_class == _stranded_wait.STRANDED
+                and _retirable(pointer)
+            ):
+                # A wait whose upstream can never land is removed on the pass
+                # that finds it. Its departure names the upstream and the
+                # reason, and the owner's obligations carry it once.
+                record = _retire_stranded(pointer, detail=wait_detail)
+                if record is not None:
+                    retired.append(record)
+                    obligations[run_id] = wait_detail or record["reason"]
+                    # The copy this pass derives keeps the retired phase so a
+                    # later round skips a request that no longer has a pointer.
+                    pointer["phase"] = "retired"
+                    row["phase"] = "retired"
+                    row["wait_class"] = wait_class
+                    row["wait_detail"] = wait_detail
+                    continue
             if issues:
                 obligations[run_id] = issues[0]
-            if issues != previous_issues or working != previous_live:
+            if (
+                waiting
+                and wait_class == _stranded_wait.IDLE
+                and _idle_report_due(pointer, moment=moment, after_hours=report_after)
+            ):
+                # An idle wait is nobody's work, which is the owner's to know --
+                # once. The stamp is the report, so a later pass is silent.
+                _stamp_idle_report(pointer, detail=wait_detail, moment=moment)
+                obligations[run_id] = wait_detail
+            if (
+                issues != previous_issues
+                or working != previous_live
+                or wait_class != previous_class
+            ):
 
                 def record_issues(
                     current: dict[str, Any],
                     recorded: list[str] = issues,
                     live_runs: list[str] = working,
+                    class_value: str = wait_class,
+                    detail_value: str = wait_detail,
                 ) -> dict[str, Any]:
                     current["upstream_obligations"] = recorded
                     current["upstream_live"] = live_runs
+                    current["wait_class"] = class_value
+                    current["wait_detail"] = detail_value
                     return current
 
                 runs._mutate_pointer(run_id, record_issues)
+            row["phase"] = pointer["phase"]
+            row["upstream_obligations"] = issues
+            row["upstream_live"] = working
+            row["wait_class"] = wait_class
+            row["wait_detail"] = wait_detail
             if target == phase:
                 # The request holds the phase its waits justify: either they
                 # still wait, or the move could not be written and is retried
@@ -613,11 +706,105 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "promoted": promoted,
         "blocked": blocked,
+        "retired": retired,
         "obligations": [
             {"run_id": run_id, "detail": detail}
             for run_id, detail in obligations.items()
         ],
     }
+
+
+def _retirable(pointer: Mapping[str, Any]) -> bool:
+    """Whether one stranded request may be retired by the pass.
+
+    A request a coordinator holds keeps its hold whatever its class: the hold is
+    a decision about the work, not a reading of the upstream. A request that has
+    launched is a run rather than a wait, so its failure belongs to the run's own
+    paths. Everything else in a waiting phase is a stored request nobody can
+    release.
+    """
+    if str(pointer.get("phase") or "") not in WAITING_UPSTREAM_PHASES:
+        return False
+    hold = pointer.get("queue_hold")
+    if isinstance(hold, Mapping) and str(hold.get("reason") or ""):
+        return False
+    return not (pointer.get("pid") or pointer.get("launched_at"))
+
+
+def _retire_stranded(
+    pointer: Mapping[str, Any], *, detail: str
+) -> dict[str, Any] | None:
+    """Retire one request whose upstream can never land, recording why.
+
+    The reason is written on the request before the departure, so the discard
+    record carries it: a reader later finds the upstream it named and why it
+    could not land, rather than only that a request went away.
+    """
+    from reckon.crew import promotion
+
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    reason = detail or "the upstream this request waits on cannot land"
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        current["reason"] = reason
+        current["wait_class"] = _stranded_wait.STRANDED
+        current["wait_detail"] = reason
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, stamp)
+    except Exception:  # noqa: BLE001 - an unwritable request keeps waiting
+        return None
+    try:
+        promotion.discard(run_id, allowed_phases=tuple(WAITING_UPSTREAM_PHASES))
+    except Exception:  # noqa: BLE001 - a refused discard leaves the request live
+        return None
+    node = dict(pointer.get("node") or {})
+    return {
+        "run_id": run_id,
+        "session": str(pointer.get("session") or ""),
+        "project": str(pointer.get("project") or ""),
+        "plan": str(node.get("plan") or pointer.get("plan") or ""),
+        "section": str(node.get("section") or pointer.get("section") or ""),
+        "node": str(node.get("id") or ""),
+        "reason": reason,
+    }
+
+
+def _idle_report_due(
+    pointer: Mapping[str, Any], *, moment: datetime, after_hours: float
+) -> bool:
+    """Whether an idle wait has stood past the threshold and never been told."""
+    if pointer.get("idle_reported_at"):
+        return False
+    started = parse_utc(
+        pointer.get("waits_at") or pointer.get("created_at") or pointer.get("queued_at")
+    )
+    if started is None:
+        return False
+    return (moment - started).total_seconds() >= after_hours * 3600.0
+
+
+def _stamp_idle_report(
+    pointer: dict[str, Any], *, detail: str, moment: datetime
+) -> None:
+    """Record the once-only idle report on the request, then mirror it locally."""
+    run_id = str(pointer.get("run_id") or "")
+    at = moment.isoformat()
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        current["idle_reported_at"] = at
+        current["wait_class"] = _stranded_wait.IDLE
+        current["wait_detail"] = detail
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, stamp)
+    except Exception:  # noqa: BLE001 - an unwritable stamp reports again next pass
+        return
+    pointer["idle_reported_at"] = at
 
 
 def _plan_html(repo_root: str | Path, plan: str) -> str:

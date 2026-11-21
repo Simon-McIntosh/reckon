@@ -219,17 +219,26 @@ def answer_decision(
         return _answer_plan_decision(
             decision_id, parts, session=session, choice=choice, note=note
         )
-    record = _read_question(decision_id)
-    from reckon.crew.lead_decisions import store_answer
+    from reckon.crew.lead_decisions import close_decision_at, recorded_decision
 
+    # The recorder's own validation is the gate: an already-answered or
+    # withdrawn record is refused by the rule that admitted it, and the read
+    # that follows is the raw record the answer is written onto.
+    recorded_decision(decision_id)
+    record = _read_question(decision_id)
+    offered = [str(option["value"]) for option in record.get("options") or ()]
+    if choice not in offered:
+        raise ValueError(f"choice {choice!r} is not one of {offered}")
     held = _held_behind(str(record.get("project") or ""), decision_id)
-    record = store_answer(
-        decision_id,
+    record.update(
         choice=choice,
-        note=note,
-        session=session,
         held_requests=held,
+        answered_at=datetime.now(UTC).isoformat(),
+        answered_by=session,
+        answer_note=str(note or "").strip(),
+        answer_via="presenting-session",
     )
+    record = close_decision_at(record, decision_id=decision_id)
     presentation_path(decision_id).unlink(missing_ok=True)
     _append_answer_row(
         project=str(record["project"]),
@@ -437,6 +446,7 @@ def _held_behind(project: str, decision_id: str) -> list[str]:
         list(view.get("decisions") or ())
         + list(view.get("pending") or ())
         + list(view.get("taken_and_reversible") or ())
+        + list(view.get("plan_block") or ())
     ):
         if str(row.get("id") or "") == str(decision_id):
             return [str(run) for run in row.get("held_requests") or ()]

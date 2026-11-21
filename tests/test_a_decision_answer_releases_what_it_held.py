@@ -19,7 +19,6 @@ import pytest
 
 from reckon._plan_html import read_state_file, write_state
 from reckon.crew import decision_answers, run_paths, runs
-from reckon.crew.admission.release import advance_waiting_requests
 from reckon.crew.lead_decisions import record_decision
 from reckon.crew.obligations import obligations
 from reckon.mcp_views import serve_crew_view
@@ -155,12 +154,14 @@ def test_an_answer_stores_the_choice_and_helped_requests_leave_hold(crew_home):
     other = obligations(PROJECT, PRESENTER)["obligations"]
     assert [row for row in other if row["kind"] == "decision-answered"] == []
 
-    released = advance_waiting_requests(runs.list_live())
-    assert sorted(released["released"]) == ["run-a", "run-b"]
+    assert sorted(decision_answers.release_answered_holds(runs.list_live())) == [
+        "run-a",
+        "run-b",
+    ]
     for run_id in ("run-a", "run-b"):
         assert runs.read_pointer(run_id)["phase"] == "queued"
     # A second pass finds nothing held: the release is idempotent.
-    assert advance_waiting_requests(runs.list_live())["released"] == []
+    assert decision_answers.release_answered_holds(runs.list_live()) == []
 
 
 def test_an_answer_outside_the_presenting_session_is_refused(crew_home):
@@ -195,8 +196,7 @@ def test_an_owner_with_no_live_session_is_answered_and_releases(crew_home):
     saved = _answer(decision["id"], choice="wait")
 
     assert saved["choice"] == "wait"
-    released = advance_waiting_requests(runs.list_live())
-    assert released["released"] == ["orphan-run"]
+    assert decision_answers.release_answered_holds(runs.list_live()) == ["orphan-run"]
     assert runs.read_pointer("orphan-run")["phase"] == "queued"
     duties = [
         row
@@ -253,8 +253,7 @@ def test_a_plan_decision_is_locked_in_its_plan_and_releases(crew_home):
     assert read_state_file(path)["decisions"]["format"]["choice"] == "expanded"
     after = serve_crew_view("decisions")
     assert after.get("decisions") == [], after
-    released = advance_waiting_requests(runs.list_live())
-    assert released["released"] == ["plan-request"]
+    assert decision_answers.release_answered_holds(runs.list_live()) == ["plan-request"]
     assert runs.read_pointer("plan-request")["phase"] == "queued"
 
 

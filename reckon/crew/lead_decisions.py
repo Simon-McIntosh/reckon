@@ -8,7 +8,7 @@ rather than requests that have launched or disappeared since recording.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -109,6 +109,16 @@ def validate_decision(record: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("reversible requires a choice and standing_rule")
     if choice and choice not in {option["value"] for option in options}:
         raise ValueError("choice must name one of the options")
+    withdrawn_by = str(record.get("withdrawn_by") or "").strip()
+    if withdrawn_by:
+        # The identity grammar is checked without writing, so a record cannot
+        # name a path as the decision that settled it.
+        decision_path(withdrawn_by)
+        if choice:
+            raise ValueError(
+                "withdrawn_by reports a decision another one settled, so it "
+                "takes no choice of its own"
+            )
     provenance = str(record.get("recommendation_source") or "").strip()
     if provenance not in {"", "owner", "reviewer", "unknown"}:
         raise ValueError("recommendation_source must be owner, reviewer or unknown")
@@ -127,6 +137,7 @@ def validate_decision(record: Mapping[str, Any]) -> dict[str, Any]:
         reversible=reversible,
         standing_rule=standing_rule,
         choice=choice,
+        withdrawn_by=withdrawn_by,
         source="crew",
     )
     return data
@@ -143,7 +154,10 @@ def record_decision(record: Mapping[str, Any]) -> dict[str, Any]:
     A taken choice requires reversible=True and its standing_rule; recording
     such a choice leaves it open for review rather than answering it as the lead.
     decision_key links the question to an authored plan decision, whose direct
-    answer then also closes this question. Identity and time are supplied here.
+    answer then also closes this question. withdrawn_by reports that another
+    decision already settled this one; it takes no choice, stands in no list,
+    and the next admission pass releases what it held. Identity and time are
+    supplied here.
     """
     data = {
         **validate_decision(record),
@@ -154,48 +168,94 @@ def record_decision(record: Mapping[str, Any]) -> dict[str, Any]:
     return data
 
 
-def store_answer(
-    decision_id: str,
-    *,
-    choice: str,
-    note: str,
-    session: str,
-    held_requests: Iterable[str],
-) -> dict[str, Any]:
-    """Persist the lead's answer onto one recorded question and return it.
+def recorded_decision(decision_id: str) -> dict[str, Any]:
+    """Read one recorded question, refusing it unless a hold may cite it.
 
-    This module owns the question record, so the one writer of an answer lives
-    here beside the writer of the question itself: a reader that asks how a
-    decision's answer is stored has one function to read, and a change to the
-    record's shape has one writer to update.
+    A hold that waits on the lead cites a record rather than restating the
+    question, so the record has to be one the lead can answer: present, an
+    object, not answered sound or withdrawn, and carrying every field the
+    recorder requires — a question, its context, its owner and the two to four
+    options with one recommended. The check is the recorder's own, run against
+    the file as it stands now, so a hand-edited record is refused by the rule
+    that admitted it and the refusal names the field at fault.
     """
-    record = json.loads(decision_path(decision_id).read_text(encoding="utf-8"))
-    if str(record.get("answered_at") or ""):
+    path = decision_path(decision_id)
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
         raise ValueError(
-            f"decision {decision_id!r} was answered at {record['answered_at']}"
-        )
-    values = [str(option["value"]) for option in record.get("options") or ()]
-    if choice not in values:
-        raise ValueError(f"choice {choice!r} is not one of {values}")
-    owner = str(record.get("session") or "")
-    if owner and owner == session:
+            f"no decision {decision_id!r} is recorded; record one with "
+            "`crew decision record --record -` first"
+        ) from exc
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"decision {decision_id!r} cannot be read: {exc}") from exc
+    if not isinstance(record, Mapping):
+        raise TypeError(f"decision {decision_id!r} is not a JSON object")
+    if str(record.get("id") or "") != decision_id:
         raise ValueError(
-            f"session {session!r} owns decision {decision_id!r}, so it cannot "
-            "answer it: only the lead, through the presenting session"
+            f"decision {decision_id!r} carries id {record.get('id')!r}, so the "
+            "file does not name the decision it was cited as"
         )
-    record.update(
-        choice=choice,
-        held_requests=[str(run) for run in held_requests],
-        answered_at=datetime.now(UTC).isoformat(),
-        answered_by=session,
-        answer_note=str(note or "").strip(),
-        answer_via="presenting-session",
-    )
-    write_json_atomically(decision_path(decision_id), record, fsync_directory=True)
-    return record
+    withdrawn_by = str(record.get("withdrawn_by") or "").strip()
+    if withdrawn_by:
+        raise ValueError(
+            f"decision {decision_id!r} was withdrawn by {withdrawn_by!r} and "
+            "holds nothing"
+        )
+    if str(record.get("answered_at") or "").strip():
+        raise ValueError(f"decision {decision_id!r} is already answered")
+    return validate_decision(record)
 
 
-def _request_identity(pointer: Mapping[str, Any]) -> tuple[str, str]:
+def record_decision_at(
+    record: Mapping[str, Any],
+    *,
+    decision_id: str,
+    recorded_at: str | None = None,
+) -> dict[str, Any]:
+    """Record or replace a decision under an identity the caller owns.
+
+    A rule that raises one decision for a fixed subject and refreshes it as the
+    work it lists changes cannot take a fresh identity on every pass, so it
+    supplies its own. Validation, path resolution and the atomic write are the
+    store's own, exactly as for a uuid-recorded decision; the fields that rule
+    keeps beside the shared ones (its subject and the records it lists) travel
+    on the record and are preserved across validation. ``recorded_at``
+    preserves the first recording time across updates.
+    """
+    path = decision_path(decision_id)
+    data = {
+        **record,
+        **validate_decision(record),
+        "id": decision_id,
+        "recorded_at": recorded_at or datetime.now(UTC).isoformat(),
+    }
+    write_json_atomically(path, data, fsync_directory=True)
+    return data
+
+
+def close_decision_at(record: Mapping[str, Any], *, decision_id: str) -> dict[str, Any]:
+    """Persist a decision's recorded answer in the store.
+
+    Unlike :func:`record_decision_at`, this does not re-run the question's
+    validation: the record was validated when it was raised, and the answer it
+    now carries is outcome data — the per-record choices and who made them —
+    rather than a fresh question. The identity, path resolution and atomic
+    write are still the store's own, so a decision is never written beside it.
+    """
+    data = {**record, "id": decision_id}
+    write_json_atomically(decision_path(decision_id), data, fsync_directory=True)
+    return data
+
+
+def request_identity(pointer: Mapping[str, Any]) -> tuple[str, str]:
+    """The plan and section a request names.
+
+    The one statement of a request's identity: every reader that needs the
+    plan and section a pointer belongs to resolves them here, so a record's
+    identity cannot drift between the writer that raises it and the reader
+    that lists the work it holds.
+    """
     node = pointer.get("node") or {}
     options = pointer.get("dispatch_options") or {}
     return (
@@ -212,7 +272,7 @@ def _held_requests(
     for pointer in pointers:
         if pointer.get("project") != decision["project"]:
             continue
-        plan, section = _request_identity(pointer)
+        plan, section = request_identity(pointer)
         hold = pointer.get("queue_hold") or {}
         bound = (hold.get("decision_id") or pointer.get("decision_id")) == decision[
             "id"
@@ -344,8 +404,75 @@ def _answered_in_plan(
     return bool(str(decision.get("choice") or "").strip())
 
 
+def withdrawn_records() -> list[dict[str, Any]]:
+    """The reports recorded as already settled, each naming what settled it."""
+    records = []
+    for path in sorted((crew_home() / "decisions").glob("*.json")):
+        try:
+            record = _read_record(path)
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            raise ValueError(f"cannot read decision {path}: {exc}") from exc
+        if record.get("withdrawn_by"):
+            records.append(record)
+    return records
+
+
+def release_withdrawn_holds(live: list[dict[str, Any]]) -> list[str]:
+    """Return the requests a withdrawn decision held to the queue.
+
+    A withdrawn report stands in no list, so nothing else will ever release the
+    work waiting behind it. Two records bind a request to the decision it waits
+    on — the hold naming its ``decision_id``, and the report naming the request
+    — and both are read the way the lists read them, so a request is released
+    for the same facts that showed it held. The pointer's own phase decides what
+    this may touch: a request that has moved off ``held`` since the pass read it
+    is left where it now stands, and one already released is not touched twice.
+    """
+    from reckon.crew import queue_edit
+
+    withdrawn = {record["id"]: record for record in withdrawn_records()}
+    if not withdrawn:
+        return []
+    released: list[str] = []
+    for pointer in live:
+        if str(pointer.get("phase") or "") != "held":
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        hold = pointer.get("queue_hold") or {}
+        bound = str(hold.get("decision_id") or pointer.get("decision_id") or "")
+        named = any(
+            run_id in record.get("held_requests", [])
+            and record["project"] == pointer.get("project")
+            for record in withdrawn.values()
+        )
+        if bound not in withdrawn and not named:
+            continue
+        try:
+            outcome = queue_edit.release(
+                run_id=run_id, reason="the decision it waited on was withdrawn"
+            )
+        except (queue_edit.CrewError, OSError, ValueError):
+            continue
+        for change in outcome.get("released") or []:
+            if str(change.get("run_id") or "") == run_id:
+                # The pass launches from the rows it read, so it takes the
+                # phase the release wrote rather than the held one it opened
+                # with.
+                pointer["phase"] = change.get("phase")
+                pointer.pop("queue_hold", None)
+                released.append(run_id)
+    return released
+
+
 def read_decisions(project: str | None = None) -> dict[str, Any]:
-    """Return ready, pending and taken-and-reversible questions, ranked by work.
+    """Return every open question in the list its own state belongs to.
+
+    Four lists: ready, pending on a named run or gate, taken under a standing
+    rule and reversible, and a plan's decisions block holding nothing behind
+    it. The last reports its owning session, recording time and held work as
+    absent by name, because a plan edit date and a plan coordinator are not
+    that decision's own. A report recorded as withdrawn names the decision that
+    settled it and stands in no list at all.
 
     Plan ownership and liveness come from the existing coordinator resolver.
     Missing historical authorship and recording time stay explicitly null.
@@ -362,6 +489,11 @@ def read_decisions(project: str | None = None) -> dict[str, Any]:
     for path in sorted((crew_home() / "decisions").glob("*.json")):
         try:
             record = _read_record(path)
+            if record.get("withdrawn_by"):
+                # A report of a decision another one settled stands in no
+                # list: the settling decision is the one the lead answers, and
+                # what this report held is released by the next admission pass.
+                continue
             if record["project"] in mounts and (
                 not record.get("choice") or record.get("reversible")
             ):
@@ -434,9 +566,21 @@ def read_decisions(project: str | None = None) -> dict[str, Any]:
             if _report_received(row, gates)
             else "pending"
         )
+        if row["source"] == "plan" and not row["held_work_count"]:
+            # A decision written in a plan's decisions block with nothing held
+            # behind it is not work waiting on the lead in the same sense: it
+            # has no owning session, no recording time of its own, and no
+            # queue, run or deferred section held by it. Each of those three
+            # is reported absent by name rather than as an empty value, so a
+            # reader cannot read "nothing recorded" as "recorded as nothing".
+            row["state"] = "plan-block"
+            row["session"] = None
+            row["recorded_at"] = None
+            row["held_work_count"] = None
+            row["absent"] = ["session", "recorded_at", "held_work"]
     rows.sort(
         key=lambda row: (
-            -row["held_work_count"],
+            -(row["held_work_count"] or 0),
             row.get("recorded_at") or "",
             row["project"],
             row["id"],
@@ -445,6 +589,7 @@ def read_decisions(project: str | None = None) -> dict[str, Any]:
     ready = [row for row in rows if row["state"] == "ready"]
     pending = [row for row in rows if row["state"] == "pending"]
     reversible = [row for row in rows if row["state"] == "taken-and-reversible"]
+    plan_block = [row for row in rows if row["state"] == "plan-block"]
     return {
         "ok": True,
         "view": "decisions",
@@ -454,4 +599,5 @@ def read_decisions(project: str | None = None) -> dict[str, Any]:
         "decisions": ready,
         "pending": pending,
         "taken_and_reversible": reversible,
+        "plan_block": plan_block,
     }
