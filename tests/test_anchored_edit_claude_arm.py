@@ -142,13 +142,15 @@ def _assert_receipt(plan, run, worktree, monkeypatch, enabled, reason):
     assert plan.anchored_edit_reason == reason
     assert plan.as_dict()["anchored_edit"] is enabled
     spec = _spec(plan, run, worktree, monkeypatch)
-    assert spec["anchored_edit"] is enabled
-    assert spec["anchored_edit_reason"] == reason
+    # The launch record names only what the launch uses; the treatment stays on
+    # the plan and in the prompt.
+    assert "anchored_edit" not in spec
+    assert "anchored_edit_reason" not in spec
     payload = dispatch_launch._worker_record_payload(
         spec, pid=0, attempt=1, launched_at="", registered_at=""
     )
-    assert payload["anchored_edit"] is enabled
-    assert payload["anchored_edit_reason"] == reason
+    assert "anchored_edit" not in payload
+    assert "anchored_edit_reason" not in payload
     return spec
 
 
@@ -437,29 +439,23 @@ def test_launch_fact_reaches_the_run_pointer(launch_case, monkeypatch, enabled):
     )
     dispatch_launch._publish_stored_phase(spec, ended=False)
     recorded = runs.read_pointer(run.name)
-    assert recorded["anchored_edit"] is enabled
-    assert recorded["anchored_edit_reason"] == (None if enabled else "disabled")
+    assert recorded["phase"] == "working"
+    assert "anchored_edit" not in recorded
+    assert "anchored_edit_reason" not in recorded
 
 
-def test_old_attempt_cannot_replace_the_treatment_receipt(launch_case, monkeypatch):
+def test_old_attempt_cannot_replace_the_stored_phase(launch_case, monkeypatch):
     compose, _, run, worktree = launch_case
     spec = _spec(compose(), run, worktree, monkeypatch)
     pointer = runs.pointer_path(run.name)
     pointer.parent.mkdir(parents=True, exist_ok=True)
     pointer.write_text(
-        json.dumps(
-            {
-                "run_id": run.name,
-                "attempt": 2,
-                "phase": "working",
-                "anchored_edit": False,
-                "anchored_edit_reason": "resumed",
-            }
-        )
+        json.dumps({"run_id": run.name, "attempt": 2, "phase": "working"})
     )
     dispatch_launch._publish_stored_phase(spec, ended=False)
-    assert runs.read_pointer(run.name)["anchored_edit"] is False
-    assert runs.read_pointer(run.name)["anchored_edit_reason"] == "resumed"
+    recorded = runs.read_pointer(run.name)
+    assert recorded["attempt"] == 2
+    assert recorded["phase"] == "working"
 
 
 def test_backend_schema_accepts_the_key_and_json_schema_agrees():
