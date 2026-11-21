@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="107">
+<meta name="plan-version" content="108">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -237,6 +237,12 @@
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261117T155905376441-review-of-failed-measurement-is-recorded-s16-3b66953c3512" data-who="reckon-build" data-when="2026-11-17T16:15:37Z">
     <div class="r-comment-body"><p>Independent review stored as parsed against 3b66953c3512992091e9d70e720a15cecf03bfdf; six scores are recorded, the suite pair shows 0 added failures, and the record check passed.</p></div>
 </div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T204139363637-review-of-anchored-dispatch-s18-ce451ced1132" data-who="reckon-build" data-when="2026-11-21T21:03:56.640Z">
+    <div class="r-comment-body"><p>Independent review of r-20261121T201933445469-anchored-dispatch-s18 at base 1666d19f and head ce451ced: scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20 (total 118), one non-blocking finding on the guard's source-text scope; both review records pass crew check --review with added_failure_count 0 derived from the reviewed run's own base and head arms (64 then 65 passed, EXIT=0 both, capture logs) and its red negative control (1 failed, 6 passed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T201933445469-anchored-dispatch-s18" data-who="reckon-build" data-when="2026-11-21T20:41:32.439Z">
+    <div class="r-comment-body"><p>The dispatch path no longer forwards the anchored editing tool&#x27;s instruction — the launcher stops post-processing the composed worker prompt with the instruction helper, the dispatching imports drop its re-export, and the dispatch facade surface and its frozen inventory no longer list it; scoped suite arms at base 1666d19f and head ce451ced both exit 0 with 0 failures over tests/test_dispatch_split_keeps_its_surface.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, a guard test fails with EXIT=1 when the forwarding is restored, and ruff check and format add no findings on the staged paths.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261110T203544773136-review-of-anchored-edit-tool-27ed13983a3d" data-who="reckon-build" data-when="2026-11-10T20:58:16.138Z">
     <div class="r-comment-body"><p>Reviewed run r-20261110T192355232896-anchored-edit-tool at head 27ed13983a3d19b3a69b18e35b56b33e9f52b354 from base cb5dcf17a3be6c8a022f5c9391ec843c67adb509; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 19; total 110), zero added failures against the reviewed arms, and three non-blocking findings recorded — a self-referential assertion at tests/test_anchored_edit.py:54, a negative-control log whose header revision predates the module checksum it measured, and a ruff claim in the evidence fragment with no recorded log which re-ran clean.</p></div>
 </div>
@@ -323,9 +329,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T082623623266-replay-omp-local-ab-s9" data-who="reckon-build" data-when="2026-11-17T08:28:05.416Z">
     <div class="r-comment-body"><p>§9 landed: the armed suite command now names only files pytest collects — a one-place predicate `is_collectible_test_path` in `reckon/crew/node.py` (pytest's defaults `test_*.py` / `*_test.py`, since this project declares no `python_files`) beside the dispatcher's `is_test_path`, used by `_node_test_files` and by `_landing_test_files`'s changed-path fallback, with `_suite_gate_prompt_body` stating the narrowed rule. At b80df254 a scope holding `tests/fixtures/omp-stream.jsonl` resolved to `pytest -q tests/fixtures/omp-stream.jsonl tests/test_x.py` and pytest exited 4 on the fixture; at head the same shape resolves to `pytest -q tests/test_x.py`, and a fixture-bearing scope plus the census runs 51 passed, EXIT=0, naming no fixture. Five tests in `tests/test_armed_suite_collectible_tests.py`: a mixed scope names only `tests/test_x.py`; a fixture-only scope names no node test file and still carries the census; a fixture-only delivery names nothing at landing; `is_test_path` still returns true for the fixture; and the armed command and the compared command agree.</p></div>
-</div>
-<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T204139363637-review-of-anchored-dispatch-s18-ce451ced1132" data-who="reckon-build" data-when="2026-11-21T21:03:56.640Z">
-    <div class="r-comment-body"><p>Independent review of r-20261121T201933445469-anchored-dispatch-s18 at base 1666d19f and head ce451ced: scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20 (total 118), one non-blocking finding on the guard&#x27;s source-text scope; both review records pass crew check --review with added_failure_count 0 derived from the reviewed run&#x27;s own base and head arms (64 then 65 passed, EXIT=0 both, capture logs) and its red negative control (1 failed, 6 passed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
