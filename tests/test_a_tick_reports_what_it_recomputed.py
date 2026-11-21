@@ -274,12 +274,21 @@ def test_each_pass_reports_what_it_recomputed(fleet) -> None:
         f"the sweep read the rewritten plan but reported no parse: {recomputed}"
     )
     # A plan is answered through more than one memo kind and each re-read the
-    # same file. What the third round must not do is recompute anything else,
-    # which the bytes they read settle: every one of them is the rewritten
-    # plan's length.
-    assert all(row["bytes_read"] == plan_bytes for row in recomputed.values()), (
-        f"the third round recomputed more than the plan: {recomputed}"
+    # same file. Each of those kinds must have recomputed the plan exactly
+    # once, and no other kind may appear at all: a count of one settles that
+    # nothing outside the rewritten plan was re-read, which the bytes alone
+    # would not.
+    plan_kinds = {"parse_meta", "plan_text"}
+    assert set(recomputed) <= plan_kinds, (
+        f"the third round recomputed kinds outside the plan: {recomputed}"
     )
+    for kind, row in recomputed.items():
+        assert row["recomputed"] == 1, (
+            f"the third round recomputed {kind} {row['recomputed']} times: {row}"
+        )
+        assert row["bytes_read"] == plan_bytes, (
+            f"the {kind} recompute did not read the rewritten plan: {row}"
+        )
     assert not _recomputed(moved["tick"]), (
         f"the third round's tick recomputed: {_recomputed(moved['tick'])}"
     )

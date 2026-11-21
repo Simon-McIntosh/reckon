@@ -455,32 +455,6 @@ def content_digest(path: Path | str) -> str:
     return memoized("content_digest", target, read)
 
 
-def _recompute_answer(
-    path: Path | str,
-    previous: _Identity | None,
-    identity: _Identity,
-    extends: bool,
-) -> tuple[str, int]:
-    """How an answer that was not served from the memo was produced.
-
-    A file that grew under the same inode is the one case an incremental reader
-    can fold, and only when its caller declared that it folds: the read it paid
-    for is the growth, so the scope is told an extension of those bytes. A
-    rewrite, a replaced file, a first read, and every caller that re-reads from
-    the first byte are full parses of the file's whole length.
-    """
-    if (
-        extends
-        and isinstance(previous, tuple)
-        and isinstance(identity, tuple)
-        and previous[0] == identity[0]
-        and previous[1] == identity[1]
-        and identity[2] > previous[2]
-    ):
-        return ANSWER_EXTENDED, identity[2] - previous[2]
-    return ANSWER_RECOMPUTED, file_bytes(path)
-
-
 def memoized[T](
     kind: str,
     path: Path | str,
@@ -489,7 +463,6 @@ def memoized[T](
     variant: Hashable = None,
     mutable: bool = False,
     by_content: bool = False,
-    extends: bool = False,
     identity: _Identity | None = None,
 ) -> T:
     """Return ``compute()`` for ``path``, reusing it while the file is unchanged.
@@ -501,12 +474,6 @@ def memoized[T](
     ``by_content`` swaps the stat identity for the file's content digest, so
     byte-identical content at two paths is parsed once. Every caller that does
     not ask for it keeps the stat signature and pays no hash.
-
-    ``extends`` declares that ``compute`` folds only the bytes a stream gained:
-    the value it answers is the whole answer, but the read it paid for is the
-    file's growth, so a measuring scope is told an extension rather than a full
-    parse. A caller that re-reads the file from its first byte must leave it
-    unset, and then a grown file is a full recompute.
 
     ``identity`` is for a caller that has already observed the file: the stat
     signature — or the digest, under ``by_content`` — of the bytes its
@@ -540,7 +507,6 @@ def memoized[T](
     if region is not None and key in region:
         record_memo(kind, ANSWER_CACHED)
         return _handout(region[key], mutable)  # type: ignore[return-value]
-    previous: _Identity | None = None
     with _LOCK:
         entry = _CACHE.get(key)
         if entry is not None and entry[0] == identity:
@@ -551,10 +517,7 @@ def memoized[T](
                 region[key] = entry[2]
                 return _handout(region[key], mutable)  # type: ignore[return-value]
             return copy.deepcopy(value)  # type: ignore[return-value]
-        if entry is not None:
-            previous = entry[0]
-    outcome, read_bytes = _recompute_answer(path, previous, identity, extends)
-    record_memo(kind, outcome, read_bytes)
+    record_memo(kind, ANSWER_RECOMPUTED, file_bytes(path))
     value = compute()
     try:
         unchanged = (

@@ -3859,8 +3859,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
     else:
         with source.open("rb") as handle:
             data = handle.read()
-        _count_parsed_bytes(len(data))
-        file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_RECOMPUTED, len(data))
+        _record_stream_read(file_memo.ANSWER_RECOMPUTED, len(data))
         added, malformed = parse_events(
             data.decode("utf-8", errors="replace").splitlines()
         )
@@ -4722,9 +4721,18 @@ def stream_boundary_fingerprint(path: str | Path, *, offset: int) -> dict[str, A
 _PARSED_STREAM_BYTES = [0]
 
 
-def _count_parsed_bytes(count: int) -> None:
-    if count > 0:
-        _PARSED_STREAM_BYTES[0] += count
+def _record_stream_read(outcome: str, count: int) -> None:
+    """Record one stream read against both tallies the read belongs to.
+
+    The producer reports how much of the fleet's stream traffic a poll parsed,
+    and a measuring scope reports what the pass that made the read recomputed.
+    Both totals describe the same bytes, so they are written here, once, rather
+    than beside each other at the readers where they could drift apart.
+    """
+    if count <= 0:
+        return
+    _PARSED_STREAM_BYTES[0] += count
+    file_memo.record_memo(_STREAM_MEMO_KIND, outcome, count)
 
 
 def take_parsed_stream_bytes() -> int:
@@ -4787,8 +4795,7 @@ def _stream_lines_from(
         return [], offset
     text = data[: cut + 1].decode("utf-8", errors="replace")
     if count:
-        _count_parsed_bytes(cut + 1)
-        file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_EXTENDED, cut + 1)
+        _record_stream_read(file_memo.ANSWER_EXTENDED, cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 
