@@ -7,6 +7,7 @@ from collections import deque
 
 from .. import lost_sessions as _lost_sessions
 from .. import queue_order
+from ..worker_behaviour import lane_identity
 from reckon.crew.open_run_index import operational_read
 
 from . import holds as _holds
@@ -182,8 +183,7 @@ def admit_once(
                     if config_for is not None
                     else _launching._resolve_lane_config(pointer, select_local=False)
                 )
-                # The installed local drainer also admits every metered route.
-                return drainer_serves_the_local_lane(lane, config)
+                return gate_admits_request(backend, lane, config)
 
             excluded_by_lane = [pointer for pointer in queued if not included(pointer)]
             queued = [pointer for pointer in queued if included(pointer)]
@@ -726,6 +726,24 @@ def admit_once(
                 order, verdicts, moment=moment, ordered=not bool(run_id)
             )
         return result
+
+
+def gate_admits_request(backend: str, lane: str, config: Mapping[str, Any]) -> bool:
+    """Whether a request queued under ``backend`` is served by a drainer started
+    for ``lane``.
+
+    A lane served by more than one backend is one lane: a request queued under
+    any of those names is served by a drainer started for another, because the
+    two publish one lane document. The gate holds on the lane, never on the
+    name, so moving the configured local backend from one name to another moves
+    no admission decision.
+    """
+    if backend == lane:
+        return True
+    if lane_identity(backend, None, config) == lane_identity(lane, None, config):
+        return True
+    # The installed local drainer also admits every metered route.
+    return drainer_serves_the_local_lane(lane, config)
 
 
 def drainer_serves_the_local_lane(lane: str, config: Mapping[str, Any]) -> bool:

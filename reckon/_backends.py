@@ -127,6 +127,7 @@ from reckon._worker_fence import (  # noqa: F401
     fence_writable_roots,
     harness_agent_store,
     harness_home,
+    harness_home_layout,
     observe_codex_login,
     protected_checkouts,
     protected_paths,
@@ -468,6 +469,10 @@ class LaunchPlan:
     # that may have moved since. An empty name means the node named no set.
     mcp_set: str = ""
     worker_mcp_servers: tuple[str, ...] = ()
+    # The treatment this launch gives the worker, stated once here so two
+    # backends of one lane can be compared fact by fact rather than by reading
+    # each harness's argv. See :mod:`reckon.crew.worker_behaviour`.
+    worker_behaviour: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -485,6 +490,7 @@ class LaunchPlan:
             "mcp_set": self.mcp_set,
             "resumed_session": self.resumed_session,
             "worker_mcp_servers": list(self.worker_mcp_servers),
+            "worker_behaviour": dict(self.worker_behaviour),
         }
 
 
@@ -1158,6 +1164,21 @@ class Dialect:
     """
 
     name = ""
+    # The run-home files this harness's interface reads for the treatment every
+    # worker of a lane shares: the settings group that carries the inbox hook
+    # and the MCP server list, and the JSON configuration that holds the server
+    # allowlist. They are properties of the interface — a claude-shaped wrapper
+    # reads the same files as the harness it wraps — which is why the seeding
+    # reads these rather than the dialect's name. A harness that reads neither
+    # declares neither, and reaches its inbox by reading the run directory.
+    settings_file: str | None = None
+    mcp_config_file: str | None = None
+    mcp_refusal_list: bool = False
+    # The dialect whose home layout this harness interface reads, for a wrapper
+    # that speaks another harness's interface rather than one of its own. A
+    # wrapper taking this value reads the wrapped harness's home, its seeded
+    # files and its delivery hook, and states nothing twice.
+    home_interface: str | None = None
     # Whether this dialect hands an attached image to its harness on a flag of
     # its own. A dialect that does not can still be handed one when its lane
     # declares image input: the paths go into the prompt the worker reads, and
@@ -2041,6 +2062,13 @@ class _OmpDialect(Dialect):
     """
 
     name = "omp"
+    # Its server allowlist lives in the agent store's MCP configuration, which
+    # is the file the run home mirrors; it declares no settings group, so a
+    # message reaches its run through the run directory rather than a hook.
+    mcp_config_file = "agent/mcp.json"
+    # Its configuration records refused servers in a list of its own beside the
+    # allowed ones, rather than by absence from the server table.
+    mcp_refusal_list = True
     # The brief rides on argv, so the process is handed an already-closed
     # stdin rather than prompt text — see the class docstring.
     stdin_prompt = False
@@ -2489,6 +2517,8 @@ class _ClaudeDialect(Dialect):
     """Claude Code: `-p` stream-json, session ids, rate-limit headroom."""
 
     name = "claude"
+    settings_file = "settings.json"
+    mcp_config_file = ".claude.json"
     # A claude subscription lane reads the operator's stored login, so the
     # fence binds it writable into the run's harness home.
     subscription_login = True
@@ -2951,6 +2981,10 @@ class _CliveDialect(_ClaudeDialect):
     """
 
     subscription_login = False
+    # Its harness home, its seeded files and its delivery hook are claude's:
+    # the wrapper execs claude itself, so a clive worker gets the treatment a
+    # clive-shaped lane is entitled to without any of it being restated here.
+    home_interface = "claude"
 
 
 _DIALECTS: dict[str, Dialect] = {
@@ -3155,6 +3189,8 @@ def launch_plan(
     fence_waiver: str | None = None,
     masked_paths: Iterable[str | Path] = (),
     unmergeable_patterns: Iterable[str] = (),
+    behaviour_role: str = "implement",
+    flight_config: Mapping[str, Any] | None = None,
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -3303,15 +3339,19 @@ def launch_plan(
             worker_mcp_servers=(
                 resolved_mcp_servers if fence_config is not None else None
             ),
+            settings_file=dialect.settings_file,
+            mcp_config_file=dialect.mcp_config_file,
+            mcp_refusal_list=dialect.mcp_refusal_list,
         )
         # Only the claude arm's treatment is decided by the seeding step: it
         # does the work by editing the run home. A codex launch carries its
         # server on the argv, which this step neither writes nor removes, so
         # its recorded fact must not be replaced by the seeder's answer.
-        if dialect.name == "claude":
+        if dialect.settings_file is not None:
             anchored_edit = seeded_treatment
-        if adopts_harness_home:
-            environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        home_layout = harness_home_layout(dialect.name)
+        if adopts_harness_home and home_layout is not None:
+            environment[home_layout[0]] = str(harness)
         # A harness that keeps its agent store below its home needs the store
         # variable too: the seed mirrors the operator's files relative to the
         # home the run owns, and a harness resolving its store from the
@@ -3322,7 +3362,7 @@ def launch_plan(
         # commits would carry a name and address nobody configured. Naming the
         # global config explicitly restores it through one environment variable
         # the fence already mounts read-only, so no path is made writable.
-        if adopts_harness_home and _HARNESS_HOME[dialect.name][0] == "HOME":
+        if adopts_harness_home and home_layout is not None and home_layout[0] == "HOME":
             operator = Path(fence_home) if fence_home is not None else Path.home()
             operator_config = operator / ".gitconfig"
             if operator_config.is_file():
@@ -3463,6 +3503,20 @@ def launch_plan(
             masked_paths=masked_paths,
             unmergeable_paths=tuple(unmergeable.items()),
         )
+    from reckon.crew.worker_behaviour import compose_worker_behaviour
+
+    behaviour = compose_worker_behaviour(
+        backend_name=backend_name,
+        backend=backend,
+        run_directory=run_directory,
+        role=behaviour_role,
+        fence=fence,
+        write_roots=write_roots,
+        unmergeable_seals=unmergeable,
+        dialect_name=dialect.name,
+        settings_file=dialect.settings_file,
+        config=flight_config,
+    )
     return LaunchPlan(
         backend=backend_name,
         dialect=dialect.name,
@@ -3480,6 +3534,7 @@ def launch_plan(
         unmergeable_seals=unmergeable,
         mcp_set=resolved_mcp_set,
         worker_mcp_servers=tuple(resolved_mcp_servers or ()),
+        worker_behaviour=dict(behaviour.dimensions()),
     )
 
 
