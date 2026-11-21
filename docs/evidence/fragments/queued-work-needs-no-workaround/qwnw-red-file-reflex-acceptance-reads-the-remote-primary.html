@@ -53,25 +53,28 @@
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>the node's file, head arm on <code>all_debug</code></td>
-        <td><code>9116590e76bf1be1616bded0b451ab5d3451095c</code>, the worktree,
+        <td><code>6464e6d76360ce42524ed1aaa51821824fae9b04</code>, the worktree,
         the revision <code>gate-head.log</code>'s first line names</td>
         <td>13 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the node's file, base arm</td>
         <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, extracted tree</td>
         <td>1 failed, 11 passed, 1 error, <code>EXIT=1</code></td></tr>
       <tr><td>the declared suite arm, head</td>
-        <td><code>9116590e76bf1be1616bded0b451ab5d3451095c</code>,
-        <code>suite-head.log</code></td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
+        <td><code>6464e6d76360ce42524ed1aaa51821824fae9b04</code>,
+        <code>suite-merge-head.log</code></td>
+        <td>the same summary as the base arm, no failure added</td></tr>
       <tr><td>the declared suite arm, base</td>
         <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>,
         <code>suite-base.log</code></td>
         <td>58 passed, <code>EXIT=0</code>, no failure added</td></tr>
-      <tr><td>the importing file, head and base</td>
-        <td><code>9116590e76bf1be1616bded0b451ab5d3451095c</code> and
-        <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
-        <td>13 passed, <code>importer-head.log</code>, and 13 passed,
-        <code>importer-base.log</code></td></tr>
+      <tr><td>the importing file, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>13 passed, <code>EXIT=0</code>, <code>importer-base.log</code></td></tr>
+      <tr><td>the importing file, merge head</td>
+        <td><code>6464e6d76360ce42524ed1aaa51821824fae9b04</code></td>
+        <td>1 failed, 12 passed, <code>EXIT=1</code>,
+        <code>importer-merge-head.log</code> — the failing id is primary's own,
+        measured at <code>67e8dea40e03</code> below</td></tr>
     </tbody>
   </table>
 
@@ -126,11 +129,41 @@
   run; the revision is the commit that carried the test change, and the
   fragment's own commit changes no test.</p>
 
+  <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-merge">The merge with primary</h3>
+
+  <p>Primary and this branch both wrote into
+  <code>tests/helpers/landing_repository.py</code>: primary lifted the
+  landed-checkout builder and the promoted-row writer there, and this branch
+  lifted the in-place scheduler transport. Both survive the merge — the module
+  carries the two fixtures and their imports — because each answers a different
+  question and neither read the other.</p>
+
+  <p>The merge also moved what the transport must answer. Primary submits a
+  measure without <code>--wait</code>, then asks <code>squeue</code> and
+  <code>sacct</code> whether that job ended, so the shared transport now runs the
+  command the wrap names and appends its output to the log the wrap redirects
+  into, answers <code>squeue</code> as a job the queue no longer holds,
+  <code>sacct</code> with the state the script exited with, and installs itself
+  on both module names the product submits by. The product's archive script,
+  gate command, measurement record and <code>EXIT=</code> receipt stay its own,
+  so the arms below still read the product's evidence rather than the test's.</p>
+
   <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-outside">Outside scope</h3>
 
-  <p><code>tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted</code>
-  is red at the same base revision for the same two causes (observed while
-  outside this node's file: 1 failed, 18 passed). It is a different file and was
-  not repaired here; the refusal it was to assert is asserted by this node's own
-  role arm instead.</p>
+<p><code>tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted</code>
+  — the sibling arm that asserted the <code>unmerged_commits</code> refusal — is red at
+  the same base revision for the same two causes (observed while outside this
+  node's file: 1 failed, 18 passed). It is a different file and was not repaired
+  here; the refusal it was to assert is asserted by this node's own role arm
+  instead.</p>
+
+  <p>One failure in the importing file is primary's, not this change's:
+  <code>tests/test_an_acceptance_check_holds_no_lease.py::test_missing_commits_reaching_primary_rejudges_the_same_head</code>
+  reads <code>integrated_verdict</code> <code>not-run</code> where it expects
+  <code>failed</code>. Extracting the primary revision
+  <code>67e8dea40e03f5afd145895bc8fc22b66914d931</code> and running that file
+  there reads 1 failed, 12 passed with the same id, so the merge inherited a red
+  test rather than introducing one. It is recorded rather than repaired: the
+  replay's verdict for a job whose log carries no receipt is a defect in the
+  replay reader, which this node's write scope does not reach.</p>
 </section>
