@@ -1,0 +1,52 @@
+<section id="qwnw-red-file-every-log-a-manifest-cites-exists-under-the-run-directory-landing">
+  <h2>Every log a manifest cites exists under the run directory</h2>
+
+  <p><strong>What changed.</strong> The manifest check judges a suite arm's
+  revision as a git object id: prose and an abbreviation of an object id are
+  refused, because a spelling cannot be compared with the base the arm must
+  match. The log-location test's fixture cited the seven-character
+  <code>abc1234</code> in both arms and wrote the same abbreviation into each
+  log's head, so both accepting cases were refused for the revision rather than
+  judged on where their logs live. The product rule is the one the check states
+  in <code>reckon/crew/manifest_faults.py</code>; the fixture is what encoded
+  the older one.</p>
+
+  <p>The fixture now cites one 40-character object id from a module constant and
+  writes the same id into each log's head, so an arm and its log name one
+  revision and the assertions turn on log location alone. No assertion was
+  deleted or weakened: the four refusals per log field (scratch, missing,
+  directory, symlink), the acceptance of every field under the run directory in
+  both absolute and relative spelling, and the relative escape are unchanged.</p>
+
+  <h3 id="qwnw-red-file-every-log-a-manifest-cites-exists-under-the-run-directory-measured">Measured</h3>
+
+  <p>Reproduction at base <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>,
+  run over a scratch extraction of that revision: <code>2 failed, 17 passed
+  in 0.62s</code>, <code>EXIT=1</code>. Both failing ids name the abbreviated
+  revision:</p>
+
+  <pre id="qwnw-red-file-every-log-a-manifest-cites-exists-under-the-run-directory-failing-ids">FAILED tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py::test_check_accepts_all_logs_under_its_run_directory[False]
+FAILED tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py::test_check_accepts_all_logs_under_its_run_directory[True]
+baseline_suite.revision 'abc1234' is not a commit object id: an arm's revision is the id the command ra...</pre>
+
+  <table id="qwnw-red-file-every-log-a-manifest-cites-exists-under-the-run-directory-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's test file, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>2 failed, 17 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's test file, head</td>
+        <td><code>fb364da3c6e6d953f0e1bd88ae719f2135a24dc7</code></td>
+        <td>19 passed, <code>EXIT=0</code>, measured as a job on
+        <code>all_debug</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm is <code>crew verify-gate --worker --partition all_debug</code>
+  at <code>fb364da3</code>, whose log records <code>19 passed in 0.46s</code>
+  and <code>EXIT=0</code> on a scratch tree of that revision. The base arm is
+  the same file at <code>42fe90d0</code>, recorded at
+  <code>negative-control-base-run.log</code> beside it.</p>
+</section>
