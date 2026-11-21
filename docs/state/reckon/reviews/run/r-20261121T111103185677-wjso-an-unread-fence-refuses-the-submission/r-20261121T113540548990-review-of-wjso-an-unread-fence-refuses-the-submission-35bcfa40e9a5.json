@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/host_shims/sbatch",
+    "reckon/host_shims/srun",
+    "reckon/host_shims/salloc"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T11:37:31Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T111103185677-wjso-an-unread-fence-refuses-the-submission/manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "summary": "the gate ran one file that imports nested_launch plus two that do not (test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py import only reckon.interface_counts), leaving 17 of the 18 files the done_when names unmeasured; the population was measurable and clean, but the recorded receipt did not establish it."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": 744,
+      "severity": "non-blocking",
+      "summary": "the refusal now fires for any ancestor whose environ cannot be read, so a fence-free tree terminating at a process owned by another user (a root-owned init or sshd parent on a bare host) can no longer be passed through, and a coordinator submission there is refused; the plan section sanctions this, and in this fleet's pid namespace the root is the user-owned fence init, so the case is not exercised by the tests."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 read commit 35bcfa40e9 against cfee1a02: one commit, two files, +170/-22; the walk's termination contract changes, main() turns the new error into a FenceUnestablishedError refusal, and the tests add a fabricated-tree reader stub plus three cases.",
+    "done_when": "pass \u2014 the three added cases exist (tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py:443 test_j, :465 test_k, :484 test_l), the negative-control log shows test_j and test_k failing at base cfee1a02 with the job forwarded, and the done_when's population measure holds: I ran the 18 files importing nested_launch at base (24 failed, 267 passed) and at head (24 failed, 270 passed) with an identical failure-id set, so zero were added.",
+    "goal": "pass \u2014 the node goal is \"refuse a submission whose fence search stopped before the top of its process tree\"; reckon/nested_launch.py:706-745 returns empty only at kernel pid 0 and raises AncestryIncompleteError for an unreadable parent, a repeated pid or the bound, and main() refuses at reckon/nested_launch.py:1286-1296 before any binary is resolved.",
+    "manifest": "pass \u2014 read; it records status complete, the scoped gate (3 files, 70 passed, exit 0), baseline 67 passed, after 70 passed, and names each log on disk; its baseline_suite and after_suite carry empty failure_ids, which I cross-checked against the log tails.",
+    "write_paths": "pass \u2014 the manifest declares 7 paths; the diff touches only reckon/nested_launch.py and tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py, both inside that set, and no declared path outside it is modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the node goal is \"refuse a submission whose fence search stopped before the top of its process tree\"; reckon/nested_launch.py:706-745 returns empty only at kernel pid 0 and raises AncestryIncompleteError for an unreadable parent, a repeated pid or the bound, and main() refuses at reckon/nested_launch.py:1286-1296 before any binary is resolved.\nVERDICT done_when: pass \u2014 the three added cases exist (tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py:443 test_j, :465 test_k, :484 test_l), the negative-control log shows test_j and test_k failing at base cfee1a02 with the job forwarded, and the done_when's population measure holds: I ran the 18 files importing nested_launch at base (24 failed, 267 passed) and at head (24 failed, 270 passed) with an identical failure-id set, so zero were added.\nVERDICT write_paths: pass \u2014 the manifest declares 7 paths; the diff touches only reckon/nested_launch.py and tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py, both inside that set, and no declared path outside it is modified.\nVERDICT manifest: pass \u2014 read; it records status complete, the scoped gate (3 files, 70 passed, exit 0), baseline 67 passed, after 70 passed, and names each log on disk; its baseline_suite and after_suite carry empty failure_ids, which I cross-checked against the log tails.\nVERDICT diff: pass \u2014 read commit 35bcfa40e9 against cfee1a02: one commit, two files, +170/-22; the walk's termination contract changes, main() turns the new error into a FenceUnestablishedError refusal, and the tests add a fabricated-tree reader stub plus three cases.\nCALL_SITES: reckon/host_shims/sbatch, reckon/host_shims/srun, reckon/host_shims/salloc\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:744 raises on an unreadable parent and :1286 refuses in main(), which is exactly the early-stop refusal the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the recorded gate at manifest.md:11 runs tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py plus two files that do not import nested_launch, covering 1 of the 18 files the done_when names, though the full population measures zero added failures when run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: only reckon/nested_launch.py and tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py changed, both declared, and nothing outside the goal's refusal path is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py:458 asserts the real binary was never resolved and :480 that the bound is named, both of which redden if the walk's `return {}` terminations are restored, as the base arm's 2 failed shows.\nSCORE fit: 18\nJUSTIFICATION fit: ruff check and format are clean at both revisions, the commit carries a conventional subject with a body stating the defect and the fix, and the docstrings at reckon/nested_launch.py:694-703 were updated to match the new contract.\nSCORE reuse: 18\nJUSTIFICATION reuse: the walk keeps reading the link through reckon/hooks/coordinator_obligations.py:369 and the environment through reckon/crew/process_signal.py rather than adding a third parser, and the refusal message reuses FenceUnestablishedError.refusal.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T111103185677-wjso-an-unread-fence-refuses-the-submission/manifest.md:11 non-blocking: the gate ran one file that imports nested_launch plus two that do not (test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py import only reckon.interface_counts), leaving 17 of the 18 files the done_when names unmeasured; the population was measurable and clean, but the recorded receipt did not establish it.\nFINDING reckon/nested_launch.py:744 non-blocking: the refusal now fires for any ancestor whose environ cannot be read, so a fence-free tree terminating at a process owned by another user (a root-owned init or sshd parent on a bare host) can no longer be passed through, and a coordinator submission there is refused; the plan section sanctions this, and in this fleet's pid namespace the root is the user-owned fence init, so the case is not exercised by the tests.",
+  "review_run_id": "r-20261121T113540548990-review-of-wjso-an-unread-fence-refuses-the-submission-35bcfa40e9a5",
+  "reviewed_base_sha": "cfee1a029c86c79d279b1a8d6f4a31a95994a99e",
+  "reviewed_head_sha": "35bcfa40e9a540efc66336e75782ecb7c689301c",
+  "reviewed_node": "wjso-an-unread-fence-refuses-the-submission",
+  "reviewed_run_id": "r-20261121T111103185677-wjso-an-unread-fence-refuses-the-submission",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T11:50:35.692190+00:00",
+  "total": 107
+}
