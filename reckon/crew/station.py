@@ -1209,6 +1209,9 @@ class Station:
         pass outside one records none rather than a fabricated zero.
         """
         self._measure_stage(time.monotonic())
+        if not self._stage_durations:
+            # The pass never entered a stage, so it has no duration to publish.
+            return
         slowest = max(self._stage_durations, key=self._stage_durations.get)
         record = {
             "started_at": self._tick_started_at,
@@ -1327,6 +1330,10 @@ class Station:
             # the tick paid for it. It closes before the tick is recorded, so
             # the counts describe derivation rather than the record written
             # after it.
+            # The measurement belongs to this pass alone. A pass that never
+            # enters a stage measured nothing, and recording the previous
+            # tick's stages against it would publish a duration it did not run.
+            self._stage_durations = {}
             with file_memo.counting() as counts:
                 published = self._tick(now=now)
             finished = self.clock().astimezone(UTC).isoformat()
