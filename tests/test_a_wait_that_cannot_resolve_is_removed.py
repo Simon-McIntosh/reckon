@@ -19,7 +19,9 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import obligations as obligations_module
 from reckon.crew import promotion, queue_admission, runs
+from reckon.crew.admission import verdicts as verdicts_module
 from reckon.crew.node import TaskNode
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
 
@@ -150,6 +152,25 @@ def test_a_request_whose_upstream_plan_is_superseded_is_retired(repo: Path) -> N
     assert "superseded" in str(record.get("reason") or "")
     assert f"{PLAN}#s1" in str(record.get("reason") or "")
 
+    # The pass's own record is what tells the owner: the retired request has no
+    # pointer left to read, so the retirement travels on the pass record and
+    # appears once among the owner's duties.
+    pass_record = verdicts_module._pass_verdict_record(
+        {"retired": outcome["retired"]}, lane="local", code_stamp="gate"
+    )
+    assert pass_record is not None
+    assert pass_record["retired"] == outcome["retired"]
+    log = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text(json.dumps(pass_record) + "\n", encoding="utf-8")
+
+    view = obligations_module.obligations(PROJECT, SESSION)
+    retired_rows = [
+        row for row in view["obligations"] if row["kind"] == "wait-retired-upstream"
+    ]
+    assert [row["run_id"] for row in retired_rows] == ["r-waiting"]
+    assert "superseded" in retired_rows[0]["reason"]
+
 
 def test_a_request_naming_a_section_its_plan_does_not_carry_is_retired(
     repo: Path,
@@ -183,6 +204,11 @@ def test_an_idle_request_is_reported_once(repo: Path) -> None:
     assert reported["idle_reported_at"]
     assert [row["run_id"] for row in first["obligations"]] == ["r-waiting"]
     assert "nobody is building" in first["obligations"][0]["detail"]
+
+    view = obligations_module.obligations(PROJECT, SESSION)
+    idle_rows = [row for row in view["obligations"] if row["kind"] == "wait-idle"]
+    assert [row["run_id"] for row in idle_rows] == ["r-waiting"]
+    assert "nobody is building" in idle_rows[0]["reason"]
 
     second = queue_admission.advance_waiting_requests(_live())
     assert second["obligations"] == []
