@@ -30,6 +30,7 @@ from reckon.crew.prompts import (
 from reckon.crew.recovery import (
     PLAN_REVIEW_NODE_PREFIX,
     REVIEW_NODE_PREFIX,
+    _pointer_role,
     _resolve_commit,
     resume_window_refusal,
 )
@@ -63,6 +64,7 @@ from reckon.crew.runs import (
     run_dir,
     unmergeable_patterns,
 )
+from reckon.crew.worker_behaviour import IMPLEMENT_ROLE
 
 
 def _shadow_mask_paths(
@@ -1502,7 +1504,7 @@ def resume_plan(
             # A resume continues the same node, so it owes what that node was
             # dispatched for rather than the implement default: a review run
             # resumed without its role would owe a review of its own.
-            behaviour_role=_recorded_role(record),
+            behaviour_role=_pointer_role(record) or IMPLEMENT_ROLE,
             unmergeable_patterns=_resume_unmergeable_patterns(record),
             masked_paths=_shadow_masks_for_record(record),
         )
@@ -1628,23 +1630,6 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
         requires_decisions=[str(key) for key in data.get("requires_decisions") or ()],
         images=[str(path) for path in data.get("images") or ()],
     )
-
-
-def _recorded_role(record: Mapping[str, Any]) -> str:
-    """The role a run was dispatched for, read from its own record.
-
-    Dispatch writes the role on the pointer root and on the recorded node, so
-    either spelling answers; a record written before either existed names no
-    role and a resumed or moved launch then keeps the implement default. The
-    record is read rather than the current configuration because the role
-    decides what the attempt owes, and a later change to the node's role must
-    not restate what this run was dispatched for.
-    """
-    from reckon.crew.worker_behaviour import IMPLEMENT_ROLE
-
-    node = record.get("node")
-    role = str((node if isinstance(node, Mapping) else {}).get("role") or "")
-    return role or str(record.get("role") or "") or IMPLEMENT_ROLE
 
 
 # How long one read-only git query inside a worktree may take. A handoff
@@ -2140,7 +2125,7 @@ def change_lane(
                 worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
                 # The moved attempt runs the same node, so it keeps the role
                 # the run was dispatched for across the lane change.
-                behaviour_role=_recorded_role(record),
+                behaviour_role=_pointer_role(record) or IMPLEMENT_ROLE,
                 unmergeable_patterns=_resume_unmergeable_patterns(record),
                 masked_paths=_shadow_masks_for_record(record),
             )

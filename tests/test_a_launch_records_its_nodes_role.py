@@ -44,7 +44,7 @@ CONFIG = {
             "time_budget": "25m",
         }
     },
-    "roles": {"implement": {}, "review": {}},
+    "roles": {"implement": {}, "review": {}, "investigate": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
 
@@ -57,6 +57,18 @@ REVIEW = {
 IMPLEMENT = {
     "role": "implement",
     "review_duty": True,
+    "landing_treatment": "promoted-under-its-lane",
+}
+
+# A role that is neither of the two the plan names. Its recorded treatment
+# differs from the implement default in every fact, so a launch that leaves the
+# role at that default cannot record it: these cases are the control that the
+# role is threaded through the call site rather than merely agreeing with it.
+# An implement node reads identically whether or not the role is passed, so its
+# cases pin the contract and this one discriminates the wiring.
+INVESTIGATE = {
+    "role": "investigate",
+    "review_duty": False,
     "landing_treatment": "promoted-under-its-lane",
 }
 
@@ -247,6 +259,12 @@ def test_a_direct_launch_records_the_implement_role(
     _assert_treatment(_direct_launch(launch_repo, tmp_path, "implement"), IMPLEMENT)
 
 
+def test_a_direct_launch_records_a_role_that_is_not_the_default(
+    launch_repo: Path, tmp_path: Path
+) -> None:
+    _assert_treatment(_direct_launch(launch_repo, tmp_path, "investigate"), INVESTIGATE)
+
+
 # ── A queued request the admission pass launches ───────────────────────────
 
 
@@ -301,6 +319,14 @@ def test_a_queued_admission_records_the_implement_role(
     launch_repo: Path, tmp_path: Path
 ) -> None:
     _assert_treatment(_admitted_launch(launch_repo, tmp_path, "implement"), IMPLEMENT)
+
+
+def test_a_queued_admission_records_a_role_that_is_not_the_default(
+    launch_repo: Path, tmp_path: Path
+) -> None:
+    _assert_treatment(
+        _admitted_launch(launch_repo, tmp_path, "investigate"), INVESTIGATE
+    )
 
 
 # ── A resume ───────────────────────────────────────────────────────────────
@@ -381,4 +407,13 @@ def test_a_resumed_launch_records_the_implement_role(
 ) -> None:
     _assert_treatment(
         _resumed_launch(launch_repo, tmp_path, "implement", monkeypatch), IMPLEMENT
+    )
+
+
+def test_a_resumed_launch_records_a_role_that_is_not_the_default(
+    launch_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _assert_treatment(
+        _resumed_launch(launch_repo, tmp_path, "investigate", monkeypatch),
+        INVESTIGATE,
     )
