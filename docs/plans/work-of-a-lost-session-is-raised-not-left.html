@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="77">
+<meta name="plan-version" content="78">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -513,6 +513,9 @@ head.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261121T071821921087-review-of-wlsr-a-raised-decision-uses-the-decisions-store-66350a172713" data-who="reckon-build" data-when="2026-11-21T07:27:09.206Z">
     <div class="r-comment-body"><p>Review of r-20261121T064900360346-wlsr-a-raised-decision-uses-the-decisions-store at base 65c0479b148ed98dc63a2d0a9a520931390f61b7..head 66350a172713820107ee7975bc81ac0e42d8b2c5 stored as a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 20, durability 14, fit 18, reuse 19 with added_failure_count 0 and added_failure_ids [] and one non-blocking finding: the store-read test at tests/test_a_lost_sessions_work_is_raised.py:194 cannot fail on the bespoke-write regression it nominally guards.</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261121T064900360346-wlsr-a-raised-decision-uses-the-decisions-store" data-who="reckon-build" data-when="2026-11-21T07:18:18.372Z">
+    <div class="r-comment-body"><p>The lost-session decision is now raised and validated by the decisions store itself: record_decision_at validates the question and writes under the session&#x27;s own identity, close_decision_at persists the answer, and request_identity is the single statement of a request&#x27;s plan and section; an adopt naming a session with no live process is refused with the pointer unchanged, an adopt of a run whose pointer has gone returns the store&#x27;s decision error rather than a traceback, and the landing skip is now exercised through the lander itself; scoped gate 11 passed, EXIT=0, suite base 65 passed / head 69 passed, both EXIT=0, negative control 1 failed, EXIT=1.</p></div>
 </div>
 </section>
 </main>
