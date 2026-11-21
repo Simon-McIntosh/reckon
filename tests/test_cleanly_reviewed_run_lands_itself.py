@@ -15,7 +15,12 @@ from reckon import _plan_html, ledger
 from reckon.crew import landing_measure, pending_landing, recovery, runs
 from reckon.crew import review as review_module
 from tests.helpers.git import git as _git
-from tests.helpers.landing_repository import PLAN, PROJECT, _write_origin_and_checkout
+from tests.helpers.landing_repository import (
+    PLAN,
+    PROJECT,
+    _write_origin_and_checkout,
+    in_place_scheduler,
+)
 
 RUN = "r-clean-delivery"
 
@@ -113,22 +118,7 @@ def delivery(tmp_path, isolated_reckon_home, monkeypatch):
     )
     review_module.store_review(record)
     submissions = []
-
-    def scheduler(argv, **options):
-        """Execute the partition's exact archive script in this test's allocation."""
-        options.pop("check", None)
-        if argv[0] != "sbatch":
-            return subprocess.run(argv, check=False, **options)
-        submissions.append(argv)
-        assert "--partition=all_debug" in argv
-        step = shlex.split(argv[argv.index("--wrap") + 1])
-        script = step[step.index("-c") + 1]
-        destination = Path(step[step.index(">>") + 1])
-        assert destination.is_file() and not destination.is_symlink()
-        completed = subprocess.run(["bash", "-c", script], check=False, **options)
-        with destination.open("a", encoding="utf-8") as stream:
-            stream.write((completed.stdout or "") + (completed.stderr or ""))
-        return subprocess.CompletedProcess(argv, completed.returncode, "12345\n", "")
+    scheduler = in_place_scheduler(submissions)
 
     # The test gate itself is allocated on all_debug. Only scheduler transport
     # is replaced: checkout construction, the command and receipt reading run.
@@ -186,6 +176,7 @@ def test_a_clean_review_lands_and_records_the_measured_head(delivery):
     assert outcome["gate_report"]["integrated_verdict"] == "passed"
     assert Path(outcome["gate_report"]["log_path"]).read_text().endswith("EXIT=0\n")
     assert delivery["submissions"]
+    assert all("--partition=all_debug" in argv for argv in delivery["submissions"])
     recorded = ledger.runs(PROJECT, root=delivery["repo"])[0]
     assert ledger.runs(PROJECT)[0]["run_id"] == RUN
     assert recorded["integrated_gate_check"]["integrated_verdict"] == "passed"

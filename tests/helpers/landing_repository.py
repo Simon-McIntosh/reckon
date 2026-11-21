@@ -9,6 +9,8 @@ same fixture without copying it.
 
 from __future__ import annotations
 
+import shlex
+import subprocess
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -19,6 +21,36 @@ from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
+
+
+def in_place_scheduler(seen: list[list[str]] | None = None):
+    """Return a scheduler transport that runs the partition's script in place.
+
+    A merged-head gate is measured on the project's compute partition, so
+    acceptance submits a batch job whose ``--wrap`` argument is the script the
+    product wrote. Only the transport is replaced: the script runs here as the
+    ``bash -c`` the submission asked for, and its output is appended to the log
+    the submission named, so the archive script, the gate command and the
+    ``EXIT=`` receipt a test reads are the product's own. ``seen`` collects the
+    argument vectors when a test asserts what was asked for.
+    """
+
+    def scheduler(argv, **options):
+        options.pop("check", None)
+        if argv[0] != "sbatch":
+            return subprocess.run(argv, check=False, **options)
+        if seen is not None:
+            seen.append(argv)
+        step = shlex.split(argv[argv.index("--wrap") + 1])
+        script = step[step.index("-c") + 1]
+        destination = Path(step[step.index(">>") + 1])
+        assert destination.is_file() and not destination.is_symlink()
+        completed = subprocess.run(["bash", "-c", script], check=False, **options)
+        with destination.open("a", encoding="utf-8") as stream:
+            stream.write((completed.stdout or "") + (completed.stderr or ""))
+        return subprocess.CompletedProcess(argv, completed.returncode, "12345\n", "")
+
+    return scheduler
 
 
 def _write_origin_and_checkout(tmp_path: Path) -> tuple[Path, Path]:

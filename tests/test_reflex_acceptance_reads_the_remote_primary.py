@@ -22,8 +22,6 @@ merge candidate, so the arm below reads a promotion and a published head.
 from __future__ import annotations
 
 import json
-import shlex
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -38,6 +36,7 @@ from tests.helpers.landing_repository import (
     PLAN,
     PROJECT,
     _write_origin_and_checkout,
+    in_place_scheduler,
 )
 
 RUN_ID = "r-20261109T120000000000-reflex-acceptance"
@@ -131,6 +130,7 @@ def _write_run(
     base: str,
     commit: str,
     worktree: Path | None = None,
+    role: str = "implement",
 ) -> None:
     manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -152,7 +152,7 @@ def _write_run(
             "worktree": str(worktree or repository),
             "base_sha": base,
             "launch": "in-harness",
-            "role": "implement",
+            "role": role,
             "backend": "native",
             "created_at": "2026-01-01T00:00:00Z",
             "manifest_path": str(manifest),
@@ -161,30 +161,11 @@ def _write_run(
                 "plan": PLAN,
                 "section": "s7",
                 "time_budget": "25m",
-                "role": "implement",
+                "role": role,
                 "write_paths": ["candidate.txt"],
             },
         },
     )
-
-
-def _local_scheduler(argv, **options):
-    """Run the measure partition's script in this test's allocation.
-
-    Only the scheduler transport is replaced: the archive script, the gate
-    command and the receipt the wrapped script writes are the product's own.
-    """
-    options.pop("check", None)
-    if argv[0] != "sbatch":
-        return subprocess.run(argv, check=False, **options)
-    step = shlex.split(argv[argv.index("--wrap") + 1])
-    script = step[step.index("-c") + 1]
-    destination = Path(step[step.index(">>") + 1])
-    assert destination.is_file() and not destination.is_symlink()
-    completed = subprocess.run(["bash", "-c", script], check=False, **options)
-    with destination.open("a", encoding="utf-8") as stream:
-        stream.write((completed.stdout or "") + (completed.stderr or ""))
-    return subprocess.CompletedProcess(argv, completed.returncode, "12345\n", "")
 
 
 def _sweep() -> dict:
@@ -230,7 +211,7 @@ def test_a_run_only_on_local_main_is_landed_by_acceptance(
     remote carries the reviewed head rather than being left behind by a
     checkout whose own push failed.
     """
-    monkeypatch.setattr(landing_measure, "_RUN", _local_scheduler)
+    monkeypatch.setattr(landing_measure, "_RUN", in_place_scheduler())
     origin, repository = origin_and_repository
     base, commit = _land_run_commit(repository, push=False)
     worker = tmp_path / "run-worktree"
@@ -245,6 +226,33 @@ def test_a_run_only_on_local_main_is_landed_by_acceptance(
     assert rows[0].get("promoted_by") == "review-acceptance"
     assert not pointer_path(RUN_ID).exists()
     _git(origin, "merge-base", "--is-ancestor", commit, "refs/heads/main")
+
+
+def test_a_role_acceptance_does_not_land_keeps_the_unmerged_refusal(
+    origin_and_repository: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Only an implementation is landed by acceptance; another role waits.
+
+    A reviewed run of a role acceptance does not land is refused with the
+    commits the primary branch does not carry, so it waits for a coordinator to
+    merge it rather than being published on a reviewer's say-so. The arm beside
+    this one covers the implementation the same state promotes, so both halves
+    of the rule are asserted.
+    """
+    _origin, repository = origin_and_repository
+    base, commit = _land_run_commit(repository, push=False)
+    _write_run(repository, tmp_path, base=base, commit=commit, role="test")
+    _store_review(base=base, head=commit)
+
+    report = _sweep()
+
+    assert report["accepted"] == [], report
+    refusal = _refusal_for(report)
+    assert refusal["accepted"] is False
+    assert refusal["unmerged_commits"] == [commit]
+    assert "not on the primary branch yet" in refusal["reason"]
+    assert pointer_path(RUN_ID).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
 
 
 def test_a_run_whose_commits_are_on_the_remote_is_promoted(

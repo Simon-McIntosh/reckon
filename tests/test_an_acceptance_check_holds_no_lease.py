@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import shlex
 import subprocess
 import sys
 import threading
@@ -17,6 +16,7 @@ from reckon import ledger
 from reckon.crew import landing_measure, merge, promotion, review, runs
 from reckon.crew import recovery_review_acceptance as acceptance
 from tests.helpers.git import git
+from tests.helpers.landing_repository import in_place_scheduler
 from tests.test_reflex_acceptance_reads_the_remote_primary import (
     PROJECT,
     RUN_ID,
@@ -27,28 +27,6 @@ from tests.test_reflex_acceptance_reads_the_remote_primary import (
 from tests.test_reflex_acceptance_reads_the_remote_primary import (
     origin_and_repository as origin_and_repository,  # noqa: PLC0414
 )
-
-
-def _local_scheduler(argv, **options):
-    """Run the measure partition's own script in this test's allocation.
-
-    A merged-head gate is measured on the project's compute partition, so
-    acceptance submits a batch job. Only the scheduler transport is replaced:
-    the archive script, the gate command and the receipt it writes are the
-    product's own.
-    """
-    options.pop("check", None)
-    if argv[0] != "sbatch":
-        return subprocess.run(argv, check=False, **options)
-    step = shlex.split(argv[argv.index("--wrap") + 1])
-    script = step[step.index("-c") + 1]
-    destination = Path(step[step.index(">>") + 1])
-    assert destination.is_file() and not destination.is_symlink()
-    completed = subprocess.run(["bash", "-c", script], check=False, **options)
-    with destination.open("a", encoding="utf-8") as stream:
-        stream.write((completed.stdout or "") + (completed.stderr or ""))
-    return subprocess.CompletedProcess(argv, completed.returncode, "12345\n", "")
-
 
 #: A gate that reports its own failure the way the reader of a measured arm
 #: expects: a ``FAILED`` line naming an id, and a non-zero exit. The seed gate
@@ -103,7 +81,7 @@ def refusing_candidate(
     assert runs.crew_home().is_relative_to(isolated_reckon_home)
     real_pointer = Path.home() / ".config/reckon/crew/live" / f"{RUN_ID}.json"
     assert not real_pointer.exists()
-    monkeypatch.setattr(landing_measure, "_RUN", _local_scheduler)
+    monkeypatch.setattr(landing_measure, "_RUN", in_place_scheduler())
     _origin, repository = origin_and_repository
     base, _commit = _land_run_commit(repository, push=False)
     (repository / "node.txt").write_text("broken\n", encoding="utf-8")
