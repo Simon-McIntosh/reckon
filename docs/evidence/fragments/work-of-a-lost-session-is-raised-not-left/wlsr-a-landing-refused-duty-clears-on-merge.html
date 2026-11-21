@@ -1,0 +1,38 @@
+<section id="wlsr-a-landing-refused-duty-clears-on-merge" class="evidence-fragment">
+  <h2>§22 — A landing-refused duty clears when the run's head is on the primary branch</h2>
+  <p>
+    A landing refusal was raised by the obligations pass from
+    <code>pointer.admission_landing</code> alone: the status was <code>refused</code>,
+    the head matched the run's tree, and a guard was recorded. Nothing in that
+    reading asked whether the head had since reached the primary branch, so a run
+    whose head was merged by hand kept a <code>landing-refused</code> duty until
+    its coordinator acted on evidence the branch already carried.
+  </p>
+  <p>
+    The duty site now asks the departure reader's own ancestry probe
+    (<code>recovery_classification._head_on_primary_branch</code>) against the
+    relational checkout's primary branch, and returns no duty when the head is
+    reached. The failure direction is chosen deliberately: an unresolvable
+    checkout, an unanswered ancestry walk, or a head the branch cannot be asked
+    about all read as unlanded, so a refusal is never withdrawn on a broken
+    probe.
+  </p>
+  <p id="wlsr-a-landing-refused-duty-clears-on-merge-measure">
+    Measure: the focused gate
+    <code>python -m pytest -q tests/test_a_landing_refused_duty_clears_on_merge.py</code>
+    reports <strong>3 passed</strong>: the refusal is listed with the head
+    unmerged, the next read lists none after the head is merged, and a second
+    read with the head still unmerged keeps the duty. At the base revision the
+    merged head still lists the duty, which is the recorded refusal this node
+    repairs.
+  </p>
+  <p>
+    Three landing fixtures delivered their commit directly on <code>main</code>
+    while the run's <code>worktree</code> was that same checkout, so every one of
+    them modelled a run whose delivery was already landed and still owed a
+    refusal. They now deliver on the run's own worktree branch and the run's
+    pointer names that worktree, which is what an unmerged delivery looks like;
+    the base checkout the scope derivation reads is a real checkout rather than
+    an empty directory, as the derivation now reads commit objects from it.
+  </p>
+</section>
