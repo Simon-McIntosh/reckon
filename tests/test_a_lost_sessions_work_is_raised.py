@@ -158,7 +158,14 @@ def test_emptying_the_store_makes_the_raise_write_more_than_once(
     assert len(writes) > 1, f"the control must count more than one write: {writes}"
 
 
-def test_an_adopt_answer_moves_ownership_to_the_adopter(admit_repo: Path) -> None:
+def test_an_adopt_answer_moves_ownership_to_the_adopter(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon.crew import lost_sessions
+
+    monkeypatch.setattr(
+        lost_sessions, "live_process_sessions", lambda sessions: {LIVE_SESSION}
+    )
     _config, resolve = _config_for()
     _pointers(admit_repo)
     _admit(resolve, _launcher([]))
@@ -181,6 +188,85 @@ def test_an_adopt_answer_moves_ownership_to_the_adopter(admit_repo: Path) -> Non
     ]
     assert record["id"] not in {d["id"] for d in _decisions()}, (
         "an answered decision leaves the open view"
+    )
+
+
+def test_the_raised_decision_is_read_and_validated_by_the_store(
+    admit_repo: Path,
+) -> None:
+    """The decision is the decisions store's own record, not one beside it."""
+    from reckon.crew.lead_decisions import read_decisions, validate_decision
+
+    _config, resolve = _config_for()
+    _pointers(admit_repo)
+    result = _admit(resolve, _launcher([]))
+
+    written = result["lost_session_decision"]["written"]
+    assert len(written) == 1, written
+    view = read_decisions(PROJECT)
+    rows = [row for row in view["decisions"] if row["id"] == written[0]]
+    assert rows, view
+    validated = validate_decision(rows[0])
+    assert validated["project"] == PROJECT
+    assert validated["session"] == LOST_SESSION
+    assert {row["run_id"] for row in rows[0]["records"]} == {
+        "r-lost-queued",
+        "r-lost-blocked",
+        "r-lost-finished",
+    }
+
+
+def test_an_adopt_naming_a_session_with_no_live_process_is_refused(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon.crew import lost_sessions
+
+    monkeypatch.setattr(lost_sessions, "live_process_sessions", lambda sessions: set())
+    _config, resolve = _config_for()
+    _pointers(admit_repo)
+    _admit(resolve, _launcher([]))
+    record = _decisions()[0]
+    before = runs.read_pointer("r-lost-queued")
+
+    with pytest.raises(ValueError, match="no live process"):
+        raised.answer_decision(
+            record["id"],
+            {"r-lost-queued": {"action": "adopt", "session": "ghost-session"}},
+        )
+
+    assert runs.read_pointer("r-lost-queued") == before, (
+        "a refused adopt leaves the pointer untouched"
+    )
+    assert record["id"] in {d["id"] for d in _decisions()}, (
+        "a refused answer leaves the decision open"
+    )
+
+
+def test_an_answer_naming_a_vanished_run_returns_the_decision_error(
+    admit_repo: Path,
+) -> None:
+    from click.testing import CliRunner
+
+    from reckon.cli import main
+
+    _config, resolve = _config_for()
+    _pointers(admit_repo)
+    _admit(resolve, _launcher([]))
+    record = _decisions()[0]
+
+    result = CliRunner().invoke(
+        main,
+        ["crew", "decision", "answer", "--id", record["id"], "--answers", "-"],
+        input=json.dumps({"r-vanished": {"action": "retire"}}),
+    )
+
+    assert result.exit_code == 1, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["error"] == "decision_error"
+    assert "r-vanished" in payload["detail"]
+    assert record["id"] in {d["id"] for d in _decisions()}, (
+        "a refused answer leaves the decision open"
     )
 
 
@@ -273,6 +359,31 @@ def test_a_landing_of_a_lost_sessions_member_is_skipped_not_refused(
     )
 
 
+def test_the_lander_skips_a_lost_sessions_delivery_and_records_the_reason(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The skip is reached through the lander, not only by calling it direct."""
+    from contextlib import nullcontext
+
+    from reckon.crew import queue_admission, queue_landing
+
+    _config, resolve = _config_for()
+    _pointers(admit_repo)
+    _admit(resolve, _launcher([]))
+    monkeypatch.setattr(queue_admission, "plan_read_scopes", nullcontext)
+
+    result = queue_landing.land_once()
+
+    skipped = {
+        row["run_id"]: row
+        for row in result.get("skipped") or ()
+        if row.get("status") == "lost-session"
+    }
+    assert "r-lost-blocked" in skipped, result
+    assert "lost" in skipped["r-lost-blocked"]["reason"]
+    assert result["landed"] == []
+
+
 # --------------------------------------------------------------------------
 # A stranded request is retired by the wait rule, not raised by this one.
 # --------------------------------------------------------------------------
@@ -287,7 +398,7 @@ def _chain_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def test_a_stranded_request_is_retired_and_absent_from_the_decision(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """§5 retires the stranded request; §4 does not list it.
+    """The stranded request is retired by the wait rule, not listed here.
 
     The lost session owns both a request whose upstream can never land and an
     implement request whose work is still live. The first is retired by the wait

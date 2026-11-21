@@ -28,8 +28,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon._store import write_json_atomically
-
 from . import runs
 from .run_paths import crew_home
 from .runs import parse_utc
@@ -85,7 +83,10 @@ def _decisions_dir() -> Path:
 
 
 def decision_path(session: str) -> Path:
-    return _decisions_dir() / f"{decision_id(session)}.json"
+    """The store's own path for one session's raised decision."""
+    from .lead_decisions import decision_path as store_decision_path
+
+    return store_decision_path(decision_id(session))
 
 
 def _read(path: Path) -> dict[str, Any] | None:
@@ -146,13 +147,10 @@ def _age_hours(pointer: Mapping[str, Any], moment: datetime) -> float | None:
 
 
 def _identity(pointer: Mapping[str, Any]) -> tuple[str, str]:
-    node = pointer.get("node") or {}
-    options = pointer.get("dispatch_options") or {}
-    plan = str(
-        pointer.get("plan") or node.get("plan") or options.get("plan_slug") or ""
-    )
-    section = str(pointer.get("section") or node.get("section") or "").removeprefix("#")
-    return plan, section
+    """The plan and section a request names, resolved by the decisions store."""
+    from .lead_decisions import request_identity
+
+    return request_identity(pointer)
 
 
 def _holds_back(pointer: Mapping[str, Any]) -> str:
@@ -301,10 +299,10 @@ def raise_lost_session_work(
                 "held_requests": [row["run_id"] for row in rows],
                 "modified": now.isoformat(),
             }
+            recorded_at = existing.get("recorded_at")
         else:
             first = rows[0]
             record = {
-                "id": decision_id(session),
                 "source": "crew",
                 "project": first["project"],
                 "session": session,
@@ -332,7 +330,6 @@ def raise_lost_session_work(
                     "removes the request or records the run's disposition"
                 ),
                 "choice": "",
-                "recorded_at": now.isoformat(),
                 "modified": now.isoformat(),
                 SESSION_FIELD: session,
                 "last_heard_at": answer.get("last_heard_at"),
@@ -345,9 +342,13 @@ def raise_lost_session_work(
                 ),
                 "answers": {},
             }
-            path.parent.mkdir(parents=True, exist_ok=True)
-        write_json_atomically(path, record, fsync_directory=True)
-        written.append(str(record["id"]))
+            recorded_at = None
+        from .lead_decisions import record_decision_at
+
+        stored = record_decision_at(
+            record, decision_id=decision_id(session), recorded_at=recorded_at
+        )
+        written.append(str(stored["id"]))
     return {
         "written": written,
         "unchanged": unchanged,
@@ -376,6 +377,33 @@ def _answer_entries(answers: Any) -> dict[str, dict[str, Any]]:
     return normalised
 
 
+def _refuse_unlive_adopters(entries: Mapping[str, Mapping[str, Any]]) -> None:
+    """An adopt names a session a live process must carry, or it is refused.
+
+    Adopting into a session nothing carries would move a record from a lost
+    session to another lost one, which is the very state the decision exists to
+    resolve. The reading is the process table's own, so a name that merely
+    looks like a session cannot take ownership of anybody's work.
+    """
+    adopters = sorted(
+        {
+            str(entry.get("session") or "")
+            for entry in entries.values()
+            if entry and entry.get("action") == ADOPT
+        }
+    )
+    if not adopters:
+        return
+    from . import lost_sessions
+
+    live = lost_sessions.live_process_sessions(adopters)
+    for adopter in adopters:
+        if adopter not in live:
+            raise ValueError(
+                f"adopt names session {adopter!r}, which no live process carries"
+            )
+
+
 def answer_decision(
     record_id: str,
     answers: Mapping[str, Any],
@@ -386,10 +414,12 @@ def answer_decision(
     """Answer a raised decision per record: adopt or retire each one.
 
     An adopt moves the record's ownership to the named live session, so that
-    session's view lists the run and the lost session's does not. A retire
-    removes a request with a discard record and records a run's disposition
-    without promoting it. The record then carries its answers and is closed, so
-    it leaves the open view; the answers themselves are the audit.
+    session's view lists the run and the lost session's does not; an adopt
+    naming a session no live process carries is refused. A retire removes a
+    request with a discard record and records a run's disposition without
+    promoting it. An answer naming a run whose pointer has gone is refused
+    before anything is written. The record then carries its answers and is
+    closed, so it leaves the open view; the answers themselves are the audit.
     """
     now = datetime.now(tz=UTC) if moment is None else moment
     path = _decisions_dir() / f"{record_id}.json"
@@ -400,6 +430,14 @@ def answer_decision(
         raise ValueError(f"decision {record_id!r} is already answered")
     entries = _answer_entries(answers)
     session = str(record.get(SESSION_FIELD) or "")
+    # Validate every answer before writing any of them, so a refused answer
+    # leaves every pointer and the decision record exactly as they were found.
+    _refuse_unlive_adopters(entries)
+    for run_id in sorted(entries):
+        if not runs.pointer_path(run_id).is_file():
+            raise ValueError(
+                f"no live run {run_id!r} (looked in {runs.pointer_path(run_id)})"
+            )
     moved: list[str] = []
     retired: list[str] = []
     for run_id, entry in sorted(entries.items()):
@@ -438,7 +476,9 @@ def answer_decision(
         "answered_at": now.isoformat(),
         "modified": now.isoformat(),
     }
-    write_json_atomically(path, closed, fsync_directory=True)
+    from .lead_decisions import close_decision_at
+
+    close_decision_at(closed, decision_id=record_id)
     return {
         "ok": True,
         "decision_id": record_id,
