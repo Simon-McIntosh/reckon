@@ -207,12 +207,11 @@ def test_a_running_coordinator_process_reads_live_whatever_its_lease(
 def ten_day_process(home):
     """A real process carrying the long-lived session id, lease a minute old.
 
-    A process started by a test cannot be ten days old, so the case that names a
-    ten-day process is reddened by an applied mutation rather than by a live
-    fixture: replacing the derivation's clock with the process's start instant
-    makes the derivation keyed on process age, and the log beside this file
-    records that run failing. What the file can do is forbid the derivation from
-    reading a start time at all, which is the guard below.
+    A process a test starts is seconds old, so the ten-day age the case names is
+    put on it through the repository's own reader: the start instant the sweep
+    would report for this pid is backdated, which is the same seam any
+    process-age-keyed derivation reads. The process itself is real, it really
+    carries the id, and its lease is really a minute old.
     """
 
     process = subprocess.Popen(
@@ -231,34 +230,92 @@ def ten_day_process(home):
     process.wait(timeout=10)
 
 
+def _backdate(monkeypatch: pytest.MonkeyPatch, pid: int, days: float) -> float:
+    """Make the repository's start reader report ``pid`` as ``days`` old."""
+
+    started = NOW.timestamp() - days * 24 * HOUR
+
+    def reported(target: Any) -> float | None:
+        return started if int(target) == pid else None
+
+    monkeypatch.setattr(gc, "_process_start_epoch", reported)
+    return started
+
+
+def _keyed_on_process_age(session: str, *, now: datetime) -> bool:
+    """The derivation the plan names as the mutation, executed.
+
+    It reads the same evidence a wrong implementation would read -- the start
+    instant of the process carrying the session id -- through the repository's
+    own reader, and compares that instant to the horizon.
+    """
+
+    carried = [entry for entry in Path("/proc").iterdir() if str(entry.name).isdigit()]
+    for entry in carried:
+        try:
+            raw = (entry / "cmdline").read_bytes()
+        except OSError:
+            continue
+        if session.encode() in raw.split(b"\0"):
+            started = gc._process_start_epoch(int(entry.name))
+            if started is not None:
+                return (now.timestamp() - started) > 72 * HOUR
+    return False
+
+
 def test_a_ten_day_process_with_a_fresh_lease_reads_live(
     ten_day_process, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The process's age is never read; only the instant the session was heard.
 
-    The lease says a minute ago and the process carrying the id is ten days old
-    -- never restarted. The session reads live because it was heard. The two
-    start-time readers the repository owns are then made to raise, so any read
-    of a process's age fails this case: neither the gc sweep's reader nor the
-    liveness reader may be reached by this derivation.
+    The process carrying the id is backdated ten days through the repository's
+    own start reader, and never restarted; its lease says a minute ago. Under
+    that evidence the process-age derivation reads the session lost, while the
+    derivation under test reads it live off the lease. The two answers differ on
+    one fixture, which is what makes this case able to fail. The start readers
+    are then made to raise, so a derivation that reaches for a process's age at
+    all fails here rather than passing by accident.
     """
 
-    # The repository's own reader, over the real process: the evidence a
-    # process-age-keyed derivation would consume, shown to be readable.
+    _backdate(monkeypatch, ten_day_process.pid, 10)
+
     started = gc._process_start_epoch(ten_day_process.pid)
-    assert started is not None
-    assert abs(time.time() - started) < 60.0
+    assert started == NOW.timestamp() - 10 * 24 * HOUR
+
+    assert _keyed_on_process_age(LONG_LIVED_SESSION, now=NOW) is True, (
+        "the process-age derivation must read the ten-day process as lost, or "
+        "this case could not fail on the regression it names"
+    )
+
+    answer = lost_sessions.session_lost(PROJECT, LONG_LIVED_SESSION, now=NOW)
+    assert answer["lost"] is False, answer
+    assert answer["last_heard_at"] == NOW.isoformat(), answer
 
     def never_read(*_arguments: Any, **_keywords: Any) -> float | None:
         raise AssertionError("the derivation read a process start time")
 
     monkeypatch.setattr(gc, "_process_start_epoch", never_read)
     monkeypatch.setattr(process_liveness, "_process_start_time", never_read)
+    assert (
+        lost_sessions.session_lost(PROJECT, LONG_LIVED_SESSION, now=NOW)["lost"]
+        is False
+    )
 
-    answer = lost_sessions.session_lost(PROJECT, LONG_LIVED_SESSION, now=NOW)
 
-    assert answer["lost"] is False, answer
-    assert answer["last_heard_at"] == NOW.isoformat(), answer
+def test_the_derivation_carries_no_second_process_start_reader() -> None:
+    """One reader for a process's start instant, and it is not this module's.
+
+    A second copy drifts silently: the one this derivation first carried split
+    the stat record on whitespace, so a command name holding a space shifted
+    every later field and the instant read wrong for exactly the case its own
+    docstring claimed to handle. The repository already owns the reader, so this
+    module must not grow another.
+    """
+
+    assert not hasattr(lost_sessions, "process_started_at")
+    source = Path(lost_sessions.__file__).read_text()
+    assert "btime" not in source
+    assert "SC_CLK_TCK" not in source
 
 
 def test_the_directory_carries_the_three_fields(home) -> None:
