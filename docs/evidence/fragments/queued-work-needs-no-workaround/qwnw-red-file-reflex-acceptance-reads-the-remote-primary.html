@@ -1,0 +1,94 @@
+<section id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-landing">
+  <h2>The reflex-acceptance file passes in full at head</h2>
+
+  <p><strong>What changed.</strong> Two causes in
+  <code>tests/test_reflex_acceptance_reads_the_remote_primary.py</code>, both in
+  the test and neither in the product. No product file changed.</p>
+
+  <p><strong>Cause one: the arm asserted a refusal the product stopped
+  producing.</strong> The file's first arm recorded a run with
+  <code>"role": "implement"</code> whose commits the remote did not carry, and
+  expected the sweep to refuse with <code>unmerged_commits</code>. Acceptance
+  now lands an implementation itself —
+  <code>automatic_land = bool(missing and implementation)</code> in
+  <code>accept_clean_review</code> — so that refusal survives only for a role
+  acceptance does not land. The base arm reproduces the defect as
+  <code>KeyError: 'unmerged_commits'</code> on
+  <code>test_a_run_only_on_local_main_is_not_promoted</code>, with 11 of the
+  file's 12 tests passing beside it.</p>
+
+  <p><strong>Cause two: the fixture named the project checkout as the run's
+  worktree.</strong> A promotion writes its own ledger row onto the primary
+  branch, so a run whose worktree <em>is</em> that checkout finds it moved when
+  the landing is judged: with the measure transport stubbed, the arm reached the
+  land step and was refused with <em>the run's worktree … is at
+  &lt;promotion row&gt;, which is neither the reviewed head &lt;head&gt; being
+  merged nor an ancestor of it</em>. The same arm reached
+  <code>sbatch --wait --parsable --partition=all_debug</code> without providing
+  a scheduler, which the repository's session guard records as a teardown
+  error.</p>
+
+  <p><strong>What the file now asserts.</strong> A run only on local
+  <code>main</code> is landed by acceptance: the sweep measures it at its merge
+  candidate and, with the recorded gate still passing there, promotes it, merges
+  the reviewed head and pushes, so the remote carries the work. The arm gives the
+  run its own detached worktree at the reviewed head, replaces only the
+  scheduler transport (partition measurements run the product's own wrap script
+  in this allocation, and the archive script, gate command and
+  <code>EXIT=</code> receipt stay the product's), and asserts the promotion, the
+  pointer's retirement, the ledger row's <code>review-acceptance</code> promoter
+  and <code>git merge-base --is-ancestor &lt;head&gt; refs/heads/main</code> on
+  the bare origin. The shared run writer gained an optional worktree, so the two
+  files that import it are unchanged. No assertion was deleted: the four that
+  read the old refusal were re-expressed against the rule that displaced it.</p>
+
+  <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-measured">Measured</h3>
+
+  <table id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, head arm on <code>all_debug</code></td>
+        <td><code>c635e4ae4eddcd4b5800f6f1c025d0b15df86fb3</code>, the worktree</td>
+        <td>12 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's file, base arm</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, extracted tree</td>
+        <td>1 failed, 11 passed, 1 error, <code>EXIT=1</code></td></tr>
+      <tr><td>the declared suite arm, head</td>
+        <td><code>c635e4ae4eddcd4b5800f6f1c025d0b15df86fb3</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite arm, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>58 passed, <code>EXIT=0</code>, no failure added</td></tr>
+      <tr><td>the importing file, head and base</td>
+        <td>both revisions</td>
+        <td>13 passed, <code>EXIT=0</code> on each arm</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm runs as a job on <code>all_debug</code> (job 1334767) with
+  <code>SLURM_JOB_ID</code> unset. The base arms extract the base revision with
+  <code>git archive</code> into a scratch tree under <code>/tmp</code>, make it a
+  repository so the tree's git-reading tests can answer, and run with
+  <code>SLURM_JOB_ID</code> unset; each log names the module imported and the
+  working directory it resolved from.</p>
+
+  <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-control">Negative control</h3>
+
+  <p>The base run of the node's file is
+  <code>negative-control-base.log</code> in the run directory. Its non-passing
+  ids are <code>test_a_run_only_on_local_main_is_not_promoted</code> — the
+  <code>KeyError: 'unmerged_commits'</code> above — and a teardown error on the
+  same id naming
+  <code>sbatch --wait --parsable --partition=all_debug</code>. The
+  head arm fails neither: the id does not exist at head and no scheduler verb is
+  reached.</p>
+
+  <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-outside">Outside scope</h3>
+
+  <p><code>tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted</code>
+  is red at the same base revision for the same two causes (observed while
+  outside this node's file: 1 failed, 18 passed). It is a different file and was
+  not repaired here.</p>
+</section>
