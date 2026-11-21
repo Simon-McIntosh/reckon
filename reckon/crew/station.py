@@ -1328,7 +1328,8 @@ class Station:
             # the counts describe derivation rather than the record written
             # after it.
             with file_memo.counting() as counts:
-                published, finished = self._tick(now=now)
+                published = self._tick(now=now)
+            finished = self.clock().astimezone(UTC).isoformat()
             self._record_finished_tick(finished, counts)
             self.store.set_station_value(
                 obligation_snapshot.STATION_TICK_FINISHED_AT_KEY, finished
@@ -1345,12 +1346,9 @@ class Station:
             release_freed_memory()
 
     @operational_read
-    def _tick(self, *, now: datetime | None = None) -> tuple[list[dict[str, Any]], str]:
-        """Run one pass, answering what it published and when it finished."""
-        moment = now or self.clock()
-        published = self._tick_work(moment)
-        finished = self.clock().astimezone(UTC).isoformat()
-        return published, finished
+    def _tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
+        """Run one pass, publishing every new transition it observed."""
+        return self._tick_work(now or self.clock())
 
     def _tick_work(self, moment: datetime) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
