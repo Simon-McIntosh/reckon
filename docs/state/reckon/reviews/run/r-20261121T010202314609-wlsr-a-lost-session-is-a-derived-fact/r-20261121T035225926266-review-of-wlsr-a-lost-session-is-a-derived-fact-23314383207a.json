@@ -12,28 +12,24 @@
   "findings": [
     {
       "file": "tests/test_a_lost_session_is_a_derived_fact.py",
-      "id": "f29ec1ac823",
       "line": "283",
       "severity": "non-blocking",
       "text": "the assertion started == NOW.timestamp() - 10*24*HOUR compares the patched reader's output against the same expression _backdate computed it from (days=10), and the companion assertion at :285 that _keyed_on_process_age returns True is arithmetic over that same supplied value, so both are satisfied by construction and guard no production behaviour; the production guard is the raising readers at :297-302."
     },
     {
       "file": "tests/test_a_lost_session_is_a_derived_fact.py",
-      "id": "ff4a6f6a4f9",
       "line": "297",
       "severity": "non-blocking",
       "text": "only two of the repository's process-start readers are patched (reckon/crew/gc.py:794 _process_start_epoch and reckon/crew/process_liveness.py:539 _process_start_time); reckon/crew/host_lease.py:32 _process_start, reckon/crew/census.py:37 and reckon/mcp_deadlines.py:152 also parse a start time and are not patched, so the docstring's claim at :275-277 that a derivation reaching for a process's age at all fails here is broader than the mechanism enforces."
     },
     {
       "file": "tests/test_a_lost_session_is_a_derived_fact.py",
-      "id": "f57f1495b59",
       "line": "305",
       "severity": "non-blocking",
       "text": "the reuse-boundary case is a textual scan of lost_sessions' source for 'btime' and 'SC_CLK_TCK', so a second reader built on os.stat, /proc/<pid>/stat via a helper, or psutil would pass it; the capability is guarded by spelling rather than behaviour."
     },
     {
       "file": "tests/test_a_lost_session_is_a_derived_fact.py",
-      "id": "f5dfc22b099",
       "line": "246",
       "severity": "non-blocking",
       "text": "the docstring says 'The derivation the plan names as the mutation, executed', a reference to the driving plan inside source; the mechanism (a derivation keyed on the carrying process's start instant) is what the code does and what the comment should state."
@@ -78,6 +74,6 @@
   },
   "status": "parsed",
   "times_source": "run-record",
-  "timestamp": "2026-11-21T04:02:22.924188+00:00",
+  "timestamp": "2026-11-21T04:03:57.870877+00:00",
   "total": 108
 }
