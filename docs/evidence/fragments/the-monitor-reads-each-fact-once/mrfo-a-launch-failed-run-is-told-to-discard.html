@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-title" content="A run that failed at launch is told to discard, not to resume">
+  <meta name="plan-summary" content="The launch-failure obligation copied the classifier's command-and-PATH repair, whose last clause offers crew resume. A launch refused before it reaches a model has no session, so resume is refused and the coordinator was handed a remedy that cannot work. The obligation now names crew discard for a launch that recorded its own end and carries the first line of the launch error; a run that ended after its first turn still reads as interrupted and keeps the resume remedy.">
+  <meta name="plan-evidence-for" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-recorded-at" content="2026-11-21">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="3c82596208">
+  <title>A run that failed at launch is told to discard, not to resume | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A run that failed at launch is told to discard, not to resume</h1>
+
+    <section id="mrfo-a-launch-failed-run-is-told-to-discard-defect">
+      <h2>The defect</h2>
+      <p>Between 11:52Z and 15:22Z on 21 November 2026 every launch through the scheduler shim
+      was refused with exit code 97 and no stream record. The obligation raised for each run
+      carried the classifier's command-and-PATH repair verbatim, whose final clause reads
+      "then launch a fresh attempt with <code>reckon crew resume --run &lt;id&gt; --advice continue</code>".
+      A launch that never reached a model has no session to resume, so resume refused and the
+      coordinator was told to run a command that could not work.</p>
+      <p><strong>Reproduced before repair. Nothing was needed for the existing resume arm:
+      it still passes at head, which is what the second case measures. The defect reproduced at
+      base revision <code>2a3bf52e35</code>, where the launch case failed with
+      <code>assert 'fix the comm...ed until then' == 'reckon crew ...ld-to-discard'</code> - the
+      obligation named <code>crew resume</code>.</p>
+    </section>
+
+    <section id="mrfo-a-launch-failed-run-is-told-to-discard-changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>recovery_classification.py</code> carries the first line of the launch error
+        on the row as <code>launch_error</code>, and marks a launch that recorded its own end
+        with <code>ended_during_launch</code>. A stranded launch reads <code>launch-failed</code>
+        but recorded no end, so it is not treated alike.</li>
+        <li><code>obligations.py</code> gives the launch-failed duty the classifier's own detail
+        as its reason, and for a launch that recorded its end replaces the resume-flavoured
+        action with <code>reckon crew discard --run &lt;id&gt;</code> for a launch that recorded its own end.</li>
+        <li><code>coordinator_obligations.py</code> prints that cause beside the remedy, so a
+        coordinator taking the discard step sees what failed without opening the run directory.</li>
+        <li>The new test module drives all three through the obligations view and then runs the
+        command the obligation names against the same temporary crew home.</li>
+      </ol>
+    </section>
+
+    <section id="mrfo-a-launch-failed-run-is-told-to-discard-measure">
+      <h2>Measure</h2>
+      <table>
+        <thead><tr><th>arm</th><th>revision</th><th>collected</th><th>outcome</th></tr></thead>
+        <tbody>
+          <tr><td>baseline</td><td><code>2a3bf52e35</code></td><td>58</td><td>58 passed, EXIT=0</td></tr>
+          <tr><td>after</td><td><code>3c82596208</code></td><td>62</td><td>62 passed, EXIT=0</td></tr>
+        </tbody>
+      </table>
+      <p>The four added cases are the node's own test module: the launch case fails at base with
+      the resume command named, the first-turn case passes at both revisions, the command
+      acceptance case fails at base because the named remedy is a sentence rather than a
+      command, and the checklist case fails at base because the cause is not printed.</p>
+    </section>
+  </main>
+</body>
+</html>
