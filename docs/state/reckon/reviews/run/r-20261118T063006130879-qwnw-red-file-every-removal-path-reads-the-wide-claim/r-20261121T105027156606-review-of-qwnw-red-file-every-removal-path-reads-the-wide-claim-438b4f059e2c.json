@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T10:52:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the base-arm paragraph states the run was made 'on all_debug with SLURM_JOB_ID unset', but base-arm.log records only the revision, the tree and the command, with no launch, partition or environment line, so that clause is asserted rather than receipted; the done_when's all_debug clause binds the head run, which gate-head.log:4-8 does receipt (job 1335173, partition all_debug, SLURM_JOB_ID=unset, confirmed by sacct), and the negative control only requires the base run's failing ids, which base-arm.log:42 does carry, so the record stands."
+    }
+  ],
+  "head_log_revision": "438b4f059e2c9879cd74e6ed327881998bb060a7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site reaches the change: the diff touches tests/test_every_removal_path_reads_the_wide_claim.py and the evidence fragment, and production modules such as reckon/crew/promotion.py:889 are read by the test rather than changed by it.",
+    "diff": "git log 42fe90d0b0a46060bafde2490dda7d4002cda478..438b4f059e2c9879cd74e6ed327881998bb060a7 names 7e4a0c0431, ca12b25fe4, 0057740589, e3ba8d62f2 and 438b4f059e; 7e4a0c0431 widens WIDE_CLAIMS and adds the registration helpers at tests/test_every_removal_path_reads_the_wide_claim.py:151-219, 0057740589 replaces the every-identifier exemption with freed-path identity and adds the four control cases, ca12b25 and e3ba8d62 write the fragment sections, and the gained commit 438b4f059e adds only the evidence-repair section at the fragment's :69-90, recording no code change.",
+    "done_when": "the done_when's clauses are each receipted: gate-head.log:1-9 records 5 passed EXIT=0 at 438b4f05 as all_debug job 1335173 with SLURM_JOB_ID=unset (sacct confirms the job), base-arm.log:42-59 records 1 failed, 2 passed, EXIT=1 at 42fe90d0 with the failing id named, and suite-baseline.log:56-59 (1 failed, 60 passed, EXIT=1 at 42fe90d0) and suite-after.log:5-6 (63 passed, EXIT=0 at 438b4f05) carry complete summaries under the same command.",
+    "goal": "the node's goal is that tests/test_every_removal_path_reads_the_wide_claim.py passes in full at head; gate-head.log:7 reads 5 passed and EXIT=0 at 438b4f059e2c9879cd74e6ed327881998bb060a7, and the fragment's cause list at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:22-39 gives each base cause a test-side verdict.",
+    "manifest": "manifest.md was read in full; it names five full commit ids, the literal gate command, four log paths, both suite arms as inline JSON at 42fe90d0 and 438b4f05 with completed true and matching EXIT records, and a negative_control_log at base-arm.log; the after_suite claim that the previous review found unmeasured now reconciles with suite-after.log:5-6, which carries '63 passed' and 'EXIT=0'.",
+    "write_paths": "the manifest declares reckon, tests, the fragment directory and the two shipped files; git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..438b4f059e2c9879cd74e6ed327881998bb060a7 names only tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_every_removal_path_reads_the_wide_claim.py:414-430 redden if WIDE_CLAIMS loses the launch spelling and :433-477 redden if the exemption widens back to the every-identifier rule or drops, with landing-arm-control.log:1-13 showing the ca12b25 scan red on the registration it was added to exempt.",
+    "evidence": "gate-head.log:4-8 names job 1335173 partition all_debug and SLURM_JOB_ID=unset (sacct confirms the job completed on all_debug), and suite-after.log:5-6 and suite-baseline.log:58-59 carry complete summaries with EXIT lines, while the fragment's base-arm all_debug claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:17 has no matching receipt in base-arm.log:1-3.",
+    "fit": "the added helpers at tests/test_every_removal_path_reads_the_wide_claim.py:151-219 follow the module's existing ast-helper style at :110-146, and the new fragment section at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:69-90 uses the same h3-per-repair shape as :42-68.",
+    "goal_fidelity": "gate-head.log:7-9 records 5 passed and EXIT=0 at 438b4f059e2c9879cd74e6ed327881998bb060a7 with the measured SLURM_JOB_ID unset, and base-arm.log:42-58 reproduces the red at 42fe90d0 with its failing id.",
+    "reuse": "a capability search over reckon/ for source scanners found reckon/clones.py:174, reckon/interface_counts.py:426 and reckon/served_code.py:1190 owning clone, interface and served-code walks but none owning a git-worktree registration predicate, and the nearest sibling tests/test_a_worktree_release_is_whole.py:461 holds only _literal_argv, so the added helpers extend this file's scan.",
+    "scope_discipline": "git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..438b4f059e2c9879cd74e6ed327881998bb060a7 names only the test module and the fragment, both inside manifest.md's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_every_removal_path_reads_the_wide_claim.py passes in full at head; gate-head.log:7 reads 5 passed and EXIT=0 at 438b4f059e2c9879cd74e6ed327881998bb060a7, and the fragment's cause list at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:22-39 gives each base cause a test-side verdict.\nVERDICT done_when: the done_when's clauses are each receipted: gate-head.log:1-9 records 5 passed EXIT=0 at 438b4f05 as all_debug job 1335173 with SLURM_JOB_ID=unset (sacct confirms the job), base-arm.log:42-59 records 1 failed, 2 passed, EXIT=1 at 42fe90d0 with the failing id named, and suite-baseline.log:56-59 (1 failed, 60 passed, EXIT=1 at 42fe90d0) and suite-after.log:5-6 (63 passed, EXIT=0 at 438b4f05) carry complete summaries under the same command.\nVERDICT write_paths: the manifest declares reckon, tests, the fragment directory and the two shipped files; git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..438b4f059e2c9879cd74e6ed327881998bb060a7 names only tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html, both inside them.\nVERDICT manifest: manifest.md was read in full; it names five full commit ids, the literal gate command, four log paths, both suite arms as inline JSON at 42fe90d0 and 438b4f05 with completed true and matching EXIT records, and a negative_control_log at base-arm.log; the after_suite claim that the previous review found unmeasured now reconciles with suite-after.log:5-6, which carries '63 passed' and 'EXIT=0'.\nVERDICT diff: git log 42fe90d0b0a46060bafde2490dda7d4002cda478..438b4f059e2c9879cd74e6ed327881998bb060a7 names 7e4a0c0431, ca12b25fe4, 0057740589, e3ba8d62f2 and 438b4f059e; 7e4a0c0431 widens WIDE_CLAIMS and adds the registration helpers at tests/test_every_removal_path_reads_the_wide_claim.py:151-219, 0057740589 replaces the every-identifier exemption with freed-path identity and adds the four control cases, ca12b25 and e3ba8d62 write the fragment sections, and the gained commit 438b4f059e adds only the evidence-repair section at the fragment's :69-90, recording no code change.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: gate-head.log:7-9 records 5 passed and EXIT=0 at 438b4f059e2c9879cd74e6ed327881998bb060a7 with the measured SLURM_JOB_ID unset, and base-arm.log:42-58 reproduces the red at 42fe90d0 with its failing id.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log:4-8 names job 1335173 partition all_debug and SLURM_JOB_ID=unset (sacct confirms the job completed on all_debug), and suite-after.log:5-6 and suite-baseline.log:58-59 carry complete summaries with EXIT lines, while the fragment's base-arm all_debug claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:17 has no matching receipt in base-arm.log:1-3.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..438b4f059e2c9879cd74e6ed327881998bb060a7 names only the test module and the fragment, both inside manifest.md's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_removal_path_reads_the_wide_claim.py:414-430 redden if WIDE_CLAIMS loses the launch spelling and :433-477 redden if the exemption widens back to the every-identifier rule or drops, with landing-arm-control.log:1-13 showing the ca12b25 scan red on the registration it was added to exempt.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers at tests/test_every_removal_path_reads_the_wide_claim.py:151-219 follow the module's existing ast-helper style at :110-146, and the new fragment section at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:69-90 uses the same h3-per-repair shape as :42-68.\nSCORE reuse: 19\nJUSTIFICATION reuse: a capability search over reckon/ for source scanners found reckon/clones.py:174, reckon/interface_counts.py:426 and reckon/served_code.py:1190 owning clone, interface and served-code walks but none owning a git-worktree registration predicate, and the nearest sibling tests/test_a_worktree_release_is_whole.py:461 holds only _literal_argv, so the added helpers extend this file's scan.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:17 non-blocking: the base-arm paragraph states the run was made 'on all_debug with SLURM_JOB_ID unset', but base-arm.log records only the revision, the tree and the command, with no launch, partition or environment line, so that clause is asserted rather than receipted; the done_when's all_debug clause binds the head run, which gate-head.log:4-8 does receipt (job 1335173, partition all_debug, SLURM_JOB_ID=unset, confirmed by sacct), and the negative control only requires the base run's failing ids, which base-arm.log:42 does carry, so the record stands.",
+  "review_run_id": "r-20261121T105027156606-review-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-438b4f059e2c",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "438b4f059e2c9879cd74e6ed327881998bb060a7",
+  "reviewed_run_id": "r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261121T105027156606-review-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-438b4f059e2c",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T11:13:03.192627+00:00",
+  "total": 111
+}
