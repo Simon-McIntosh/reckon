@@ -22,6 +22,7 @@ and takes the path, while a living holder still refuses.
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import json
 import os
@@ -123,33 +124,44 @@ def real_live_directory_is_not_a_fixture_target() -> None:
     ``~/docs-server`` install, so the guard watches the directory a leak would
     actually reach rather than a path literal that only matches one layout.
 
-    An entry is matched by its live pointer's filename, not by its contents:
-    every run id ends in the node it dispatches, so a pointer this case minted
-    is named ``r-<stamp>-<node>.json``. Reading contents cannot make that
-    claim — a peer's pointer quotes plan wording and node descriptions, so a
-    substring search fires on a dispatch that has nothing to do with this case.
-    Matching the filename is the rule the crew-home isolation guard beside this
-    one already applies, for the same reason.
+    The identifiers are compared against the run id the pointer records, not
+    against its text: a run id ends in the node it dispatches, so a pointer
+    this case minted reads ``r-<stamp>-<node>``. Searching text cannot make
+    that claim — a peer's pointer quotes plan wording and node descriptions,
+    so a substring search fires on a dispatch that has nothing to do with this
+    case, while the id is minted here and nowhere else.
+
+    The listing is the crew run module's own: pointing ``RECKON_HOME`` at the
+    real home for the duration of the read is how ``real_store_home`` reaches
+    it, so the guard asks the module that owns the pointer format rather than
+    scanning the directory itself.
     """
 
-    live = real_store_home() / "crew" / "live"
-    pointer_suffix = f"-{NODE_ID}.json"
+    ambient_home = real_store_home()
 
-    def fixture_pointers() -> list[str]:
-        if not live.is_dir():
-            return []
-        return sorted(
-            str(entry)
-            for entry in live.iterdir()
-            if entry.name.endswith(pointer_suffix)
-        )
+    @contextlib.contextmanager
+    def reading_the_ambient_home():
+        override = os.environ.get("RECKON_HOME")
+        os.environ["RECKON_HOME"] = str(ambient_home)
+        try:
+            yield
+        finally:
+            if override is None:
+                os.environ.pop("RECKON_HOME", None)
+            else:
+                os.environ["RECKON_HOME"] = override
 
-    before = fixture_pointers()
-    assert before == []
+    def fixture_runs() -> list[str]:
+        with reading_the_ambient_home():
+            return sorted(
+                str(record["run_id"])
+                for record in list_live()
+                if str(record.get("run_id") or "").endswith(f"-{NODE_ID}")
+            )
+
+    assert fixture_runs() == []
     yield
-    after = fixture_pointers()
-    assert len(after) == len(before)
-    assert after == []
+    assert fixture_runs() == []
 
 
 def _node(config_home: Path) -> crew.TaskNode:
