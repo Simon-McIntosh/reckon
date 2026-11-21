@@ -67,3 +67,24 @@ def test_the_refused_run_names_its_stream_fault(two_runs) -> None:
     )
     assert "stream unreadable" in str(refused.get("detail")), refused
     assert "another vocabulary" in str(refused.get("detail")), refused
+
+
+def test_a_refused_stream_has_no_completion_stamp(monkeypatch) -> None:
+    """The classification's own stream read does not raise the refusal either.
+
+    Classifying a run dates its finish from its stream. For a pointer that
+    names one harness over a stream another wrote, that read is refused, and it
+    is reached after the observation above: the sweep went on failing for the
+    whole project until this read answered with no stamp.
+    """
+    from reckon.crew import promotion, recovery_stream
+
+    def refuse(record):
+        raise BackendError("the dialect refused a stream in another vocabulary")
+
+    monkeypatch.setattr(promotion, "_terminal_stream_data", refuse)
+    record = {"run_id": "r-foreign-stream", "launch": "cli", "backend": "harness-b"}
+
+    assert recovery_stream._stream_completion_stamp(record) is None
+    # Asked again, the stream is read again: a refusal is not remembered.
+    assert recovery_stream._stream_completion_stamp(record) is None
