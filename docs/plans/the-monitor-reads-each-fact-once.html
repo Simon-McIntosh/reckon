@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="556">
+<meta name="plan-version" content="557">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -2005,6 +2005,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T063100562095-review-of-an-unchanged-run-store-is-decoded-once-251c036af9a9" data-who="reckon-build" data-when="2026-11-21T06:37:47.561Z">
+    <div class="r-comment-body"><p>Reviewed r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at 251c036af9 (base 43f48118fa): the answer cache honours the store token and copies every answer out, the five-case test fails at base (assert 3200 == 800) and passes at head, and the one defect is reuse — reckon/run_store.py:922 re-implements reckon/file_memo.py:562 memoized_key rather than extending it.</p></div>
 </div>
 </section>
 </main>
