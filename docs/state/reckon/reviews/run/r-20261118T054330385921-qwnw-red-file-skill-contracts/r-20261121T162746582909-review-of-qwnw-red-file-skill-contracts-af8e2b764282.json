@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk, read directly rather than from the manifest's count: suite-base.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 ends '2 failed, 56 passed in 19.03s' / EXIT=1 with FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and FAILED tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write; suite-head4.log (sha256 91dd6fa6555260a1496da486abeda1d8beb608b1d7a4b5a09069d80b31f90807, the digest the manifest's after_suite names) at af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0 ends with the identical '2 failed, 56 passed' and the same two FAILED ids. The set difference after-minus-baseline is empty, so 0 failures were added.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:574-628",
+    "reckon/agent_context.py:533",
+    "reckon/project_maintenance_commands.py:1113"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T16:29:30Z",
+  "findings": [
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "287",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added line's --id, --answers and --by flags are guarded by no assertion, because the expected map at tests/test_skill_contracts.py:1420 supplies an empty required-flag set for (\"crew\", \"decision\") and the loop at tests/test_skill_contracts.py:1538-1541 only checks the flags it is handed, so deleting --answers from this line leaves tests/test_skill_contracts.py green; only the verb token itself is covered, by test_every_registered_crew_verb_is_documented_or_exempt at tests/test_skill_contracts.py:1692."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/gate-merged.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the full-file gate run at the reviewed node-head af8e2b76 records a revision, command, on-main and node-head but no SLURM_JOB_ID line, so the done_when's 'SLURM_JOB_ID unset' condition survives only in gate-merged.sh:11 (`env -u SLURM_JOB_ID -u SLURM_JOBID srun ...`) and cannot be verified from the log the manifest cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production code reads the changed table: reckon/crew_run_commands.py:574-628 registers the decision group and its answer command, which the line documents, while reckon/agent_context.py:533 and reckon/project_maintenance_versions:1113 reach skills/reckon-build/SKILL.md by path only; the table's only grader is tests/test_skill_contracts.py:1683-1692.",
+    "diff": "read commit by commit: 89714e6b..af8e2b76 is the single commit af8e2b76 'docs(skill): name the crew decision answer verb', one insertion at skills/reckon-build/SKILL.md:287 and nothing else, and the earlier three commits in 42fe90d0..af8e2b76 were already read by the prior reviews at a92b9d03 and 89714e6b.",
+    "done_when": "the done_when asks for tests/test_skill_contracts.py green at head as an all_debug job with SLURM_JOB_ID unset, each cause carrying a product-or-test verdict, both arms as inline JSON at full 40-character revisions and a red base control; the manifest records baseline_suite at 42fe90d0b0a46060bafde2490dda7d4002cda478 (suite-base.log, 2 failed / 56 passed, EXIT=1) and after_suite at af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0 (digest sha256:91dd6fa6 of suite-head4.log, identical 2 failed / 56 passed), plus gate-merged.log at node-head af8e2b76 with 73 passed and EXIT=0, though that log carries no SLURM_JOB_ID line.",
+    "goal": "the source node's goal is 'Make tests/test_skill_contracts.py pass in full on the primary branch'; the one commit this review gained, af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0, adds nothing but the line at skills/reckon-build/SKILL.md:287 naming `reckon crew decision answer`, and gate-merged.log records 73 passed EXIT=0 for that file at node-head af8e2b76 (merged f4c8a51b on main 792a8970).",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/manifest.md; it reads status complete with the four commits, the literal tests line, four test_logs, both arm JSONs at 40-character revisions, a negative_control_log path and all six rubric lines, and `HOME=/home/ITER/mcintos reckon crew check --manifest --run r-20261118T054330385921-qwnw-red-file-skill-contracts` answers {\"findings\": [], \"ok\": true} with EXIT=0.",
+    "write_paths": "the reviewed node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment, the figures directory and skills/reckon-build/SKILL.md; the gained commit touches only skills/reckon-build/SKILL.md, and the whole 42fe90d0..af8e2b76 diff touches only that file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html and tests/test_skill_contracts.py, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "deleting skills/reckon-build/SKILL.md:287 reddens tests/test_skill_contracts.py:1692, but the flags --id/--answers/--by have no guard because tests/test_skill_contracts.py:1420 supplies an empty required-flag set for (\"crew\", \"decision\").",
+    "evidence": "gate-merged.log:1-9 records node-head af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0 and 73 passed EXIT=0, while the manifest's after_suite row cites the unrelated staged-write suite and gate-merged.log carries no SLURM_JOB_ID line.",
+    "fit": "skills/reckon-build/SKILL.md:287 repeats the one-line verb-plus-comment shape of its neighbours at :286 and :288, with optional flags bracketed as elsewhere in the table.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:287 names `reckon crew decision answer` with the --id, --answers and --by flags registered at reckon/crew_run_commands.py:606-620, and the gate at that node-head passes.",
+    "reuse": "the commit adds no definition and extends the table that owns the capability; a search over reckon/ for a second skill command-table owner found only tests/test_skill_contracts.py:1683 reading it.",
+    "scope_discipline": "git diff 89714e6b..af8e2b76 shows one insertion in skills/reckon-build/SKILL.md:287 and no other path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Make tests/test_skill_contracts.py pass in full on the primary branch'; the one commit this review gained, af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0, adds nothing but the line at skills/reckon-build/SKILL.md:287 naming `reckon crew decision answer`, and gate-merged.log records 73 passed EXIT=0 for that file at node-head af8e2b76 (merged f4c8a51b on main 792a8970).\nVERDICT done_when: the done_when asks for tests/test_skill_contracts.py green at head as an all_debug job with SLURM_JOB_ID unset, each cause carrying a product-or-test verdict, both arms as inline JSON at full 40-character revisions and a red base control; the manifest records baseline_suite at 42fe90d0b0a46060bafde2490dda7d4002cda478 (suite-base.log, 2 failed / 56 passed, EXIT=1) and after_suite at af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0 (digest sha256:91dd6fa6 of suite-head4.log, identical 2 failed / 56 passed), plus gate-merged.log at node-head af8e2b76 with 73 passed and EXIT=0, though that log carries no SLURM_JOB_ID line.\nVERDICT write_paths: the reviewed node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment, the figures directory and skills/reckon-build/SKILL.md; the gained commit touches only skills/reckon-build/SKILL.md, and the whole 42fe90d0..af8e2b76 diff touches only that file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html and tests/test_skill_contracts.py, all inside the declared scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/manifest.md; it reads status complete with the four commits, the literal tests line, four test_logs, both arm JSONs at 40-character revisions, a negative_control_log path and all six rubric lines, and `HOME=/home/ITER/mcintos reckon crew check --manifest --run r-20261118T054330385921-qwnw-red-file-skill-contracts` answers {\"findings\": [], \"ok\": true} with EXIT=0.\nVERDICT diff: read commit by commit: 89714e6b..af8e2b76 is the single commit af8e2b76 'docs(skill): name the crew decision answer verb', one insertion at skills/reckon-build/SKILL.md:287 and nothing else, and the earlier three commits in 42fe90d0..af8e2b76 were already read by the prior reviews at a92b9d03 and 89714e6b.\nCALL_SITES: reckon/crew_run_commands.py:574-628, reckon/agent_context.py:533, reckon/project_maintenance_commands.py:1113\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:287 names `reckon crew decision answer` with the --id, --answers and --by flags registered at reckon/crew_run_commands.py:606-620, and the gate at that node-head passes.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-merged.log:1-9 records node-head af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0 and 73 passed EXIT=0, while the manifest's after_suite row cites the unrelated staged-write suite and gate-merged.log carries no SLURM_JOB_ID line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 89714e6b..af8e2b76 shows one insertion in skills/reckon-build/SKILL.md:287 and no other path.\nSCORE durability: 14\nJUSTIFICATION durability: deleting skills/reckon-build/SKILL.md:287 reddens tests/test_skill_contracts.py:1692, but the flags --id/--answers/--by have no guard because tests/test_skill_contracts.py:1420 supplies an empty required-flag set for (\"crew\", \"decision\").\nSCORE fit: 19\nJUSTIFICATION fit: skills/reckon-build/SKILL.md:287 repeats the one-line verb-plus-comment shape of its neighbours at :286 and :288, with optional flags bracketed as elsewhere in the table.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition and extends the table that owns the capability; a search over reckon/ for a second skill command-table owner found only tests/test_skill_contracts.py:1683 reading it.\nFINDING skills/reckon-build/SKILL.md:287 non-blocking: the added line's --id, --answers and --by flags are guarded by no assertion, because the expected map at tests/test_skill_contracts.py:1420 supplies an empty required-flag set for (\"crew\", \"decision\") and the loop at tests/test_skill_contracts.py:1538-1541 only checks the flags it is handed, so deleting --answers from this line leaves tests/test_skill_contracts.py green; only the verb token itself is covered, by test_every_registered_crew_verb_is_documented_or_exempt at tests/test_skill_contracts.py:1692.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/gate-merged.log:1 non-blocking: the full-file gate run at the reviewed node-head af8e2b76 records a revision, command, on-main and node-head but no SLURM_JOB_ID line, so the done_when's 'SLURM_JOB_ID unset' condition survives only in gate-merged.sh:11 (`env -u SLURM_JOB_ID -u SLURM_JOBID srun ...`) and cannot be verified from the log the manifest cites.\n",
+  "review_node": "review-of-qwnw-red-file-skill-contracts-af8e2b764282",
+  "review_run_id": "r-20261121T162746582909-review-of-qwnw-red-file-skill-contracts-af8e2b764282",
+  "reviewed_base_sha": "89714e6bf35240f5de5bf5dafc2f37878fb8efc2",
+  "reviewed_head_sha": "af8e2b764282b2d4284ae9ef2a3362c6ce1a21a0",
+  "reviewed_run_id": "r-20261118T054330385921-qwnw-red-file-skill-contracts",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T16:40:50.547484+00:00",
+  "total": 107
+}
