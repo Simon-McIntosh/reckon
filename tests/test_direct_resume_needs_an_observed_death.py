@@ -474,7 +474,10 @@ def test_a_lane_change_preview_of_an_observed_death_reports_without_writing(
     preview's write would go through: a pointer write moves the dispatch-time
     detail — the argv among it — into the run's own file, so the fixture's
     in-memory record is not the shape on disk and a comparison against it would
-    fail on the write's shape rather than on a preview that moved the run.
+    fail on the write's shape rather than on a preview that moved the run. The
+    file's bytes are compared beside that reading, because a write that
+    re-splits dispatch detail leaves the hydrated reading equal while the
+    pointer on disk has been rewritten.
     """
     _stub_destination(monkeypatch)
     _lane_pointer(
@@ -485,6 +488,7 @@ def test_a_lane_change_preview_of_an_observed_death_reports_without_writing(
         launcher_host=HOST,
     )
     before = runs.read_pointer(DEAD_PID_RUN)
+    stored = pointer_path(DEAD_PID_RUN).read_bytes()
 
     preview = change_lane(
         DEAD_PID_RUN, "beta", "the lane is spent", config=CONFIG, launch=False
@@ -495,3 +499,4 @@ def test_a_lane_change_preview_of_an_observed_death_reports_without_writing(
     assert preview["run_id"] == DEAD_PID_RUN
     # A preview decides and reports; it stops no worker and records no move.
     assert runs.read_pointer(DEAD_PID_RUN) == before
+    assert pointer_path(DEAD_PID_RUN).read_bytes() == stored
