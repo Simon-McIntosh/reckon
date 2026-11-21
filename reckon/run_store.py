@@ -450,6 +450,44 @@ def _archive_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}.archive{path.suffix}")
 
 
+def _plan_owned_identities(
+    connection: sqlite3.Connection,
+    schemas: Iterable[str],
+    *,
+    project: str | None,
+    plan: str,
+    run_ids: Iterable[str] | None,
+    node: str | None,
+) -> list[str]:
+    """The rows whose plan owner answers *plan*, in the store's order.
+
+    The owner is :func:`reckon.ledger.row_plan`, so the store asks it about the
+    three fields it reads — the row's own plan, the implementation move it
+    reported, the node definition it ran — rather than comparing the ``plan``
+    column, which is that answer at write time and can outlive the detail a
+    rotation washes out afterwards. The candidates arrive through
+    :func:`_plan_owner_sql` so a plan read decodes the rows that expression
+    admits rather than every row in the project; the owner then decides.
+    """
+    from reckon import ledger
+
+    owned = []
+    for run_id, payload, detail in _record_rows(
+        connection,
+        schemas=schemas,
+        project=project,
+        run_ids=run_ids,
+        node=node,
+        plan=plan,
+        fields=PLAN_OWNER_FIELDS,
+        narrowed=True,
+    ):
+        record = {**json.loads(payload), **(json.loads(detail) if detail else {})}
+        if ledger.row_plan(record) == plan:
+            owned.append(str(run_id))
+    return owned
+
+
 def _record_rows(
     connection: sqlite3.Connection,
     *,
@@ -460,15 +498,35 @@ def _record_rows(
     node: str | None = None,
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
+    narrowed: bool = False,
 ) -> Iterator[tuple[Any, ...]]:
     """Read selected records through the single durable/detail join.
 
-    Plan and activity selection search their indexed columns. Activity
-    predicates consume a buffered narrow projection after its cursor closes,
-    then only matching identities fetch the requested payload.
+    A plan filter resolves the identities :func:`reckon.ledger.row_plan` names
+    through a narrowed candidate query before any payload is fetched, and
+    activity predicates consume a buffered narrow projection after its cursor
+    closes, so only matching identities fetch the requested payload.
     Python selection, decoding and consumption therefore hold no read lock.
     Encoded rows are buffered per query; identity batches stay below driver limits.
     """
+    if plan is not None and not narrowed:
+        yield from _record_rows(
+            connection,
+            schemas=schemas,
+            project=project,
+            run_ids=_plan_owned_identities(
+                connection,
+                schemas,
+                project=project,
+                plan=plan,
+                run_ids=run_ids,
+                node=node,
+            ),
+            node=node,
+            fields=fields,
+            activity_since=activity_since,
+        )
+        return
     selected = None if run_ids is None else sorted(set(map(str, run_ids)))
     batches = (
         [None]
@@ -526,9 +584,7 @@ def _record_rows(
             query = (
                 f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
             )
-            if plan and batch is None and not node:
-                query += "INDEXED BY idx_runs_plan "
-            elif indexed_activity and batch is None and not node:
+            if indexed_activity and batch is None and not node:
                 # Force the range index rather than a project-only scan when
                 # the planner has no statistics for the recent population.
                 query += (
@@ -554,7 +610,7 @@ def _record_rows(
                 clauses.append("r.node = ?")
                 params.append(node)
             if plan:
-                clauses.append("r.plan = ?")
+                clauses.append(f"({_plan_owner_sql()}) = ?")
                 params.append(plan)
             if indexed_activity:
                 clauses.append("r.activity_seconds >= ?")
@@ -904,6 +960,33 @@ def stored_run_rows(
         raise _unreadable(target, f"{type(error).__name__}: {error}") from error
     finally:
         connection.close()
+
+
+#: The fields :func:`reckon.ledger.row_plan` reads to name a row's plan. A
+#: reader asking which stored rows a plan owns needs these three and no others.
+PLAN_OWNER_FIELDS = ("plan", "impl_move", "node_definition")
+
+
+def _plan_owner_sql() -> str:
+    """The owner precedence as a narrowing expression over both halves of a row.
+
+    :func:`reckon.ledger.row_plan` decides which plan a row belongs to; this
+    expression lets the store reach the rows that decision can keep without
+    decoding every row in the project first. It reads the three fields that
+    owner reads, in the same order, from the detail half over the durable half.
+    A row it lets through that the owner does not name is discarded by the
+    owner before any caller sees it, so an over-wide expression costs a decode
+    and never an answer; a row it drops that the owner names would be a wrong
+    answer, which is why ``tests/test_a_plan_read_asks_the_row_owner.py``
+    compares the narrowing against the owner over every combination of the
+    three fields.
+    """
+    merged = "json_patch(r.payload, COALESCE(d.detail, '{}'))"
+    fields = ("plan", "impl_move.plan", "node_definition.plan")
+    terms = [
+        f"NULLIF(trim(json_extract({merged}, '$.{field}')), '')" for field in fields
+    ]
+    return "COALESCE(" + ", ".join([*terms, "''"]) + ")"
 
 
 def stored_run_exists(project: str, *, path: str | Path | None = None) -> bool:
