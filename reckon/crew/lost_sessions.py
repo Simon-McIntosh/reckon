@@ -146,7 +146,12 @@ def _oldest_record_instant(pointers: Iterable[Mapping[str, Any]]) -> float | Non
 
     instants: list[float] = []
     for pointer in pointers:
-        created = parse_utc(str(pointer.get("created_at") or ""))
+        # A record's creation stamp is written as an ISO string by dispatch and
+        # as an epoch by some fixtures and older writers, and ``parse_utc``
+        # reads both -- but only from the value itself. Stringifying first turned
+        # an epoch into a date-less string, so such a record dated nothing and
+        # its session read live forever.
+        created = parse_utc(pointer.get("created_at"))
         if created is not None:
             instants.append(created.timestamp())
     return min(instants) if instants else None

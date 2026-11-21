@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s3">
+  <meta name="plan-verdict" content="pass">
+  <title>A lost session's reviews retire | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-a-lost-sessions-reviews-retire-landing" data-node="wlsr-a-lost-sessions-reviews-retire" data-reckon="landed" data-when="2026-11-21">
+  <h2>A lost session's reviews retire</h2>
+  <p>A review request queued, or parked against an upstream, by a session nothing has heard for the flight threshold can never be read. It used to sit in the queue indefinitely, and the reflex composed a fresh review for every finished run the same session owned, each one created only to be refused. The admit pass now retires those requests before any ordering or lane question, through the discard path every stranded review already uses, and the reflex composes none.</p>
+  <p>The departure record names the session, the instant it was last heard and the rule that decided it: <code>lost_session</code>, <code>last_heard_at</code> and <code>rule</code>, written onto the same marker a discard leaves, so a reader asking why a pointer went finds the answer in the one place it already asks. The pass's verdict record lists every retirement under <code>retired_lost_session</code> and every refusal under <code>retirement_refused</code>.</p>
+  <p>Lostness is one derivation per session per pass. <code>LostSessionReads</code> in <code>reckon/crew/lost_sessions.py</code> dates a session from its follower lease, a process, or its oldest live record, and the pass reads each session once. A record's creation stamp is written as an ISO string by dispatch and as an epoch by older writers and fixtures; both are read from the value itself, because stringifying an epoch first produced a date-less string, which left such a session looking heard for ever.</p>
+  <h3>What the review round changed</h3>
+  <p>A pass asked about one run decides only that run. The retirement sweep and the re-read that follows it ranged over every live pointer, so a named admission could retire, and then launch, requests its caller was promised would be untouched. Both now follow the pass: the named request alone when one is named, the fleet otherwise.</p>
+  <p>A discard that refuses leaves the request queued. The pass counted it retired anyway and then launched the very review the retirement exists to suppress, on the same pass. A refusal is now named in the obligation, stamped on the pointer, kept out of that pass's ordering, and reported as <code>retirement_refused</code> rather than as a retirement.</p>
+  <p>The retirement carries its own facts to <code>_discard_stranded_review</code> instead of keeping a second discard writer that repeated the same marker lookup and the same three refusal sentences; the pointer stamp goes through the existing retirement helper. At the reviewed revision <code>holds.py</code> carried its own <code>_stamp_discard_reason</code> and <code>_record_lost_session_retirement</code>; both are gone and the file's discard calls are <code>_discard_stranded_review</code>.</p>
+  <p>The reflex dated a session from the run that owed the review alone, while the admit pass dates it from every live record. A young run under a session with an older record past the threshold then read live, and its review was composed only to be refused. Every live record dates the session now.</p>
+  <h3>Gates</h3>
+  <table class="r-table">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>node check</td><td><code>2f24ec3543</code></td><td>11 passed, exit 0</td><td><code>gate.log</code></td></tr>
+      <tr><td>base suite</td><td><code>5adc9f1c5b</code></td><td>58 passed, exit 0</td><td><code>baseline-suite.log</code></td></tr>
+      <tr><td>after suite</td><td><code>2f24ec3543</code></td><td>69 passed, exit 0</td><td><code>after-suite.log</code></td></tr>
+      <tr><td>repair reverted</td><td>tree at <code>2f24ec3543^</code></td><td>3 failed, 8 passed, exit 1</td><td><code>negative-control-repair.log</code></td></tr>
+    </tbody>
+  </table>
+  <p><code>tests/test_a_lost_sessions_reviews_retire.py</code> reads 11 passed at the repair head. The two suite arms run <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> beside it; the base arm runs them over a tree materialised at <code>5adc9f1c5b</code>, and the after arm adds the node's own file at the head, 69 passed. Both files require a repository, so the base tree is a scratch repository holding that revision's <code>reckon/</code>, <code>tests/</code> and <code>pyproject.toml</code>; a plain extraction has no git to read the tracked file list from and the census reads zero files.</p>
+  <h3>The control</h3>
+  <p>Reverting the repair commit's source in the working tree, with its tests kept, reads 3 failed and 8 passed, exit 1, and each failure is the defect the finding named:</p>
+  <ul>
+    <li><code>test_a_named_admission_retires_only_the_request_it_was_handed</code> — the retired list carries <code>r-lost-review-unnamed</code> as well as the request that was passed, so the named pass retired a stranger's request.</li>
+    <li><code>test_a_refused_discard_is_not_reported_as_a_retirement</code> — the retired list carries <code>r-lost-review-refused</code>, a request whose discard refused and which therefore never left the queue.</li>
+    <li><code>test_a_sessions_lostness_is_read_from_its_oldest_record</code> — the reflex composes a review for <code>r-delivered</code> under a session whose older live record is 73 hours old.</li>
+  </ul>
+  <p>The declared pairing holds at the head: the live session's identical queued review is neither retired nor held back, the pass launches it, and the reflex composes its review; the lost session's is retired with its facts and composes nothing.</p>
+  <p>No figure was drawn. The evidence here is a behaviour difference measured by test outcomes and a pair of log counts; every sibling record for this plan stands in prose and tables for the same reason, and a diagram of a three-line scope fix would say less than the assertion that names it.</p>
+</article>
+</body>
+</html>
