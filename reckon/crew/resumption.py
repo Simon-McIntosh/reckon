@@ -2114,22 +2114,15 @@ def _resume(
             flag="the run's recorded repository",
         )
     failure = _launch_failure_block(record)
-    if failure is not None:
-        if not coordinator:
-            # A launch that produced no stream has no session to continue, so a
-            # lift would repeat the failed exec every tick. It waits for a
-            # person, and only a person's own command may relaunch it.
-            raise CrewError(
-                f"run {run_id!r} is in phase {failure['phase']!r}: "
-                f"{failure['detail']} — repair the launch ("
-                f"{failure['remedy']}) and resume it by hand, or complete it"
-            )
-        # A hand-typed resume is that repair: it launches a fresh attempt on the
-        # run's own backend, so the failure and its phase are cleared and the
-        # attempt allowance restored rather than left to the launch that
-        # supersedes them.
-        _clear_launch_failure(run_id)
-        record = read_pointer(run_id)
+    if failure is not None and not coordinator:
+        # A launch that produced no stream has no session to continue, so a
+        # lift would repeat the failed exec every tick. It waits for a person,
+        # and only a person's own command may relaunch it.
+        raise CrewError(
+            f"run {run_id!r} is in phase {failure['phase']!r}: "
+            f"{failure['detail']} — repair the launch ("
+            f"{failure['remedy']}) and resume it by hand, or complete it"
+        )
     _refuse_a_launch_already_running(run_id)
     if coordinator:
         # A repair round that took an attempt and then declared it was waiting
@@ -2199,6 +2192,15 @@ def _resume(
             # its verdict so the supervisor does not read the new worker's first
             # edit as that delivery.
             _reset_delivered_manifest_status(run_id, record)
+            if failure is not None:
+                # A hand-typed resume is the repair the launch-failure refusal
+                # names, so it retires the failure and its phase here, at the
+                # last point before a worker is started: every gate that can
+                # still decline the launch has run, and a resume that one of
+                # them refuses leaves the state that stops the lift loop in
+                # place. The history survives in the retired attempt records.
+                _clear_launch_failure(run_id)
+                record = read_pointer(run_id)
             if launcher is None:
                 pid = _spawn(
                     plan,

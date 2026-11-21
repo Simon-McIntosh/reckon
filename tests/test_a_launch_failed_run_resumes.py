@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import dispatch_launch, recovery, resumption, runs
+from reckon.crew.node import CrewError
 from tests.test_resume_and_lane_change_follow_their_own_attempt import (  # noqa: F401
     CONFIG,
     _stopped_pointer,
@@ -124,6 +125,56 @@ def test_the_view_names_the_plain_resume_command(
         "the view still names the lane-change form for a plain resume: "
         f"{row['next_action']!r}"
     )
+
+
+def test_a_refused_resume_leaves_the_failure_for_the_lift_to_refuse(
+    tmp_path: Path, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A resume a gate declines must not retire the state that stops the lift.
+
+    The repair retires the phase only once every gate that can decline the
+    launch has passed. Until then the run must still read as the launch that
+    failed, or a sweep would find a live-looking run with no worker behind it
+    and no failure to refuse.
+    """
+    record = _run_that_failed_to_launch(tmp_path, request.getfixturevalue("repo"))
+    launched: list[dict] = []
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):  # pragma: no cover
+        launched.append({"plan": plan})
+        return os.getpid()
+
+    def lane_is_shut() -> dict:
+        raise CrewError("the lane is paused")
+
+    monkeypatch.setattr(resumption, "_require_fleet_gate_open", lane_is_shut)
+
+    with pytest.raises(CrewError):
+        resumption._resume(
+            RUN_ID,
+            record,
+            config=CONFIG,
+            launcher=launcher,
+            advice="continue",
+            coordinator=True,
+        )
+
+    assert launched == [], "the launch was attempted through a shut lane"
+    refused = runs.read_pointer(RUN_ID)
+    assert refused["phase"] == dispatch_launch.LAUNCH_FAILED_PHASE, (
+        "a refused resume retired the phase that stops the lift loop"
+    )
+    assert refused.get("launch_failures"), (
+        "a refused resume stripped the failure the lift is refused by"
+    )
+
+    # The state a refused resume leaves is exactly what the sweep is refused
+    # by, so the lift still cannot repeat the exec the phase exists to stop.
+    with pytest.raises(CrewError):
+        resumption._resume(
+            RUN_ID, refused, config=CONFIG, launcher=launcher, advice="continue"
+        )
+    assert launched == []
 
 
 def test_the_lift_still_refuses_a_launch_failed_run(

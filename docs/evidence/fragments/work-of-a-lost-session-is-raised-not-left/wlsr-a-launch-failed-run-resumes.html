@@ -16,7 +16,24 @@
   attempt that failed and its attempt allowance is restored; the failure history survives in
   the retired per-attempt records. The live view's next action for the phase now names the
   plain command (<code>reckon crew resume --run &lt;id&gt;</code>) rather than a form that
-  carries a backend override.</p>
+  carries a backend override. The phase is retired at the last point before the worker
+  is started, after every gate that can still decline the launch, so a resume the fleet
+  gate or a held claim refuses leaves the failure that stops the lift loop in place.</p>
+
+  <h3>Repair — the failure is retired only once the launch will happen</h3>
+
+  <p><strong>The defect.</strong> The first version cleared the phase and the failure list
+  at the top of <code>_resume</code>, before
+  <code>_refuse_a_launch_already_running</code>,
+  <code>supersede_a_held_repair_round</code>, <code>reserve_launch_attempt</code> and
+  <code>_require_fleet_gate_open</code> — four gates that can still decline the launch.
+  A resume refused at any of them, a paused lane most cheaply, left the pointer reading
+  <code>starting</code> with no failure the lift is refused by and no worker behind it,
+  which is exactly the state the phase exists to prevent. The clear now runs immediately
+  before the launcher, after the gate that can still refuse, and
+  <code>test_a_refused_resume_leaves_the_failure_for_the_lift_to_refuse</code> makes a
+  shut gate raise and then asserts the pointer still reads <code>launch-failed</code> with
+  its failure list and that the unqualified resume is still refused.</p>
 
   <h3>Measured</h3>
 
@@ -30,7 +47,7 @@
     <tbody>
       <tr><td>head gate</td>
         <td><code>e689315bb7</code> + this node</td>
-        <td><strong>3 passed</strong>, exit 0</td></tr>
+        <td><strong>4 passed</strong>, exit 0</td></tr>
       <tr><td>base (the same test file copied into a <code>git archive</code> of the base)</td>
         <td><code>e689315bb7</code></td>
         <td><strong>2 failed, 1 passed</strong>, exit 1 — the declared negative control</td></tr>
@@ -56,6 +73,10 @@
     <li><strong>The lift still refuses.</strong> The same run resumed without
     <code>coordinator</code> raises <code>CrewError</code> naming the phase, and the launcher
     seam records no call.</li>
+    <li><strong>A refused resume leaves the refusal.</strong> With the fleet
+    gate made to raise, a hand-typed resume raises and the pointer still reads
+    <code>launch-failed</code> with its failure list; the unqualified resume is then still
+    refused and the launcher seam records no call.</li>
     <li><strong>The negative control.</strong> At the base revision the resume case fails with
     the refusal verbatim — <em>run 'r-launch-failed-resumes' is in phase 'launch-failed':
     &hellip; repair the launch &hellip; and resume it by hand, or complete it</em> — and the
