@@ -28,11 +28,12 @@
     <code>c531183617a5</code> both ran the armed suite
     (<code>tests/test_staged_write_inventory.py
     tests/test_every_shared_home_lock_holds_across_nodes.py</code>) on the
-    <code>all_debug</code> partition, each green (0 failures, 0 collected-error
-    exit) one arm at a time. The scoped gate passed at the head with the same
-    command and <code>EXIT=0</code>. A corroborating run of the four suites that
-    import the changed module — the pointer phase advance, the refused lane
-    change, the attempt exit and the review-record check — read 34 passed.
+    <code>all_debug</code> partition, one arm at a time: the base read
+    <code>58 passed in 43.05s</code> and the head <code>58 passed in
+    37.95s</code>, <code>EXIT=0</code> in each. A corroborating run of the four
+    suites that import the changed module — the pointer phase advance, the
+    refused lane change, the attempt exit and the review-record check — read
+    <code>34 passed in 11.60s</code>.
     <code>ruff check</code> reports the same two findings in both arms and
     <code>ruff format --check</code> the same two hunks, so the change adds
     none.</p>
