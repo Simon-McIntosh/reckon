@@ -40,7 +40,10 @@
   and <code>git merge-base --is-ancestor &lt;head&gt; refs/heads/main</code> on
   the bare origin. The shared run writer gained an optional worktree, so the two
   files that import it are unchanged. No assertion was deleted: the four that
-  read the old refusal were re-expressed against the rule that displaced it.</p>
+  read the old refusal were re-expressed against the rule that displaced it, and
+  a new arm keeps the refusal asserted for the roles acceptance does not land —
+  a <code>"role": "test"</code> run whose commits the remote does not carry waits
+  for a coordinator and carries <code>unmerged_commits</code> in its refusal.</p>
 
   <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-measured">Measured</h3>
 
@@ -50,20 +53,25 @@
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>the node's file, head arm on <code>all_debug</code></td>
-        <td><code>c635e4ae4eddcd4b5800f6f1c025d0b15df86fb3</code>, the worktree</td>
-        <td>12 passed, <code>EXIT=0</code></td></tr>
+        <td><code>9116590e76bf1be1616bded0b451ab5d3451095c</code>, the worktree,
+        the revision <code>gate-head.log</code>'s first line names</td>
+        <td>13 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the node's file, base arm</td>
         <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, extracted tree</td>
         <td>1 failed, 11 passed, 1 error, <code>EXIT=1</code></td></tr>
       <tr><td>the declared suite arm, head</td>
-        <td><code>c635e4ae4eddcd4b5800f6f1c025d0b15df86fb3</code></td>
+        <td><code>9116590e76bf1be1616bded0b451ab5d3451095c</code>,
+        <code>suite-head.log</code></td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the declared suite arm, base</td>
-        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>,
+        <code>suite-base.log</code></td>
         <td>58 passed, <code>EXIT=0</code>, no failure added</td></tr>
       <tr><td>the importing file, head and base</td>
-        <td>both revisions</td>
-        <td>13 passed, <code>EXIT=0</code> on each arm</td></tr>
+        <td><code>9116590e76bf1be1616bded0b451ab5d3451095c</code> and
+        <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>13 passed, <code>importer-head.log</code>, and 13 passed,
+        <code>importer-base.log</code></td></tr>
     </tbody>
   </table>
 
@@ -85,10 +93,44 @@
   head arm fails neither: the id does not exist at head and no scheduler verb is
   reached.</p>
 
+  <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-repair">The repair round: one transport, one refusal arm</h3>
+
+  <p>The measure transport this file carried as a local function was the third
+  copy of it in the suite:
+  <code>tests/test_an_acceptance_check_holds_no_lease.py</code> and
+  <code>tests/test_cleanly_reviewed_run_lands_itself.py</code> each carried the
+  same <code>--wrap</code> split, the same <code>bash -c</code> execution, the
+  same appended log and the same synthetic job id. It lives once now, as
+  <code>in_place_scheduler</code> in
+  <code>tests/helpers/landing_repository.py</code>, which all three files
+  already import; the helper collects the submissions for a caller that asserts
+  on them, so the partition assertion the clean-review fixture made inside its
+  copy is made where that fixture's own arm already asserts it has submissions.
+  Reverting that commit restores a local copy in this file and leaves the import
+  unused, so the check the finding names — this file carries no transport of its
+  own — fails without the repair, while the three files stay green either way.</p>
+
+  <p>The same commit answers the second finding: the refusal the arm above gave
+  up was re-expressed for an implementation and is now asserted again for a role
+  acceptance does not land, by
+  <code>test_a_role_acceptance_does_not_land_keeps_the_unmerged_refusal</code>,
+  which reads a <code>"role": "test"</code> run's refusal, its
+  <code>unmerged_commits</code>, the pointer still on disk and an empty ledger.
+  Removing the branch that refuses an
+  unmerged non-implementation makes that arm fail with
+  <code>KeyError: 'unmerged_commits'</code>, so the guard is asserted rather
+  than merely present.</p>
+
+  <p>The table's head rows name the revision the cited log's first line names, so
+  a reader holding this fragment and a log reconciles them without a further
+  run; the revision is the commit that carried the test change, and the
+  fragment's own commit changes no test.</p>
+
   <h3 id="qwnw-red-file-reflex-acceptance-reads-the-remote-primary-outside">Outside scope</h3>
 
   <p><code>tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted</code>
   is red at the same base revision for the same two causes (observed while
   outside this node's file: 1 failed, 18 passed). It is a different file and was
-  not repaired here.</p>
+  not repaired here; the refusal it was to assert is asserted by this node's own
+  role arm instead.</p>
 </section>
