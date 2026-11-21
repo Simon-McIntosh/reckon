@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1126">
+<meta name="plan-version" content="1127">
 <meta name="plan-modified" content="2026-11-21">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3447,6 +3447,9 @@
 </div>
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261120T210813697448-review-of-qwnw-a-loaded-node-publishes-a-current-disk-reading-0ca74c486961" data-who="reckon-build" data-when="2026-11-20T21:24:33.654Z">
     <div class="r-comment-body"><p>Review of 0ca74c4869 against 68d13e40, one commit, two test files, +117 -1: goal_fidelity 18, evidence 15, scope_discipline 20, durability 16, fit 16, reuse 18, added_failure_count 0, two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261119T184810689491-qwnw-a-loaded-node-publishes-a-current-disk-reading" data-who="reckon-build" data-when="2026-11-19T20:10:58Z">
+    <div class="r-comment-body"><p>The sampler publishes the disk reading as the first step of a pass whose every step is clamped to a 90-second pass bound, and the unowned-scratch sweep runs as its own step after the row is written, so consecutive published readings are separated by the wait plus the pass bound — 60 + 90 seconds inside the 180-second freshness limit — where the base ordering separated them by 18.3 seconds against an 8-second limit at the same scale; a reading that does go stale now names the row&#x27;s sampler process and the age of the reading and holds no stop hook.</p></div>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261120T204802120637-qwnw-a-landed-plan-write-survives-a-promotion" data-who="reckon-build" data-when="2026-11-20T21:35:52.272Z">
     <div class="r-comment-body"><p>Added tests/test_a_landed_plan_write_survives_a_promotion.py, which interleaves a section append with a landing comment in both orders: 2 passed there, 60 passed on the scoped gate and 58 on the base arm, and the negative control (the disagreement guard removed) fails with the appended section missing.</p></div>
