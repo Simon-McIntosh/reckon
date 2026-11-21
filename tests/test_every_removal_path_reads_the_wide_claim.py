@@ -25,8 +25,12 @@ from a launch's own side. Neither consults what phase a pointer carries.
 
 A function that removes a tree this same body registered itself with ``git
 worktree add`` is not a removal path of a run's worktree: the path was
-generated here and never handed to a pointer, so only a removal call built
-from the names its own registration read may use that exemption.
+generated here and never handed to a pointer. The exemption is identity of the
+freed path, so only a removal call that frees a name the registration's own
+path argument read may use it — the release helper's options (a run id, the
+trash root the move must land on) say what the tree is released *as*, not which
+tree it is, and a call tied to the registration by nothing but an option stays
+a removal path judged by the claim.
 
 Every case works on synthesised pointers, mounts and repositories under a
 temporary config home; no real fleet directory is read or written.
@@ -155,20 +159,63 @@ def _is_registration_call(node: ast.AST) -> bool:
     )
 
 
-def _names_in(node: ast.AST) -> set[str]:
-    """Every identifier a call refers to."""
-    return {child.id for child in ast.walk(node) if isinstance(child, ast.Name)}
+def _registered_path(node: ast.Call) -> ast.AST | None:
+    """The path expression a ``git worktree add`` call registers, if any.
+
+    The path is the first argument after the ``add`` subcommand that is not a
+    flag, so ``git worktree add --detach <path> <rev>`` yields ``<path>``.
+    """
+    for index, argument in enumerate(node.args):
+        if not (isinstance(argument, ast.Constant) and argument.value == "add"):
+            continue
+        for later in node.args[index + 1 :]:
+            if (
+                isinstance(later, ast.Constant)
+                and isinstance(later.value, str)
+                and later.value.startswith("-")
+            ):
+                continue
+            return later
+    return None
+
+
+def _path_expression(node: ast.AST) -> ast.AST:
+    """The path a call argument denotes, with a ``str(...)`` cast stripped."""
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "str"
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        return node.args[0]
+    return node
 
 
 def _removes_own_registration(
     node: ast.FunctionDef | ast.AsyncFunctionDef, call: ast.Call
 ) -> bool:
-    """Whether a removal call targets only a tree this same body registered."""
+    """Whether a removal call frees the path this same body registered.
+
+    Identity is the freed path, not every name the call mentions: the release
+    helper takes options of its own — a run id, the trash root it must stay on
+    — and those are values about the tree, not the tree. A call whose only tie
+    to the registration is an option is still a removal path judged by the
+    claim, while a call that frees the very expression the registration read is
+    not.
+    """
     registered: set[str] = set()
     for child in ast.walk(node):
-        if _is_registration_call(child):
-            registered.update(_names_in(child))
-    return bool(registered) and _names_in(call) <= registered
+        if not _is_registration_call(child):
+            continue
+        target = _registered_path(child)
+        if target is not None:
+            registered.add(ast.dump(_path_expression(target)))
+    if not registered:
+        return False
+    return any(
+        ast.dump(_path_expression(argument)) in registered for argument in call.args
+    )
 
 
 def _scan_source(source: str, module_key: str) -> dict[str, _RemovalPath]:
@@ -385,18 +432,32 @@ def test_the_scan_reads_the_launch_side_view_as_the_wide_claim() -> None:
 
 def test_the_scan_exempts_only_a_tree_the_body_registers() -> None:
     """The exemption covers a tree the body registers, never a tree it is
-    handed: a removal call built from the registration's own names is exempt,
-    while one naming anything else stays a removal path judged by the claim."""
+    handed: a removal call that frees the registration's own path is exempt,
+    while one freeing anything else stays a removal path judged by the claim.
+    """
     own = (
         "def _scratch_checkout(repo, sha):\n"
         "    target = scratch / 'tree'\n"
-        "    _git(repo, 'worktree', 'add', str(target), sha)\n"
+        "    _git(repo, 'worktree', 'add', '--detach', str(target), sha)\n"
         "    try:\n"
         "        yield target\n"
         "    finally:\n"
-        "        _git(repo, 'worktree', 'remove', str(target))\n"
+        "        _git(repo, 'worktree', 'remove', '--force', str(target))\n"
     )
     assert _scan_source(own, "reckon/scratch.py") == {}
+
+    released = (
+        "def _scratch_checkout(repo, sha):\n"
+        "    target = scratch / 'tree'\n"
+        "    _git(repo, 'worktree', 'add', '--detach', str(target), sha)\n"
+        "    try:\n"
+        "        yield target\n"
+        "    finally:\n"
+        "        _release_worktree_whole(\n"
+        "            repo, target, run_id='landing-base', trash_root=scratch\n"
+        "        )\n"
+    )
+    assert _scan_source(released, "reckon/scratch.py") == {}
 
     handed = (
         "def _reclaim(repo, path):\n"
@@ -404,4 +465,13 @@ def test_the_scan_exempts_only_a_tree_the_body_registers() -> None:
         "    _git(repo, 'worktree', 'remove', str(path))\n"
     )
     found = _scan_source(handed, "reckon/scratch.py")
+    assert list(found) == ["reckon/scratch.py::_reclaim"]
+
+    option_only = (
+        "def _reclaim(repo, path):\n"
+        "    target = scratch / 'tree'\n"
+        "    _git(repo, 'worktree', 'add', str(target), 'HEAD')\n"
+        "    _release_worktree_whole(repo, path, trash_root=target)\n"
+    )
+    found = _scan_source(option_only, "reckon/scratch.py")
     assert list(found) == ["reckon/scratch.py::_reclaim"]
