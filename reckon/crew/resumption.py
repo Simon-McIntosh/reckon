@@ -1725,6 +1725,28 @@ def _refusal_entry(entry: Mapping[str, Any], exc: BaseException) -> dict[str, An
     return {**entry, "reason": "resume-refused", "detail": str(exc)}
 
 
+def _clear_launch_failure(run_id: str) -> None:
+    """Return a launch-failed run to the live phase a hand-typed resume earns.
+
+    The phase and its failure list are what stop the lift loop, so a person who
+    has repaired the command lifts them by resuming: the new attempt starts from
+    a live phase rather than reading as the failure it supersedes. The recorded
+    history survives in the retired attempt receipts, so clearing the pointer's
+    copy loses no evidence.
+    """
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return
+        if str(current.get("phase") or "") != "launch-failed":
+            return
+        current["phase"] = "starting"
+        current.pop("launch_failures", None)
+        current.pop("detail", None)
+        _write_json(pointer_path(run_id), current)
+
+
 def _launch_failure_block(record: Mapping[str, Any]) -> dict[str, str] | None:
     """Describe the launch failure that stops this run's lift, or None.
 
@@ -2093,13 +2115,21 @@ def _resume(
         )
     failure = _launch_failure_block(record)
     if failure is not None:
-        # A launch that produced no stream has no session to continue, so a
-        # lift would repeat the failed exec every tick. It waits for a person.
-        raise CrewError(
-            f"run {run_id!r} is in phase {failure['phase']!r}: "
-            f"{failure['detail']} — repair the launch ("
-            f"{failure['remedy']}) and resume it by hand, or complete it"
-        )
+        if not coordinator:
+            # A launch that produced no stream has no session to continue, so a
+            # lift would repeat the failed exec every tick. It waits for a
+            # person, and only a person's own command may relaunch it.
+            raise CrewError(
+                f"run {run_id!r} is in phase {failure['phase']!r}: "
+                f"{failure['detail']} — repair the launch ("
+                f"{failure['remedy']}) and resume it by hand, or complete it"
+            )
+        # A hand-typed resume is that repair: it launches a fresh attempt on the
+        # run's own backend, so the failure and its phase are cleared and the
+        # attempt allowance restored rather than left to the launch that
+        # supersedes them.
+        _clear_launch_failure(run_id)
+        record = read_pointer(run_id)
     _refuse_a_launch_already_running(run_id)
     if coordinator:
         # A repair round that took an attempt and then declared it was waiting
