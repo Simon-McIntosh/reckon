@@ -1506,6 +1506,118 @@ def _merged_primary_baseline(
     return normalized
 
 
+#: The manifest key prefixes that open a labelled suite pair. A run armed on
+#: more than one population records each population's arms apart, so a label's
+#: pair is judged on its own rather than one population's baseline being read
+#: against another's head.
+_LABELLED_SUITE_PREFIXES = ("baseline_suite_", "after_suite_")
+
+
+def labelled_suite_pairs(
+    manifest: Mapping[str, Any] | None,
+) -> list[tuple[str, Any, Any]]:
+    """Every labelled suite pair a manifest records, ordered by label.
+
+    A label opens a pair when either side is present, so a label carrying only
+    one arm is still a pair to judge and the absent side is what the
+    completeness check names. The unlabelled ``baseline_suite``/``after_suite``
+    fields carry no label and are read by the ordinary path.
+    """
+    if not isinstance(manifest, Mapping):
+        return []
+    labels: set[str] = set()
+    for key in manifest:
+        for prefix in _LABELLED_SUITE_PREFIXES:
+            if key.startswith(prefix) and key != prefix:
+                labels.add(key[len(prefix) :])
+    return [
+        (
+            label,
+            manifest.get(f"baseline_suite_{label}"),
+            manifest.get(f"after_suite_{label}"),
+        )
+        for label in sorted(labels)
+    ]
+
+
+def _evaluate_labelled_suite_delta(
+    manifest: Mapping[str, Any],
+    *,
+    suite_command: str,
+) -> dict[str, Any]:
+    """Judge a manifest whose suite arms are recorded per label.
+
+    Each label's pair is judged as the unlabelled pair is: both sides must be
+    complete evidence, and the after arm must add no failure its own baseline
+    does not name. A label missing a side is refused naming that side; a label
+    whose after arm adds a failure is refused naming the label and the id, so
+    the worker knows which population to repair. A clean set of pairs is a
+    clean delta.
+    """
+    pairs = labelled_suite_pairs(manifest)
+    missing: list[str] = []
+    normalized: list[dict[str, Any]] = []
+    added_by_label: dict[str, list[str]] = {}
+    for label, baseline, after in pairs:
+        pair_missing = [
+            *ledger.suite_observation_missing_fields(
+                baseline, name=f"baseline_suite_{label}"
+            ),
+            *ledger.suite_observation_missing_fields(
+                after, name=f"after_suite_{label}"
+            ),
+        ]
+        if pair_missing:
+            missing.extend(pair_missing)
+            continue
+        added = ledger.added_failure_ids(baseline, after)
+        if added:
+            added_by_label[label] = added
+        normalized.append(
+            {
+                "label": label,
+                "baseline_suite": ledger.normalized_suite_observation(baseline),
+                "after_suite": ledger.normalized_suite_observation(after),
+                "added_failure_ids": added,
+            }
+        )
+    if missing:
+        raise ledger.SuiteDeltaError(
+            "labelled suite arms require a complete baseline and after pair for "
+            "every label; missing " + ", ".join(missing),
+            missing_fields=missing,
+        )
+    if added_by_label:
+        detail = "; ".join(
+            f"after_suite_{label} names failures its baseline_suite_{label} "
+            "does not: " + ", ".join(ids)
+            for label, ids in added_by_label.items()
+        )
+        raise ledger.SuiteDeltaError(
+            "armed promotion added suite failures: " + detail,
+            added_failure_ids=[
+                failure_id for ids in added_by_label.values() for failure_id in ids
+            ],
+        )
+    first = normalized[0]
+    return {
+        "status": "clean",
+        "suite_command": suite_command,
+        "baseline_suite": first["baseline_suite"],
+        "after_suite": first["after_suite"],
+        "suite_pairs": normalized,
+        "added_failure_ids": [],
+        "failure_attribution": {},
+        "inherited_failure_ids": {},
+        "primary_suite": None,
+        "waiver_reason": None,
+        "waiver_covered_fields": [],
+        "waived_arms": None,
+        "measured_by": "run",
+        "baseline_measured_nothing": False,
+    }
+
+
 def _evaluate_suite_delta(
     run_id: str,
     record: Mapping[str, Any],
@@ -1575,9 +1687,18 @@ def _evaluate_suite_delta(
             )
         except (OSError, KeyError, ValueError):
             manifest = {}
+    labelled_pairs = labelled_suite_pairs(manifest)
+    if labelled_pairs and not (
+        isinstance(manifest.get("baseline_suite"), Mapping)
+        or isinstance(manifest.get("after_suite"), Mapping)
+    ):
+        # A manifest that records its arms per label has no unlabelled pair to
+        # read; each label's pair is judged on its own so one population's
+        # failures are never compared against another population's baseline.
+        return _evaluate_labelled_suite_delta(manifest, suite_command=suite_command)
+    head = _run_head(record)
     baseline = manifest.get("baseline_suite")
     after = manifest.get("after_suite")
-    head = _run_head(record)
     measured_by_landing = False
     missing: list[str] = []
     if not manifest_present:
