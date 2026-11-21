@@ -11,6 +11,7 @@ mutable state, imported once and independent of run-index rebuilds.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import logging
@@ -18,7 +19,9 @@ import os
 import random
 import sqlite3
 import subprocess
+import threading
 import time
+from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import datetime
 from pathlib import Path
@@ -904,6 +907,81 @@ def stored_run_payloads(
     return token, read()
 
 
+#: Distinct answers held beside the token they were built from, and the rows
+#: those answers may hold between them. One reader asks a handful of questions
+#: per store revision, so the working set sits well under both bounds while a
+#: long-lived process stays bounded however often the token moves underneath it.
+_ROW_ANSWER_LIMIT = 32
+_ROW_ANSWER_ROWS = 50_000
+
+#: Decoded answers keyed by the question and the token it was answered under.
+#: The token is part of the key, so a moved token makes an entry unreachable
+#: rather than wrong: an entry never answers from a store revision it was not
+#: built from. Every answer is handed out as a copy, so a caller that mutates a
+#: record it was given cannot change the next caller's answer.
+_row_answers: OrderedDict[tuple[Any, ...], list[dict[str, Any]]] = OrderedDict()
+_row_answers_lock = threading.Lock()
+
+
+def _answer_key(
+    target: Path,
+    token: tuple[Any, ...],
+    project: str,
+    run_ids: tuple[str, ...] | None,
+    plan: str | None,
+    node: str | None,
+    fields: tuple[str, ...] | None,
+    activity_since: float | None,
+) -> tuple[Any, ...]:
+    return (
+        str(target),
+        token,
+        project,
+        run_ids,
+        plan,
+        node,
+        fields,
+        activity_since,
+    )
+
+
+def _cached_answer(key: tuple[Any, ...]) -> list[dict[str, Any]] | None:
+    with _row_answers_lock:
+        records = _row_answers.get(key)
+        if records is None:
+            return None
+        _row_answers.move_to_end(key)
+        return copy.deepcopy(records)
+
+
+def _remember_answer(key: tuple[Any, ...], records: list[Any]) -> None:
+    """Keep one answer, evicting the oldest until both bounds hold again.
+
+    An answer larger than the whole row bound is not kept at all: caching it
+    would evict every other answer and then exceed the bound itself.
+    """
+    if len(records) > _ROW_ANSWER_ROWS:
+        return
+    with _row_answers_lock:
+        _row_answers[key] = copy.deepcopy(records)
+        _row_answers.move_to_end(key)
+        held = sum(len(answer) for answer in _row_answers.values())
+        while len(_row_answers) > _ROW_ANSWER_LIMIT or held > _ROW_ANSWER_ROWS:
+            _, evicted = _row_answers.popitem(last=False)
+            held -= len(evicted)
+
+
+def _decode_run_row(payload: str, detail: str | None) -> dict[str, Any]:
+    """Decode one stored row's durable and detail halves into one record.
+
+    The single point a stored row becomes Python, so a caller measuring what a
+    read cost counts rows here rather than inferring it from the query.
+    """
+    return run_record.normalize_outside_scope_paths(
+        {**json.loads(payload), **(json.loads(detail) if detail else {})}
+    )
+
+
 def stored_run_rows(
     project: str,
     *,
@@ -924,42 +1002,50 @@ def stored_run_rows(
     ``path`` names the store to read and falls back to the resolved location,
     so a caller comparing two stores — or a probe holding its own fixture —
     reads the one it named rather than whichever store this machine routes to.
+
+    A repeated question is answered from the previous answer while the store's
+    change token stands still; q.v. :func:`store_stamp`. The token is read
+    before and after the rows, and an answer is kept only when the two agree, so
+    a write that lands during the read cannot be cached under the token it
+    moved past. ``None`` is never kept: an absent store has no answer to hold.
     """
     target = store_path() if path is None else Path(path)
     if not target.exists():
         return None
+    identities = None if run_ids is None else tuple(str(value) for value in run_ids)
+    token = change_token(target)
+    key = _answer_key(
+        target, token, project, identities, plan, node, fields, activity_since
+    )
+    cached = _cached_answer(key)
+    if cached is not None:
+        return cached
     connection = _open_readonly(target)
     try:
-        if not _refuse_owed_migration(connection, target):
-            return []
-        schemas = _read_attached_tables(connection, target)
-        records = []
-        for run_id, payload, detail in _record_rows(
-            connection,
-            schemas=schemas,
-            project=project,
-            run_ids=run_ids,
-            plan=plan,
-            node=node,
-            fields=fields,
-            activity_since=activity_since,
-        ):
-            if fields == ("run_id",):
-                records.append({"run_id": str(run_id)})
-            else:
-                records.append(
-                    run_record.normalize_outside_scope_paths(
-                        {
-                            **json.loads(payload),
-                            **(json.loads(detail) if detail else {}),
-                        }
-                    )
-                )
-        return records
+        records: list[dict[str, Any]] = []
+        if _refuse_owed_migration(connection, target):
+            schemas = _read_attached_tables(connection, target)
+            for run_id, payload, detail in _record_rows(
+                connection,
+                schemas=schemas,
+                project=project,
+                run_ids=identities,
+                plan=plan,
+                node=node,
+                fields=fields,
+                activity_since=activity_since,
+            ):
+                if fields == ("run_id",):
+                    records.append({"run_id": str(run_id)})
+                else:
+                    records.append(_decode_run_row(payload, detail))
     except sqlite3.Error as error:
         raise _unreadable(target, f"{type(error).__name__}: {error}") from error
     finally:
         connection.close()
+    if change_token(target) == token:
+        _remember_answer(key, records)
+    return records
 
 
 #: The fields :func:`reckon.ledger.row_plan` reads to name a row's plan. A
