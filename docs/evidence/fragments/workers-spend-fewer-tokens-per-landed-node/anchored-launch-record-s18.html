@@ -20,34 +20,37 @@
   <p><code>reckon/crew/dispatch_launch.py</code> no longer writes an
     <code>anchored_edit</code> or <code>anchored_edit_reason</code> field at any
     of its three record sites: the supervisor spec, the worker record, and the
-    live pointer's phase rewrite. Nothing outside the module read either field,
-    so the records now name only what a launch still uses — the backend, its
-    argv and its dialect. A grep for <code>anchored_edit</code> and
+    live pointer's phase rewrite. A grep for <code>anchored_edit</code> and
     <code>anchored-edit</code> over the changed path finds nothing.</p>
-  <p><strong>Measure.</strong> Base arm <code>1666d19f7744</code> and head arm
-    <code>c531183617a5</code> both ran the armed suite
+  <p><strong>Its guard.</strong> <code>tests/test_anchored_edit_claude_arm.py</code>
+    reads those keys: <strong>that file reads both, and the field's removal
+    broke it</strong> — it reported <code>13 failed, 28 passed in 4.29s</code>
+    against <code>41 passed</code> at base. The receipt assertions now assert
+    the keys are <em>absent</em> from the spec, the worker record and the
+    pointer, which is the guard the change needs: the treatment stays on the
+    plan and in the prompt, and a record that names it again fails. The attempt guard test keeps covering the stored phase, which is the field the pointer still owns.</p>
+  <p><strong>Measure.</strong> The armed suite
     (<code>tests/test_staged_write_inventory.py
-    tests/test_every_shared_home_lock_holds_across_nodes.py</code>) on the
-    <code>all_debug</code> partition, one arm at a time: the base read
-    <code>58 passed in 43.05s</code> and the head <code>58 passed in
-    37.95s</code>, <code>EXIT=0</code> in each. A corroborating run of the four
-    suites that import the changed module — the pointer phase advance, the
-    refused lane change, the attempt exit and the review-record check — read
-    <code>34 passed in 11.60s</code>.
+    tests/test_every_shared_home_lock_holds_across_nodes.py</code>) ran one arm
+    at a time on <code>all_debug</code>: base read <code>58 passed in
+    44.66s</code> at tree-head <code>1666d19f7744</code> and head
+    <code>58 passed in 46.50s</code>, <code>EXIT=0</code> in each. The repaired
+    guard reads <code>41 passed in 2.01s</code>. The corroborating pointer
+    suites read <code>34 passed in 11.60s</code>.
     <code>ruff check</code> reports the same two findings in both arms and
     <code>ruff format --check</code> the same two hunks, so the change adds
     none.</p>
-  <p><strong>Falsified.</strong> The declared negative control is a spec whose
-    backend still carries <code>anchored_edit: true</code>. The same probe run
-    against the base tree prints the worker record's keys with
-    <code>anchored_edit</code> and <code>anchored_edit_reason</code> present,
-    and against the head tree prints them absent (<code>EXIT=0</code> both, with
-    the base run as the positive control that the probe sees the field when it
-    exists). A record that still carried the field would be caught by this
-    probe. The module <code>reckon/anchored_edit.py</code>, the flight key and
-    the backend dialect are removed by later nodes of this section; the argv a
-    backend composes still carries its own flag until then, which is outside
-    this node's write scope.</p>
+  <p><strong>Falsified.</strong> Two directions, both red. The head module with
+    the base receipt assertions reads <code>13 failed, 28 passed in
+    4.29s</code>. The repaired assertions against the base module — the module
+    that still writes the field — read <code>13 failed, 28
+    passed in 2.07s</code>, <code>EXIT=1</code> in each, so the new assertions
+    fire on exactly the record the change removed. The declared negative control
+    is the same fact stated as data: a spec whose backend carries
+    <code>anchored_edit: true</code> produced a record naming it at
+    <code>1666d19f7744</code> and produces no such key at the head, with the
+    base run as the positive control that the probe reads the field when it
+    exists.</p>
 </article>
 </body>
 </html>
