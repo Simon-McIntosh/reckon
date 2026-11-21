@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s33">
+  <meta name="plan-verdict" content="pass">
+  <title>A decision answer accepts an inline object | reckon</title>
+</head>
+<body>
+  <main>
+    <h1 id="wlsr-a-decision-answer-accepts-an-inline-object-title">A decision answer accepts an inline object</h1>
+    <p id="wlsr-a-decision-answer-accepts-an-inline-object-what">The answer reader now resolves the three forms the command's help offers: an inline JSON object, a readable file holding one, or <code>-</code> for standard input. The option carries the raw value and <code>read_answers</code> in <code>reckon/crew/lost_session_work.py</code> decides the form, so an inline object is no longer opened as a path.</p>
+    <p id="wlsr-a-decision-answer-accepts-an-inline-object-refusal">A value that is none of the three is refused with the forms named in the detail, instead of surfacing as a missing file.</p>
+    <h2 id="wlsr-a-decision-answer-accepts-an-inline-object-measure">Measure</h2>
+    <p id="wlsr-a-decision-answer-accepts-an-inline-object-gate">The scoped gate reads 73 passed across this node's file and the two neighbouring suites, EXIT=0. The suite arms read 69 passed at the base revision and 73 at the head, both EXIT=0. At the base revision the inline case fails with <code>Invalid value for '--answers': '{"r-lost-queued": ...}': No such file or directory</code> and exit 2, while the file form passes: 3 failed, 12 passed, EXIT=1, which is the recorded negative control.</p>
+  </main>
+</body>
+</html>
