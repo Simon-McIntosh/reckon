@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T21:05:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:95",
+      "id": "reasoning-1",
+      "reason": "two nodes built from \u00a75 and \u00a78 will implement contradictory behaviour for one request class and one will fail the other's done-when, so \u00a75's second sentence must be revised to defer to \u00a78 (idle only when the service may not queue the upstream) or \u00a78 must carve out \u00a75's class.",
+      "text": "\u00a78 queues the upstream when \"a stored request waits on a section that is declared implementable, has no live request, and sits in a plan the service may queue\", while \u00a75 line 74 states that \"a request waiting on a section nobody is building, whose upstream could still land, keeps the idle report it has today\"; that is the same class of request, so one section queues it and the other leaves it idle, and the new \u00a78 does not declare any reconciliation with \u00a75",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:88",
+      "id": "done_when-1",
+      "reason": "this is a soft performance target that does not alter what the section delivers or gate its functional arms; a node can still measure a pass-time delta, so naming a base would sharpen it but does not change the plan.",
+      "text": "\u00a77's done-when closes with \"On the fleet node, one pass over the mounted projects adds under two seconds to the pass\", a timing bound stated with no base revision, comparator or sample size, so it sits beside the functional arms without a way to fail deterministically and would need its own uncontrolled benchmark",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "0ad00226fcb2f2fcd0bfc3d69b11730805daca75",
+  "plan_fingerprint": "049794b103002430ee982c00dba1bf576342cd337b55b755d789969df56e076c",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261121T210349920870-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "8ddc0513ab8f973810a5a0eb6c8b1e582439bb2e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commit `130892970e` resolves, `queued-work-needs-no-workaround#s3` exists, and the \"lost-session\" plan (`work-of-a-lost-session-is-raised-not-left.html`) that \u00a77 depends on for its lost-owner arm exists; no extensionless-href defect.",
+    "done_when": "a finding \u2014 \u00a77's done-when mixes an untargeted timing bound (\"adds under two seconds to the pass\") among its functional arms, with no base revision, comparator or sample.",
+    "evidence_paths": "pass \u2014 each changed section writes its arms' logs under the run directory, which is held with the run record rather than a node-local temporary path.",
+    "naming": "pass \u2014 section headings, test names and symbols describe mechanism (queue a reviewed plan, queue an idle wait's upstream, adopt within a shared sprint) with no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a78 queues the upstream for exactly the class of request \u00a75 says keeps its idle report, so the plan asserts two incompatible endpoints for the same request and neither section names the other.",
+    "single_goal": "pass \u2014 \u00a77 (the service queues reviewed plans), \u00a78 (an idle wait queues its upstream) and \u00a79 (sprint-scoped adoption) each name one deliverable, and each done-when's arms all serve that one.",
+    "wiring": "pass \u2014 every entry in `plan-section-depends-on` resolves to a section that exists and delivers what the dependent needs (s2\u2192queued-work-needs-no-workaround#s3 \"Every field a dispatch omits is taken from its section\"; s3\u2192s2; s4\u2192s2; s7\u2192s2+s4; s8\u2192s7; s9\u2192s4), and no declared relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "06efae08dd00c949c0bde0cee66e10753771cc4f722a032b1c87ff6acf6e4c39",
+    "s1": "945f8192ba732e39775a62f309dac8f70be446863df5da2d0106234609894eeb",
+    "s2": "b96d0d4a387a7df8054bf90cf48f7a097a2c0e1102fda7ee546d4b8cc46f963a",
+    "s3": "072e525acac0eebf1bfbc75f216687e5dea2b9318687210153ae22b8296dbd9e",
+    "s4": "1fe8ec78c1acc206d7c851dae37a93866c66d22b3436bb0ad3047d709e525a90",
+    "s5": "8e1338f8456b3cdbe21db559c51b923a814de8d111d9e3388104083ffcbd6246",
+    "s6": "6e8492474b3eefba9051c5e9dc353856693810abce0a8fd10ee27a503d6e5f68",
+    "s7": "116ebf52959bf73aaf3d12b2e91d00c7ce079646bc9f4985f6ff8b0eca49a86c",
+    "s8": "3ee95818a96359161c86d28581b22d1a36de86987491b8f381ef4b86c7b80bed",
+    "s9": "4b76fa38099968ea757884c34ae6b08fb0d12e97e2e436459589b03e1a35e5e9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T21:18:27.264657+00:00",
+  "total": null
+}
