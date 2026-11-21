@@ -1342,6 +1342,16 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
+    # A stop that could not settle the run's scheduler step leaves work running
+    # where this host cannot see it, so the reason is read before any liveness
+    # probe: the local process may be gone while the step still works, and the
+    # generic refusal would name neither the step nor the command that ends it.
+    from reckon.crew import resumption as _resumption
+
+    step_refusal = _resumption.surviving_step_refusal(record)
+    if step_refusal is not None:
+        _resumption.store_refused_advice(run_id, advice)
+        raise step_refusal
     from reckon.crew.recovery_liveness import _record_is_known_foreign
 
     if (
@@ -2262,6 +2272,7 @@ def terminate(run_id: str) -> dict[str, Any]:
             _record_is_known_foreign,
             launcher_host_is_gone,
         )
+        from reckon.crew.process_signal import cancel_placed_step
 
         foreign = _record_is_known_foreign(record)
         if foreign and not launcher_host_is_gone(record):
@@ -2287,6 +2298,7 @@ def terminate(run_id: str) -> dict[str, Any]:
         # rather than the recorded pid's.
         # Foreign pids can collide with unrelated local processes. The
         # scheduler settles the remote end without probing or signalling them.
+        step_stop: dict[str, Any] | None = None
         if foreign:
             target_pids = []
             ended = []
@@ -2329,6 +2341,13 @@ def terminate(run_id: str) -> dict[str, Any]:
                 )
                 if not ended and not recorded_pid:
                     raise CrewError(f"run {run_id!r} has no process to stop")
+            # A placed worker's own worker runs on the node the allocation is
+            # held on, so no signal sent here reaches it and the step client
+            # waits for that step rather than ending with the signal. The step
+            # is ended where the scheduler holds it, before the wait below, so
+            # a client that was waiting on the step exits within the same
+            # bound rather than outliving the stop.
+            step_stop = cancel_placed_step(run_directory)
             alive_after = _await_run_processes_gone(
                 int(recorded_pid) if recorded_pid else None,
                 run_id=run_id,
@@ -2357,6 +2376,25 @@ def terminate(run_id: str) -> dict[str, Any]:
         record["killed_pids"] = killed
         record["alive_after"] = alive_after
         record["held_by"] = holders
+        # A step that was still listed after the bound is not a detail: it is
+        # work of this run that is still running where this host cannot see it,
+        # so the run records why it cannot be resumed rather than only what the
+        # stop did to the local tree.
+        step_unsettled = (
+            step_stop is not None and step_stop.get("surviving") is not False
+        )
+        if step_stop is not None:
+            record["step_stop"] = step_stop
+        if step_unsettled:
+            record["stop_reason"] = (
+                f"step {step_stop['step']} outlived the stop; "
+                f"end it with `{step_stop['command']}` before resuming"
+                if step_stop.get("surviving") is True
+                else (
+                    f"step {step_stop['step']} could not be observed after the "
+                    f"stop; end it with `{step_stop['command']}` before resuming"
+                )
+            )
         if alive_after:
             record["detail"] = (
                 f"run {run_id}: SIGTERM sent to {len(ended)} of "
@@ -2381,15 +2419,21 @@ def terminate(run_id: str) -> dict[str, Any]:
                 f"; {len(holders)} process(es) hold the worktree with no "
                 "ownership mark and were left alive"
             )
+        if step_stop is not None:
+            record["detail"] += f"; {step_stop['detail']}"
         record["phase"] = "stopped"
         record["stopped_at"] = _utc_now()
         # A stop owns the wait when its supervisor was ended before it could
         # file an exit. The receipt is written only after the whole tree is
-        # gone; a surviving worker must keep every resume door closed.
+        # gone; a surviving worker must keep every resume door closed, and so
+        # must an unsettled step — a receipt says an end was observed, which a
+        # step still running elsewhere contradicts.
         record["stop_exit_recorded"] = (
-            _record_stopped_attempt_exit(run_id, record) if not alive_after else False
+            _record_stopped_attempt_exit(run_id, record)
+            if not alive_after and not step_unsettled
+            else False
         )
-        if not alive_after and not record["stop_exit_recorded"]:
+        if not alive_after and not step_unsettled and not record["stop_exit_recorded"]:
             record["detail"] += "; the stopped attempt's exit could not be recorded"
         # The result a caller prints and the record it reads back both carry
         # what happened to the tree, so neither has to be opened to know
