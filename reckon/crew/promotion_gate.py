@@ -1084,7 +1084,6 @@ def _rerun_gate_at_integrated_revision(
                 replay_text = result.stdout or ""
                 status = result.returncode
             report["exit_status"] = status
-            report["integrated_verdict"] = "passed" if status == 0 else "failed"
             written = _write_replay_log(
                 replay_log_path,
                 stream=replay_log_stream,
@@ -1094,8 +1093,24 @@ def _rerun_gate_at_integrated_revision(
             )
             if written is not None:
                 report["log_path"] = str(written)
+                report["integrated_verdict"] = "passed" if status == 0 else "failed"
+            elif status == 0:
+                report["integrated_verdict"] = "passed"
+            else:
+                # A replay that exited non-zero and wrote no log produced no
+                # evidence a reader can open. That is a failure of the replay
+                # itself, not a verdict on the run's code: recording it as the
+                # run's failure would charge the delivery for a measurement
+                # nobody can read.
+                report["integrated_verdict"] = "not-run"
+                report["replay_failure"] = (
+                    f"the replay exited {status} and wrote no log, so its "
+                    "output cannot be read as a verdict on the run"
+                )
     if reason is not None:
         report["reason"] = reason
+    elif report.get("replay_failure"):
+        report["reason"] = str(report["replay_failure"])
     elif report["timed_out"]:
         report["reason"] = _replay_cut_short_reason(
             bound_seconds=bound_seconds,
