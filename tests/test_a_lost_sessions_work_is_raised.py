@@ -120,6 +120,12 @@ def test_one_decision_names_every_record_and_ten_passes_write_once(
         assert row["age_hours"] and row["age_hours"] >= 72
         assert row["holds_back"]
 
+    # The decision is readable through the crew view, not only on disk.
+    from reckon.crew.lead_decisions import read_decisions
+
+    view = read_decisions(PROJECT)
+    assert [row["id"] for row in view["decisions"]] == [record["id"]], view["decisions"]
+
     for _ in range(10):
         later = _admit(resolve, _launcher([]))
         writes.extend(later["lost_session_decision"]["written"])
