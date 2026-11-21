@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/service.py:472 (admit_once from the once-mode admit pass)",
+    "reckon/crew/admission/service.py:537 (admit_once from the admit service loop)",
+    "reckon/crew_run_commands.py:6133 (crew admit --run, named admission)",
+    "reckon/crew/admission/review_sweep.py:47 (_sweep_project -> recovery_watch.recover with any_session=True)",
+    "reckon/crew_run_commands.py:5200 (crew recover --dispatch-reviews, the coordinator reflex)",
+    "reckon/crew/admission/verdicts.py:533 (_pass_verdict_record carries retired_lost_session onto the pass receipt)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T05:04:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "183",
+      "severity": "blocking",
+      "text": "blocking: after any retirement the re-read replaces queued with every queued pointer in the fleet, so on a named admission (admit_once(run_id=...), reached by `crew admit --run` at reckon/crew_run_commands.py:6133, whose docstring at :6124 states it 'returns after deciding only the named queued request ... and leaves unrelated requests untouched') line 303's `order = placeable if run_id` now ranks and can launch unrelated requests; the retirement loop at holds.py:1282 also ranges over every live pointer in that same named pass. Seen when a lost session holds any queued review: the named run is no longer the only candidate."
+    },
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": "1311",
+      "severity": "non-blocking",
+      "text": "non-blocking: run_id is appended to retired, and a retired-lost-session verdict row written, whether or not the discard went through, so a discard that refuses (handled at holds.py:1232) is still reported retired and listed in result['retired_lost_session'] and the pass receipt, contradicting _retire_lost_session_review's own docstring at holds.py:1206-1209; the pointer is stamped and the next pass retries, but the pass's record says the request left when it did not."
+    },
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": "1158",
+      "severity": "non-blocking",
+      "text": "non-blocking: _stamp_discard_reason duplicates recovery_review_dispatch._discard_stranded_review (reckon/crew/recovery_review_dispatch.py:888) line for line in its discard call, its marker lookup over discard_record_path/discard_spool_path and its three refusal sentences, differing only in the extra lost_session/last_heard_at/rule fields; extending the owner with an extra-fields argument would keep one implementation of writing a reason onto a departure. The same applies to _record_lost_session_retirement (holds.py:1246), which is _record_retirement (holds.py:1082) with a different record payload."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "4525",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reflex derives lostness from LostSessionReads(pointers=scoring), only the records this project owes a review, where the admit pass uses every live pointer; session_lost dates a session from its oldest record when no lease or process is heard, so a session whose live records predate the scoring run reads younger here than in the admit pass and its review is composed rather than suppressed -- an under-detection that keeps the old behaviour the node exists to stop."
+    },
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-lost-sessions-reviews-retire.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node's declared evidence fragment and figures directory were not delivered, and every sibling section under docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/ carries one, so this section has no artifact for the plan's evidence record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production paths into the change: the admit pass reached from the service loop and once-mode, the named admission CLI, the review sweep, the recover CLI, and the pass-verdict writer.",
+    "diff": "read the single commit 27e754b16d against base 5adc9f1c5b: holds.py adds the lost-session retirement helpers, selection.py calls them and re-reads the fleet, verdicts.py carries the new key, lost_sessions.py stops stringifying a numeric created_at before parsing, recovery_watch.py suppresses composition for a lost session, and the new 339-line test file.",
+    "done_when": "the done_when names tests/test_a_lost_sessions_reviews_retire.py and five required cases plus a live-session negative control; the file carries all five at :87, :133, :184, :230, :244 and :262, the reflex pair at :262 and :296 supplies the three-pass measure and the live control, and gate.log records '8 passed in 3.12s' EXIT=0 at revision 27e754b16d, so the gate asserts the measure and its result is recorded rather than claimed.",
+    "goal": "the node's goal is to retire the review requests of a lost session; holds.py:1282 retires a queued or awaiting-upstream review of a lost session on the admitting pass and writes its facts onto the discard marker (holds.py:1158), and recovery_watch.py:4525 stops composing reviews under a lost session in recover(), the single function both composition paths call.",
+    "manifest": "read; status complete, commits 27e754b16d, changed_paths the six delivered files, tests the literal single-file pytest gate whose command line carries absolute paths, test_logs naming gate.log and regression.log, artifacts quoting '8 passed in 3.12s' and '3 failed, 142 passed', outside_scope naming the three pre-existing failures, and negative_control_log negative-control-reflex.log with its note.",
+    "write_paths": "read the reviewed manifest's declared paths and the delivery brief's copy of them; git diff 5adc9f1c5b..27e754b16d touches six paths and every one is inside the fence, while the declared evidence fragment docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-lost-sessions-reviews-retire.html and the figures directory carry no file."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lost_sessions_reviews_retire.py:87 fails if the admit retirement is not run and :230 fails if the epoch-stamp parse is stringified again, and the live-session pair at :168 and :296 establishes that neither guard fires on a live session; no test exercises admit_once with run_id, which is exactly where selection.py:183 regresses, and holds.py:1311 reports a retirement whose discard was refused.",
+    "evidence": "gate.log names revision 27e754b16d, the tree and the command on its header lines, reads '8 passed in 3.12s' EXIT=0; negative-control-reflex.log reads '1 failed, 6 passed' EXIT=1 and negative-control-admit.log '3 failed, 4 passed' EXIT=1; regression.log's three failures (3 failed, 142 passed) reproduce unchanged at the review base 5adc9f1c5b, which I re-ran as a three-test command and confirmed, so the added-failure count is 0 with a receipt.",
+    "fit": "the added helpers follow the shape of the sibling retirement at reckon/crew/admission/holds.py:1033 with mechanism-named symbols (_lost_session_review_answer, _stamp_discard_reason, _retire_lost_session_review) and no plan, section or ticket identifier in any added line.",
+    "goal_fidelity": "reckon/crew/admission/holds.py:1282 retires a queued/awaiting-upstream review of a lost session on the pass that finds it, and reckon/crew/recovery_watch.py:4525 suppresses composition for a lost session in recover(), which is the one function both the reflex (crew_run_commands.py:5200) and the admit service's sweep (review_sweep.py:47) route through, so the deliverable is met while reckon/crew/admission/selection.py:183 changes named-admission behaviour the goal does not imply.",
+    "reuse": "reckon/crew/admission/holds.py:1158 _stamp_discard_reason re-implements reckon/crew/recovery_review_dispatch.py:888 _discard_stranded_review (same discard call, same marker lookup over discard_record_path/discard_spool_path, same three refusal sentences) and holds.py:1246 _record_lost_session_retirement re-implements the sibling holds.py:1082 _record_retirement, rather than extending either owner with the extra fields.",
+    "scope_discipline": "every path in the diff (holds.py, selection.py, verdicts.py, lost_sessions.py, recovery_watch.py, tests/test_a_lost_sessions_reviews_retire.py) is inside the declared write paths, but selection.py:183-186 re-reads the whole live fleet after a retirement and thereby changes a named admission's candidate set, which the goal does not imply, and the declared evidence fragment and figures directory were not delivered."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to retire the review requests of a lost session; reckon/crew/admission/holds.py:1282 retires a queued or awaiting-upstream review of a lost session on the admitting pass and writes its facts onto the discard marker (holds.py:1158), and reckon/crew/recovery_watch.py:4525 stops composing reviews under a lost session in recover(), the single function both composition paths call.\nVERDICT done_when: the done_when names tests/test_a_lost_sessions_reviews_retire.py and five required cases plus a live-session negative control; the file carries all five at :87, :133, :184, :230, :244 and :262, the reflex pair at :262 and :296 supplies the three-pass measure and the live control, and gate.log records '8 passed in 3.12s' EXIT=0 at revision 27e754b16d, so the gate asserts the measure and its result is recorded rather than claimed.\nVERDICT write_paths: read the reviewed manifest's declared paths and the delivery brief's copy of them; git diff 5adc9f1c5b..27e754b16d touches six paths and every one is inside the fence, while the declared evidence fragment docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-lost-sessions-reviews-retire.html and the figures directory carry no file.\nVERDICT manifest: read; status complete, commits 27e754b16d, changed_paths the six delivered files, tests the literal single-file pytest gate whose command line carries absolute paths, test_logs naming gate.log and regression.log, artifacts quoting '8 passed in 3.12s' and '3 failed, 142 passed', outside_scope naming the three pre-existing failures, and negative_control_log negative-control-reflex.log with its note.\nVERDICT diff: read the single commit 27e754b16d against base 5adc9f1c5b: holds.py adds the lost-session retirement helpers, selection.py calls them and re-reads the fleet, verdicts.py carries the new key, lost_sessions.py stops stringifying a numeric created_at before parsing, recovery_watch.py suppresses composition for a lost session, and the new 339-line test file.\nCALL_SITES: reckon/crew/admission/service.py:472 (admit_once from the once-mode admit pass), reckon/crew/admission/service.py:537 (admit_once from the admit service loop), reckon/crew_run_commands.py:6133 (crew admit --run, named admission), reckon/crew/admission/review_sweep.py:47 (_sweep_project -> recovery_watch.recover with any_session=True), reckon/crew_run_commands.py:5200 (crew recover --dispatch-reviews, the coordinator reflex), reckon/crew/admission/verdicts.py:533 (_pass_verdict_record carries retired_lost_session onto the pass receipt)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/admission/holds.py:1282 retires a queued/awaiting-upstream review of a lost session on the pass that finds it, and reckon/crew/recovery_watch.py:4525 suppresses composition for a lost session in recover(), which is the one function both the reflex (crew_run_commands.py:5200) and the admit service's sweep (review_sweep.py:47) route through, so the deliverable is met while reckon/crew/admission/selection.py:183 changes named-admission behaviour the goal does not imply.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log names revision 27e754b16d, the tree and the command on its header lines, reads '8 passed in 3.12s' EXIT=0; negative-control-reflex.log reads '1 failed, 6 passed' EXIT=1 and negative-control-admit.log '3 failed, 4 passed' EXIT=1; regression.log's three failures (3 failed, 142 passed) reproduce unchanged at the review base 5adc9f1c5b, which I re-ran as a three-test command and confirmed, so the added-failure count is 0 with a receipt.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every path in the diff (holds.py, selection.py, verdicts.py, lost_sessions.py, recovery_watch.py, tests/test_a_lost_sessions_reviews_retire.py) is inside the declared write paths, but selection.py:183-186 re-reads the whole live fleet after a retirement and thereby changes a named admission's candidate set, which the goal does not imply, and the declared evidence fragment and figures directory were not delivered.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_lost_sessions_reviews_retire.py:87 fails if the admit retirement is not run and :230 fails if the epoch-stamp parse is stringified again, and the live-session pair at :168 and :296 establishes that neither guard fires on a live session; no test exercises admit_once with run_id, which is exactly where selection.py:183 regresses, and holds.py:1311 reports a retirement whose discard was refused.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers follow the shape of the sibling retirement at reckon/crew/admission/holds.py:1033 with mechanism-named symbols (_lost_session_review_answer, _stamp_discard_reason, _retire_lost_session_review) and no plan, section or ticket identifier in any added line.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/admission/holds.py:1158 _stamp_discard_reason re-implements reckon/crew/recovery_review_dispatch.py:888 _discard_stranded_review (same discard call, same marker lookup over discard_record_path/discard_spool_path, same three refusal sentences) and holds.py:1246 _record_lost_session_retirement re-implements the sibling holds.py:1082 _record_retirement, rather than extending either owner with the extra fields.\nFINDING reckon/crew/admission/selection.py:183 blocking: after any retirement the re-read replaces queued with every queued pointer in the fleet, so on a named admission (admit_once(run_id=...), reached by `crew admit --run` at reckon/crew_run_commands.py:6133, whose docstring at :6124 states it 'returns after deciding only the named queued request ... and leaves unrelated requests untouched') line 303's `order = placeable if run_id` now ranks and can launch unrelated requests; the retirement loop at holds.py:1282 also ranges over every live pointer in that same named pass. Seen when a lost session holds any queued review: the named run is no longer the only candidate.\nFINDING reckon/crew/admission/holds.py:1311 non-blocking: run_id is appended to retired, and a retired-lost-session verdict row written, whether or not the discard went through, so a discard that refuses (handled at holds.py:1232) is still reported retired and listed in result['retired_lost_session'] and the pass receipt, contradicting _retire_lost_session_review's own docstring at holds.py:1206-1209; the pointer is stamped and the next pass retries, but the pass's record says the request left when it did not.\nFINDING reckon/crew/admission/holds.py:1158 non-blocking: _stamp_discard_reason duplicates recovery_review_dispatch._discard_stranded_review (reckon/crew/recovery_review_dispatch.py:888) line for line in its discard call, its marker lookup over discard_record_path/discard_spool_path and its three refusal sentences, differing only in the extra lost_session/last_heard_at/rule fields; extending the owner with an extra-fields argument would keep one implementation of writing a reason onto a departure. The same applies to _record_lost_session_retirement (holds.py:1246), which is _record_retirement (holds.py:1082) with a different record payload.\nFINDING reckon/crew/recovery_watch.py:4525 non-blocking: the reflex derives lostness from LostSessionReads(pointers=scoring), only the records this project owes a review, where the admit pass uses every live pointer; session_lost dates a session from its oldest record when no lease or process is heard, so a session whose live records predate the scoring run reads younger here than in the admit pass and its review is composed rather than suppressed -- an under-detection that keeps the old behaviour the node exists to stop.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-lost-sessions-reviews-retire.html:1 non-blocking: the node's declared evidence fragment and figures directory were not delivered, and every sibling section under docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/ carries one, so this section has no artifact for the plan's evidence record.",
+  "review_run_id": "r-20261121T050323110738-review-of-wlsr-a-lost-sessions-reviews-retire-27e754b16d9d",
+  "reviewed_base_sha": "5adc9f1c5ba84ba302ed4889cf20ee40b9463aed",
+  "reviewed_head_sha": "27e754b16d9d0323151aa9684f7247deca5a32ae",
+  "reviewed_run_id": "r-20261121T010255162335-wlsr-a-lost-sessions-reviews-retire",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T050323110738-review-of-wlsr-a-lost-sessions-reviews-retire-27e754b16d9d"
+  },
+  "reviewer_run_id": "r-20261121T050323110738-review-of-wlsr-a-lost-sessions-reviews-retire-27e754b16d9d",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T05:12:35.457306+00:00",
+  "total": 87
+}

@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -404,6 +404,9 @@ head.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory" data-who="reckon-build" data-when="2026-11-21T04:08:25Z">
     <div class="r-comment-body"><p>tests/test_concurrent_dispatch_of_one_node.py runs an autouse guard that asks the crew run module for the real home's live runs before and after every case and requires none of them to be one this case minted. The home is reached by pointing RECKON_HOME at what real_store_home resolves for the duration of the read, so the module that owns pointer listing and decoding answers the question and the test owns only the comparison; the hand-rolled filename scan it replaced was a second copy of that listing, and the length comparison that followed was dead because the before reading is asserted empty. A run is attributed by its id, which ends in the node it dispatches, not by the text of its record: a peer's pointer quotes plan wording and node descriptions, so a content search fires on a dispatch that has nothing to do with this case, while the id is minted here. The comparison log plants a peer record quoting both identifiers and shows it listed and not counted. Measured over the three-file suite: base e689315bb7 is 58 passed with 8 errors, head 4da0fb44 is 66 passed with 0 errors. The focused gate on the real live directory is 8 passed at this head. With both RECKON_HOME overrides removed from a copy of the case and its conftest, the guard fails at setup naming the run the case wrote, 8 errors, EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261121T050323110738-review-of-wlsr-a-lost-sessions-reviews-retire-27e754b16d9d" data-who="reckon-build" data-when="2026-11-21T05:11:58.542Z">
+    <div class="r-comment-body"><p>Reviewed r-20261121T010255162335-wlsr-a-lost-sessions-reviews-retire at base 5adc9f1c5b..head 27e754b16d; a parsed record scoring goal_fidelity 17, evidence 18, scope_discipline 14, durability 15, fit 18, reuse 5 with added_failure_count 0 and five findings (one blocking: named admission&#x27;s candidate set is replaced after a retirement) is stored under review-records/.</p></div>
 </div>
 </section>
 </main>
