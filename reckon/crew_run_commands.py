@@ -609,24 +609,21 @@ def crew_decision_record(record_file, pretty):
     "--answers",
     "answers_file",
     required=True,
-    type=click.File("r"),
     help=(
         'JSON object keyed by run id: {"run": {"action": "adopt", '
         '"session": "live-session"}} or '
-        '{"run": {"action": "retire"}}. Use - for stdin, or pass the '
-        "object inline."
+        '{"run": {"action": "retire"}}. Pass an inline object, a readable '
+        "file holding one, or - for standard input."
     ),
 )
 @click.option("--by", "answered_by", default="", help="Who answered the decision.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_decision_answer(record_id, answers_file, answered_by, pretty):
     """Answer a raised decision per record: adopt into a live session or retire."""
-    import json
-
-    from reckon.crew.lost_session_work import answer_decision
+    from reckon.crew.lost_session_work import answer_decision, read_answers
 
     try:
-        answers = json.load(answers_file)
+        answers = read_answers(answers_file, stream=click.get_text_stream("stdin"))
         _emit(
             answer_decision(record_id, answers, answered_by=answered_by),
             pretty,

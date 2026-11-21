@@ -278,6 +278,84 @@ def test_an_adopt_of_a_vanished_run_returns_the_decision_error(
     )
 
 
+@pytest.mark.parametrize("form", ["file", "inline"])
+def test_an_answer_from_a_file_or_an_inline_object_adopts_the_same(
+    admit_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    form: str,
+) -> None:
+    from click.testing import CliRunner
+
+    from reckon.cli import main
+    from reckon.crew import lost_sessions
+
+    monkeypatch.setattr(
+        lost_sessions, "live_process_sessions", lambda sessions: {LIVE_SESSION}
+    )
+    _config, resolve = _config_for()
+    _pointers(admit_repo)
+    _admit(resolve, _launcher([]))
+    record = _decisions()[0]
+    answers = {"r-lost-queued": {"action": "adopt", "session": LIVE_SESSION}}
+    if form == "file":
+        source = tmp_path / "answers.json"
+        source.write_text(json.dumps(answers), encoding="utf-8")
+        argument = str(source)
+    else:
+        argument = json.dumps(answers)
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "crew",
+            "decision",
+            "answer",
+            "--id",
+            record["id"],
+            "--answers",
+            argument,
+            "--by",
+            "lead",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["adopted"] == ["r-lost-queued"]
+    assert runs.read_pointer("r-lost-queued")["session"] == LIVE_SESSION
+
+
+def test_the_inline_object_and_the_file_read_the_same_answers(tmp_path: Path) -> None:
+    written = json.dumps({"r-lost-queued": {"action": "retire"}})
+    path = tmp_path / "answers.json"
+    path.write_text(written, encoding="utf-8")
+
+    assert raised.read_answers(str(path)) == raised.read_answers(written)
+    assert raised.read_answers(written) == json.loads(written)
+
+
+def test_a_value_that_is_neither_an_object_nor_a_file_names_the_three_forms(
+    admit_repo: Path,
+) -> None:
+    from click.testing import CliRunner
+
+    from reckon.cli import main
+
+    result = CliRunner().invoke(
+        main,
+        ["crew", "decision", "answer", "--id", "any", "--answers", "not-an-answer"],
+    )
+
+    assert result.exit_code == 1, result.output
+    payload = json.loads(result.output)
+    assert payload["error"] == "decision_error"
+    detail = payload["detail"]
+    for form in ("inline JSON object", "readable file", "standard input"):
+        assert form in detail, detail
+
+
 def test_a_retire_answer_leaves_a_discard_record_and_no_pointer(
     admit_repo: Path,
 ) -> None:
