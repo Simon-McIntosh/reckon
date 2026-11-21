@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -348,6 +348,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261121T023705178692-review-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-097c7c3b8598" data-who="reckon-build" data-when="2026-11-21T02:48:00.078Z">
     <div class="r-comment-body"><p>reviewed e689315bb74ca1efdd63eee69d7a55ed9b235a0e..097c7c3b8598c154d90d595812fd87012623ecdc; scores goal_fidelity 15, evidence 16, scope_discipline 18, durability 11, fit 16, reuse 4; one blocking finding (the NODE_ID needle fires on a peer run's live pointer) and two non-blocking (duplicated real_store_home/_fixture_writes_under; stale revision label on negative-control.log)</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261121T031958617287-review-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-901f7b54fb3b" data-who="reckon-build" data-when="2026-11-21T03:28:01.272Z">
+    <div class="r-comment-body"><p>reviewed the gained commit 901f7b54fb3b (delta 097c7c3b..901f7b54) against run r-20261121T010302201319: the content-needle guard is replaced by a `-&lt;node&gt;.json` filename match and the ambient home now comes from tests/conftest.py real_store_home. The prior blocking false-positive is repaired in both directions (guard-rule-comparison.log spares a quoting peer; negative-control.log reddens on a minted pointer). Stored a parsed record scoring goal_fidelity 18, evidence 14, scope_discipline 20, durability 16, fit 16, reuse 5, with three non-blocking findings (reuse duplication of _fixture_writes_under; gate-real-live.log mislabelled as the head arm; a dead length assertion).</p></div>
 </div>
 </section>
 </main>
