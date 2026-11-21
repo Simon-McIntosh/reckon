@@ -8,8 +8,7 @@
   and read <code>argv</code> and <code>launcher_host</code> as missing. One
   cause, and the test was wrong; no product line changed; no assertion was
   deleted or weakened; the preview case also compares the pointer file's
-  bytes beside that reading. The file reads <code>9 passed</code> at head
-  <code>fd75799ba796</code>.</p>
+  bytes beside that reading. The file reads <code>9 passed</code> at the run's head.</p>
 
   <h3 id="qwnw-red-file-direct-resume-needs-an-observed-death-cause">Cause and verdict</h3>
 
@@ -58,7 +57,7 @@ EXIT=1
 
   <p>The base arm was extracted from the base revision into the run's scratch
   root and run there; the head arm ran as a batch job on the
-  <code>all_debug</code> partition (job <code>1335609</code> on
+  <code>all_debug</code> partition (job <code>1335614</code> on
   <code>98dci4-clu-3141</code>, per <code>sacct</code>) over the worktree at the
   committed head, with <code>env -u SLURM_JOB_ID -u SLURM_JOBID</code> in the command itself, because a
   batch job sets <code>SLURM_JOB_ID</code> for the command it wraps (measured
@@ -81,8 +80,8 @@ EXIT=1
         <td><code>1 failed, 8 passed</code>, <code>EXIT=1</code></td>
       </tr>
       <tr>
-        <td>head (node gate, <code>all_debug</code>)</td>
-        <td><code>fd75799ba796a3b8480a95fdeada58a6cba2020f</code></td>
+        <td>head (node gate, <code>all_debug</code>, job 1335614)</td>
+        <td><code>8331e8bfb9299cd4a61d97f29c86edb6b43a74f9</code></td>
         <td><code>9 passed</code>, <code>EXIT=0</code></td>
       </tr>
     </tbody>
@@ -95,5 +94,5 @@ EXIT=1
   <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> on
   <code>all_debug</code>: <code>0 failed</code> at
   <code>05b3eea9c31c</code> and <code>0 failed</code> at
-  <code>fd75799ba796</code>.</p>
+  <code>8331e8bfb929</code>.</p>
 </section>
