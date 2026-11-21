@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T06:08:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:234",
+      "id": "done_when-1",
+      "reason": "without a case where the harness's name and the seeded inbox disagree (a run whose launch seeded no inbox must not be queued, or one whose harness name the old code refuses must be), the gate can go green with the harness-keyed decision still in place, which is exactly the defect \u00a726 records against \u00a76's tests.",
+      "text": "\u00a725's third added case, \"a message to a live run on each local backend is queued for its inbox\", cannot distinguish the rule the deliverable names (decided by whether the launch seeded an inbox) from the harness-keyed rule it replaces: a launch on a local backend that seeds an inbox is queued by today's code too, so the case passes both before and after the change",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:241",
+      "id": "done_when-2",
+      "reason": "the gate can close on a record saying the behaviour is impossible without anything showing it, which is the shape earlier reviews rejected in \u00a78's \"a written cause measured by nothing\".",
+      "text": "\u00a726's fourth deliverable is an either/or (\"names that session, or the section's record states the code path that prevents it\") while the done-when only asks for \"one added case for each of the four\", so when the answer is \"the code path prevents it\" the fourth case has no stated assertion and the gate passes whatever the code does",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:248",
+      "id": "done_when-3",
+      "reason": "\u00a715 already establishes that an ancestor head whose changed path was since removed must not be settled, so the same request path must carry that case or the plan ships a guard its own sibling section forbids.",
+      "text": "\u00a727's deliverable makes \"changed paths are on the primary branch\" a precondition of settling a promotion request, but neither added case exercises it: case one is the satisfying run and case two is a head that is not an ancestor, so an implementation that tests ancestry alone passes the gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:233",
+      "id": "single_goal-1",
+      "reason": "the node can be closed only as a group, so three of the four gaps have no verdict of their own and no case that must fail when their fix is reverted, the same shape this plan already split out of \u00a712 and \u00a717.",
+      "text": "\u00a725 closes four independent gaps (the recorded role at launch, a resumed launch's lane document, the inbox-delivery decision, and one lane-of-a-backend answer shared by the drainer and the treatment) with one gate and one negative control covering only the first",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:233",
+      "id": "reasoning-1",
+      "reason": "the done-when already measures the observable version (the two callers returning the same lane for a configuration whose lane document is spelled two ways), so removing or keeping the sentence changes no work a node does.",
+      "text": "\u00a725 states the endpoint partly as an implementation shape (\"one function answers what lane a backend serves, used by both the admission drainer and the worker treatment\"), which names a code structure and its callers rather than an observable",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "48df2f825e5d8a795a435b98242f12a34b026540",
+  "plan_fingerprint": "c567b866ee961b64c1639ed839d549b078955dc3cdfb4f74a444e4fa553e99d4",
+  "plan_slug": "work-of-a-lost-session-is-raised-not-left",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261121T060739070389-plan-review-of-work-of-a-lost-session-is-raised-not-left",
+  "reviewed_blob_sha": "921a613d74ec1da306afca31cca9689de22009fe",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 at the reviewed revision `tests/test_worker_behaviour_is_the_same_on_every_harness.py`, `tests/test_a_scheduler_job_names_its_owner.py` and `tests/test_a_landed_head_is_not_landed_again.py` all exist, and the \u00a725/\u00a726/\u00a727 references to \u00a716, \u00a76, \u00a715, \u00a723 and \u00a724 resolve.",
+    "done_when": "a finding \u2014 \u00a725's inbox case passes on the harness-keyed code it replaces, \u00a726's fourth case has no stated assertion, and \u00a727 never exercises the changed-paths half of its own precondition.",
+    "evidence_paths": "pass \u2014 every gate names a test file in the repository and the only document deliverable (\u00a78) sits under `docs/research/`, none in a scratchpad or node-local path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags in the new section text, and no changelog prose.",
+    "reasoning": "pass \u2014 each section's stated gap matches the evidence it cites and every endpoint is observable from the tests; \u00a725's \"one function\" sentence prescribes an owner rather than an endpoint, recorded as a non-changing finding below.",
+    "single_goal": "a finding \u2014 \u00a725 closes four gaps in four different behaviours under one gate.",
+    "wiring": "pass \u2014 `plan-section-depends-on` resolves (s3/s5\u2192s2, s4\u2192s2+s5, s16\u2192s12) and the three new sections each build on a section already declared `done` (\u00a716, \u00a76, \u00a715), so no ordering edge is missing; the followup text at #followups matches the meta."
+  },
+  "section_digests": {
+    "_document": "c105f8fea4a1c91fcc90324f90719c9ce3316160ed6afdcac77dce86212bdf45",
+    "s1": "97d20596806fb031c34ba234b045b924725cca184c9388f84deb8af3eb261f80",
+    "s10": "6f44bf185ae0fc7e5f84b80cae1dcb50dd90023c3529bb6d1c3b410e5cd28b56",
+    "s11": "fa19054253211fb42f596e9c93dc65ceebd4a1aab844db1cb88dbd7d19ea621b",
+    "s12": "a864b5979050d34ceb0190d68bb129f05700640fec87e61674e144629f83a304",
+    "s13": "1ef1697f402f80e80931d4b5ebc2cc7b5809a3f6456ddef4669ad4089a89aae6",
+    "s14": "59df0cf0864078f32f7c9271b7e010f709b20c15735a3d96011098eadaa1e081",
+    "s15": "cf62f689211b44af7597aa45a4fec07ab06ff1ee61e47d0e5e3105f03bb0c281",
+    "s16": "6ae0e537f34a3d091c8552c4ed875f0082022dd873e2ac5036ef0ded0595a621",
+    "s17": "c06edbc8dfeb250470fb7dd3b41fa5a116791e56d12b27e32cd434fc2086135b",
+    "s18": "96c05bce6087ae1a3ee910220846ba1ec2847e3a7273b48c22e3dd9aecdcc422",
+    "s19": "6a73d4d2ca4bf3cbb6d7e90b8c3089e4be64e52827727988c69309062f74141e",
+    "s2": "26db713d5ea4030aa59a12228a900ca0ec942c80fd7c25ae2f23ce17c68e1cec",
+    "s20": "c5932b646d93f63d6bb200ccd9d622fb7068e270f01ef6e989265d7cde2bc89c",
+    "s21": "c5d6bfa9d6ac9335da56af60b650acc6f41bf7bb4d4a8750bf5141e26b5c50e6",
+    "s22": "a583f2deb2e87fcbe4a3a49bda90a7c9e46307856df9313fa8d347b57c5b030f",
+    "s23": "9dfec068439808ee048e58ef1e4e7dc8002bcb40cee464b25573d40eca78685d",
+    "s24": "7670046d7cddd47351903f17ba5b26f1b2bfbbcbda8bea2ab6ceb3dabab60455",
+    "s25": "1ae2261d0ee519af57ec6a7ea935bd6d54542222d87940cf0e50449e2dda6c96",
+    "s26": "3e946b82061bdd66b701e7f240d5d788dbdeb3b78d7514bc593dabaf8cefcf24",
+    "s27": "00fca2b920394a940663e6a3438e2e39109f517f2d2fcecafbf5e4220dd6605d",
+    "s3": "36d2e2500f8d8b34f9a08006e3980de143b30d0d219a541fae72768d29dd88e7",
+    "s4": "4c9e804b0931d4eaa4cc0e387f126a2785223052e3f1bb082b948a2d149ecfb1",
+    "s5": "b9552e1d93227db666cbc1960a993d681197fc75b13e4c5b67dc1c3c11125496",
+    "s6": "e4c2c3412596e5b597b5ed69e381f8b6b8cb0f20ef095352896df0c66eb9c7e2",
+    "s7": "1fcb9877d1467576d37f1eb5e1b29ed55f5ddd8991ed8313cf145d20b69f73d9",
+    "s8": "146e3d4e2ba80e663cea4c0fba4083ccd453211522f93be9cacf5ad586f95cd0",
+    "s9": "69ef00a968d16bb6e2fc3751e4cf08b229e16c3dbaea7d2c74ef9cadf9f75459"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T06:12:47.663808+00:00",
+  "total": null
+}
