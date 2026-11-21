@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1666d19f7744d3cbbb272f620e38427ad9738472",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:746 _backends.launch_plan",
+    "reckon/crew/dispatch_sessions.py:1476 _backends.launch_plan",
+    "reckon/crew/dispatch_sessions.py:2105 _backends.launch_plan",
+    "reckon/crew/resumption.py:702 _backends.launch_plan",
+    "reckon/_backends.py:3320 seed_harness_home",
+    "reckon/_backends.py:3410 claude_worker_mcp_config"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T21:30:47Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_mcp_allowlist.py",
+      "line": "49",
+      "severity": "non-blocking",
+      "text": "the anchored allowlist case was deleted and no in-repo assertion replaces it, so no committed test fails if the fence re-seeds reckon-anchored-edit or reckon/crew/prompts.py regains with_anchored_edit_instruction; the only falsifier, test_negative_control.py, lives in the run directory and never travels with the repository."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3402",
+      "severity": "non-blocking",
+      "text": "the codex branch still adds ANCHORED_EDIT_SERVER to the worker's MCP flags when backend['anchored_edit'] is true while this node removed the prompt half that steered a codex worker to it, so a run that still sets the flight key is handed a tool it is never told about."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3314",
+      "severity": "non-blocking",
+      "text": "a claude backend with anchored_edit true now falls through to the operator-settings reason although the seeding path and the user-server passthrough it describes are both gone, so the launch record states a cause that can no longer apply."
+    }
+  ],
+  "head_log_revision": "2bd648a88f61303ae760c775b95395dafdc44160",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/dispatching/launch.py:746 launch_plan, reckon/crew/dispatch_sessions.py:1476 and :2105 launch_plan, reckon/crew/resumption.py:702 launch_plan, and reckon/_backends.py:3320 seed_harness_home and :3410 claude_worker_mcp_config; no caller still names a removed symbol.",
+    "diff": "Read commit by commit: the single commit 2bd648a88f deletes the seeder helper and its two parameters, the instruction constants and helper, the two prompt arm tests, and the six call-site references, with no other change to any file.",
+    "done_when": "The done_when asks for no seeded anchored settings, no composed instruction, a grep finding nothing over the two source paths, no added failure against a base arm over the importing tests, and no new ruff findings; the manifest records the importer arms at 33 failed/816 passed (base) and 33 failed/813 passed (head) with identical failure-id files, a negative control red at base and green at head, and a before/after reproduction, so the measure is asserted apart from the ruff line which carries no log.",
+    "goal": "The goal is to drop the anchored edit settings seeder and the prompt instruction; at 2bd648a8 reckon/_worker_fence.py:346 seed_harness_home no longer takes anchored_edit or anchored_edit_roots and _seed_anchored_edit is gone, and reckon/crew/prompts.py no longer defines with_anchored_edit_instruction or ANCHORED_EDIT_HEADING.",
+    "manifest": "Read; status complete, one commit 2bd648a88f, changed_paths names all ten diff paths including the two deletions, tests and test_logs name the scoped gate and both declared suite arms, baseline_suite and after_suite carry exit 0 with zero failures, and outside_scope is none.",
+    "write_paths": "The declared write paths are the twelve paths named in the dispatch; every one of the ten paths in the delivered diff is on that list and nothing outside it was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_mcp_allowlist.py:49 launches with no anchored key and no committed test asserts the seeder or instruction is absent, so the removal's guard exists only in the run directory's uncommitted test_negative_control.py.",
+    "evidence": "The reviewed run's baseline_suite and after_suite logs both end EXIT=0 with 58 passed and no FAILED ids, and the importer arms' base-failed.ids and head-failed.ids are identical at 33 entries, so added_failure_count is 0; the unlogged ruff claim costs the remainder.",
+    "fit": "The changed modules follow their neighbours' style and the surviving comments state the mechanism, but reckon/_backends.py:3314 still assigns a now-unreachable operator-settings reason and :3402 still declares ANCHORED_EDIT_SERVER for codex with no instruction left to steer a worker to it.",
+    "goal_fidelity": "reckon/_worker_fence.py:346 and reckon/crew/prompts.py both lose every anchored symbol, and the run directory's repro_before.out shows the base seeding and instruction against repro_after.out's absent ones.",
+    "reuse": "The change only removes code; no added definition re-implements a mechanism the repository owns, and a capability search over reckon/_worker_fence.py and reckon/crew/prompts.py found no parallel owner left behind.",
+    "scope_discipline": "Every one of the ten paths in the diff is on the twelve-path declared list, and the declared evidence fragment and figure directory are simply unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to drop the anchored edit settings seeder and the prompt instruction; at 2bd648a8 reckon/_worker_fence.py:346 seed_harness_home no longer takes anchored_edit or anchored_edit_roots and _seed_anchored_edit is deleted, and reckon/crew/prompts.py no longer defines with_anchored_edit_instruction, prompt_without_anchored_edit_instruction or ANCHORED_EDIT_HEADING.\nVERDICT done_when: the done_when asserts no seeded anchored settings, no composed instruction, a clean grep over the two source paths, no added failure over the importing tests against a base arm, and clean ruff; the manifest records 33 failed/816 passed at base 1666d19f and 33 failed/813 passed at head with identical failure-id files, plus a negative control red at base (2 failed, EXIT=1) and green at head (3 passed, EXIT=0), so the measure is asserted apart from the ruff line which carries no log.\nVERDICT write_paths: the declared list is the twelve paths in the dispatch; all ten paths in the diff are on it, including the two deleted arm tests, and nothing outside it changed.\nVERDICT manifest: read; status complete, one commit 2bd648a88f, changed_paths matches the diff, baseline_suite and after_suite record exit 0 with zero failures, outside_scope is none.\nVERDICT diff: read commit by commit against 1666d19f; the single commit deletes the seeder helper, its two parameters, the instruction constants and helper, the two prompt arm tests, and six call-site references, +6/-1352 across ten declared paths.\nCALL_SITES: reckon/crew/dispatching/launch.py:746 _backends.launch_plan, reckon/crew/dispatch_sessions.py:1476 _backends.launch_plan, reckon/crew/dispatch_sessions.py:2105 _backends.launch_plan, reckon/crew/resumption.py:702 _backends.launch_plan, reckon/_backends.py:3320 seed_harness_home, reckon/_backends.py:3410 claude_worker_mcp_config\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:346 and reckon/crew/prompts.py both lose every anchored symbol, and repro_before.out shows the base seeding and instruction against repro_after.out's absent ones.\nSCORE evidence: 16\nJUSTIFICATION evidence: the reviewed run's baseline_suite and after_suite logs both end EXIT=0 with 58 passed and zero FAILED ids, and base-failed.ids equals head-failed.ids at 33 entries, so added_failure_count is 0; the unlogged ruff claim costs the remainder.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is on the declared twelve-path list.\nSCORE durability: 9\nJUSTIFICATION durability: tests/test_worker_mcp_allowlist.py:49 launches with no anchored key and no committed test asserts absence.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/_backends.py:3314 keeps a reason string for a cause the change removed.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and forks no capability.\nFINDING tests/test_worker_mcp_allowlist.py:49 non-blocking: the anchored allowlist case was deleted and no in-repo assertion replaces it, so no committed test fails if the fence re-seeds reckon-anchored-edit or the prompt helper returns.\nFINDING reckon/_backends.py:3402 non-blocking: the codex branch still adds ANCHORED_EDIT_SERVER to the worker's MCP flags when the flight key is set while the prompt half that steered a codex worker to it is removed.\nFINDING reckon/_backends.py:3314 non-blocking: a claude backend with anchored_edit true now falls through to the operator-settings reason although the seeding path it describes is gone.\n",
+  "review_run_id": "r-20261121T212903858120-review-of-anchored-fence-prompt-s18-2bd648a88f61",
+  "reviewed_base_sha": "1666d19f7744d3cbbb272f620e38427ad9738472",
+  "reviewed_head_sha": "2bd648a88f61303ae760c775b95395dafdc44160",
+  "reviewed_run_id": "r-20261121T201936403732-anchored-fence-prompt-s18",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T212903858120-review-of-anchored-fence-prompt-s18-2bd648a88f61"
+  },
+  "reviewer_run_id": "r-20261121T212903858120-review-of-anchored-fence-prompt-s18-2bd648a88f61",
+  "scores": {
+    "durability": 9,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T22:00:03.739033+00:00",
+  "total": 101
+}
