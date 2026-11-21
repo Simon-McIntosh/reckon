@@ -42,16 +42,18 @@ AFTER_HOURS_SLOT = "after_hours"
 def lost_session_after_hours(config: Mapping[str, Any] | None = None) -> float:
     """The configured threshold in hours, or the shipped default.
 
-    A layer that declares the block without a usable figure falls back to the
-    default rather than to zero: a non-positive threshold would read every
-    session as lost the moment its follower's lease went stale, which is the
-    opposite of what an operator setting this key means.
+    Zero is honoured: the schema admits it, and an operator who sets it means
+    that any session nothing has heard right now is lost. Only a figure the
+    schema cannot hold -- a boolean, a non-number, or a negative -- falls back
+    to the shipped default, because such a value is a broken layer rather than a
+    threshold, and a broken layer must not silently change what the derivation
+    does.
     """
 
     resolved = config if config is not None else flight.resolve().config
     block = resolved.get(AFTER_HOURS_KEY)
     value = block.get(AFTER_HOURS_SLOT) if isinstance(block, Mapping) else None
-    if isinstance(value, bool) or not isinstance(value, int | float) or value <= 0:
+    if isinstance(value, bool) or not isinstance(value, int | float) or value < 0:
         return DEFAULT_AFTER_HOURS
     return float(value)
 
@@ -109,6 +111,38 @@ def live_process_sessions(
             if argument in candidates:
                 found.add(argument)
     return found
+
+
+def process_started_at(pid: int, *, process_root: Path = Path("/proc")) -> float | None:
+    """The instant a process started, or ``None`` when it cannot be read.
+
+    This is the evidence a derivation keyed on process age would read, and it is
+    why that derivation is wrong for a session: a session id outlives the
+    process carrying it, so a start time dates the process and says nothing
+    about when the session was last heard. Nothing in the session derivation
+    calls this; it is here so the negative control can read the same evidence a
+    process-age-keyed derivation would, rather than asserting about arithmetic
+    of its own.
+
+    ``/proc/<pid>/stat`` carries the start time in field 22 as clock ticks since
+    boot, so the boot instant from ``/proc/stat`` converts it to wall clock. The
+    command name sits in parentheses and may contain spaces, so the fields are
+    split after the closing parenthesis.
+    """
+
+    try:
+        fields = (process_root / str(pid) / "stat").read_text().split()
+        boot = None
+        for line in (process_root / "stat").read_text().splitlines():
+            if line.startswith("btime "):
+                boot = float(line.split()[1])
+                break
+        ticks = float(fields[21])
+    except (OSError, IndexError, ValueError):
+        return None
+    if boot is None:
+        return None
+    return boot + ticks / os.sysconf("SC_CLK_TCK")
 
 
 def live_census_pairs() -> set[tuple[str, str]]:

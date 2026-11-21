@@ -25,6 +25,7 @@ import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -127,6 +128,53 @@ def test_the_setting_moves_the_boundary(home) -> None:
     )
 
 
+def _flight_config(monkeypatch: pytest.MonkeyPatch, **block: Any) -> None:
+    """Put a lost-session block in front of the derivation's flight read."""
+
+    monkeypatch.setattr(
+        lost_sessions.flight,
+        "resolve",
+        lambda: SimpleNamespace(config={"lost_session": dict(block)}),
+    )
+
+
+def test_the_boundary_comes_from_the_flight_layer(
+    home, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The threshold is read from the flight layer, not baked into the derivation.
+
+    A derivation that stopped reading the layer and always returned the shipped
+    default would pass every other case here, so this one moves the layer and
+    requires the answer to move with it: 74 hours keeps the 73-hour lease live,
+    70 hours makes the 71-hour lease lost, and zero is honoured as declared
+    rather than folded back to the default.
+    """
+
+    assert lost_sessions.lost_session_after_hours() == 72.0
+    assert lost_sessions.session_lost(PROJECT, LOST_SESSION, now=NOW)["lost"] is True
+
+    _flight_config(monkeypatch, after_hours=74)
+    assert lost_sessions.lost_session_after_hours() == 74.0
+    assert lost_sessions.session_lost(PROJECT, LOST_SESSION, now=NOW)["lost"] is False
+
+    _flight_config(monkeypatch, after_hours=70)
+    assert lost_sessions.session_lost(PROJECT, LIVE_SESSION, now=NOW)["lost"] is True
+
+    _flight_config(monkeypatch, after_hours=0)
+    assert lost_sessions.lost_session_after_hours() == 0.0
+    assert lost_sessions.session_lost(PROJECT, LIVE_SESSION, now=NOW)["lost"] is True
+
+
+def test_a_broken_layer_falls_back_to_the_shipped_default(
+    home, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A value the schema cannot hold must not silently change the horizon."""
+
+    for broken in (-1, "72", True, None):
+        _flight_config(monkeypatch, after_hours=broken)
+        assert lost_sessions.lost_session_after_hours() == 72.0, broken
+
+
 @pytest.fixture
 def running_session(home):
     """A live process carrying one session id as a whole argument."""
@@ -156,28 +204,85 @@ def test_a_running_coordinator_process_reads_live_whatever_its_lease(
     assert answer["last_heard_at"] is not None
 
 
-def test_a_ten_day_process_with_a_fresh_lease_reads_live(home) -> None:
-    """The process's age is never read; only the instant the session was heard.
+@pytest.fixture
+def ten_day_process(home):
+    """A real process carrying the long-lived session id, lease a minute old.
 
-    The lease says a minute ago and the process carrying the id says ten days
-    ago -- never restarted. The session is live because a lease heard it, and
-    the appended control shows the case discriminates: a derivation keyed on
-    the process's age reads the very same evidence as lost.
+    A process in a test cannot actually be ten days old, so the start instant a
+    process-age derivation would read is substituted where it is read: see
+    ``test_a_ten_day_process_with_a_fresh_lease_reads_live``.
     """
 
-    ten_days_ago = NOW - timedelta(days=10)
-    renew_follower_lease(PROJECT, LONG_LIVED_SESSION, now=(NOW.timestamp() - 60.0))
-
-    answer = lost_sessions.session_lost(PROJECT, LONG_LIVED_SESSION, now=NOW)
-    assert answer["lost"] is False, answer
-
-    age_seconds = (NOW - ten_days_ago).total_seconds()
-    keyed_on_process_age = age_seconds > 72 * HOUR
-    assert keyed_on_process_age is True, (
-        "a derivation keyed on process age must read this session lost, which is "
-        "why the live assertion above is the negative control for the node: the "
-        f"ten-day process is {age_seconds / HOUR:.0f} h old"
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import time; time.sleep(120)",
+            LONG_LIVED_SESSION,
+        ]
     )
+    renew_follower_lease(PROJECT, LONG_LIVED_SESSION, now=(NOW.timestamp() - 60.0))
+    try:
+        yield process
+    finally:
+        process.kill()
+    process.wait(timeout=10)
+
+
+def _keyed_on_process_age(
+    pid: int, *, now: datetime, horizon_hours: float = 72.0
+) -> bool:
+    """The declared negative control, executed: lost iff the process is old.
+
+    This is the derivation the plan names as the mutation.
+
+    A derivation keyed on process age reads the start instant of the process
+    carrying the session id and compares that to the horizon. It is run here
+    rather than described, so the control exercises the same evidence the real
+    derivation would have to read to be wrong in the way the case forbids.
+    """
+
+    started = lost_sessions.process_started_at(pid)
+    if started is None:
+        return False
+    return (now.timestamp() - started) > horizon_hours * HOUR
+
+
+def test_a_ten_day_process_with_a_fresh_lease_reads_live(
+    ten_day_process, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The process's age is never read; only the instant the session was heard.
+
+    The lease says a minute ago and the process carrying the id started ten days
+    ago -- never restarted. The session is live because it was heard, and the
+    control beside it shows why that assertion discriminates: the same evidence,
+    read as a process's age, reads lost. The control is executed, not asserted
+    about its own arithmetic, and the second half forbids the real derivation
+    from reading a process start time at all.
+    """
+
+    started = NOW.timestamp() - 10 * 24 * HOUR
+    monkeypatch.setattr(
+        lost_sessions,
+        "process_started_at",
+        lambda pid, **_kwargs: started if pid == ten_day_process.pid else None,
+    )
+
+    assert _keyed_on_process_age(ten_day_process.pid, now=NOW) is True, (
+        "the negative control must read the ten-day process as lost, or this "
+        "case could not fail on the regression it names"
+    )
+
+    # The derivation under test must still read the session live, and must do so
+    # without touching the start time: any read of it is a failure here.
+    def never_read(*_arguments: Any, **_keywords: Any) -> float | None:
+        raise AssertionError("the derivation read a process start time")
+
+    monkeypatch.setattr(lost_sessions, "process_started_at", never_read)
+    answer = lost_sessions.session_lost(PROJECT, LONG_LIVED_SESSION, now=NOW)
+
+    assert answer["lost"] is False, answer
+    assert answer["last_heard_at"] == NOW.isoformat(), answer
 
 
 def test_the_directory_carries_the_three_fields(home) -> None:
@@ -215,13 +320,16 @@ def test_an_admit_pass_reads_each_session_once(home) -> None:
         assert path["session"]
 
     pointers = runs.list_live(project=PROJECT)
-    with _service._read_tally() as tally:
-        _selection.admit_once(lock=False)
+    result = _selection.admit_once(lock=False)
 
-    reads = {entry["read"]: entry["count"] for entry in tally.entries()}
-    assert reads.get("lost-session reads", 0) <= 6, reads
-    assert reads.get("lost-session reads", 0) > 0, (
-        "the pass must read the derivation at all, or a zero here would be an "
-        f"instrument that measured nothing: {reads}"
+    assert len(result["lost_sessions"]) == 6
+    receipt = {
+        str(entry["read"]): int(entry["count"])
+        for entry in result["reads"]["lost sessions"]
+    }
+    assert receipt.get("lost-session reads", 0) <= 6, result["reads"]
+    assert receipt.get("lost-session reads", 0) > 0, (
+        "the pass's own receipt must carry the derivation, or a zero here would "
+        f"be an instrument that measured nothing: {result['reads']}"
     )
     assert len(pointers) == 40
