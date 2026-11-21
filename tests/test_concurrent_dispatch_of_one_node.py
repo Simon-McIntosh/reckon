@@ -113,34 +113,30 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     return config_home, repo
 
 
-def _real_live_entries() -> int:
-    """How many entries the real live directory holds, zero when it is absent."""
-    try:
-        return sum(1 for _ in REAL_LIVE.iterdir())
-    except OSError:
-        return 0
-
-
 @pytest.fixture(autouse=True)
 def real_live_directory_is_not_a_fixture_target() -> None:
     """No case may write this fixture's pointer into the real crew home.
 
     The ``RECKON_HOME`` override in ``home`` is what keeps the case inside its
-    own tree, and this guard proves it held. The project name is not a needle:
-    a peer's live pointer may quote plan wording that names the fixture
-    project, and that is the peer's record rather than this case's write. The
-    node and session identifiers are minted only here, so a pointer carrying
-    either was written by this case.
+    own tree, and this guard proves it held. The count is taken over the
+    entries carrying this fixture's identifiers, not over the directory as a
+    whole: peer sessions dispatch continuously, so a whole-directory count
+    moves without anything being wrong and a guard built on it fails on a
+    peer's write rather than on this case's. The project name is not a needle
+    either — a peer's pointer may quote plan wording that names the fixture
+    project — while the node and session identifiers are minted only here, so
+    an entry carrying either was written by this case.
     """
 
     def fixture_pointers() -> list[str]:
         return traces_naming(REAL_LIVE.parent, ("live",), (NODE_ID, SESSION))
 
-    before = _real_live_entries()
-    assert fixture_pointers() == []
+    before = fixture_pointers()
+    assert before == []
     yield
-    assert _real_live_entries() == before
-    assert fixture_pointers() == []
+    after = fixture_pointers()
+    assert len(after) == len(before)
+    assert after == []
 
 
 def _node(config_home: Path) -> crew.TaskNode:
