@@ -603,6 +603,84 @@ def crew_decision_record(record_file, pretty):
         raise click.exceptions.Exit(1) from exc
 
 
+@crew_decision.command(name="present")
+@click.option(
+    "--session",
+    required=True,
+    help="The one session presenting the choices to the lead.",
+)
+@click.option("--project", default=None, help="Present one project's decisions.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_present(session, project, pretty):
+    """Hold every open decision for one session and return them as choices.
+
+    Largest held work first, each with its repository, session, plan and
+    section, its context, its options recommendation-first and what the answer
+    releases. A decision another session is already presenting is reported with
+    the session holding it, and a project whose documents cannot be read is
+    named apart rather than dropping the rest of the fleet.
+    """
+    from reckon.crew.lead_presentation import present
+
+    try:
+        _emit(present(session=session, project=project), pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit(
+            {"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty
+        )
+        raise click.exceptions.Exit(1) from exc
+
+
+@crew_decision.command(name="choose")
+@click.option("--id", "decision_id", required=True, help="The decision answered.")
+@click.option("--option", "option", required=True, help="The chosen option value.")
+@click.option(
+    "--session",
+    required=True,
+    help="The presenting session; only it may answer what it presents.",
+)
+@click.option("--note", default="", help="The lead's note, when there is one.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_choose(decision_id, option, session, note, pretty):
+    """Record the lead's answer to one presented decision."""
+    from reckon.crew.lead_presentation import choose
+
+    try:
+        _emit(
+            choose(
+                session=session, decision_id=decision_id, option=option, note=note
+            ),
+            pretty,
+        )
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
+@crew_decision.command(name="release")
+@click.option(
+    "--session", required=True, help="The presenting session giving its claim up."
+)
+@click.option(
+    "--id",
+    "decision_id",
+    default=None,
+    help="One decision's claim; every claim the session holds when omitted.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_release(session, decision_id, pretty):
+    """Give up presentation claims so another session can present them."""
+    from reckon.crew.lead_presentation import release
+
+    try:
+        _emit(release(session=session, decision_id=decision_id), pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit(
+            {"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty
+        )
+        raise click.exceptions.Exit(1) from exc
+
+
 @crew_decision.command(name="answer")
 @click.option("--id", "record_id", required=True, help="The decision to answer.")
 @click.option(

@@ -70,9 +70,34 @@ def answer_path(answer_id: str) -> Path:
     return crew_home() / "answers" / f"{answer_id}.json"
 
 
+def presenting_directory() -> Path:
+    """The directory holding every decision's presentation claim."""
+    return crew_home() / "decisions" / "presenting"
+
+
 def presentation_path(decision_id: str) -> Path:
     """The file holding one decision's presentation claim."""
-    return crew_home() / "decisions" / "presenting" / f"{_claim_name(decision_id)}.json"
+    return presenting_directory() / f"{_claim_name(decision_id)}.json"
+
+
+def presenting_claims() -> list[dict[str, Any]]:
+    """Every presentation claim on disk, read whole.
+
+    A claim's decision id is carried in the file rather than parsed from its
+    name, because the name holds a digest of the identity: two identities that
+    read alike stay apart and a name-to-identity parse would have to re-derive
+    the digest.
+    """
+    claims = []
+    for path in sorted(presenting_directory().glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            continue
+        if not isinstance(record, dict):
+            raise TypeError(f"claim {path.name} is not an object")
+        claims.append(record)
+    return claims
 
 
 def _plan_decision_parts(decision_id: str) -> tuple[str, str, str] | None:
