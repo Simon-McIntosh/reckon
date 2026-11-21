@@ -54,6 +54,9 @@ __all__ = [
     "ADMIT_LOCK_NAME",
     "AWAITING_UPSTREAM_PHASE",
     "BLOCKED_UPSTREAM_PHASE",
+    "CONTRACT_REFUSAL_CONFIRMATIONS",
+    "CONTRACT_REFUSAL_PASSES_FIELD",
+    "CONTRACT_REFUSAL_STAMP_FIELD",
     "DEAD_RUN_PHASES",
     "DEFAULT_ADMIT_INTERVAL_SECONDS",
     "DISPATCH_REFUSAL_REMEDIES",
@@ -286,6 +289,21 @@ _TRUSTED_CODE_STAMPS: dict[tuple[str, str], bool] = {}
 _CAPACITY_REFUSAL_REMEDY = DISPATCH_REFUSAL_REMEDIES["D09"]
 
 _NODE_CONTRACT_REFUSAL = "node is not dispatchable"
+
+#: How many admission passes must each read a request and each refuse it on its
+#: node contract before the request is parked. One refusal is evidence about the
+#: pass's read — a node body read while its run directory was being written, or
+#: a tree moving under a landing, answers empty and makes a stored contract look
+#: absent — so a single refusal leaves the request queued for the next pass. Two
+#: reads that agree is the request's own state.
+CONTRACT_REFUSAL_CONFIRMATIONS = 2
+
+#: Consecutive contract refusals a queued pointer carries, and the fingerprint
+#: of the contract they refused. The fingerprint is what releases a parked
+#: request: a ``queue edit`` that repairs the contract changes it.
+CONTRACT_REFUSAL_PASSES_FIELD = "contract_refusal_passes"
+
+CONTRACT_REFUSAL_STAMP_FIELD = "failure_contract"
 
 # The three answers a wait ref resolves to. ``satisfied`` clears the ref;
 # ``abandoned`` blocks every request waiting on it, because nothing will ever

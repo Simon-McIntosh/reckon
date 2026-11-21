@@ -328,6 +328,17 @@ _EDITABLE_CONTRACT_PROPERTIES: Mapping[str, str] = {
     "bounded": "time-budget",
 }
 
+# The ``crew queue edit`` option that sets each editable field, with the value
+# its reader has to supply. The refusal names a property; the field behind it is
+# what a coordinator changes, so the row publishes the flag that sets it rather
+# than a verb that would leave the field as it is.
+_QUEUE_EDIT_FIELD_FLAGS: Mapping[str, str] = {
+    "steering": "--brief <file>",
+    "done-when": "--done-when <measure>",
+    "write-paths": "--write-path <path>",
+    "time-budget": "--time-budget <budget>",
+}
+
 # Each node-contract finding is rendered as ``<property>: <detail>``, the first
 # after the refusal's opening words and the rest after ``; ``. The detail may
 # itself contain a colon or a semicolon, so the property is read by position
@@ -1776,6 +1787,14 @@ def _queued_contract_refusal(
     failed: an editable one is cleared in place, keeping the request's place in
     the queue, while a plan-owned one leaves nothing to edit and the request is
     dropped after the section is repaired.
+
+    A refusal that only one pass recorded is not this row at all. The stored
+    contract is the authority, and a pass can read no authority or no measure
+    for a request whose body it did not manage to read, so one refusal is
+    evidence about the pass rather than about the request. Only
+    passes that each read the request and each refused it agree about it; until
+    they do, the request keeps the waiting reading and the next pass judges it
+    afresh.
     """
     if str(pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
         return None
@@ -1793,6 +1812,9 @@ def _queued_contract_refusal(
         # A full lane names the same condition in its opening words, but an
         # occupying run finishing clears it: that one is a wait, not a repair.
         return None
+    passes = int(pointer.get(queue_admission.CONTRACT_REFUSAL_PASSES_FIELD) or 0)
+    if passes < queue_admission.CONTRACT_REFUSAL_CONFIRMATIONS:
+        return None
     run_id = str(pointer.get("run_id") or "")
     properties = _CONTRACT_PROPERTY.findall(text)
     editable = bool(properties) and all(
@@ -1800,20 +1822,30 @@ def _queued_contract_refusal(
     )
     if editable:
         fields = sorted({_EDITABLE_CONTRACT_PROPERTIES[name] for name in properties})
+        flags = [
+            _QUEUE_EDIT_FIELD_FLAGS[field]
+            for field in fields
+            if field in _QUEUE_EDIT_FIELD_FLAGS
+        ]
         detail = (
-            "the last admission attempt refused this queued request on its node "
-            f"contract, which no lane slot clears; the queue edit sets the "
-            f"field behind each named property ({', '.join(fields)}): {text}"
+            "two admission passes each read this queued request and each "
+            "refused it on its node contract, which no lane slot clears; the "
+            "queue edit sets the field behind each named property "
+            f"({', '.join(fields)}): {text}"
         )
         return {
             "detail": detail,
-            "next_command": f"reckon crew queue edit --run {run_id}",
+            "next_command": (
+                f"reckon crew queue edit --run {run_id} " + " ".join(flags)
+            ).strip()
+            if flags
+            else f"reckon crew queue edit --run {run_id}",
         }
     detail = (
-        "the last admission attempt refused this queued request on its node "
-        "contract, which no lane slot clears; the named properties belong to the "
-        "plan section the request was queued from, so repair the section and "
-        f"dispatch it again: {text}"
+        "two admission passes each read this queued request and each refused it "
+        "on its node contract, which no lane slot clears; the named properties "
+        "belong to the plan section the request was queued from, so repair the "
+        f"section and dispatch it again: {text}"
     )
     return {"detail": detail, "next_command": f"reckon crew queue drop --run {run_id}"}
 

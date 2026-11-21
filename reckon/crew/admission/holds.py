@@ -14,6 +14,9 @@ from .shared import (
     ADMISSION_RETRY_BACKOFF_CAP_SECONDS,
     ADMISSION_RETRY_BACKOFF_SECONDS,
     AWAITING_UPSTREAM_PHASE,
+    CONTRACT_REFUSAL_CONFIRMATIONS,
+    CONTRACT_REFUSAL_PASSES_FIELD,
+    CONTRACT_REFUSAL_STAMP_FIELD,
     QUEUED_PHASE,
     RECORDED_HOLD_FIELD,
     REVIEW_ROLE,
@@ -32,6 +35,7 @@ from .shared import (
     _dispatch_lane_gate,
     copy,
     datetime,
+    json,
     os,
     parse_utc,
     queue_order,
@@ -383,6 +387,52 @@ def _is_lane_hold(failure: Any) -> bool:
     the lane's allowance is zero, or its gate is paused.
     """
     return _failure_text(failure).startswith(("LaneHeld", "LanePaused"))
+
+
+def _is_node_contract_refusal(failure: Any) -> bool:
+    """Whether this failure is the node contract refusing the request itself.
+
+    The refusal names a property of the request's node — no authority, no
+    measure — and every attempt re-tests it against the request as that pass
+    read it. A full lane names the same condition in its opening words, but a
+    lane clears, so that one is excluded here and stays a wait.
+    """
+    if not failure:
+        return False
+    text = _failure_text(failure)
+    return _NODE_CONTRACT_REFUSAL in text and _CAPACITY_REFUSAL_REMEDY not in text
+
+
+#: The node fields the contract check reads, and the whole of what a refusal can
+#: be about. The fingerprint is taken over these alone so a request's unrelated
+#: fields moving (a queue rank, a hold) does not release a parked refusal.
+_CONTRACT_FINGERPRINT_FIELDS = (
+    "goal",
+    "plan",
+    "section",
+    "brief",
+    "brief_path",
+    "done_when",
+    "role",
+    "write_paths",
+    "time_budget",
+)
+
+
+def _node_contract_stamp(pointer: Mapping[str, Any]) -> str:
+    """A fingerprint of the contract a refusal was about.
+
+    The queued request's authority and measure live in the node body its pointer
+    names, so the fingerprint is taken over the hydrated node rather than the
+    pointer: a ``queue edit`` that repairs the measure changes it, and a later
+    pass then retries the request.
+    """
+    node = runs.node_definition(pointer)
+    return json.dumps(
+        {name: node.get(name) for name in _CONTRACT_FINGERPRINT_FIELDS},
+        sort_keys=True,
+        default=str,
+    )
 
 
 def _file_stamp(path: str) -> str:
@@ -1285,6 +1335,12 @@ def _until_changed_hold(
     failure = pointer.get("failure")
     if not failure or not _is_until_changed_failure(failure):
         return None
+    if _is_node_contract_refusal(failure):
+        # A contract refusal is judged by ``_retry_backoff_*`` below, which
+        # retries an unconfirmed one and holds a confirmed one until the
+        # contract itself changes. Holding it here would leave a request whose
+        # stored contract is intact waiting on a change nothing will make.
+        return None
     guard = pointer.get("failure_guard")
     if guard is None:
         # Nothing was fingerprinted, so there is nothing to compare and no
@@ -1445,6 +1501,31 @@ def _retry_backoff_hold(
         return None
     if _is_lane_hold(failure):
         return None
+    if _is_node_contract_refusal(failure):
+        # The contract a refusal names is the request's stored one, and a pass
+        # that read no authority or no measure may have read nothing rather
+        # than read a request that lacks them. So the first refusal is not a
+        # back-off at all: the next pass reads the request afresh and judges it
+        # on that reading. Only a second pass that agrees parks the request, and
+        # a repair to the contract releases it. A timed back-off here would
+        # leave a request whose contract is intact waiting, and a stamped
+        # back-off is exactly what one refusal used to cost it.
+        passes = int(pointer.get(CONTRACT_REFUSAL_PASSES_FIELD) or 0)
+        if passes < CONTRACT_REFUSAL_CONFIRMATIONS:
+            return None
+        guard = pointer.get("failure_guard")
+        if guard is not None and guard != _dependency_guard(pointer, config_for):
+            return None
+        stamped_contract = pointer.get(CONTRACT_REFUSAL_STAMP_FIELD)
+        if stamped_contract is not None and stamped_contract != _node_contract_stamp(
+            pointer
+        ):
+            return None
+        return (
+            "two admission passes each read this request and each refused it on "
+            f"its node contract, and the contract has not changed since: "
+            f"{_failure_text(failure)}"
+        )
     guard = pointer.get("failure_guard")
     if guard is not None and guard != _dependency_guard(pointer, config_for):
         return None
@@ -1477,6 +1558,19 @@ def _stamp_failure(
 ) -> dict[str, Any]:
     """Record one attempt's failure and when the request may be retried."""
     attempts = int(record.get("failure_attempts") or 0) + 1
+    if _is_node_contract_refusal(failure):
+        # Count only passes that agree with each other: an intervening attempt
+        # that failed some other way is a different reading of the request.
+        agreed = int(record.get(CONTRACT_REFUSAL_PASSES_FIELD) or 0)
+        record[CONTRACT_REFUSAL_PASSES_FIELD] = (
+            agreed + 1 if _is_node_contract_refusal(record.get("failure")) else 1
+        )
+        record[CONTRACT_REFUSAL_STAMP_FIELD] = _node_contract_stamp(record)
+    else:
+        record.pop(CONTRACT_REFUSAL_PASSES_FIELD, None)
+        # A stamp kept from an earlier contract refusal would release this
+        # failure on a contract that has nothing to do with it.
+        record.pop(CONTRACT_REFUSAL_STAMP_FIELD, None)
     record["failure"] = failure if isinstance(failure, str) else dict(failure)
     record["failure_at"] = moment.isoformat()
     # The first stamp of a failure is the one the session is told about, so the

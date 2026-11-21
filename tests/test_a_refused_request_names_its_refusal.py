@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import runs
+from reckon.crew import queue_admission, runs
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -87,7 +87,15 @@ def mounted_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return home
 
 
-def _write_queued_pointer(run_id: str, *, failure: str = "") -> dict[str, object]:
+def _write_queued_pointer(
+    run_id: str, *, failure: str = "", passes: int | None = None
+) -> dict[str, object]:
+    """One queued pointer carrying the failures a settled admission pass leaves.
+
+    A pointer carrying a refusal is a pointer two passes have each read and each
+    refused, so the agreed count is written beside it: one refusal is evidence
+    about one pass's read of the request, not about the request.
+    """
     record: dict[str, object] = {
         "run_id": run_id,
         "project": PROJECT,
@@ -99,6 +107,9 @@ def _write_queued_pointer(run_id: str, *, failure: str = "") -> dict[str, object
     }
     if failure:
         record["failure"] = failure
+        record[queue_admission.CONTRACT_REFUSAL_PASSES_FIELD] = (
+            queue_admission.CONTRACT_REFUSAL_CONFIRMATIONS if passes is None else passes
+        )
     runs._write_json(runs.pointer_path(run_id), record)
     return record
 
@@ -151,7 +162,10 @@ def test_an_editable_refusal_names_the_queue_edit(mounted_home: Path) -> None:
     # The row names the field behind each property, so the edit is actionable.
     assert "steering" in reason
     assert "write-paths" in reason
-    assert str(row["next_command"]) == f"reckon crew queue edit --run {REFUSED_RUN}"
+    # The command names the flag for each field, so running it sets them.
+    assert str(row["next_command"]) == (
+        f"reckon crew queue edit --run {REFUSED_RUN} --brief <file> --write-path <path>"
+    )
 
 
 def test_a_full_lane_is_not_read_as_a_contract_repair(mounted_home: Path) -> None:
