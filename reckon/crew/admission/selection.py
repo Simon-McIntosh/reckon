@@ -256,6 +256,17 @@ def admit_once(
             queued = [pointer for pointer in queued if included(pointer)]
         else:
             excluded_by_lane = []
+        # A recorded answer ends the hold an answered decision put on its
+        # requests. The release runs on the rows this pass holds, so a request
+        # it frees is read as free in the same pass that freed it.
+        from ..decision_answers import release_answered_holds
+
+        try:
+            result["released_answered"] = release_answered_holds(live)
+        except (OSError, ValueError):
+            # One unreadable answer cannot end the pass: the requests it held
+            # keep their hold until the record reads again.
+            result["released_answered"] = []
         disk_hold = _service.node_disk_admission_hold() if queued else None
         if disk_hold is not None:
             reason = str(disk_hold["reason"])

@@ -1,0 +1,151 @@
+<section id="ldop-an-answer-reaches-its-owner-and-releases-what-it-held-negative-control">
+<h2>An answer releases the request it held</h2>
+<p>The done-when's negative control: one revision-agnostic probe holds a request
+behind a recorded question, writes the lead's answer into the question record,
+and runs the admission pass's release stage. At the base revision the pass
+leaves the request held, so the probe fails; at the head the same probe passes.
+The gate that measures the node's own change runs beside it, and the two arms
+of the declared suite are green on either side.</p>
+<h3 id="ldop-an-answer-reaches-its-owner-and-releases-what-it-held-negative-control-base">The base revision leaves the request held</h3>
+<pre># revision 5417b373ff9230f07c1c8f403632835808fffc15
+# tree /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/measure/base
+# command PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_answer_release_negative_control.py
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_an_answered_decision_releases_the_request_it_held ____________
+
+crew_home = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/pytest-of-mcintos/pytest-1/test_an_answered_decision_rele0/config&#x27;)
+
+    def test_an_answered_decision_releases_the_request_it_held(crew_home: Path) -&gt; None:
+        &quot;&quot;&quot;The pass moves the request out of its hold once the answer is written.&quot;&quot;&quot;
+        from reckon.crew import runs
+        from reckon.crew.lead_decisions import decision_path, record_decision
+    
+        decision = record_decision(
+            {
+                &quot;question&quot;: &quot;Which transport carries the work?&quot;,
+                &quot;context&quot;: &quot;The current transport is saturated. A second route exists.&quot;,
+                &quot;options&quot;: [
+                    {&quot;value&quot;: &quot;wait&quot;, &quot;label&quot;: &quot;Wait for capacity&quot;},
+                    {&quot;value&quot;: &quot;route&quot;, &quot;label&quot;: &quot;Use the second route&quot;},
+                ],
+                &quot;recommended&quot;: &quot;route&quot;,
+                &quot;project&quot;: &quot;sample&quot;,
+                &quot;session&quot;: &quot;owner-session&quot;,
+                &quot;plan&quot;: &quot;transport&quot;,
+                &quot;section&quot;: &quot;payload&quot;,
+                &quot;held_requests&quot;: [&quot;held-request&quot;],
+            }
+        )
+        live = crew_home / &quot;crew&quot; / &quot;live&quot;
+        live.mkdir(parents=True)
+        (live / &quot;held-request.json&quot;).write_text(
+            json.dumps(
+                {
+                    &quot;run_id&quot;: &quot;held-request&quot;,
+                    &quot;project&quot;: &quot;sample&quot;,
+                    &quot;phase&quot;: &quot;held&quot;,
+                    &quot;session&quot;: &quot;owner-session&quot;,
+                    &quot;node&quot;: {&quot;plan&quot;: &quot;transport&quot;, &quot;section&quot;: &quot;payload&quot;},
+                    &quot;waits&quot;: [],
+                    &quot;queue_hold&quot;: {
+                        &quot;prior_phase&quot;: &quot;queued&quot;,
+                        &quot;started_at&quot;: &quot;2026-11-02T00:00:00+00:00&quot;,
+                        &quot;reason&quot;: &quot;waiting for the lead&quot;,
+                    },
+                }
+            ),
+            encoding=&quot;utf-8&quot;,
+        )
+        path = decision_path(decision[&quot;id&quot;])
+        answered = json.loads(path.read_text(encoding=&quot;utf-8&quot;))
+        answered.update(
+            choice=&quot;route&quot;,
+            answered_at=&quot;2026-11-03T00:00:00+00:00&quot;,
+            answered_by=&quot;presenter&quot;,
+            answer_note=&quot;&quot;,
+        )
+        path.write_text(json.dumps(answered), encoding=&quot;utf-8&quot;)
+    
+        from reckon.crew.admission.release import advance_waiting_requests
+    
+        advance_waiting_requests(runs.list_live())
+    
+&gt;       assert runs.read_pointer(&quot;held-request&quot;)[&quot;phase&quot;] == &quot;queued&quot;
+E       AssertionError: assert &#x27;held&#x27; == &#x27;queued&#x27;
+E         
+E         - queued
+E         + held
+
+tests/test_answer_release_negative_control.py:81: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_answer_release_negative_control.py::test_an_answered_decision_releases_the_request_it_held - AssertionError: assert &#x27;held&#x27; == &#x27;queued&#x27;
+  
+  - queued
+  + held
+1 failed in 1.18s
+EXIT=1
+</pre>
+<h3 id="ldop-an-answer-reaches-its-owner-and-releases-what-it-held-negative-control-head">The head releases it</h3>
+<pre># revision 60983907ec6cd986a16f96348c7d5a45b30c8c3e
+# tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held
+# command PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_answer_release_negative_control.py
+.                                                                        [100%]
+1 passed in 2.00s
+EXIT=0
+</pre>
+<h3 id="ldop-an-answer-reaches-its-owner-and-releases-what-it-held-gate">The gate, at the head</h3>
+<pre># revision 4372c6b8e213ffe221af98bddd40b5d9ebdf18cf
+# tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held
+# command PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_decision_answer_releases_what_it_held.py
+......                                                                   [100%]
+6 passed in 1.55s
+EXIT=0
+</pre>
+<h3 id="ldop-an-answer-reaches-its-owner-and-releases-what-it-held-suite-arms">The declared suite, both arms</h3>
+<pre># revision 5417b373ff9230f07c1c8f403632835808fffc15
+# tree /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/measure/base
+# command PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# cwd /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/measure/base
+# module /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/measure/base/reckon/__init__.py
+..........................................................               [100%]
+58 passed in 37.51s
+EXIT=0
+</pre>
+<pre># revision 4372c6b8e213ffe221af98bddd40b5d9ebdf18cf
+# tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held
+# command PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# cwd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held
+# module /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/reckon/__init__.py
+..........................................................               [100%]
+58 passed in 36.41s
+EXIT=0
+</pre>
+<h3 id="ldop-an-answer-reaches-its-owner-and-releases-what-it-held-merged">The branch merges into main, and the merge is green</h3>
+<p>The branch's two files that main had also rewritten were replaced with main's
+text with this section's behaviour re-expressed as a hunk on top, so the merge
+carries no conflict. The proof runs on the merge itself: git's own merge writes
+the tree, and the gate and both suite arms run inside a tree materialised from
+that merged commit.</p>
+<pre># command git merge-tree --write-tree HEAD main
+516b89918e2134988c052cb6c2823c22a31dbacf
+# conflicts (a conflict prints a CONFLICT line and exits 1)
+EXIT=0
+</pre>
+<pre># merged commit 64455c81b778bd67aa1450957f19502820934458 (tree 516b89918e2134988c052cb6c2823c22a31dbacf)
+# merged parents main 9a4d4d5d34af9fae67f395b5441fe281cdd86bf0 + head 00e4c25b6df5b48542820645cfc9851489600344
+# tree /tmp/reckon-crew-scratch/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/merged.KGjhoj
+# command PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_decision_answer_releases_what_it_held.py
+.......                                                                  [100%]
+7 passed in 1.08s
+EXIT=0
+</pre>
+<pre># merged commit 64455c81b778bd67aa1450957f19502820934458 (tree 516b89918e2134988c052cb6c2823c22a31dbacf)
+# merged parents main 9a4d4d5d34af9fae67f395b5441fe281cdd86bf0 + head 00e4c25b6df5b48542820645cfc9851489600344
+# tree /tmp/reckon-crew-scratch/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/merged.KGjhoj
+# command PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 36.56s
+EXIT=0
+</pre>
+</section>
