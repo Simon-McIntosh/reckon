@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/host_shims/sbatch:69",
+    "reckon/host_shims/srun:69",
+    "reckon/host_shims/salloc:69",
+    "reckon/nested_launch.py:1255",
+    "reckon/nested_launch.py:1119"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T09:53:09Z",
+  "findings": [
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "653",
+      "severity": "non-blocking",
+      "text": "non-blocking: _process_environment is a byte-for-byte duplicate of reckon/crew/process_signal.py:127 (same name, same /proc/<pid>/environ split), and _parent_process at :676 restates the ancestor-walk capability already owned by reckon/hooks/coordinator_obligations.py:369 _parent_of and _ancestor_pids; the addition neither extends nor wraps either owner, so the fence's recovery logic forks two low-level readers the repository already maintains."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires that the tests importing the scheduler shim add no failure against the base, but both recorded arms (manifest.md:25-26) run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/nested_launch.py or the shims, so the 58-to-64 pair cannot see a regression in the changed module; the direct importer tests/test_nested_launch.py is in no arm, and the manifest's rubric.done_when claim that the scoped gate ran them green is unsupported because the scoped gate lists the same two unrelated files."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "711",
+      "severity": "non-blocking",
+      "text": "non-blocking: ancestry_fence's own termination - ANCESTRY_BOUND, the parent<=0/seen cycle guard and the namespace-init stop - has no test; test_f at :314 injects a lambda and pins only fence_environment's fill-only-missing rule, so a regression in the walk's stopping condition (for example an off-by-one that skipped the nearest ancestor) would leave all six cases green."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "693",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recovery depends on a live ancestor still holding RECKON_WORKER_FENCE in its exec-time environment, but the fence sets the recipe with --setenv on the bwrap payload only (reckon/_worker_fence.py:2449), so a worker that clears its environment and then exec-replaces itself leaves only bwrap above it, whose /proc environ carries no recipe; fence_environment then returns {} and the submission is passed through bare rather than refused, which is the outcome the goal sentence forbids."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 6ea77848a0 against bfc8d4ac72 commit by commit; the single commit adds FenceUnestablished (:631), _process_environment (:653), _parent_process (:676), ancestry_fence (:693), fence_environment (:729), the fill loop in main (:1255) and recipe validation in fenced_scheduler_task (:1170-1185), plus a 331-line test file.",
+    "done_when": "The done_when names tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py with four cases plus importer arms on all_debug; the scoped gate (scoped-gate-1795254454668693306.log, '64 passed in 50.23s' EXIT=0 at 6ea77848a0 on 98dci4-clu-3141) records the four cases, and the negative control (negative-control-base-cleared.log, 1 failed EXIT=1 at bfc8d4ac72, 'submitted the bare task') falls at the base - but the recorded base and after suite arms at manifest.md:25-26 run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed module, so the importer-arms clause is unmeasured.",
+    "goal": "The reviewed node's goal is 'keep a job fenced whatever environment its submitting process carries' (dispatch-detail.json); reckon/nested_launch.py:729 fence_environment fills the shim's own missing fence names from the process tree at :1255, so a submission whose shell cleared every RECKON_ name is wrapped in the same fence.",
+    "manifest": "read manifest.md - status complete, commits 6ea77848a0, baseline_suite 58 passed EXIT=0 and after_suite 64 passed EXIT=0 both completed with failure_count 0, negative_control_log a real 1-failed red log.",
+    "write_paths": "The dispatch declares seven paths; both diff paths (reckon/nested_launch.py, tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py) are inside them, and the declared reckon/_worker_fence.py, reckon/shim_lookup.py and reckon/host_shims were not needed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py:225 reddens to a bare task when the fill at reckon/nested_launch.py:1255 is removed and :245 stays empty when the refusal path is removed, but the ancestry walk's termination at :711 is untested.",
+    "evidence": "The new test arm is recorded and red at base (negative-control-base-cleared.log '1 failed' EXIT=1 versus scoped-gate-1795254454668693306.log '64 passed' EXIT=0 at 6ea77848a0), but the importer arms the done_when names are absent from manifest.md:25-26 and both arms measure files that never import the changed module.",
+    "fit": "The additions follow the module's documented-module-constant and typed-function idiom (reckon/nested_launch.py:128 FENCE_ENVIRONMENT_NAMES, :139 ANCESTRY_BOUND) and introduce no plan, ticket or version identifier in any name, comment or docstring.",
+    "goal_fidelity": "reckon/nested_launch.py:1255 fills only the names the submitter is missing and ancestry_fence (:693) reads them from the kernel's exec-time record, so the reported cleared-shell incident runs fenced; the residual is a payload that exec-replaces itself after clearing, which passes through bare at :711.",
+    "reuse": "reckon/nested_launch.py:653 _process_environment duplicates reckon/crew/process_signal.py:127 verbatim and :676 _parent_process duplicates reckon/hooks/coordinator_obligations.py:369 _parent_of, neither extending nor wrapping the existing owner.",
+    "scope_discipline": "Only reckon/nested_launch.py and tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py changed in bfc8d4ac72..6ea77848a0, both inside the declared write paths, and nothing the goal does not imply was carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is 'keep a job fenced whatever environment its submitting process carries' (dispatch-detail.json); reckon/nested_launch.py:729 fence_environment fills the shim's own missing fence names from the process tree at :1255, so a submission whose shell cleared every RECKON_ name is wrapped in the same fence.\nVERDICT done_when: The done_when names tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py with four cases plus importer arms on all_debug; the scoped gate (scoped-gate-1795254454668693306.log, '64 passed in 50.23s' EXIT=0 at 6ea77848a0 on 98dci4-clu-3141) records the four cases, and the negative control (negative-control-base-cleared.log, 1 failed EXIT=1 at bfc8d4ac72, 'submitted the bare task') falls at the base - but the recorded base and after suite arms at manifest.md:25-26 run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed module, so the importer-arms clause is unmeasured.\nVERDICT write_paths: The dispatch declares seven paths; both diff paths (reckon/nested_launch.py, tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py) are inside them, and the declared reckon/_worker_fence.py, reckon/shim_lookup.py and reckon/host_shims were not needed.\nVERDICT manifest: read manifest.md - status complete, commits 6ea77848a0, baseline_suite 58 passed EXIT=0 and after_suite 64 passed EXIT=0 both completed with failure_count 0, negative_control_log a real 1-failed red log.\nVERDICT diff: read 6ea77848a0 against bfc8d4ac72 commit by commit; the single commit adds FenceUnestablished (:631), _process_environment (:653), _parent_process (:676), ancestry_fence (:693), fence_environment (:729), the fill loop in main (:1255) and recipe validation in fenced_scheduler_task (:1170-1185), plus a 331-line test file.\nCALL_SITES: reckon/host_shims/sbatch:69, reckon/host_shims/srun:69, reckon/host_shims/salloc:69, reckon/nested_launch.py:1255, reckon/nested_launch.py:1119\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:1255 fills only the names the submitter is missing and ancestry_fence (:693) reads them from the kernel's exec-time record, so the reported cleared-shell incident runs fenced; the residual is a payload that exec-replaces itself after clearing, which passes through bare at :711.\nSCORE evidence: 11\nJUSTIFICATION evidence: The new test arm is recorded and red at base (negative-control-base-cleared.log '1 failed' EXIT=1 versus scoped-gate-1795254454668693306.log '64 passed' EXIT=0 at 6ea77848a0), but the importer arms the done_when names are absent from manifest.md:25-26 and both arms measure files that never import the changed module.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Only reckon/nested_launch.py and tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py changed in bfc8d4ac72..6ea77848a0, both inside the declared write paths, and nothing the goal does not imply was carried.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py:225 reddens to a bare task when the fill at reckon/nested_launch.py:1255 is removed and :245 stays empty when the refusal path is removed, but the ancestry walk's termination at :711 is untested.\nSCORE fit: 18\nJUSTIFICATION fit: The additions follow the module's documented-module-constant and typed-function idiom (reckon/nested_launch.py:128 FENCE_ENVIRONMENT_NAMES, :139 ANCESTRY_BOUND) and introduce no plan, ticket or version identifier in any name, comment or docstring.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/nested_launch.py:653 _process_environment duplicates reckon/crew/process_signal.py:127 verbatim and :676 _parent_process duplicates reckon/hooks/coordinator_obligations.py:369 _parent_of, neither extending nor wrapping the existing owner.\nFINDING reckon/nested_launch.py:653 non-blocking: _process_environment is a byte-for-byte duplicate of reckon/crew/process_signal.py:127 (same name, same /proc/<pid>/environ split), and _parent_process at :676 restates the ancestor-walk capability already owned by reckon/hooks/coordinator_obligations.py:369 _parent_of and _ancestor_pids; the addition neither extends nor wraps either owner, so the fence's recovery logic forks two low-level readers the repository already maintains.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries/manifest.md:25 non-blocking: the done_when requires that the tests importing the scheduler shim add no failure against the base, but both recorded arms (manifest.md:25-26) run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/nested_launch.py or the shims, so the 58-to-64 pair cannot see a regression in the changed module; the direct importer tests/test_nested_launch.py is in no arm, and the manifest's rubric.done_when claim that the scoped gate ran them green is unsupported because the scoped gate lists the same two unrelated files.\nFINDING reckon/nested_launch.py:711 non-blocking: ancestry_fence's own termination - ANCESTRY_BOUND, the parent<=0/seen cycle guard and the namespace-init stop - has no test; test_f at :314 injects a lambda and pins only fence_environment's fill-only-missing rule, so a regression in the walk's stopping condition (for example an off-by-one that skipped the nearest ancestor) would leave all six cases green.\nFINDING reckon/nested_launch.py:693 non-blocking: the recovery depends on a live ancestor still holding RECKON_WORKER_FENCE in its exec-time environment, but the fence sets the recipe with --setenv on the bwrap payload only (reckon/_worker_fence.py:2449), so a worker that clears its environment and then exec-replaces itself leaves only bwrap above it, whose /proc environ carries no recipe; fence_environment then returns {} and the submission is passed through bare rather than refused, which is the outcome the goal sentence forbids.\n",
+  "review_method": "Read-only review: the plan section, the reviewed node's dispatch-detail goal and done_when, its manifest, the single commit of bfc8d4ac72..6ea77848a0 against its base with the full two-path diff, the new test file read at the reviewed head, and the reviewed run's scoped-gate, negative-control, baseline_suite and after_suite logs read for their revision headers, summary lines and EXIT= lines. One read outside the diff for the reuse judgement: reckon/crew/process_signal.py and a capability search over reckon/ for existing /proc-environment and ancestor-wins helpers. No suite was re-run and nothing in the reviewed tree was modified.",
+  "review_run_id": "r-20261121T095250455151-review-of-wjso-a-job-runs-fenced-whatever-its-submitter-carries-6ea77848a029",
+  "reviewed_base_sha": "bfc8d4ac7294e28f77335cd10994217cf9fa32cb",
+  "reviewed_head_sha": "6ea77848a0290bab9ed3bbe85ded61aca6a89502",
+  "reviewed_run_id": "r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries",
+  "scores": {
+    "durability": 16,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_derivation": "Derived from the reviewed run's own gate logs: baseline_suite-1795254541866036713.log at bfc8d4ac7294e28f77335cd10994217cf9fa32cb records '58 passed in 35.83s' with zero FAILED lines and a final EXIT=0; after_suite-1795254584696289920.log at 6ea77848a0 records '64 passed in 48.43s' with zero FAILED lines and a final EXIT=0. Both arms declare completed: true with failure_count 0, so the head arm adds no failure and added_failure_count is 0 with an empty added_failure_ids.",
+    "after_arm": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries/after_suite-1795254584696289920.log",
+      "revision": "6ea77848a0290bab9ed3bbe85ded61aca6a89502"
+    },
+    "baseline_arm": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries/baseline_suite-1795254541866036713.log",
+      "revision": "bfc8d4ac7294e28f77335cd10994217cf9fa32cb"
+    },
+    "reviewed_run_arms": [
+      "scoped-gate-1795254454668693306.log 64 passed in 50.23s EXIT=0 at 6ea77848a0 (98dci4-clu-3141)",
+      "negative-control-base-cleared.log 1 failed in 2.80s EXIT=1 at bfc8d4ac72 (cleared case submitted the bare task)",
+      "baseline_suite-1795254541866036713.log 58 passed in 35.83s EXIT=0 at bfc8d4ac72",
+      "after_suite-1795254584696289920.log 64 passed in 48.43s EXIT=0 at 6ea77848a0"
+    ]
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:08:17.064316+00:00",
+  "total": 86
+}
