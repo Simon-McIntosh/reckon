@@ -1957,6 +1957,8 @@ class _PlanWriteSnapshot:
     rollback_content: bytes | None = None
     rollback_removed: bool = False
     expected_content: bytes | None = None
+    comment_id: str | None = None
+    comment_anchor: str | None = None
 
     def index_entry(self) -> str:
         return _git(
@@ -2100,12 +2102,112 @@ class _PlanWriteSnapshot:
                 )
 
 
+def _declared_sections(state: Mapping[str, Any]) -> set[str]:
+    """The section ids a plan document declares, from its parsed state."""
+    identity = {
+        str(record.get("id") or "")
+        for record in (state.get("sections") or [])
+        if isinstance(record, Mapping)
+    }
+    identity.update(str(key) for key in (state.get("section_declarations") or {}))
+    identity.discard("")
+    return identity
+
+
+def _refuse_a_comment_the_plan_cannot_hold(
+    snapshot: _PlanWriteSnapshot | None, section: str
+) -> None:
+    """Stop a landing whose comment the current plan has nowhere to put.
+
+    A plan that declared the run's section when the snapshot was taken, and no
+    longer declares it now, has nowhere to put this landing's comment. The
+    landing stops here — before the comment write and before the ledger row —
+    rather than recording a promotion with no landing record. A plan that never
+    declared the section answers nothing about it, so the landing proceeds as
+    it always has.
+    """
+    if snapshot is None or not str(section or "").strip():
+        return
+    from reckon import _plan_html
+
+    try:
+        text = snapshot.path.read_bytes().decode("utf-8")
+    except OSError:
+        return
+    anchor = _plan_html.section_anchor(section)
+    held_before = _declared_sections(
+        _plan_html.read_state(snapshot.content.decode("utf-8"))
+    )
+    if anchor not in held_before:
+        return
+    held_now = _declared_sections(_plan_html.read_state(text))
+    if anchor not in held_now:
+        raise CrewError(
+            f"the plan no longer holds section {section!r}: the landing comment "
+            "cannot be placed, so the landing stopped before writing the ledger row"
+        )
+
+
+def _adopt_a_plan_edited_after_the_snapshot(
+    snapshot: _PlanWriteSnapshot, current: bytes
+) -> _PlanWriteSnapshot | None:
+    """The snapshot to commit when the plan was edited after ours was taken.
+
+    A landing comment is an append, so the document now on disk is the other
+    writer's committed plan plus this run's comment. That is recognised by
+    removing this run's comment from the current document and requiring the
+    result to be byte-identical to the plan at HEAD: a writer that changed
+    anything else does not match, and the caller's refusal stands. When it does
+    match, the rollback target becomes HEAD's plan — the state a refusal must
+    leave behind — rather than the preimage this run snapshotted before the
+    other writer's edit existed.
+    """
+    from reckon import _plan_html
+
+    if not snapshot.comment_id:
+        return None
+    relative = snapshot.path.relative_to(snapshot.checkout).as_posix()
+    shown = _git(snapshot.checkout, "show", f"HEAD:{relative}", check=False)
+    if shown.returncode:
+        return None
+    head_text = shown.stdout
+    try:
+        actual = _plan_html.read_state(current.decode("utf-8"))
+    except (ValueError, TypeError):
+        return None
+    entries = (actual.get("comments") or {}).get(snapshot.comment_anchor or "", [])
+    if not any(str(item.get("id") or "") == snapshot.comment_id for item in entries):
+        return None
+    rendered = _plan_html.write_state(
+        head_text,
+        actual,
+        drop_authored_impl_meta=True,
+    )
+    if rendered.encode("utf-8") != current:
+        return None
+    head_bytes = head_text.encode("utf-8")
+    return replace(
+        snapshot,
+        content=head_bytes,
+        mode=snapshot.path.stat().st_mode,
+        index=snapshot.index_entry(),
+        head_entry=snapshot.committed_entry(),
+        head_content=head_bytes,
+        expected_content=current,
+        rollback_content=None,
+        commit_attempted=False,
+    )
+
+
 def _record_comment_with_snapshot(
     snapshot: _PlanWriteSnapshot | None, **kwargs: Any
 ) -> dict:
     if snapshot is not None:
         from reckon import _plan_html
 
+        _refuse_a_comment_the_plan_cannot_hold(
+            snapshot, str(kwargs.get("section") or "")
+        )
         narrative = str(kwargs.get("landing") or kwargs.get("narrative") or "").strip()
         if narrative:
             state = _store._state_from_text(
@@ -2121,6 +2223,8 @@ def _record_comment_with_snapshot(
                 author=kwargs["author"],
                 when=kwargs["when"],
             )
+            snapshot.comment_id = str(_comment["id"])
+            snapshot.comment_anchor = _anchor
             if payload.get("comments") != state.get("comments"):
                 payload = {
                     **payload,
@@ -2146,43 +2250,47 @@ def _commit_with_plan_snapshot(
     try:
         snapshot.require_owned_content(current)
     except CrewError:
-        from bs4 import BeautifulSoup
+        adopted = _adopt_a_plan_edited_after_the_snapshot(snapshot, current)
+        if adopted is not None:
+            checkpoint = adopted
+        else:
+            from bs4 import BeautifulSoup
 
-        from reckon import _plan_html
+            from reckon import _plan_html
 
-        if snapshot.expected_content is None:
-            raise
-        intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
-        actual = _plan_html.read_state(current.decode("utf-8"))
-        merged = _store._comment_append_onto_current(actual, intended)
-        held_comments = actual.get("comments") or {}
-        kept = all(
-            entry in held_comments.get(section, [])
-            for section, entries in (intended.get("comments") or {}).items()
-            for entry in entries
-        )
-        rendered = _plan_html.write_state(
-            snapshot.expected_content.decode("utf-8"),
-            actual,
-            drop_authored_impl_meta=True,
-        ).encode("utf-8")
-        same_document = BeautifulSoup(
-            rendered.decode("utf-8"), "html.parser"
-        ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
-        if merged is None or not kept or not same_document:
-            raise
-        # A commutative peer append may land with this run. Its full bytes
-        # and staging become the commit's rollback target, never the older
-        # snapshot that predates the peer's comment.
-        checkpoint = replace(
-            snapshot,
-            content=current,
-            mode=snapshot.path.stat().st_mode,
-            index=snapshot.index_entry(),
-            expected_content=current,
-            rollback_content=None,
-            commit_attempted=False,
-        )
+            if snapshot.expected_content is None:
+                raise
+            intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
+            actual = _plan_html.read_state(current.decode("utf-8"))
+            merged = _store._comment_append_onto_current(actual, intended)
+            held_comments = actual.get("comments") or {}
+            kept = all(
+                entry in held_comments.get(section, [])
+                for section, entries in (intended.get("comments") or {}).items()
+                for entry in entries
+            )
+            rendered = _plan_html.write_state(
+                snapshot.expected_content.decode("utf-8"),
+                actual,
+                drop_authored_impl_meta=True,
+            ).encode("utf-8")
+            same_document = BeautifulSoup(
+                rendered.decode("utf-8"), "html.parser"
+            ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
+            if merged is None or not kept or not same_document:
+                raise
+            # A commutative peer append may land with this run. Its full bytes
+            # and staging become the commit's rollback target, never the older
+            # snapshot that predates the peer's comment.
+            checkpoint = replace(
+                snapshot,
+                content=current,
+                mode=snapshot.path.stat().st_mode,
+                index=snapshot.index_entry(),
+                expected_content=current,
+                rollback_content=None,
+                commit_attempted=False,
+            )
     checkpoint.require_owned_index(current)
     checkpoint.commit_attempted = True
     try:
