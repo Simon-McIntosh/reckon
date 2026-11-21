@@ -42,6 +42,99 @@ _LOCK = threading.Lock()
 # memo, so a test asking for a cold read gets one.
 _MAPS: list[Any] = []
 
+# How one answer was produced, for a caller measuring what a pass paid for.
+# ``cached`` is a value the memo already held, ``extended`` a derivation folded
+# from the bytes a file gained, and ``recomputed`` a parse run again in full
+# because the file it describes moved. A file parse has no incremental fold, so
+# every file-backed kind answers ``cached`` or ``recomputed``; the stream
+# reader in :mod:`reckon._backends` is the one kind that extends.
+ANSWER_CACHED = "cached"
+ANSWER_EXTENDED = "extended"
+ANSWER_RECOMPUTED = "recomputed"
+
+_ANSWERS = (ANSWER_CACHED, ANSWER_EXTENDED, ANSWER_RECOMPUTED)
+
+
+class MemoCounts:
+    """Per-kind counts of the answers one measured pass was served.
+
+    A pass that must show whether it did work opens a :func:`counting` scope,
+    and every file-backed :func:`memoized` answer served inside it, plus every
+    stream observation recorded through :func:`record_memo`, is counted here
+    under its kind. ``bytes_read`` is the bytes the answer had to read from disk
+    to be produced — the file's size for a full parse, the grown prefix for an
+    incremental extension, and nothing for a value the memo already held. A
+    path that cannot be stat'ed reads no bytes at all, so it is not counted:
+    the reading describes what a pass read from disk, and an answer composed
+    from a file that is not there read nothing.
+
+    Only the work asked for on the scope's own thread is counted. A derivation
+    another thread runs while the pass is open is another pass's work, and a
+    station that attributed it here would report a tick paying for its
+    neighbours.
+    """
+
+    __slots__ = ("_kinds",)
+
+    def __init__(self) -> None:
+        self._kinds: dict[str, dict[str, int]] = {}
+
+    def record(self, kind: str, outcome: str, bytes_read: int = 0) -> None:
+        """Count one answer of ``kind``, produced by ``outcome``."""
+        if outcome not in _ANSWERS:
+            raise ValueError(f"not a memo outcome: {outcome!r}")
+        entry = self._kinds.setdefault(
+            kind,
+            {
+                ANSWER_CACHED: 0,
+                ANSWER_EXTENDED: 0,
+                ANSWER_RECOMPUTED: 0,
+                "bytes_read": 0,
+            },
+        )
+        entry[outcome] += 1
+        if bytes_read > 0:
+            entry["bytes_read"] += int(bytes_read)
+
+    def summary(self) -> dict[str, dict[str, int]]:
+        """A copy of every kind's counts, so a reader cannot change them."""
+        return {kind: dict(counts) for kind, counts in self._kinds.items()}
+
+
+# The scope a pass opened, so an answer is charged to the pass that asked for
+# it rather than to whatever else the process happens to be doing. A ContextVar
+# rather than a process global: a tick and a sweep pass measuring at the same
+# time each count their own answers, and a thread that opens no scope records
+# nothing.
+_COUNTS: ContextVar[MemoCounts | None] = ContextVar("file_memo_counts", default=None)
+
+
+@contextlib.contextmanager
+def counting() -> Iterator[MemoCounts]:
+    """Open a scope that counts every memo answer served inside it."""
+    counts = MemoCounts()
+    token = _COUNTS.set(counts)
+    try:
+        yield counts
+    finally:
+        _COUNTS.reset(token)
+
+
+def record_memo(kind: str, outcome: str, bytes_read: int = 0) -> None:
+    """Count one answer under ``kind`` when a measuring scope is open."""
+    counts = _COUNTS.get()
+    if counts is not None:
+        counts.record(kind, outcome, bytes_read)
+
+
+def file_bytes(path: Path | str) -> int:
+    """The file's size, or zero when it cannot be stat'ed."""
+    try:
+        return os.stat(path).st_size
+    except OSError:
+        return 0
+
+
 # A read-only region in which a memoised value is shared rather than copied.
 # Within the region each document is stat'ed once, decoded once, and handed to
 # the caller as a read-only view of the parsed value: the region refuses any
@@ -412,16 +505,19 @@ def memoized[T](
                 return compute()
         key = (kind, os.fspath(path), variant)
     if region is not None and key in region:
+        record_memo(kind, ANSWER_CACHED)
         return _handout(region[key], mutable)  # type: ignore[return-value]
     with _LOCK:
         entry = _CACHE.get(key)
         if entry is not None and entry[0] == identity:
             _CACHE.move_to_end(key)
             value = entry[1]
+            record_memo(kind, ANSWER_CACHED)
             if region is not None:
                 region[key] = entry[2]
                 return _handout(region[key], mutable)  # type: ignore[return-value]
             return copy.deepcopy(value)  # type: ignore[return-value]
+    record_memo(kind, ANSWER_RECOMPUTED, file_bytes(path))
     value = compute()
     try:
         unchanged = (
