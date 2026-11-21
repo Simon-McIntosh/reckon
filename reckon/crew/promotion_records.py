@@ -407,23 +407,36 @@ def _default_gate_evidence_from_manifest(
     resolved_commits = tuple(str(sha).strip() for sha in commits if str(sha).strip())
     if str(verdict).strip().lower() != "passed":
         return resolved_gate, resolved_commits
-    # A command and the log it ran against describe one execution, so a caller
-    # that supplies one and leaves the other absent would get a check pairing
-    # its own command with evidence this fill derived from somewhere else. The
-    # half-filled case is refused rather than completed, because the completed
-    # check reads as a run nobody performed.
+    # A command and the log it ran against describe one execution, so a check
+    # completed here — a caller's own half beside evidence this fill derived
+    # from the manifest or the stored record — reads as a run nobody performed.
+    # The completion is refused where it would happen, not up front: a
+    # half-stated check this fill completes nothing for is a check missing a
+    # field, and the gate's own refusal names that field. Raising up front
+    # instead hides every other precondition the promotion judges beside it,
+    # which is the one-refusal contract the rest of the promotion keeps.
     given_command = bool(str(resolved_gate.get("command") or "").strip())
     given_log = bool(
         str(resolved_gate.get("log_path") or "").strip()
         or str(resolved_gate.get("log_digest") or "").strip()
     )
-    if given_command != given_log:
-        raise CrewError(
-            "a gate check is a command and the evidence it ran against: pass "
-            "--gate-command and --gate-log-path (or --gate-log-digest) "
-            "together, or neither, because a command beside a log the "
-            "promotion found elsewhere records a run that never happened"
-        )
+
+    def refuse_a_completed_check() -> None:
+        """Refuse filling the half a caller left out of a half-stated check."""
+        if given_command != given_log:
+            raise CrewError(
+                "a gate check is a command and the evidence it ran against: "
+                "pass --gate-command and --gate-log-path (or "
+                "--gate-log-digest) together, or neither, because a command "
+                "beside a log the promotion found elsewhere records a run "
+                "that never happened"
+            )
+
+    def fill(key: str, value: Any) -> None:
+        """Fill one check field, refusing a check completed from elsewhere."""
+        refuse_a_completed_check()
+        resolved_gate[key] = value
+
     manifest = _fresh_manifest(record)
     if manifest is None:
         return resolved_gate, resolved_commits
@@ -433,7 +446,7 @@ def _default_gate_evidence_from_manifest(
             manifest, manifest_path=manifest_path
         )
         if default_log:
-            resolved_gate["log_path"] = default_log
+            fill("log_path", default_log)
     log_path = str(resolved_gate.get("log_path") or "").strip()
     log_text = ""
     if log_path:
@@ -457,6 +470,11 @@ def _default_gate_evidence_from_manifest(
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
     if review_evidence is not None:
+        # The stored record supplies both halves of the check, and the log it
+        # captures is written where the promotion will cite it, so a half-stated
+        # check is refused before that derivation rather than after it: a
+        # promotion that refuses leaves no file behind it.
+        refuse_a_completed_check()
         # The check's log is captured only where the promotion will cite it: a
         # caller's own flag, or a log the manifest already names, is the
         # evidence that run re-executed, and writing a second log beside it
@@ -470,10 +488,10 @@ def _default_gate_evidence_from_manifest(
                 if resolved_gate.get(key) is None:
                     resolved_gate[key] = value
             elif not str(resolved_gate.get(key) or "").strip():
-                resolved_gate[key] = value
+                fill(key, value)
     command_unset = not str(resolved_gate.get("command") or "").strip()
     if command_unset and declared_command and not _gate_command_prose(declared_command):
-        resolved_gate["command"] = declared_command
+        fill("command", declared_command)
     # A worker that writes a description of its suite on the `tests:` line
     # rather than the command cannot have that text re-run at the integrated
     # head. The cited log's own header names the command that actually ran, so
@@ -485,9 +503,9 @@ def _default_gate_evidence_from_manifest(
     if not str(resolved_gate.get("command") or "").strip():
         recovered = _command_from_gate_log(log_text)
         if recovered:
-            resolved_gate["command"] = recovered
+            fill("command", recovered)
         elif declared_command:
-            resolved_gate["command"] = declared_command
+            fill("command", declared_command)
     if resolved_gate.get("exit_status") is None:
         recorded = _recorded_exit_status(log_text) if log_text else None
         if recorded is not None:
@@ -1413,11 +1431,22 @@ def _merged_primary_baseline(
     inherited failures without claiming they failed before the run started.
     Reuse a receipt only for its immutable revision and command, checking its
     log before trusting its IDs. An interrupted reading excuses no failure.
+
+    A role that may not write repository paths merged nothing: its tree is the
+    tree it grades, so a merge in that history was taken by whoever merged the
+    head, and there are no inherited failures for this run's delivery to
+    explain. Measuring one would charge the verifier a scheduler job for a
+    revision it did not land, so the reading is skipped and the run's own
+    baseline and after pair stands as its evidence.
     """
     import hashlib
 
     from reckon.crew import promotion_evidence
+    from reckon.crew.node import role_may_write_repository_paths
+    from reckon.crew.recovery import _pointer_role
 
+    if not role_may_write_repository_paths(_pointer_role(record)):
+        return None
     primary = promotion_evidence._merged_primary_revision(record, head)
     if not primary:
         return None
@@ -1486,6 +1515,126 @@ def _merged_primary_baseline(
     receipt.parent.mkdir(parents=True, exist_ok=True)
     receipt.write_text(json.dumps(normalized, sort_keys=True), encoding="utf-8")
     return normalized
+
+
+#: The manifest key prefixes that open a labelled suite pair. A run armed on
+#: more than one population records each population's arms apart, so a label's
+#: pair is judged on its own rather than one population's baseline being read
+#: against another's head.
+_LABELLED_SUITE_PREFIXES = ("baseline_suite_", "after_suite_")
+
+
+def labelled_suite_pairs(
+    manifest: Mapping[str, Any] | None,
+) -> list[tuple[str, Any, Any]]:
+    """Every labelled suite pair a manifest records, ordered by label.
+
+    A label opens a pair when either side is present, so a label carrying only
+    one arm is still a pair to judge and the absent side is what the
+    completeness check names. The unlabelled ``baseline_suite``/``after_suite``
+    fields carry no label and are read by the ordinary path.
+
+    A suffixed key is a label only where its value is a suite record. Manifests
+    also carry plain annotations beside their arms under the same prefix — a
+    result sentence, a log path, a note — and read as labels each of those is
+    a pair with nothing on either side, which refused the landing of a run
+    whose unlabelled arms were complete.
+    """
+    if not isinstance(manifest, Mapping):
+        return []
+    labels: set[str] = set()
+    for key, value in manifest.items():
+        if not isinstance(value, Mapping):
+            continue
+        for prefix in _LABELLED_SUITE_PREFIXES:
+            if key.startswith(prefix) and key != prefix:
+                labels.add(key[len(prefix) :])
+    return [
+        (
+            label,
+            manifest.get(f"baseline_suite_{label}"),
+            manifest.get(f"after_suite_{label}"),
+        )
+        for label in sorted(labels)
+    ]
+
+
+def _evaluate_labelled_suite_delta(
+    manifest: Mapping[str, Any],
+    *,
+    suite_command: str,
+) -> dict[str, Any]:
+    """Judge a manifest whose suite arms are recorded per label.
+
+    Each label's pair is judged as the unlabelled pair is: both sides must be
+    complete evidence, and the after arm must add no failure its own baseline
+    does not name. A label missing a side is refused naming that side; a label
+    whose after arm adds a failure is refused naming the label and the id, so
+    the worker knows which population to repair. A clean set of pairs is a
+    clean delta.
+    """
+    pairs = labelled_suite_pairs(manifest)
+    missing: list[str] = []
+    normalized: list[dict[str, Any]] = []
+    added_by_label: dict[str, list[str]] = {}
+    for label, baseline, after in pairs:
+        pair_missing = [
+            *ledger.suite_observation_missing_fields(
+                baseline, name=f"baseline_suite_{label}"
+            ),
+            *ledger.suite_observation_missing_fields(
+                after, name=f"after_suite_{label}"
+            ),
+        ]
+        if pair_missing:
+            missing.extend(pair_missing)
+            continue
+        added = ledger.added_failure_ids(baseline, after)
+        if added:
+            added_by_label[label] = added
+        normalized.append(
+            {
+                "label": label,
+                "baseline_suite": ledger.normalized_suite_observation(baseline),
+                "after_suite": ledger.normalized_suite_observation(after),
+                "added_failure_ids": added,
+            }
+        )
+    if missing:
+        raise ledger.SuiteDeltaError(
+            "labelled suite arms require a complete baseline and after pair for "
+            "every label; missing " + ", ".join(missing),
+            missing_fields=missing,
+        )
+    if added_by_label:
+        detail = "; ".join(
+            f"after_suite_{label} names failures its baseline_suite_{label} "
+            "does not: " + ", ".join(ids)
+            for label, ids in added_by_label.items()
+        )
+        raise ledger.SuiteDeltaError(
+            "armed promotion added suite failures: " + detail,
+            added_failure_ids=[
+                failure_id for ids in added_by_label.values() for failure_id in ids
+            ],
+        )
+    first = normalized[0]
+    return {
+        "status": "clean",
+        "suite_command": suite_command,
+        "baseline_suite": first["baseline_suite"],
+        "after_suite": first["after_suite"],
+        "suite_pairs": normalized,
+        "added_failure_ids": [],
+        "failure_attribution": {},
+        "inherited_failure_ids": {},
+        "primary_suite": None,
+        "waiver_reason": None,
+        "waiver_covered_fields": [],
+        "waived_arms": None,
+        "measured_by": "run",
+        "baseline_measured_nothing": False,
+    }
 
 
 def _evaluate_suite_delta(
@@ -1557,9 +1706,18 @@ def _evaluate_suite_delta(
             )
         except (OSError, KeyError, ValueError):
             manifest = {}
+    labelled_pairs = labelled_suite_pairs(manifest)
+    if labelled_pairs and not (
+        isinstance(manifest.get("baseline_suite"), Mapping)
+        or isinstance(manifest.get("after_suite"), Mapping)
+    ):
+        # A manifest that records its arms per label has no unlabelled pair to
+        # read; each label's pair is judged on its own so one population's
+        # failures are never compared against another population's baseline.
+        return _evaluate_labelled_suite_delta(manifest, suite_command=suite_command)
+    head = _run_head(record)
     baseline = manifest.get("baseline_suite")
     after = manifest.get("after_suite")
-    head = _run_head(record)
     measured_by_landing = False
     missing: list[str] = []
     if not manifest_present:
@@ -1686,10 +1844,26 @@ def _evaluate_suite_delta(
                 "after_suite": after if isinstance(after, Mapping) else None,
             },
         }
+        uncounted = [
+            name
+            for name, observation in (
+                ("baseline_suite", baseline),
+                ("after_suite", after),
+            )
+            if ledger.suite_observation_is_uncounted(observation)
+        ]
         detail = (
             "armed promotion requires complete baseline and after suite evidence; "
             "missing " + ", ".join(missing)
         )
+        if uncounted:
+            refusal["uncounted_arms"] = uncounted
+            detail += (
+                ". " + " and ".join(uncounted) + " never reached a pytest summary, "
+                "so no failure count exists to compare: re-measure the arm, or "
+                "state why it cannot count with --waive-suite-delta '<why>', "
+                "which records the arm as unmeasured rather than as a passing one"
+            )
         if any(field.endswith(".command_matches_suite_command") for field in missing):
             detail += (
                 ". An arm that ran a different command states that command and "
@@ -1722,8 +1896,12 @@ def _evaluate_suite_delta(
             detail,
             missing_fields=missing,
         )
-    normalized_baseline = ledger.normalized_suite_observation(baseline)
-    normalized_after = ledger.normalized_suite_observation(after)
+    normalized_baseline = ledger.normalized_suite_observation(
+        baseline, unmeasured_reason=waiver
+    )
+    normalized_after = ledger.normalized_suite_observation(
+        after, unmeasured_reason=waiver
+    )
     # What an arm waiver held, in the normalised shape the row records. The
     # committed row is the durable copy: promotion deletes the pointer this
     # waiver was written to.

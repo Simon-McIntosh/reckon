@@ -396,12 +396,17 @@ def test_an_unlocked_decision_means_the_node_is_not_closed() -> None:
     assert verdict.ok
 
 
-def test_a_budget_over_the_fence_is_recorded_on_the_node() -> None:
-    """The resolved fence sizes the work rather than refusing dispatch."""
+def test_a_budget_over_the_fence_needs_a_reason_and_records_it() -> None:
+    """The fence binds: an overage rides the node only with a stated reason."""
     node = _node(time_budget="90m")
     verdict = crew.validate_node(node, budget_ceiling="25m")
-    assert "bounded" not in verdict.failed_properties
+    assert "bounded" in verdict.failed_properties
     assert node.over_fence_note == "budget 90m exceeds the resolved fence 25m"
+
+    admitted = _node(time_budget="90m", over_fence_reason="the gate runs a long suite")
+    verdict = crew.validate_node(admitted, budget_ceiling="25m")
+    assert "bounded" not in verdict.failed_properties
+    assert admitted.over_fence_note == "budget 90m exceeds the resolved fence 25m"
 
 
 def test_a_malformed_budget_names_the_accepted_form() -> None:
@@ -2563,12 +2568,33 @@ def test_dispatch_launches_a_cli_backend_and_records_the_run(home, repo) -> None
     # The record is on disk, so a fresh session can pick the run up. The fields
     # a dispatch composes for its own callers are kept in the run's detail file
     # and the pointer names it, so the pointer carries the run and the accessor
-    # answers with the whole record rather than either side keeping a copy.
+    # answers with the whole record rather than either side keeping a copy. Two
+    # parts are kept beside the pointer rather than inside it — the node's body
+    # and the channel's peer list — and each is read back through the accessor
+    # that answers for a pointer written either before or after the move, so the
+    # comparison below still states one record however the pointer is shaped.
     pointer = json.loads(crew.pointer_path(record["run_id"]).read_text())
     detail_path = str(runs.dispatch_detail_path(record["run_id"]))
     assert pointer["dispatch_detail"] == record["dispatch_detail"] == detail_path
+    stored = {key: value for key, value in pointer.items() if key != "dispatch_detail"}
+    hydrated = runs.node_definition(pointer)
+    hydrated_node = {
+        name: value for name, value in hydrated.items() if name != runs.NODE_BODY_KEY
+    }
+    # The body is where the pointer says it is: the pointer names the file, and
+    # the accessor answers with the definition the record carries.
+    body_path = str(hydrated.get(runs.NODE_BODY_KEY) or "")
+    if body_path:
+        assert body_path == str(runs.node_body_path(record["run_id"]))
+    assert hydrated_node == record["node"]
+    assert stored["peer_channel"] == {
+        name: value for name, value in record["peer_channel"].items() if name != "peers"
+    }
+    assert runs.peer_channel_peers(pointer) == record["peer_channel"]["peers"]
     assert {
-        key: value for key, value in pointer.items() if key != "dispatch_detail"
+        **stored,
+        "node": hydrated_node,
+        "peer_channel": record["peer_channel"],
     } == {
         key: value
         for key, value in record.items()
@@ -2991,6 +3017,28 @@ def _set_pointer_pid(run_id: str, pid: int) -> None:
     crew._write_json(crew.pointer_path(run_id), pointer)
 
 
+# A pid no process table holds, so a probe of it proves the process gone rather
+# than answering nothing at all.
+_ABSENT_PID = 999999999
+
+
+def _worker_has_stopped(record: dict) -> None:
+    """Record the ended worker a delivered run's verdict is read through.
+
+    ``_dispatched`` launches through a stub that returns zero, so the pointer
+    carries no pid a launch could have produced: every liveness read answers
+    "unknown", and a terminal word stays provisional while the run's stream is
+    inside the stall window — the verdict a case studying the word itself wants
+    to read is held at ``running`` by a worker that was never launched. A case
+    that has delivered a verdict records what an exited worker leaves behind
+    instead: the pointer names a pid no process table holds, and the attempt's
+    own worker record names that same ended process, so the pointer's number is
+    not taken for a worker of the attempt before it.
+    """
+    _set_pointer_pid(record["run_id"], _ABSENT_PID)
+    _record_attempt_worker(record, _ABSENT_PID)
+
+
 def _record_attempt_worker(record: dict, pid: int) -> None:
     """Write the current attempt's own worker record, as a supervisor does.
 
@@ -3121,8 +3169,9 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     original_session = "019ff509-8a60-7723-94fd-65942a6d8faa"
     fresh_session = "019ff509-8a60-7723-94fd-65942a6d8fab"
     ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
-    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
-    roster_before = roster_path.read_bytes()
+    # The roster is held in the run store, which is where every reader takes it
+    # from; the committed state path is the aggregate the store imports once.
+    roster_before = ledger.members("proj", repo)
     first = crew.dispatch(
         node=_node(),
         project="proj",
@@ -3188,7 +3237,7 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     assert fresh_record["session_model"] == "other-model"
     assert fresh_record["agent"] == fresh_agent
     assert crew.read_pointer(first["run_id"]) == original_record
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.members("proj", repo) == roster_before
 
 
 def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> None:
@@ -3422,6 +3471,34 @@ def _deliver_manifest(record: dict, status: str, **fields: str) -> None:
     Path(record["manifest_path"]).write_text("\n".join(lines) + "\n")
 
 
+def _let_the_worker_stop_when_it_wrote_its_verdict(record: dict) -> None:
+    """Place the run's stop outside the stall window the interim word needs.
+
+    A terminal status is provisional while its attempt is still inside the
+    window a working run is given: the attempt's own stream written inside the
+    stall window defers the word, because a worker that wrote ``blocked`` and
+    went on writing has not stopped. A case asserting what a stopped worker's
+    verdict reads therefore has to age both clocks the reading takes its quiet
+    time from — the attempt's start and the run's newest stream — so nothing in
+    the fixture claims the attempt is still producing output. The manifest stays
+    fresh: it is what the worker wrote as it stopped.
+    """
+    quiet = recovery.LOG_STALE_AFTER_SECONDS + 300
+    stopped = datetime.now(UTC) - timedelta(seconds=quiet)
+    started = stopped.isoformat(timespec="seconds").replace("+00:00", "Z")
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["attempt_started_at"] = started
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+    # The attempt record carries the attempt's own clock too, and the later of
+    # the two records dates the attempt, so both move together.
+    attempt_path = runs.run_dir(record["run_id"]) / "attempt.json"
+    attempt = json.loads(attempt_path.read_text(encoding="utf-8"))
+    attempt["attempt_started_at"] = started
+    attempt_path.write_text(json.dumps(attempt), encoding="utf-8")
+    stamp = stopped.timestamp()
+    os.utime(record["log_path"], (stamp, stamp))
+
+
 def _predate_delivery(manifest: Path, dispatched_at: str) -> None:
     """Back-date a delivery to the attempt that wrote it.
 
@@ -3653,6 +3730,8 @@ def test_blocked_manifest_is_not_promotable(home, repo) -> None:
         "blocked",
         blockers="the schema choice needs direction",
     )
+    _worker_has_stopped(record)
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
 
     row = crew.classify_pointer(crew.observe(record["run_id"]))
 
@@ -3671,6 +3750,8 @@ def test_failed_manifest_is_not_promotable(home, repo) -> None:
         manifest_path=str(manifest),
     )
     _deliver_manifest(record, "failed", blockers="the focused test failed")
+    _worker_has_stopped(record)
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
 
     row = crew.classify_pointer(crew.observe(record["run_id"]))
 
@@ -3692,6 +3773,8 @@ def test_a_complete_manifest_emits_an_authorised_review_dispatch(
         manifest_path=str(manifest),
     )
     _deliver_manifest(record, "complete", commits="HEAD")
+    _worker_has_stopped(record)
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
 
     row = crew.classify_pointer(crew.observe(record["run_id"]))
 
@@ -3740,6 +3823,8 @@ def test_crew_read_and_recovery_command_share_classification(home, repo) -> None
         manifest_path=str(manifest),
     )
     _deliver_manifest(record, "blocked", blockers="waiting for direction")
+    _worker_has_stopped(record)
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
     crew.observe(record["run_id"])
 
     read_row = mcp._crew("proj", view="live")["runs"][0]

@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T10:20:31Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-e3ba8d62f29d",
+      "recorded_at": "2026-11-21T10:48:38.583985+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-e3ba8d62f29d",
+      "recorded_at": "2026-11-21T10:48:40.016619+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim/suite-after.log",
+      "line": "4",
+      "severity": "blocking",
+      "text": "the after suite arm stopped after its first test: the log holds the three header lines and a single '.' with no summary line and no EXIT= line, while manifest.md:12 records after_suite completed true, exit_status 0 and failure_count 0 for this same path, so the done_when's no-added-failure arm is claimed rather than measured and the recorded added_failure_count of 0 rests on the baseline arm alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim/gate-head.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "gate-head.sh runs pytest directly in the shared worktree and neither the script nor gate-head.log names an all_debug job or an unset SLURM_JOB_ID, so the done_when clause 'as a job on all_debug with SLURM_JOB_ID unset' is unrecorded; the head pass itself holds at e3ba8d62 and over main's tree in landing-arm-repaired.log."
+    },
+    {
+      "file": "tests/test_every_removal_path_reads_the_wide_claim.py",
+      "line": "216",
+      "severity": "non-blocking",
+      "text": "the exemption compares every positional argument of a removal call with the registration's path expression rather than the argument the removal helper actually frees, so a future body that registers its own tree and frees a handed path while passing the registered target in another positional slot is dropped from the scan silently; no current caller has that shape and the four controls at :438-477 cover only the keyword-option and handed-path cases."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "rubric.cleanliness reports a clean ruff check on the changed test file, but ruff check reports I001 on its import block at both 42fe90d0 and e3ba8d62, so the file is not clean; the accurate claim is that the commit adds no finding, which is what the identical base result shows."
+    }
+  ],
+  "head_log_revision": "e3ba8d62f29da2b1eb585f4c97973ce2bb96f11e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "git log 42fe90d0b0a46060bafde2490dda7d4002cda478..e3ba8d62f29da2b1eb585f4c97973ce2bb96f11e names 7e4a0c0431, ca12b25fe4, 0057740589 and e3ba8d62; the first rewrites the scan's claim recognition and adds the own-registration exemption, ca12b25 and e3ba8d62 add and extend the evidence fragment, 0057740589 replaces the identifier-subset exemption with freed-path identity and adds four control cases, and no product source changed.",
+    "done_when": "the done_when names the file's pass at head, a base arm that reproduces the red with a cause verdict per path, a no-added-failure suite arm at both revisions and a negative control; gate-head.log (5 passed, EXIT=0), base-arm.log (1 failed, 2 passed, EXIT=1) and suite-baseline.log (58 passed, EXIT=0) carry theirs, but suite-after.log stops after one character of progress with no summary and no EXIT= line, and no receipt names the all_debug job the done_when requires.",
+    "goal": "the node's goal is that tests/test_every_removal_path_reads_the_wide_claim.py passes in full at head; gate-head.log records 5 passed EXIT=0 at e3ba8d62f29da2b1eb585f4c97973ce2bb96f11e and landing-arm-repaired.log records 5 passed EXIT=0 for the same file over main's extracted tree, so the scan holds on the branch it lands on.",
+    "manifest": "the manifest was read in full: it names four commits, the literal gate command and four log paths, both suite arms as inline JSON at full 40-character revisions and a landing line, and two of its claims do not reconcile with the artefacts they cite, after_suite's completed/exit_status against suite-after.log:4 and rubric.cleanliness against ruff's I001 at tests/test_every_removal_path_reads_the_wide_claim.py:39.",
+    "write_paths": "the manifest declares reckon, tests, the fragment directory and the two shipped files; git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..e3ba8d62f29da2b1eb585f4c97973ce2bb96f11e names only tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_every_removal_path_reads_the_wide_claim.py:447-477 redden if the exemption widens to option ties or narrows back to the pre-repair every-identifier rule, and :415-430 redden if WIDE_CLAIMS drops the launch-side spelling.",
+    "evidence": "suite-after.log:4 stops after one '.' with no summary or EXIT= line while manifest.md:12 records completed true and exit_status 0, so the after arm's zero is unmeasured.",
+    "fit": "the added helpers at tests/test_every_removal_path_reads_the_wide_claim.py:151-219 follow the module's existing ast-helper style at :120-146, and the fragment uses the single article wrapper at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html:8.",
+    "goal_fidelity": "tests/test_every_removal_path_reads_the_wide_claim.py reads 5 passed EXIT=0 at e3ba8d62 in gate-head.log and 5 passed EXIT=0 over main's extracted tree in landing-arm-repaired.log, with the pre-repair scan reddening at tests/test_every_removal_path_reads_the_wide_claim.py:337 in landing-arm-control.log.",
+    "reuse": "a search of tests/ and reckon/ for worktree-removal or registration scanners found no owner for a git-worktree-add predicate, the nearest siblings being the per-file copies at tests/test_a_worktree_release_is_whole.py:461-495, so _is_registration_call extends this file's scan rather than forking a repository capability.",
+    "scope_discipline": "git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..e3ba8d62f29da2b1eb585f4c97973ce2bb96f11e names only the test module and the fragment, both inside manifest.md's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_every_removal_path_reads_the_wide_claim.py passes in full at head; gate-head.log records 5 passed EXIT=0 at e3ba8d62f29da2b1eb585f4c97973ce2bb96f11e and landing-arm-repaired.log records 5 passed EXIT=0 for the same file over main's extracted tree, so the scan holds on the branch it lands on.\nVERDICT done_when: the done_when names the file's pass at head, a base arm that reproduces the red with a cause verdict per path, a no-added-failure suite arm at both revisions and a declaration of the environment; gate-head.log, base-arm.log and suite-baseline.log carry theirs, but suite-after.log stops after one character of progress with no summary and no EXIT= line, and no receipt names the all_debug job.\nVERDICT write_paths: the manifest declares reckon, tests, the fragment directory and the two shipped files; git diff --stat 42fe90d0..e3ba8d62 names only tests/test_every_removal_path_reads_the_wide_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-removal-path-reads-the-wide-claim.html, both inside them.\nVERDICT manifest: the manifest was read in full; it names four commits, the literal gate command and four log paths, both suite arms as inline JSON at full 40-character revisions and a landing line, and its after_suite JSON claims completed true and exit_status 0 against a named log that holds neither a summary nor an EXIT= line.\nVERDICT diff: read all four commits against 42fe90d0; 7e4a0c04 rewrites the scan's claim recognition and own-registration exemption, ca12b25 and e3ba8d62 add and extend the evidence fragment, 00577405 replaces the identifier-subset exemption with freed-path identity and adds four control cases, and no product source changed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_every_removal_path_reads_the_wide_claim.py reads 5 passed EXIT=0 at e3ba8d62 in gate-head.log and 42fe90d0b0a46060bafde2490dda7d4002cda478's scan reddens at :337 in landing-arm-control.log, while landing-arm-repaired.log reads 5 passed EXIT=0 over main's tree.\nSCORE evidence: 11\nJUSTIFICATION evidence: suite-after.log:4 stops after one '.' with no summary or EXIT= line while manifest.md:12 records completed true and exit_status 0, so the after arm's zero is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat names only the test module and the fragment, both inside manifest.md's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_every_removal_path_reads_the_wide_claim.py:447-477 redden if the exemption widens to option ties or narrows back to the pre-repair every-identifier rule.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers at tests/test_every_removal_path_reads_the_wide_claim.py:151-219 follow the module's existing ast-helper style at :120-146.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search of tests/ and reckon/ for worktree-removal or registration scanners found no owner for a git-worktree-add predicate, so _is_registration_call extends this file's scan.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim/suite-after.log:4 blocking: the after suite arm stopped after its first test: the log holds three header lines and a single '.' with no summary line and no EXIT= line, while manifest.md:12 records after_suite completed true, exit_status 0 and failure_count 0 for this same path, so the done_when's no-added-failure arm is claimed rather than measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim/gate-head.log:1 blocking: gate-head.sh runs pytest directly in the shared worktree and neither the script nor the log names an all_debug job or an unset SLURM_JOB_ID, so the done_when clause 'as a job on all_debug with SLURM_JOB_ID unset' is unrecorded; the head pass itself holds at e3ba8d62 and over main's tree in landing-arm-repaired.log.\nFINDING tests/test_every_removal_path_reads_the_wide_claim.py:216 non-blocking: the exemption compares every positional argument of a removal call with the registration's path expression rather than the argument the removal helper actually frees, so a future body that registers its own tree and frees a handed path while passing the registered target in another positional slot is dropped from the scan silently.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim/manifest.md:21 non-blocking: rubric.cleanliness reports a clean ruff check on the changed test file, but ruff check reports I001 on its import block at both 42fe90d0 and e3ba8d62, so the file is not clean; the accurate claim is that the commit adds no finding.",
+  "review_run_id": "r-20261121T101942057902-review-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-e3ba8d62f29d",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "e3ba8d62f29da2b1eb585f4c97973ce2bb96f11e",
+  "reviewed_run_id": "r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261121T101942057902-review-of-qwnw-red-file-every-removal-path-reads-the-wide-claim-e3ba8d62f29d",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:35:42.553228+00:00",
+  "total": 101
+}

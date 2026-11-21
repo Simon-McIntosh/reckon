@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs as its manifest records them: baseline_suite at 2f00851c42f247cba1c81c80ed0cf7b41045de76 is exit_status 0, completed true, failure_count 0, failure_ids [], and after_suite at e27681fb7237f4712be4a05d7a225b45e05d46a8 is exit_status 0, completed true, failure_count 0, failure_ids [], so the set difference is empty. The importer arms were read beside them from disk: baseline_importers-1794999361018529412.log ends '12 failed, 465 passed, 1 skipped' at the base revision and after_importers-1794999506878660028.log ends '10 failed, 467 passed, 1 skipped' at head, and the head's ten are a strict subset of the base's twelve, so those arms add no failure either.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:56:09Z",
+  "findings": [
+    {
+      "disposition": "",
+      "file": "tests/test_a_released_review_is_composed_again.py",
+      "line": "157",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_strand` pops pid, stderr_path, worker.json, claim.json and attempt.json but leaves the pointer's composed `budget` block untouched, so both cases pin only the placeholder direction; nothing anywhere in the two arms pins a measured budget keeping a launch in flight, so a predicate that always returned False would redden no test, and that is the direction this repair newly opens."
+    },
+    {
+      "disposition": "",
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "754",
+      "severity": "non-blocking",
+      "text": "non-blocking: the predicate re-lists by hand the eight fields `reckon._backends.unknown_budget` composes at reckon/_backends.py:515-531 rather than deriving the placeholder's shape from that owner, so a field added, renamed or defaulted differently on the owner silently changes what this reader counts as a reading while both sides still look correct."
+    },
+    {
+      "disposition": "",
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-review-is-composed-again.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the four-line probe output quoted at lines 26-29 ('placeholder evidence False stranded True', 'folded evidence True stranded False', 'refusal evidence True stranded False', 'nobudget evidence False stranded True') has no log behind it \u2014 the manifest names no path for it, so the both-directions claim that carries the fragment's argument cannot be reproduced from the run directory the way the base and head arms can."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits e27681fb and b20dc093 against base 2f00851c42f247cba1c81c80ed0cf7b41045de76: recovery_liveness.py gains _budget_reports_a_reading (47 lines) and _spawn_evidence now calls it (line 792), and the two fragments are new files of 65 and 26 lines; nothing else changed.",
+    "done_when": "the done_when asks for the file's full pass at head as an all_debug job with SLURM_JOB_ID unset, a base run, importing-file arms at both revisions with full 40-character revisions, the logged negative control, ruff and commit form; the head gate log records the pass and the revision header, baseline_importers-1794999361018529412.log holds both target ids among '12 failed' at 2f00851c42f247cba1c81c80ed0cf7b41045de76 and after_importers-1794999506878660028.log '10 failed' at head, and the negative control is on disk and quoted in the fragment \u2014 but no logged artefact names the partition or the cleared SLURM_ environment the done_when states, the gate log header at scoped-gate-1794999041074633324.log naming only revision, host, tree and command.",
+    "goal": "the node goal is to make tests/test_a_released_review_is_composed_again.py pass in full on the primary branch; scoped-gate-1794999041074633324.log records '2 passed' with EXIT=0 at e27681fb7237f4712be4a05d7a225b45e05d46a8, and the product commit e27681fb replaces recovery_liveness._spawn_evidence's `isinstance(record.get('budget'), Mapping)` test with the _budget_reports_a_reading predicate at reckon/crew/recovery_liveness.py:727.",
+    "manifest": "read in full; it reports status complete, commits e27681fb7237f4712be4a05d7a225b45e05d46a8 and b20dc09383100d6c0d09d13793f3638c50d6b218, a head gate of 2 passed beside a base arm of 2 failed, both importing arms with full revisions at 12 and 10 failures, and names six log paths under the run directory, each of which I opened and found to agree with the stored manifest.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with the node fragment named under it, and the node's figure directory; the diff carries reckon/crew/recovery_liveness.py plus the two new fragments under that directory and nothing else, so every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "reverting recovery_liveness.py:792 to `isinstance(record.get('budget'), Mapping)` reddens both cases of tests/test_a_released_review_is_composed_again.py, which is exactly the base arm's reading; the predicate's own positive direction has no assertion, so an always-False predicate would pass every arm.",
+    "evidence": "the gate names its revision, tree and command and ends 'EXIT=0' at reckon/crew/recovery_liveness.py's head commit, and both importing arms are on shared storage with the base's failure set a strict superset of the head's, though neither the all_debug partition nor the cleared SLURM_ environment the done_when states is recorded anywhere the run directory holds.",
+    "fit": "the helper at recovery_liveness.py:727 is private, typed and documented in the same prose idiom as its neighbours such as reckon/crew/recovery_liveness.py:768's _spawn_evidence docstring, and introduces no identifier a naming rule forbids.",
+    "goal_fidelity": "the target file passes in full at the landed head (scoped-gate-1794999041074633324.log: '2 passed' EXIT=0) and the repair sits in the product rule scoped by recovery_liveness.py:792, which is what left the release unable to fire.",
+    "reuse": "a capability search over reckon/ for a prior reader of 'does this budget block carry a measurement' found none \u2014 reckon/_backends.py:641 budget_exhausted answers spentness and returns None for unknown, reckon/crew/lane_evidence.py:71 reads one field \u2014 so the predicate is the first such reader.",
+    "scope_discipline": "all three paths in the diff are inside the declared fragment directory records plus the node fragment, and the second fragment is expressly named by the done_when's negative-control clause.",
+    "the record": "the revision pair 2f00851c42f247cba1c81c80ed0cf7b41045de76..b20dc09383100d6c0d09d13793f3638c50d6b218 is the pair the diff was read from and to, and every score and finding above is about the files at that head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_released_review_is_composed_again.py pass in full on the primary branch; scoped-gate-1794999041074633324.log records '2 passed' with EXIT=0 at e27681fb7237f4712be4a05d7a225b45e05d46a8, and the product commit e27681fb replaces recovery_liveness._spawn_evidence's isinstance test with the _budget_reports_a_reading predicate at reckon/crew/recovery_liveness.py:727.\nVERDICT done_when: the done_when asks for the file's full pass at head as an all_debug job with SLURM_JOB_ID unset, a base run, importing-file arms at both revisions with full 40-character revisions, the logged negative control, ruff and commit form; the head gate log records the pass at the head revision, baseline_importers-1794999361018529412.log holds both target ids among '12 failed' at 2f00851c42f247cba1c81c80ed0cf7b41045de76 and after_importers-1794999506878660028.log '10 failed' at head, but no logged artefact names the partition or the cleared SLURM_ environment the done_when states.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with the node fragment named under it, and the node's figure directory; the diff carries only these.\nVERDICT manifest: read in full; it reports complete, two commits, a head gate of 2 passed beside a base arm of 2 failed, both importing arms at 12 and 10 failures with full revisions, and six log paths I opened and found to agree with it.\nVERDICT diff: read both commits against base 2f00851c42f247cba1c81c80ed0cf7b41045de76; recovery_liveness.py gains _budget_reports_a_reading and _spawn_evidence now calls it, and the two fragments are new.\nCALL_SITES: reckon/crew/recovery_liveness.py:822, reckon/crew/recovery_classification.py:2039\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the target file passes in full at the landed head and the repair sits in the product rule at reckon/crew/recovery_liveness.py:792.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate records its revision and EXIT=0 and both importing arms are on disk with the base's failure set a strict superset, though the all_debug partition is only in dispatch-detail.json, never in the log header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the three-file diff lies inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: reverting reckon/crew/recovery_liveness.py:792 reddens both cases of tests/test_a_released_review_is_composed_again.py, but no assertion pins the measured-budget direction, so an always-False predicate would pass both arms.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at reckon/crew/recovery_liveness.py:727 is private, typed and documented as its neighbours are.\nSCORE reuse: 17\nJUSTIFICATION reuse: a capability search of reckon/ found no owner of 'does a budget block carry a reading' besides the schema owner unknown_budget at reckon/_backends.py:515, whose field list the predicate restates; the predicate is the first reader of the question itself.\nFINDING tests/test_a_released_review_is_composed_again.py:157 non-blocking: the fixture leaves the composed budget block in place, so only the placeholder direction is pinned and an always-False predicate would redden nothing.\nFINDING reckon/crew/recovery_liveness.py:754 non-blocking: the predicate re-lists the fields reckon/_backends.py:515 composes rather than deriving them from that owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-released-review-is-composed-again.html:26 non-blocking: the probe output is quoted with no log behind it.",
+  "review_node": "review-of-qwnw-red-file-a-released-review-is-composed-again-b20dc0938310",
+  "review_run_id": "r-20261118T111705790491-review-of-qwnw-red-file-a-released-review-is-composed-again-b20dc0938310",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "b20dc09383100d6c0d09d13793f3638c50d6b218",
+  "reviewed_run_id": "r-20261118T062537416281-qwnw-red-file-a-released-review-is-composed-again",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:18:03.089052+00:00",
+  "total": 106
+}

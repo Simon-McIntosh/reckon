@@ -1,0 +1,139 @@
+<section id="qwnw-red-file-gc-reaches-every-crew-store-landing">
+  <h2>gc reaches every crew store, and a confined pass offers the tree it was sent for</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_gc_reaches_every_crew_store.py</code>
+  was red on the primary branch at <code>23b901694b</code>: one of its nine cases,
+  <code>test_a_confined_run_offers_its_tree_while_it_is_live</code>, failed with an
+  empty offered set. The failure had four separate causes in the retention sweep,
+  all of them in <code>reckon/crew/routing.py</code> and
+  <code>reckon/crew/report_retention.py</code>, and every one is a product rule
+  the code did not keep rather than a test asserting something the code need not
+  do.</p>
+
+  <table id="qwnw-red-file-gc-reaches-every-crew-store-causes">
+    <caption>Each cause, and whether the product rule or the test was wrong.</caption>
+    <thead><tr><th>cause</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr><td>A <code>--run pass</code> that owns a run's artifacts still withheld
+        that run's report tree: the retention context built its live set from every
+        pointer, including the pointer the confinement overrides. The sibling rule
+        for plan-review raw text already honours the confinement through
+        <code>_run_has_live_pointer</code>; the report-item rule never read it.</td>
+        <td>product wrong</td></tr>
+      <tr><td>A project the gc repository carries but that is not a registered mount
+        was skipped outright (<code>docs_dir is None: continue</code>), so none of
+        its report items was ever judged — the whole-sweep arm of the case was
+        passing only because the rule produced no rows at all.</td>
+        <td>product wrong</td></tr>
+      <tr><td>A live pointer that names no project withheld nothing: the context read
+        only project-tagged pointers, so an unattributed pointer read as another
+        project's and its tree stayed offered for removal.</td>
+        <td>product wrong</td></tr>
+      <tr><td>The rule narrated each item with <code>print()</code> to stdout, so the
+        JSON report a caller parses could not be decoded once the rule had anything
+        to report.</td>
+        <td>product wrong</td></tr>
+      <tr><td>No assertion was deleted or weakened; the test file is unchanged by
+        this node.</td>
+        <td>test unchanged</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the repair does.</strong> <code>build_context</code> takes
+  <code>confined_to</code> and leaves the confined run's own pointer out of the
+  live set, so <code>--run</code> offers the tree it was sent for while a whole
+  sweep still withholds it. <code>_run_report_trees</code> takes
+  <code>repo_root</code> and falls back to the docs tree its own repository
+  carries when the project has no mount — the same fallback the run-directory
+  rule reads its project from. A pointer naming no project is now withheld in
+  every project's context rather than read as another project's. The per-item
+  narration is dropped: each row already states path, size, age and reason, and
+  <code>crew gc</code> writes its report to stdout.</p>
+
+  <h3 id="qwnw-red-file-gc-reaches-every-crew-store-reproduction">Reproduction at the base revision</h3>
+
+  <p>Run at <code>23b901694b</code> without merging anything, the file read
+  <code>1 failed, 8 passed</code>. The failing assertion, quoted from the base
+  log, is the empty offered set the confinement should have produced:</p>
+
+  <pre id="qwnw-red-file-gc-reaches-every-crew-store-failure">    confined = gc(repo, apply=False, run="live-tree")
+    offered = {
+        row["path"]
+        for row in confined["report_trees"]
+        if row["run_id"] == "live-tree"
+    }
+&gt;   assert offered == {held_tree}
+E   AssertionError: assert set() == {'/tmp/pytest-…/config/crew/reports/gc-store/live-tree'}
+tests/test_gc_reaches_every_crew_store.py:385: AssertionError</pre>
+
+  <h3 id="qwnw-red-file-gc-reaches-every-crew-store-measured">Measured</h3>
+
+  <table id="qwnw-red-file-gc-reaches-every-crew-store-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head arm, job on <code>all_debug</code></td>
+        <td><code>759a5fcd5b187e9b67da3f74046fe23bee146675</code></td>
+        <td>9 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base arm, job on <code>all_debug</code></td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>1 failed, 8 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the test files that import what changed, head arm, job on
+        <code>all_debug</code> (<code>tests/test_gc_reaches_every_crew_store.py</code>,
+        <code>tests/test_an_unpersisted_report_expires.py</code>,
+        <code>tests/test_raw_report_retention.py</code>)</td>
+        <td><code>759a5fcd5b187e9b67da3f74046fe23bee146675</code></td>
+        <td>30 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the same importers arm at the base revision</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>1 failed, 29 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the declared suite, baseline arm, job on <code>all_debug</code></td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm, job on <code>all_debug</code></td>
+        <td><code>1b78a9a4bd8561dbfaf581c083084efc719a7cde</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the adjoining retention suites
+        (<code>test_an_unpersisted_report_expires.py</code>,
+        <code>test_raw_report_retention.py</code>) at head</td>
+        <td><code>759a5fcd5b</code>, working tree</td>
+        <td>21 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>ruff check, changed paths</td>
+        <td><code>759a5fcd5b</code></td>
+        <td>7 findings, identical to the base blob linted with the same config</td></tr>
+      <tr><td>ruff format --check, changed paths</td>
+        <td><code>759a5fcd5b</code></td>
+        <td>3 files already formatted</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-gc-reaches-every-crew-store-control">Negative control</h3>
+
+  <p>The base arm is red for the one id the head arm passes, and it is the case
+  the node exists to repair:
+  <code>test_a_confined_run_offers_its_tree_while_it_is_live</code>. The head arm
+  collects the same nine cases and passes all nine, so the change is what moved
+  the count rather than a change in what the file collects.</p>
+
+  <h3 id="qwnw-red-file-gc-reaches-every-crew-store-logs">Logs</h3>
+
+  <p>All paths below sit under
+  <code>~/.config/reckon/crew/runs/r-20261118T062951419370-qwnw-red-file-gc-reaches-every-crew-store/</code>.</p>
+
+  <ul>
+    <li>head, named file, <code>all_debug</code> job:
+      <code>scoped-gate-1795011869799253977.log</code></li>
+    <li>base, named file, <code>all_debug</code> job: <code>base-run.log</code></li>
+    <li>head, importers arm, <code>all_debug</code> job:
+      <code>scoped-gate-1795012413922042323.log</code></li>
+    <li>base, importers arm: <code>base-importers-arm.log</code></li>
+    <li>declared suite, baseline arm:
+      <code>suite-base-arm.log</code></li>
+    <li>declared suite, after arm:
+      <code>suite-head-arm.log</code></li>
+  </ul>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

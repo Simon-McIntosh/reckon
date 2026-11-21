@@ -1,0 +1,153 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "arm_evidence": {
+    "base_arm": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_dispatch_session_host.py::test_dispatch_asks_the_session_host_and_is_admitted_by_it"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063025989041-qwnw-red-file-dispatch-session-host/base-arm.log",
+      "result": "1 failed, 7 passed in 2.88s",
+      "revision": "94359be6ce0d3f31fd31f0ac4d4b7437f2835832",
+      "scheduler": "sbatch --partition=all_debug per base-arm.sh #SBATCH line, SLURM_JOB_ID stripped",
+      "tree": "scratch extraction /tmp/qwnw-dsh-base.nagQah, removed by base-arm.sh after the run"
+    },
+    "head_arm": {
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063025989041-qwnw-red-file-dispatch-session-host/head-arm-final.log",
+      "result": "8 passed in 4.01s",
+      "revision": "b6acea32811c530c73571c7cb0eefde433e5361f",
+      "scheduler": "sbatch --partition=all_debug per head-arm-final.sh #SBATCH line, SLURM_JOB_ID stripped from the test process",
+      "tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-dispatch-session-host"
+    },
+    "importer_arms": {
+      "base": {
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063025989041-qwnw-red-file-dispatch-session-host/importers-base.log",
+        "result": "16 failed, 403 passed in 512.43s"
+      },
+      "delta": "comm -23 over base_ids.txt and head_ids.txt gives exactly the reviewed case; comm -13 gives nothing, so the arm adds no failure against the base",
+      "head": {
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063025989041-qwnw-red-file-dispatch-session-host/importers-head.log",
+        "result": "15 failed, 404 passed in 406.86s"
+      }
+    }
+  },
+  "assertion_audit": [
+    {
+      "assertion": "assert stub.line is not None, \"the request must reach the host's FIFO\"",
+      "fails_if": "Dispatch stops writing the follow request to the calling session's own host FIFO or refuses the pair before writing; the base arm is exactly this failure at 94359be6, where the case dispatched under a session this process is not and the request was never written.",
+      "file": "tests/test_dispatch_session_host.py",
+      "line": 296
+    },
+    {
+      "assertion": "json.loads(stub.line) == {\"project\": project, \"session\": session, \"owner_checked\": True}",
+      "fails_if": "The request line drops the owner mark or names a different pair; putting back the base's two-key line reddens it. Its session field is not independent: session is the same variable handed to _dispatch at line 290 and equals the env value the fixture sets at line 152, so an implementation that echoed its argument would still satisfy that field.",
+      "file": "tests/test_dispatch_session_host.py",
+      "line": 297
+    },
+    {
+      "assertion": "assert record[\"watch\"][\"session_attached\"] is True",
+      "fails_if": "Dispatch accepts a bare follower registration instead of the host's own live census child, i.e. reckon/crew/dispatch_watch.py:798 stops gating admission on _session_host_child_pid; the worker's census-removed mutant of this case is reported to fail 1, per the manifest's artifacts line, which records no log path.",
+      "file": "tests/test_dispatch_session_host.py",
+      "line": 302
+    },
+    {
+      "assertion": "assert record[\"watch\"][\"delivery\"] == \"host\" and record[\"watch\"][\"arming_line\"] == \"\"",
+      "fails_if": "A host-delivered session is reported as the Monitor fallback or arms a watcher line; unchanged by this diff and still load-bearing.",
+      "file": "tests/test_dispatch_session_host.py",
+      "line": 303
+    }
+  ],
+  "assertion_independence": "One assertion is not independent of the value under test: the session field at tests/test_dispatch_session_host.py:299 compares against the session variable the test passed into _dispatch at line 290, so a dispatch that echoed its argument without the own-host-pair guard would still satisfy it. The owner_checked key and the census-gated attachment assertion are independent of anything the test passed in, and the arrival assertion at line 296 is the one the base arm reddens.",
+  "assertion_note": "The new census write at tests/test_dispatch_session_host.py:228-236 is fixture setup, not an assertion: it supplies the host answer the case asserts on, which is what a stub host must do; without it the attachment assertion cannot pass, which is the mutant the manifest reports.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:15:19Z",
+  "evidence_limits": [
+    "No suite rerun and no re-run of the named test: the reviewer read the reviewed run's recorded logs, which is what the review brief bounds.",
+    "The reviewed branch is not checked out in this worktree; the diff was read from the base and head objects with git diff and git show.",
+    "The census-removed mutant cited in the manifest's artifacts line has no log path in the run directory."
+  ],
+  "finding_dispositions": [],
+  "findings": [
+    {
+      "file": "tests/test_dispatch_session_host.py",
+      "line": "299",
+      "severity": "non-blocking",
+      "text": "non-blocking: the session field of the request-line assertion compares against the same variable the test handed _dispatch at line 290 (session = CLAUDE_SESSION at line 278), so an implementation that echoed its argument without consulting the calling process's session pair would still satisfy it; assert against os.environ[\"CLAUDE_CODE_SESSION_ID\"] so the field is independent of the value supplied to the code under test."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "No production call site reaches the change: it touches only a test file and an evidence fragment, and no module under reckon/ changed. The production functions the repaired case drives were read as the owners the fragment names: reckon/crew/dispatch_watch.py:750 _session_host_child_pid, :798 the census comparison, and reckon/crew/session_host.py:106 RECORD_SUFFIX with :151 _state_dir.",
+    "diff": "Read the three commits against base 94359be6: eea4a1160b rewrites the case and stub host, 47309da0ce adds the fragment, b6acea3281 prefixes the fragment's element ids. Total 44 insertions and 7 deletions in the test file plus the 89-line fragment; the deletion is comment wording and the two-key request-line assertion, which the diff replaces with a stricter three-key one.",
+    "done_when": "Read \u00a729's four measures against the run's logs: head-arm-final.log 8 passed EXIT=0 at b6acea32811c, base-arm.log 1 failed 7 passed EXIT=1 at 94359be6 naming one id, importers-base/head.log 16 then 15 failed with only that id cleared, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html:62-80 logs both arms and states they ran as all_debug jobs, which head-arm-final.sh and base-arm.sh confirm on their #SBATCH --partition lines.",
+    "goal": "Read docs/plans/queued-work-needs-no-workaround.html:331-333: each failing test file must pass in full with a product-or-test verdict per cause. tests/test_dispatch_session_host.py passes 8/8 at b6acea32811c and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html:12-20 states all three causes were test-side.",
+    "manifest": "Read the reviewed run's manifest.md end to end: status complete, the gate command, three arm logs, baseline_suite and after_suite completed with 0 failures each, the base arm as negative control with its one failing id, three test-side causes under evidence_inputs, and two pre-existing importer-population failures under outside_scope; its census-removed mutant result names no log path.",
+    "write_paths": "Read the declared write paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two concrete files under it) against both diff paths: tests/test_dispatch_session_host.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html are inside them, and no path under reckon/ appears in the diff."
+  },
+  "justifications": {
+    "durability": "base-arm.log shows the case failing at 94359be6 on the same id head passes, but the session field at tests/test_dispatch_session_host.py:299 compares against the value the test itself passed in, so durability rests on the arrival, owner-mark and attachment assertions.",
+    "evidence": "head-arm-final.log, base-arm.log, importers-base.log and importers-head.log all carry revision, tree and command headers with a final EXIT line, and both suite logs read 58 passed with EXIT=0, but the manifest's census-removed mutant is claimed without a log path, so that one fact cannot be opened.",
+    "fit": "The repair follows the file's own idiom \u2014 a module constant beside the fixture that sets it (tests/test_dispatch_session_host.py:36), the existing _write_host_record helper at :160 rather than a second path spelling, and the stub docstring updated at :184-188 \u2014 and introduces no name the naming rules forbid.",
+    "goal_fidelity": "docs/plans/queued-work-needs-no-workaround.html:333 asks the named file to pass in full with each cause's product-or-test verdict, and tests/test_dispatch_session_host.py passes 8/8 at b6acea32811c while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html:12-20 names three test-side causes and no product change, which the diff confirms.",
+    "reuse": "Searched reckon/crew by capability before scoring: the census owner is reckon/crew/session_host.py:106/:151 and :314, and the added stub block calls the test's existing _write_host_record, which resolves that same directory, so no capability is forked and no new module, class or helper is added.",
+    "scope_discipline": "The diff contains only tests/test_dispatch_session_host.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html, both inside the declared write paths, and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/queued-work-needs-no-workaround.html:333 requires the named test file to pass in full with a product-or-test verdict per cause; tests/test_dispatch_session_host.py passes 8/8 at b6acea32811c and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html:12-20 states all three causes were test-side.\nVERDICT done_when: all four measures are recorded \u2014 head-arm-final.log 8 passed EXIT=0 at b6acea32811c, base-arm.log 1 failed 7 passed EXIT=1 at 94359be6 naming the same single id, importers-base/head.log 16 failed then 15 failed with only that id cleared, and the fragment logs both arms as all_debug jobs, which head-arm-final.sh and base-arm.sh carry on their #SBATCH --partition lines.\nVERDICT write_paths: the two diff paths, tests/test_dispatch_session_host.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html, are both inside the declared write paths and nothing under reckon/ changed.\nVERDICT manifest: read the reviewed run's manifest.md; it states complete, cites the gate and arm logs, records baseline_suite and after_suite completed with 0 failures each, names the base arm and its failing id, and lists three test-side causes, while its census-removed mutant carries no log path.\nVERDICT diff: read the three commits against 94359be6 \u2014 eea4a1160b rewrites the case and stub host, 47309da0ce adds the fragment, b6acea3281 prefixes its element ids \u2014 44 insertions and 7 deletions in the test file plus the 89-line fragment, the deletion being comment wording and a two-key assertion replaced by a stricter three-key one.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_dispatch_session_host.py passes 8/8 at b6acea32811c and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html:12-20 names three test-side causes, with no file under reckon/ touched by the diff.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm-final.log and base-arm.log carry revisions and EXIT lines and baseline_suite-1795013967266218638.log and after_suite-1795014043594571961.log both read 58 passed EXIT=0, though the manifest's census-removed mutant names no log path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff contains only tests/test_dispatch_session_host.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-session-host.html, both inside the declared paths.\nSCORE durability: 16\nJUSTIFICATION durability: base-arm.log shows the case failing at 94359be6 on the same id head passes, but the session field at tests/test_dispatch_session_host.py:299 compares against the value the test itself passed in, so the guard rests on the arrival and owner-mark assertions.\nSCORE fit: 19\nJUSTIFICATION fit: the repair reuses the file's own fixture and helper (tests/test_dispatch_session_host.py:36, :160, :184-188) and matches the surrounding comment and docstring idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the census capability's owner is reckon/crew/session_host.py:151 _state_dir with :106 RECORD_SUFFIX, and the stub writes through the test's existing _write_host_record rather than a second path spelling.\nFINDING tests/test_dispatch_session_host.py:299 non-blocking: the session field of the request-line assertion compares against the same variable the test passed to _dispatch at line 290, so an implementation that echoed its argument without the own-pair guard would still satisfy it; assert against os.environ[\"CLAUDE_CODE_SESSION_ID\"] instead.\n",
+  "reuse_search": {
+    "capability": "write and read the calling session host's child census record",
+    "opened": [
+      "reckon/crew/session_host.py:106 RECORD_SUFFIX",
+      "reckon/crew/session_host.py:151 _state_dir",
+      "reckon/crew/session_host.py:314 census glob",
+      "reckon/crew/dispatch_watch.py:750 _session_host_child_pid"
+    ],
+    "verdict": "the addition wraps the owner through the test's existing _write_host_record; no duplicate implementation added"
+  },
+  "review_run_id": "r-20261118T151138277252-review-of-qwnw-red-file-dispatch-session-host-b6acea32811c",
+  "reviewed_base_sha": "94359be6ce0d3f31fd31f0ac4d4b7437f2835832",
+  "reviewed_head_sha": "b6acea32811c530c73571c7cb0eefde433e5361f",
+  "reviewed_run_id": "r-20261118T063025989041-qwnw-red-file-dispatch-session-host",
+  "reviewed_worker_commits": [
+    "eea4a1160b4dd194387fed094c19c8afffe36e45",
+    "47309da0ce71baa8a325cf532beff37d060032f6",
+    "b6acea32811c530c73571c7cb0eefde433e5361f"
+  ],
+  "scope_provenance": "Worker commits begin at eea4a1160b4dd194387fed094c19c8afffe36e45, whose parent is the declared base 94359be6ce0d3f31fd31f0ac4d4b7437f2835832; the delivered diff 94359be6..b6acea3281 is exactly those three commits and two paths.",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063025989041-qwnw-red-file-dispatch-session-host/after_suite-1795014043594571961.log",
+      "revision": "b6acea32811c530c73571c7cb0eefde433e5361f",
+      "summary_line": "58 passed in 37.25s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063025989041-qwnw-red-file-dispatch-session-host/baseline_suite-1795013967266218638.log",
+      "revision": "94359be6ce0d3f31fd31f0ac4d4b7437f2835832",
+      "summary_line": "58 passed in 36.88s"
+    },
+    "derivation": "Read the pytest summary line of each log: 0 failures at both revisions, so no failure id appears at head that is absent at base; added_failure_count is 0 and added_failure_ids is empty. The node changed no module under reckon/, so the suite pair covers the changed file's importers rather than the named file itself; the named file is measured by the head and base arms listed under arm_evidence."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:47:55.434827+00:00",
+  "total": 112
+}

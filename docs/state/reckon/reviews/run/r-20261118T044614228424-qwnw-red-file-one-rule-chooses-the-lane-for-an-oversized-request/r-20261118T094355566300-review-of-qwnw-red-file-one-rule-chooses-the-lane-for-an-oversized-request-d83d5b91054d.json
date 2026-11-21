@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "The diff adds no assertion, so no input-echo assertion exists to name; the negative control instead reinstates a product regression and shows the file's own assertions redden.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:23:58Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the table caption reads 'at the delivered head' but the after-arm row quotes base revision 97dec20bfb8603ab71c4e9deeefddab685e0a42e while after_suite-1794994658012972880.log ran at d83d5b91054d, and the named file's head gate run (14 passed, scoped-gate-1794994193501244276.log) is not recorded at all, so a reader comparing the fragment against the manifest sees two different heads."
+    }
+  ],
+  "justifications": {
+    "durability": "No assertion is added by the diff; the guard for the claim is the pre-existing tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py, which logs/negative-control-first-usable.log shows reddening (3 failed, EXIT=1) when widest_fitting_candidate returns usable[0], though nothing re-checks the fragment's revision claims.",
+    "evidence": "Both suite arms are recorded with full 40-character revisions and zero failures, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request.html:39 records the after arm at the base revision rather than the head its own caption names.",
+    "fit": "The fragment follows the bare-anchor shape its siblings use, as docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1 does.",
+    "goal_fidelity": "The goal is tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py passing in full, and scoped-gate-1794994193501244276.log records 14 passed in 2.03s EXIT=0 at the delivered head d83d5b91054d with no product change needed.",
+    "reuse": "The diff adds no definition; reckon/evidence.py:854 builds the fragment's own path and reckon/evidence.py:1610 composes a bare-anchor fragment unchanged, so nothing forks a capability the repository owns; the search over fragment readers found reckon/evidence.py as the only owner.",
+    "scope_discipline": "The single commit d83d5b91054d adds only the evidence fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, which is a declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py passes in full at head, and scoped-gate-1794994193501244276.log records 14 passed EXIT=0 at d83d5b91054d, so the goal is met with no product edit.\nVERDICT done_when: the done_when asks for the file passing as an all_debug job plus both suite arms with full revisions and a logged negative control; the manifest records all five, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request.html:26 reports the base gate job rather than the head one.\nVERDICT write_paths: the declared paths are reckon, tests and the queued-work-needs-no-workaround fragment directory; the only path in 97dec20..d83d5b9 is the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, inside them.\nVERDICT manifest: read; it records status complete, one commit, baseline_suite and after_suite as inline JSON with 40-character revisions and zero failures each, the named-file gate log, and logs/negative-control-first-usable.log for the negative control.\nVERDICT diff: read commit by commit against 97dec20; the single commit d83d5b9 adds the 75-line evidence fragment only, with no product, test or figure path touched.\nCALL_SITES: reckon/evidence.py:_fragment_href, reckon/evidence.py:_fragment_body_bytes\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: scoped-gate-1794994193501244276.log records 14 passed EXIT=0 at d83d5b91054d for tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms carry full revisions and EXIT=0, but the fragment's table row at line 39 misstates the after arm's revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of 97dec20..d83d5b9 contains only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request.html.\nSCORE durability: 14\nJUSTIFICATION durability: no assertion is added and logs/negative-control-first-usable.log shows the pre-existing file reddens under the mutated rule, but the fragment's own claims are unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1 uses the same bare-anchor shape.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added and reckon/evidence.py:854 and 1610 already own fragment paths and composition.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request.html:39 non-blocking: the caption says the table is at the delivered head but the after arm is listed at the base revision and the head gate run is omitted.",
+  "review_run_id": "r-20261118T094355566300-review-of-qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request-d83d5b91054d",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "d83d5b91054d842b6eafa3b8634067d4e369455d",
+  "reviewed_run_id": "r-20261118T044614228424-qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request",
+  "reviewed_worker_commits": [
+    "d83d5b91054d842b6eafa3b8634067d4e369455d"
+  ],
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:55:13.532720+00:00",
+  "total": 106
+}

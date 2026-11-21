@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:1664 evidence_record_plan composes a plan's cumulative evidence record by reading docs/evidence/fragments/<plan>/*.html, so it reads the changed fragment",
+    "reckon/evidence.py:1694 evidence_dir / 'fragments' / plan_slug is the directory the composer reads",
+    "reckon/serve.py:2739 _send_evidence_record serves that composed record over HTTP, so the changed paragraph reaches a reader through it",
+    "reckon/crew/resumption.py:3017 the review pass inside resumption.sweep imports and calls recovery_review_dispatch.review_request_census, the census the fragment's figures report"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-a-delivered-run-is-reviewed-within-minutes-eddc1538a52d",
+      "recorded_at": "2026-11-18T00:35:17.269353+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-18T00:12:31Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html",
+      "line": 110,
+      "severity": "non-blocking",
+      "text": "The census paragraph still reads 'the requests that were made were made inside the window', and the gained commit now adds 'every figure above is that log's own' to the same paragraph. The log it names records request_lag_seconds p50 96.674459 with p90 and max 917.087791 over five samples, so at least one recorded request followed delivery by 917 s, far outside the 120 s window: the universal claim is contradicted by the max the paragraph itself prints one sentence earlier. Qualifying it (the median inside the window; one of five requests at 917 s) would keep the evidence record true to its own log."
+    }
+  ],
+  "justifications": {
+    "durability": "The commit adds no assertion, and no test reads this fragment (a search over tests/ for the fragment's filename finds no reader), so reinstating the nine-obligation figure at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:112 would leave every test green; durability rests on review reading alone.",
+    "evidence": "live-census-20261117T2145Z.log parsed from the run directory gives len(obligations) == 8, reasons 4 no-live-pointer + 1 resume-not-delivered + 1 measurement + 1 skipped + 1 lane-paused, counts.unrequested 9 with the smallest obligation age 627 s, so the corrected sentences reconcile with the log, while after_suite-eddc1538a52d74991ee89102c041a37633493ef2.log:1-8 records '68 passed in 54.23s' EXIT=0 and baseline_suite-head.log:1-8 '58 passed in 42.35s' EXIT=0.",
+    "fit": "The rewritten sentences keep the fragment's own idiom of naming the log beside each figure and quoting its reason strings verbatim, but the commit subject at eddc1538a5 carries no conventional type prefix in a history whose earlier commits use docs(evidence): and fix(crew):.",
+    "goal_fidelity": "The gained paragraph at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:112-120 now states 8 obligations and the five reason classes the reviewed log actually holds, which is the census its node goal is measured by.",
+    "reuse": "The gained commit defines no function, class or module; a capability search over reckon/ for a mechanism that reconciles evidence-fragment figures with the log they name found only reckon/evidence.py:1664 (fragment composition) and no figure checker, and the census the paragraph reports stays with its owner reckon/crew/recovery_review_dispatch.py:4806 rather than being restated.",
+    "scope_discipline": "git show --stat eddc1538a5 lists one path, docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html, which is one of the node's five declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T001123569728-review-of-a-delivered-run-is-reviewed-within-minutes-eddc1538a52d",
+  "reviewed_base_sha": "3df7ec587a8a0ec609137bcd7fa9e49f9bda2ec9",
+  "reviewed_head_sha": "eddc1538a52d74991ee89102c041a37633493ef2",
+  "reviewed_run_id": "r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes",
+  "scores": {
+    "durability": 9,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:17:53.716066+00:00",
+  "total": 96,
+  "verdicts": {
+    "diff": "Read commit by commit over 3df7ec587a..eddc1538a5: the gained delta is one commit, eddc1538a5, which rewrites the obligation sentences at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:112-120 from '9 delivered runs owe an obligation' to '8 \u2026 the nine older unrequested runs are not the same count', lists the eight reasons the log's obligations array carries, and adds 'every figure above is that log's own'; it touches no other path.",
+    "done_when": "The done_when's two halves are carried by tests/test_a_delivered_run_is_reviewed_within_minutes.py (held-tick request inside 120 s with the run's priority; obligation at ten minutes; the red arm under the mutation) and by the fleet census paragraph at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:98-120; the gained commit repairs only the obligation count and reasons in that paragraph, and after_suite-eddc1538a52d74991ee89102c041a37633493ef2.log records the node tests inside '68 passed in 54.23s' EXIT=0.",
+    "goal": "The source node's goal is that every delivered run's review is requested inside 120 s with request-to-launch recorded apart and an obligation after ten minutes; the gained commit eddc1538a5 changes only the census paragraph of docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html, leaving reckon/crew/recovery_review_dispatch.py:4806 review_request_census untouched, so the goal stands as the previous review read it and the delta corrects the record of what it measured.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes/manifest.md: status complete, commits ending eddc1538, tests line naming the three node test files with /home/ITER/mcintos/Code/reckon/.venv/bin/python, baseline_suite and after_suite both exit_status 0 with completed true, negative_control_log naming a red run of '3 failed, 7 passed in 2.45s' EXIT=1.",
+    "write_paths": "The declared write paths include docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html; the gained commit touches that file and nothing else (9 insertions, 4 deletions)."
+  }
+}

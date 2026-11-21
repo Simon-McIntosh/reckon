@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-097c7c3b8598",
+      "recorded_at": "2026-11-21T03:18:47.614626+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T02:38:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-097c7c3b8598",
+      "recorded_at": "2026-11-21T03:18:42.690579+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_concurrent_dispatch_of_one_node.py",
+      "line": "141",
+      "severity": "blocking",
+      "text": "blocking: the needle set (NODE_ID, SESSION) still fires on another session's record -- the reviewed run's own live pointer r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory.json carries \"node-one-worktree\" in its final_message, and running the landed guard's resolver now returns that path, so assert before == [] errors all 8 cases whenever a peer quotes r-20261117T093219874690-node-one-worktree (plan section 9 does), which is the same false-positive class commit 72241ab7 was written to remove."
+    },
+    {
+      "file": "tests/test_concurrent_dispatch_of_one_node.py",
+      "line": "137",
+      "severity": "non-blocking",
+      "text": "non-blocking: the ambient-home resolution rebuilds tests/conftest.py:1148 real_store_home() (pop RECKON_HOME, call _config_home, restore) instead of using it, and the fixture-identifier search at :141 duplicates tests/test_member_friction.py:76 _fixture_writes_under(); the repository owns both capabilities, so the addition duplicates rather than extends its owners."
+    },
+    {
+      "file": "negative-control.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log's header names revision 72241ab791 as the copied case's source, but the copied guard resolves through _config_home, which exists only at 097c7c3b (committed 02:24:51Z, after this log's 02:23:58Z start), so the red arm exercises the head code under a stale label and a reader cannot reproduce the copy from the named revision."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (plan \u00a79 deliverable) is to find and isolate the test that writes into the real crew home and assert the real live directory gained nothing; tests/test_concurrent_dispatch_of_one_node.py:144-148 now asserts that, resolving the directory through reckon/_store.py:132 _config_home with RECKON_HOME stripped, and the stray pointer was retired at 02:03Z as the manifest records.\nVERDICT done_when: the done_when names the owning test file passing with an equal-entry assertion and crew view live returning no runs; gate-real-live.log records 8 passed EXIT=0 at 097c7c3b, negative-control.log records 8 errors EXIT=1 with five minted pointers named, and view-live-concurrent-dispatch-fixture.json records runs [] with pointer_count 0.\nVERDICT write_paths: the declared set is the test file, an evidence fragment and a figure directory; the delivered diff touches only tests/test_concurrent_dispatch_of_one_node.py (28 insertions, 5 deletions), inside the declared set, and the undelivered evidence fragment is not required by the done_when.\nVERDICT manifest: read; it records status complete, the three commits b2d4ba96/72241ab7/097c7c3b, four gate logs with revisions and EXIT lines, and the coordinator's crew discard of r-20261117T093219874690-node-one-worktree at 02:03Z with its reason.\nVERDICT diff: read commit by commit over e689315bb74ca1efdd63eee69d7a55ed9b235a0e..097c7c3b8598c154d90d595812fd87012623ecdc: b2d4ba96 adds the before/after reading, 72241ab7 narrows the needles after a peer write moved a whole-directory count, 097c7c3b resolves the ambient home through _config_home because the literal XDG path let the negative control pass green.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/test_concurrent_dispatch_of_one_node.py:144-148 asserts the real live directory gained nothing, but the needle set at :141 makes that assertion fire on another session's record, so the delivered guard does not hold in the ambient it ships to.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-real-live.log:1-9 records 8 passed EXIT=0 at 097c7c3b and negative-control.log records 8 errors EXIT=1 naming five minted pointers, though the base arm's 8 errors are the guard firing on a peer pointer via the project needle rather than on the recorded defect.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed line is inside tests/test_concurrent_dispatch_of_one_node.py, which is in the declared write paths, and no production file is touched.\nSCORE durability: 11\nJUSTIFICATION durability: the negative control shows the guard reddens when the RECKON_HOME isolation is removed, but no committed test pins the _config_home resolution added by 097c7c3b or the needle choice, so a revert of either leaves the suite green while the guard watches the wrong entries.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the autouse-fixture idiom already in this file and reuses tests/real_home_traces.py:traces_naming, though the assertion pair at :147-148 repeats the same reading rather than one independent check.\nSCORE reuse: 4\nJUSTIFICATION reuse: tests/test_concurrent_dispatch_of_one_node.py:137-140 rebuilds tests/conftest.py:1148 real_store_home and tests/test_concurrent_dispatch_of_one_node.py:141 duplicates tests/test_member_friction.py:76 _fixture_writes_under rather than extending either owner; both existed at the node's base.\nFINDING tests/test_concurrent_dispatch_of_one_node.py:141 blocking: the needle set (NODE_ID, SESSION) still fires on another session's record -- the reviewed run's own live pointer r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory.json carries \"node-one-worktree\" in its final_message, and running the landed guard's resolver now returns that path, so assert before == [] errors all 8 cases whenever a peer quotes r-20261117T093219874690-node-one-worktree (plan \u00a79 does), which is the same false-positive class commit 72241ab7 was written to remove.\nFINDING tests/test_concurrent_dispatch_of_one_node.py:137 non-blocking: the ambient-home resolution rebuilds tests/conftest.py:1148 real_store_home() (pop RECKON_HOME, call _config_home, restore) instead of using it, and the fixture-identifier search at :141 duplicates tests/test_member_friction.py:76 _fixture_writes_under(); the repository owns both capabilities, so the addition duplicates rather than extends its owners.\nFINDING negative-control.log:3 non-blocking: the log's header names revision 72241ab791 as the copied case's source, but the copied guard resolves through _config_home, which exists only at 097c7c3b (committed 02:24:51Z, after this log's 02:23:58Z start), so the red arm exercises the head code under a stale label and a reader cannot reproduce the copy from the named revision.",
+  "review_run_id": "r-20261121T023705178692-review-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-097c7c3b8598",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "097c7c3b8598c154d90d595812fd87012623ecdc",
+  "reviewed_run_id": "r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory",
+  "scores": {
+    "durability": 11,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:46:40Z",
+  "total": 80
+}

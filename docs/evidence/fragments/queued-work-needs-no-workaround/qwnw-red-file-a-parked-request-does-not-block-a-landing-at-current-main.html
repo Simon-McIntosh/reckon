@@ -1,0 +1,57 @@
+<section id="qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-landing">
+<h3>The parked-claim landing file is red again</h3>
+<p>The named file reads 4 failed, 2 passed at the base revision <code>28fbf2bc2fe2</code>. One cause accounts for all four, and it is the test asserting a reply shape the product no longer emits. The product rule the file exists to check — a parked request's claim is admitted and recorded on the acceptance while a still-running peer's claim refuses it — is correct at head and is now exercised. No assertion was deleted or weakened: the same path, reason, run id, claim and phase are compared, and the pointer-removal and ledger assertions are untouched.</p>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-causes">Cause and verdict</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>The completion reply is a bounded summary, not the record</td>
+<td>4 of 6 at base, <code>KeyError: 'record'</code> on every waiting phase (<code>awaiting-upstream</code>, <code>blocked-upstream</code>, <code>held</code>, <code>queued</code>): <code>crew complete</code> answered <code>{"ledger_path, ok, pointer_removed, record_path, run_id}</code>, and the case read <code>json.loads(result.output)["record"]</code> before it ever reached the claim it measures</td>
+<td><strong>test wrong</strong> — <code>ba811581d3</code> (17 November) made the command answer one short receipt per run and write the full promotion result to the file named by <code>record_path</code>; <code>tests/test_a_stopped_runs_claim_does_not_block_another_landing.py</code> reads the claim the same way since then. The case now reads that receipt and judges <code>receipt["record"]["scope_acceptances"]</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>What broke the file since its earlier repair <code>fd952c39fe</code>: that repair is an ancestor of the base and <code>ba811581d3</code> is not, so the reply reshaping landed afterwards and restored need it. The two cases that already passed at base are the running-peer refusal, which reads only the exit status and the printed refusal, and the after-acceptance pointer check, which reads the pointer file directly.</p>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-negative-control">Negative control: the base revision's own run</h4>
+<pre>
+# revision: 28fbf2bc2fe2b27addcf04248210222f2115c1ee (base; the test file as git show prints it at that revision)
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main (HEAD c61492e341, whose reckon/, bin/, skills/ and pyproject.toml are identical to base)
+# command: PYTHONPATH=$PWD $PWD/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/reckon-crew-scratch/r-20261118T063921898506-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main/base/test_a_parked_request_does_not_block_a_landing.py
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[awaiting-upstream] - KeyError: 'record'
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[blocked-upstream] - KeyError: 'record'
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[held] - KeyError: 'record'
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[queued] - KeyError: 'record'
+4 failed, 2 passed in 4.31s
+EXIT=1
+</pre>
+<p>The run directory holds the log verbatim at <code>logs/base-parked-request.log</code>.</p>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision: 656144883dee332fa9bb68dca8c3552bebac3f1e
+# host: 98dci4-clu-3141.iter.org
+# partition: all_debug
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_parked_request_does_not_block_a_landing.py'
+......                                                                   [100%]
+6 passed in 3.21s
+EXIT=0
+</pre>
+<p>The job's own log is <code>scoped-gate-1795120261692806654.log</code> beside the run's manifest. The same command also passed at <code>c61492e341</code> (6 passed, <code>EXIT=0</code>, log <code>scoped-gate-1795120063211370980.log</code>), the commit that carries the repair.</p>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-arms">Armed suite arms: no failure added</h4>
+<pre>
+# baseline at 28fbf2bc2fe2b27addcf04248210222f2115c1ee, all_debug job on 98dci4-clu-3141
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'
+58 passed in 35.06s
+EXIT=0
+
+# head at 656144883dee332fa9bb68dca8c3552bebac3f1e, all_debug job on 98dci4-clu-3141
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'
+58 passed in 38.20s
+EXIT=0
+</pre>
+<p>The node's change is confined to <code>tests/test_a_parked_request_does_not_block_a_landing.py</code>; no product module is touched, so the arm over the files that import what it changed is the gate itself, where 4 failing ids before the change become none after it.</p>
+</section>

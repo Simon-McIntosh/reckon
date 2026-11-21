@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verdict" content="pass">
+  <meta name="node" content="wlsr-a-stream-is-read-by-the-harness-that-wrote-it">
+  <title>Each attempt's stream is read by the harness that wrote it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-a-stream-is-read-by-the-harness-that-wrote-it-landing" data-node="wlsr-a-stream-is-read-by-the-harness-that-wrote-it" data-reckon="landed" data-when="2026-11-21">
+  <h2>A run's attempts are folded by the harness that wrote each of them</h2>
+  <p>A run that changes lane keeps the streams its earlier harnesses wrote while its live pointer names the lane it carries now. Every reader folded those streams through the pointer's dialect: the <code>omp</code> dialect refuses a stream in another dialect's vocabulary outright, so <code>crew observe</code> and <code>crew complete</code> died on such a run with <code>BackendError: the 'omp' dialect refused a stream in the codex vocabulary</code>, and a dialect that does not refuse would instead fold the stream to a complete-looking run that spent nothing.</p>
+  <p>The stream fold now names each attempt's writer from the event vocabulary its own opening records carry, in <code>reckon/_backends.py</code>, at the single entrypoint (<code>_observe_run_stream</code>) every reader of a run's stream goes through: <code>crew observe</code>, promotion's terminal measure, the recovery sweep, and the live view's spend. A stream whose vocabulary matches the pointer's dialect keeps the pointer's backend unchanged, so a run that never changed harness reads exactly as it did. The identification is a bounded opening read, so pointing it at a live stream stays cheap, and it is memoised against the stream's stat identity so a stream being written is re-read rather than remembered by its previous contents.</p>
+  <p>The spend is summed across both attempts by the existing <code>reckon/crew/metering.py</code> fold, which already treats each attempt as a distinct thread: this node's change makes both attempts readable, and the arithmetic then covers both.</p>
+  <p>Gate: <code>tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py</code> reads <code>5 passed</code>, exit 0 (<code>gate.log</code>). The five cases are: each attempt is folded and the spend of both is summed through <code>promotion_checks._terminal_stream_data</code> and <code>metering.accumulate_run_spend</code> (two measured streams, 300 input, 120 output over the two attempts); <code>crew observe</code> returns the run's phase and throughput without a dialect refusal; the live view's <code>recovery_watch._spend_facts</code> carries the spend of both harnesses; a run written by one harness reads as it did, with its backend object returned unchanged; and <code>crew complete --wait --gate failed</code> records a run whose pointer names one harness over streams two wrote, writing the delivered row with gate <code>failed</code> and the delivered commit.</p>
+  <p>Negative control: with <code>reckon/_backends.py</code> restored to the base revision <code>ff3bb24bcf916047144aadb4c3fc0315e9687219</code> and the same file's head test set, the fold is refused rather than silently empty. <code>negative-control.log</code> reads <code>4 failed, 1 passed</code>, exit 1, and the four failures are the omp dialect's refusal of a codex-vocabulary stream, raised from <code>_refuse_foreign_stream</code>. The one passing case is the live view, whose spend path does not go through the refusing dialect — the control therefore fails in the direction the defect names, and not everywhere.</p>
+</article>
+</body>
+</html>

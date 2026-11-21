@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4d464485b8d773934c39db59a4ba4d43e8648a97",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/routing.py:3465 reap_idle_session_members",
+    "reckon/crew/promotion_records.py:2098 _retire_disposable_identity",
+    "reckon/ledger.py:4666 record_hold_checks",
+    "reckon/ledger.py:3283 members",
+    "reckon/ledger.py:4763 holds",
+    "reckon/ledger.py:2456 write_members"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:35:02Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-the-ledger-writer-refuses-a-fold-253c17df56c0",
+      "recorded_at": "2026-11-19T11:20:29.528562+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the done_when requires the base run's failing ids logged beside the head run in this file, and git ls-tree at 253c17df56 lists no such path while the reviewed worktree holds none on disk, so the node's negative control is recorded only inside the run directory and one named done_when artifact never landed."
+    },
+    {
+      "file": "tests/test_the_ledger_writer_refuses_a_fold.py",
+      "line": "207",
+      "severity": "non-blocking",
+      "text": "non-blocking: the autouse store_home fixture points RECKON_HOME and RECKON_RUN_STORE at tmp_path but no case asserts this workstation's real store and config home were left untouched afterwards, which the repository's test-isolation rule asks for because an isolated write is not proven by an isolated read."
+    }
+  ],
+  "head_log_revision": "253c17df56c062d34f941de6147c9e29c82f47a9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the single commit 253c17df56 against parent 4d464485b8 commit by commit; the diff moves the run store under tmp_path, seeds the roster through ledger.write_members, and reads the hold, reap and retirement transitions from the store while keeping every aggregate assertion and adding stored[\"holds\"] == [].",
+    "done_when": "the done_when asks for a head gate as an all_debug job, a first-at-base run with its failing ids, a cause verdict per failure, an arm pair in inline JSON with 40-character revisions, a clean ruff on the changed paths, and the base run logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html; the manifest records the head gate, the base run (3 failed, 7 passed, EXIT=1) and both arm JSONs, but that named fragment exists at neither head 253c17df56 nor its worktree, so one named item is unmet.",
+    "goal": "the node's goal is to make tests/test_the_ledger_writer_refuses_a_fold.py pass in full; the file's ten cases pass at the reviewed head, recorded as \"10 passed\" EXIT=0 in scoped-gate-1795049958448411911.log.",
+    "manifest": "read at .config/reckon/crew/runs/r-20261118T054115216792-qwnw-red-file-the-ledger-writer-refuses-a-fold/manifest.md; it states status complete, commits 253c17df56c062d34f941de6147c9e29c82f47a9, changed_paths the one test file, the gate command with its log, the base control with three failing ids, and baseline_suite/after_suite inline JSON at 40-character revisions with exit_status 0 and failure_count 0.",
+    "write_paths": "the node declared reckon, tests, the queued-work-needs-no-workaround fragment directory and a figures directory; the single landed commit touches only tests/test_the_ledger_writer_refuses_a_fold.py, inside the declared test path and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_writer_refuses_a_fold.py:276 and :303 fail if the reap or the retirement stops removing its roster row from the store, and :199 fails if the hold transition folds holds back into the aggregate; nothing asserts the real store was left untouched, so the isolation is claimed by the docstring at :207 rather than guarded.",
+    "evidence": "scoped-gate-1795049958448411911.log records \"10 passed\" EXIT=0 at 253c17df56 and logs/base-run.txt records \"3 failed, 7 passed\" EXIT=1 at 4d464485b8, but the done_when's named fragment for those arms is absent.",
+    "fit": "the added fixture at tests/test_the_ledger_writer_refuses_a_fold.py:206 follows the module's existing pytest-fixture and docstring idiom, and the commit carries a conventional subject with a body naming the rule the cases now assert.",
+    "goal_fidelity": "the ten cases in tests/test_the_ledger_writer_refuses_a_fold.py pass at head 253c17df56, which is the goal the node states, with the evidence shortfall scored under evidence rather than here.",
+    "reuse": "no capability is forked \u2014 the cases call the existing store readers at reckon/ledger.py:3283 and :4763 and the existing writer at :2456, and the search over reckon/ledger.py, reckon/run_store.py and tests/helpers/git.py found the same mechanisms already owned there.",
+    "scope_discipline": "git diff --stat 4d464485b8..253c17df56 lists only tests/test_the_ledger_writer_refuses_a_fold.py, inside the node's declared tests path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_the_ledger_writer_refuses_a_fold.py pass in full; the file's ten cases pass at the reviewed head, recorded as \"10 passed\" EXIT=0 in scoped-gate-1795049958448411911.log.\nVERDICT done_when: the done_when asks for a head gate as an all_debug job, a first-at-base run with its failing ids, a cause verdict per failure, an arm pair in inline JSON with 40-character revisions, a clean ruff on the changed paths, and the base run logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html; the manifest records the head gate, the base run (3 failed, 7 passed, EXIT=1) and both arm JSONs, but that named fragment exists at neither head 253c17df56 nor its worktree, so one named item is unmet.\nVERDICT write_paths: the node declared reckon, tests, the queued-work-needs-no-workaround fragment directory and a figures directory; the single landed commit touches only tests/test_the_ledger_writer_refuses_a_fold.py, inside the declared test path and nothing else.\nVERDICT manifest: read at .config/reckon/crew/runs/r-20261118T054115216792-qwnw-red-file-the-ledger-writer-refuses-a-fold/manifest.md; it states status complete, commits 253c17df56c062d34f941de6147c9e29c82f47a9, changed_paths the one test file, the gate command with its log, the base control with three failing ids, and baseline_suite/after_suite inline JSON at 40-character revisions with exit_status 0 and failure_count 0.\nVERDICT diff: read the single commit 253c17df56 against parent 4d464485b8 commit by commit; the diff moves the run store under tmp_path, seeds the roster through ledger.write_members, and reads the hold, reap and retirement transitions from the store while keeping every aggregate assertion and adding stored[\"holds\"] == [].\nCALL_SITES: reckon/crew/routing.py:3465 reap_idle_session_members, reckon/crew/promotion_records.py:2098 _retire_disposable_identity, reckon/ledger.py:4666 record_hold_checks, reckon/ledger.py:3283 members, reckon/ledger.py:4763 holds, reckon/ledger.py:2456 write_members\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the ten cases in tests/test_the_ledger_writer_refuses_a_fold.py pass at head 253c17df56, which is the goal the node states, with the evidence shortfall scored under evidence rather than here.\nSCORE evidence: 12\nJUSTIFICATION evidence: scoped-gate-1795049958448411911.log records \"10 passed\" EXIT=0 at 253c17df56 and logs/base-run.txt records \"3 failed, 7 passed\" EXIT=1 at 4d464485b8, but the done_when's named fragment for those arms is absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4d464485b8..253c17df56 lists only tests/test_the_ledger_writer_refuses_a_fold.py, inside the node's declared tests path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_ledger_writer_refuses_a_fold.py:276 and :303 fail if the reap or the retirement stops removing its roster row from the store, and :199 fails if the hold transition folds holds back into the aggregate; nothing asserts the real store was left untouched, so the isolation is claimed by the docstring at :207 rather than guarded.\nSCORE fit: 19\nJUSTIFICATION fit: the added fixture at tests/test_the_ledger_writer_refuses_a_fold.py:206 follows the module's existing pytest-fixture and docstring idiom, and the commit carries a conventional subject with a body naming the rule the cases now assert.\nSCORE reuse: 20\nJUSTIFICATION reuse: no capability is forked \u2014 the cases call the existing store readers at reckon/ledger.py:3283 and :4763 and the existing writer at :2456, and the search over reckon/ledger.py, reckon/run_store.py and tests/helpers/git.py found the same mechanisms already owned there.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html:1 blocking: the done_when requires the base run's failing ids logged beside the head run in this file, and git ls-tree at 253c17df56 lists no such path while the reviewed worktree holds none on disk, so the node's negative control is recorded only inside the run directory and one named done_when artifact never landed.\nFINDING tests/test_the_ledger_writer_refuses_a_fold.py:207 non-blocking: the autouse store_home fixture points RECKON_HOME and RECKON_RUN_STORE at tmp_path but no case asserts this workstation's real store and config home were left untouched afterwards, which the repository's test-isolation rule asks for because an isolated write is not proven by an isolated read.",
+  "review_run_id": "r-20261119T013318627229-review-of-qwnw-red-file-the-ledger-writer-refuses-a-fold-253c17df56c0",
+  "reviewed_base_sha": "4d464485b8d773934c39db59a4ba4d43e8648a97",
+  "reviewed_head_sha": "253c17df56c062d34f941de6147c9e29c82f47a9",
+  "reviewed_run_id": "r-20261118T054115216792-qwnw-red-file-the-ledger-writer-refuses-a-fold",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T013318627229-review-of-qwnw-red-file-the-ledger-writer-refuses-a-fold-253c17df56c0"
+  },
+  "reviewer_run_id": "r-20261119T013318627229-review-of-qwnw-red-file-the-ledger-writer-refuses-a-fold-253c17df56c0",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:02:02.135356+00:00",
+  "total": 108
+}

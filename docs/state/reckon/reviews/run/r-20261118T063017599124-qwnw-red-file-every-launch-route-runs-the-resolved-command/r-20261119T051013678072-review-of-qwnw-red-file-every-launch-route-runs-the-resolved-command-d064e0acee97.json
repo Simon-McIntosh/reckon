@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1579",
+    "reckon/crew_dispatch_commands.py:300"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T20:34:53Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-every-launch-route-runs-the-resolved-command-d064e0acee97",
+      "recorded_at": "2026-11-19T21:06:59.786411+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command/manifest.md",
+      "id": "f4c1a33b02b",
+      "line": 13,
+      "severity": "blocking",
+      "text": "The manifest records neither a baseline_suite nor an after_suite arm, so the armed census pair this node's suite fence declared (tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, 58 passed at both 42fe90d0b0a4 and 65efa64e1511) exists only as baseline-suite.log and after-suite.log with no manifest field pointing at it \u2014 and the done_when names 'both arms recorded as inline JSON carrying full 40-character revisions' as a required clause. reckon/crew/promotion_evidence.py:2265 returns a refusal clause when a manifest carries neither name, so promotion reads no observation to compute a delta against and this record cannot be promoted as written; the repair is to copy the two arms from the logs into the manifest, not to re-run anything."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command/manifest.md",
+      "id": "f4611ed7a08",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "The manifest carries two test_logs keys: line 13 is an empty field and line 14 carries the four real log paths, so a reader that takes the first occurrence (or splits naively) opens nothing on this line rather than the four logs the run wrote, which the write contract forbids by requiring exactly these keys."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command/manifest.md",
+      "id": "fb2812b3150",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "The reviewed run recorded no rubric self-check: the manifest carries no rubric.<dimension> line for any of the six dimensions, which the worker contract states is reported as no self-check at all rather than as a passing one, and its artifacts, evidence_inputs, outside_scope and blockers keys are likewise absent, so the reconciliation fields promotion and the coordinator read are missing from a record whose status is complete."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-launch-route-runs-the-resolved-command.html",
+      "id": "f0d33b9de3b",
+      "line": 68,
+      "severity": "non-blocking",
+      "text": "The lint paragraph states 'ruff check reports one pre-existing F401 ... and ruff format --check reports the same two pre-existing spots at both' revisions, but no ruff log exists in the run directory and the manifest records no ruff command, so the done_when's 'ruff check and ruff format --check report nothing new on the changed paths' clause is prose with no receipt behind it; the claim is true \u2014 I re-ran ruff check on the base and head copies of tests/test_every_launch_route_runs_the_resolved_command.py and both report the same single F401 on the reckon.flight import at line 25 \u2014 but nothing in the run's artefacts lets a reader establish that without repeating the work."
+    }
+  ],
+  "notes": "Durability is judged against the reinstated regression, not against a green run: restoring the removed misspelt path is not applicable here, the guarded shape is that tests/test_every_launch_route_runs_the_resolved_command.py:161 parses result.stdout rather than the combined output, and base-gate.log is that regression reinstated \u2014 the identical tree with the pre-change line parses the notice at preparation.py:1579 and reddens test_a_dispatch_runs_the_backend_command_it_resolved on json.decoder.JSONDecodeError, EXIT=1 \u2014 so the guard fires on the code shape it was added for. The converse regression, the product writing the notice back to stdout, also reddens the same line, because json.loads(result.stdout) raises rather than skipping. The change adds no assertion and removes none: 'run[\"ok\"] is True' and 'str(bindir / COMMAND) in run.get(\"argv\", [])' at :164-165 are pre-existing and are read against a value the product resolved (the fixture plants bindir on its declared search path while the launching PATH omits it), not against the variable the test handed in, so neither assertion moves with its own input. Score evidence at 13 because a done_when clause and the armed arm records are unmet on the record even though the underlying logs exist and were read: added_failure_count is 0, taken from baseline-suite.log's '58 passed' EXIT=0 at 42fe90d0b0a4 and after-suite.log's '58 passed' EXIT=0 at 65efa64e1511, with no failure ids on either side and per-test attribution unreadable at that resolution, so no id can be named as added. Re-ran nothing but ruff check on the two copies of the changed test file, to test the fragment's lint claim.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is tests/test_every_launch_route_runs_the_resolved_command.py green in full; head-gate.log records 2 passed EXIT=0 at 65efa64e1511906a107324afb02788b9cb88ea23 for that file, and the reviewed head d064e0acee differs from that revision only by the evidence fragment.\nVERDICT done_when: The measure needs a head job, a base arm, a per-cause verdict, a census arm pair as inline JSON, a negative control and ruff; the logs and fragment carry all but the inline-JSON arm records, which manifest.md:13-18 omits, and ruff, which has no log.\nVERDICT write_paths: The declared scope is reckon, tests and the node's fragment and figure paths; the two changed paths are tests/test_every_launch_route_runs_the_resolved_command.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-launch-route-runs-the-resolved-command.html, both inside it.\nVERDICT manifest: Read all 18 lines; it records both commits, the gate command, four logs, the base reproduction and the negative control, but no baseline_suite or after_suite arm, no rubric.<dimension> line, and an empty test_logs key at line 13 above the populated one at line 14.\nVERDICT diff: Read both commits against 42fe90d0b0a4; 65efa64e15 parses result.stdout instead of the combined output's first line at tests/test_every_launch_route_runs_the_resolved_command.py:161 and drops a debug print, and d064e0acee adds the 75-line evidence fragment, with no product file touched.\nCALL_SITES: reckon/crew/dispatching/preparation.py:1579, reckon/crew_dispatch_commands.py:300\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: head-gate.log records 2 passed EXIT=0 for tests/test_every_launch_route_runs_the_resolved_command.py, which is the goal's whole content.\nSCORE evidence: 13\nJUSTIFICATION evidence: the arms exist as baseline-suite.log and after-suite.log but manifest.md:13-18 records neither as baseline_suite or after_suite, so the done_when's inline-JSON clause and promotion's delta read are both unmet.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's two paths, the changed test and the node's own fragment, both sit inside the declared write paths, and no figure or product file was written.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating json.loads(result.output.splitlines()[0]) at tests/test_every_launch_route_runs_the_resolved_command.py:161 reddens test_a_dispatch_runs_the_backend_command_it_resolved, as base-gate.log records at EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the added comment and the result.stdout read at tests/test_every_launch_route_runs_the_resolved_command.py:161-163 follow the surrounding CliRunner idiom and name no new symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so nothing can fork a capability; I searched reckon/crew for an existing stdout-document reader and the change uses click's own CliRunner streams rather than adding one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command/manifest.md:13 blocking: the armed census arms run at 42fe90d0b0a4 and 65efa64e1511 are in baseline-suite.log and after-suite.log but no baseline_suite or after_suite field records them, so promotion reads no suite observation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command/manifest.md:18 non-blocking: no rubric self-check line and no artifacts, evidence_inputs, outside_scope or blockers keys are present, so the record's reconciliation fields are missing.\n",
+  "review_run_id": "r-20261119T051013678072-review-of-qwnw-red-file-every-launch-route-runs-the-resolved-command-d064e0acee97",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_commits": [
+    "65efa64e1511906a107324afb02788b9cb88ea23",
+    "d064e0acee976b4ec9b67f84fb638ed66e51e88b"
+  ],
+  "reviewed_head_sha": "d064e0acee976b4ec9b67f84fb638ed66e51e88b",
+  "reviewed_node": "qwnw-red-file-every-launch-route-runs-the-resolved-command",
+  "reviewed_run_id": "r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:05:00+00:00",
+  "total": 107,
+  "verdicts": {
+    "call_sites": "The rule the test asserts is the product's two-stream split: reckon/crew/dispatching/preparation.py:1579 prints 'reckon: created run {run_id}' to sys.stderr with flush, and the command's single document leaves through reckon/crew_dispatch_commands.py:300 _emit onto sys.stdout, so the stdout-only parse the change adopts reads the stream the product states, and no other runtime site can reach the test.",
+    "diff": "Read commit by commit over 42fe90d0b0a46060bafde2490dda7d4002cda478..d064e0acee976b4ec9b67f84fb638ed66e51e88b: 65efa64e15 changes three lines in tests/test_every_launch_route_runs_the_resolved_command.py, replacing 'run = json.loads(output.splitlines()[0])' with 'run = json.loads(result.stdout)' and deleting the 'print(output)' debug line, and d064e0acee adds the 75-line evidence fragment; no product file is touched.",
+    "done_when": "The measure's clauses are a head job on all_debug with SLURM_JOB_ID unset, a base arm first, a per-cause verdict, a census arm pair recorded as inline JSON, a base negative control in the fragment, and ruff reporting nothing new; head-gate.log (module path and command header, EXIT=0), base-gate.log (1 failed, 1 passed, EXIT=1) and the fragment's arm table satisfy all but the inline-JSON arm records, which manifest.md:13-18 omits, and the ruff clause, which rests on the fragment's prose with no log.",
+    "goal": "Goal is 'Make tests/test_every_launch_route_runs_the_resolved_command.py pass in full on the primary branch'; head-gate.log at 65efa64e1511906a107324afb02788b9cb88ea23 records '..' then '2 passed in 2.89s' and EXIT=0 for that file, and the head arm's tree differs from the reviewed head d064e0acee only by the evidence fragment, so the file passes at the delivered revision while the merge onto primary belongs to the promotion's own gate.",
+    "manifest": "Read all 18 lines of manifest.md: it records status complete, both commits at full length, the literal gate command, four test logs, the base reproduction and the negative control, but it records no baseline_suite or after_suite arm, no rubric.<dimension> line, and a stray empty test_logs key at line 13 above the populated test_logs at line 14.",
+    "write_paths": "Declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's fragment and figure paths; the two changed paths are tests/test_every_launch_route_runs_the_resolved_command.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-launch-route-runs-the-resolved-command.html, both inside it, and no figure was written."
+  }
+}

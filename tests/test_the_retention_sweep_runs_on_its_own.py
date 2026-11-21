@@ -245,17 +245,19 @@ def test_a_pass_starts_no_git_process_even_where_the_checkout_carries_trees(
     assert not calls.exists(), calls.read_text()
 
 
-def test_the_pass_reads_each_ledger_through_its_index(
+def test_the_pass_reads_each_mounted_ledger_through_the_shared_reader(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """Both ledgers are read through the shared index-backed reader.
+    """Both ledgers are read through the shared ledger reader.
 
-    The spy sits on the index-backed reader itself rather than on the wrapper
-    that carries the flag, because the pass never passes the flag: a spy on the
-    wrapper records whatever a caller's default happens to be and passes
-    whether or not the index is read at all. A pass that parsed an aggregate
-    would not reach this reader for either project, so an empty or partial
-    record here is the failure this case exists to raise.
+    The spy sits on ``ledger.runs``, the reader the pass calls for each mounted
+    project. It is not pinned one layer lower: that reader answers a project's
+    history from the run store once the store holds a row and only falls back
+    to the committed ledger's index otherwise, so a spy beneath it records
+    nothing on the store path. A pass that parsed an aggregate, or carried its
+    own notion of where a run's project is recorded, would call this reader for
+    neither project, so an empty or partial record here is the failure this
+    case exists to raise.
     """
     home = tmp_path / "config"
     monkeypatch.setenv("RECKON_HOME", str(home))
@@ -268,19 +270,19 @@ def test_the_pass_reads_each_ledger_through_its_index(
     plant_run(home, roots[PROJECT_A], PROJECT_A, "run-a", now=now)
     plant_run(home, roots[PROJECT_B], PROJECT_B, "run-b", now=now)
 
-    indexed: list[str] = []
-    real_indexed_data = ledger._indexed_data
+    read: list[str] = []
+    real_runs = ledger.runs
 
     def spy(project, root=None, **kwargs):
-        indexed.append(project)
-        return real_indexed_data(project, root, **kwargs)
+        read.append(project)
+        return real_runs(project, root, **kwargs)
 
-    monkeypatch.setattr(ledger, "_indexed_data", spy)
+    monkeypatch.setattr(ledger, "runs", spy)
 
     report = gc_module.retention_sweep(apply=True, now=now)
 
     assert sorted(report["removed"]) == ["run-a", "run-b"]
-    assert sorted(set(indexed)) == [PROJECT_A, PROJECT_B], indexed
+    assert sorted(set(read)) == [PROJECT_A, PROJECT_B], read
 
 
 def test_installing_writes_a_service_and_an_hourly_timer_and_reinstalling_writes_nothing(

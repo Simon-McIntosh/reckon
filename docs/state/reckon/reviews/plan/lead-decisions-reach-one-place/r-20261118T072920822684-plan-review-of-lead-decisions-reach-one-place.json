@@ -1,0 +1,164 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "digests": {
+        "s4": "4186d24cf297815a6a3cb6b6a57cf5022b876f973afe118bb2d1cecf6c768d1d",
+        "s5": "3d3a9ec6734fedf27259ab03bf06d449264ce7ca2f7468d17e1e09bf04056c39"
+      },
+      "reason": "every edit since the stored review is the acted answer to one of its findings, named in that finding's note; no other text changed",
+      "units": [
+        "s4",
+        "s5"
+      ],
+      "when": "2026-11-18T10:36:59.950233+00:00"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T09:52:57Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261118T072920822684-plan-review-of-lead-decisions-reach-one-place/plan.html:22",
+      "id": "wiring-1",
+      "reason": "an absent dependency lets \u00a74 land first and leaves \u00a75's node discovering, mid-implementation, that it must also change a dispatched section.",
+      "text": "`plan-section-depends-on` lists s2, s3 and s4 only, so s5 declares no dependency on the \u00a71 read it extends, and s4 carries no ordering after s5 even though \u00a75's deliverable requires \u00a74's presentation to show a plan-block record's owning session, time and held work as absent; either node can be dispatched against the wrong premise.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261118T072920822684-plan-review-of-lead-decisions-reach-one-place/plan.html:127",
+      "id": "wiring-2",
+      "reason": "queued literally, the plan's own instruction drops the one section that answers two earlier review findings and would never be dispatched.",
+      "text": "the open followup `f-ldop-001` is the dispatch instruction and still reads \"queue \u00a71 to \u00a74 in one batch\", naming neither \u00a75 nor its 2.0 hours, while `plan-section-declarations` at line 23 declares s5 implementable.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261118T072920822684-plan-review-of-lead-decisions-reach-one-place/plan.html:70",
+      "id": "done_when-1",
+      "reason": "a control that holds on the unfixed code measures nothing, and the worker would either ship a test that passes before the change or silently substitute a different control.",
+      "text": "\u00a75's negative control states \"at the base revision the taken decision and the plan-block decision both appear in the ready list\", but the base revision already separates the two: `read_decisions` returns `taken_and_reversible` as its own list and sets the state at reckon/crew/lead_decisions.py:390, with tests/test_lead_decision_read.py:380 asserting exactly that separation at the head \u00a75 branches from \u2014 so a test written as written passes at base on the taken half and this control cannot fail on its own stated mechanism.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261118T072920822684-plan-review-of-lead-decisions-reach-one-place/plan.html:70",
+      "id": "done_when-2",
+      "reason": "an unmeasured presentation claim is what lets \u00a74 ship drawing a plan-block record with blank owning session and no work held, which \u00a75 says must read as absent by name.",
+      "text": "\u00a75's deliverable requires that \"only the ready list is what \u00a74 presents first\" and that \"\u00a74's presentation shows it as absent\", yet \u00a75's done-when asserts only the read's lists and absent-by-name fields, and \u00a74's own done-when at line 66 tests repository, session, context, options and held work but no absent field and no ready-first ordering, so neither section's gate can show the presentation claim holds.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1c8f8c823118f966567976dbc264094edc400412",
+  "plan_fingerprint": "1a3284bf8dd393203b8e7aa5569418474610aa75c632249a50a3d0cb076fe4ef",
+  "plan_slug": "lead-decisions-reach-one-place",
+  "plan_version": 8,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "The section waits now declare section 5 after section 1 and section 4 after section 5, so the presentation is built on the read that reports absent fields.",
+      "reason": "",
+      "when": "2026-11-18T10:35:22.950637+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "finding": "wiring-2",
+      "note": "The open followup now names sections 2 to 5.",
+      "reason": "",
+      "when": "2026-11-18T10:35:27.553862+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "Section 5's negative control now names what the base revision actually lacks: the plan-block decision with nothing held appears in the ready list and no withdrawn state exists, and the test fails on both; the taken list is no longer claimed as missing at base.",
+      "reason": "",
+      "when": "2026-11-18T10:35:33.101822+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "Section 4's done-when now includes a test that a ready decision is presented before a plan-block one and that the plan-block one shows its owning session, time and held work as absent.",
+      "reason": "",
+      "when": "2026-11-18T10:35:37.955998+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "note": "Section 5's negative control now names what the base revision actually lacks: the plan-block decision with nothing held appears in the ready list and no withdrawn state exists, and the test fails on both; the taken list is no longer claimed as missing at base.",
+      "reason": "",
+      "when": "2026-11-18T10:35:33.101822+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "note": "Section 4's done-when now includes a test that a ready decision is presented before a plan-block one and that the plan-block one shows its owning session, time and held work as absent.",
+      "reason": "",
+      "when": "2026-11-18T10:35:37.955998+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "note": "The section waits now declare section 5 after section 1 and section 4 after section 5, so the presentation is built on the read that reports absent fields.",
+      "reason": "",
+      "when": "2026-11-18T10:35:22.950637+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "1c8f8c823118f966567976dbc264094edc400412",
+      "commit_basis": "edit",
+      "note": "The open followup now names sections 2 to 5.",
+      "reason": "",
+      "when": "2026-11-18T10:35:27.553862+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/lead-decisions-reach-one-place/r-20261118T072920822684-plan-review-of-lead-decisions-reach-one-place.json",
+  "review_run_id": "r-20261118T072920822684-plan-review-of-lead-decisions-reach-one-place",
+  "reviewed_blob_sha": "3bfed4519f1ddf4affa928520e3ff5ed575ad857",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the \u00a71 and \u00a74 anchors, the work-flows-to-the-lane.html successor plan and the evidence fragment directory all resolve.",
+    "done_when": "a finding \u2014 \u00a75's negative control at plan.html:70 asserts that the taken decision appears in the ready list at the base revision, which the already-landed \u00a71 read contradicts (lead_decisions.py:390,406,415 and tests/test_lead_decision_read.py:380), and \u00a75's done-when never exercises the \u00a74 presentation behaviour its deliverable claims.",
+    "evidence_paths": "pass \u2014 every gate log named in s2, s3 and s5 sits under docs/evidence/fragments/lead-decisions-reach-one-place/, where s1.html already exists.",
+    "naming": "pass \u2014 no plan label, section number, ticket or version tag reaches a symbol; `reckon-select` and `all_debug` are product and host facts.",
+    "reasoning": "pass \u2014 the rationale matches the trial table, the endpoints are obtainable from the described system, and s2, s3 and s5 name no code path, formula or function.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the read telling its four lists apart; the \u00a74 presentation clause is leverage on an existing section, not a second deliverable.",
+    "wiring": "a finding \u2014 the wiring map at plan.html:22 declares no depends-on entry for s5 and leaves \u00a74 ahead of it, although \u00a75 (plan.html:70) requires a change to \u00a74's presentation; and the open followup at plan.html:127 still queues only \u00a71 to \u00a74."
+  },
+  "section_digests": {
+    "_document": "605fb0b1f314c9672a2f8194e3efee6493fdc4ce7faa7bc827ca5b7678558340",
+    "s1": "988ff80099600d149c344b0ae6d055140098718f2577498bb3d7d61ea8b076df",
+    "s2": "d6829dab0497bf02539e460acbbcf941fe4b1974588fb5300ac08951492b413d",
+    "s3": "9926bc9229fa2b9d474d1f2d60ba0f4b7d5a0425199ebb9e295f755cbaf31131",
+    "s4": "e3d4ea14d0d4f7de233d9d9bf8b33afd1125da5541f9fae57b1864be038ac7cf",
+    "s5": "d526821aa84f87b8450b8ccb2c5829cdb1d1bb46d8a8d492fed51526c542c028"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:11:58.516032+00:00",
+  "total": null
+}

@@ -241,6 +241,11 @@ def test_nested_id_hit_does_not_refuse_append(repository, monkeypatch):
 def test_byte_scan_miss_never_parses_aggregate_or_opens_other_run(
     repository, monkeypatch
 ):
+    # A store carrying a row for this project already makes this an ordinary
+    # append. Seeding the store from committed history is the first row's job
+    # and decodes the aggregate it seeds from; that is a different read from
+    # the duplicate check, and this test is about the duplicate check.
+    run_store.append(PROJECT, {"run_id": "r-seeded"})
     other = ledger.run_path(PROJECT, "r-unrelated", repository)
     other.parent.mkdir()
     other.write_text("deliberately unreadable JSON")
@@ -263,27 +268,44 @@ def test_byte_scan_miss_never_parses_aggregate_or_opens_other_run(
     assert opened == [("r-independent.json", "x")]
 
 
-def test_index_lag_observes_failed_insert_without_rebuilding(repository, monkeypatch):
-    assert ledger.index_lag(PROJECT, repository) == 0
+def test_refused_store_write_leaves_no_lag_and_lag_never_rebuilds(
+    repository, monkeypatch
+):
+    """A store that will not take the row refuses and leaves no lag to observe.
+
+    The run store is the durable authority, so a failed store write is a
+    refusal rather than an unhealthy index a later pass repairs: the run file
+    it had already written is taken back and neither store keeps the row, so
+    the lag between file and store is zero on both sides.
+
+    Lag is what a run file the store does not hold contributes, and counting
+    that reads no record, refreshes no index and opens no file.
+    """
     row = {"run_id": "r-index-failure", "node_definition": {"goal": "retained"}}
-    target = ledger.run_path(PROJECT, row["run_id"], repository)
     calls = []
 
     def failed(project, record):
         calls.append(record)
-        assert target.read_text() == ledger.serialize_run(row)
         raise RuntimeError("deliberate index failure")
 
     with monkeypatch.context() as patch:
         patch.setattr(run_store, "append", failed)
-        result = ledger.append_run(PROJECT, row, root=repository)
+        with pytest.raises(ledger.LedgerError) as excinfo:
+            ledger.append_run(PROJECT, row, root=repository)
     assert calls == [row]
-    assert result["store"] == {
-        "status": "failed",
-        "error": "RuntimeError: deliberate index failure",
-    }
-    assert result["run"] == row
+    refusal = str(excinfo.value)
+    assert str(run_store.store_path()) in refusal
+    assert "RuntimeError: deliberate index failure" in refusal
+    assert "promote the run again" in refusal
+    assert not ledger.run_path(PROJECT, row["run_id"], repository).exists()
+    assert ledger.index_lag(PROJECT, repository) == 0
     before = run_store.store_path().read_bytes()
+
+    # A run file the store does not hold is what lag counts, so write one by
+    # hand: the refusal above deliberately leaves no such file behind.
+    path = ledger.run_path(PROJECT, "r-unstored", repository)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(ledger.serialize_run({"run_id": "r-unstored"}))
 
     def forbidden(*args, **kwargs):
         raise AssertionError("observing lag must not load records or rebuild the index")
@@ -295,9 +317,8 @@ def test_index_lag_observes_failed_insert_without_rebuilding(repository, monkeyp
         assert ledger.index_lag(PROJECT, repository) == 1
         assert ledger.index_lag(PROJECT, repository) == 1
     assert run_store.store_path().read_bytes() == before
-    assert target.read_text() == ledger.serialize_run(row)
-    with run_store.RunStore(root=repository) as store:
-        assert store.get_run(row["run_id"])["run_id"] == row["run_id"]
+    assert path.read_text() == ledger.serialize_run({"run_id": "r-unstored"})
+    run_store.append(PROJECT, {"run_id": "r-unstored"})
     assert ledger.index_lag(PROJECT, repository) == 0
 
 

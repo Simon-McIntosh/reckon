@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:4657 record_hold_checks",
+    "reckon/budget.py:1939 record_hold_checks caller",
+    "reckon/ledger.py:4719 holds",
+    "reckon/ledger.py:load_aggregate"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:20:36Z",
+  "findings": [
+    {
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": "209",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base file's stderr assertion at base line 195 (assert \"merge in progress\" in capsys.readouterr().err) was deleted rather than retargeted, while reckon/ledger.py:3552 still prints that notice from _commit_state_write on the committing-write path, so the done_when's \"No assertion is deleted\" is not kept and the merge refusal no longer has any assertion in this file."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hold-check-leaves-the-tree-clean.html",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "non-blocking: the table row labelled \"the node's file, head (the gate)\" pins 867ead7d40 as the head while the reviewed head is d138d59319, so a reader comparing that row against the promoted head reads a mismatch the table does not explain, even though the intervening commits touch no test file."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054100108947-qwnw-red-file-hold-check-leaves-the-tree-clean/scoped-gate-1794992824760628947.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log's header names host, tree and command but no partition and its first line reports \"srun: task re-enters the worker fence\", with both scoped-gate .scheduler sidecars empty, so the done_when's \"as a job on all_debug\" is asserted by no artefact a later reader can open."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the three commits 867ead7d40, 24179e3abb and d138d59319 against base f29efdc6 \u2014 the first rewrites the four hold cases onto the store with a new RECKON_RUN_STORE fixture and renames test_opening_a_hold_commits_the_run_record_it_rewrote, the second adds the 97-line evidence fragment, and the third repoints one fragment row away from a pinned revision.",
+    "done_when": "the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a base run first, no deleted assertion, and two arm records carrying full 40-character revisions; scoped-gate-1794992824760628947.log records 6 passed EXIT=0 at 867ead7d40, base-run-hold-check-leaves-the-tree-clean.log records 4 failed 2 passed EXIT=1 at f29efdc6, base-arm-suite.log and after-arm-suite.log each record 58 passed at the full ids f29efdc635a1b578bb4461ff90785d3be848646b and d138d59319869a261f9b419ea7a3d7a2827fbec7, and negative-control-hold-on-committed-path.log records 4 failed 2 passed, but no log line names a partition, so the all_debug job the done_when names is not shown by any artefact.",
+    "goal": "the source node's goal is that tests/test_hold_check_leaves_the_tree_clean.py passes in full on the primary branch, and the file at d138d59319 asserts the store-backed hold path the product now keeps while the run's scoped-gate log records 6 passed, EXIT=0, against 4 failed and 2 passed at base f29efdc6.",
+    "manifest": "the manifest names the three commits, both suite arms as inline JSON with full revisions and zero failures, the gate log, the base log and the negative control log by path, and states the gate ran at 867ead7d40; its tests line carries PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hold_check_leaves_the_tree_clean.py, which is not the command the gate log's own header records.",
+    "write_paths": "the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the delivered range f29efdc635a1b578bb4461ff90785d3be848646b..d138d59319869a261f9b419ea7a3d7a2827fbec7 touches only tests/test_hold_check_leaves_the_tree_clean.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hold-check-leaves-the-tree-clean.html, both inside those declarations."
+  },
+  "justifications": {
+    "durability": "negative-control-hold-on-committed-path.log shows the four rewritten cases red when record_hold_checks also writes and commits the aggregate, and tests/test_hold_check_leaves_the_tree_clean.py:151-160 read HEAD and the store rather than the value the test handed in, but the merge-refusal assertion at base line 195 was removed with nothing replacing it.",
+    "evidence": "scoped-gate-1794992824760628947.log and base-run-hold-check-leaves-the-tree-clean.log record the head and base runs with their revisions and EXIT lines, but the gate ran at 867ead7d40 rather than the reviewed head, its header names no partition, and the manifest's tests line differs from the command that log records.",
+    "fit": "the case bodies keep the file's existing shape of one behaviour per case over the tests.helpers.git helper, and the head module docstring at tests/test_hold_check_leaves_the_tree_clean.py:1-13 restates the rule the cases assert.",
+    "goal_fidelity": "tests/test_hold_check_leaves_the_tree_clean.py at d138d59319 asserts the store rows, an unmoved HEAD and byte-identical committed files, and scoped-gate-1794992824760628947.log records 6 passed EXIT=0, so the red file the goal names is green.",
+    "reuse": "the added helpers delegate \u2014 tests/test_hold_check_leaves_the_tree_clean.py:120 calls ledger.holds and :124 wraps the shared tests/helpers/git.py git \u2014 and a search over tests/ and reckon/ found no existing owner of a HEAD-reading helper, every other test in the suite inlining the rev-parse call.",
+    "scope_discipline": "git diff f29efdc6..d138d59319 lists only tests/test_hold_check_leaves_the_tree_clean.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hold-check-leaves-the-tree-clean.html, both inside the node's declared tests and fragment paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_hold_check_leaves_the_tree_clean.py passes in full on the primary branch, and the file at d138d59319 asserts the store-backed hold path the product now keeps while the run's scoped-gate log records 6 passed, EXIT=0, against 4 failed and 2 passed at base f29efdc6.\nVERDICT done_when: the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a base run first, no deleted assertion, and two arm records carrying full 40-character revisions; scoped-gate-1794992824760628947.log records 6 passed EXIT=0 at 867ead7d40, base-run-hold-check-leaves-the-tree-clean.log records 4 failed 2 passed EXIT=1 at f29efdc6, base-arm-suite.log and after-arm-suite.log each record 58 passed at the full ids f29efdc635a1b578bb4461ff90785d3be848646b and d138d59319869a261f9b419ea7a3d7a2827fbec7, and negative-control-hold-on-committed-path.log records 4 failed 2 passed, but no log line names a partition, so the all_debug job the done_when names is not shown by any artefact.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the delivered range f29efdc635a1b578bb4461ff90785d3be848646b..d138d59319869a261f9b419ea7a3d7a2827fbec7 touches only tests/test_hold_check_leaves_the_tree_clean.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hold-check-leaves-the-tree-clean.html, both inside those declarations.\nVERDICT manifest: the manifest names the three commits, both suite arms as inline JSON with full revisions and zero failures, the gate log, the base log and the negative control log by path, and states the gate ran at 867ead7d40; its tests line carries PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hold_check_leaves_the_tree_clean.py, which is not the command the gate log's own header records.\nVERDICT diff: read the three commits 867ead7d40, 24179e3abb and d138d59319 against base f29efdc6 \u2014 the first rewrites the four hold cases onto the store with a new RECKON_RUN_STORE fixture and renames test_opening_a_hold_commits_the_run_record_it_rewrote, the second adds the 97-line evidence fragment, and the third repoints one fragment row away from a pinned revision.\nCALL_SITES: reckon/ledger.py:4657 record_hold_checks, reckon/budget.py:1939 record_hold_checks caller, reckon/ledger.py:4719 holds, reckon/ledger.py:load_aggregate\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_hold_check_leaves_the_tree_clean.py at d138d59319 asserts the store rows, an unmoved HEAD and byte-identical committed files, and scoped-gate-1794992824760628947.log records 6 passed EXIT=0, so the red file the goal names is green.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1794992824760628947.log and base-run-hold-check-leaves-the-tree-clean.log record the head and base runs with their revisions and EXIT lines, but the gate ran at 867ead7d40 rather than the reviewed head, its header names no partition, and the manifest's tests line differs from the command that log records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f29efdc6..d138d59319 lists only tests/test_hold_check_leaves_the_tree_clean.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hold-check-leaves-the-tree-clean.html, both inside the node's declared tests and fragment paths.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control-hold-on-committed-path.log shows the four rewritten cases red when record_hold_checks also writes and commits the aggregate, and tests/test_hold_check_leaves_the_tree_clean.py:151-160 read HEAD and the store rather than the value the test handed in, but the merge-refusal assertion at base line 195 was removed with nothing replacing it.\nSCORE fit: 19\nJUSTIFICATION fit: the case bodies keep the file's existing shape of one behaviour per case over the tests.helpers.git helper, and the head module docstring at tests/test_hold_check_leaves_the_tree_clean.py:1-13 restates the rule the cases assert.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added helpers delegate \u2014 tests/test_hold_check_leaves_the_tree_clean.py:120 calls ledger.holds and :124 wraps the shared tests/helpers/git.py git \u2014 and a search over tests/ and reckon/ found no existing owner of a HEAD-reading helper, every other test in the suite inlining the rev-parse call.\nFINDING tests/test_hold_check_leaves_the_tree_clean.py:209 non-blocking: the base file's stderr assertion at base line 195 (assert \"merge in progress\" in capsys.readouterr().err) was deleted rather than retargeted, while reckon/ledger.py:3552 still prints that notice from _commit_state_write on the committing-write path, so the done_when's \"No assertion is deleted\" is not kept and the merge refusal no longer has any assertion in this file.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hold-check-leaves-the-tree-clean.html:54 non-blocking: the table row labelled \"the node's file, head (the gate)\" pins 867ead7d40 as the head while the reviewed head is d138d59319, so a reader comparing that row against the promoted head reads a mismatch the table does not explain, even though the intervening commits touch no test file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054100108947-qwnw-red-file-hold-check-leaves-the-tree-clean/scoped-gate-1794992824760628947.log:1 non-blocking: the gate log's header names host, tree and command but no partition and its first line reports \"srun: task re-enters the worker fence\", with both scoped-gate .scheduler sidecars empty, so the done_when's \"as a job on all_debug\" is asserted by no artefact a later reader can open.",
+  "review_method": "Read-only read of the source node record, its manifest, its gate, base, negative-control and suite-arm logs, and the three landed commits against base f29efdc6; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T094118292724-review-of-qwnw-red-file-hold-check-leaves-the-tree-clean-d138d5931986",
+  "reviewed_base_sha": "f29efdc635a1b578bb4461ff90785d3be848646b",
+  "reviewed_head_sha": "d138d59319869a261f9b419ea7a3d7a2827fbec7",
+  "reviewed_run_id": "r-20261118T054100108947-qwnw-red-file-hold-check-leaves-the-tree-clean",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "867ead7d40bf51f2c0a83e9f7fbb012d75643e3a",
+    "24179e3abb178ffe5947b47aca48fa78ad6cf0ff",
+    "d138d59319869a261f9b419ea7a3d7a2827fbec7"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after": {
+      "exit_status": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054100108947-qwnw-red-file-hold-check-leaves-the-tree-clean/after-arm-suite.log",
+      "result": "58 passed",
+      "revision": "d138d59319869a261f9b419ea7a3d7a2827fbec7"
+    },
+    "baseline": {
+      "exit_status": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054100108947-qwnw-red-file-hold-check-leaves-the-tree-clean/base-arm-suite.log",
+      "result": "58 passed",
+      "revision": "f29efdc635a1b578bb4461ff90785d3be848646b"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:37:19.336216+00:00",
+  "total": 110
+}

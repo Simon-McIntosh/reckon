@@ -226,19 +226,37 @@ def test_edit_replaces_steering_and_the_declared_fields(
     assert record["node"]["brief_sha256"] == payload["steering_sha256"]
 
 
-def test_an_over_ceiling_edit_is_refused_and_stores_nothing(home: Path) -> None:
-    """An edit obeys the same project fence as a dispatch."""
-    pointer = _write_request(home)
-    before = pointer.read_bytes()
+def test_an_over_ceiling_edit_is_recorded_as_a_dispatch_records_it(home: Path) -> None:
+    """An edit records a budget past the fence the way a dispatch records it.
+
+    The fence is a sizing reference rather than a refusal: a dispatch or a
+    queued request whose budget exceeds it carries a note saying so, and an
+    edit to the budget must leave the request saying the same. The over-fence
+    note is therefore stored beside the budget it explains, and lowering the
+    budget back within the fence clears it rather than leaving a stale note.
+    """
+    _write_request(home)
 
     result = CliRunner().invoke(
         CREW, ["queue", "edit", "--run", "r-queued", "--time-budget", "35m"]
     )
+    payload = _answer(result)
+    assert result.exit_code == 0, result.output
 
-    assert result.exit_code != 0, result.output
-    assert "35m" in result.output
-    assert "25m" in result.output
-    assert pointer.read_bytes() == before
+    assert payload["time_budget"] == "35m"
+    record = _pointer(home)
+    assert record["node"]["time_budget"] == "35m"
+    assert record["node"]["over_fence_note"] == (
+        "budget 35m exceeds the resolved fence 25m"
+    )
+
+    lowered = CliRunner().invoke(
+        CREW, ["queue", "edit", "--run", "r-queued", "--time-budget", "20m"]
+    )
+    assert lowered.exit_code == 0, lowered.output
+    record = _pointer(home)
+    assert record["node"]["time_budget"] == "20m"
+    assert record["node"]["over_fence_note"] == ""
 
 
 def test_an_edit_that_fails_the_contract_is_refused_and_stores_nothing(

@@ -125,6 +125,9 @@ def _invoke(repo: Path, *, node: str, dry_run: bool, extra: list[str] | None = N
 
 
 def _payload(result) -> dict:
+    # The command writes its one JSON document on stdout and its progress
+    # notice ("reckon: created run ...") on stderr; click's combined output
+    # puts that notice first on a live dispatch.
     return json.loads(result.stdout.splitlines()[0])
 
 

@@ -1,0 +1,57 @@
+<h2 id="qwnw-red-file-skill-contracts-runs">The skill-contract file, red at base and green at head</h2>
+
+<p>Both runs are jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+unset inside the task, and both write their output under the run directory.</p>
+
+<table>
+  <thead><tr><th>Run</th><th>Job</th><th>Revision</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr id="qwnw-red-file-skill-contracts-head">
+      <td>head</td><td>1329187</td>
+      <td><code>208a799184e4</code></td>
+      <td>73 passed, <code>EXIT=0</code></td>
+    </tr>
+    <tr id="qwnw-red-file-skill-contracts-base">
+      <td>base</td><td>1329198</td>
+      <td><code>42fe90d0b0a4</code></td>
+      <td>1 failed, 72 passed, <code>EXIT=1</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p id="qwnw-red-file-skill-contracts-cause">The base run fails on
+<code>test_every_registered_crew_verb_is_documented_or_exempt</code>, reporting that
+<code>reckon crew decision record</code> is registered and the ship skill never names it.
+The loop stopped at the first missing verb, so the same run hid five more:
+<code>declare-gate</code>, <code>hold</code>, <code>promotions</code>,
+<code>record-merge</code> and <code>release</code>. The verdict is <em>product
+wrong</em>: the verbs shipped without the skill naming them, so the skill gained
+a line for each and the parity map in the test gained the corresponding entries.
+<code>crew reload</code> is exempted with its reason instead, because it is a
+service-control request a follower answers on its own schedule.</p>
+
+<p id="qwnw-red-file-skill-contracts-logs">Head log:
+<code>skill-contracts-head.log</code>. Base log:
+<code>sbatch-base-nc.log</code>.</p>
+
+<h2 id="qwnw-red-file-skill-contracts-suite">The landing suite arms</h2>
+
+<p>The two arms below run the same command, whose failures both revisions
+share: <code>test_staged_write_inventory.py</code> reports
+<code>test_every_staged_write_reaches_the_owner</code> and
+<code>test_claim_move_aside_is_not_a_staged_write</code> at base and at head,
+so the node adds no failure to the pair.</p>
+
+<table>
+  <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr id="qwnw-red-file-skill-contracts-suite-base">
+      <td>baseline</td><td><code>42fe90d0b0a4</code></td>
+      <td>2 failed, 56 passed, <code>EXIT=1</code></td>
+    </tr>
+    <tr id="qwnw-red-file-skill-contracts-suite-after">
+      <td>after</td><td><code>a92b9d037772</code></td>
+      <td>2 failed, 56 passed, <code>EXIT=1</code></td>
+    </tr>
+  </tbody>
+</table>

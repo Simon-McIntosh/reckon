@@ -185,7 +185,12 @@ def test_the_obligations_view_and_gc_name_the_same_tree(repo: Path) -> None:
 
 
 def test_two_sessions_one_node_id_resolve_their_own_tree(repo: Path) -> None:
-    """Each run resolves its own session's tree; a peer's tree is untouched."""
+    """Each run resolves its own session's tree; a peer's tree is untouched.
+
+    Both heads are merged before the association is read, so the trees are no
+    longer duties: the duty view drops a tree whose landing took its work, and
+    the view that still answers which run a tree belongs to is the named one.
+    """
     early, early_head = _withheld(repo, NODE, session=SESSION_EARLY)
     late, late_head = _withheld(repo, NODE, session=SESSION_LATE)
     _promoted_withheld(repo, RUN_EARLY, early, session=SESSION_EARLY)
@@ -198,9 +203,12 @@ def test_two_sessions_one_node_id_resolve_their_own_tree(repo: Path) -> None:
         routing_module._run_worktree_path(repo, PROJECT, RUN_EARLY) == early.resolve()
     )
 
-    held = obligations_module._held_worktree_records(PROJECT)
-    assert str(held[late.resolve()].get("run_id") or "") == RUN_LATE
-    assert str(held[early.resolve()].get("run_id") or "") == RUN_EARLY
+    # Both trees' work has landed, so neither is a duty: the duty view answers
+    # nothing here.
+    assert obligations_module._held_worktree_records(PROJECT) == {}
+    named = obligations_module._named_worktree_records(PROJECT)
+    assert str(named[late.resolve()].get("run_id") or "") == RUN_LATE
+    assert str(named[early.resolve()].get("run_id") or "") == RUN_EARLY
 
     exit_code, payload = _gc_run(repo, RUN_LATE)
 

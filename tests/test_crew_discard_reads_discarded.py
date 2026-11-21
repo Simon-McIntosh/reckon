@@ -22,8 +22,9 @@ from pathlib import Path
 
 import pytest
 
-from reckon import crew, ledger
+from reckon import crew
 from reckon.crew import promotion, recovery
+from tests.helpers.landing_repository import landed_checkout, record_promoted_row
 
 
 @pytest.fixture()
@@ -35,7 +36,7 @@ def home(tmp_path, monkeypatch):
     return config_home
 
 
-def _blocked_run(home: Path, run_id: str) -> dict:
+def _blocked_run(home: Path, run_id: str, *, repo: Path | None = None) -> dict:
     """A stopped run whose manifest reads blocked, with its run directory made.
 
     The run directory is created because a real run always has one — that is
@@ -52,31 +53,25 @@ def _blocked_run(home: Path, run_id: str) -> dict:
         "blockers: the fence excludes the file the repair needs\n"
     )
     crew.run_dir(run_id).mkdir(parents=True, exist_ok=True)
-    crew._write_json(
-        crew.pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": "proj",
-            "node": {"id": "ticker-node", "plan": "plan-a", "time_budget": "20m"},
-            "phase": "blocked",
-            "created_at": datetime.now(tz=UTC).isoformat(),
-            "manifest_path": str(manifest),
-            "log_path": str(stream),
-            "process_alive": False,
-        },
-    )
+    pointer = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": "ticker-node", "plan": "plan-a", "time_budget": "20m"},
+        "phase": "blocked",
+        "created_at": datetime.now(tz=UTC).isoformat(),
+        "manifest_path": str(manifest),
+        "log_path": str(stream),
+        "process_alive": False,
+    }
+    if repo is not None:
+        pointer["repo"] = str(repo)
+        pointer["worktree"] = str(repo)
+    crew._write_json(crew.pointer_path(run_id), pointer)
     return crew.read_pointer(run_id)
 
 
 def _snapshot(pointer: dict) -> dict:
     return recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
-
-
-def _record_ledger_row(run_id: str) -> None:
-    """Write the per-run ledger file a promotion leaves behind."""
-    path = ledger.run_path("proj", run_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"run_id": run_id, "commits": ["HEAD"]}))
 
 
 def test_a_discarded_run_departs_as_discarded(home: Path) -> None:
@@ -106,11 +101,12 @@ def test_a_discarded_run_departs_as_discarded(home: Path) -> None:
     assert record["discarded_at"]
 
 
-def test_a_recorded_promotion_still_reads_promoted(home: Path) -> None:
-    """A departure the ledger records as a promotion reads promoted."""
-    pointer = _blocked_run(home, "r-promoted")
+def test_a_recorded_promotion_still_reads_promoted(home: Path, tmp_path: Path) -> None:
+    """A departure the ledger records as a landed promotion reads promoted."""
+    repo, head = landed_checkout(home=home, tmp_path=tmp_path)
+    pointer = _blocked_run(home, "r-promoted", repo=repo)
     snapshot = _snapshot(pointer)
-    _record_ledger_row("r-promoted")
+    record_promoted_row("r-promoted", repo, head)
     crew.pointer_path("r-promoted").unlink()
 
     folded, _ = recovery.fleet_transitions({"r-promoted": snapshot}, {})
@@ -118,18 +114,19 @@ def test_a_recorded_promotion_still_reads_promoted(home: Path) -> None:
     assert folded[0][2] == "promoted"
 
 
-def test_a_promotion_outweighs_a_discard_marker(home: Path) -> None:
+def test_a_promotion_outweighs_a_discard_marker(home: Path, tmp_path: Path) -> None:
     """A recorded promotion reads promoted whatever else the run directory holds.
 
     A discard marker cannot be present on a genuinely promoted run, but a stale
     marker left by an earlier act must never outvote the ledger: the row is the
     fleet's evidence that work landed, and a directory file is not.
     """
-    pointer = _blocked_run(home, "r-both")
+    repo, head = landed_checkout(home=home, tmp_path=tmp_path)
+    pointer = _blocked_run(home, "r-both", repo=repo)
     snapshot = _snapshot(pointer)
     marker = promotion.discard_record_path("r-both")
     marker.write_text(json.dumps({"run_id": "r-both"}), encoding="utf-8")
-    _record_ledger_row("r-both")
+    record_promoted_row("r-both", repo, head)
     crew.pointer_path("r-both").unlink()
 
     folded, _ = recovery.fleet_transitions({"r-both": snapshot}, {})

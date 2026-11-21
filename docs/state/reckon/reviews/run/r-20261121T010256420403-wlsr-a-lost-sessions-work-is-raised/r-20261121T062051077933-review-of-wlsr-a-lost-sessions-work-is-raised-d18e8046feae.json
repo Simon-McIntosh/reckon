@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's suite fence was unarmed (baseline_suite and after_suite are empty); no base/after pair was run, so there is no delta to difference. Its own gate.log at d18e8046 records '40 passed in 43.57s' with EXIT=0 and no FAILED line, and negative-control.log records the intended 1 failed EXIT=1. Added failures: none.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:225 (admit_once calls raise_lost_session_work)",
+    "reckon/crew/admission/selection.py:236 (admit_once calls suppress_lost_session_requests)",
+    "reckon/crew/queue_landing.py:2282 (_land_deliveries calls skip_lost_session_landings)",
+    "reckon/crew/queue_landing.py:2244 (_land_deliveries calls sessions_with_open_decision)",
+    "reckon/crew_run_commands.py:631 (crew_decision_answer calls answer_decision)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T06:21:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/lost_session_work.py",
+      "line": "148",
+      "severity": "non-blocking",
+      "text": "non-blocking: _identity re-implements lead_decisions._request_identity at reckon/crew/lead_decisions.py:171 in the same terms, and the decision write at lost_session_work.py:349 bypasses lead_decisions.record_decision and validate_decision, duplicating the owner of the decisions store."
+    },
+    {
+      "file": "reckon/crew/lost_session_work.py",
+      "line": "371",
+      "severity": "non-blocking",
+      "text": "non-blocking: an adopt answer accepts any non-empty session string, so the lead can move a record to another lost or unknown session even though the plan says a live session; nothing checks liveness before the pointer mutation."
+    },
+    {
+      "file": "tests/test_a_lost_sessions_work_is_raised.py",
+      "line": "290",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring cites plan sections \u00a75 and \u00a74, a plan-label reference in source that the naming rule forbids; the test should name the mechanism instead."
+    },
+    {
+      "file": "tests/test_a_lost_sessions_work_is_raised.py",
+      "line": "257",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing case calls skip_lost_session_landings directly and never runs _land_deliveries, so a regression that dropped the reckon/crew/queue_landing.py:2282 wiring or its recorded reason would leave the suite green."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "629",
+      "severity": "non-blocking",
+      "text": "non-blocking: crew_decision_answer catches OSError, ValueError and TypeError but not the CrewError that runs.read_pointer raises for a vanished run, so an adopt of a run that disappeared surfaces as a traceback rather than the decision_error JSON the sibling handlers emit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against base d917e63b498b62c0ce0c75ebe84577126e7e2c29; e4eef604f4 adds the module, three wiring points and the test; d18e8046fe adds six lines requiring the crew view to list the decision; 933 insertions, no deletions, all inside scope.",
+    "done_when": "the done_when names tests/test_a_lost_sessions_work_is_raised.py with six behaviours plus a negative control; the file carries seven cases at tests/test_a_lost_sessions_work_is_raised.py:99,140,161,187,227,257,287, gate.log at d18e8046 records 40 passed EXIT=0 and negative-control.log records the single-write case failing at EXIT=1.",
+    "goal": "the reviewed node's goal is to raise the implement work of a lost session as one lead decision; reckon/crew/lost_session_work.py:234 raise_lost_session_work records one open decision per lost session naming every implement record it owns, and reckon/crew/admission/selection.py:225 calls it from the admit pass, so the goal is met.",
+    "manifest": "read; status complete, commits e4eef604f4 and d18e8046fe, gate 40 passed, negative control 11 writes against 1, confirmed against the logs.",
+    "write_paths": "the dispatch declared seven paths; every file in the diff lies inside them and the figure directory carries no file."
+  },
+  "justifications": {
+    "durability": "the single-write assertion at tests/test_a_lost_sessions_work_is_raised.py:136 reddens under the recorded negative control at 11 writes against 1, but no test reddens if the queue_landing.py:2282 wiring is removed.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010256420403-wlsr-a-lost-sessions-work-is-raised/gate.log records 40 passed EXIT=0 and negative-control.log records 1 failed EXIT=1, but the landing case at tests/test_a_lost_sessions_work_is_raised.py:257 exercises skip_lost_session_landings directly rather than through _land_deliveries.",
+    "fit": "the module follows the surrounding style, but tests/test_a_lost_sessions_work_is_raised.py:290 cites plan sections \u00a75 and \u00a74 in a docstring, lost_session_work.py:414 reaches into runs._mutate_pointer, and reckon/crew_run_commands.py:629 does not catch the CrewError answer_decision can raise.",
+    "goal_fidelity": "reckon/crew/lost_session_work.py:234-356 raises one decision per lost session and reckon/crew/admission/selection.py:225-241 wires it into the pass, though the landing skip is per pointer rather than per the group the done_when's wording implies.",
+    "reuse": "reckon/crew/lost_session_work.py:148-155 duplicates lead_decisions._request_identity at reckon/crew/lead_decisions.py:171-177 and its write bypasses lead_decisions.record_decision at reckon/crew/lead_decisions.py:146, so an owned capability is re-implemented rather than extended.",
+    "scope_discipline": "all six paths in the diff (reckon/crew/lost_session_work.py, admission/selection.py, queue_landing.py, crew_run_commands.py, the test and the fragment) are inside the declared write paths, and nothing the goal does not imply was added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to raise the implement work of a lost session as one lead decision; reckon/crew/lost_session_work.py:234 raise_lost_session_work records one open decision per lost session naming every implement record it owns, and reckon/crew/admission/selection.py:225 calls it from the admit pass, so the goal is met.\nVERDICT done_when: the done_when names tests/test_a_lost_sessions_work_is_raised.py with six behaviours plus a negative control; the file carries seven cases at tests/test_a_lost_sessions_work_is_raised.py:99,140,161,187,227,257,287 covering each of the six, and gate.log at d18e8046 records 40 passed EXIT=0 while negative-control.log records the single-write case failing at EXIT=1.\nVERDICT write_paths: the dispatch declared seven paths (the fragment, an unused figures directory, lost_session_work.py, admission/selection.py, queue_landing.py, crew_run_commands.py and the test); every file in the diff lies inside them and the figure directory simply carries no file.\nVERDICT manifest: read; it reports status complete, commits e4eef604f4 and d18e8046fe, gate 40 passed across this node's file and two neighbouring suites, and a negative control failing at 11 writes against 1, all of which I confirmed against the logs on disk.\nVERDICT diff: read both commits against base d917e63b498b62c0ce0c75ebe84577126e7e2c29; e4eef604f4 adds the module and its three wiring points plus the test, and d18e8046fe adds six lines to the test requiring the crew view to list the raised decision, 933 insertions and no deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/admission/selection.py:225 (admit_once calls raise_lost_session_work), reckon/crew/admission/selection.py:236 (admit_once calls suppress_lost_session_requests), reckon/crew/queue_landing.py:2282 (_land_deliveries calls skip_lost_session_landings), reckon/crew/queue_landing.py:2244 (_land_deliveries calls sessions_with_open_decision), reckon/crew_run_commands.py:631 (crew_decision_answer calls answer_decision)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/lost_session_work.py:234-356 raises one decision per lost session and reckon/crew/admission/selection.py:225-241 wires it into the pass, though the landing skip is per pointer rather than per the group the done_when's wording implies.\nSCORE evidence: 15\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010256420403-wlsr-a-lost-sessions-work-is-raised/gate.log records 40 passed EXIT=0 and negative-control.log records 1 failed EXIT=1, but the landing case at tests/test_a_lost_sessions_work_is_raised.py:257 exercises skip_lost_session_landings directly rather than through _land_deliveries.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all six paths in the diff (reckon/crew/lost_session_work.py, admission/selection.py, queue_landing.py, crew_run_commands.py, the test and the fragment) are inside the declared write paths, and nothing the goal does not imply was added.\nSCORE durability: 16\nJUSTIFICATION durability: the single-write assertion at tests/test_a_lost_sessions_work_is_raised.py:136 reddens under the recorded negative control at 11 writes against 1, but no test reddens if the queue_landing.py:2282 wiring is removed.\nSCORE fit: 14\nJUSTIFICATION fit: the module follows the surrounding style, but tests/test_a_lost_sessions_work_is_raised.py:290 cites plan sections \u00a75 and \u00a74 in a docstring, lost_session_work.py:414 reaches into runs._mutate_pointer, and reckon/crew_run_commands.py:629 does not catch the CrewError answer_decision can raise.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/lost_session_work.py:148-155 duplicates lead_decisions._request_identity at reckon/crew/lead_decisions.py:171-177 and its write bypasses lead_decisions.record_decision at reckon/crew/lead_decisions.py:146, so an owned capability is re-implemented rather than extended.\nFINDING reckon/crew/lost_session_work.py:148 non-blocking: _identity re-implements lead_decisions._request_identity at reckon/crew/lead_decisions.py:171 in the same terms, and the decision write at lost_session_work.py:349 bypasses lead_decisions.record_decision and validate_decision, duplicating the owner of the decisions store.\nFINDING reckon/crew/lost_session_work.py:371 non-blocking: an adopt answer accepts any non-empty session string, so the lead can move a record to another lost or unknown session even though the plan says a live session; nothing checks liveness before the pointer mutation.\nFINDING tests/test_a_lost_sessions_work_is_raised.py:290 non-blocking: the docstring cites plan sections \u00a75 and \u00a74, a plan-label reference in source that the naming rule forbids; the test should name the mechanism instead.\nFINDING tests/test_a_lost_sessions_work_is_raised.py:257 non-blocking: the landing case calls skip_lost_session_landings directly and never runs _land_deliveries, so a regression that dropped the reckon/crew/queue_landing.py:2282 wiring or its recorded reason would leave the suite green.\nFINDING reckon/crew_run_commands.py:629 non-blocking: crew_decision_answer catches OSError, ValueError and TypeError but not the CrewError that runs.read_pointer raises for a vanished run, so an adopt of a run that disappeared surfaces as a traceback rather than the decision_error JSON the sibling handlers emit.\n",
+  "review_run_id": "r-20261121T062051077933-review-of-wlsr-a-lost-sessions-work-is-raised-d18e8046feae",
+  "reviewed_base_sha": "d917e63b498b62c0ce0c75ebe84577126e7e2c29",
+  "reviewed_head_sha": "d18e8046feaebf7a0c4f0699b42523f392967ffe",
+  "reviewed_run_id": "r-20261121T010256420403-wlsr-a-lost-sessions-work-is-raised",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T062051077933-review-of-wlsr-a-lost-sessions-work-is-raised-d18e8046feae"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T06:27:37.040362+00:00",
+  "total": 86
+}

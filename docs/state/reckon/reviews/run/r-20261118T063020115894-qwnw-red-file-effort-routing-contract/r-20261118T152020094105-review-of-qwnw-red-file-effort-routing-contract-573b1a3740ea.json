@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T16:18:21Z",
+  "findings": [
+    "non-blocking: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063020115894-qwnw-red-file-effort-routing-contract/manifest.md:14 records arms over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports tests/test_effort_routing_contract.py, so the done_when's import-arm clause measures nothing about this change while reading as a measured 58 passed.",
+    "non-blocking: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063020115894-qwnw-red-file-effort-routing-contract/scoped-gate-1795013128720412719.log:2 records revision, host, tree and command but no partition and no SLURM_JOB_ID state, so the done_when's all_debug job with SLURM_JOB_ID unset is reproduced from the manifest's sentence rather than from an artefact a later reader can open."
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against fb3ec9a: b1fa27e774 replaces the working-tree ledger read with committed_ledger over git rev-list/cat-file and strengthens the filter assertions at tests/test_effort_routing_contract.py:33-65,143-163; 573b1a3740 adds the 41-line evidence fragment recording the one cause, the base failure and the passing head.",
+    "done_when": "the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, both arms in inline JSON with 40-character revisions, a cause verdict, no weakened assertion and a negative control; the manifest records 7 passed at head, causes stated test-wrong, arms at fb3ec9a and 573b1a3 with 0 failures, and own-file-baseline.log red at fb3ec9a, but the arms name unrelated test files and the log shows no partition or SLURM_JOB_ID state",
+    "goal": "the node goal is that tests/test_effort_routing_contract.py passes in full on the primary branch; at 573b1a3 the scoped gate log reads 7 passed EXIT=0 and tests/test_effort_routing_contract.py:52 reads the ledger from the newest committed revision that carries it.",
+    "manifest": "read; status complete, commits b1fa27e774e068fdd4f06f4f8fe3a0108c3f50e2 and 573b1a3740ea9a1d93d639408406310d26c0ee76, tests line naming the pytest command, five test_logs, baseline_suite and after_suite at fb3ec9a and 573b1a3 with exit_status 0 and failure_ids [] (manifest.md:14-15), negative_control_log naming own-file-baseline.log.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; git diff fb3ec9a..573b1a3 lists only tests/test_effort_routing_contract.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-effort-routing-contract.html."
+  },
+  "justifications": {
+    "durability": "reinstating the removed working-tree read is exactly the base arm at own-file-baseline.log, which reddens test_documented_filter_runs_against_the_committed_ledger (1 failed, 6 passed, EXIT=1), and tests/test_effort_routing_contract.py:162-163 fail if the filter selects nothing on the lane's exact rows or selects a run under open.",
+    "evidence": "manifest.md:14-15 records both arms with full 40-character revisions and failure_ids [], but their commands name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import nothing this change touches, and scoped-gate-1795013128720412719.log:1-5 records revision, host, tree and command without the partition or SLURM_JOB_ID state the done_when names.",
+    "fit": "the added _git/_carries/committed_ledger helpers at tests/test_effort_routing_contract.py:33-65 follow the test-local _git idiom at tests/test_a_damaged_run_record_stops_only_its_run.py:20, and the comment at tests/test_effort_routing_contract.py:7-13 states the mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_effort_routing_contract.py:52 resolves the ledger from the newest committed revision carrying docs/state/reckon/crew.json, a path absent from the tree at 573b1a3 and present in history, so the file's one red case now passes on the primary branch (7 passed in the scoped gate log).",
+    "reuse": "the only owner of reading a blob at a revision is the private reckon/crew/routing.py:1079 _git_blob (also reckon/crew/promotion_checks.py:638), which the addition neither extends nor wraps; no shared test-side owner exists (every test file carries its own _git) and a contract test reading the documented recipe deliberately does not import product code.",
+    "scope_discipline": "git diff --stat fb3ec9a..573b1a3 carries only tests/test_effort_routing_contract.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-effort-routing-contract.html, both inside the node's declared write paths, with no product module touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_effort_routing_contract.py passes in full on the primary branch; tests/test_effort_routing_contract.py:52 resolves the ledger from the newest committed revision carrying docs/state/reckon/crew.json, a path absent from the tree at 573b1a3 and present in history, and the scoped gate log reads 7 passed EXIT=0.\nVERDICT done_when: the done_when asks for a full pass at head on all_debug with SLURM_JOB_ID unset, both arms in inline JSON with 40-character revisions, a cause verdict, no weakened assertion and a negative control; manifest.md:14-15 records the arms at fb3ec9a and 573b1a3 with 0 failures and own-file-baseline.log is red at fb3ec9a, but the arms name test files unrelated to the change and the gate log shows no partition or SLURM_JOB_ID state.\nVERDICT write_paths: declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment and a figures directory; git diff --stat fb3ec9a..573b1a3 lists only tests/test_effort_routing_contract.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-effort-routing-contract.html, both inside.\nVERDICT manifest: read; status complete, commits b1fa27e774e068fdd4f06f4f8fe3a0108c3f50e2 and 573b1a3740ea9a1d93d639408406310d26c0ee76, a tests line naming the pytest command, five test_logs, baseline_suite and after_suite with exit_status 0 and failure_ids [] at manifest.md:14-15, and negative_control_log naming own-file-baseline.log which reads 1 failed, 6 passed, EXIT=1.\nVERDICT diff: read both commits against fb3ec9a; b1fa27e774e068fdd4f06f4f8fe3a0108c3f50e2 replaces the working-tree ledger read with committed_ledger over git rev-list/cat-file and strengthens the filter assertions at tests/test_effort_routing_contract.py:143-163, and 573b1a3740ea9a1d93d639408406310d26c0ee76 adds the 41-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_effort_routing_contract.py:52 resolves the ledger from committed history, so the case that was red on the primary branch passes.\nSCORE evidence: 14\nJUSTIFICATION evidence: manifest.md:14-15 records both arms with full revisions, but their commands name test files unrelated to the change and scoped-gate-1795013128720412719.log:1-5 shows no partition or SLURM_JOB_ID state.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two paths in git diff fb3ec9a..573b1a3, tests/test_effort_routing_contract.py and the evidence fragment, are both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm own-file-baseline.log reddens test_documented_filter_runs_against_the_committed_ledger at EXIT=1, which is the removed working-tree read reinstated.\nSCORE fit: 18\nJUSTIFICATION fit: the test-local _git at tests/test_effort_routing_contract.py:33 matches the idiom at tests/test_a_damaged_run_record_stops_only_its_run.py:20.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/routing.py:1079 _git_blob owns reading a blob at a revision and is private, no shared test-side owner exists, and the addition repeats only the subprocess wrapper every test file carries.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063020115894-qwnw-red-file-effort-routing-contract/manifest.md:14 non-blocking: the recorded arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import nothing the change touches, so the import-arm clause is vacuous while reading as a measured 58 passed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063020115894-qwnw-red-file-effort-routing-contract/scoped-gate-1795013128720412719.log:2 non-blocking: the head gate log records no partition and no SLURM_JOB_ID state.",
+  "review_run_id": "r-20261118T152020094105-review-of-qwnw-red-file-effort-routing-contract-573b1a3740ea",
+  "reviewed_base_sha": "fb3ec9a1a4047cb40052991176938311bb70a449",
+  "reviewed_head_sha": "573b1a3740ea9a1d93d639408406310d26c0ee76",
+  "reviewed_run_id": "r-20261118T063020115894-qwnw-red-file-effort-routing-contract",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T152020094105-review-of-qwnw-red-file-effort-routing-contract-573b1a3740ea"
+  },
+  "reviewer_run_id": "r-20261118T152020094105-review-of-qwnw-red-file-effort-routing-contract-573b1a3740ea",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T16:49:06.526860+00:00",
+  "total": 105
+}

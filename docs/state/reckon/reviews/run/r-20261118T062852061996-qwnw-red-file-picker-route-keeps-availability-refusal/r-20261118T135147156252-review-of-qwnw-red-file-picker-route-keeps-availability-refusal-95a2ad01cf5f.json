@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c61cd5f4766676317d1d85959c2983f55f74b41c",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T14:35:14Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062852061996-qwnw-red-file-picker-route-keeps-availability-refusal/scoped-gate-1795009587160557851.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log header names revision, host, tree and command only, so the done_when's \"on all_debug\" clause cannot be re-checked from any artefact a later reader can open."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-picker-route-keeps-availability-refusal.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence rests \"the repair adds no failure against the base\" on 0-failed arms over two test files the change cannot reach, so the arm clause of the done_when is asserted rather than demonstrated."
+    }
+  ],
+  "head_log_revision": "95a2ad01cf5fcfa57dc64f9fc4c9c8db05539e7b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit: 324186ff3f replaces result.output with result.stdout at tests/test_picker_route_keeps_availability_refusal.py:317 plus a two-line comment, 7e74ea1245 adds the 22-line evidence fragment, 95a2ad01cf rewrites the fragment's cited arm revisions; no assertion was deleted or weakened.",
+    "done_when": "the done_when asks for the named file passing in full at head as an all_debug job with SLURM_JOB_ID unset, the cause and verdict listed, an arm over importing files adding no failure, and the base run with its failing id logged under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records the 7/7 head gate, the 1-failed base run, one cause with verdict test wrong, and both suite arms at 0 failures, but those arms are tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import nothing the change touches, and no log names the partition.",
+    "goal": "the node's goal is \"Make tests/test_picker_route_keeps_availability_refusal.py pass in full on the primary branch\"; at the delivered head 95a2ad01 the file's seven cases pass (scoped-gate-1795009587160557851.log reads \"7 passed in 1.41s\", EXIT=0) and the diff changes no product module.",
+    "manifest": "read from the reviewed run directory; it states one cause with verdict test wrong, three landed commits, the literal gate command, the base negative-control log with its failing id, and both suite arms as inline JSON at full 40-character revisions with 0 failures each.",
+    "write_paths": "the declared paths are reckon, tests, the evidence fragment directory with its one html file, and the figure directory; the delivered diff c61cd5f4..95a2ad01 touches tests/test_picker_route_keeps_availability_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-picker-route-keeps-availability-refusal.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_route_keeps_availability_refusal.py:319 asserts on the parsed document's own keys, so a product change that stopped writing one JSON document to stdout reddens it, and base-arm-named-file-1795009203726289029.log shows the pre-repair path failing on exactly that.",
+    "evidence": "scoped-gate-1795009587160557851.log records \"7 passed in 1.41s\" and EXIT=0 at revision 95a2ad01 beside base-arm-named-file-1795009511072642586.log's \"1 failed, 6 passed\" EXIT=1 at c61cd5f4, but the arm clause is measured over an unrelated file pair and no log names the partition.",
+    "fit": "the repair uses CliRunner's documented Result.stdout with a comment in the style of the sibling cases at tests/test_picker_route_keeps_availability_refusal.py:232, though those still read result.output.",
+    "goal_fidelity": "tests/test_picker_route_keeps_availability_refusal.py:317 now reads Result.stdout, the channel reckon/crew/dispatching/preparation.py:1579 keeps the launch notice off, so the file passes in full at 95a2ad01 as the goal asks.",
+    "reuse": "the diff adds no function, class or module; the search over reckon/crew and tests found no shared helper that extracts a CLI JSON document, and the one-line parse at tests/test_picker_route_keeps_availability_refusal.py:317 matches its siblings rather than forking one.",
+    "scope_discipline": "the two changed paths, tests/test_picker_route_keeps_availability_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-picker-route-keeps-availability-refusal.html, both lie inside the declared write paths and nothing outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_picker_route_keeps_availability_refusal.py pass in full on the primary branch\"; at the delivered head 95a2ad01 the file's seven cases pass (scoped-gate-1795009587160557851.log reads \"7 passed in 1.41s\", EXIT=0) and the diff changes no product module.\nVERDICT done_when: the done_when asks for the named file passing in full at head as an all_debug job with SLURM_JOB_ID unset, the cause and verdict listed, an arm over importing files adding no failure, and the base run with its failing id logged under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records the 7/7 head gate, the 1-failed base run, one cause with verdict test wrong, and both suite arms at 0 failures, but those arms are tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import nothing the change touches, and no log names the partition.\nVERDICT write_paths: the declared paths are reckon, tests, the evidence fragment directory with its one html file, and the figure directory; the delivered diff c61cd5f4..95a2ad01 touches tests/test_picker_route_keeps_availability_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-picker-route-keeps-availability-refusal.html, both inside that scope.\nVERDICT manifest: read from the reviewed run directory; it states one cause with verdict test wrong, three landed commits, the literal gate command, the base negative-control log with its failing id, and both suite arms as inline JSON at full 40-character revisions with 0 failures each.\nVERDICT diff: read commit by commit: 324186ff3f replaces result.output with result.stdout at tests/test_picker_route_keeps_availability_refusal.py:317 plus a two-line comment, 7e74ea1245 adds the 22-line evidence fragment, 95a2ad01cf rewrites the fragment's cited arm revisions; no assertion was deleted or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_picker_route_keeps_availability_refusal.py:317 now reads Result.stdout, the channel reckon/crew/dispatching/preparation.py:1579 keeps the launch notice off, so the file passes in full at 95a2ad01 as the goal asks.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795009587160557851.log records \"7 passed in 1.41s\" and EXIT=0 at revision 95a2ad01 beside base-arm-named-file-1795009511072642586.log's \"1 failed, 6 passed\" EXIT=1 at c61cd5f4, but the arm clause is measured over an unrelated file pair and no log names the partition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two changed paths, tests/test_picker_route_keeps_availability_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-picker-route-keeps-availability-refusal.html, both lie inside the declared write paths and nothing outside them is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_picker_route_keeps_availability_refusal.py:319 asserts on the parsed document's own keys, so a product change that stopped writing one JSON document to stdout reddens it, and base-arm-named-file-1795009203726289029.log shows the pre-repair path failing on exactly that.\nSCORE fit: 18\nJUSTIFICATION fit: the repair uses CliRunner's documented Result.stdout with a comment in the style of the sibling cases at tests/test_picker_route_keeps_availability_refusal.py:232, though those still read result.output.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; the search over reckon/crew and tests found no shared helper that extracts a CLI JSON document, and the one-line parse at tests/test_picker_route_keeps_availability_refusal.py:317 matches its siblings rather than forking one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062852061996-qwnw-red-file-picker-route-keeps-availability-refusal/scoped-gate-1795009587160557851.log:1 non-blocking: the gate log header names revision, host, tree and command only, so the done_when's \"on all_debug\" clause cannot be re-checked from any artefact a later reader can open.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-picker-route-keeps-availability-refusal.html:21 non-blocking: the sentence rests \"the repair adds no failure against the base\" on 0-failed arms over two test files the change cannot reach, so the arm clause of the done_when is asserted rather than demonstrated.\n",
+  "review_method": "Read-only: the reviewed dispatch detail (goal, done_when, write paths), the reviewed manifest, both suite-arm logs, the head gate and base negative-control logs, and the three landed commits against base c61cd5f4 reviewed commit by commit; the product claim behind the test repair was checked at reckon/crew/dispatching/preparation.py:1579. No suite rerun and no mutation.",
+  "review_run_id": "r-20261118T135147156252-review-of-qwnw-red-file-picker-route-keeps-availability-refusal-95a2ad01cf5f",
+  "reviewed_base_sha": "c61cd5f4766676317d1d85959c2983f55f74b41c",
+  "reviewed_head_sha": "95a2ad01cf5fcfa57dc64f9fc4c9c8db05539e7b",
+  "reviewed_run_id": "r-20261118T062852061996-qwnw-red-file-picker-route-keeps-availability-refusal",
+  "reviewer_run_id": "r-20261118T135147156252-review-of-qwnw-red-file-picker-route-keeps-availability-refusal-95a2ad01cf5f",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:45:00Z",
+  "total": 113
+}

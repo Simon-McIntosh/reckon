@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (baseline_suite-1795007372447211646.log, revision 25255992b19bf9b2dc2bb9e4fd46d9e429f943f6, EXIT=0) and after_suite (after_suite-1795007447521362189.log, revision 678f3051e7797e841886a98a5fb10c8f429bb0aa, EXIT=0) each carry the same command over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and record 58 passed with zero FAILED lines, so the set difference of failing test ids is empty (0). The base-revision red run negative-control-1795004557199734287.log (EXIT=1, 1 failed on test_a_watcher_armed_by_a_child_session_is_not_left_running) is the declared negative control, not an added failure against the head.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1400",
+    "reckon/crew/reports.py:3061",
+    "reckon/nested_launch.py:804"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T14:32:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "2854",
+      "severity": "non-blocking",
+      "text": "non-blocking: recorded_log_revision still matches _GATE_LOG_REVISION against lines[0], so a gate log captured through the same fence - both arms of this run open with 'srun: task re-enters the worker fence ...' - annotate a null base/head log revision; the new _first_recorded_line is not applied here, so a fenced run's review record ties its added-failure count to no commit."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "867",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair-gate revision check takes the first non-blank line of the captured log, which for a fenced launch is the same notice, so a repair landing whose gate ran through the fence is refused with 'repair gate log must name repaired revision <head>' although the header naming it is the next line."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1509",
+      "severity": "non-blocking",
+      "text": "non-blocking: _FENCE_NOTICE_TEXT is derived by splitting SCHEDULER_FENCE_NOTICE on '{tool}', so an edit to the constant that drops or reorders the placeholder raises IndexError while reckon/crew/reports.py is imported rather than failing a check about the notice it could not recognise."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production paths: reckon/crew_run_commands.py:1400 calls audit_manifest, which reaches _gate_log_revision_findings at reckon/crew/reports.py:3061 and so _first_recorded_line at :1518; reckon/nested_launch.py:804 calls fenced_scheduler_task, which prints SCHEDULER_FENCE_NOTICE at :742 and imports it at reckon/crew/reports.py:75.",
+    "diff": "read commit by commit over 25255992b19bf9b2dc2bb9e4fd46d9e429f943f6..678f3051e7797e841886a98a5fb10c8f429bb0aa - 2a495a5f0b fixes the test's stream read, 1a6c2c00/22f290356a/d0e7c5f245/1ae7571f14 record the measure in the fragment, d286ebcfd4 makes the manifest audit judge a log's first recorded line rather than the fence's notice, 678f3051e7 records that repair; 5 paths, 182 insertions, 6 deletions, all inside the declared scope.",
+    "done_when": "the done_when requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a first run at base with each cause given a verdict, an arm over the importing test files adding no failure against the base, a logged base-red negative control beside the head run, and no assertion deleted; scoped-gate-1795007321544565133.log (2 passed, EXIT=0 at 678f3051e7) and negative-control-1795004557199734287.log (1 failed, EXIT=1 at 25255992b1 on test_a_watcher_armed_by_a_child_session_is_not_left_running) satisfy those, the base-red ids being quoted beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-test-watchers-are-reaped.html; the ruff half of the measure is stated in the manifest's evidence_inputs with no ruff log cited.",
+    "goal": "the node goal is that tests/test_test_watchers_are_reaped.py pass in full on the primary branch; tests/test_test_watchers_are_reaped.py:164-172 now reads the dispatch document from result.stdout and asserts the \"reckon: created run\" notice on result.stderr, and scoped-gate-1795007321544565133.log records 2 passed, 1 skipped, EXIT=0 at 678f3051e7.",
+    "manifest": "read; status complete, it names the head gate (2 passed, 1 skipped, EXIT=0 at 678f3051e7), the red base arm, the audit repair forced by its own delivery, the two-direction tests, and quotes both suite arms at 25255992b1 and 678f3051e7 with 58 passed each; the repair test's own run is stated in tests_note without a log path.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment file, and docs/figures; every delivered path - docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-test-watchers-are-reaped.html:1, reckon/crew/reports.py:1505, reckon/nested_launch.py:68, tests/test_control_gate_repairs.py:142, tests/test_test_watchers_are_reaped.py:164 - is inside them, and nothing in the diff sits outside."
+  },
+  "justifications": {
+    "durability": "tests/test_test_watchers_are_reaped.py:172 reddens if the notice moves back off stderr, tests/test_control_gate_repairs.py:174 reddens if _first_recorded_line is reverted to the literal first line, and tests/test_control_gate_repairs.py:200 reddens if the skip swallows prose that names no revision.",
+    "evidence": "both suite arms are recorded inline JSON with full 40-character revisions and zero FAILED lines each (baseline_suite-1795007372447211646.log and after_suite-1795007447521362189.log, EXIT=0 in both), which is what added_failure_count 0 is derived from, while the repair test's \"2 passed\" at reckon/crew/reports.py:1518 rests on the manifest's tests_note with no log cited.",
+    "fit": "the helpers at reckon/crew/reports.py:1518 sit beside _names_the_same_revision at :1501 in the module's private-helper idiom, and SCHEDULER_FENCE_NOTICE at reckon/nested_launch.py:68 replaces the inline f-string that printed it at :742.",
+    "goal_fidelity": "tests/test_test_watchers_are_reaped.py:168-172 asserts both watch fields and the stderr notice, and scoped-gate-1795007321544565133.log records 2 passed, 1 skipped, EXIT=0 at 678f3051e7.",
+    "reuse": "no prior owner of skipping a launch prologue existed, but reckon/crew/review.py:2854 and reckon/crew/pending_landing.py:867 still read the raw first line of the same gate logs, so the skip now lives in one of three readers.",
+    "scope_discipline": "every delivered path is inside the declared write paths, and reckon/crew/reports.py:1505 is a second deliverable the record fragment justifies under its section on the audit refusing the logs its writer wrote."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_test_watchers_are_reaped.py pass in full on the primary branch; tests/test_test_watchers_are_reaped.py:164-172 now reads the dispatch document from result.stdout and asserts the \"reckon: created run\" notice on result.stderr, and scoped-gate-1795007321544565133.log records 2 passed, 1 skipped, EXIT=0 at 678f3051e7.\nVERDICT done_when: the done_when requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a first run at base with each cause given a verdict, an arm over the importing test files adding no failure against the base, a logged base-red negative control beside the head run, and no assertion deleted; scoped-gate-1795007321544565133.log (2 passed, EXIT=0 at 678f3051e7) and negative-control-1795004557199734287.log (1 failed, 1 passed, 1 skipped, EXIT=1 at 25255992b1 on test_a_watcher_armed_by_a_child_session_is_not_left_running) satisfy those, the base-red ids being quoted beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-test-watchers-are-reaped.html; the ruff half of the measure is stated in the manifest's evidence_inputs with no ruff log cited.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment file, and docs/figures; every delivered path - docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-test-watchers-are-reaped.html:1, reckon/crew/reports.py:1505, reckon/nested_launch.py:68, tests/test_control_gate_repairs.py:142, tests/test_test_watchers_are_reaped.py:164 - is inside them, and nothing in the diff sits outside.\nVERDICT manifest: read; status complete, it names the head gate (2 passed, 1 skipped, EXIT=0 at 678f3051e7), the red base arm, the audit repair forced by its own delivery, the two-direction tests, and quotes both suite arms at 25255992b1 and 678f3051e7 with 58 passed each; the repair test's own run is stated in tests_note without a log path.\nVERDICT diff: read commit by commit over 25255992b19bf9b2dc2bb9e4fd46d9e429f943f6..678f3051e7797e841886a98a5fb10c8f429bb0aa - 2a495a5f0b fixes the test's stream read, 1a6c2c00/22f290356a/d0e7c5f245/1ae7571f14 record the measure in the fragment, d286ebcfd4 makes the manifest audit judge a log's first recorded line rather than the fence's notice, 678f3051e7 records that repair; 5 paths, 182 insertions, 6 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:1400, reckon/crew/reports.py:3061, reckon/nested_launch.py:804\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_test_watchers_are_reaped.py:168-172 asserts both watch fields and the stderr notice, and scoped-gate-1795007321544565133.log records 2 passed, 1 skipped, EXIT=0 at 678f3051e7.\nSCORE evidence: 15\nJUSTIFICATION evidence: both suite arms are recorded inline JSON with full 40-character revisions and zero FAILED lines each (baseline_suite-1795007372447211646.log and after_suite-1795007447521362189.log, EXIT=0 in each), which is what added_failure_count 0 is derived from, while the repair test's two passing cases at reckon/crew/reports.py:1518 rest on the manifest's tests_note with no log cited.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every delivered path is inside the declared write paths, and reckon/crew/reports.py:1505 is a second deliverable the record fragment justifies under its section on the audit refusing the logs its writer wrote.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_test_watchers_are_reaped.py:172 reddens if the notice moves back off stderr, tests/test_control_gate_repairs.py:174 reddens if _first_recorded_line is reverted to the literal first line, and tests/test_control_gate_repairs.py:200 reddens if the skip swallows prose that names no revision.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at reckon/crew/reports.py:1505-1533 sit beside _names_the_same_revision at :1501 in the module's private-helper idiom, and SCHEDULER_FENCE_NOTICE at reckon/nested_launch.py:68 replaces the inline f-string that printed it at :742.\nSCORE reuse: 14\nJUSTIFICATION reuse: no prior owner of skipping a launch prologue existed, but reckon/crew/review.py:2854 and reckon/crew/pending_landing.py:867 still read the raw first line of the same gate logs, so the skip now lives in one of three readers.\nFINDING reckon/crew/review.py:2854 non-blocking: recorded_log_revision still matches _GATE_LOG_REVISION against lines[0], so a gate log captured through the same fence - both arms of this run open with the srun notice - annotates a null base/head log revision; the new _first_recorded_line is not applied here, so a fenced run's review record ties its added-failure count to no commit.\nFINDING reckon/crew/pending_landing.py:867 non-blocking: the repair-gate revision check takes the first non-blank line of the captured log, which for a fenced launch is the same notice, so a repair landing whose gate ran through the fence is refused as naming no revision although the header naming it is the next line.\nFINDING reckon/crew/reports.py:1509 non-blocking: _FENCE_NOTICE_TEXT is derived by splitting SCHEDULER_FENCE_NOTICE on the tool placeholder, so an edit to the constant that drops or reorders it raises IndexError while reckon/crew/reports.py is imported rather than failing a check about the notice it could not recognise.\n",
+  "review_node": "review-of-qwnw-red-file-test-watchers-are-reaped-678f3051e779",
+  "review_run_id": "r-20261118T131711517827-review-of-qwnw-red-file-test-watchers-are-reaped-678f3051e779",
+  "reviewed_base_sha": "25255992b19bf9b2dc2bb9e4fd46d9e429f943f6",
+  "reviewed_head_sha": "678f3051e7797e841886a98a5fb10c8f429bb0aa",
+  "reviewed_run_id": "r-20261118T062728329482-qwnw-red-file-test-watchers-are-reaped",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T131711517827-review-of-qwnw-red-file-test-watchers-are-reaped-678f3051e779"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:55:00+00:00",
+  "total": 99
+}

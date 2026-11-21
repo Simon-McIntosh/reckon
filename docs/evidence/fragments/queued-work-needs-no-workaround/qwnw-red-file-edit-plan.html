@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="queued-work-needs-no-workaround">
+  <title>tests/test_edit_plan.py passes in full | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>tests/test_edit_plan.py passes in full</h1>
+      <p class="lead">At the base revision the file reads 78 passed and 1 failed. The failure
+      is one case expecting <code>schema_validation</code> where the write surface answers
+      <code>op_error</code>, and one cause accounts for it.</p>
+    </header>
+
+    <section id="qwnw-red-file-edit-plan-cause">
+      <h2>The cause, and which side was wrong</h2>
+      <p><strong>Test wrong.</strong>
+      <code>test_set_section_declarations_rejects_unknown_classification</code> sends a
+      whole-map <code>set</code> of <code>section_declarations</code> with an unknown
+      classification and expected the schema pass to be the refusal. The case was written at
+      <code>c8dc734560</code>, when <code>apply_ops</code> left the value to the schema. The
+      atomic-section commit <code>25845dc8f9</code> and its <code>0e339294e5</code> repair
+      made the whole-map write normalise every entry and refuse an unknown classification
+      before the schema runs, which is the rule the dotted form already carried:
+      <code>tests/test_edit_plan_section_writes.py</code> pins <code>op_error</code> for
+      <code>section_declarations.s2</code> with an exact payload.</p>
+      <p>Reproduced at the base revision before any edit:
+      <code>assert 'op_error' == 'schema_validation'</code> at
+      <code>tests/test_edit_plan.py:177</code>. The repair re-pins the case to the rule the
+      code keeps and strengthens it: the refusal must be <code>op_error</code>, must carry the
+      accepted vocabulary in <code>detail</code>, and must name
+      <code>refused_op_index: 0</code>. No assertion was deleted or weakened; the no-write and
+      unchanged-version assertions after it stay as they were.</p>
+    </section>
+
+    <section id="qwnw-red-file-edit-plan-measured">
+      <h2>Measured</h2>
+      <table id="qwnw-red-file-edit-plan-arms">
+        <thead>
+          <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Receipt</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>base, <code>tests/test_edit_plan.py</code></td>
+            <td><code>fb3ec9a1a4047cb40052991176938311bb70a449</code></td>
+            <td>1 failed, 78 passed: <code>tests/test_edit_plan.py::test_set_section_declarations_rejects_unknown_classification</code></td>
+            <td><code>negative-control-1795013069579892337.log</code>, <code>EXIT=1</code></td>
+          </tr>
+          <tr>
+            <td>head, <code>tests/test_edit_plan.py</code></td>
+            <td><code>4eaa8308cc9dc11441e813714cfe0f9338957c39</code></td>
+            <td>79 passed, 0 failed</td>
+            <td><code>scoped-gate-1795012947873099564.log</code>, <code>EXIT=0</code></td>
+          </tr>
+          <tr>
+            <td>baseline suite, <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+            <td><code>fb3ec9a1a4047cb40052991176938311bb70a449</code></td>
+            <td>58 passed, 0 failed</td>
+            <td><code>baseline_suite-1795013125256764727.log</code>, <code>EXIT=0</code></td>
+          </tr>
+          <tr>
+            <td>after suite, the same two files</td>
+            <td><code>4eaa8308cc9dc11441e813714cfe0f9338957c39</code></td>
+            <td>58 passed, 0 failed</td>
+            <td><code>after_suite-1795013168335995218.log</code>, <code>EXIT=0</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Both <code>tests/test_edit_plan.py</code> runs and both suite arms ran as their own
+      <code>all_debug</code> jobs on compute host <code>98dci4-clu-3141</code>, submitted with
+      the caller's scheduler variables stripped; each archived its own revision into a scratch
+      tree and linked the project environment there. The logs sit in the run directory
+      <code>~/.config/reckon/crew/runs/r-20261118T063023024776-qwnw-red-file-edit-plan/</code>.
+      Each header names its revision, tree and command, and each ends with a bare
+      <code>EXIT=</code> line.</p>
+      <p>The base control and the head gate were taken by the same instrument, so the two arms
+      differ in the tree under test and not in how it was run.</p>
+      <p>No product module changed, so no test file imports something this node edited; the
+      two-file armed pair is the reported population, and its after arm adds no failure against
+      its base arm.</p>
+      <p><code>ruff check tests/test_edit_plan.py</code> passes.
+      <code>ruff format --check</code> reports the file as reformatted at the base revision and
+      at the head revision alike &mdash; three call sites of pre-existing long literals this
+      commit does not touch &mdash; so the commit adds no finding.</p>
+    </section>
+
+    <section id="qwnw-red-file-edit-plan-control">
+      <h2>Negative control</h2>
+      <p>The base arm above is the red run: the same file at <code>fb3ec9a1</code> fails its
+      one case with <code>EXIT=1</code>, while the head arm on the same
+      partition reads 79 passed and <code>EXIT=0</code>. The head log carries
+      <code># revision: 4eaa8308cc9dc11441e813714cfe0f9338957c39</code>, so the pass is the
+      change's own marker rather than an earlier green.</p>
+    </section>
+  </main>
+</body>
+</html>

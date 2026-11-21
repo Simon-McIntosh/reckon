@@ -327,9 +327,9 @@ def _run_comment_id(run_id: str) -> str:
     Promotion derives the id from the run id, so the landing comment of a run
     is found by deriving the same id here from the run the section landed. The
     prefix is taken from the writer that owns it, and the run id is normalised
-    by the writer's own rule: a bare ``c-run-`` prefix names every review of a
-    run as well as its landing, so matching the prefix alone would quote a
-    review as the landing.
+    by the writer's own rule: the bare prefix names every review of a run as
+    well as its landing, so matching the prefix alone would quote a review as
+    the landing.
     """
     from reckon.crew.plan_review import RUN_COMMENT_PREFIX
 

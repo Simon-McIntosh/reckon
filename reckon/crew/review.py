@@ -65,6 +65,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
@@ -505,6 +506,44 @@ FIGURE_VERDICTS_KEY = "figures"
 # repaired by opening the figure and an item name alone does not say which one.
 FIGURE_VERDICT_SHORTFALLS_KEY = "figure_verdict_shortfalls"
 
+# A figure reviewer writes one ``RUBRIC <item>: <verdict>`` line per item, and
+# a record may store those lines without an item map beside them, so the lines
+# are a second spelling of the same measurement the map carries. They are
+# folded into one map before any reader judges the record, exactly as a claims
+# record's ``claim_verdicts`` folds to ``claims``, and read through the one
+# RUBRIC grammar this module declares for every rubric's verdict lines.
+FIGURE_LINES_KEY = "rubric_lines"
+
+# The keys a figure record may state its flat item map under, first one wins
+# per item. ``rubric_items`` is the name the brief asks for. A reviewer told
+# only to "include the rubric verdicts" wrote the same map as
+# ``rubric_verdicts``, and records filed that way answer the rubric as fully.
+FIGURE_ITEM_MAP_KEYS = ("rubric_items", "rubric_verdicts")
+
+
+def figure_line_verdicts(record: Mapping[str, Any]) -> dict[str, str]:
+    """The item verdicts a record states as ``RUBRIC <item>: <verdict>`` lines.
+
+    The item name is folded to its lower-case spelling, because the rubric's
+    item set is lower-case and a reviewer may capitalise the name. A line whose
+    verdict is blank states nothing, so its item is left out and reads as
+    missing rather than as checked. The first line for an item wins, because a
+    duplicate line is not a second verdict on the same item.
+    """
+    lines = record.get(FIGURE_LINES_KEY)
+    if not isinstance(lines, (list, tuple)):
+        return {}
+    stated: dict[str, str] = {}
+    for line in lines:
+        match = _PLAN_RUBRIC_LINE_RE.match(str(line))
+        if match is None:
+            continue
+        item = match.group(1).lower()
+        verdict = match.group(2).strip()
+        if verdict and item not in stated:
+            stated[item] = verdict
+    return stated
+
 
 def figure_rubric_verdicts(
     record: Mapping[str, Any],
@@ -518,14 +557,26 @@ def figure_rubric_verdicts(
     counted one figure's verdict for another's would report a review nobody
     made. A record stating its verdicts flat — one figure's record, the shape
     written before several figures shared a review — is returned as it stands,
-    with no shortfall, so its reading does not move.
+    with no shortfall, so its reading does not move. An item the flat map does
+    not answer is taken from the record's ``RUBRIC <item>: <verdict>`` lines, so
+    a record that answered its rubric in the form the brief asks for and never
+    folded it to an item map is read by the same verdict its reviewer wrote. A
+    line answers its item for the whole record, so in a per-figure record it
+    stands for every figure and clears that figure-and-item pair from the
+    shortfalls.
     """
-    flat = record.get("rubric_items")
-    stated = (
-        {str(key): str(value) for key, value in flat.items()}
-        if isinstance(flat, Mapping)
-        else {}
-    )
+    stated: dict[str, str] = {}
+    for key in FIGURE_ITEM_MAP_KEYS:
+        flat = record.get(key)
+        if not isinstance(flat, Mapping):
+            continue
+        for item, verdict in flat.items():
+            if not str(stated.get(str(item)) or "").strip():
+                stated[str(item)] = str(verdict)
+    lines = figure_line_verdicts(record)
+    for item, verdict in lines.items():
+        if not str(stated.get(item) or "").strip():
+            stated[item] = verdict
     figures = record.get(FIGURE_VERDICTS_KEY)
     if not isinstance(figures, Mapping):
         return stated, []
@@ -542,9 +593,14 @@ def figure_rubric_verdicts(
                 folded[item].append(f"{path}: {verdict}")
             else:
                 shortfalls.append(f"{path}: {item}")
-    return {
+    answers = {
         item: "; ".join(rows) for item, rows in folded.items() if len(rows) == named
-    }, shortfalls
+    }
+    for item, verdict in lines.items():
+        answers.setdefault(item, verdict)
+    return answers, [
+        entry for entry in shortfalls if entry.rsplit(": ", 1)[-1] not in lines
+    ]
 
 
 def with_figure_verdicts(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -718,8 +774,14 @@ def _reviewed_run_pointer(reviewed_run_id: str) -> Mapping[str, Any] | None:
     if not reviewed_run_id:
         return None
     from reckon.crew.node import CrewError
+    from reckon.crew.open_run_index import pointers
     from reckon.crew.runs import read_pointer
 
+    snapshot = pointers()
+    if snapshot is not None:
+        return next(
+            (row for row in snapshot if row.get("run_id") == reviewed_run_id), None
+        )
     try:
         return read_pointer(reviewed_run_id)
     except (CrewError, OSError, ValueError):
@@ -1207,7 +1269,135 @@ def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
     return refusals
 
 
-def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
+#: The value ``added_failure_count`` carries when a review files a waived count.
+#: A run whose suite delta was waived produced no pair of arms to difference, so
+#: its review states that no count exists rather than the number zero: zero is a
+#: measured clean pair, and a reader cannot tell the two apart once the count is
+#: an integer. The waived form is accepted only against a run that carries the
+#: suite-delta waiver, which is what keeps an absent count from passing as one.
+WAIVED_ADDED_FAILURE_COUNT = "waived"
+
+#: The committed ``suite_delta.status`` values a recorded waiver may appear
+#: under. Two spellings write one fact: a pair whose added failure or whose arms
+#: were waived records ``waived``, and a matched pair that ``crew complete
+#: --waive-suite-delta`` was given a reason for records ``clean`` with that
+#: reason in ``waiver_reason``, because there the status names what the evidence
+#: found rather than how it was accepted. A reader that knew only the first
+#: spelling made the waiver invisible once the run's pointer was gone, so a
+#: review of a run that landed clean-with-reason was refused its waived count.
+WAIVER_ROW_STATUSES = ("waived", "clean")
+
+
+def _recorded_waiver_reason(value: object, *, statuses: Sequence[str] = ()) -> str:
+    """The reason a recorded suite-delta waiver carries, or "".
+
+    ``statuses``, when given, admits only those ``status`` values. The two
+    spellings a record may use differ in status rather than in where the reason
+    lives: a pair whose addition or arms were waived records ``waived``, and a
+    matched pair that ``crew complete --waive-suite-delta`` was given a reason
+    for records ``clean`` with that reason beside it, because the status names
+    what the evidence found rather than how it was accepted. Both carry
+    ``waiver_reason``, and a record carrying neither form yields nothing.
+    """
+    if not isinstance(value, Mapping):
+        return ""
+    if statuses and str(value.get("status") or "") not in statuses:
+        return ""
+    return str(value.get("waiver_reason") or value.get("reason") or "").strip()
+
+
+def recorded_suite_delta_waiver(reviewed_run_id: object, project: object = "") -> str:
+    """The reason a run's suite delta stands waived, or "" when it does not.
+
+    One reader for every place a waived review count is judged, so filing, the
+    delivery check, a repair and a later audit all answer from the same record.
+    Two sources hold it and both are read: the live pointer, which carries the
+    waiver from the ``crew complete --waive-suite-delta`` attempt that recorded
+    it until the run's promotion writes its row, and the committed row, which is
+    what a stored review is judged against once the pointer is gone. A run
+    carrying neither has no waiver, and a review may not read one into it.
+    """
+    run_id = str(reviewed_run_id or "").strip()
+    if not run_id:
+        return ""
+    try:
+        pointer = _reviewed_run_pointer(run_id) or {}
+    except Exception:  # noqa: BLE001 - an unread pointer is a run with no waiver
+        pointer = {}
+    reason = _recorded_waiver_reason(pointer.get("suite_delta_waiver"))
+    if reason:
+        return reason
+    reason = _recorded_waiver_reason(
+        pointer.get("suite_delta"), statuses=WAIVER_ROW_STATUSES
+    )
+    if reason:
+        return reason
+    named_project = str(pointer.get("project") or project or "").strip()
+    if not named_project:
+        return ""
+    from reckon import run_store
+
+    try:
+        rows = run_store.stored_run_rows(named_project, run_ids=[run_id])
+    except Exception:  # noqa: BLE001 - an unread store is no waiver either
+        return ""
+    for row in rows or ():
+        reason = _recorded_waiver_reason(
+            row.get("suite_delta"), statuses=WAIVER_ROW_STATUSES
+        )
+        if reason:
+            return reason
+    return ""
+
+
+def waived_failure_count_refusals(
+    record: Mapping[str, Any], *, suite_delta_waiver: bool | None = None
+) -> list[str]:
+    """The refusals a review's ``added_failure_count`` form earns, if any.
+
+    The waived form is accepted only for a run whose suite delta is waived: the
+    count exists to show that a delivered head is no redder than its base, and a
+    run that produced no comparable pair owes that absence to a written reason
+    before a review may state it instead of a number. ``suite_delta_waiver`` is
+    the caller's own reading of the run; ``None`` resolves it from the run's
+    record here, which reads the live pointer beside the committed row.
+
+    A record naming an integer is judged only for agreement with its ids, so the
+    measured form is exactly as it was. A null or missing count is refused as it
+    always was: an absent count is never read as zero.
+    """
+    count = record.get("added_failure_count")
+    if count != WAIVED_ADDED_FAILURE_COUNT:
+        refusals: list[str] = []
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            refusals.append("missing or invalid added_failure_count")
+        return refusals
+    refusals = []
+    reason = record.get("added_failure_waiver")
+    if not isinstance(reason, str) or not reason.strip():
+        refusals.append(
+            "missing added_failure_waiver: a waived added_failure_count must "
+            "state why the reviewed run has no count to file"
+        )
+    if suite_delta_waiver is None:
+        suite_delta_waiver = bool(
+            recorded_suite_delta_waiver(
+                record.get("reviewed_run_id"), record.get("project")
+            )
+        )
+    if not suite_delta_waiver:
+        refusals.append(
+            "added_failure_count is waived but the reviewed run records no "
+            "suite-delta waiver: only a run whose suite delta is waived with "
+            "`crew complete --waive-suite-delta '<why>'` may file a waived "
+            "count"
+        )
+    return refusals
+
+
+def review_record_refusals(
+    record: Mapping[str, Any], *, suite_delta_waiver: bool | None = None
+) -> list[str]:
     """Check the current review delivery contract and the store's refusals."""
     required = (
         "project",
@@ -1237,11 +1427,18 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     elif rubric == CLAIMS_RUBRIC:
         refusals.extend(claims_verdict_refusals(record))
     count = record.get("added_failure_count")
-    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
-        refusals.append("missing or invalid added_failure_count")
+    refusals.extend(
+        waived_failure_count_refusals(record, suite_delta_waiver=suite_delta_waiver)
+    )
     ids = record.get("added_failure_ids")
     if not isinstance(ids, list) or not all(isinstance(item, str) for item in ids):
         refusals.append("missing or invalid added_failure_ids")
+    elif count == WAIVED_ADDED_FAILURE_COUNT and ids:
+        # A waived count names no failure, so a list beside it claims failures
+        # the record also says it cannot count.
+        refusals.append(
+            "added_failure_ids must be empty when added_failure_count is waived"
+        )
     elif isinstance(count, int) and count != len(ids):
         refusals.append("added_failure_count differs from added_failure_ids")
     if not isinstance(record.get("findings"), list):
@@ -2441,6 +2638,30 @@ RESULT_COUNT_RE = re.compile(
 _SUMMARY_FAILURE_FIGURE_RE = re.compile(r"\b(\d+)\s+(?:failed|error|errors)\b")
 
 
+def pytest_summary_line(log_text: str) -> str | None:
+    """The text's last pytest result-count line, stripped, or ``None``.
+
+    A pytest run prints one result-count line at its end, and a log holding two
+    runs prints one per run, so the last is the one whose exit status a capture
+    also records at the tail. A failure line is skipped even when its reason
+    quotes a count, because a ``FAILED`` line names a test rather than
+    summarising a run; the ``====`` decoration a full pytest run wraps the line
+    in is stripped so a reader compares the figure rather than the banner.
+
+    ``None`` means the text carries no result-count line at all — a ctest log,
+    or a pytest run that stopped before its summary.
+    """
+    measured: str | None = None
+    for raw in log_text.splitlines():
+        line = raw.strip().strip("=").strip()
+        if _GATE_FAILURE_RE.match(line) or "::" in line:
+            continue
+        if RESULT_COUNT_RE.search(line) is None:
+            continue
+        measured = line
+    return measured
+
+
 def pytest_summary_failure_count(log_text: str) -> int | None:
     """The failed-plus-errored figure of the text's last pytest summary line.
 
@@ -2455,17 +2676,36 @@ def pytest_summary_failure_count(log_text: str) -> int | None:
     rather than zero. A run that reported nothing to run reads zero, because
     ``no tests ran`` is a summary stating exactly that.
     """
-    measured: int | None = None
-    for raw in log_text.splitlines():
-        line = raw.strip()
-        if _GATE_FAILURE_RE.match(line) or "::" in line:
-            continue
-        if RESULT_COUNT_RE.search(line) is None:
-            continue
-        measured = sum(
-            int(figure) for figure in _SUMMARY_FAILURE_FIGURE_RE.findall(line)
-        )
-    return measured
+    line = pytest_summary_line(log_text)
+    if line is None:
+        return None
+    return sum(int(figure) for figure in _SUMMARY_FAILURE_FIGURE_RE.findall(line))
+
+
+def pytest_summary_failure_total(log_text: str) -> int | None:
+    """The failure figure a gate log states, summed across a per-file gate.
+
+    A log of repeated attempts at one suite states its result on the last
+    attempt's summary, so that is the figure read. A per-file gate log states
+    one result per file, and every file belongs to the gate, so the figures are
+    summed across all of them — the same runs whose ids
+    :func:`gate_log_failure_ids` reports.
+
+    ``None`` means the log states no figure: its last attempt reached no
+    summary, or a marked per-file run did. A killed file is unmeasured rather
+    than clean, so a gate holding one has no count until that file's run is
+    finished.
+    """
+    runs = per_file_gate_runs(log_text)
+    if runs is None:
+        return pytest_summary_failure_count(last_run_text(log_text))
+    total = 0
+    for _name, text in runs:
+        figure = pytest_summary_failure_count(text)
+        if figure is None:
+            return None
+        total += figure
+    return total
 
 
 class FailureIdMatch(NamedTuple):
@@ -2560,6 +2800,38 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
 
 _EXIT_RECORD_LINE_RE = re.compile(r"^\s*EXIT=-?\d+\s*$", re.MULTILINE)
 
+# The header a per-file gate runner writes before each file's own run, as
+# ``# file: tests/test_x.py``. The same header names the file a mutation is
+# applied to in a control log, so one spelling covers both. A gate log carrying
+# these headers holds several files of one gate rather than repeated attempts at
+# one suite, and the whole log is what its receipt describes: a file that
+# failed before one that passed is still a failure the gate reported.
+PER_FILE_MARKER_RE = re.compile(
+    r"^[ \t]*#[ \t]*file:[ \t]*(?P<file>\S[^\n]*?)[ \t]*$", re.MULTILINE
+)
+
+
+def per_file_gate_runs(log_text: str) -> list[tuple[str, str]] | None:
+    """The runs a per-file gate log marks, each cut at the next file header.
+
+    Each marked run is the text from its ``# file:`` header to the one before
+    the next header, so a run's own output — its runner summary and its
+    ``EXIT=<n>`` record — stays with the file it belongs to. Text before the
+    first header is the gate's own preamble rather than any file's run and is
+    not returned.
+
+    ``None`` means the log carries no per-file header, so its several runs are
+    successive attempts at one suite rather than separate files of one gate.
+    """
+    markers = list(PER_FILE_MARKER_RE.finditer(log_text))
+    if not markers:
+        return None
+    runs: list[tuple[str, str]] = []
+    for index, marker in enumerate(markers):
+        end = markers[index + 1].start() if index + 1 < len(markers) else len(log_text)
+        runs.append((marker.group("file").strip(), log_text[marker.end() : end]))
+    return runs
+
 
 def last_run_text(log_text: str) -> str:
     """The log's last run, read after its second-to-last ``EXIT=`` line.
@@ -2575,6 +2847,31 @@ def last_run_text(log_text: str) -> str:
     if len(records) < 2:
         return log_text
     return log_text[records[-2].end() :]
+
+
+def _per_file_failure_ids(
+    runs: list[tuple[str, str]], arm_directory: str | Path | None
+) -> set[str] | None:
+    """The failing ids of every file a per-file gate log marks.
+
+    Every marked run belongs to the gate, so the ids are summed across all of
+    them rather than read at the last. A run that reached no summary line —
+    a file killed or still running when the log was closed — states no result,
+    and the gate's count is then unmeasured rather than short by that file's
+    failures: ``None`` says the log cannot answer.
+    """
+    ids: set[str] | None = set()
+    for _name, text in runs:
+        log_format = _gate_log_format(text)
+        if log_format is None:
+            return None
+        if log_format == "pytest" and pytest_summary_failure_count(text) is None:
+            return None
+        if log_format == "ctest":
+            ids |= _ctest_failure_ids(text)
+        else:
+            ids |= _pytest_failure_ids(text, arm_directory)
+    return ids
 
 
 def gate_log_failure_ids(
@@ -2600,8 +2897,13 @@ def gate_log_failure_ids(
     ``last_run`` reads only the log's final run, cut by :func:`last_run_text`,
     so a log holding two commands reports the failures of the one whose exit
     status is also read from the tail. Reading the whole text would answer for
-    a run the receipt does not describe.
+    a run the receipt does not describe. A per-file log is the exception: its
+    marked runs are files of one gate rather than attempts at one suite, so
+    every one of them is read whatever ``last_run`` asks.
     """
+    per_file = per_file_gate_runs(log_text)
+    if per_file is not None:
+        return _per_file_failure_ids(per_file, arm_directory)
     read = last_run_text(log_text) if last_run else log_text
     log_format = _gate_log_format(read)
     if log_format is None:
@@ -2691,8 +2993,21 @@ def _gate_log_path(manifest_text: str, field: str) -> str | None:
     return None
 
 
-def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | None:
-    """Read a named gate log, resolving a relative path against ``run_directory``."""
+# A delivered run's logs never change, so a repeated read of its review would
+# re-read and re-scan the same bytes for every reader that asked. What is held
+# is the pair's own result — the count, the ids and each arm's header revision —
+# never an arm log's text: the station is long-lived, a pair of logs runs to
+# megabytes, and an entry bound says nothing about how many bytes an entry may
+# hold.
+
+
+def _gate_log_file(log_path: str | None, run_directory: Path | None) -> Path | None:
+    """Return where a named gate log sits, or ``None`` when none is named.
+
+    A relative path is resolved against ``run_directory``, the reviewed run's
+    own directory, and a retired run's path is resolved to the run's archived
+    location rather than read as missing.
+    """
     if not log_path:
         return None
     path = Path(log_path)
@@ -2700,11 +3015,160 @@ def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | No
         path = Path(run_directory) / path
     from reckon.crew.runs import resolve_run_path
 
-    path = resolve_run_path(path)
+    return resolve_run_path(path)
+
+
+def _read_gate_log_text(path: Path) -> str:
+    """Read one gate log's bytes as text.
+
+    This is the one place an arm log is read, so a stand-in placed here counts
+    the reads of each arm's log rather than the review's own bookkeeping.
+    """
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _read_gate_log_attempt(path: Path | None) -> tuple[str | None, bool]:
+    """Return one gate log's text and whether reading it failed.
+
+    A path that names no log is not a failure: the run simply has no such log,
+    and that is a state the record can carry as unmeasured. A log that is there
+    but cannot be read is a failure, and the caller must not keep what a failed
+    read produced — the next read of the same pair has to try again rather than
+    inherit one transient error for the life of the process.
+    """
+    if path is None:
+        return None, False
     try:
-        return path.read_text(encoding="utf-8", errors="replace")
+        return _read_gate_log_text(path), False
+    except OSError:
+        return None, True
+
+
+def _read_gate_log_at(path: Path | None) -> str | None:
+    """Return one gate log's text, or ``None`` when it is absent or unreadable.
+
+    A review read before its run delivered the log has no text to read, and that
+    is a state the record can carry as unmeasured rather than a reason to raise.
+    """
+    return _read_gate_log_attempt(path)[0]
+
+
+def _gate_log_identity(path: Path | None) -> tuple[int, ...] | None:
+    """Return the stat identity a gate log's bytes are keyed on, or ``None``."""
+    if path is None:
+        return None
+    try:
+        return file_memo.file_signature(path)
     except OSError:
         return None
+
+
+def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | None:
+    """Read a named gate log, resolving a relative path against ``run_directory``."""
+    return _read_gate_log_at(_gate_log_file(log_path, run_directory))
+
+
+class _ArmLogPair(NamedTuple):
+    """The facts one derivation of an arm-log pair yields.
+
+    The count and the added ids are the derivation's answer; ``base_present``
+    distinguishes a missing base log from a pair that simply added nothing, and
+    the two revisions are what each arm's own header records. No log text is
+    carried, so holding the result holds no bytes of the logs.
+    """
+
+    count: int | None
+    added_ids: list[str]
+    base_present: bool
+    base_revision: str | None
+    head_revision: str | None
+
+
+# One entry per pair of arm-log identities, each a few short strings and the ids
+# the head added. The bound is on entries, which is what an entry's size depends
+# on: no log text is held, so 4096 pairs of a large run cost the same as 4096
+# pairs of a small one.
+_PAIR_RESULTS: file_memo.BoundedMap[_ArmLogPair] = file_memo.bounded_map(
+    "review_gate_log_pair_results", limit=4096
+)
+
+
+def _added_failures_for_arm_logs(
+    base_path: Path | None,
+    head_path: Path | None,
+    *,
+    base_directory: str | Path | None,
+    head_directory: str | Path | None,
+) -> _ArmLogPair:
+    """Return the pair's count, ids, base-log presence and both revisions.
+
+    The pair is derived once per pair of stat identities and answered from the
+    map on every later read of the same pair, so five reads of an unchanged
+    review read each log once. A log rewritten to a new identity misses the key
+    and the pair is derived again from both logs — the difference needs both
+    arms, and neither arm's bytes are retained to avoid the second read.
+
+    A derivation that reads a log unsuccessfully is handed to this caller and
+    not kept: the text it read is missing rather than empty, so the result says
+    nothing about the pair, and holding it would keep one transient error in
+    place until the process restarted. A pair whose logs are simply absent is
+    kept, because the key already carries that absence and a log that appears
+    changes it.
+
+    The held value is the result alone: the count, the added ids, whether the
+    base log was there, and the two revision strings each header names. No log
+    text is kept, so an entry's size follows the number of failing tests rather
+    than the size of the logs it was derived from.
+    """
+    key = (
+        _gate_log_identity(base_path),
+        _gate_log_identity(head_path),
+        os.fspath(base_directory) if base_directory is not None else "",
+        os.fspath(head_directory) if head_directory is not None else "",
+    )
+    held = _PAIR_RESULTS.get(key)
+    if held is not None:
+        # The ids are handed out as a fresh list: a record built from this pair
+        # carries them, and a caller that changed them must not reach the entry
+        # every later reader is answered from.
+        return held._replace(added_ids=list(held.added_ids))
+    pair, failed = _derive_arm_log_pair(
+        base_path,
+        head_path,
+        base_directory=base_directory,
+        head_directory=head_directory,
+    )
+    if not failed:
+        _PAIR_RESULTS.put(key, pair)
+    return pair._replace(added_ids=list(pair.added_ids))
+
+
+def _derive_arm_log_pair(
+    base_path: Path | None,
+    head_path: Path | None,
+    *,
+    base_directory: str | Path | None,
+    head_directory: str | Path | None,
+) -> tuple[_ArmLogPair, bool]:
+    """Read both arms and return the pair's result and whether a read failed."""
+    base_text, base_failed = _read_gate_log_attempt(base_path)
+    head_text, head_failed = _read_gate_log_attempt(head_path)
+    count, added_ids = added_failures_from_gate_logs(
+        base_text,
+        head_text,
+        base_directory=base_directory,
+        head_directory=head_directory,
+    )
+    return (
+        _ArmLogPair(
+            count=count,
+            added_ids=added_ids,
+            base_present=base_text is not None,
+            base_revision=recorded_log_revision(base_text),
+            head_revision=recorded_log_revision(head_text),
+        ),
+        base_failed or head_failed,
+    )
 
 
 def recorded_log_revision(log_text: str | None) -> str | None:
@@ -3216,18 +3680,59 @@ def annotate_added_failures(
     ``base_directory`` and ``head_directory`` are the working directories the
     two arms' own records name, and every id on the count's two sides is reduced
     against the arm that printed it.
+
+    A waived count is returned unchanged: the record says there was no pair to
+    difference, so deriving one here would replace the reviewer's stated reason
+    with a count taken from logs the run's own waiver says cannot support it —
+    and a reader would then judge the record by a count the reviewer never
+    filed.
     """
-    result = dict(record)
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        return dict(record)
     count, added_ids = added_failures_from_gate_logs(
         base_text,
         head_text,
         base_directory=base_directory,
         head_directory=head_directory,
     )
+    return _annotated_added_failure_count(
+        record,
+        count,
+        added_ids,
+        base_present=base_text is not None,
+        retirement_text=retirement_text,
+        base_directory=base_directory,
+        head_directory=head_directory,
+    )
+
+
+def _annotated_added_failure_count(
+    record: dict[str, Any],
+    count: int | None,
+    added_ids: list[str],
+    *,
+    base_present: bool,
+    retirement_text: str = "",
+    base_directory: str | Path | None = None,
+    head_directory: str | Path | None = None,
+) -> dict[str, Any]:
+    """Record an already-taken added-failure count on ``record`` and cap its total.
+
+    The count and the ids are handed in rather than derived here so a caller
+    reading the same pair of logs again does not rescan them for a number it
+    already holds; :func:`annotate_added_failures` derives them and delegates
+    here, and the review reader takes them from
+    :func:`_added_failures_for_arm_logs`. What is decided from the count — the
+    unmeasured note, the retirement of added ids and the total's cap — stays
+    here, because it is the record's shape rather than the logs' content.
+    """
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        return dict(record)
+    result = dict(record)
     result["added_failure_count"] = count
     result["added_failure_ids"] = added_ids
     if count is None:
-        missing = "base" if base_text is None else "head"
+        missing = "base" if not base_present else "head"
         result["added_failures_note"] = (
             f"unmeasured: the reviewed manifest names no {missing} gate log, so "
             "the added-failure count was not taken"
@@ -3381,26 +3886,32 @@ def annotate_review_of_run(
         )
     except OSError:
         return record
-    base_text = _read_gate_log(
-        _gate_log_path(manifest_text, _BASE_LOG_FIELD), run_directory
+    base_directory = _arm_directory(manifest_text, _BASE_LOG_FIELD)
+    head_directory = _arm_directory(manifest_text, _HEAD_LOG_FIELD)
+    # The pair's result is derived once per pair of log identities, so the
+    # duties that read the same stored review within a tick share one derivation
+    # rather than repeating it for each of them.
+    pair = _added_failures_for_arm_logs(
+        _gate_log_file(_gate_log_path(manifest_text, _BASE_LOG_FIELD), run_directory),
+        _gate_log_file(_gate_log_path(manifest_text, _HEAD_LOG_FIELD), run_directory),
+        base_directory=base_directory,
+        head_directory=head_directory,
     )
-    head_text = _read_gate_log(
-        _gate_log_path(manifest_text, _HEAD_LOG_FIELD), run_directory
-    )
-    annotated = annotate_added_failures(
+    annotated = _annotated_added_failure_count(
         record,
-        base_text=base_text,
-        head_text=head_text,
+        pair.count,
+        pair.added_ids,
+        base_present=pair.base_present,
         retirement_text=_manifest_prose(manifest_text),
-        base_directory=_arm_directory(manifest_text, _BASE_LOG_FIELD),
-        head_directory=_arm_directory(manifest_text, _HEAD_LOG_FIELD),
+        base_directory=base_directory,
+        head_directory=head_directory,
     )
     # Each arm log's own header says which revision it measured, so recording it
     # lets a reader tie the added-failure count to that commit without re-running
     # the gate. A header naming the base while the change is at another commit
     # then reads as the mismatch it is rather than as evidence about the change.
-    annotated[_BASE_LOG_REVISION_KEY] = recorded_log_revision(base_text)
-    annotated[_HEAD_LOG_REVISION_KEY] = recorded_log_revision(head_text)
+    annotated[_BASE_LOG_REVISION_KEY] = pair.base_revision
+    annotated[_HEAD_LOG_REVISION_KEY] = pair.head_revision
     return annotated
 
 
@@ -3535,6 +4046,14 @@ def store_review(
     brief_refusal = review_brief_head_refusal(record)
     if brief_refusal:
         raise ValueError(brief_refusal)
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        # A waived count is filed only against a run that carries the
+        # suite-delta waiver, and the run's own record is where that is read.
+        # The refusal is the delivery check's, so a record the store refuses and
+        # one ``crew check --review`` refuses cannot be two different records.
+        count_refusals = waived_failure_count_refusals(record)
+        if count_refusals:
+            raise ValueError("; ".join(count_refusals))
     base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
     if base_carried or head_carried:
         record = dict(record)
@@ -3742,6 +4261,7 @@ def file_delivered_run_review_report(
             continue
         try:
             from reckon.crew.stage_receipts import review_file_instant
+
             with review_file_instant(source):
                 filed.append(store_review(body))
         except (ValueError, OSError) as exc:
@@ -3887,7 +4407,27 @@ def repair_run_review(
     from reckon.crew import runs
 
     source = Path(record_path).expanduser().resolve()
-    original = source.read_bytes()
+
+    def _stages(run: str) -> bool:
+        return (
+            bool(run)
+            and source.parent
+            == run_review_record_directory(runs.run_dir(run)).resolve()
+        )
+
+    try:
+        original = source.read_bytes()
+    except OSError:
+        # Containment follows from the path and the run the caller named, so a
+        # record outside the named run's directory is refused for that reason
+        # instead of for a read that never had to happen: a mistyped path and a
+        # path that is simply not there otherwise surfaces the OS's error
+        # rather than the rule the repair applies.
+        if not _stages(run_id):
+            raise ValueError(
+                "record is outside the reviewed run's review-records directory"
+            ) from None
+        raise
     body = json.loads(original)
     if not isinstance(body, dict):
         raise TypeError("review record is not an object")
@@ -3896,13 +4436,6 @@ def repair_run_review(
     replacement_review_run_id = (
         change.partition("=")[2].strip() if change.startswith("review_run_id=") else ""
     )
-
-    def _stages(run: str) -> bool:
-        return (
-            bool(run)
-            and source.parent
-            == run_review_record_directory(runs.run_dir(run)).resolve()
-        )
 
     in_staging = any(
         _stages(name) and source.name.startswith(name)
@@ -4279,6 +4812,16 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
         block[REVIEWED_BASE_KEY] = base_sha
     if head_carried:
         block[REVIEWED_HEAD_KEY] = head_sha
+    # A waived count is the one added-failure reading the block carries: it is
+    # not a figure, so it has no place among the scores, and the reason it rests
+    # on is the whole of its evidence. The row therefore keeps both, so a reader
+    # of the durable record alone learns that no count exists and why rather than
+    # finding an absent count it cannot tell from an unscored review.
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        block["added_failure_count"] = WAIVED_ADDED_FAILURE_COUNT
+        waiver_reason = str(record.get("added_failure_waiver") or "").strip()
+        if waiver_reason:
+            block["added_failure_waiver"] = waiver_reason
     return block
 
 
@@ -4337,6 +4880,7 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
 
     review_records.record_written(path, record)
     from reckon.crew.stage_receipts import note_review_record
+
     note_review_record(record)
 
 
@@ -4354,6 +4898,7 @@ from reckon.crew.review_records import (  # noqa: E402, F401
     _store_index,
     collect_read_failures,
     commit_record_write,
+    note_read_failure,
     reconcile_foreign_write,
     record_for_review_run,
     record_written,

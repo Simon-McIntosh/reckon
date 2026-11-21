@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:110",
+    "reckon/crew/admission/launching.py:369",
+    "reckon/crew/dispatching/preparation.py:615",
+    "reckon/crew/dispatching/fences.py:298",
+    "reckon/crew_dispatch_commands.py:2225"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:45:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": "883",
+      "severity": "non-blocking",
+      "text": "non-blocking: _stamp_terminal_launch_failure swallows CrewError from runs._mutate_pointer, so when the pointer write fails the request is left launch-failed carrying no failure text and the caller sees no signal, which is the state the limit branch exists to make visible."
+    },
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": "923",
+      "severity": "non-blocking",
+      "text": "non-blocking: the limit branch continues without appending a verdict row, so the admission result reports the request as neither requeued nor refused and a coordinator reading `requeued` and `verdicts` cannot see why a queued request stopped."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "574",
+      "severity": "non-blocking",
+      "text": "non-blocking: a request naming no repository falls back to Path.cwd(), the admit service's own directory, which reproduces the defect the node fixes for exactly the class of request that carries no repo; the docstring acknowledges the fallback but no test covers it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from 3ab436fe38858d361bdd38ee97ab437d867b2043 to 97674dad7c12a717205f955148f6a0c4cc0ce0df; one implementation commit touching six modules and one test, one docs commit appending the landing fragment, all inside the declared scope.",
+    "done_when": "the done_when asks for three behaviours: a relative brief launches from an unrelated directory, an absent brief is refused before storage, and a request past its launch limit stays launch-failed with the failure text; tests/test_a_relative_brief_launches_from_any_directory.py:88, :114 and :172 assert each. The absent-brief refusal is pre-existing (reckon/crew/dispatch_admission.py:2572 readable_brief_source feeds _brief_digest), verified not reimplemented.",
+    "goal": "the node's goal is that a request stores its brief so every launcher resolves the same file; reckon/crew/dispatch_plan.py:829 resolves a relative brief against the request's repository once at dispatch, and the admit launcher passes that the launcher reads through reckon/crew/admission/launching.py:369.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory/manifest.md; it records the scoped gate and both suite arms green and states the base arm 3 failed, 2 passed as the negative control beside five named logs.",
+    "write_paths": "every one of the nine paths in the diff is inside the declared set; reckon/crew/dispatch.py and reckon/crew/dispatch_launch.py were declared but left untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_relative_brief_launches_from_any_directory.py:149 asserts the re-queued id is absent from result[\"requeued\"], which reddens if reckon/crew/admission/launching.py:923's limit branch is deleted, as the recorded base arm shows for three of five cases.",
+    "evidence": "the scoped gate at 47644df5 ran tests/test_a_relative_brief_launches_from_any_directory.py and reports 63 passed, the after arm 63 passed against a base arm of 58 passed, and the negative control at 3ab436fe reports 3 failed, 2 passed with EXIT=1.",
+    "fit": "reckon/flight.py:1324 reads the new limit through the same queue namespace and fallbacks as reckon/flight.py:1300's queue_max_requests, and no added name carries a plan, version or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_plan.py:829 makes node.brief absolute against the request's repository, so reckon/crew/admission/launching.py:369's dispatch reads one file from any working directory, and the endpoint's launch-failure clause is at reckon/crew/admission/launching.py:923.",
+    "reuse": "reckon/flight.py:1324 extends the existing queue accessor family and reckon/crew/dispatch_plan.py:554 adds a capability no other module owns; a search of reckon/crew for repo-relative resolution found only reckon/crew/recovery_review_dispatch.py:1615, which matches cited paths to roots rather than resolving a dispatch argument.",
+    "scope_discipline": "all nine changed paths sit inside the twelve declared, and the only untested-in-gate module touching the change, tests/test_a_queued_run_is_admitted.py:66, exercises only a first re-queue."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a request stores its brief so every launcher resolves the same file; reckon/crew/dispatch_plan.py:829 resolves a relative brief against the request's repository once at dispatch, and the admit launcher passes that the launcher reads through reckon/crew/admission/launching.py:369.\nVERDICT done_when: the done_when asks for three behaviours: a relative brief launches from an unrelated directory, an absent brief is refused before storage, and a request past its launch limit stays launch-failed with the failure text; tests/test_a_relative_brief_launches_from_any_directory.py:88, :114 and :172 assert each. The absent-brief refusal is pre-existing (reckon/crew/dispatch_admission.py:2572 readable_brief_source feeds _brief_digest), verified not reimplemented.\nVERDICT write_paths: every one of the nine paths in the diff is inside the declared set; reckon/crew/dispatch.py and reckon/crew/dispatch_launch.py were declared but left untouched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory/manifest.md; it records the scoped gate and both suite arms green and states the base arm 3 failed, 2 passed as the negative control beside five named logs.\nVERDICT diff: read commit by commit from 3ab436fe38858d361bdd38ee97ab437d867b2043 to 97674dad7c12a717205f955148f6a0c4cc0ce0df; one implementation commit touching six modules and one test, one docs commit appending the landing fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/admission/selection.py:110, reckon/crew/admission/launching.py:369, reckon/crew/dispatching/preparation.py:615, reckon/crew/dispatching/fences.py:298, reckon/crew_dispatch_commands.py:2225\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_plan.py:829 makes node.brief absolute against the request's repository, so reckon/crew/admission/launching.py:369's dispatch reads one file from any working directory, and the endpoint's launch-failure clause is at reckon/crew/admission/launching.py:923.\nSCORE evidence: 19\nJUSTIFICATION evidence: the scoped gate at 47644df5 ran tests/test_a_relative_brief_launches_from_any_directory.py and reports 63 passed, the after arm 63 passed against a base arm of 58 passed, and the negative control at 3ab436fe reports 3 failed, 2 passed with EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all nine changed paths sit inside the twelve declared, and the only untested-in-gate module touching the change, tests/test_a_queued_run_is_admitted.py:66, exercises only a first re-queue.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_relative_brief_launches_from_any_directory.py:149 asserts the re-queued id is absent from result[\"requeued\"], which reddens if reckon/crew/admission/launching.py:923's limit branch is deleted, as the recorded base arm shows for three of five cases.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/flight.py:1324 reads the new limit through the same queue namespace and fallbacks as reckon/flight.py:1300's queue_max_requests, and no added name carries a plan, version or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/flight.py:1324 extends the existing queue accessor family and reckon/crew/dispatch_plan.py:554 adds a capability no other module owns; a search of reckon/crew for repo-relative resolution found only reckon/crew/recovery_review_dispatch.py:1615, which matches cited paths to roots rather than resolving a dispatch argument.\nFINDING reckon/crew/admission/launching.py:883 non-blocking: _stamp_terminal_launch_failure swallows CrewError from runs._mutate_pointer, so when the pointer write fails the request is left launch-failed carrying no failure text and the caller sees no signal, which is the state the limit branch exists to make visible.\nFINDING reckon/crew/admission/launching.py:923 non-blocking: the limit branch continues without appending a verdict row, so the admission result reports the request as neither requeued nor refused and a coordinator reading `requeued` and `verdicts` cannot see why a queued request stopped.\nFINDING reckon/crew/dispatch_plan.py:574 non-blocking: a request naming no repository falls back to Path.cwd(), the admit service's own directory, which reproduces the defect the node fixes for exactly the class of request that carries no repo; the docstring acknowledges the fallback but no test covers it.\n",
+  "review_run_id": "r-20261121T074430524728-review-of-qwnw-a-relative-brief-launches-from-any-directory-97674dad7c12",
+  "reviewed_base_sha": "3ab436fe38858d361bdd38ee97ab437d867b2043",
+  "reviewed_head_sha": "97674dad7c12a717205f955148f6a0c4cc0ce0df",
+  "reviewed_run_id": "r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:28:40.573831+00:00",
+  "total": 111
+}

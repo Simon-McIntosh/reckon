@@ -1,0 +1,167 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s10": "4e1c5c0d2515be5c19dca2e0f81107e36e2a3c581b2b9c59dec3fe77094e64b8"
+      },
+      "reason": "s10's body, a comment on s10, the s9 declaration and the followups were rewritten to answer the four findings of the review at v46; no other section changed",
+      "units": [
+        "s10"
+      ],
+      "when": "2026-11-18T03:26:23.100579+00:00"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:45:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html:94",
+      "id": "wiring-1",
+      "reason": "the plan's own dispatch route never reaches the section it just added, so \u00a710 is orphaned until a followup is written outside the plan record.",
+      "text": "the only open followup dispatches \u00a79, and no followup names \u00a710, which is `implementable` and declares a wait on `a-gate-halts-only-on-substance#s9`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html:84",
+      "id": "done_when-1",
+      "reason": "the node can close with the callerless seam untouched, so the \u00a79 finding it folds in stays unmeasured and the gate passes on an incomplete deliverable.",
+      "text": "the Deliverable requires the `suite_delta_waiver` parameter to \"either gain a production caller or go\", yet the done-when asserts nothing about it and the either/or leaves the endpoint to the worker",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html:84",
+      "id": "single_goal-1",
+      "reason": "both touch files the node already edits and cost a line each, and the unmeasured one is reported under done_when, so splitting the node would change no work.",
+      "text": "\u00a710's stated goal is reachability of a waived review, but it also folds in two unrelated \u00a79 findings (a test's unasserted refusal text, a dead parameter)",
+      "type": "single_goal",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html:84",
+      "id": "anchors_resolve-1",
+      "reason": "the worker amends a case that already names its refusal and leaves the recorded gap at line 303 unasserted.",
+      "text": "the folded test finding is pointed at \"line 364 of tests/test_a_waived_review_lands_a_waived_run.py\", but at 03b003a26dad line 364 is the `assert first.exit_code == 1` of `test_a_null_count_is_refused_against_a_waived_run`, a case whose review-check refusal text is already asserted at line 374; the case the \u00a79 review recorded as accepting any non-zero exit is at line 303",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+  "plan_fingerprint": "fe7f6222fc9a1fd25fd0cfe0ec9f50d53496797b99d9f218bca0baec095bbe99",
+  "plan_slug": "a-gate-halts-only-on-substance",
+  "plan_version": 46,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "the \u00a79 followup is resolved now that \u00a79 is on main, and a new followup carries the \u00a710 invocation",
+      "reason": "",
+      "when": "2026-11-18T03:21:50.247759+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the suite_delta_waiver parameter is removed from \u00a710's scope; a comment records it as a test-only seam left as is",
+      "reason": "",
+      "when": "2026-11-18T03:22:04.010882+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a710 now covers only reachability, the reviewer brief and the committed-row fallback; the refusal-text test tightening and the parameter are recorded in a comment as out of scope",
+      "reason": "",
+      "when": "2026-11-18T03:22:12.860062+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "the line anchor left \u00a710 with the test item; the comment that records it names line 303, the case the \u00a79 review meant",
+      "reason": "",
+      "when": "2026-11-18T03:22:31.818020+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "note": "the line anchor left \u00a710 with the test item; the comment that records it names line 303, the case the \u00a79 review meant",
+      "reason": "",
+      "when": "2026-11-18T03:22:31.818020+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "note": "the suite_delta_waiver parameter is removed from \u00a710's scope; a comment records it as a test-only seam left as is",
+      "reason": "",
+      "when": "2026-11-18T03:22:04.010882+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "note": "\u00a710 now covers only reachability, the reviewer brief and the committed-row fallback; the refusal-text test tightening and the parameter are recorded in a comment as out of scope",
+      "reason": "",
+      "when": "2026-11-18T03:22:12.860062+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "9c716e08cc05fd6f82e6fe0d66c10b50d472c5ac",
+      "commit_basis": "edit",
+      "note": "the \u00a79 followup is resolved now that \u00a79 is on main, and a new followup carries the \u00a710 invocation",
+      "reason": "",
+      "when": "2026-11-18T03:21:50.247759+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-gate-halts-only-on-substance/r-20261118T004439641209-plan-review-of-a-gate-halts-only-on-substance.json",
+  "review_run_id": "r-20261118T004439641209-plan-review-of-a-gate-halts-only-on-substance",
+  "reviewed_blob_sha": "3fd19add55f2ae0f71413e95ccd8519e9aa2cf70",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the folded test finding is cited at tests/test_a_waived_review_lands_a_waived_run.py line 364, where the review-check refusal text is already asserted at line 374; the case the \u00a79 review recorded is at line 303.",
+    "done_when": "a finding \u2014 \u00a710's Deliverable at :84 requires the `suite_delta_waiver` parameter to gain a production caller or go, and no assertion in the done-when measures either outcome.",
+    "evidence_paths": "pass \u2014 each arm's log is written under the run directory and the gate command is relative and literal, so a later reader can open the evidence.",
+    "naming": "pass \u2014 the section states behaviour (\"told in its brief\", \"recognises a recorded waiver under either spelling\") and carries no plan label or ticket number into a symbol.",
+    "reasoning": "pass \u2014 at s9's head `recovery_review_subject.py:1505` asks for a count derived from the run's arms and names no waived form, `review.py:1264` reads a committed row's waiver only with `status=\"waived\"`, and `promotion_records.py:1841` records a pair given a waiver reason as status `clean`, so the cited cause is the one the code shows.",
+    "single_goal": "a finding \u2014 \u00a710 folds two \u00a79 findings unrelated to its stated reachability goal into the same node.",
+    "wiring": "a finding \u2014 the followup list at docs/plans/a-gate-halts-only-on-substance.html:94-98 carries only the \"Build \u00a79\" invocation, so \u00a710 has no dispatch route."
+  },
+  "section_digests": {
+    "_document": "6ff5c65cedfac527fe611203424e973acc162f544d468e819889c3f1050f38ea",
+    "s1": "da96e9775c5ac3c922e7c9262b6c95659f8a63dd7ecaefbf9c9ea72c3d506b61",
+    "s10": "1d4c57ec66937b56bd1191ccf8391411eb6820f7e4ecb766876b8328218aadeb",
+    "s2": "34659f8a9f7d766af00602047920116071d6c4a45beb59504f09c79856fe4449",
+    "s3": "7d5900898dccbca711f2ba5f009a9d77a8106e6c95850afa29ea353bee133ea1",
+    "s4": "0e123dd962d8cd12c2e71ad44abb85e97ccaf736d952b19140641c3426beab23",
+    "s5": "8693ffa47dece4b7d7becaed1cc17e2eae2192270529686416237848fcfe3d7d",
+    "s6": "c1a4e9a4b81527a7a273e421018eb3a5b58b491f8eb6afe57798b77df653c903",
+    "s7": "02f674f3ab07d57d2a9a4a13805c075967cd59e063bf39eb470a940c1e9e9897",
+    "s8": "6a840e82c44d918c74c527bb0bc07eed5fa4efdfb5dc69fc1e3b7dfbe1ff477f",
+    "s9": "c8b306703470d37f30d14f4daf3bab517ea9c8695de15fd5f03a0fa83a6a3408"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:55:03.378978+00:00",
+  "total": null
+}

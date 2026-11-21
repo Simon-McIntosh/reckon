@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1816",
+    "reckon/crew/dispatch.py:639"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T20:42:09Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "anchored-backends-s18",
+      "recorded_at": "2026-11-21T21:12:55.670750+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_dispatch_split_keeps_its_surface.py",
+      "line": "715",
+      "severity": "non-blocking",
+      "text": "non-blocking: the guard reads the launcher's source text and the export inventory rather than the prompt a launch composes, so an instruction appended by another route \u2014 the launch-time arm still live at reckon/_backends.py:3448 \u2014 would leave it green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read the single commit ce451ced against base 1666d19f; it deletes the prompt post-processing call, drops the import and the frozen-inventory entry, rewrites one comment in dispatch_sessions.py by mechanism, and adds one guard test, 22 insertions against 12 deletions across five files.",
+    "done_when": "The done_when's measures are the anchored_edit/anchored-edit grep, a base/head arm over tests/test_dispatch_split_keeps_its_surface.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, a ruff delta, and a red negative control; the manifest records both arms exit 0 with 0 failures (64 then 65 passed), the grep finding nothing at ce451ced, ruff clean on the five paths, and the negative control at 1 failed, 6 passed, EXIT=1.",
+    "goal": "The goal is that the dispatch path stops forwarding the anchored editing tool's instruction; the landed diff removes the `_with_anchored_edit_instruction(prompt, backend)` call from `reckon/crew/dispatching/launch.py`, its import in `reckon/crew/dispatching/_imports.py`, and the name from the facade export list at `reckon/crew/dispatch.py:433`, and `git grep anchored_edit` at ce451ced over the five write paths returns nothing, so no file on the dispatch path reads or forwards the key.",
+    "manifest": "Read at status complete with commit ce451ced; it states both suite arms, the red negative control and the grep, and its outside_scope names reckon/_backends.py:3446-3448 and reckon/crew/prompts.py:746-834 as the sibling nodes' remaining references.",
+    "write_paths": "Read the declared paths for anchored-dispatch-s18; every path in the diff (reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, reckon/crew/dispatching/_imports.py, reckon/crew/dispatching/launch.py, tests/test_dispatch_split_keeps_its_surface.py) is inside them, and the declared evidence-fragment and figure directories are simply not written."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_split_keeps_its_surface.py:715 reddens when the forwarding is restored (negative-control.log, 1 failed, EXIT=1) and passes at ce451ced (my re-run, review-guard.log, 1 passed).",
+    "evidence": "baseline_suite-1795293268971313860.capture.log and after_suite-1795293343836963618.capture.log each carry their revision, command and EXIT=0 line, and negative-control.log carries EXIT=1.",
+    "fit": "the change reuses the existing frozen-inventory idiom at tests/test_dispatch_split_keeps_its_surface.py:441 and adds no plan or ticket label anywhere in the diff.",
+    "goal_fidelity": "reckon/crew/dispatching/launch.py:381-390 at ce451ced composes the prompt from the node and never applies a backend-keyed instruction, and no write path mentions anchored_edit.",
+    "reuse": "no production definition is added; the guard reads the existing _MODULE_EXPORTS and EXPECTED_SURFACE owners, and a search of tests/ and reckon/ for a check on the launcher's instruction found no other owner.",
+    "scope_discipline": "every changed path is one of the five declared paths, and the sibling-owned reckon/_backends.py and reckon/crew/prompts.py are left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that the dispatch path stops forwarding the anchored editing tool's instruction; the landed diff removes the `_with_anchored_edit_instruction(prompt, backend)` call from `reckon/crew/dispatching/launch.py`, its import in `reckon/crew/dispatching/_imports.py`, and the name from the facade export list at `reckon/crew/dispatch.py:433`, and `git grep anchored_edit` at ce451ced over the five write paths returns nothing, so no file on the dispatch path reads or forwards the key.\nVERDICT done_when: The done_when's measures are the anchored_edit/anchored-edit grep, a base/head arm over tests/test_dispatch_split_keeps_its_surface.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, a ruff delta, and a red negative control; the manifest records both arms exit 0 with 0 failures (64 then 65 passed), the grep finding nothing at ce451ced, ruff clean on the five paths, and the negative control at 1 failed, 6 passed, EXIT=1.\nVERDICT write_paths: Read the declared paths for anchored-dispatch-s18; every path in the diff (reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, reckon/crew/dispatching/_imports.py, reckon/crew/dispatching/launch.py, tests/test_dispatch_split_keeps_its_surface.py) is inside them, and the declared evidence-fragment and figure directories are simply not written.\nVERDICT manifest: Read at status complete with commit ce451ced; it states both suite arms, the red negative control and the grep, and its outside_scope names reckon/_backends.py:3446-3448 and reckon/crew/prompts.py:746-834 as the sibling nodes' remaining references.\nVERDICT diff: Read the single commit ce451ced against base 1666d19f; it deletes the prompt post-processing call, drops the import and the frozen-inventory entry, rewrites one comment in dispatch_sessions.py by mechanism, and adds one guard test, 22 insertions against 12 deletions across five files.\nCALL_SITES: reckon/crew/dispatching/preparation.py:1816, reckon/crew/dispatch.py:639\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/launch.py:381-390 at ce451ced composes the prompt from the node and never applies a backend-keyed instruction, and no write path mentions anchored_edit.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline_suite-1795293268971313860.capture.log and after_suite-1795293343836963618.capture.log each carry their revision, command and EXIT=0 line, and negative-control.log carries EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is one of the five declared paths, and the sibling-owned reckon/_backends.py and reckon/crew/prompts.py are left untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_dispatch_split_keeps_its_surface.py:715 reddens when the forwarding is restored (negative-control.log, 1 failed, EXIT=1) and passes at ce451ced (my re-run, review-guard.log, 1 passed).\nSCORE fit: 20\nJUSTIFICATION fit: the change reuses the existing frozen-inventory idiom at tests/test_dispatch_split_keeps_its_surface.py:441 and adds no plan or ticket label anywhere in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; the guard reads the existing _MODULE_EXPORTS and EXPECTED_SURFACE owners, and a search of tests/ and reckon/ for a check on the launcher's instruction found no other owner.\nFINDING tests/test_dispatch_split_keeps_its_surface.py:715 non-blocking: the guard reads the launcher's source text and the export inventory rather than the prompt a launch composes, so an instruction appended by another route \u2014 the launch-time arm still live at reckon/_backends.py:3448 \u2014 would leave it green.\nreviewed_base_sha: 1666d19f7744d3cbbb272f620e38427ad9738472\nreviewed_head_sha: ce451ced11327f4375547f4b6fd3715f06eb0466",
+  "review_run_id": "r-20261121T204139363637-review-of-anchored-dispatch-s18-ce451ced1132",
+  "reviewed_base_sha": "1666d19f7744d3cbbb272f620e38427ad9738472",
+  "reviewed_head_sha": "ce451ced11327f4375547f4b6fd3715f06eb0466",
+  "reviewed_run_id": "r-20261121T201933445469-anchored-dispatch-s18",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T21:09:05.232217+00:00",
+  "total": 118
+}

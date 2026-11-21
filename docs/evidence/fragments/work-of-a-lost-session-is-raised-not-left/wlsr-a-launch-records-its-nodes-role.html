@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s25">
+  <meta name="plan-verdict" content="pass">
+  <title>A launch records its node's role | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-a-launch-records-its-nodes-role-landing" data-node="wlsr-a-launch-records-its-nodes-role" data-reckon="landed" data-when="2026-11-21">
+  <h2>A launch records its node's role</h2>
+  <p id="wlsr-a-launch-records-its-nodes-role-what">The launch's recorded treatment did not carry the role at all. <code>WorkerBehaviour.dimensions</code>, which is what a launch plan records and what a reader compares, named the lane, the inbox, the allowlist, the fence roots, the review duty and the landing route — and left the role out. Every review launch therefore read from its own record as an implement run: it owed a review of its own and declared the implement landing route, and no caller could have corrected that by passing a role because there was nowhere for it to land.</p>
+  <p id="wlsr-a-launch-records-its-nodes-role-routes">Two changes close it. The role is a recorded dimension. And the three routes that compose a worker launch pass the role the node was dispatched with: <code>_launch_dispatch</code> in <code>reckon/crew/dispatching/launch.py</code> reads <code>node.role</code>, which also serves the queued admission launch because <code>_launch_queued</code> hands its rebuilt node to the same dispatch; <code>resume_plan</code> and <code>change_lane</code> in <code>reckon/crew/dispatch_sessions.py</code> read it through <code>_pointer_role</code> — the read the recovery module already owns for a recorded run, which answers from the pointer root and the recorded node — and fall back to <code>IMPLEMENT_ROLE</code>. A run carries the role it was dispatched with, so a later configuration change cannot restate what an earlier attempt owed.</p>
+  <p id="wlsr-a-launch-records-its-nodes-role-gate">Gate: <code>tests/test_a_launch_records_its_nodes_role.py</code> with <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — 67 passed, exit 0, at head <code>f4b6287304</code> (<code>scoped-gate-1795246116977163672.log</code>). The node's own file reads 9 passed, exit 0. The base arm over <code>65c0479b148e</code> reads 58 passed, exit 0 (<code>baseline_suite-git-arm.log</code>); the after arm resolves the same three files at the head and reads 67 passed, exit 0 (<code>after_suite-git-arm.log</code>). The nine-case difference is exactly this node's new file.</p>
+  <p id="wlsr-a-launch-records-its-nodes-role-cases">Each route is driven through its real door and the treatment read off the composed launch. A direct dispatch of a review node records <code>role: review</code>, <code>review_duty: false</code> and <code>reviewed-under-its-lane</code>. A queued request carrying a review node, launched by one admission pass, records the same. A stopped run whose record names the review role, resumed through <code>resume_plan</code>, records the same. An implement node on each of the three routes records <code>role: implement</code>, <code>review_duty: true</code> and <code>promoted-under-its-lane</code>. A third role on each route — <code>investigate</code>, which is neither of the two the plan names — records <code>role: investigate</code>, <code>review_duty: false</code> and <code>promoted-under-its-lane</code>.</p>
+  <p id="wlsr-a-launch-records-its-nodes-role-discriminating">The implement cases pin the contract but cannot see the wiring: an implement node records the same treatment whether or not the call site passes the role, because the default describes it. The investigate cases are the ones that discriminate, since a defaulted role records <code>implement</code> where they require <code>investigate</code>.</p>
+  <p id="wlsr-a-launch-records-its-nodes-role-control">The declared control holds. With the role left at the launch call site's default — the <code>behaviour_role</code> argument removed from the dispatch and session call sites, the recorded dimension left in place — the node's file reads 6 failed and 3 passed, exit 1 (<code>wlsr-negative-control.log</code>). The six failures are the three review cases and the three investigate cases, each reporting a launch that recorded the implement default; the three implement cases pass, because the default describes them correctly and that is exactly why they cannot carry the control on their own.</p>
+</article>
+</body>
+</html>

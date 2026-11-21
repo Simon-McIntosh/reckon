@@ -1,0 +1,116 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1221",
+    "reckon/roadmap.py:3812"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f",
+      "recorded_at": "2026-11-18T01:28:39.064591+00:00"
+    },
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f",
+      "recorded_at": "2026-11-18T01:28:28.970541+00:00"
+    },
+    "goal_fidelity": {
+      "kind": "folded",
+      "node": "repair-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f",
+      "recorded_at": "2026-11-18T01:28:23.244433+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-18T01:02:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f",
+      "recorded_at": "2026-11-18T01:28:18.863614+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "332",
+      "severity": "blocking",
+      "text": "blocking: _trim keeps a pointer's value only when it is a scalar, so the `node` mapping every live pointer carries is dropped, _pointer_parts (reckon/crew/section_holds.py:57) then answers empty plan and section, _collect's target() returns None, and the batch's held-node check cannot see any live hold \u2014 reproduced against a real pointer in the crew home: untrimmed parts ('reasoning-text-in-tool-arguments', 'a-tool-call-carries-no-model-markup', 's6', 'investigate', 'complete'), trimmed parts ('', '', '', 'investigate', 'complete'), so a node another live run holds is queued again."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "356",
+      "severity": "non-blocking",
+      "text": "non-blocking: added() appends the untouched pointer, so the payload _trim removes from every pre-batch pointer returns once per entry the batch stores and the snapshot's retained bytes grow with the entry count, the growth this section exists to remove."
+    },
+    {
+      "file": "tests/test_dispatch_batch_memory_profile.py",
+      "line": "152",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert stored == LARGE compares the test's own argument with itself, because _peak_kib returns its `entries` parameter at line 144, so the assertion holds whatever queue_batch does and cannot catch a regression in what the batch stores."
+    },
+    {
+      "file": "tests/test_dispatch_batch_memory_profile.py",
+      "line": "143",
+      "severity": "non-blocking",
+      "text": "non-blocking: `queued` is the batch's own subtraction (accepted - held_count, reckon/crew/dispatch_batch.py:1313) and no assertion reads the store, so \u00a78's \"each run's stored requests equal the base's\" is unmeasured by this gate."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": "143",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-node store read returns only rows whose indexed node column matches, so a delivered record written before node ids existed \u2014 which reckon/crew/section_holds.py:170 says must still hold its section \u2014 is absent whenever an entry names no node id, and that node is queued again."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "410",
+      "severity": "non-blocking",
+      "text": "non-blocking: _HeldOnce.rows re-implements the identity-and-filter step of held_node_rows at reckon/crew/section_holds.py:275 rather than sharing it, leaving two implementations of \"the rows holding this plan's section node\"."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the cited after_suite log suite-head-final.log carries no `# revision:`, `# tree:` or `# command:` header and no `EXIT=` line, so the head arm's revision and exit status are unread from the run's own record, and the only log that does carry a revision header (suite-head.log) names bd1d5d0, not the reviewed head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the fourteen commits of 4b7aa8a071ed10e619d95fdacdaa5e644d04b548..a876883a0c7f3796d592ba53cd201e4e1e56e898 one by one; five files change \u2014 reckon/crew/dispatch_batch.py (+160/-10), reckon/crew/section_holds.py (+23/-6), scripts/profile_control_pass.py (+35/-5), tests/test_dispatch_batch_memory_profile.py (+157) and the evidence fragment (+80).",
+    "done_when": "\u00a78's done_when (docs/plans/the-fleet-node-stays-inside-its-memory.html:99) asks for under 4 GB and within 1 GB at forty entries, and the manifest's own head pair is 11.62 GiB at eight and 13.12 GiB at forty (1,544 MiB apart) with a base arm that stored nothing to compare against.",
+    "goal": "read \u00a78's deliverable (docs/plans/the-fleet-node-stays-inside-its-memory.html:98) against reckon/crew/dispatch_batch.py:289-433: the batch's repeated per-entry reads are gone and its in-process traced peak no longer rises with the entry count, but the resident peak at forty entries is 13.12 GiB against the section's 4 GB ceiling.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory/manifest.md; it records the three-file gate at 59 passed, the base arm at 58 passed, the negative control at 1 failed, and states that the section's resident bound is unmet.",
+    "write_paths": "the node declared eight write paths; the five paths in 4b7aa8a..a876883a all lie inside them, and the two declared paths that carry no change (reckon/crew/dispatch_plan.py, reckon/run_store.py) hold nothing to review."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_batch_memory_profile.py:154 does fail at the base revision (the negative control reports 156 % growth), but nothing asserts the stored requests, the batch-sibling ordering or the hold check the diff rewrites, so the regression the record carries reddens no test.",
+    "evidence": "the manifest cites suite-head-final.log as its after_suite arm and that log carries no revision header and no EXIT= line, while the gate it records measures a traced in-process peak rather than the done_when's resident figure.",
+    "fit": "_live_once follows the scope idiom of reckon/crew/dispatch_batch.py:157 _parsed_once, though reckon/crew/dispatch_batch.py:410 reaches into the private section_holds._collect.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:316 retains a whole-batch snapshot that drops every live pointer's node identity, so the hold check at reckon/crew/dispatch_batch.py:410 no longer refuses a node another run already holds.",
+    "reuse": "reckon/crew/dispatch_batch.py:410 repeats the selection held_node_rows already owns at reckon/crew/section_holds.py:275 instead of factoring it, while the node-indexed store read itself is an extension made in place at reckon/crew/section_holds.py:143.",
+    "scope_discipline": "every path in the diff lies inside the eight declared write paths and no change sits outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read \u00a78's deliverable (docs/plans/the-fleet-node-stays-inside-its-memory.html:98) against reckon/crew/dispatch_batch.py:289-433: the batch's repeated per-entry reads are gone and its in-process traced peak no longer rises with the entry count, but the resident peak at forty entries is 13.12 GiB against the section's 4 GB ceiling.\nVERDICT done_when: \u00a78's done_when (docs/plans/the-fleet-node-stays-inside-its-memory.html:99) asks for under 4 GB and within 1 GB at forty entries, and the manifest's own head pair is 11.62 GiB at eight and 13.12 GiB at forty (1,544 MiB apart) with a base arm that stored nothing to compare against.\nVERDICT write_paths: the node declared eight write paths; the five paths in 4b7aa8a..a876883a all lie inside them, and the two declared paths that carry no change (reckon/crew/dispatch_plan.py, reckon/run_store.py) hold nothing to review.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory/manifest.md; it records the three-file gate at 59 passed, the base arm at 58 passed, the negative control at 1 failed, and states that the section's resident bound is unmet.\nVERDICT diff: read the fourteen commits of 4b7aa8a071ed10e619d95fdacdaa5e644d04b548..a876883a0c7f3796d592ba53cd201e4e1e56e898 one by one; five files change \u2014 reckon/crew/dispatch_batch.py (+160/-10), reckon/crew/section_holds.py (+23/-6), scripts/profile_control_pass.py (+35/-5), tests/test_dispatch_batch_memory_profile.py (+157) and the evidence fragment (+80).\nCALL_SITES: reckon/crew_dispatch_commands.py:1221, reckon/roadmap.py:3812\nSCORE goal_fidelity: 5\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:316 retains a whole-batch snapshot that drops every live pointer's node identity, so the hold check at reckon/crew/dispatch_batch.py:410 no longer refuses a node another run already holds.\nSCORE evidence: 6\nJUSTIFICATION evidence: the manifest cites suite-head-final.log as its after_suite arm and that log carries no revision header and no EXIT= line, while the gate it records measures a traced in-process peak rather than the done_when's resident figure.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff lies inside the eight declared write paths and no change sits outside them.\nSCORE durability: 6\nJUSTIFICATION durability: tests/test_dispatch_batch_memory_profile.py:154 does fail at the base revision (the negative control reports 156 % growth), but nothing asserts the stored requests, the batch-sibling ordering or the hold check the diff rewrites, so the regression the record carries reddens no test.\nSCORE fit: 15\nJUSTIFICATION fit: _live_once follows the scope idiom of reckon/crew/dispatch_batch.py:157 _parsed_once, though reckon/crew/dispatch_batch.py:410 reaches into the private section_holds._collect.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/crew/dispatch_batch.py:410 repeats the selection held_node_rows already owns at reckon/crew/section_holds.py:275 instead of factoring it, while the node-indexed store read itself is an extension made in place at reckon/crew/section_holds.py:143.\nFINDING reckon/crew/dispatch_batch.py:332 blocking: _trim keeps a pointer's value only when it is a scalar, so the `node` mapping every live pointer carries is dropped, _pointer_parts (reckon/crew/section_holds.py:57) then answers empty plan and section, _collect's target() returns None, and the batch's held-node check cannot see any live hold \u2014 reproduced against a real pointer in the crew home: untrimmed parts ('reasoning-text-in-tool-arguments', 'a-tool-call-carries-no-model-markup', 's6', 'investigate', 'complete'), trimmed parts ('', '', '', 'investigate', 'complete'), so a node another live run holds is queued again.\nFINDING reckon/crew/dispatch_batch.py:356 non-blocking: added() appends the untouched pointer, so the payload _trim removes from every pre-batch pointer returns once per entry the batch stores and the snapshot's retained bytes grow with the entry count, the growth this section exists to remove.\nFINDING tests/test_dispatch_batch_memory_profile.py:152 non-blocking: assert stored == LARGE compares the test's own argument with itself, because _peak_kib returns its `entries` parameter at line 144, so the assertion holds whatever queue_batch does and cannot catch a regression in what the batch stores.\nFINDING tests/test_dispatch_batch_memory_profile.py:143 non-blocking: `queued` is the batch's own subtraction (accepted - held_count, reckon/crew/dispatch_batch.py:1313) and no assertion reads the store, so \u00a78's \"each run's stored requests equal the base's\" is unmeasured by this gate.\nFINDING reckon/crew/section_holds.py:143 non-blocking: the per-node store read returns only rows whose indexed node column matches, so a delivered record written before node ids existed \u2014 which reckon/crew/section_holds.py:170 says must still hold its section \u2014 is absent whenever an entry names no node id, and that node is queued again.\nFINDING reckon/crew/dispatch_batch.py:410 non-blocking: _HeldOnce.rows re-implements the identity-and-filter step of held_node_rows at reckon/crew/section_holds.py:275 rather than sharing it, leaving two implementations of \"the rows holding this plan's section node\".\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory/manifest.md:17 non-blocking: the cited after_suite log suite-head-final.log carries no `# revision:`, `# tree:` or `# command:` header and no `EXIT=` line, so the head arm's revision and exit status are unread from the run's own record, and the only log that does carry a revision header (suite-head.log) names bd1d5d0, not the reviewed head.",
+  "review_run_id": "r-20261118T010152259555-review-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f",
+  "reviewed_base_sha": "4b7aa8a071ed10e619d95fdacdaa5e644d04b548",
+  "reviewed_head_sha": "a876883a0c7f3796d592ba53cd201e4e1e56e898",
+  "reviewed_run_id": "r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory",
+  "scores": {
+    "durability": 6,
+    "evidence": 6,
+    "fit": 15,
+    "goal_fidelity": 5,
+    "reuse": 11,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T01:13:50.408207+00:00",
+  "total": 59
+}

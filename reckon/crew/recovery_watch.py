@@ -11,11 +11,12 @@ import socket
 import subprocess
 import time
 from contextlib import contextmanager, suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon import file_memo
+from reckon._worker_fence import BackendError
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -781,7 +782,7 @@ def overdue_unreconciled_runs(
 
 def _utc_seconds() -> float:
     """Current time as epoch seconds, matching a file mtime's clock."""
-    return datetime.now(tz=timezone.utc).timestamp()
+    return datetime.now(tz=UTC).timestamp()
 
 
 # A producer that finds its project's seat held by a live producer on another
@@ -1030,7 +1031,7 @@ EXPLAINED_STATES = frozenset(
 
 
 def _promote_record_holds(record: Mapping[str, Any]) -> bool:
-    """Whether this live pointer's completed run has a committed ledger row.
+    """Whether this live pointer's completed run has durable promotion evidence.
 
     Promotion appends the run's ledger row and then removes the live pointer,
     so for the length of that window the pointer still exists while the work
@@ -1040,14 +1041,13 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     ledger row settles the run even when it declares no repository change, so
     row presence, rather than its commit list, answers this question.
 
-    The row is read from the run's own repository, the root promotion wrote it
-    under. Promotion writes the per-run file before it touches the aggregate,
-    so a single stat answers whether the row was committed.
+    The authoritative run store is read before the legacy file in the run's
+    own repository, using the same evidence reader as pointer retirement.
     An unreadable or absent row answers False — the run then takes the word its
     pointer earns, which is the safe direction because the alternative promises
     a landing nothing recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -1058,29 +1058,22 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     repo = str(record.get("repo") or "")
     if not run_id or not project or not repo:
         return False
-    try:
-        return ledger_module.run_path(project, run_id, repo).is_file()
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return False
+    return _promoted_row(project, run_id, root=repo) is not None
 
 
 def _recorded_pointer_word(record: Mapping[str, Any]) -> str:
-    """Name a settled pointer's committed work or recorded completion.
+    """Name a settled pointer's promoted work or recorded completion.
 
     The row existence check already established settlement. A row that cannot
     be decoded cannot establish a code landing, so its safe word is recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
-    try:
-        path = ledger_module.run_path(
-            str(record.get("project") or ""),
-            str(record.get("run_id") or ""),
-            str(record.get("repo") or ""),
-        )
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return "recorded"
+    row = _promoted_row(
+        str(record.get("project") or ""),
+        str(record.get("run_id") or ""),
+        root=str(record.get("repo") or ""),
+    )
     return (
         "promoted"
         if isinstance(row, Mapping)
@@ -1301,6 +1294,10 @@ def _watch_verdict(
             "recovery": "",
             "lifting_condition": None,
             "next_action": row.get("next_action"),
+            # The authority the word was read under, carried beside it: the
+            # word itself is whatever the row earns today, which is the
+            # delivered one while a promotion's head is on no branch yet.
+            "promotion_recorded": True,
         }
 
     # The working bucket is keyed on a process that is genuinely still alive,
@@ -1420,8 +1417,16 @@ def _watch_verdict(
         # command: the release the classifier names would launch over the
         # admission pass's release path, and nothing on the row says a
         # coordinator's move is what ends the wait.
+        #
+        # A block the worker's own manifest reports keeps the word that block
+        # already earned. The lane's refusal gates *when* the blocker can be
+        # worked and never lifts it, so painting such a row as a wait would
+        # hide the reader's work behind a clock that answers a different
+        # question — the same reason the classification keeps the manifest's
+        # reason beside the refusal rather than in place of it.
         next_action = None
-        if stored_phase != "held":
+        manifest_blocked = str(row.get("manifest_status") or "") == "blocked"
+        if stored_phase != "held" and not manifest_blocked:
             state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
@@ -1603,6 +1608,10 @@ def _watch_verdict(
         "stall_pause_reason": stall_pause_reason,
         "stall_process_state": stall_process_state,
         "stall_quiet_seconds": quiet_seconds,
+        # The pointer's own word, taken without a committed ledger row behind
+        # it. The fold reads this to tell a reading worded by the run's own row
+        # from one the pointer alone supports.
+        "promotion_recorded": False,
     }
 
 
@@ -1677,7 +1686,15 @@ def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
 
 
 _SNAPSHOT_CACHE: dict[str, tuple[str, dict[str, Any]]] = {}
-_SNAPSHOT_CACHE_LIMIT = 256
+# The cache has to hold every live run of the project at once, or a poll
+# recomputes the runs it just evicted: each recomputation classifies a run from
+# its streams, so a fleet one run over the bound re-reads streams every poll.
+# A snapshot is a small mapping, so the bound sits well above any fleet this
+# process watches and exists only to stop a leak.
+_SNAPSHOT_CACHE_LIMIT = 4096
+# A trim removes this share of the bound, so the directory checks it costs are
+# paid once per that many stores rather than on every store past the bound.
+_SNAPSHOT_CACHE_TRIM = 8
 
 
 def _remember_snapshot(
@@ -1699,11 +1716,20 @@ def _remember_snapshot(
     store[run_id] = (key, snapshot)
     if len(store) <= _SNAPSHOT_CACHE_LIMIT:
         return
+    # Past the bound, runs whose directory has gone are dropped first, then the
+    # oldest entries down to a margin below the bound. The margin is what keeps
+    # this from running on every store: without it each store past the bound
+    # checked every cached run's directory, which on a fleet larger than the
+    # bound was one directory check per pair of runs per poll.
     for rid in list(store):
         if rid != run_id and not runs.run_dir(rid).is_dir():
             del store[rid]
-    while len(store) > _SNAPSHOT_CACHE_LIMIT:
-        store.pop(next(iter(store)))
+    target = _SNAPSHOT_CACHE_LIMIT - _SNAPSHOT_CACHE_LIMIT // _SNAPSHOT_CACHE_TRIM
+    while len(store) > target:
+        oldest = next(iter(store))
+        if oldest == run_id:
+            break
+        store.pop(oldest)
 
 
 def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
@@ -1813,6 +1839,7 @@ def _compute_watch_snapshot(
         **({"pointers": pointers} if pointers is not None else {}),
     )
     from reckon.crew.stage_receipts import observe_review_delivery
+
     observe_review_delivery(pointer, pointers=pointers)
     # Which repair records count as open is the reflex's own question, so it is
     # asked of the owner of that reading rather than answered here. The import
@@ -1891,6 +1918,13 @@ def _compute_watch_snapshot(
         # carries it under its own name rather than as a flattened display flag.
         "lineage": pointer.get("lineage"),
         "state": verdict["state"],
+        # Whether that word came from the run's own committed ledger row rather
+        # than from the pointer. The two are not the same fact: a promotion
+        # whose head is on no branch yet reads as delivered, so the fold cannot
+        # recognise a settled run from its word alone. Carried beside the word
+        # so a departure or a stale pointer reading can be judged against the
+        # authority that worded it.
+        "promotion_recorded": bool(verdict.get("promotion_recorded")),
         "delivery": row.get("delivery"),
         "classification": row["classification"],
         "process_alive": row["process_alive"],
@@ -2253,7 +2287,10 @@ def _stuck_count(rows: Iterable[Mapping[str, Any]]) -> int:
 
 
 def _fleet_counts(
-    snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
+    snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Partition the fleet into working, reviewing, blocked, delivered and waiting.
 
@@ -2297,6 +2334,17 @@ def _fleet_counts(
         for snapshot in rows
     )
     buckets = [_bucket_of(state) for state in states]
+    # A row is delivered when its own row word says delivered, and the
+    # classifier's promotion debt reads only the promotable ones. Counting the
+    # fold alone would drop a run whose review is still owed — drawn delivered
+    # while it is classified ``scoring`` — out of every cell, so the state the
+    # pane draws it with counts here, one row once, and the fold adds the
+    # promotable rows the delivered states do not name.
+    delivered_rows = sum(
+        state in FLEET_UNPROMOTED_STATES
+        or str((snapshot.get("delivery") or {}).get("status") or "") == "delivered"
+        for snapshot, state in zip(rows, states, strict=True)
+    )
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states)
         - reviewing
@@ -2306,17 +2354,24 @@ def _fleet_counts(
         # word and the figure cannot disagree if there is one statement of
         # which bucket a state belongs to.
         "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
-        - repairing,
+        "unpromoted": delivered_rows - repairing,
     }
-    if any("delivery" in row and row["delivery"] is not None for row in rows):
+    # The promotion figures join the counts only when some row carries a
+    # delivery reading. An empty one is the classifier's "nothing delivered
+    # here" rather than a zero to publish, the same way ``reviewing`` and
+    # ``waiting`` join the result only when a run is in them: metadata with no
+    # reading behind it would sit in a dict of counts as a value that is not a
+    # count, and the fleet's figures are read as a partition that adds up to
+    # the rows it summarises.
+    if any(row.get("delivery") for row in rows):
         from .recovery_classification import delivery_summary
 
-        delivery = delivery_summary(rows)
-        counts["unpromoted"] = delivery["delivered"]
+        delivery = delivery_summary(rows, pointers=pointers)
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
-        counts["oldest_promotion_requested_at"] = delivery["oldest_promotion_requested_at"]
+        counts["oldest_promotion_requested_at"] = delivery[
+            "oldest_promotion_requested_at"
+        ]
     if reviewing:
         counts["reviewing"] = reviewing
     # A row's bucket is the word it is drawn with, read from the state this
@@ -2404,12 +2459,23 @@ def _manifest_rewritten(
 
 
 def _ledger_landing_word(project: str, row: Mapping[str, Any]) -> str:
-    """A promotion only announces landing once its head reaches primary."""
+    """A promotion only announces landing once its head reaches primary.
+
+    A ledger row names its project and never its checkout, so the ancestry
+    question is asked against the project's registered mount: that is the tree
+    the landing puts the row's head on, and asking it nowhere would word every
+    landed promotion as still awaiting its merge.
+    """
     if not row.get("commits"):
         return "recorded"
+    from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.recovery_classification import _promoted_awaiting_merge
 
-    if _promoted_awaiting_merge({**row, "project": project}, moment=time.time()):
+    record = {**row, "project": project}
+    checkout = project_mount_repository(project)
+    if checkout is not None:
+        record["repo"] = str(checkout)
+    if _promoted_awaiting_merge(record, moment=time.time(), row=row):
         return "complete"
     return "promoted"
 
@@ -2587,6 +2653,10 @@ def fleet_transitions(
     settles there: the completion is announced once, a later pointer
     reading cannot move it back to ``dispatched``, and the pointer's own
     disappearance — a gc reap included — emits nothing further for the run.
+    Settlement is read from the row, not from the word: a promotion whose
+    delivered head no branch carries yet is worded delivered and held exactly
+    the same way, moving only to the landed word the row itself earns once a
+    branch carries the head.
 
     An admission pass launches a queued request by releasing its pointer and
     publishing the launch under a new run id, so the request is absent for the
@@ -2667,12 +2737,18 @@ def fleet_transitions(
     else:
         recorded = {}
     for run_id in departures:
-        if str(known[run_id].get("state") or "") in FLEET_SETTLED_STATES:
+        if str(known[run_id].get("state") or "") in FLEET_SETTLED_STATES or (
+            _settled_by_ledger(known[run_id])
+        ):
             # The run already settled on its terminal ledger row: the landing
             # was announced once, so the pointer's later disappearance — a gc
             # reap included — is not news and emits nothing for the run. The
             # slot is still given up, so a genuine re-dispatch of the same id
             # is read as an arrival rather than suppressed by a stale memory.
+            # A promotion whose head no branch carries yet is settled the same
+            # way while its row exists: its word is the delivered one, so the
+            # row alone says the run is the ledger's to word and not the
+            # pointer's to withdraw.
             running.pop(run_id, None)
             continue
         # A departure is its own fact and inherits no clause or marker from the
@@ -2714,6 +2790,15 @@ def fleet_transitions(
             # cannot drive the row back — holding the promoted word is what
             # stops the row flapping between the two.
             continue
+        if _settled_by_ledger(known[run_id]) and not _is_ledger_word(state):
+            # The row worded this run, and the word it drew is not one that row
+            # can produce: the pointer a promotion left behind still reads its
+            # own phase. A promotion whose head no branch carries yet is worded
+            # delivered rather than promoted, so the flip it used to make was
+            # delivered to dispatched and back on every poll. Only a word the
+            # row itself earns — the landed one, once a branch carries the head
+            # — may move the row.
+            continue
         previous_recovery = str(
             known[run_id].get("recovery_classification") or previous
         )
@@ -2753,12 +2838,13 @@ def fleet_transitions(
         # ``dispatched`` while the pointer lingers.
         if run_id not in current:
             running.pop(run_id, None)
-        elif (
-            run_id in running
-            and str(running[run_id].get("state") or "") in FLEET_SETTLED_STATES
+        elif run_id in running and (
+            str(running[run_id].get("state") or "") in FLEET_SETTLED_STATES
         ):
             # Settled on its terminal ledger row: hold the promoted memory
-            # rather than adopting a later pointer reading.
+            # rather than adopting a later pointer reading. A delivered-but-
+            # unmerged promotion needs no hold of its own here: no transition
+            # of its word is folded at all unless the row itself earned it.
             pass
         elif not snapshot.get("manifest_rewritten") and not snapshot.get(
             "status_repaired"
@@ -2766,6 +2852,37 @@ def fleet_transitions(
             running[run_id] = dict(snapshot)
         events.append((dict(snapshot), previous, state, _transition_counts(running)))
     return events, running
+
+
+def _settled_by_ledger(snapshot: Mapping[str, Any]) -> bool:
+    """Whether a snapshot's word came from the run's own committed ledger row.
+
+    Promotion writes that row while the live pointer may still exist, and the
+    classifier words the run from the row rather than from the pointer. The word
+    is not always a settled one: a promotion whose delivered head no branch
+    carries yet reads as delivered, with the owed merge named in its detail, so
+    the word ``complete`` names a run that has landed and one that has not.
+    For the fold the row is still the run's settled memory — a later pointer
+    reading cannot re-word it, and its pointer's disappearance is not news. The
+    authority therefore has to travel beside the word; reading it off the word
+    would leave every delivered-but-unmerged promotion flapping against the
+    stale pointer it left behind.
+    """
+    return snapshot.get("promotion_recorded") is True
+
+
+def _is_ledger_word(state: str) -> bool:
+    """Whether a word is one a run holding a committed ledger row can read as.
+
+    The classifier words such a run from its row: landed as ``promoted`` or
+    ``recorded``, or delivered as ``complete`` while the promotion's head is on
+    no branch yet. A word outside that set is the pointer's own reading, which
+    the row outranks; the import is deferred because the classification module
+    is the one that imports this one.
+    """
+    from reckon.crew.recovery_classification import PROMOTED_UNMERGED_STATE
+
+    return state in FLEET_SETTLED_STATES or state == PROMOTED_UNMERGED_STATE
 
 
 def _awaits_its_admission(run_id: str, snapshot: Mapping[str, Any]) -> bool:
@@ -2793,6 +2910,8 @@ def handover_run_ids(project: str) -> set[str]:
 
 def _session_fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """The fleet partition per owning session, unowned rows under ``""``.
 
@@ -2806,7 +2925,7 @@ def _session_fleet_counts(
     for owner in owners | {""}:
         rows, _peers = _partition_session_rows(snapshots.values(), owner)
         counts[owner] = {
-            **_fleet_counts(snapshots, session=owner),
+            **_fleet_counts(snapshots, session=owner, pointers=pointers),
             "stuck": _stuck_count(rows),
         }
     return counts
@@ -2814,12 +2933,14 @@ def _session_fleet_counts(
 
 def _transition_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The fleet's counts at one transition, with the per-session partition."""
     return {
-        **_fleet_counts(snapshots),
+        **_fleet_counts(snapshots, pointers=pointers),
         "stuck": _stuck_count(snapshots.values()),
-        "sessions": _session_fleet_counts(snapshots),
+        "sessions": _session_fleet_counts(snapshots, pointers=pointers),
     }
 
 
@@ -3041,6 +3162,7 @@ def _watch_transition(
         )
     )
     from reckon.crew.stage_receipts import note_delivery
+
     note_delivery(event)
     return event
 
@@ -3056,14 +3178,23 @@ def _recorded_transition_spend(project: str, run_id: str) -> dict[str, Any] | No
     if not run_id:
         return None
     from reckon import ledger as ledger_module
+    from reckon import run_store
 
     try:
         path = ledger_module.run_path(project, run_id)
         if path.is_file():
             row = json.loads(path.read_text(encoding="utf-8"))
         else:
-            rows, _version = ledger_module.read_records(project, with_figures=False)
-            row = next((item for item in rows if item.get("run_id") == run_id), None)
+            # The store answers one identity by key, decoding that row alone,
+            # so a transition pays for its own run rather than for the
+            # project's history. A project with no store is read from its
+            # ledger, narrowed to the same identity.
+            rows = run_store.stored_run_rows(project, run_ids=(run_id,))
+            if rows is None:
+                rows, _version = ledger_module.read_records(
+                    project, with_figures=False, run_ids=(run_id,)
+                )
+            row = rows[0] if rows else None
     except (OSError, ValueError, ledger_module.LedgerError):
         return None
     if not isinstance(row, Mapping) or row.get("run_id") != run_id:
@@ -3492,8 +3623,12 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     scoped["reviewing"] = total.get("reviewing", 0)
     scoped["blocked"] = total.get("blocked", 0)
     scoped["promotion_queued"] = total.get("promotion_queued", 0)
-    scoped["oldest_promotion_position"] = oldest_promotion.get("oldest_promotion_position")
-    scoped["oldest_promotion_requested_at"] = oldest_promotion.get("oldest_promotion_requested_at")
+    scoped["oldest_promotion_position"] = oldest_promotion.get(
+        "oldest_promotion_position"
+    )
+    scoped["oldest_promotion_requested_at"] = oldest_promotion.get(
+        "oldest_promotion_requested_at"
+    )
     scoped["unpromoted"] = total.get("unpromoted", 0)
     scoped["project_working"] = project_counts.get("working", 0)
     scoped["project_reviewing"] = project_counts.get("reviewing", 0)
@@ -4125,7 +4260,7 @@ def watch_ticker(
                         )
                         continue
 
-                    counts = _transition_counts(current)
+                    counts = _transition_counts(current, pointers=pointers)
                     watch_record["last_stage"] = "publishing"
                     if not fleet_seen:
                         fleet_seen = True
@@ -4335,7 +4470,8 @@ def recover(
 
     reports = []
     scoring: list[dict[str, Any]] = []
-    for pointer in list_live():
+    listed = list(list_live())
+    for pointer in listed:
         if project and str(pointer.get("project") or "") != project:
             continue
         run_id = str(pointer.get("run_id") or "")
@@ -4344,7 +4480,12 @@ def recover(
         if run_id:
             try:
                 observed = observe(run_id, config=config)
-            except CrewError as exc:
+            except (CrewError, BackendError) as exc:
+                # A stream a backend's dialect refuses is one run's fault. A
+                # pointer moved to another harness keeps the stream its first
+                # harness wrote, and left uncaught that refusal ended the pass
+                # for every other run of the project, so none of them was
+                # classified and no review they owed was composed.
                 unreadable = str(exc)
         observed = _derive_missing_manifest(observed, config=config)
         report = classify_pointer(observed)
@@ -4372,12 +4513,40 @@ def recover(
             counts[name] = count
     reflex = []
     awaiting_coordinator = []
+    awaiting_lost_session = []
     if dispatch_reviews:
+        # A run whose owning session is lost owes a review nobody is left to
+        # read. Composing one creates a request that can only be refused, so it
+        # is not composed at all -- not by this sweep's ``any_session`` path and
+        # not by a coordinator's own. The duty is not dropped: the run is carried
+        # into the decision raised for its session, and it is reported here
+        # rather than left to reappear as a refusal every pass.
+        from reckon.crew import lost_sessions as _lost_sessions
+
+        # Every live pointer dates its session, not only the run that owes the
+        # review: a session with no lease or process is dated from its oldest
+        # record, and reading only the scoring run would date it younger than
+        # the admit pass does. A younger answer under-detects lostness, which
+        # is the behaviour this suppression exists to stop.
+        lost_reads = _lost_sessions.LostSessionReads(pointers=listed)
         for record in scoring:
             session = str(record.get("session") or "")
+            if session and lost_reads.answer(
+                session, str(record.get("project") or project or "")
+            ).get("lost"):
+                awaiting_lost_session.append(
+                    {
+                        "run_id": str(record.get("run_id") or ""),
+                        "status": "awaiting-lost-session",
+                        "reason": (
+                            f"session {session!r} is lost, so no review is "
+                            "composed under it"
+                        ),
+                    }
+                )
+                continue
             if not any_session and (
-                not session
-                or not runs.follower_state(project, session).get("live")
+                not session or not runs.follower_state(project, session).get("live")
             ):
                 awaiting_coordinator.append(
                     {
@@ -4404,6 +4573,7 @@ def recover(
         ],
         "reviews_refused": [r for r in reflex if r.get("refused")],
         "reviews_awaiting_coordinator": awaiting_coordinator,
+        "reviews_awaiting_lost_session": awaiting_lost_session,
     }
 
 

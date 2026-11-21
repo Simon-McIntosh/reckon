@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:_publish_obligation_snapshots",
+    "reckon/crew/station_obligations.py:refresh",
+    "reckon/crew/station_obligations.py:_rewrite_without_follower"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T22:11:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-obligation-sweep-lists-live-pointers-once.html",
+      "id": "fc3c6f5bb13",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node declared an evidence fragment and its figure directory but delivered neither, so the 122-to-2 listing measurement exists only in the run manifest and the commit body and no plan-facing record carries it."
+    },
+    {
+      "file": "tests/test_an_obligation_sweep_lists_live_pointers_once.py",
+      "id": "ff4d6fc115e",
+      "line": "254",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm substitutes a hand-written stand-in for the base revision's read pattern, so if the derivation's readers stopped consulting _live_pointers the stand-in would still list per duty and line 258's listing count would still pass while no longer reproducing what the base revision did."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base eed783c702b1; 6b2143b867 adds the publication and the 272-line test, 16331f4e31 widens the base-read stand-in in tests/test_fleet_state_reads_the_live_pointers_once.py so it drops the population it is now offered, and no file outside the declared scope is touched.",
+    "done_when": "the done_when names tests/test_an_obligation_sweep_lists_live_pointers_once.py with 200 pointers, 60 delivered review duties over three sessions, <=3 listings, <=600 copied records and base-pattern equality; that file asserts MAX_LISTINGS (3) at line 237, MAX_RECORDS (600) at line 240, the population seen at line 228, and the two-arm equality at line 263.",
+    "goal": "the node goal is \"Make one obligation-snapshot sweep list the live directory a bounded number of times whatever the number of review duties\"; reckon/crew/obligation_snapshot.py:2070 now publishes state.pointers as the slice's live snapshot around the per-duty derivation, so the sweep's listing count is set by the derivation and not by the 60 review duties.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T145852346953-an-obligation-sweep-lists-live-pointers-once/manifest.md, which records the gate at 60 passed EXIT=0, base arm 58 passed EXIT=0, after arm 60 passed EXIT=0, and the negative control red at base with 122 listings; two declared paths, the evidence fragment and the figure, are absent from its changed_paths.",
+    "write_paths": "read the reviewed dispatch's declared paths (obligations.py, obligation_snapshot.py, the new test, an evidence fragment, a figure directory, and tests/test_fleet_state_reads_the_live_pointers_once.py); the diff touches three of the six and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_an_obligation_sweep_lists_live_pointers_once.py:237 reddens on the regression reinstated in the recorded negative control (122 listings at base, EXIT=1), and line 258 makes the equality arm prove it took the base read pattern rather than comparing one path with itself.",
+    "evidence": "tests/test_an_obligation_sweep_lists_live_pointers_once.py:237 and :240 assert the done_when's two bounds, the manifest records 60 passed EXIT=0, and I re-ran that test at head 16331f4e31 for 2 passed EXIT=0.",
+    "fit": "the split of payload_for into _payload_for_state at reckon/crew/obligation_snapshot.py:2076 follows the module's private-helper and docstring idiom, and ruff check plus ruff format --check pass on all three changed files.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:2072 publishes the held population for the length of each slice, so runs.py:_publish_obligation_snapshots no longer pays a listing per review duty.",
+    "reuse": "the publication is obligations.live_pointer_snapshot (reckon/crew/obligations.py:824), the owner of the published population that _live_pointers reads, and the search of reckon/crew found open_run_index.py:23 owning only the nested read scope this owner already consumes, so the change extends the owner rather than forking it.",
+    "scope_discipline": "every changed path (obligation_snapshot.py, the new test, test_fleet_state_reads_the_live_pointers_once.py) is inside those declared, but the declared evidence fragment and figure under docs/ are not written at all."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make one obligation-snapshot sweep list the live directory a bounded number of times whatever the number of review duties\"; reckon/crew/obligation_snapshot.py:2070 now publishes state.pointers as the slice's live snapshot around the per-duty derivation, so the sweep's listing count is set by the derivation and not by the 60 review duties.\nVERDICT done_when: the done_when names tests/test_an_obligation_sweep_lists_live_pointers_once.py with 200 pointers, 60 delivered review duties over three sessions, <=3 listings, <=600 copied records and base-pattern equality; that file asserts MAX_LISTINGS (3) at line 237, MAX_RECORDS (600) at line 240, the population seen at line 228, and the two-arm equality at line 263.\nVERDICT write_paths: read the reviewed dispatch's declared paths (obligations.py, obligation_snapshot.py, the new test, an evidence fragment, a figure directory, and tests/test_fleet_state_reads_the_live_pointers_once.py); the diff touches three of the six and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T145852346953-an-obligation-sweep-lists-live-pointers-once/manifest.md, which records the gate at 60 passed EXIT=0, base arm 58 passed EXIT=0, after arm 60 passed EXIT=0, and the negative control red at base with 122 listings; two declared paths, the evidence fragment and the figure, are absent from its changed_paths.\nVERDICT diff: read both commits against base eed783c702b1; 6b2143b867 adds the publication and the 272-line test, 16331f4e31 widens the base-read stand-in in tests/test_fleet_state_reads_the_live_pointers_once.py so it drops the population it is now offered, and no file outside the declared scope is touched.\nCALL_SITES: reckon/crew/runs.py:_publish_obligation_snapshots, reckon/crew/station_obligations.py:refresh, reckon/crew/station_obligations.py:_rewrite_without_follower\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:2072 publishes the held population for the length of each slice, so runs.py:_publish_obligation_snapshots no longer pays a listing per review duty.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_an_obligation_sweep_lists_live_pointers_once.py:237 and :240 assert the done_when's two bounds, the manifest records 60 passed EXIT=0, and I re-ran that test at head 16331f4e31 for 2 passed EXIT=0.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path (obligation_snapshot.py, the new test, test_fleet_state_reads_the_live_pointers_once.py) is inside those declared, but the declared evidence fragment and figure under docs/ are not written at all.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_obligation_sweep_lists_live_pointers_once.py:237 reddens on the regression reinstated in the recorded negative control (122 listings at base, EXIT=1), and line 258 makes the equality arm prove it took the base read pattern rather than comparing one path with itself.\nSCORE fit: 18\nJUSTIFICATION fit: the split of payload_for into _payload_for_state at reckon/crew/obligation_snapshot.py:2076 follows the module's private-helper and docstring idiom, and ruff check plus ruff format --check pass on all three changed files.\nSCORE reuse: 20\nJUSTIFICATION reuse: the publication is obligations.live_pointer_snapshot (reckon/crew/obligations.py:824), the owner of the published population that _live_pointers reads, and the search of reckon/crew found open_run_index.py:23 owning only the nested read scope this owner already consumes, so the change extends the owner rather than forking it.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-obligation-sweep-lists-live-pointers-once.html:1 non-blocking: the node declared an evidence fragment and its figure directory but delivered neither, so the 122-to-2 listing measurement exists only in the run manifest and the commit body and no plan-facing record carries it.\nFINDING tests/test_an_obligation_sweep_lists_live_pointers_once.py:254 non-blocking: the base arm substitutes a hand-written stand-in for the base revision's read pattern, so if the derivation's readers stopped consulting _live_pointers the stand-in would still list per duty and line 258's listing count would still pass while no longer reproducing what the base revision did.",
+  "review_run_id": "r-20261119T221028002178-review-of-an-obligation-sweep-lists-live-pointers-once-16331f4e31db",
+  "reviewed_base_sha": "eed783c702b16cd8ef596bf8d7c785e2e39e3538",
+  "reviewed_head_sha": "16331f4e31db67793b989d0d427f5bce7ff7096c",
+  "reviewed_run_id": "r-20261119T145852346953-an-obligation-sweep-lists-live-pointers-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:24:27.018734+00:00",
+  "total": 111
+}

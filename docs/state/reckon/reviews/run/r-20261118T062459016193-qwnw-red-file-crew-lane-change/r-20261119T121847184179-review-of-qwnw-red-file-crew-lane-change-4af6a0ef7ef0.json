@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1805 change_lane",
+    "reckon/crew/dispatch_sessions.py:1030 dispatch_field(record, 'argv')",
+    "reckon/crew/runs.py:275 dispatch_field",
+    "reckon/crew_run_commands.py:2756 change_lane (crew lane-change CLI)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:21:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-lane-change.html",
+      "line": "62-67",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two declared-suite arm rows delegate their result to baseline_suite and after_suite, but both arms run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py (baseline_suite-1795089798866652443.log and after_suite-1795089841623654908.log, both '58 passed'), neither of which imports or exercises tests/test_crew_lane_change.py; the done_when's 'an arm over the test files that import what you changed adds no failure against the base' is therefore satisfied vacuously, and promotion's suite pair would report green even if the repaired assertions regressed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is test-only; the production paths it reads are reckon/crew/dispatch_sessions.py:1805 change_lane (writes the resumed argv), :1030 dispatch_field(record, 'argv') and reckon/crew_run_commands.py:2756 change_lane",
+    "diff": "read all three commits against d9b857e053: 12031ca225 replaces both after['argv'] reads through dispatch_field and adds its import, 8b215417b9 adds the 83-line evidence fragment, and 4af6a0ef7e rewrites the head rows of the fragment's arms table.",
+    "done_when": "the done_when asks for the named file in full as an all_debug job with SLURM_JOB_ID unset, a base arm with verdicts, a no-added-failure arm pair, the base red log in the evidence fragment, and clean ruff on changed paths; the manifest and lane-change-{base,head}.log supply the file arms, the fragment quotes the base ids, both ruff checks match base, but the arm pair's two logs cover files unrelated to the change.",
+    "goal": "the goal is that tests/test_crew_lane_change.py passes in full on the primary branch; the delivered head 4af6a0ef7e carries the two-accessor repair at tests/test_crew_lane_change.py:196 and :247 and lane-change-head.log reads 7 passed EXIT=0, so the file is green at the head promotion lands.",
+    "manifest": "read; status complete, commits 12031ca225efefd3f7b4359cf462b243d1ab2e30, 8b215417b99024020a8db3bb35339f0551928baf and 4af6a0ef7ef066ad5c25ebb864cf73c838df4441, changed_paths naming the two landed files, the gate command with its log, baseline_suite and after_suite at 40-character revisions, and its own outside_scope note about the suite mismatch.",
+    "write_paths": "declared were reckon, tests, and the fragment/figure paths; the diff touches only the fragment and tests/test_crew_lane_change.py, both inside that fence."
+  },
+  "justifications": {
+    "durability": "the base arm fails both cases on the exact defect (KeyError: 'argv' at tests/test_crew_lane_change.py:194 and :244), and reinstating that defect \u2014 dropping the resumed argv from the run's stored dispatch detail \u2014 makes dispatch_field return None at :196 and empty at :247, reddening both; the inline fallback at reckon/crew/runs.py:279 means a pointer that carries argv again would not be caught, which is the only gap.",
+    "evidence": "lane-change-base.log (d9b857e053, '2 failed, 5 passed' EXIT=1) and lane-change-head.log (4af6a0ef7e, '7 passed' EXIT=0) are recorded in the manifest and reproduced in the evidence fragment, but the two declared-suite arm logs the done_when's 'adds no failure against the base' clause rests on (baseline_suite-1795089798866652443.log and after_suite-1795089841623654908.log, both '58 passed' EXIT=0) measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which exercises the changed file.",
+    "fit": "the added import at tests/test_crew_lane_change.py:18 follows the module's from-import idiom beside it, the explanatory comment at :195-197 states the mechanism, and no plan or ticket identifier appears in the changed test or the fragment.",
+    "goal_fidelity": "tests/test_crew_lane_change.py:196 and :247 now read the resumed command through reckon/crew/runs.py:275 dispatch_field, and lane-change-head.log at 4af6a0ef7e reads '7 passed' EXIT=0, so the named file is green at the delivered head; the fix is not yet on main because promotion lands it, not the node.",
+    "reuse": "the diff adds no definition; it calls reckon/crew/runs.py:275 dispatch_field, the owner of reading dispatch-time detail, which reckon/crew/dispatch_sessions.py:1030 already uses on the launch path.",
+    "scope_discipline": "the diff d9b857e053..4af6a0ef7ef0 touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-lane-change.html and tests/test_crew_lane_change.py (:196, :247), both inside the declared write paths, with no product module and no plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_crew_lane_change.py passes in full on the primary branch; the delivered head 4af6a0ef7e carries the two-accessor repair at tests/test_crew_lane_change.py:196 and :247 and lane-change-head.log reads 7 passed EXIT=0, so the file is green at the head promotion lands.\nVERDICT done_when: the done_when asks for the named file in full as an all_debug job with SLURM_JOB_ID unset, a base arm with verdicts, a no-added-failure arm pair, the base red log in the evidence fragment, and clean ruff on changed paths; the manifest and lane-change-{base,head}.log supply the file arms and the fragment quotes the base ids, but the arm pair's two logs cover files unrelated to the change.\nVERDICT write_paths: declared were reckon, tests, and the fragment/figure paths; the diff touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-lane-change.html and tests/test_crew_lane_change.py, both inside that fence.\nVERDICT manifest: read; status complete, three commits, changed_paths naming the two landed files, the gate command with its log, baseline_suite and after_suite at 40-character revisions, and its own outside_scope note about the suite mismatch.\nVERDICT diff: read all three commits against d9b857e053; 12031ca225 replaces both after['argv'] reads through dispatch_field, 8b215417b9 adds the 83-line evidence fragment, and 4af6a0ef7e rewrote the head rows of the fragment's arms table.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1805 change_lane, reckon/crew/dispatch_sessions.py:1030 dispatch_field, reckon/crew/runs.py:275 dispatch_field, reckon/crew_run_commands.py:2756 change_lane\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_lane_change.py:196 and :247 read the resumed command through reckon/crew/runs.py:275, and lane-change-head.log at 4af6a0ef7e reads 7 passed EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: lane-change-base.log (2 failed, 5 passed, EXIT=1) and lane-change-head.log (7 passed, EXIT=0) are recorded, but the declared-suite arms at both revisions run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither touching the changed file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff d9b857e053..4af6a0ef7ef0 touches only the evidence fragment and tests/test_crew_lane_change.py, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: both repaired assertions fail on the base arm's KeyError: 'argv' at tests/test_crew_lane_change.py:194 and :244, and reinstating that defect reddens them again through reckon/crew/runs.py:275.\nSCORE fit: 19\nJUSTIFICATION fit: the import at tests/test_crew_lane_change.py:18 follows the module's from-import idiom and the comment at :195-197 states the mechanism with no ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and calls reckon/crew/runs.py:275 dispatch_field, the owner reckon/crew/dispatch_sessions.py:1030 already reads argv through.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-lane-change.html:62-67 non-blocking: the declared-suite arms (baseline_suite-1795089798866652443.log and after_suite-1795089841623654908.log, both 58 passed) run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so the done_when's no-added-failure clause is satisfied vacuously and promotion's suite pair cannot detect a regression in the repaired assertions.",
+  "review_run_id": "r-20261119T121847184179-review-of-qwnw-red-file-crew-lane-change-4af6a0ef7ef0",
+  "reviewed_base_sha": "d9b857e053a77af65ab77aad9d78f3ef3d3bb28a",
+  "reviewed_head_sha": "4af6a0ef7ef066ad5c25ebb864cf73c838df4441",
+  "reviewed_run_id": "r-20261118T062459016193-qwnw-red-file-crew-lane-change",
+  "reviewer_run_id": "r-20261119T121847184179-review-of-qwnw-red-file-crew-lane-change-4af6a0ef7ef0",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:02:54.194615+00:00",
+  "total": 112
+}

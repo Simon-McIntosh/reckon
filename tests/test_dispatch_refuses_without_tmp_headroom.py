@@ -84,6 +84,8 @@ def test_dry_run_reports_the_same_named_refusal(tmp_path, monkeypatch):
             "sample",
             "--plan",
             "sample",
+            "--section",
+            "s1",
             "--node",
             "work",
             "--session",

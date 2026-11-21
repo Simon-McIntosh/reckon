@@ -246,7 +246,12 @@ def derive_within_budget(
 # rather than to any run's work, a repair round is a worker the reflex resumed
 # and will re-fire when the round ends, and a route the picker defaulted is a
 # notice about a run that is working rather than a debt, so blocking would ask a
-# coordinator to act on a condition no run of this session created.
+# coordinator to act on a condition no run of this session created. A disk
+# reading the sampler has not published is the same shape of duty: it names no
+# run, no session owns the sampler, and the row names the process and the
+# reading's age so a coordinator can say what is wrong without being able to
+# clear it. Only a published reading that is low on space is a duty here, and
+# that row still holds the turn.
 # Mirrors the derivation's own vocabulary, which cannot be imported here on the
 # paths that read a fresh snapshot.
 _NON_BLOCKING_KINDS = frozenset(
@@ -260,8 +265,21 @@ _NON_BLOCKING_KINDS = frozenset(
         "repair-round",
         "scope-held",
         "route-defaulted",
+        "node-disk-stale",
+        "node-disk-missing",
+        "node-disk-unreadable",
     }
 )
+
+# The waiting kinds the checklist still names row by row. A skipped review
+# record is the one non-blocking duty whose row is the only place its subject
+# appears: the collapsed line counts "unreadable-review-record 1" with no path,
+# and a reader given a count cannot read that record again once its writer
+# finishes or remove the file left half-written. It is named while the stop
+# still treats it as seen-and-let-through, because the coordinator's act is one
+# it can take — the record may be served by a writer still finishing — rather
+# than one the turn must be refused for.
+_NAMED_WAIT_KINDS = frozenset({"unreadable-review-record"})
 
 # A session worktree's directory component is the repository name plus a short
 # hex digest, e.g. ``reckon-c8f839407e49``.
@@ -719,16 +737,9 @@ def budget_reset_store_path() -> Path:
 
 def _instant(value: Any) -> datetime | None:
     """One stored UTC instant, or None when it cannot be read."""
-    text = str(value or "").strip()
-    if not text:
-        return None
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    try:
-        parsed = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(str(value or ""))
 
 
 def limit_reset_events(
@@ -832,6 +843,21 @@ def _row_is_actionable(item: Mapping[str, Any]) -> bool:
     if not isinstance(age, (int, float)) or isinstance(age, bool):
         age = 0
     return age >= window
+
+
+def _row_is_printed(item: Mapping[str, Any]) -> bool:
+    """Whether the checklist names the row rather than counting it.
+
+    A row a coordinator can act on is printed in full, and so is a wait whose
+    row is the only place its subject is named: the collapsed line keeps a
+    fleet's worth of identical housekeeping off the checklist, and a count says
+    enough where every member is interchangeable. A skipped record's path is
+    not interchangeable with another's, so it keeps its own line. The stop
+    verdict never reads this: what holds a turn open is decided by
+    :func:`_row_is_actionable` alone.
+    """
+    kind = str(item.get("kind") or "")
+    return _row_is_actionable(item) or kind in _NAMED_WAIT_KINDS
 
 
 def _collapsed_line(items: Sequence[Mapping[str, Any]]) -> str:
@@ -939,9 +965,10 @@ def format_checklist(
     if items:
         header += f", oldest {_format_age(int(summary.get('oldest_age_seconds') or 0))}"
     actionable = [item for item in items if _row_is_actionable(item)]
-    waiting = [item for item in items if not _row_is_actionable(item)]
+    printed = [item for item in items if _row_is_printed(item)]
+    waiting = [item for item in items if not _row_is_printed(item)]
     lines = [header]
-    lines.extend(_work_lines(actionable))
+    lines.extend(_work_lines(printed))
     if waiting:
         # The waits a coordinator cannot shorten are the bulk of a fleet's
         # list and the same rows turn after turn, so they are counted rather
@@ -1853,7 +1880,16 @@ def reapply_acknowledgements(
     pointers as they read now. The acknowledgement's own deadline bounds the
     effect: a deferral that has expired is not in force, so the duty returns to
     the list and the stop blocks again.
+
+    The read is paid only when a deferral is recorded: with none in force at
+    publish and none since, re-partitioning cannot change the list, and the
+    derivation module that reads them carries the rest of the crew facade,
+    which the prompt path must never load.
     """
+    if not payload.get("acknowledged") and not snapshot_module().deferrals_recorded(
+        project
+    ):
+        return payload
     module = _obligations_module()
     items = list(payload.get("obligations") or ())
     identities = {(item.get("run_id"), item.get("kind")) for item in items}

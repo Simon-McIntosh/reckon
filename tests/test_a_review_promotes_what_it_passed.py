@@ -122,6 +122,7 @@ def _manifest_body(changed_paths: list[str], *, commits: str = "none") -> str:
         "changed_paths:\n"
         + "".join(f"  - {path}\n" for path in changed_paths)
         + f"tests: {EXECUTABLE_GATE_COMMAND}\n"
+        + "messages_received: none\n"
     )
 
 
@@ -246,17 +247,24 @@ def test_a_committed_path_outside_every_declaration_is_still_refused(
     """The other direction: promotion still refuses what no declaration grants.
 
     A non-review run cites the commit it made, and that commit's own diff holds
-    a path the node never declared. The scope test reads the committed paths at
-    promotion and names the stray one, so the acceptance above is not a blanket
-    admission of every path outside a declaration.
+    a path the node never declared. A declared write path is a hint, so the
+    merge-safe neighbour committed beside it is delivered and the worktree
+    isolates the edit; the class a merge cannot reconcile — here a generated
+    state file — is what the scope test refuses. The refusal names the stray
+    path alone, so the acceptance above is not a blanket admission of every
+    path outside a declaration.
     """
     undeclared = "undeclared.txt"
+    generated = f"docs/state/{PROJECT}/undeclared.json"
     (repository / undeclared).write_text("work\n", encoding="utf-8")
-    _git(repository, "add", "--", undeclared)
+    (repository / generated).write_text("{}\n", encoding="utf-8")
+    _git(repository, "add", "--", undeclared, generated)
     _git(repository, "commit", "-q", "-m", "test: undeclared work")
     commit = _git(repository, "rev-parse", "HEAD")
     manifest = tmp_path / "manifest.md"
-    manifest.write_text(_manifest_body([undeclared], commits=commit), encoding="utf-8")
+    manifest.write_text(
+        _manifest_body([undeclared, generated], commits=commit), encoding="utf-8"
+    )
     _write_json(
         pointer_path(RUN_ID),
         {
@@ -281,8 +289,12 @@ def test_a_committed_path_outside_every_declaration_is_still_refused(
         },
     )
 
-    with pytest.raises(crew.CrewError, match="outside its declared write scope"):
+    with pytest.raises(
+        crew.CrewError, match="outside its declared write scope"
+    ) as refused:
         crew.complete(RUN_ID, gate="passed", commits=[commit], root=repository)
 
+    assert generated in str(refused.value)
+    assert undeclared not in str(refused.value)
     assert pointer_path(RUN_ID).is_file()
     assert ledger.runs(PROJECT, root=repository) == []

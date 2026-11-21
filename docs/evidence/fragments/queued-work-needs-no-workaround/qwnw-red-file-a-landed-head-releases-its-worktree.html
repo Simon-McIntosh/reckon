@@ -1,0 +1,84 @@
+<section id="qwnw-red-file-a-landed-head-releases-its-worktree-landing">
+  <h2>A landed head releases its worktree</h2>
+
+  <p><strong>What changed.</strong> One cause, one verdict: <em>test
+  wrong</em>. Nothing in <code>reckon/</code> changed.</p>
+
+  <p>The three cases read <code>crew complete --land</code>'s outcome with
+  <code>json.loads(result.output)</code> and then asserted
+  <code>report["steps"]["land"]</code>. Since the completion path began
+  answering a direct caller with a bounded receipt, stdout carries only
+  <code>{"ok", "merged", "run_id", "record_path"}</code> and the merge, release
+  and refusal detail lives in the archived record that
+  <code>record_path</code> names. Each case therefore failed with
+  <code>KeyError: 'steps'</code> before reaching any landing assertion. The
+  rule the file now asserts is that <code>crew complete</code> reports through
+  its linked record: a new <code>_full_report(result)</code> helper loads
+  <code>json.loads(result.output)["record_path"]</code>, and the three cases
+  read that document. Every assertion is unchanged — the reviewed head is
+  merged and pushed, the marker the change introduced is on
+  <code>main</code> and on the remote, the post-merge release
+  (<code>steps.release.worktree_released</code>) frees the tree, a run whose
+  recorded checkout the landing did not move still releases its tree, and a
+  worktree holding a commit beyond the head is withheld with
+  <code>worktree_released</code> false and nothing landed. No assertion was
+  deleted or weakened.</p>
+
+  <p><code>tests/helpers/landing_repository.py</code> is untouched: the
+  bounded receipt kept the same <code>crew complete</code> invocation and exit
+  statuses the fixture already observed.</p>
+
+  <h3 id="qwnw-red-file-a-landed-head-releases-its-worktree-measured">Measured</h3>
+
+  <p>Every case synthesises its own origin, checkout, ledger, workspace and
+  config home under a temporary directory; none reads or writes the live crew
+  home. The gate file is
+  <code>tests/test_a_landed_head_releases_its_worktree.py</code>, run on the
+  <code>all_debug</code> partition as a job with <code>SLURM_JOB_ID</code>
+  unset. Each log names its revision, tree, imported module and command on its
+  first lines and ends with a bare <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table id="qwnw-red-file-a-landed-head-releases-its-worktree-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>this file, head</td>
+        <td><code>aaf074e3999d9de3afb2b652b5a9a749a6c1c685</code>, this worktree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>this file, base</td>
+        <td><code>6acdaba6c3c678f7508a8b5485e14309f1f6afbe</code>, scratch tree</td>
+        <td id="qwnw-red-file-a-landed-head-releases-its-worktree-base-ids">3 failed, <code>EXIT=1</code>:
+        <code>test_a_landing_of_the_reviewed_head_releases_the_worktree</code>,
+        <code>test_a_recorded_observer_checkout_still_releases_the_worktree</code>,
+        <code>test_a_worktree_holding_a_commit_beyond_the_head_is_withheld</code>
+        — all <code>KeyError: 'steps'</code></td></tr>
+      <tr><td>the file importing the changed module, head</td>
+        <td><code>aaf074e3999d9de3afb2b652b5a9a749a6c1c685</code>, this worktree</td>
+        <td>1 failed, 10 passed, <code>EXIT=1</code>; the same one id as the base arm</td></tr>
+      <tr><td>the file importing the changed module, base</td>
+        <td><code>6acdaba6c3c678f7508a8b5485e14309f1f6afbe</code>, scratch tree</td>
+        <td>1 failed, 10 passed, <code>EXIT=1</code>:
+        <code>tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run</code>
+        (<code>KeyError: 'steps'</code>) — zero added</td></tr>
+    </tbody>
+  </table>
+
+  <p>The importing file's one failure is the same reply-shape cause in a file
+  this node does not own; it is reported under <code>outside_scope</code>.
+  <code>tests/test_a_failed_land_exits_nonzero.py</code>,
+  <code>tests/test_a_land_refuses_a_head_behind_its_worktree.py</code> and one
+  case of <code>tests/test_a_clean_landing_releases_its_worktree.py</code> read
+  the same absent <code>steps</code> from stdout at this revision; those files
+  belong to other nodes and are untouched here.</p>
+
+  <h3 id="qwnw-red-file-a-landed-head-releases-its-worktree-logs">Logs</h3>
+  <ul>
+    <li>head gate:
+      <code>scoped-gate-1795083905935976050.log</code> in the run directory</li>
+    <li>base arm:
+      <code>qwnw-red-file-a-landed-head-releases-its-worktree-base.log</code></li>
+    <li>base arm, importing file:
+      <code>qwnw-red-file-a-landed-head-releases-its-worktree-base-importers.log</code></li>
+    <li>head arm, importing file:
+      <code>scoped-gate-1795084119278532323.log</code></li>
+  </ul>
+</section>

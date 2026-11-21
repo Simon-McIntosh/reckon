@@ -190,6 +190,20 @@ def test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_field
     assert not hot_ids()
 
 
+def test_a_ledger_whose_documents_are_gone_keeps_its_cached_rows(history):
+    root, _, records, _ = history
+    state = root / "docs" / "state" / "sample"
+    for path in state.iterdir():
+        path.unlink()
+    assert not any(state.iterdir()), "the fixture left a document behind"
+    with run_store.RunStore(root=root) as store:
+        for _ in range(2):
+            assert set(store.durable_rows("sample")) == {
+                record["run_id"] for record in records
+            }
+    assert len(hot_ids()) == len(records)
+
+
 def test_an_import_racing_retirement_does_not_recreate_a_hot_run(history, monkeypatch):
     root, now, records, _ = history
     inspected = threading.Event()
@@ -257,6 +271,44 @@ def test_a_default_sweep_moves_exactly_its_batch_and_leaves_the_rest(history):
     next_report = gc.retention_sweep(apply=True, now=now)
     assert len(next_report["run_store"]["retired"]) == 3
     assert not hot_ids()
+
+
+def test_the_retirement_gate_sees_the_project_its_row_is_filed_under(history):
+    """A sweep's gate can name the project of the record it is offered.
+
+    A promotion writes a record that names no project — the store files the row
+    under the project its caller passes — so a gate that reads one off the
+    record it is handed is asking the store for the column. The retention sweep
+    asks exactly that: which project's history released a candidate decides
+    whether its row leaves the hot tables.
+    """
+    root, now, records, _ = history
+    promoted = {
+        "run_id": "r-promoted",
+        # A promotion record: no project field.
+        "node": "task",
+        "dispatched_at": records[0]["dispatched_at"],
+        "completed_at": records[0]["completed_at"],
+        "gate": "passed",
+    }
+    asked = []
+
+    def released(record):
+        asked.append(record["project"])
+        return record["project"] == "sample"
+
+    with run_store.RunStore(root=root) as store:
+        store.append("sample", promoted)
+        report = store.retire(
+            before=now,
+            protected=set(),
+            projects={"sample"},
+            apply=False,
+            can_retire=released,
+            limit=len(records) + 1,
+        )
+    assert asked and set(asked) == {"sample"}
+    assert "r-promoted" in report["offered"]
 
 
 def test_the_hourly_sweep_uses_incremental_compaction_without_a_full_rewrite(

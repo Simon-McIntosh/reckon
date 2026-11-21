@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:2374",
+    "reckon/crew/promotion_gate.py:1278",
+    "reckon/crew/admission/readiness.py:561",
+    "reckon/crew/open_run_index.py:444",
+    "reckon/budget.py:713",
+    "reckon/serve.py:808"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:09:40Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py:2797",
+      "line": 2797,
+      "severity": "non-blocking",
+      "text": "The _load_file_history docstring still states 'No stored read inspects per-run documents or refreshes their disposable indexes', which this change makes false: the stored branch at reckon/ledger.py:2841-2846 now scandirs the runs directory and decodes every document the store does not hold on each stored read, so the module's own contract text contradicts the behaviour it documents."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised/manifest.md:16",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "The done_when requires the arm over the ledger-importing test files to be recorded as inline JSON carrying full 40-character revisions, but baseline_suite/after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py (0 failures in both logs), which import no ledger module; the ledger arm (6 failed 171 passed at 2437205f9a762420c943f3c0b0312ded03f7395f versus 4 failed 173 passed at 70c0ce43867b29585ae82013218a1981feb2055d) exists only as prose in artifacts beside logs/ledger-arm-base.log and logs/ledger-arm-head.log, so a promotion reading only the JSON arms sees a pair that never exercises the change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised/manifest.md:21",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "The done_when's 'ruff check and ruff format --check report nothing new on the changed paths' clause rests on prose in the artifacts line with no log or command recorded, so no artefact lets a reader establish the claim without repeating the work."
+    }
+  ],
+  "notes": "Durability is a reading, not an experiment: the diff adds no assertion, and the guard is the pre-existing named file, which reddens on the reinstated regression - at 2437205f9a762420c943f3c0b0312ded03f7395f the stored branch answers _report_damaged_run_records(project, ()) and logs/torn-ledger-base-red.log records test_review_pass_keeps_promoting_with_a_truncated_row and test_read_during_exclusive_append_reports_damage_then_recovers[True] failing on 'assert () == (PosixPath(...),)'. Those expectations are independent of the value under test: the expected tuple holds a path the test itself wrote and the actual value comes from ledger.damaged_run_records, so restoring the empty-tuple call reddens them. The nine-file arm's head failing ids are a strict subset of the base's (verified from logs/ledger-arm-base.log and logs/ledger-arm-head.log), the four remainder matching the manifest's outside_scope. Reuse search: grep over reckon/ for damaged_run_records, for an enumerator of unheld run documents, and for the run-directory listing owners (_run_files at reckon/ledger.py:1054, _run_files_written_since at :2940, _merge_run_documents at :2976) found no owner for reporting damage among documents the store does not hold; the new helper calls the existing _read_run, ledger_path and _report_damaged_run_records rather than adding a second damage rule or a parallel damaged set.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is making tests/test_a_torn_ledger_row_is_reported_not_raised.py pass in full on the primary branch; scoped-gate-1795112270588728189.log records '6 passed in 1.45s' and EXIT=0 for that file at d7f4b66a872792a7f002042b52d1086b516a6fcd, and the primary landing itself is the promotion's gate rather than the node's.\nVERDICT done_when: The measure asks for a head job on all_debug with SLURM_JOB_ID unset, a base run first, a per-cause verdict, an arm over the ledger-importing files as inline JSON with full revisions, a base negative control and a clean ruff; the gate log, logs/torn-ledger-base-red.log ('2 failed, 4 passed', EXIT=1) and the committed fragment carry the head, base, verdict (product wrong) and negative control, while the arm is prose; the inline JSON arms name other test files and the ruff clause has no receipt.\nVERDICT write_paths: The declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's fragment and figure paths; the diff's two paths are reckon/ledger.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-torn-ledger-row-is-reported-not-raised.html, both inside it, and no test file is edited.\nVERDICT manifest: Read all 22 lines of manifest.md: it records status complete, both commit ids at full length, the literal gate command, four log paths that exist and end in EXIT=0 or EXIT=1 as claimed, the base reproduction and a negative control, but its baseline_suite/after_suite JSON covers tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py with 0 failures in both arms, which is not the ledger arm the done_when requires as inline JSON.\nVERDICT diff: Read 2437205f9a762420c943f3c0b0312ded03f7395f..d7f4b66a872792a7f002042b52d1086b516a6fcd commit by commit: 70c0ce4386 changes only reckon/ledger.py (48 added, 2 deleted: a Collection import, the stored-branch damage report at lines 2830-2847, and the new _damaged_run_documents at 2897-2923), and d7f4b66a87 adds only the 29-line evidence fragment; nothing else is touched.\nCALL_SITES: reckon/crew/promotion.py:2374, reckon/crew/promotion_gate.py:1278, reckon/crew/admission/readiness.py:561, reckon/crew/open_run_index.py:444, reckon/budget.py:713, reckon/serve.py:808\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scoped-gate-1795112270588728189.log shows tests/test_a_torn_ledger_row_is_reported_not_raised.py at 6 passed and EXIT=0 on the delivered head, the full pass the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and its base red are recorded and reproducible from scoped-gate-1795112270588728189.log and logs/torn-ledger-base-red.log, but manifest.md:16 files the arm the done_when demands as inline JSON against two test files that do not import ledger.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/ledger.py and the node's own fragment, both inside the declared write paths, with no test, plan or figure edit.\nSCORE durability: 17\nJUSTIFICATION durability: the change adds no assertion, and it is guarded by the pre-existing tests at tests/test_a_torn_ledger_row_is_reported_not_raised.py:63 and :76, whose 'damaged_run_records(...)' expectations redden at 2437205f9a7624 where the stored branch reports an empty tuple.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/ledger.py:2897 follows the module's private-helper, LedgerError and scandir-cost idiom, but the function it branches inside still reads 'No stored read inspects per-run documents' at reckon/ledger.py:2797.\nSCORE reuse: 18\nJUSTIFICATION reuse: no existing owner reports damage among documents the store does not hold; the helper reuses _read_run, ledger_path and _report_damaged_run_records and follows the scandir listing already established at reckon/ledger.py:2940 rather than forking a damage rule.",
+  "review_run_id": "r-20261119T182355674440-review-of-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised-d7f4b66a8727",
+  "reviewed_base_sha": "2437205f9a762420c943f3c0b0312ded03f7395f",
+  "reviewed_commits": [
+    "70c0ce43867b29585ae82013218a1981feb2055d",
+    "d7f4b66a872792a7f002042b52d1086b516a6fcd"
+  ],
+  "reviewed_head_sha": "d7f4b66a872792a7f002042b52d1086b516a6fcd",
+  "reviewed_node": "qwnw-red-file-a-torn-ledger-row-is-reported-not-raised",
+  "reviewed_run_id": "r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:30:58+00:00",
+  "total": 105,
+  "verdicts": {
+    "call_sites": "Verified reckon/crew/promotion.py:2374 reads ledger.damaged_run_records to gate the damaged-record refusal, and reckon/crew/promotion_gate.py:1278, reckon/crew/admission/readiness.py:561, reckon/crew/open_run_index.py:444, reckon/budget.py:713 and reckon/serve.py:808 call ledger.load on the stored path this change extends.",
+    "diff": "70c0ce43867b adds 48 and deletes 2 lines in reckon/ledger.py (Collection import, stored-branch damage reporting, _damaged_run_documents) and d7f4b66a8727 adds the 29-line fragment; the base 2437205f9a76 is the parent of 70c0ce43867b, so the pair is the whole landed change.",
+    "done_when": "The measure asks for a head job, a base run first, a per-cause verdict, an arm over the ledger-importing files as inline JSON with full revisions, a base negative control and a clean ruff; the head gate (6 passed, EXIT=0), the base red (2 failed, 4 passed, EXIT=1), the product-wrong verdict and the negative control in the committed fragment are all present, but the ledger arm is prose in artifacts and the JSON arms name two other test files, and the ruff clause has no log.",
+    "goal": "The goal is 'Make tests/test_a_torn_ledger_row_is_reported_not_raised.py pass in full on the primary branch'; scoped-gate-1795112270588728189.log records '# revision: d7f4b66a872792a7f002042b52d1086b516a6fcd', '6 passed in 1.45s' and EXIT=0 for that file, and the head is the reviewed commit.",
+    "manifest": "Read all 22 lines: status complete, full commit ids, the literal gate command, four test logs that exist with the claimed summaries, an empty retry attribution, a negative control; baseline_suite and after_suite are inline JSON but cover tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py with 0 failures in both, not the ledger arm.",
+    "write_paths": "Declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's fragment and figure paths; the two changed paths are reckon/ledger.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-torn-ledger-row-is-reported-not-raised.html, both inside it."
+  }
+}

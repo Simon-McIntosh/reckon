@@ -27,7 +27,7 @@ import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -38,6 +38,7 @@ from reckon import _store, file_memo, flight, ledger, review_tiers
 from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_reset,
+    obligation_snapshot,
     queue_admission,
     recovery,
     recovery_classification,
@@ -59,6 +60,7 @@ from reckon.crew.node import (
     _claim_commit_answer,
     _git_answer,
     _integration_ref_revision,
+    claim_repository,
     parse_duration,
 )
 from reckon.crew.open_run_index import operational_read
@@ -201,7 +203,7 @@ DUTY_ROW_FIELDS = (
     # text quotes.
     "review_owner",
     "reflex_window_seconds",
-    # An overdue remedy's time-dependent intervals; see refresh_overdue_remedy.
+    # An overdue remedy's time-dependent intervals; see obligation_snapshot.refresh_overdue_remedy.
     "overdue_remedy",
     "refused_at",
     "queued_at",
@@ -368,6 +370,19 @@ PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 # the request.
 WAIT_UNRESOLVABLE_DUTY_KIND = "wait-unresolvable"
 
+# A request waiting on an upstream that is still open and that no run or request
+# is building. Unlike the unresolvable kind this wait can still resolve -- the
+# owner or a coordinator can queue the upstream -- so the row is a prompt rather
+# than a lost cause. It is reported on the pass that first sees it past the
+# threshold and not again.
+WAIT_IDLE_DUTY_KIND = "wait-idle"
+
+# A request the admission pass removed because an upstream it named can never
+# land -- the plan is gone, closed, or no longer carries the section. The row
+# carries the pass's own reason so the owner learns why the request went away
+# without reading the discard store.
+UPSTREAM_RETIRED_DUTY_KIND = "wait-retired-upstream"
+
 # A run the dispatcher placed on a default lane because its pick failed rather
 # than answered. The route is not the router's reading of the run, so the row
 # names the step the pick gave up in and the lane the run therefore takes. It is
@@ -399,6 +414,7 @@ INDEX_LAG_GIT_ENV = {"GIT_OPTIONAL_LOCKS": "0"}
 #: stop describing the checkout (the index's stat identity and HEAD), so a
 #: sweep that recomputes every session's payload does not run git per tick.
 _INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = {}
+_SOURCE_CLEAN_READINGS: dict[str, tuple[Any, tuple[str, ...], tuple[Any, ...]]] = {}
 
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
@@ -666,13 +682,17 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
                 "kind",
                 "run_id",
                 "age_seconds",
+                "review_tier",
                 "reason",
                 "next_command",
             )
             if key in item
         }
         # The run id is the key of the full read, so the bounded row need not
-        # repeat the manifest, pointer, worktree and review paths.
+        # repeat the manifest, pointer, worktree and review paths. The review
+        # tier is short and is what the row's own kind is decided by: a reader
+        # handed ``review-ready`` without it cannot tell a run whose review
+        # passed from one the tier rule exempted.
         row["record_action"] = "observe"
         row = project_run_rows(
             [row],
@@ -736,10 +756,7 @@ def _queued_hold(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
     pass's own verdict row and the request's stored hold cannot disagree about
     what holds one request.
     """
-    named = _verdicts.failure_hold(pointer)
-    if named is not None:
-        return named
-    return queue_admission.recorded_pass_hold(pointer)
+    return _verdicts.queued_hold(pointer)
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
@@ -845,9 +862,16 @@ def live_pointer_snapshot(
     The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
     exactly as long as the block and no later read inherits it.
     """
-    listing = (
-        list(pointers) if pointers is not None else runs.list_live(project=project)
-    )
+    if pointers is not None:
+        listing = list(pointers)
+    else:
+        # An enclosing read scope already holds this pass's population, so the
+        # read that opened it is the view's one read: listing the directory
+        # again here would answer from a second snapshot.
+        from reckon.crew.open_run_index import pointers as held_pointers
+
+        held = held_pointers(project=project)
+        listing = list(held) if held is not None else runs.list_live(project=project)
     published: dict[str, list[dict[str, Any]]] = {}
     for pointer in listing:
         published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
@@ -859,6 +883,8 @@ def live_pointer_snapshot(
     # holding a pass whose pointers have gone. A reader below fills it in for
     # this listing; it outlives nothing.
     reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
+    # A reader that asks for one run by id answers from the memo the listing
+    # filled: a pointer whose stat identity has not moved is decoded once.
     try:
         yield listing
     finally:
@@ -882,7 +908,10 @@ def _live_pointers(project: str) -> list[dict[str, Any]]:
         snapshot = held.get(project)
         if snapshot is not None:
             return list(snapshot)
-    return runs.list_live(project=project)
+    from reckon.crew.open_run_index import pointers
+
+    snapshot = pointers(project=project)
+    return list(snapshot) if snapshot is not None else runs.list_live(project=project)
 
 
 def _recorded_review_dispatch(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -1256,19 +1285,6 @@ def _iso(instant: datetime) -> str:
     return instant.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _age_of_instant(value: Any, *, now: datetime) -> int:
-    """The non-negative age in seconds of one stored instant."""
-    stamp = parse_utc(value)
-    if stamp is None:
-        return 0
-    return max(0, int((now - stamp).total_seconds()))
-
-
-def _overdue_figure(seconds: int) -> str:
-    """How an overdue interval is printed in a duty's remedy text."""
-    return f"{max(0, int(seconds)) // 60}m {max(0, int(seconds)) % 60}s"
-
-
 def _overdue_remedy(
     project: str,
     pointer: Mapping[str, Any],
@@ -1302,50 +1318,10 @@ def _overdue_remedy(
     return remedy
 
 
-def _render_overdue_remedy(
-    remedy: Mapping[str, Any], *, age: int, now: datetime
-) -> str:
-    """Compose an overdue duty's text from its intervals at one clock reading."""
-    figure = _overdue_figure(int(age))
-    stage = str(remedy.get("stage") or "")
-    if stage:
-        stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
-        text = (
-            f"review overdue by {figure}: the station's tick has run "
-            f"{_overdue_figure(stage_age)} in its {stage} stage, which holds "
-            "the reflex's sweep"
-        )
-        dispatch = str(remedy.get("dispatch") or "")
-        if dispatch:
-            return f"{text}; dispatch the review now with: {dispatch}"
-        return f"{text}; dispatch the review for session {remedy.get('session')!r} now"
-    return (
-        f"review overdue by {figure}: session {remedy.get('session')!r} "
-        "has an armed follower, but its reflex has not dispatched this "
-        "run's review; inspect the follower's review pass"
-    )
-
-
-def refresh_overdue_remedy(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
-    """One duty row whose time-dependent remedy text is composed at ``now``.
-
-    A published snapshot stores a duty's age as the instant it is measured
-    from, and the reader turns it back into seconds against its own clock. The
-    remedy text beside it was composed once, at the writer's instant, so without
-    this the figure it prints stays at the value the snapshot was written with
-    while ``age_seconds`` grows — a stuck clock beside a moving one. The row
-    carries the intervals the figure is built from, so the text is composed
-    here at the reading instant, from the same refreshed age the row shows.
-    """
-    refreshed = dict(row)
-    remedy = refreshed.get("overdue_remedy")
-    if not isinstance(remedy, Mapping):
-        return refreshed
-    age = refreshed.get("age_seconds")
-    if isinstance(age, bool) or not isinstance(age, int):
-        return refreshed
-    refreshed["next_command"] = _render_overdue_remedy(remedy, age=age, now=now)
-    return refreshed
+# The reader composes an overdue duty's text for a snapshot row, so the reader
+# is where the render lives and this module composes through its copy.
+_render_overdue_remedy = obligation_snapshot._render_overdue_remedy
+_overdue_figure = obligation_snapshot._overdue_figure
 
 
 def _reflex_review_command(
@@ -1854,11 +1830,13 @@ def _acknowledgements_in_force(
     project's committed history — a deliberate remainder of a promoted run is
     withheld exactly as a live run's is, and expires the same way.
 
-    A deferral whose ``until`` has passed is not returned, so the run it named
-    re-enters the list on the next read rather than lingering in the
-    acknowledged block. A run whose deferral cannot be parsed as an instant is
-    treated as undeferred: an unreadable deadline is no excuse to withhold an
-    obligation.
+    A deferral whose ``until`` has passed is not returned, and its file is
+    removed by the same read that refuses it: the deferral excuses nothing and
+    leaving it behind charges every later read for a record no reader can
+    honour. A deferral whose ``until`` cannot be parsed as an instant is
+    likewise not returned — an unreadable deadline is no excuse to withhold an
+    obligation — but its file is left in place, because a sweep removes only
+    what it can prove expired and an unreadable instant proves nothing.
     """
     in_force: dict[str, dict[str, Any]] = {}
     live_ids: set[str] = set()
@@ -1888,11 +1866,11 @@ def _acknowledgements_in_force(
             runs.release_run_acknowledgement(run_id, record, promoted=True)
             continue
         until = parse_utc(record.get("until"))
-        if (
-            until is not None
-            and until > now
-            and not _acknowledgement_condition_ended(record)
-        ):
+        if until is None:
+            # Nothing proves this record expired, so it is refused the duty it
+            # proves: the run is owed, the file an operator wrote stays.
+            continue
+        if until > now and not _acknowledgement_condition_ended(record):
             in_force[run_id] = record
         else:
             runs.release_run_acknowledgement(run_id, record, promoted=True)
@@ -2157,6 +2135,31 @@ def admission_verdicts() -> dict[str, dict[str, Any]]:
             if run_id:
                 verdicts[run_id] = dict(row)
     return verdicts
+
+
+def recent_upstream_retirements() -> list[dict[str, Any]]:
+    """The upstream retirements the most recent admission pass recorded.
+
+    A retired request has no pointer left to read, so the pass's own record is
+    the only account of it. Only the last record's list is returned: the pass
+    that retired the request carried it, and a later pass carrying none means
+    the retirement has already been read.
+    """
+    path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    for line in reversed(text.splitlines()):
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        retired = record.get("retired")
+        if not isinstance(retired, list):
+            return []
+        return [dict(row) for row in retired if isinstance(row, Mapping)]
+    return []
 
 
 def _stalled_item(
@@ -2708,7 +2711,7 @@ def _selected_review(
         str(tree or ""),
         review_records.review_entries_signature(project, run_id),
     )
-    return file_memo.memoized_key(
+    return review_records.memoised_read(
         "obligation_review_selection",
         key,
         lambda: recovery.select_review_for_head(project, run_id, head, tree=tree),
@@ -2795,6 +2798,7 @@ def _review_tier_key(
 def _clear_cached_obligation_inputs() -> None:
     """Drop every memoised per-run derivation, so the next read recomputes."""
     _INDEX_LAG_READINGS.clear()
+    _SOURCE_CLEAN_READINGS.clear()
     with _HELD_READ_LOCK:
         _HELD_RECORD_READS.clear()
         _HELD_REGISTRY_READS.clear()
@@ -2922,8 +2926,14 @@ def _review_duty_item(
             "--reason 'The delivery is ready to land.'"
         )
     elif recovery._is_review_run(pointer):
+        # A reviewer's record is its own deliverable, and a clean delivery is
+        # left to the automatic promoter that lands it: only a refusal is the
+        # coordinator's decision. A reviewer whose delivery is still coming or
+        # cannot be read is neither, and the closure counts its pointer as
+        # unreconciled for as long as it stands — so suppressing those too left
+        # a counted run listed nowhere, the drift this view exists to prevent.
         state, reason, _record = acceptance.review_self_state(pointer)
-        if state != acceptance.REVIEW_SELF_REFUSED:
+        if state == acceptance.REVIEW_SELF_READY:
             return None
         item["reason"] = reason
     elif item["kind"] in {"review-ready", "promotable-stale"}:
@@ -2984,6 +2994,28 @@ def _review_duty_item(
         )
     item["_delivery_decision"] = str((pointer.get("node") or {}).get("section") or " ")
     return item
+
+
+def _refused_head_is_landed(
+    pointer: Mapping[str, Any], head: str, *, now: datetime
+) -> bool:
+    """Whether a run's tree is carrying the head its landing was refused at.
+
+    The answer is the departure reader's own ancestry probe: a head the primary
+    branch reaches is a landing that has finished, whatever a refusal recorded
+    against it still says. A checkout that cannot be resolved, a head the branch
+    cannot be asked about, or an unreadable branch reads as unlanded, because a
+    refusal withdrawn on a broken probe would hide work a coordinator still owes.
+    """
+    if not head:
+        return False
+    checkout = claim_repository(pointer)
+    if checkout is None:
+        return False
+    return (
+        recovery_classification._head_on_primary_branch(checkout, head, now.timestamp())
+        is True
+    )
 
 
 def _review_duty_detail(
@@ -3119,6 +3151,11 @@ def _review_duty_detail(
         and recovery.same_revision(str(landing.get("head") or ""), resumed_head)
         and str(landing.get("guard") or "").strip()
     ):
+        if _refused_head_is_landed(pointer, resumed_head, now=now):
+            # The refusal describes a merge the primary branch has since taken.
+            # A duty left standing would spend a coordinator's repair on
+            # evidence for a revision nothing is waiting for.
+            return None
         item = _live_item(row, kind="landing-refused", now=now)
         item["head"] = resumed_head
         item["reason"] = f"automatic landing refused: {landing['guard']}"
@@ -3691,6 +3728,44 @@ def recorded_run_rows(
     return None if rows is None else list(rows)
 
 
+#: The project whose derivation is building, so a reader the derivation reaches
+#: can take the history it already read. Unset everywhere else: outside a
+#: derivation the whole-history read is exactly the cost a bounded reader exists
+#: to avoid, and asking for it on the chance that some earlier read left rows
+#: behind would reinstate it.
+_DERIVING_PROJECT: ContextVar[str | None] = ContextVar("deriving_project", default=None)
+
+
+@contextmanager
+def derivation_history(project: str) -> Iterator[None]:
+    """Mark the history this derivation read as shareable with its own readers.
+
+    A derivation reads the ledger's run rows for the held-worktree screen and
+    then classifies the fleet, and the utilisation reader the classification
+    reaches needs a window of that same history. Both name one ledger file, so
+    a second read would decode one index twice for one derivation's answer.
+    The marker confines the share to a derivation: a monitor that classifies
+    runs without deriving never opens the ledger to answer a window.
+    """
+    token = _DERIVING_PROJECT.set(project)
+    try:
+        yield
+    finally:
+        _DERIVING_PROJECT.reset(token)
+
+
+def derivation_run_rows(project: str) -> list[Mapping[str, Any]] | None:
+    """The rows this derivation already read, or ``None`` where there are none.
+
+    ``None`` answers a caller outside a derivation, and a derivation whose pass
+    read no history because the project owes no tree duty. Both keep their own
+    read rather than widening one to the whole ledger.
+    """
+    if _DERIVING_PROJECT.get() != project:
+        return None
+    return recorded_run_rows(project)
+
+
 def _held_records_read_uncached(
     project: str, repository: Path, signature: tuple[Any, ...]
 ) -> _RecordedPass:
@@ -4203,7 +4278,7 @@ def stored_review_for_run(
     """
     head, tree = recovery._review_head_and_tree(pointer)
     if not head:
-        return file_memo.memoized_key(
+        return review_records.memoised_read(
             "obligation_headless_review",
             (project, run_id, review_records.review_entries_signature(project, run_id)),
             lambda: (
@@ -4234,7 +4309,7 @@ def _review_is_hot(
     superseding this one, read from the store's own rows so a by-head selection
     cannot hide a later round.
     """
-    later = file_memo.memoized_key(
+    later = review_records.memoised_read(
         "obligation_review_rounds",
         (project, run_id, review_records.review_entries_signature(project, run_id)),
         lambda: [
@@ -4289,7 +4364,7 @@ def _sub_floor_items_by_session(
         if not run_id:
             continue
         signature = review_records.review_entries_signature(project, run_id)
-        newest = file_memo.memoized_key(
+        newest = review_records.memoised_read(
             "obligation_review_presence",
             (project, run_id, signature),
             lambda run_id=run_id: review_module.read_review(project, run_id),
@@ -4546,6 +4621,195 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+def _source_file_signatures(
+    repository: Path, paths: tuple[str, ...]
+) -> tuple[Any, ...]:
+    """The tracked source identities, including missing files and symlinks."""
+    signatures = []
+    for name in paths:
+        try:
+            signatures.append(
+                file_memo.signature_from_stat((repository / name).lstat())
+            )
+        except OSError:
+            signatures.append(None)
+    return tuple(signatures)
+
+
+def _unlanded_source_items(project: str) -> list[dict[str, Any]]:
+    """Attribute staged or serving source absent from primary to a run's commit.
+
+    Inspect both the index and disk: a staged copy can differ even when disk
+    matches HEAD. Search a run's unmerged history, since its reviewed head may
+    have advanced past the copy a refused landing left in this checkout.
+    """
+    from reckon.crew import merge
+    from reckon.crew.dispatch_sections import project_mount_repository
+    from reckon.path_classes import path_class
+
+    repository = project_mount_repository(project)
+    if repository is None:
+        return []
+    key = _index_lag_reading_key(repository)
+    cached = _SOURCE_CLEAN_READINGS.get(str(repository))
+    if key is not None and cached is not None and cached[0] == key:
+        source_paths = cached[1]
+        signatures = _source_file_signatures(repository, source_paths)
+        if signatures == cached[2]:
+            return []
+    else:
+        tracked = run_git(repository, "ls-files", "-z", env=INDEX_LAG_GIT_ENV)
+        if tracked.returncode:
+            return []
+        source_paths = tuple(
+            sorted(
+                {
+                    os.fsdecode(name)
+                    for name in tracked.stdout.split(b"\0")
+                    if name and path_class(os.fsdecode(name)) == "source"
+                }
+            )
+        )
+        signatures = _source_file_signatures(repository, source_paths)
+    names: set[str] = set()
+    for options in (("--cached",), ()):
+        changed = run_git(
+            repository,
+            "diff",
+            *options,
+            "--name-only",
+            "-z",
+            "HEAD",
+            env=INDEX_LAG_GIT_ENV,
+        )
+        if changed.returncode:
+            return []
+        names.update(
+            os.fsdecode(name)
+            for name in changed.stdout.split(b"\0")
+            if name and path_class(os.fsdecode(name)) == "source"
+        )
+    if not names:
+        # A clean answer is reusable only while the index, HEAD and every
+        # tracked source identity agree. Compare both sides of the git read so
+        # a source write during that read cannot become a cached clean answer.
+        if (
+            key is not None
+            and _index_lag_reading_key(repository) == key
+            and _source_file_signatures(repository, source_paths) == signatures
+        ):
+            _SOURCE_CLEAN_READINGS[str(repository)] = (key, source_paths, signatures)
+        return []
+    paths = sorted(names)
+    index = merge._checkout_index(repository, paths)
+    blobs: dict[str, set[str]] = {}
+    for name in paths:
+        primary = run_git(
+            repository,
+            "rev-list",
+            "--objects",
+            "HEAD",
+            "--",
+            name,
+            env=INDEX_LAG_GIT_ENV,
+        )
+        if primary.returncode:
+            continue
+        known = {
+            line.split(b" ", 1)[0].decode() for line in primary.stdout.splitlines()
+        }
+        candidates = {
+            entry.split(" ")[1] for entry in index.get(name, "").split("\0") if entry
+        }
+        value = merge._checkout_path(repository / name)
+        if value is not None and value[1] is not None:
+            content = os.fsencode(value[1]) if isinstance(value[1], str) else value[1]
+            hashed = run_git(
+                repository,
+                "hash-object",
+                "--stdin",
+                input=content,
+                env=INDEX_LAG_GIT_ENV,
+            )
+            if hashed.returncode == 0:
+                candidates.add(hashed.stdout.decode().strip())
+        if candidates - known:
+            blobs[name] = candidates - known
+    if not blobs:
+        return []
+    records = {
+        str(row.get("run_id") or ""): dict(row)
+        for row in _run_file_rows(project, repository)
+    }
+    for pointer in _live_pointers(project):
+        run_id = str(pointer.get("run_id") or "")
+        records[run_id] = {**records.get(run_id, {}), **pointer}
+    items = []
+    for run_id, row in records.items():
+        if not run_id:
+            continue
+        heads = list(row.get("commits") or [])
+        heads.extend(str(row.get(key) or "") for key in ("head", "reviewed_head"))
+        worktree = str(row.get("worktree") or "")
+        if worktree:
+            with suppress(merge.MergeError):
+                heads.append(merge._rev_parse(Path(worktree), "HEAD"))
+        matched: dict[str, str] = {}
+        for head in dict.fromkeys(heads):
+            if not re.fullmatch(r"[0-9a-f]{40,64}", head):
+                continue
+            history = run_git(
+                repository,
+                "rev-list",
+                head,
+                "^HEAD",
+                "--",
+                *blobs,
+                env=INDEX_LAG_GIT_ENV,
+            )
+            if history.returncode:
+                continue
+            for revision in history.stdout.decode().splitlines():
+                for name, candidates in blobs.items():
+                    if (
+                        name not in matched
+                        and merge._blob_id(repository, revision, name) in candidates
+                    ):
+                        matched[name] = revision
+        if matched:
+            items.append(
+                {
+                    "kind": "unlanded-source",
+                    "run_id": run_id,
+                    "run_ids": [run_id],
+                    "age_seconds": 0,
+                    "paths": sorted(matched),
+                    "head": next(iter(matched.values())),
+                    "reason": (
+                        f"the checkout's staged or serving source at {', '.join(sorted(matched))} "
+                        f"matches unlanded commits of run {run_id}; no commit on the primary "
+                        "branch carries that content, so a refused landing may be serving source"
+                    ),
+                    "next_command": " && ".join(
+                        shlex.join(
+                            [
+                                "git",
+                                "-C",
+                                str(repository),
+                                "diff",
+                                *options,
+                                "HEAD",
+                                "--",
+                                *matched,
+                            ]
+                        )
+                        for options in (("--cached",), ())
+                    ),
+                }
+            )
+    return items
+
+
 def _node_disk_notice(project: str) -> dict[str, Any] | None:
     """The project's fleet disk pressure, from the sampler on that node."""
     from reckon.crew.fleet_supervisor import node_disk_obligation
@@ -4639,10 +4903,20 @@ def _obligations_view(
     from reckon.crew.fleet_supervisor import fleet_test_obligations
 
     items.extend(fleet_test_obligations(project, session, now=now))
+    from reckon.crew import decision_answers
+
+    items.extend(decision_answers.answered_items(project, session, now=now))
     pointers = {
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
     live_pointers = list(pointers.values())
+    from reckon.crew.fleet_supervisor import producer_start_failure_obligations
+
+    items.extend(
+        producer_start_failure_obligations(
+            project, session, now=now, pointers=live_pointers
+        )
+    )
     from reckon.crew.section_obligations import merged_section_items
 
     items.extend(merged_section_items(project, session, live_pointers, now=now))
@@ -4705,6 +4979,57 @@ def _obligations_view(
                     f"fix the wait or drop the request: no project holds the run "
                     f"this request waits on, so it can never be released while "
                     f"the ref stands (reckon crew discard --run {run_id})"
+                ),
+            }
+        )
+    # A request whose upstream is still open and that nobody is building waits
+    # for work no one has taken. The pass records the report on the request the
+    # first time it crosses the threshold, so the row exists for an owner who is
+    # looking and is never re-raised by a later pass.
+    for pointer in live_pointers:
+        if str(pointer.get("wait_class") or "") != "idle":
+            continue
+        if not pointer.get("idle_reported_at"):
+            continue
+        if str(pointer.get("session") or "") != session:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        started = parse_utc(pointer.get("waits_at") or pointer.get("created_at"))
+        items.append(
+            {
+                "kind": WAIT_IDLE_DUTY_KIND,
+                "run_id": run_id,
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "plan": str(
+                    pointer.get("plan") or (pointer.get("node") or {}).get("plan") or ""
+                ),
+                "age_seconds": (int((now - started).total_seconds()) if started else 0),
+                "reason": str(pointer.get("wait_detail") or ""),
+                "next_command": (
+                    f"queue the upstream this request waits on, or drop the "
+                    f"request (reckon crew discard --run {run_id})"
+                ),
+            }
+        )
+    # A request the pass removed because an upstream could never land. The
+    # departure is recorded, so the owner is told why it went rather than left
+    # to notice a request that is no longer there.
+    for row in recent_upstream_retirements():
+        if str(row.get("session") or "") != session:
+            continue
+        if str(row.get("project") or project) != project:
+            continue
+        items.append(
+            {
+                "kind": UPSTREAM_RETIRED_DUTY_KIND,
+                "run_id": str(row.get("run_id") or ""),
+                "node": str(row.get("node") or ""),
+                "plan": str(row.get("plan") or ""),
+                "age_seconds": 0,
+                "reason": str(row.get("reason") or ""),
+                "next_command": (
+                    "the request was retired because its upstream can never land; "
+                    "examine the discard record if the plan is expected to change"
                 ),
             }
         )
@@ -5007,6 +5332,7 @@ def _obligations_view(
     index_lag = _index_lag_notice(project, now=now)
     if index_lag is not None:
         items.append(index_lag)
+    items.extend(_unlanded_source_items(project))
     acknowledgements = _acknowledgements_in_force(project, now=now)
     items, acknowledged = _partition_acknowledged(items, acknowledgements)
     items.sort(
@@ -5023,7 +5349,15 @@ def _obligations_view(
             str(item["kind"]),
         )
     )
-    unreconciled = runs.drain_unreconciled_by_session(project).get(session, 0)
+    # Counted over the same population this view derives its rows from, so the
+    # summary and the rows cannot disagree about which runs are live, and the
+    # directory is not listed a second time inside one view. The count reads
+    # through the shared ownerless partition, so a session that owns no row of
+    # its own is still counted.
+    unreconciled = runs.unreconciled_for_session(
+        runs.drain_unreconciled_by_session(project, pointers=live_pointers),
+        session,
+    )
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
     sections = run_section_index([pointers.values()])

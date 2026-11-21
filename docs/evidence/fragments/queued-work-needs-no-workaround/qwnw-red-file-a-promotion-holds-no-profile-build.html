@@ -1,0 +1,91 @@
+<section id="qwnw-red-file-a-promotion-holds-no-profile-build-landing">
+  <h2>A promotion holds no profile build: the named file is already green at base</h2>
+
+  <p><strong>What changed.</strong> Nothing in <code>reckon/</code> or
+  <code>tests/</code>. <code>tests/test_a_promotion_holds_no_profile_build.py</code>
+  is green in full at the base revision this node was queued against
+  (<code>ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5</code>), so the node is
+  delivered as the plan permits for that case: the passing run, with the
+  failing-ids record empty rather than the file edited to fit. No assertion was
+  deleted or weakened, because no assertion was touched.</p>
+
+  <p><strong>Why it was queued red and is not red now.</strong> The file asserts
+  a behaviour the product already implements: a promotion hands
+  <code>refresh_run_time_profile</code> the rows it has just written and the
+  ledger state it observed, so the refresh folds the stored samples plus that
+  row instead of decoding the index or scanning the authoritative run
+  documents. The fold path is <code>_promotion_fold_inputs</code> in
+  <code>reckon/crew/picker/lane_context.py</code>, and the rebuild branch for a
+  base the fold cannot extend is inside the same function. That repair is an
+  ancestor of the base revision, so no cause reproduces here and none is
+  repaired; the cause list is empty.</p>
+
+  <p><strong>Measured</strong> — the base run of the named file, as its own job
+  (<code>1327395</code>) on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset, on the worktree at its own revision:</p>
+
+  <pre id="qwnw-red-file-a-promotion-holds-no-profile-build-base"># revision: ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5
+# host: 98dci4-clu-3144.iter.org
+# tree: .../qwnw-red-file-a-promotion-holds-no-profile-build
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_holds_no_profile_build.py
+# pytest_process SLURM_JOB_ID=<unset>
+....                                                                     [100%]
+4 passed in 4.74s
+EXIT=0</pre>
+
+  <p>The head run is the same run: this node adds no product or test change, so
+  the tree's head revision is the base revision and the passing run above is
+  the head run as well.</p>
+
+  <p><strong>The negative control is a mutation, because the base run is
+  green.</strong> A green base run cannot show that the four cases still fire,
+  so a scratch copy of the head tree had the removed behaviour reinstated: the
+  profile refresh scans every authoritative run document before it folds,
+  through <code>ledger._merge_run_documents</code> called from
+  <code>refresh_run_time_profile</code>. The named file re-run over that copy
+  reads:</p>
+
+<pre id="qwnw-red-file-a-promotion-holds-no-profile-build-mutation"># revision: ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5 (scratch copy) + mutation
+# host: 98dci4-clu-3144.iter.org
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_holds_no_profile_build.py
+# module.__file__: /tmp/mutation-tree.Tb3Wnp/reckon/crew/picker/lane_context.py
+# cwd: /tmp/mutation-tree.Tb3Wnp
+FFF.                                                                     [100%]
+FAILED tests/test_a_promotion_holds_no_profile_build.py::test_a_promotion_folds_its_row_without_a_ledger_decode[False]
+FAILED tests/test_a_promotion_holds_no_profile_build.py::test_a_promotion_folds_its_row_without_a_ledger_decode[True]
+FAILED tests/test_a_promotion_holds_no_profile_build.py::test_a_fold_carries_the_samples_across_the_date_roll
+3 failed, 1 passed in 4.22s
+EXIT=1</pre>
+
+  <p>The failure is the guarded assertion, not an incidental error: each red
+  case reports the profile path's own counted calls, for example
+  <code>{'name': '_merge_run_documents', 'in_lock': True, 'in_profile': True}</code>,
+  against <code>assert profile_calls == []</code>. The mutation lives only in
+  the scratch copy under the job's own scratch directory; the worktree at
+  <code>ab67be8bb1</code> is unmodified.</p>
+
+  <h3 id="qwnw-red-file-a-promotion-holds-no-profile-build-verdicts">Causes and verdicts</h3>
+
+  <p>None. Four cases, zero failures at base, zero at head; the deliverable is
+  the passing run the plan names for a file whose product rule already landed.</p>
+
+  <p><strong>The composed gate</strong> — the scoped gate measured by
+  <code>crew verify-gate --worker</code> with the command the done-when names,
+  and the two suite arms:</p>
+
+  <pre id="qwnw-red-file-a-promotion-holds-no-profile-build-gate"># module.__file__: &lt;scratch tree&gt;/reckon/crew/picker/lane_context.py
+# cwd: &lt;scratch tree&gt;
+....                                                                     [100%]
+4 passed
+EXIT=0
+
+baseline ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5: 58 passed, EXIT=0
+head     (the commit this fragment lands in):          58 passed, EXIT=0</pre>
+
+  <p>Both suite arms resolve the same two files
+  (<code>tests/test_staged_write_inventory.py</code>,
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>),
+  because this node adds no test file and deletes none; <code>ruff check</code>
+  and <code>ruff format --check</code> have no Python path to inspect among the
+  files this node changed.</p>
+</section>

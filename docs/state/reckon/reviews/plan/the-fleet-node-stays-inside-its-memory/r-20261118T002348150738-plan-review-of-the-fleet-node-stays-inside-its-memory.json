@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:24:55Z",
+  "findings": [
+    {
+      "anchor": "plan.html:135",
+      "id": "wiring-1",
+      "reason": "the order is what a coordinator dispatches from, so an unlisted section is neither queued nor gated against \u00a75's landed state.",
+      "text": "the followup body fixes the build order over \u00a72 to \u00a711 and never names \u00a713, and plan.html:24 declares no relationship from s13 to s5 even though \u00a713's deliverable rewrites \u00a75's disk-reserve obligation and the reclaim runs from the sampler \u00a75 landed, so a coordinator reading the order has no position for \u00a713 and a worker has no declared wait",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:129",
+      "id": "done_when-1",
+      "reason": "the fields the done-when omits are the only evidence that a deletion was the intended one, so its gate cannot show the record is usable.",
+      "text": "the deliverable requires each removal recorded \"with its path, size, age and the reason\" while the done-when asserts only \"its size and age\", so a pass that records neither path nor reason still measures green and a later reader cannot tell what was deleted or why",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:23",
+      "id": "done_when-2",
+      "reason": "closing s3 on the fleet measure before its 24 hours elapse records a measure that has not run, and the declaration is what a reader trusts.",
+      "text": "plan-section-declarations marks s3 done, but \u00a73's done-when requires the count to be zero over 24 hours on the live fleet and the only live-series start the plan records is the hand replacement at 21:50 UTC on 17 November (plan.html:153), so at review time the window is about three hours in and the live arm is not met",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:128",
+      "id": "single_goal-1",
+      "reason": "the section would be closed on a verdict that covers only one of its two stated endpoints, which is the failure single-goal fencing exists to prevent.",
+      "text": "\u00a713 carries a second deliverable in \"The disk-reserve obligation of \u00a75 names such entries apart from live runs' scratch\", which no arm of the done-when and no fleet check exercises, so the node can close on the reclaimer alone while that clause is unproven",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:127",
+      "id": "reasoning-1",
+      "reason": "the deliverable already requires removal \"without a coordinator\", so the endpoint and every measure stand unchanged; correcting the sentence does not move what a node builds.",
+      "text": "the Why attributes the aged trees to \"the node's sweep keeps that root whole while live runs write inside it, so nothing removes these\", but the repository already implements the section's stated rule \u2014 an unattributed entry older than a 7200-second grace, refused when a live pointer or process holds it \u2014 in reckon/crew/gc.py:1549, reachable only through the crew gc command, so the missing capability is unattended invocation rather than removal logic that does not exist",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "61fb9eb5113fcd38b18158ffad554f208e0ad77c",
+  "plan_fingerprint": "6ecc8c273e1219c8840fff745eae31b444856f25f68788517e67a5d4a53259df",
+  "plan_slug": "the-fleet-node-stays-inside-its-memory",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261118T002348150738-plan-review-of-the-fleet-node-stays-inside-its-memory",
+  "reviewed_blob_sha": "0bcff942118b23902078f433a6ddf582436f53e2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/landing_measure.py and reckon/crew/fleet_supervisor.py both exist under the repository root, the flight schema files and their generated JSON resolve, the plan hrefs resolve with `<path>.html` appended, and both cited plans exist; tests/test_unowned_scratch_is_reclaimed.py is the file the section creates, so its absence is not a pointer to something renamed or deleted.",
+    "done_when": "a finding \u2014 \u00a713's done-when narrows the removal record to size and age (plan.html:129), and s3 is declared done at plan.html:23 while the live window its own done-when requires only opens at the hand replacement stamped 21:50 UTC in plan.html:153.",
+    "evidence_paths": "pass \u2014 \u00a713 names no scratchpad, node-local temporary directory or other non-durable path for its evidence; the removal record is the section's own output, not a pointer to a per-run log.",
+    "naming": "pass \u2014 the named paths and the record fields carry the mechanism (unowned scratch, grace, size, age) and no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a713's Why explains the leftovers by \"the node's sweep keeps that root whole while live runs write inside it\", while the repository already carries the stated rule as an unattributed-scratch sweep with a 7200-second grace, live-pointer and process-holder refusal (reckon/crew/gc.py:1549), invoked only from the crew gc command.",
+    "single_goal": "a finding \u2014 \u00a713's deliverable (plan.html:128) also requires \u00a75's reserve obligation to name unowned entries apart from live scratch, a second deliverable that neither the test nor the fleet measure exercises.",
+    "wiring": "a finding \u2014 \u00a713 is absent from the followup's fixed build order (plan.html:135) and declares no depends-on on \u00a75, whose disk sampler it extends and whose reserve obligation it changes."
+  },
+  "section_digests": {
+    "_document": "a1cd9f88ae34d969d6522978fdc2f9e8317fb93be0ce0c1e89533abeaaec86b3",
+    "s1": "bd4e46820d70a6901e2d82e4fd6386ec7b4fa86f0a54637a0bb22960399f70df",
+    "s10": "4a13c11c1e14c10049882930c77d89def15230051f81a97593bb783a653df453",
+    "s11": "2cedcb676942cd7a60f31c28a745cde686b2b3a65e6cbd434cd29a2fd4e8d5b9",
+    "s12": "ddd6d97387a749dadcad375aaa0ea9769a572635102cc5afb2759e6be06f68ca",
+    "s13": "29e55a1e47ef0a2ca65ccd487bb35f8edbbe8321ce8f4ca134a585eb77032469",
+    "s2": "e099a2cd38a025736e9e56d3728e4dddd0af9c52fc9a6715bbe53227288061de",
+    "s3": "198ecdb48c79a8e9327ee799e8ae423ad669b99caf5958eb17c4847fcaf6e528",
+    "s4": "f42cb9988f1651a81cf2a1997f16268ade2b7f46d203317d149e6e78087c8290",
+    "s5": "67913abf218447de7e81d67433a233675314c3ed29e2230e27f332dd33e09425",
+    "s6": "ad9cca097874b1a2c042499a7c033b9ec7993c818128b94e9b0b3533a9639b17",
+    "s7": "6c2cc89d6c033f4fbe71d654feb65918a822615cf9d78209cb44ce8ea4632243",
+    "s8": "afe6b663cea93b493c8b785d1e3e1c780c53b746cdc78e17515d9ef0f2b3bce7",
+    "s9": "87b1728646dee5714df7f9c7b104c9bc9a01cdbf9f98244f0af5553ab8e7c5a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:35:38.561649+00:00",
+  "total": null
+}

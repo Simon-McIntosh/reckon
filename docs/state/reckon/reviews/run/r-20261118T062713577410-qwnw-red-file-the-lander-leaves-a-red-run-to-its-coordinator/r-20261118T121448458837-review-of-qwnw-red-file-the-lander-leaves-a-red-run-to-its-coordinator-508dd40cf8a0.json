@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived with reckon.manifest's arms as the reviewed run records them: baseline_suite at 250d9cf3e68ee9d9119f29956780bde9fe480a10 and after_suite at 99fbf09becfd22adc16fa92b526a0c339f621a3d both exit 0/0 with completed true and failure_ids [], so the set difference is empty; the two log digests in those blocks match the bytes of baseline_suite-1795003159942146240.log and after_suite-1795003202769821684.log",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:46:48Z",
+  "findings": [
+    {
+      "file": "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py",
+      "line": "611",
+      "severity": "non-blocking",
+      "text": "non-blocking: _remove_the_finding_guards removes both _review_accepts_promotion and _undisposed_finding_guard in one control, so the case the control belongs to no longer shows which arm decided the refusal; the _undisposed_finding arm is unreachable behind the acceptance branch at reckon/crew/queue_landing.py:2404-2418, and the control's honest pair-removal leaves no case in this file that reddens when reckon/crew/queue_landing.py:1515's guard is emptied."
+    },
+    {
+      "file": "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py",
+      "line": "442",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_a_non_blocking_finding_with_no_disposition_is_deferred asserts the deferral that tests/test_a_run_a_review_does_not_block_lands.py:375 already asserts through the same queue_landing.land_once() path and the same finding text, so one assertion now has two owners that can drift apart."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit over 250d9cf3e68ee9d9119f29956780bde9fe480a10..508dd40cf8a0ee72bc12e51fab85e5c8b55c4428; 99fbf09bec splits test_a_finding_with_no_disposition_is_not_promoted into a blocking refusal and a non-blocking deferral and rewrites the per-case negative control, and 508dd40cf8 adds the 56-line evidence fragment.",
+    "done_when": "the done_when asks for a base run before any merge, a head run as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, one verdict per cause, and armed arms recorded as inline JSON at both full 40-character revisions; base-gate-1795003251415896459.log:51 reads \"1 failed, 12 passed\" with the failing id test_a_finding_with_no_disposition_is_not_promoted, scoped-gate-1795003115709727124.log:6 prints SLURM_JOB_ID=None and :10 reads \"14 passed\", and both armed arm logs carry 0 failures with revision headers 250d9cf3 and 99fbf09b.",
+    "goal": "the goal is that tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py passes in full on the primary branch; the landed diff changes only that file's finding cases plus an evidence fragment, no product module, and scoped-gate-1795003115709727124.log:10 reads \"14 passed\" at head.",
+    "manifest": "read at .../runs/r-20261118T062713577410-qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator/manifest.md; it states status complete, commits 99fbf09bec, 508dd40cf8, one cause with verdict \"test wrong\", both gate logs and both armed arms, and its landing line's figures agree with the logs I read.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two granted figure/fragment paths; the diff touches exactly tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:442-465 reddens if the deferral rule is reverted, since _promoted asserts the run landed and finding_disposition(stored, 0) is pinned to \"deferred:<run>\", but tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:611's control removes both guards at once so no case reddens if reckon/crew/queue_landing.py:1515 is emptied.",
+    "evidence": "base-gate-1795003251415896459.log:51 and scoped-gate-1795003115709727124.log:6-10 record both arms at the revisions those logs' headers name, and the two armed arm logs' sha256 digests match the bytes on disk, but their headers carry the fence notice instead of a revision line and the manifest's tests line differs from the log's own \"# command:\" header, so the arms are cited by digest rather than read by the gate-log revision rule.",
+    "fit": "the two new cases keep the file's docstring-per-case, _accept/_refusal/_promoted and one-negative-control-per-arm idiom at tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:414-465 and :611, with snake_case names and no name the repository rules forbid.",
+    "goal_fidelity": "the file reads 14 passed and EXIT=0 in scoped-gate-1795003115709727124.log:10 while the same file read 1 failed and 12 passed in base-gate-1795003251415896459.log:51, so the red file is green without a product change; one point is held because the head gate ran at 99fbf09b and the landed head 508dd40 adds only the fragment, so greenness at the exact landed head is inferred rather than measured.",
+    "reuse": "the change adds no production definition and reads the owner's own predicates (findings.undisposed_finding_indexes, review_dispositions.record_landed_deferrals), but the added deferral assertion at tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:465 re-states what tests/test_a_run_a_review_does_not_block_lands.py:375 already owns through the same land_once entry point.",
+    "scope_discipline": "git diff --stat 250d9cf3..508dd40 changes two files, tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator.html, both inside the declared paths, and touches no product module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py passes in full on the primary branch; the landed diff changes only that file's finding cases plus an evidence fragment, no product module, and scoped-gate-1795003115709727124.log:10 reads \"14 passed\" at head.\nVERDICT done_when: the done_when asks for a base run before any merge, a head run as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, one verdict per cause, and armed arms recorded as inline JSON at both full 40-character revisions; base-gate-1795003251415896459.log:51 reads \"1 failed, 12 passed\" with the failing id test_a_finding_with_no_disposition_is_not_promoted, scoped-gate-1795003115709727124.log:6 prints SLURM_JOB_ID=None and :10 reads \"14 passed\", and both armed arm logs carry 0 failures with revision headers 250d9cf3 and 99fbf09b.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two granted figure/fragment paths; the diff touches exactly tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator.html, both inside them.\nVERDICT manifest: read at .../runs/r-20261118T062713577410-qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator/manifest.md; it states status complete, commits 99fbf09bec, 508dd40cf8, one cause with verdict \"test wrong\", both gate logs and both armed arms, and its landing line's figures agree with the logs I read.\nVERDICT diff: read commit by commit over 250d9cf3e68ee9d9119f29956780bde9fe480a10..508dd40cf8a0ee72bc12e51fab85e5c8b55c4428; 99fbf09bec splits test_a_finding_with_no_disposition_is_not_promoted into a blocking refusal and a non-blocking deferral and rewrites the per-case negative control, and 508dd40cf8 adds the 56-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the file reads 14 passed and EXIT=0 in scoped-gate-1795003115709727124.log:10 while the same file read 1 failed and 12 passed in base-gate-1795003251415896459.log:51, so the red file is green without a product change; one point is held because the head gate ran at 99fbf09b and the landed head 508dd40 adds only the fragment, so greenness at the exact landed head is inferred rather than measured.\nSCORE evidence: 17\nJUSTIFICATION evidence: base-gate-1795003251415896459.log:51 and scoped-gate-1795003115709727124.log:6-10 record both arms at the revisions those logs' headers name, and the two armed arm logs' sha256 digests match the bytes on disk, but their headers carry the fence notice instead of a revision line and the manifest's tests line differs from the log's own \"# command:\" header, so the arms are cited by digest rather than read by the gate-log revision rule.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 250d9cf3..508dd40 changes two files, tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator.html, both inside the declared paths, and touches no product module.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:442-465 reddens if the deferral rule is reverted, since _promoted asserts the run landed and finding_disposition(stored, 0) is pinned to \"deferred:<run>\", but tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:611's control removes both guards at once so no case reddens if reckon/crew/queue_landing.py:1515 is emptied.\nSCORE fit: 18\nJUSTIFICATION fit: the two new cases keep the file's docstring-per-case, _accept/_refusal/_promoted and one-negative-control-per-arm idiom at tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:414-465 and :611, with snake_case names and no name the repository rules forbid.\nSCORE reuse: 13\nJUSTIFICATION reuse: the change adds no production definition and reads the owner's own predicates (findings.undisposed_finding_indexes, review_dispositions.record_landed_deferrals), but the added deferral assertion at tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:465 re-states what tests/test_a_run_a_review_does_not_block_lands.py:375 already owns through the same land_once entry point.\nFINDING tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:611 non-blocking: _remove_the_finding_guards removes both _review_accepts_promotion and _undisposed_finding_guard in one control, so the case the control belongs to no longer shows which arm decided the refusal; the _undisposed_finding arm is unreachable behind the acceptance branch at reckon/crew/queue_landing.py:2404-2418, and the control's honest pair-removal leaves no case in this file that reddens when reckon/crew/queue_landing.py:1515's guard is emptied.\nFINDING tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:442 non-blocking: test_a_non_blocking_finding_with_no_disposition_is_deferred asserts the deferral that tests/test_a_run_a_review_does_not_block_lands.py:375 already asserts through the same queue_landing.land_once() path and the same finding text, so one assertion now has two owners that can drift apart.",
+  "review_run_id": "r-20261118T121448458837-review-of-qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator-508dd40cf8a0",
+  "reviewed_base_sha": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "reviewed_head_sha": "508dd40cf8a0ee72bc12e51fab85e5c8b55c4428",
+  "reviewed_run_id": "r-20261118T062713577410-qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:18:33.071829+00:00",
+  "total": 100
+}

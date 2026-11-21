@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "84df41f817943ad9f228ac90491b8faf87dbd2c1",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:50:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-release.html",
+      "id": "f0a1c30d5e7",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the table's head rows name d4c40d13 and the prose at :89 names sc/\u2026/scoped-gate-1795007743215377985.log as the head run, while the delivered head is f406d8c6 whose own gate is scoped-gate-1795008106022933677.log, so a reader using this record lands on a non-head measurement."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062839648443-qwnw-red-file-promotion-release/scoped-gate-1795008106022933677.log",
+      "id": "f7b2e41a6c9",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log's header names revision, host, tree and command only and its .scheduler sidecar is empty, so neither the all_debug partition nor the unset SLURM_JOB_ID the done_when requires can be re-checked from an artefact a later reader can open."
+    }
+  ],
+  "head_log_revision": "f406d8c69f4df36529f1691c4aea0599bde918b0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site: the diff changes a test file and an evidence fragment, and no runtime module is touched.",
+    "diff": "read commit by commit: 5ee1f09 replaces no_commit= with commits=[git(worktree, \"rev-parse\", \"HEAD\")] at tests/test_promotion_release.py:254, d4c40d13 adds the 93-line fragment",
+    "done_when": "the done_when names the file passing in full at head as an all_debug job with SLURM_JOB_ID unset plus an arm over importing files adding no failure and both suite arms as inline JSON; the manifest carries both suite arms at 0 failures with full revisions and the head gate, but no log states the partition or the unset variable.",
+    "goal": "the node's goal is to make tests/test_promotion_release.py pass in full; at the delivered head f406d8c6 the file's five cases pass (scoped-gate-1795008106022933677.log reads 5 passed, EXIT=0) and the diff touches no product module.",
+    "manifest": "read; it names one cause (test wrong), three commits, the literal pytest gate command, a base negative-control log with the following quoted refusal, and both suite arms at 0 failures with full 40-character revisions.",
+    "write_paths": "declared paths are reckon, tests, the evidence fragment directory and the figure directory; the diff 84df41f8..f406d8c6 changes only tests/test_promotion_release.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-release.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_promotion_release.py pass in full; at the delivered head f406d8c6 the file's five cases pass (scoped-gate-1795008106022933677.log reads \"5 passed\", EXIT=0) and the diff touches no product module.\nVERDICT done_when: the done_when names the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, plus an arm over importing files adding no failure and both suite arms recorded as inline JSON; the manifest carries both suite arms at 0 failures with full revisions and the head gate, but no log states the partition or the unset variable.\nVERDICT write_paths: declared paths are reckon, tests, the evidence fragment directory and the figure directory; the diff 84df41f8..f406d8c6 changes only tests/test_promotion_release.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-release.html.\nVERDICT manifest: read; it names one cause (test wrong), three commits, the literal pytest gate command, a base negative-control log with the refusal quoted, and both suite arms at 0 failures with full 40-character revisions.\nVERDICT diff: read commit by commit \u2014 5ee1f09 replaces no_commit= with commits=[git(worktree, \"rev-parse\", \"HEAD\")] at tests/test_promotion_release.py:254, d4c40d13 adds the 93-line evidence fragment, f406d8c6 repoints four figures in it at d4c40d13.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_promotion_release.py:254 is the only test edit and the file reads 5 passed, EXIT=0 at f406d8c6 in scoped-gate-1795008106022933677.log.\nSCORE evidence: 15\nJUSTIFICATION evidence: suite-arm-baseline.log and suite-arm-after.log record both arms at 58 passed, 0 failures at 84df41f8 and f406d8c6, but scoped-gate-1795008106022933677.log:1 names no partition and no unset SLURM_JOB_ID, so the done_when's job class is unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two changed paths, tests/test_promotion_release.py and the docs/evidence/fragments/queued-work-needs-no-workaround fragment, both lie inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the three assertions at tests/test_promotion_release.py:257-259 fail if the release step releases a non-ancestor tree, and the no_commit path the case stopped presenting stays guarded by tests/test_a_commitless_manifest_promotes.py:256.\nSCORE fit: 19\nJUSTIFICATION fit: the change uses the product's commits= parameter and the file's existing git() helper, matching the sibling cases at tests/test_promotion_release.py:242-250.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module \u2014 tests/test_promotion_release.py:251 calls the existing crew.complete API \u2014 so nothing forks a capability the repository owns.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-release.html:36 non-blocking: the table's head rows name d4c40d13 and the prose at :89 names scoped-gate-1795007743215377985.log as the head run, while the delivered head is f406d8c6 whose own gate is scoped-gate-1795008106022933677.log, so a reader following the record lands on a non-head measurement.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062839648443-qwnw-red-file-promotion-release/scoped-gate-1795008106022933677.log:1 non-blocking: the header names revision, host, tree and command only, and its .scheduler sidecar is empty, so neither the all_debug partition nor the unset SLURM_JOB_ID the done_when requires can be re-checked from any artefact.",
+  "review_method": "Read-only: the reviewed dispatch, its manifest, the head gate, the base negative-control, both suite arms, the affected-selection arms and the three landed commits against base 84df41f8; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T134604442882-review-of-qwnw-red-file-promotion-release-f406d8c69f4d",
+  "reviewed_base_sha": "84df41f817943ad9f228ac90491b8faf87dbd2c1",
+  "reviewed_head_sha": "f406d8c69f4df36529f1691c4aea0599bde918b0",
+  "reviewed_run_id": "r-20261118T062839648443-qwnw-red-file-promotion-release",
+  "reviewer_run_id": "r-20261118T134604442882-review-of-qwnw-red-file-promotion-release-f406d8c69f4d",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:05:00Z",
+  "total": 111
+}

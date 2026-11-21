@@ -1,0 +1,81 @@
+<section id="qwnw-red-file-crew-peers-landing">
+  <h2>A peer's paths stay fenced only where a merge cannot reconcile them</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_crew_peers.py</code> was red
+  on the primary branch on one id,
+  <code>test_peer_channel_does_not_relax_live_scope_refusal</code>. The other
+  three channel tests passed. This one failed with
+  <code>DID NOT RAISE ScopeConflict</code> while its captured stderr reported
+  three runs created, the third among them. The cause is a test that encodes a
+  rule the code no longer keeps.</p>
+
+  <p><strong>Verdict: the test is wrong, the product rule is intact.</strong>
+  The rule the test asserts — that a second dispatch naming the same source file
+  a live peer holds is refused — was deliberately replaced.
+  <code>feat(crew): share source files in a project with no sharing
+  declaration</code> made source and test declarations mergeable across isolated
+  worktrees, and <code>fix(crew): reserve path claims for nonmergeable
+  artifacts</code> named what still fences: a plan document, a cumulative
+  evidence record, generated state, a figure topic directory, the dependency
+  manifest and lock, a generated receipt, and an unmergeable binary. Two
+  dispatches may edit one source file because each works its own worktree and a
+  merge reconciles the two. The old test named
+  <code>package/definition.py</code>, a mergeable source file, so the arbitration
+  walked the claim past as shared and admitted the third dispatch exactly as the
+  declared rule says it must.</p>
+
+  <p>The test keeps every assertion it had — the refusal, the holding run's id
+  named in it, the unchanged run directory, and the live peer list — and points
+  the third dispatch at an artifact the live peer holds,
+  <code>docs/figures/interface/topic</code>, declared beside that pair's source
+  files. No assertion was deleted or weakened. The refusal reproduces before and
+  after the edit with the holding run named:
+  <code>write scope 'docs/figures/interface/topic' conflicts with live claim
+  'docs/figures/interface/topic' held by run '...' (node 'definition-owner')</code>,
+  and <code>runs_dir()</code> is unchanged afterwards.</p>
+
+  <h3 id="qwnw-red-file-crew-peers-measured">Measured</h3>
+
+  <table id="qwnw-red-file-crew-peers-arms">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node test, base</td>
+        <td><code>3fef705d24b5</code></td>
+        <td>extraction, all_debug</td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>node test, head</td>
+        <td><code>5c2589afd2a8</code></td>
+        <td>scratch tree, all_debug</td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>3fef705d24b5</code></td>
+        <td>all_debug</td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, head arm</td>
+        <td><code>5c2589afd2a8</code></td>
+        <td>all_debug</td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Both node arms were run as jobs on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset, and both logs sit in the run directory. The
+  head arm's delta against the base arm is the one failure fixed and no added
+  failure.</p>
+
+  <h3 id="qwnw-red-file-crew-peers-control">Negative control</h3>
+
+  <p>The base log records
+  <code>FAILED
+  tests/test_crew_peers.py::test_peer_channel_does_not_relax_live_scope_refusal -
+  Failed: DID NOT RAISE ScopeConflict</code>, and its captured stderr names the
+  three runs it had to see one of refused. The head log lists no failure id. The
+  base log is <code>negative-control-base.log</code> in the run directory.</p>
+
+  <h3 id="qwnw-red-file-crew-peers-outside">Outside scope</h3>
+
+  <p>None: the red id was this node's own measure, and the change stays inside
+  one test file.</p>
+</section>

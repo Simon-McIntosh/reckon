@@ -1,0 +1,182 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "elapsed_periods <= 2",
+      "fails_if": "A replacement first row is more than two unrounded periods after the recorded supervisor request, even if both timestamps floor to an instant difference of two; timestamps come from independent monotonic measurements in the real rehearsal.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:98"
+    },
+    {
+      "assertion": "Expected counts dictionary gains literal elapsed_periods=2",
+      "fails_if": "The helper omits or miscalculates elapsed_periods for the fixed request=8 and row=10 fixture; this is metadata coverage, not proof the refusal fires.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:503-516"
+    },
+    {
+      "assertion": "Updated expected refusal messages for excessive delivery time and request-relative timing",
+      "fails_if": "Using only floored timing or removing the fractional refusal either raises the wrong message or fails to refuse; the original large-overrun cases also retain the whole-instant guard.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:543-555"
+    },
+    {
+      "assertion": "Exact two-period boundary accepted, 2.005/2.74/2.75 periods refused; returned elapsed_periods equals literal 2",
+      "fails_if": "Reinstating the pre-repair helper accepts 8.255 and 8.99 after request 6.25; changing <= to < rejects the exact boundary; omitting the new metadata fails the accepted case. The inherited first_row_slot==row_slot is an input echo, unchanged in this diff, and receives no timing durability credit.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:559-575"
+    },
+    {
+      "assertion": "Fixture floor difference=2 and fractional difference approximately 2.74",
+      "fails_if": "The counterexample inputs cease to describe a fractional overrun hidden by floor arithmetic; these two checks validate fixture construction and do not test production behavior.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:580-581"
+    },
+    {
+      "assertion": "The explicit 2.74-period overrun raises the unrounded-deadline refusal",
+      "fails_if": "Restoring the exact old helper or weakening the deadline to rounded instants accepts this fixture and produces DID NOT RAISE, demonstrated in the negative-control log.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:587-588"
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T04:37:26Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read the sole new commit 646561afbcd3bed44d85157f273d7bf3365bdfe5 against prior reviewed head 16654039955028fb15e0f4a498e4bc4d04b57699; its 25 additions and 8 deletions only repair the test helper and fractional boundary controls.",
+    "done_when": "Read source prompt.txt FENCE EVIDENCE; fractional-deadline-scoped.log records 131 passed and explicitly refuses 2.74 periods, while baseline_suite/after_suite logs yield zero added failing IDs.",
+    "goal": "Read the source prompt.txt GOAL and live plan section 12; tests/test_the_sampler_runs_the_current_script.py:97-98 restores the two-period delivery requirement for the sampler-replacement rehearsal.",
+    "manifest": "Read source manifest.md and the completed gate receipts; the original base has 8 failed/162 passed, repair base 8 failed/188 passed, and head the same eight failing IDs/190 passed.",
+    "write_paths": "Read the source declared grants and orientation_write_paths; tests/test_the_sampler_runs_the_current_script.py is granted and is the sole changed path in the incremental revision pair."
+  },
+  "justifications": {
+    "durability": "tests/test_the_sampler_runs_the_current_script.py:567-568 and :587-588 fail when the unrounded guard at :98 is removed or replaced with the prior floored check; the reversal log demonstrates both failures, without crediting the inherited input-echo equality at :575.",
+    "evidence": "fractional-deadline-scoped.log records 131 passed and the 2.74-period refusal, fractional-deadline-negative.log records two DID NOT RAISE failures on exact helper reversal, and the source suite logs add zero failing IDs.",
+    "fit": "tests/test_the_sampler_runs_the_current_script.py:97-98 and :578-589 use the existing descriptive helper, math/pytest idioms and mechanism-based names without forbidden labels.",
+    "goal_fidelity": "tests/test_the_sampler_runs_the_current_script.py:97-98 enforces the full request-to-first-row interval independently of whole-instant continuity, answering the prior blocking finding.",
+    "reuse": "Capability searches for sampler delivery timing, elapsed periods and handover counters found the existing owner tests/test_the_sampler_runs_the_current_script.py:71, which this commit extends; the new refusal case at :578 invokes that owner rather than implementing another validator.",
+    "scope_discipline": "The complete 16654039955028fb15e0f4a498e4bc4d04b57699..646561afbcd3bed44d85157f273d7bf3365bdfe5 delta is the granted tests/test_the_sampler_runs_the_current_script.py and directly repairs the rehearsal measure."
+  },
+  "limitations": [
+    "Incremental test-only review of the sole commit since the prior reviewed head; earlier production changes are context, not re-reviewed.",
+    "No test rerun or mutation by this reviewer; inspected committed assertions and completed source logs.",
+    "Source original suite base differs from incremental review base and is recorded explicitly alongside the repair-base comparison.",
+    "Supplementary ten-run -n 8 stability evidence exceeds the named at-most -n 4 gate width and is not needed for this verdict.",
+    "Merged integration and live-fleet observation remain coordinator work."
+  ],
+  "negative_control_evidence": {
+    "mutation_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/fractional-deadline-answer-reversal.patch",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/fractional-deadline-negative.log",
+    "result": "Exact previous helper restored, delivered checks retained: two DID NOT RAISE failures; 2 failed in 0.60s; EXIT=1"
+  },
+  "previous_findings": [
+    {
+      "file": "tests/test_the_sampler_runs_the_current_script.py",
+      "prior_line": 97,
+      "resolution": "The blocking fractional-overrun finding is answered by the independent elapsed guard at current lines 97-98 and the actual refusal at 587-588."
+    },
+    {
+      "file": "tests/test_the_sampler_runs_the_current_script.py",
+      "prior_line": 572,
+      "resolution": "Inherited metadata input echo now at line 575 is outside this incremental diff; no timing durability credit assigned, and independent fractional refusal now exists."
+    }
+  ],
+  "production_context": [
+    "reckon/crew/fleet_supervisor.py:3961 calls start_health_sampler at :1471; the changed test helper has no production caller.",
+    "The real rehearsal calls _record_handover at tests/test_the_sampler_runs_the_current_script.py:235, which calls the changed helper at :137; series timestamps and request event use the same monotonic period basis."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source prompt.txt GOAL and live plan section 12; tests/test_the_sampler_runs_the_current_script.py:97-98 restores the two-period delivery requirement for the sampler-replacement rehearsal.\nVERDICT done_when: Read source prompt.txt FENCE EVIDENCE; fractional-deadline-scoped.log records 131 passed and explicitly refuses 2.74 periods, while baseline_suite/after_suite logs yield zero added failing IDs.\nVERDICT write_paths: Read the source declared grants and orientation_write_paths; tests/test_the_sampler_runs_the_current_script.py is granted and is the sole changed path in the incremental revision pair.\nVERDICT manifest: Read source manifest.md and the completed gate receipts; the original base has 8 failed/162 passed, repair base 8 failed/188 passed, and head the same eight failing IDs/190 passed.\nVERDICT diff: Read the sole new commit 646561afbcd3bed44d85157f273d7bf3365bdfe5 against prior reviewed head 16654039955028fb15e0f4a498e4bc4d04b57699; its 25 additions and 8 deletions only repair the test helper and fractional boundary controls.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_the_sampler_runs_the_current_script.py:97-98 enforces the full request-to-first-row interval independently of whole-instant continuity, answering the prior blocking finding.\nSCORE evidence: 20\nJUSTIFICATION evidence: fractional-deadline-scoped.log records 131 passed and the 2.74-period refusal, fractional-deadline-negative.log records two DID NOT RAISE failures on exact helper reversal, and the source suite logs add zero failing IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete 16654039955028fb15e0f4a498e4bc4d04b57699..646561afbcd3bed44d85157f273d7bf3365bdfe5 delta is the granted tests/test_the_sampler_runs_the_current_script.py and directly repairs the rehearsal measure.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_sampler_runs_the_current_script.py:567-568 and :587-588 fail when the unrounded guard at :98 is removed or replaced with the prior floored check; the reversal log demonstrates both failures, without crediting the inherited input-echo equality at :575.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_the_sampler_runs_the_current_script.py:97-98 and :578-589 use the existing descriptive helper, math/pytest idioms and mechanism-based names without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for sampler delivery timing, elapsed periods and handover counters found the existing owner tests/test_the_sampler_runs_the_current_script.py:71, which this commit extends; the new refusal case at :578 invokes that owner rather than implementing another validator.\n",
+  "repair_added_failure_count": 0,
+  "repair_added_failure_ids": [],
+  "reproduction_evidence": {
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/fractional-deadline-reproduction.log",
+    "quote": "Actual elapsed sampling periods: 2.74; AssertionError: flooring accepts a fractional deadline overrun; EXIT=1",
+    "revision": "16654039955028fb15e0f4a498e4bc4d04b57699"
+  },
+  "review_run_id": "r-20261118T043607373965-review-of-the-sampler-runs-the-current-script-646561afbcd3",
+  "reviewed_base_sha": "16654039955028fb15e0f4a498e4bc4d04b57699",
+  "reviewed_head_sha": "646561afbcd3bed44d85157f273d7bf3365bdfe5",
+  "reviewed_run_id": "r-20261117T211039288247-the-sampler-runs-the-current-script",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_run_leaves_nothing_behind.py tests/test_an_installed_interpreter_refuses_a_write.py tests/test_each_admission_pass_records_its_verdict.py tests/test_fleet_health_records_node_tmp.py tests/test_gc_bounds_a_run_file.py tests/test_no_caller_waits_on_a_promotion.py tests/test_the_sampler_runs_the_current_script.py tests/test_the_station_starts_where_workers_run.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/fractional-deadline-head.log",
+      "revision": "646561afbcd3bed44d85157f273d7bf3365bdfe5",
+      "summary": "8 failed, 190 passed in 253.89s (0:04:13)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_run_leaves_nothing_behind.py tests/test_an_installed_interpreter_refuses_a_write.py tests/test_each_admission_pass_records_its_verdict.py tests/test_fleet_health_records_node_tmp.py tests/test_gc_bounds_a_run_file.py tests/test_no_caller_waits_on_a_promotion.py tests/test_the_station_starts_where_workers_run.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/evidence-recapture-base-git.log",
+      "revision": "3845a12fe055e3b175e74f47984d4ecee9262d4e",
+      "summary": "8 failed, 162 passed in 211.52s (0:03:31)"
+    },
+    "repair_after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_run_leaves_nothing_behind.py tests/test_an_installed_interpreter_refuses_a_write.py tests/test_each_admission_pass_records_its_verdict.py tests/test_fleet_health_records_node_tmp.py tests/test_gc_bounds_a_run_file.py tests/test_no_caller_waits_on_a_promotion.py tests/test_the_sampler_runs_the_current_script.py tests/test_the_station_starts_where_workers_run.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/fractional-deadline-head.log",
+      "revision": "646561afbcd3bed44d85157f273d7bf3365bdfe5",
+      "summary": "8 failed, 190 passed in 253.89s (0:04:13)"
+    },
+    "repair_baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_run_leaves_nothing_behind.py tests/test_an_installed_interpreter_refuses_a_write.py tests/test_each_admission_pass_records_its_verdict.py tests/test_fleet_health_records_node_tmp.py tests/test_gc_bounds_a_run_file.py tests/test_no_caller_waits_on_a_promotion.py tests/test_the_sampler_runs_the_current_script.py tests/test_the_station_starts_where_workers_run.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/whole-instants-head.log",
+      "revision": "16654039955028fb15e0f4a498e4bc4d04b57699",
+      "summary": "8 failed, 188 passed in 254.00s (0:04:14)"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T04:43:55.461621+00:00",
+  "total": 120
+}

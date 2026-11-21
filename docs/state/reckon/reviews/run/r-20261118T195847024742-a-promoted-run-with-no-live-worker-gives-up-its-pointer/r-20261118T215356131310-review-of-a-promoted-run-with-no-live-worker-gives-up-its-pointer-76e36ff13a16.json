@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/pending_landing.py:1451 (finish_pending_landings -> release_merged_promotions)",
+    "reckon/crew/pending_landing.py:529 (retire_promoted_pointer -> _promoted_run_worker_state)",
+    "reckon/crew/station.py:458 (SweepBeat -> retire_promoted_pointers)",
+    "reckon/crew/queue_landing.py:1935 (queue landing -> finish_pending_landings)",
+    "reckon/crew_run_commands.py:4083 (crew land -> finish_pending_landings)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T21:55:10Z",
+  "finding_count": 3,
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-promoted-run-with-no-live-worker-gives-up-its-pointer",
+      "recorded_at": "2026-11-19T04:47:34.716186+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": 1175,
+      "severity": "blocking",
+      "text": "blocking: a promoted pointer whose record names no pid now reads WORKER_UNKNOWN and is kept by release_merged_promotions at :1365, so a promoted pointer that records no process is never released and the release path the section fixed is unreachable for it; tests/test_a_merged_promoted_run_is_released.py passes 10 tests at 0be7b97a81c3d7771f57391a1991460b9cc44d52 and 5 of those 10 fail at 76e36ff13a1619567a48aa01c2db26053d01509e (test_merged_clean_run_releases_workspace_pointer_and_waiter, test_a_repair_mark_cannot_release_a_newer_attempt, test_a_complete_merged_repair_without_a_journal_is_retired[absent], [matching], [phase-rewritten]), each with rows reading \"the run's worker liveness cannot be established\"; arms recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T215356131310-review-of-a-promoted-run-with-no-live-worker-gives-up-its-pointer-76e36ff13a16/importers-base-0be7b97a81c3d7771f57391a1991460b9cc44d52.log (10 passed, EXIT=0) and .../importers-head-76e36ff13a1619567a48aa01c2db26053d01509e.log (5 failed, 5 passed, EXIT=1), and the reviewed manifest's outside_scope does not name this file."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": 1162,
+      "severity": "non-blocking",
+      "text": "non-blocking: _named_process_state re-implements the record liveness read that reckon/crew/process_liveness.py:391 record_process_liveness already owns, and WORKER_DEAD/WORKER_ALIVE/WORKER_UNKNOWN at :1149-1151 repeat that module's LIVENESS_DEAD/LIVENESS_UNKNOWN tri-state; the copy keeps its own four-field identity and drops the owner's placement arm, which is how a record naming no pid reached WORKER_UNKNOWN instead of the owner's answer, so this addition duplicates rather than extends reckon/crew/process_liveness.py."
+    },
+    {
+      "file": "manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed run's baseline_suite and after_suite arms measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/crew/pending_landing.py, so the done_when's importer clause (\"the importers of the touched modules add no failure against the base\") is never asserted and the five importer failures named above are absent from the manifest's outside_scope."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against 0be7b97a81c3d7771f57391a1991460b9cc44d52 (+455/-19 over two files): 1dd9db02a00d removes the marked-attempt skip and the stream-based busy check in favour of a process check and adds a measurement-run release path beside the subset, and 76e36ff13a16 replaces that boolean with a three-valued worker state at reckon/crew/pending_landing.py:1186 plus a WORKER_ALIVE guard in retire_promoted_pointer at :466.",
+    "done_when": "the done_when asks for the node test's cases, its stated negative control and \"the importers of the touched modules add no failure against the base on all_debug with at most -n 4\"; the node test and the negative control are recorded (59 passed, EXIT=0; negative control \"1 failed, 1 passed\", EXIT=1) but the arms the manifest records at manifest.md:16-17 measure two files that do not import reckon/crew/pending_landing.py, so the importer clause is unmeasured and my own arms show it is false.",
+    "goal": "the source node's goal is \"Release every promoted run whose recorded worker process is not alive so that its pointer is retired\"; reckon/crew/pending_landing.py:1356 now reads the pointer's worker as alive, dead or unknown and releases on dead, which retires the three fleet pointers the goal names, but :1175 reads a record naming no pid as unknown and :1363 keeps it, so a promoted run with no live worker and no recorded process keeps its pointer.",
+    "manifest": "read; it records status complete, commit 76e36ff13a1619567a48aa01c2db26053d01509e, a scoped gate of \"59 passed\" with EXIT=0, arms at 58 and 59 passed with EXIT=0, and a negative control red at 0be7b97a81c3 with \"surviving pointers: ['marked-earlier', 'stale-turn', 'measured']\", yet its outside_scope names no importer test failure.",
+    "write_paths": "the source node declares five paths (prompt.txt:474); the diff touches only reckon/crew/pending_landing.py and tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py, both inside that list, and the declared evidence fragment and figure are undelivered."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:210 reddens if the dead-pid release is reverted and :226 if an unknown worker is released, but the kept tuple at :200 makes a pid-less pointer the expected outcome that an existing importer test at tests/test_a_merged_promoted_run_is_released.py:118 contradicts.",
+    "evidence": "the arms recorded at manifest.md:16-17 measure tests that do not import the changed module, so the done_when's importer clause is unasserted, and at 76e36ff13a16 tests/test_a_merged_promoted_run_is_released.py reports 5 failed against 10 passed at the base revision.",
+    "fit": "the docstrings, function-local imports and result rows at reckon/crew/pending_landing.py:1144-1310 follow the module's idiom, but WORKER_DEAD/WORKER_ALIVE/WORKER_UNKNOWN at :1149-1151 is a second liveness vocabulary beside LIVENESS_* at reckon/crew/process_liveness.py:348-349.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:1363 keeps every promoted pointer whose worker state is not dead and :1175 answers unknown for a record naming no pid, so the promoted runs the goal names that record no process are never released.",
+    "reuse": "_named_process_state at reckon/crew/pending_landing.py:1162 re-reads the process liveness of a run record that reckon/crew/process_liveness.py:391 record_process_liveness already owns, without extending it.",
+    "scope_discipline": "every path in 0be7b97a81c3d7771f57391a1991460b9cc44d52..76e36ff13a1619567a48aa01c2db26053d01509e is one of the five paths declared at prompt.txt:474, and no file outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Release every promoted run whose recorded worker process is not alive so that its pointer is retired\"; reckon/crew/pending_landing.py:1356 now reads the pointer's worker as alive, dead or unknown and releases on dead, which retires the three fleet pointers the goal names, but :1175 reads a record naming no pid as unknown and :1363 keeps it, so a promoted run with no live worker and no recorded process keeps its pointer.\nVERDICT done_when: the done_when asks for the node test's cases, its stated negative control and \"the importers of the touched modules add no failure against the base on all_debug with at most -n 4\"; the node test and the negative control are recorded (59 passed, EXIT=0; negative control \"1 failed, 1 passed\", EXIT=1) but the arms the manifest records at manifest.md:16-17 measure two files that do not import reckon/crew/pending_landing.py, so the importer clause is unmeasured and my own arms show it is false.\nVERDICT write_paths: the source node declares five paths (prompt.txt:474); the diff touches only reckon/crew/pending_landing.py and tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py, both inside that list, and the declared evidence fragment and figure are undelivered.\nVERDICT manifest: read; it records status complete, commit 76e36ff13a1619567a48aa01c2db26053d01509e, a scoped gate of \"59 passed\" with EXIT=0, arms at 58 and 59 passed with EXIT=0, and a negative control red at 0be7b97a81c3 with \"surviving pointers: ['marked-earlier', 'stale-turn', 'measured']\", yet its outside_scope names no importer test failure.\nVERDICT diff: read both commits against 0be7b97a81c3d7771f57391a1991460b9cc44d52 (+455/-19 over two files): 1dd9db02a00d removes the marked-attempt skip and the stream-based busy check in favour of a process check and adds a measurement-run release path beside the subset, and 76e36ff13a16 replaces that boolean with a three-valued worker state at reckon/crew/pending_landing.py:1186 plus a WORKER_ALIVE guard in retire_promoted_pointer at :466.\nCALL_SITES: reckon/crew/pending_landing.py:1451 (finish_pending_landings -> release_merged_promotions), reckon/crew/pending_landing.py:529 (retire_promoted_pointer -> _promoted_run_worker_state), reckon/crew/station.py:458 (SweepBeat -> retire_promoted_pointers), reckon/crew/queue_landing.py:1935 (queue landing -> finish_pending_landings), reckon/crew_run_commands.py:4083 (crew land -> finish_pending_landings)\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:1363 keeps every promoted pointer whose worker state is not dead and :1175 answers unknown for a record naming no pid, so the promoted runs the goal names that record no process are never released.\nSCORE evidence: 9\nJUSTIFICATION evidence: the arms recorded at manifest.md:16-17 measure tests that do not import the changed module, so the done_when's importer clause is unasserted, and at 76e36ff13a16 tests/test_a_merged_promoted_run_is_released.py reports 5 failed against 10 passed at the base revision.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in 0be7b97a81c3d7771f57391a1991460b9cc44d52..76e36ff13a1619567a48aa01c2db26053d01509e is one of the five paths declared at prompt.txt:474, and no file outside them is touched.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:210 reddens if the dead-pid release is reverted and :226 if an unknown worker is released, but the kept tuple at :200 makes a pid-less pointer the expected outcome that an existing importer test at tests/test_a_merged_promoted_run_is_released.py:118 contradicts.\nSCORE fit: 16\nJUSTIFICATION fit: the docstrings, function-local imports and result rows at reckon/crew/pending_landing.py:1144-1310 follow the module's idiom, but WORKER_DEAD/WORKER_ALIVE/WORKER_UNKNOWN at :1149-1151 is a second liveness vocabulary beside LIVENESS_* at reckon/crew/process_liveness.py:348-349.\nSCORE reuse: 5\nJUSTIFICATION reuse: _named_process_state at reckon/crew/pending_landing.py:1162 re-reads the process liveness of a run record that reckon/crew/process_liveness.py:391 record_process_liveness already owns, without extending it.\nFINDING reckon/crew/pending_landing.py:1175 blocking: a promoted pointer whose record names no pid now reads WORKER_UNKNOWN and is kept by release_merged_promotions at :1365, so a promoted pointer that records no process is never released and the release path the section fixed is unreachable for it; tests/test_a_merged_promoted_run_is_released.py passes 10 tests at 0be7b97a81c3d7771f57391a1991460b9cc44d52 and 5 of those 10 fail at 76e36ff13a1619567a48aa01c2db26053d01509e (test_merged_clean_run_releases_workspace_pointer_and_waiter, test_a_repair_mark_cannot_release_a_newer_attempt, test_a_complete_merged_repair_without_a_journal_is_retired[absent], [matching], [phase-rewritten]), each with rows reading \"the run's worker liveness cannot be established\"; arms recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T215356131310-review-of-a-promoted-run-with-no-live-worker-gives-up-its-pointer-76e36ff13a16/importers-base-0be7b97a81c3d7771f57391a1991460b9cc44d52.log (10 passed, EXIT=0) and .../importers-head-76e36ff13a1619567a48aa01c2db26053d01509e.log (5 failed, 5 passed, EXIT=1), and the reviewed manifest's outside_scope does not name this file.\nFINDING reckon/crew/pending_landing.py:1162 non-blocking: _named_process_state re-implements the record liveness read that reckon/crew/process_liveness.py:391 record_process_liveness already owns, and WORKER_DEAD/WORKER_ALIVE/WORKER_UNKNOWN at :1149-1151 repeat that module's LIVENESS_DEAD/LIVENESS_UNKNOWN tri-state; the copy keeps its own four-field identity and drops the owner's placement arm, which is how a record naming no pid reached WORKER_UNKNOWN instead of the owner's answer, so this addition duplicates rather than extends reckon/crew/process_liveness.py.\nFINDING manifest.md:16 non-blocking: the reviewed run's baseline_suite and after_suite arms measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/crew/pending_landing.py, so the done_when's importer clause (\"the importers of the touched modules add no failure against the base\") is never asserted and the five importer failures named above are absent from the manifest's outside_scope.\n",
+  "review_run_id": "r-20261118T215356131310-review-of-a-promoted-run-with-no-live-worker-gives-up-its-pointer-76e36ff13a16",
+  "reviewed_base_sha": "0be7b97a81c3d7771f57391a1991460b9cc44d52",
+  "reviewed_head_sha": "76e36ff13a1619567a48aa01c2db26053d01509e",
+  "reviewed_run_id": "r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer",
+  "rubric": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 9,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T22:12:26.202075+00:00",
+  "total": 75
+}

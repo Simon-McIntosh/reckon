@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/review.py:1324 waived_failure_count_refusals",
+    "reckon/crew/recovery_review_subject.py:1245 _write_review_brief",
+    "reckon/crew/recovery_review_subject.py:1476 _review_dispatch_fields",
+    "reckon/crew/recovery_review_dispatch.py:3203 dispatch_review_for_run",
+    "reckon/crew/dispatch_commands.py:3350 node brief_text"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T04:34:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the clause is exercised end to end by \u00a79's landing test, whose waived review is filed against the composed condition; a direct assertion on the condition text is a test tightening, not a change to what a reviewer may file",
+      "recorded_at": "2026-11-18T04:41:31.666854+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": 1528,
+      "severity": "non-blocking",
+      "text": "The dispatch-condition branch that admits the waived form has no assertion: reckon/crew/recovery_review_subject.py:1528 adds the waived clause to the composed done_when, but tests/test_a_waived_review_is_reachable.py exercises only _review_brief_text at line 320 and 328, so reverting lines 1528-1535 to the measured-only clause leaves all three cases green and a reviewer is again dispatched a condition that refuses the count it was told to file."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": 1528,
+      "severity": "non-blocking",
+      "text": "The waived clause is gated on the waiver alone while the brief block is also gated on the rubric: reckon/crew/recovery_review_subject.py:1528 omits the figure check that line 1496 resolves and that line 968 applies to the brief, so a figure review of a waived run would be dispatched a done_when naming a form its own brief never explains."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified recall: reckon/crew/review.py:1324 waived_failure_count_refusals, reckon/crew/recovery_review_subject.py:1245 and :1476 brief composition, reckon/crew/recovery_review_dispatch.py:3203 and :3282 dispatch, reckon/crew/dispatch_commands.py:3350 node fields",
+    "diff": "Read fcbaea0087d81a41f552d2e8cda3eb77ba4584d2..27776268f3aa6f3595b25561751d0212121d947f commit by commit: 9b8d09be17 fixes review.py's row-status set and adds the brief block, 847f4256e4 and 27776268f3 add only the evidence fragment, and 4da0eb94ab adds four assertions to the test file.",
+    "done_when": "Read the done_when in dispatch-detail.json and its three cases against tests/test_a_waived_review_is_reachable.py:298, :337 and :370; the scoped gate at head records 61 passed / EXIT=0 and the base arm records 2 failed, 1 passed / EXIT=1 in negative-control-base.log.",
+    "goal": "Read the source node's goal from the run's dispatch-detail.json and from docs/plans/a-gate-halts-only-on-substance.html:82; the landed change makes the waived form reachable from both directions, the brief block at reckon/crew/recovery_review_subject.py:852 and the committed-row reader at reckon/crew/review.py:1284.",
+    "manifest": "Read the source manifest.md in full; it names four commits, the scoped gate and both suite arms with EXIT=0, the base control at 2 failed / EXIT=1 and the matched importer arms, and every named log was opened and carries its revision header and a bare EXIT line.",
+    "write_paths": "Read the node's declared write_paths from dispatch-detail.json; all four delivered paths, reckon/crew/recovery_review_subject.py, reckon/crew/review.py, tests/test_a_waived_review_is_reachable.py and docs/evidence/fragments/a-gate-halts-only-on-substance/a-waived-review-is-reachable.html, are inside them and the declared figure path was left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_waived_review_is_reachable.py:361 reddens when WAIVER_ROW_STATUSES at reckon/crew/review.py:1226 drops 'clean' and :321 reddens when the block at recovery_review_subject.py:970 is removed, but the dispatch clause at :1528 has no assertion, so a third of the delivered behaviour is unguarded.",
+    "evidence": "negative-control-base.log records 2 failed, 1 passed and EXIT=1 at fcbaea0 with the head's test file, scoped-gate-1794975994935138108.log records 61 passed and EXIT=0 at 27776268, and baseline_suite-1794976119880049837.log and after_suite-1794976194025790951.log both end EXIT=0 with 0 failures, giving added_failure_count 0 and an empty id list.",
+    "fit": "The new block follows the existing composer idiom of recovery_review_subject.py:822's _reviewed_scope_block and review.py:1215's constant-plus-docstring form, and every added name states the mechanism it carries.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:970 appends the waived block to a waived run's brief and reckon/crew/review.py:1286 reads a committed row whose status is clean with a waiver_reason, which is exactly the two holes the node goal names.",
+    "reuse": "The brief resolves its reason through reckon/crew/review.py:1247 recorded_suite_delta_waiver rather than reading the pointer itself, and no second reader of a recorded suite-delta waiver exists: a search over reckon/ for waiver_reason found only promotion_records.py:1475 as the writer.",
+    "scope_discipline": "Every path in the diff, reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_waived_review_is_reachable.py and the evidence fragment, is inside the four write_paths in dispatch-detail.json; the only reach beyond the plan's deliverable is the dispatch clause at recovery_review_subject.py:1528, which the deliverable's 'told in its brief' implies."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T043327098226-review-of-a-waived-review-is-reachable-27776268f3aa",
+  "reviewed_base_sha": "fcbaea0087d81a41f552d2e8cda3eb77ba4584d2",
+  "reviewed_head_sha": "27776268f3aa6f3595b25561751d0212121d947f",
+  "reviewed_run_id": "r-20261118T032634298279-a-waived-review-is-reachable",
+  "scores": {
+    "durability": 16,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T04:40:53.338830+00:00",
+  "total": 113
+}

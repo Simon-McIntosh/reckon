@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3229 dispatch_review_for_run",
+    "reckon/crew/obligations.py:1753 obligations"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T04:28:07Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read e7fbe694bb68169f91831227d2d9c2019f2afbbb and 0983265f83c0d777b18f6fe377257c125349ad4f against a29130802a7465dcbbe829e7bf514870af92c9d6; the first adds coverage and the second changes only classification's retained-refusal handling plus focused tests.",
+    "done_when": "Read node.done_when and the recorded scoped, control and importer evidence; the scoped log records 9 passed, the archived base records 2 failed and 7 passed for a retained orientation refusal, and the originally predicted stale-help-only defect does not reproduce, as manifest.md:24 explicitly acknowledges.",
+    "goal": "Read the source pointer's node.goal and live docs/plans/delivered-work-lands-without-a-coordinator.html:190; recovery_classification.py:1961 rechecks a retained refusal so a recovered complete attempt reaches review, while tests preserve coverage for already-correct stale-help precedence.",
+    "manifest": "Read source manifest.md and its named logs; base/head armed summaries are 58/67 passed with EXIT=0, scoped head is 9 passed, and the report explicitly limits the historical diagnosis because those run directories are unavailable.",
+    "write_paths": "Read source pointer node.write_paths and manifest.md:3; both changed paths, reckon/crew/recovery_classification.py and tests/test_a_resumed_run_reads_its_newest_attempt.py, are declared."
+  },
+  "justifications": {
+    "durability": "Reinstating the direct manifest-only call at reckon/crew/recovery_classification.py:1970 makes tests/test_a_resumed_run_reads_its_newest_attempt.py:296 fail on blocked review dispatch, as base-control-resumed.log demonstrates, while line 324 requires a current scope violation to remain visible.",
+    "evidence": "source manifest.md:24 and base-control-resumed.log honestly distinguish the already-working stale-help case from the reproduced retained-refusal failure, with completed base/head gate logs and zero added failure ids.",
+    "fit": "reckon/crew/recovery_classification.py:1953 follows the surrounding mapping and memo idiom, uses mechanism-based names, and records absent echoes explicitly at line 1972.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1948 applies the repair only to an authoritative complete manifest, and tests/test_a_resumed_run_reads_its_newest_attempt.py:181 checks delivery with earlier help retained.",
+    "reuse": "Capability searches for orientation validation and attempt handling found the owner reckon/crew/dispatch_sessions.py:378 and :442, which line 1970 reuses; added test definitions only construct fixtures, invoke production owners and assert observable outcomes.",
+    "scope_discipline": "The two committed paths in a29130802a7465dcbbe829e7bf514870af92c9d6..0983265f83c0d777b18f6fe377257c125349ad4f match source manifest.md:3 and contain only classification behavior and its coverage."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source pointer's node.goal and live docs/plans/delivered-work-lands-without-a-coordinator.html:190; recovery_classification.py:1961 rechecks a retained refusal so a recovered complete attempt reaches review, while tests preserve coverage for already-correct stale-help precedence.\nVERDICT done_when: Read node.done_when and the recorded scoped, control and importer evidence; the scoped log records 9 passed, the archived base records 2 failed and 7 passed for a retained orientation refusal, and the originally predicted stale-help-only defect does not reproduce, as manifest.md:24 explicitly acknowledges.\nVERDICT write_paths: Read source pointer node.write_paths and manifest.md:3; both changed paths, reckon/crew/recovery_classification.py and tests/test_a_resumed_run_reads_its_newest_attempt.py, are declared.\nVERDICT manifest: Read source manifest.md and its named logs; base/head armed summaries are 58/67 passed with EXIT=0, scoped head is 9 passed, and the report explicitly limits the historical diagnosis because those run directories are unavailable.\nVERDICT diff: Read e7fbe694bb68169f91831227d2d9c2019f2afbbb and 0983265f83c0d777b18f6fe377257c125349ad4f against a29130802a7465dcbbe829e7bf514870af92c9d6; the first adds coverage and the second changes only classification's retained-refusal handling plus focused tests.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3229 dispatch_review_for_run, reckon/crew/obligations.py:1753 obligations\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1948 applies the repair only to an authoritative complete manifest, and tests/test_a_resumed_run_reads_its_newest_attempt.py:181 checks delivery with earlier help retained.\nSCORE evidence: 19\nJUSTIFICATION evidence: source manifest.md:24 and base-control-resumed.log honestly distinguish the already-working stale-help case from the reproduced retained-refusal failure, with completed base/head gate logs and zero added failure ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two committed paths in a29130802a7465dcbbe829e7bf514870af92c9d6..0983265f83c0d777b18f6fe377257c125349ad4f match source manifest.md:3 and contain only classification behavior and its coverage.\nSCORE durability: 20\nJUSTIFICATION durability: Reinstating the direct manifest-only call at reckon/crew/recovery_classification.py:1970 makes tests/test_a_resumed_run_reads_its_newest_attempt.py:296 fail on blocked review dispatch, as base-control-resumed.log demonstrates, while line 324 requires a current scope violation to remain visible.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1953 follows the surrounding mapping and memo idiom, uses mechanism-based names, and records absent echoes explicitly at line 1972.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for orientation validation and attempt handling found the owner reckon/crew/dispatch_sessions.py:378 and :442, which line 1970 reuses; added test definitions only construct fixtures, invoke production owners and assert observable outcomes.\n",
+  "review_run_id": "r-20261118T042713250746-review-of-a-resumed-run-reads-its-newest-attempt-0983265f83c0",
+  "reviewed_base_sha": "a29130802a7465dcbbe829e7bf514870af92c9d6",
+  "reviewed_head_sha": "0983265f83c0d777b18f6fe377257c125349ad4f",
+  "reviewed_run_id": "r-20261118T034534047411-a-resumed-run-reads-its-newest-attempt",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T034534047411-a-resumed-run-reads-its-newest-attempt/after_suite-1794975697592239378-audited.log",
+      "summary": "67 passed in 37.07s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T034534047411-a-resumed-run-reads-its-newest-attempt/baseline_suite-1794975622508654568-audited.log",
+      "summary": "58 passed in 39.26s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T04:33:50.313045+00:00",
+  "total": 119
+}

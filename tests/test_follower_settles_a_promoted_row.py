@@ -4,14 +4,16 @@ Promotion writes the run's ledger row and only then removes the live pointer.
 When the promotion's later steps fail — a peer's ``git index.lock`` taken — the
 row is written and the pointer is left behind. The pointer's own reading and the
 ledger row then disagree, and a fold that lets the pointer's reading win lets
-the run's row flap between ``promoted`` and ``dispatched`` every poll, and keeps
-re-emitting after the pointer is reaped.
+the run's row flap between the row's word and ``dispatched`` every poll, and
+keeps re-emitting after the pointer is reaped.
 
-The fold settles the run on the ledger row instead: once the row words the run
-``promoted``, the landing is announced once and the pointer's later reading
-announces nothing. The run leaves the fleet on its own pointer's disappearance
-without a second row, and a genuine re-dispatch of the same id is still read as
-an arrival.
+The fold settles the run on the ledger row instead: once the row words the run,
+that word is announced once and a pointer repeating the run's stale phase is not
+news. The word is the row's, and the row words a run ``promoted`` only once a
+branch carries its delivered head; while the merge is still owed it words the
+run delivered and names the outstanding merge in its detail. The run leaves the
+fleet on its own pointer's disappearance without a second row, and a genuine
+re-dispatch of the same id is still read as an arrival.
 """
 
 from __future__ import annotations
@@ -86,11 +88,13 @@ def test_a_promoted_row_settles_once_and_does_not_alternate(
 ) -> None:
     """A promoted ledger row wins over the pointer's own reading, once.
 
-    The pointer is left behind reading ``dispatched`` while the ledger row says
-    the run landed, which is the incident's disagreement. The two readings
-    disagree every poll, so the fold is fed both across six observations. The
-    landing is announced once as ``promoted`` and never answered by a
-    ``dispatched`` row for the run.
+    The pointer is left behind reading ``dispatched`` while the ledger row words
+    the run, which is the incident's disagreement. The word is the row's, and
+    the row words this run delivered: the fixture's repository is not a checkout
+    with a primary branch, so the landing the row records is unverified. The two
+    readings disagree every poll, so the fold is fed both across six
+    observations. The row's word is drawn once and no ``dispatched`` row for the
+    run is ever drawn beside it.
     """
     run_id = "r-promoted-settles"
     repo = tmp_path / "repo"
@@ -99,13 +103,14 @@ def test_a_promoted_row_settles_once_and_does_not_alternate(
 
     promoted = _snapshot(run_id)
     assert recovery._promote_record_holds(crew.read_pointer(run_id))
-    assert promoted["state"] == "promoted"
+    assert promoted["state"] == "complete"
 
     dispatched = {**promoted, "state": "dispatched"}
     known = {run_id: {**promoted, "state": "completed_unpromoted"}}
 
-    # The survivor's own word alternates with the ledger row's: the ledger row
-    # sees promotion, the left-behind pointer keeps reading its stale phase.
+    # The survivor's own word alternates with the ledger row's: the row words
+    # the run from itself, while the left-behind pointer keeps reading its
+    # stale phase.
     readings = [promoted, dispatched, promoted, dispatched, promoted, dispatched]
 
     seen: list[tuple[str | None, str]] = []
@@ -113,11 +118,11 @@ def test_a_promoted_row_settles_once_and_does_not_alternate(
         events, known = _fold(known, {run_id: reading})
         seen.extend((previous, state) for _s, previous, state, _c in events)
 
-    assert [state for _previous, state in seen] == ["promoted"], seen
+    assert [state for _previous, state in seen] == ["complete"], seen
     assert all(state != "dispatched" for _previous, state in seen), seen
-    # Settled, not forgotten: the memory still carries the promoted word, so a
+    # Settled, not forgotten: the memory still carries the row's word, so a
     # later reading cannot re-open the run.
-    assert str(known[run_id]["state"]) == "promoted"
+    assert str(known[run_id]["state"]) == "complete"
 
 
 def test_removing_the_pointer_emits_nothing_further(home: Path, tmp_path: Path) -> None:
@@ -128,7 +133,7 @@ def test_removing_the_pointer_emits_nothing_further(home: Path, tmp_path: Path) 
     _write_promoted_run(tmp_path, run_id, repo)
 
     promoted = _snapshot(run_id)
-    # The run settled on a prior tick: its landing was already announced.
+    # The run settled on a prior tick: the row's word was already drawn.
     known = {run_id: promoted}
 
     events, after = _fold(known, {})

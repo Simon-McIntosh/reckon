@@ -1700,6 +1700,113 @@ def _review_store_stamp(root: Path, project: str) -> tuple[int, int]:
     return (stamp[0], stamp[1])
 
 
+#: Each project's stored-record summaries, keyed by ``(project, store root)``:
+#: ``{record path: ((mtime ns, size), identity, review run id)}``. A pass needs
+#: the runs the store holds and which records carry them, and neither needs a
+#: record's body — reading every body is what the pass used to cost. A record
+#: whose stat identity is the one summarised here answers without a read, so a
+#: pass over an unchanged store reads no record; one that moved is read once.
+_RECORD_SUMMARIES: dict[
+    tuple[str, str], dict[str, tuple[tuple[int, int], str, str]]
+] = {}
+
+
+def _record_files(project: str, *, base_dir: str | Path | None = None) -> list[Path]:
+    """The stored plan-review files of one project, committed tree first.
+
+    The committed tree is listed before the staging store, as
+    :func:`list_plan_reviews` lists it, so a review promoted out of staging is
+    summarised once rather than once per tree.
+    """
+    committed_paths: list[Path] = []
+    committed = _review_store.committed_review_root(project)
+    if committed is not None:
+        plan_root = committed / _review_store.COMMITTED_PLAN_DIRNAME
+        if plan_root.is_dir():
+            slug_dirs = sorted(
+                (entry for entry in plan_root.iterdir() if entry.is_dir()),
+                key=lambda entry: entry.name,
+            )
+            for slug_dir in slug_dirs:
+                committed_paths.extend(sorted(slug_dir.glob("*.json")))
+    staging_paths: list[Path] = []
+    staging = _review_store.review_store_root(base_dir) / project
+    if staging.is_dir():
+        staging_paths = sorted(staging.glob(PLAN_REVIEW_FILE_GLOB))
+    return [*committed_paths, *staging_paths]
+
+
+def _stored_record_summaries(
+    project: str, *, base_dir: str | Path | None = None
+) -> list[tuple[Path, str, str]]:
+    """Every stored plan review's path, identity and review run id.
+
+    The summary is what a pass answers from when it does not need a record's
+    body: the runs the store already holds, and which records carry a run stays
+    one lookup rather than one read of the store. A record file whose stat
+    identity is the one it was last summarised at answers without being
+    decoded, so a pass over a store that has not changed reads no record body;
+    a new or rewritten record is decoded once and its identity and run id are
+    kept for the passes that follow. A store entry that disappears is dropped.
+    """
+    key = (project, str(_review_store.review_store_root(base_dir)))
+    held = _RECORD_SUMMARIES.get(key) or {}
+    current: dict[str, tuple[tuple[int, int], str, str]] = {}
+    summaries: list[tuple[Path, str, str]] = []
+    seen: set[str] = set()
+    for path in _record_files(project, base_dir=base_dir):
+        try:
+            info = path.stat()
+        except OSError:
+            continue
+        stamp = (int(info.st_mtime_ns), int(info.st_size))
+        summary = held.get(str(path))
+        if summary is not None and summary[0] == stamp:
+            identity, run_id = summary[1], summary[2]
+        else:
+            record = _read_record(path)
+            if record is None:
+                continue
+            identity = _plan_review_identity(record)
+            run_id = str(record.get("review_run_id") or "").strip()
+        current[str(path)] = (stamp, identity, run_id)
+        if identity and identity in seen:
+            continue
+        if identity:
+            seen.add(identity)
+        summaries.append((path, identity, run_id))
+    _RECORD_SUMMARIES[key] = current
+    return summaries
+
+
+def _records_carrying(
+    summaries: Iterable[tuple[Path, str, str]],
+    run_ids: Iterable[str],
+    project: str,
+) -> list[dict[str, Any]]:
+    """The stored records that carry any of ``run_ids``, decoded and annotated.
+
+    Only the records a pass actually asks about are read: the findings this
+    reflex raised are carried by the reviews it dispatched, so a pass over a
+    store of thousands of records reads the handful whose run id it holds and no
+    other. A record is annotated the way :func:`list_plan_reviews` annotates the
+    ones it lists, so a reader cannot tell which of the two handed it the
+    record.
+    """
+    wanted = {str(run_id) for run_id in run_ids if str(run_id)}
+    records: list[dict[str, Any]] = []
+    for path, identity, run_id in summaries:
+        if not identity or run_id not in wanted:
+            continue
+        record = _load(path)
+        if record is None:
+            continue
+        record.setdefault("project", project)
+        record["review_path"] = str(path)
+        records.append(record)
+    return records
+
+
 def list_plan_reviews(
     project: str | None = None,
     plan_slug: str | None = None,
@@ -1927,28 +2034,24 @@ def _record_decided_units(units: Iterable[str]) -> None:
         holder["units"] = tuple(sorted(units))
 
 
-_SECTION_TOKEN = re.compile(r"^[sS][0-9]+(?:[.-][0-9]+)*$")
-
-
 def _normalise_sections(sections: Iterable[Any] | None) -> tuple[str, ...]:
     """The section units a ``--section`` spelling names, in the order given.
 
     Every spelling the parser derives an identity for is accepted — the ``s``
     prefix, the section symbol, and a bare number all name one section — and a
-    repeated name is dropped rather than read twice. A token naming no section is refused here, because
-    a scope that silently names nothing composes a review of the whole plan
-    while reporting itself as narrow.
+    repeated name is dropped rather than read twice. Each spelling resolves
+    through the one section-number derivation in :mod:`reckon._plan_html`, so
+    this module owns no grammar of its own. A name that no plan section
+    carries is refused downstream by :func:`review_scope`, whose message names
+    the sections the plan does carry — a better refusal than one here could
+    give, because only that caller holds the plan.
     """
     units: list[str] = []
     for raw in sections or ():
         token = str(raw or "").strip()
         if not token:
             continue
-        if _SECTION_TOKEN.match(token):
-            token = "§" + token[1:]
         unit = _plan_html.section_record_id(token)
-        if not unit:
-            raise ValueError(f"{raw!r} does not name a plan section")
         if unit not in units:
             units.append(unit)
     return tuple(units)
@@ -2105,14 +2208,9 @@ def _answer_instant(when: str) -> datetime | None:
     module wrote it. A stamp without one is read as UTC so a comparison against a
     commit's own time is never between two different zones.
     """
-    text = (when or "").strip()
-    if not text:
-        return None
-    try:
-        instant = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(when)
 
 
 def _commit_time(
@@ -2126,10 +2224,9 @@ def _commit_time(
     output = _git(repo, "show", "-s", "--format=%cI", commit)
     if not output or not output.strip():
         return None
-    try:
-        return datetime.fromisoformat(output.strip())
-    except ValueError:
-        return None
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(output)
 
 
 def _plan_text_at(
@@ -3177,9 +3274,11 @@ def _reviewed_plan_text(
         return None
 
 
-_SECTION_REFERENCE = re.compile(
-    r"§\s*(\d+(?:[.-]\d+)*)|(?<![0-9A-Za-z_])s(\d+(?:[.-]\d+)*)(?![0-9])"
+_SECTION_REFERENCE_GRAMMAR = (
+    rf"§\s*({_plan_html.SECTION_NUMBER_PATTERN})"
+    rf"|(?<![0-9A-Za-z_])s({_plan_html.SECTION_NUMBER_PATTERN})(?![0-9])"
 )
+_SECTION_REFERENCE = re.compile(_SECTION_REFERENCE_GRAMMAR)
 
 
 def _fragment_unit(anchor: str) -> str | None:
@@ -4010,6 +4109,14 @@ PLAN_REVIEW_BURST_SECONDS = 24 * 60 * 60
 # budget is one plan per pass.
 PLAN_REVIEW_PASS_LIMIT = 1
 
+# How long a plan the pass did not weigh is left alone before it is weighed
+# again. A plan filed unweighed here is one whose last visit answered "not this
+# pass" — the limit was spent, another plan composed, or its own reason was one
+# that can clear by itself — so the reason is revisited on a timer rather than
+# by reading the plan on every tick. The interval is the quiet period: a plan
+# whose review is composed after its author stops editing is composed within
+# one quiet period of the pass that first saw it, which is the latency the
+# composed review's own wait already imposes.
 # How long a preview may spend weighing plans. A ``dry_run`` weighs every plan
 # inside the burst window rather than one, so its cost is proportional to the
 # plans being authored, not to the project; weighing one plan against the stored
@@ -4301,8 +4408,127 @@ def _note_records(
     return noted
 
 
+#: The plan listing each project's tree last yielded, keyed by project: the
+#: directory identity the scan was taken at, the plans it found and the files it
+#: dropped. A pass whose tree has gained or lost no document answers from the
+#: listing without walking the tree, which is what keeps an unchanged pass off
+#: the resource directories. The identity is the stat of each covered directory,
+#: so a plan written in place does not miss the entry while a plan added or
+#: removed does.
+_PLAN_LISTINGS: dict[str, tuple[tuple, list[tuple[str, Path]], list[dict]]] = {}
+
+
+def _plan_tree_identity(docs: Path, project: str) -> tuple | None:
+    """The identity of a docs tree's directory set, or ``None`` when unknown.
+
+    The tree's covered directories are the ones the resource walk records, and
+    each carries the stat that moves when an entry is added to or removed from
+    it. A tree that has never been walked has no recorded set, and ``None`` says
+    so rather than reading as an unchanged tree.
+    """
+    from reckon import metadata_index
+
+    try:
+        reused = metadata_index._reuse_covered(docs, project)
+    except (OSError, ValueError):
+        return None
+    if reused is None:
+        return None
+    identities = reused[2]
+    if not identities:
+        return None
+    return tuple(
+        sorted((name, tuple(identity)) for name, identity in identities.items())
+    )
+
+
+#: Each project's plan facts, keyed by project and then by slug: the edit the
+#: facts were last read at and the plan's status. The listing's walk parses every
+#: document in the tree already, so the status it read is kept rather than read
+#: again when that plan's turn to be weighed comes. A plan whose edit has moved
+#: is read once and refreshed — which is what lets a pass weigh a plan it has
+#: visited before, on its rotation turn, without opening the file.
+_PLAN_FACTS: dict[str, dict[str, tuple[float, str]]] = {}
+
+
+def _plan_fact_map(project: str) -> dict[str, tuple[float, str]]:
+    """The plan facts a project's last read left, replaced by every scan."""
+    return _PLAN_FACTS.setdefault(project, {})
+
+
+def _plan_status(path: Path) -> str:
+    """The status a plan declares, as the pass compares it."""
+    return str(_plan_html.parse_meta(path).get("status") or "").strip().lower()
+
+
+def _plan_fact(
+    project: str, plan_slug: str, path: Path, edited: float
+) -> tuple[str, bool]:
+    """The plan's status at this edit, and whether it had to be read for it.
+
+    A plan whose edit is the one its facts were read at answers from them; one
+    that has been written since is read now, so the answer is the file's and not
+    a stale copy of it. The second element is what tells the pass which plans
+    have actually moved, which is the order it weighs them in.
+    """
+    facts = _plan_fact_map(project)
+    held = facts.get(str(plan_slug))
+    if held is not None and held[0] == edited:
+        return held[1], False
+    status = _plan_status(path)
+    facts[str(plan_slug)] = (float(edited), status)
+    return status, True
+
+
+def _remember_plan_facts(project: str, plans: Iterable[tuple[str, Path]]) -> None:
+    """Read every listed plan's facts once, replacing what the last scan held.
+
+    The walk that found these plans found them by reading their heads, so this
+    costs one read per plan and only when the tree's file set moved. A plan that
+    has left the tree leaves the map with it.
+    """
+    facts: dict[str, tuple[float, str]] = {}
+    for plan_slug, path in plans:
+        edited = _edit_moment(path)
+        if edited is None:
+            continue
+        facts[str(plan_slug)] = (float(edited), _plan_status(path))
+    _PLAN_FACTS[project] = facts
+
+
 def _project_plan_paths(project: str) -> tuple[list[tuple[str, Path]], list[dict]]:
-    """The live plans of a project, and the documents the catalogue dropped.
+    """The live plans of a project, and the files it dropped.
+
+    A pass weighs the plans it is given, so the listing is the pass's one read
+    of the tree. It is remembered against the tree's directory identity, and a
+    pass that finds that identity unchanged answers from the listing it already
+    has rather than walking the resources again.
+    """
+    from reckon._store import _docs_dir_for_project
+
+    docs = _docs_dir_for_project(project)
+    if docs is None:
+        return [], []
+    identity = _plan_tree_identity(docs, project)
+    if identity is not None:
+        held = _PLAN_LISTINGS.get(project)
+        if held is not None and held[0] == identity:
+            return list(held[1]), [dict(row) for row in held[2]]
+    plans, failed = _scan_plan_paths(docs, project)
+    _remember_plan_facts(project, plans)
+    if identity is None:
+        # The scan records the tree's shape as it walks it, so the next pass has
+        # an identity to compare against even though this one started without.
+        identity = _plan_tree_identity(docs, project)
+    if identity is not None:
+        _PLAN_LISTINGS[project] = (identity, list(plans), [dict(row) for row in failed])
+    return plans, failed
+
+
+def _scan_plan_paths(
+    docs: Path, project: str
+) -> tuple[list[tuple[str, Path]], list[dict]]:
+    """Walk a project's resources once and return the live plans it holds.
 
     One document whose location disagrees with its declared type makes a strict
     catalogue raise for the whole tree, which would stop the pass for every
@@ -4310,12 +4536,8 @@ def _project_plan_paths(project: str) -> tuple[list[tuple[str, Path]], list[dict
     the files it dropped are read from the scope's own record, so the pass
     names the offending document and weighs the rest.
     """
-    from reckon._store import _docs_dir_for_project
     from reckon.resources import iter_resources, resource_scan_scope
 
-    docs = _docs_dir_for_project(project)
-    if docs is None:
-        return [], []
     try:
         with resource_scan_scope() as dropped:
             resources = iter_resources(
@@ -4356,6 +4578,15 @@ _REFLEX_CURSOR_KEY = "__cursor__"
 # only set it may answer.
 _REFLEX_COMPOSED_KEY = "__composed__"
 
+# The key the state file holds the edit each plan carried when the pass last
+# looked at the tree, keyed by plan slug. It is what tells a pass which plans
+# have actually been written since the one before: a plan whose edit is the one
+# recorded here has not moved, and a plan it does not name is one this pass is
+# seeing for the first time. The record survives the process, so a restarted
+# station weighs the plan edited while it was down first, exactly as one that
+# never stopped would have.
+_REFLEX_OBSERVED_KEY = "__observed__"
+
 
 def _reflex_state(project: str) -> dict:
     """The stored state of the last pass: plan mtimes and the rotation cursor."""
@@ -4381,6 +4612,18 @@ def _weighed_cursor(project: str) -> str:
     return cursor if isinstance(cursor, str) else ""
 
 
+def _observed_edits(project: str) -> dict[str, float]:
+    """The edit each plan carried when the pass last looked at the tree."""
+    stored = _reflex_state(project).get(_REFLEX_OBSERVED_KEY)
+    if not isinstance(stored, Mapping):
+        return {}
+    return {
+        str(slug): float(stored[slug])
+        for slug in stored
+        if isinstance(stored[slug], (int, float))
+    }
+
+
 def _composed_reviews(project: str) -> dict[str, list[str]]:
     """The review runs the reflex dispatched, keyed by the plan they review."""
     stored = _reflex_state(project).get(_REFLEX_COMPOSED_KEY)
@@ -4398,6 +4641,7 @@ def _record_weighed_edits(
     *,
     cursor: str = "",
     composed: Mapping[str, Iterable[str]] | None = None,
+    observed: Mapping[str, float] | None = None,
 ) -> None:
     """Write the mtimes the pass weighed, the plan it stopped at, and its reviews."""
     path = _reflex_state_path(project)
@@ -4411,6 +4655,10 @@ def _record_weighed_edits(
     held = {slug: run_ids for slug, run_ids in held.items() if run_ids}
     if held:
         stored[_REFLEX_COMPOSED_KEY] = held
+    if observed is not None:
+        stored[_REFLEX_OBSERVED_KEY] = {
+            str(slug): float(edit) for slug, edit in sorted(observed.items())
+        }
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(stored, indent=2) + "\n", encoding="utf-8")
@@ -4430,7 +4678,7 @@ def _owed_review_skip_reason(
     base_dir: str | Path | None,
     now_seconds: float | None,
     authors: Mapping[str, Mapping[str, str]],
-    records: Iterable[Mapping[str, Any]] | None = None,
+    status: str,
     pointers: Iterable[Mapping[str, Any]] | None = None,
     include_design: bool = False,
 ) -> str | None:
@@ -4447,7 +4695,6 @@ def _owed_review_skip_reason(
     from reckon.crew import recovery_review_dispatch
     from reckon.lifecycle import TERMINAL_STATUSES
 
-    status = str(_plan_html.parse_meta(path).get("status") or "").strip().lower()
     if status in TERMINAL_STATUSES:
         return f"the plan is {status}, so it owes no review"
     quiet_remaining = plan_review_quiet_remaining(path, now_seconds=now_seconds)
@@ -4495,11 +4742,228 @@ def _owed_review_skip_reason(
     if contributing and not uncovered and not design_owed:
         return "a stored review already covers the plan's current content"
     refusal = compose_burst_refusal(
-        project, plan_slug, base_dir=base_dir, plan_path=path, records=records
+        project, plan_slug, base_dir=base_dir, plan_path=path
     )
     if refusal:
         return refusal
     return None
+
+
+# The longest the owed-plan-review pass is left unrun while its inputs sit
+# still. The pass reads the project's plans, its stored plan reviews and its
+# authoring runs, and each of those changes on the scale of minutes rather than
+# of one tick, so the pass runs when one of them has moved since the pass before
+# and on this interval when none has. The interval is also the promise made to a
+# change that the gate does not see — a stored record rewritten in place keeps
+# its directory's stamp — because the interval ticks on the clock rather than on
+# the footprint: a review the ungated pass would have composed is composed at
+# most this much later.
+OWED_PLAN_REVIEW_PASS_SECONDS = 60.0
+
+
+def _owed_review_pass_state_path(project: str) -> Path:
+    """Where the gate records the footprint and moment of the last pass."""
+    return _reflex_state_path(project).with_suffix(".pass.json")
+
+
+def _owed_review_pass_state(project: str) -> dict[str, Any]:
+    """The gate's record of the last pass: its moment and what it read."""
+    try:
+        stored = json.loads(
+            _owed_review_pass_state_path(project).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return {}
+    return dict(stored) if isinstance(stored, Mapping) else {}
+
+
+def _live_authoring_identities(
+    pointers: Iterable[Mapping[str, Any]],
+) -> list[list[str]]:
+    """The runs in a live listing that would name a plan's author, as identities.
+
+    This is the live half of :func:`plan_authoring_runs`'s input. It is answered
+    from the listing the sweep already holds rather than from a second read of
+    the store, so a dispatch still in flight is a change the gate sees for the
+    cost of walking a list.
+    """
+    identities: list[list[str]] = []
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        author = _authoring_pointer(pointer)
+        if author is None:
+            continue
+        identities.append(
+            [str(author["plan"]), str(author["run_id"]), str(author["session"])]
+        )
+    return sorted(identities)
+
+
+def _owed_plan_edit_identity(info: Any) -> list[int]:
+    """What a plan file's write moves: its modification moment and its size.
+
+    Two fields rather than one, because a shared filesystem's timestamps are
+    coarser than the writes it records: a plan rewritten inside the second its
+    previous edit is stamped with can keep that stamp, and its new size is what
+    tells the gate the write happened.
+    """
+    return [int(info.st_mtime_ns), int(info.st_size)]
+
+
+def owed_plan_review_footprint(
+    project: str, *, pointers: Iterable[Mapping[str, Any]] | None = None
+) -> dict[str, Any]:
+    """A cheap identity of everything one owed-plan-review pass reads.
+
+    The pass reads three things: the project's plan files, its stored plan
+    reviews, and the runs that name a plan's author. Each is read here by its
+    own cheap reading rather than by the pass's expensive one — one stat per
+    plan, one listing of the store's record names, the run store's change token
+    and the ledger's write generation — so a sweep can tell whether the pass has
+    anything new to read without decoding a record or a row.
+
+    ``plans`` carries each plan's edit moment and size, so an edit made in place
+    is a change. ``reviews`` carries the store's record count and a digest of
+    its record names, so a record added or removed is a change; a record
+    rewritten in place keeps its name and is left to the interval, which is what
+    the interval is for. The names are listed rather than the directory stamped
+    because a directory's own stamp does not always move within the second a
+    record is added to it, and a change the gate missed would wait the whole
+    interval. ``runs`` carries the run store's token, the ledger's write
+    generation and, when a caller supplies the listing the sweep already holds,
+    the live runs that would author a plan.
+
+    A reading that cannot be taken is ``None`` and compares unequal to a reading
+    that was, so an unreadable store makes the pass due rather than keeping it
+    away.
+    """
+    from reckon import ledger, run_store
+
+    try:
+        plans, _failed = _project_plan_paths(project)
+        edits: list[Any] | None = []
+        for plan_slug, path in plans:
+            try:
+                info = path.stat()
+            except OSError:
+                edits.append([str(plan_slug), None, None])
+                continue
+            edits.append([str(plan_slug), *_owed_plan_edit_identity(info)])
+        edits = sorted(edits)
+    except Exception:  # noqa: BLE001 — an unreadable tree is not "unchanged"
+        edits = None
+    try:
+        names = "\n".join(str(path) for path in _record_files(project))
+        reviews = [
+            names.count("\n") + 1 if names else 0,
+            hashlib.sha256(names.encode("utf-8")).hexdigest()[:16],
+        ]
+    except Exception:  # noqa: BLE001 — an unreadable store is not "unchanged"
+        reviews = None
+    try:
+        ledger_generation: str | None = ledger.ledger_generation(project)
+    except Exception:  # noqa: BLE001 — an unreadable ledger is not "unchanged"
+        ledger_generation = None
+    try:
+        store_token = list(run_store.store_stamp() or ())
+    except Exception:  # noqa: BLE001 — an unreadable store is not "unchanged"
+        store_token = None
+    runs_read: dict[str, Any] = {
+        "store": store_token,
+        "ledger": ledger_generation,
+    }
+    if pointers is not None:
+        runs_read["live"] = _live_authoring_identities(pointers)
+    return {"plans": edits, "reviews": reviews, "runs": runs_read}
+
+
+def owed_plan_review_pass_due(
+    project: str,
+    *,
+    now_seconds: float | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Whether the owed-plan-review pass must run now, and why it must or not.
+
+    The pass is due when anything it reads has moved since the pass before, or
+    when :data:`OWED_PLAN_REVIEW_PASS_SECONDS` have passed since it, whichever
+    comes first. The first pass for a project is due because nothing records one
+    having run.
+
+    This reads; it never records a pass. A caller that runs the pass it was told
+    to run calls :func:`record_owed_plan_review_pass` afterwards, so a preview
+    that consulted the gate and wrote nothing leaves the next real pass due.
+    """
+    moment = time.time() if now_seconds is None else now_seconds
+    footprint = owed_plan_review_footprint(project, pointers=pointers)
+    state = _owed_review_pass_state(project)
+    recorded = state.get("inputs")
+    ran_at = state.get("at")
+    elapsed = moment - float(ran_at) if isinstance(ran_at, (int, float)) else None
+    answer: dict[str, Any] = {
+        "inputs": footprint,
+        "since_seconds": elapsed,
+        "due": True,
+    }
+    if not isinstance(recorded, Mapping):
+        answer["reason"] = "no owed-plan-review pass is recorded for this project"
+        return answer
+    changed = sorted(
+        key
+        for key in set(footprint) | set(recorded)
+        if footprint.get(key) != recorded.get(key)
+    )
+    if changed:
+        answer["reason"] = "the pass's inputs changed since its last run: " + ", ".join(
+            changed
+        )
+        return answer
+    if elapsed is None or elapsed >= OWED_PLAN_REVIEW_PASS_SECONDS:
+        answered = int(elapsed) if elapsed is not None else 0
+        answer["reason"] = (
+            f"{answered} s have passed since the last pass, at the "
+            f"{int(OWED_PLAN_REVIEW_PASS_SECONDS)} s interval"
+        )
+        return answer
+    answer["due"] = False
+    answer["reason"] = (
+        "nothing the pass reads has changed and "
+        f"{int(elapsed)} s of its {int(OWED_PLAN_REVIEW_PASS_SECONDS)} s "
+        "interval have passed"
+    )
+    return answer
+
+
+def record_owed_plan_review_pass(
+    project: str,
+    *,
+    now_seconds: float | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> None:
+    """Record that the pass ran now, with the footprint it ran against.
+
+    The footprint is taken after the pass rather than before it, because the
+    pass writes: a note it answers into a stored record moves the store it read,
+    and a footprint stamped before that write would report the pass's own write
+    as a change and run it again on the next sweep. Recording after the pass
+    costs one more cheap reading on the sweeps that run it, and buys the sweeps
+    that follow.
+
+    The record is an optimisation: a gate that cannot write it runs the pass
+    every sweep, which is slow but never wrong.
+    """
+    moment = time.time() if now_seconds is None else now_seconds
+    state = {
+        "at": moment,
+        "inputs": owed_plan_review_footprint(project, pointers=pointers),
+    }
+    path = _owed_review_pass_state_path(project)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass
 
 
 def compose_owed_plan_reviews(
@@ -4561,17 +5025,19 @@ def compose_owed_plan_reviews(
     # store, which is the moment its notes have been answered.
     held = _composed_reviews(project) if not dry_run else {}
     answered: list[Path] = []
-    # One walk of the store for the whole pass, not one per plan and not one
-    # per section: this pass runs on the sweep's cadence and a project carries
-    # dozens of plans and a thousand stored reviews.
-    records = list_plan_reviews(project, base_dir=base_dir)
+    # One listing of the store for the whole pass, carrying each record's run id
+    # and the stat it was read at rather than its body. The pass needs to know
+    # which runs the store already holds and which records answer its own
+    # findings; a record whose file has not moved since the last pass is not
+    # read at all, and one that moved is read once.
+    summaries = _stored_record_summaries(project, base_dir=base_dir)
     if not dry_run:
         owned = {run_id for run_ids in held.values() for run_id in run_ids}
         try:
             with _deferring_record_commits() as pending:
                 try:
                     report["notes"] = _note_records(
-                        records,
+                        _records_carrying(summaries, owned, project),
                         base_dir=base_dir,
                         by=PLAN_REVIEW_REFLEX,
                         when=None,
@@ -4597,9 +5063,7 @@ def compose_owed_plan_reviews(
                         "stage": "notes commit",
                     }
                 )
-        stored_runs = {
-            str(record.get("review_run_id") or "").strip() for record in records
-        }
+        stored_runs = {run_id for _path, _identity, run_id in summaries}
         held = {
             slug: [run_id for run_id in run_ids if run_id not in stored_runs]
             for slug, run_ids in held.items()
@@ -4617,9 +5081,18 @@ def compose_owed_plan_reviews(
     # of quiet plans would otherwise spend every pass on a document nobody has
     # touched and never reach the one being authored.
     moment = time.time() if now_seconds is None else now_seconds
-    candidates: list[tuple[str, Path, float]] = []
+    # The edit each plan carried when the pass last looked at the tree. A plan
+    # whose file still carries it has not moved, and one this record does not
+    # name is one this pass is seeing for the first time: both facts are about
+    # the tree, not about the process, so a restarted station answers as the
+    # running one would have.
+    observed = _observed_edits(project) if not dry_run else {}
+    observations: dict[str, float] = {}
+    candidates: list[tuple[str, Path, float, bool]] = []
     for plan_slug, path in plans:
         edited = _edit_moment(path)
+        if edited is not None:
+            observations[plan_slug] = float(edited)
         if edited is None:
             report["skipped"].append(
                 {"plan": plan_slug, "reason": "the plan file cannot be read"}
@@ -4649,22 +5122,33 @@ def compose_owed_plan_reviews(
             # it owes nothing new. This is what keeps the pass proportional to
             # the edits since the last sweep rather than to the project.
             continue
-        candidates.append((plan_slug, path, edited))
-    # The freshest edit first: the burst that has just ended is the one most
-    # likely to belong to a session still holding its lane, and a preview that
-    # stops at its time bound should have weighed that one rather than an older
-    # authoring burst that happens to sort earlier. The rotation below still
-    # decides where a real pass starts, so freshness does not starve a plan.
-    candidates.sort(key=lambda row: row[2], reverse=True)
-    # Start after the plan the last pass weighed. The pass takes one plan, so a
-    # plan near the top whose reason never settles would otherwise hold the
-    # only slot on every pass and starve every plan behind it.
+        candidates.append((plan_slug, path, edited, observed.get(plan_slug) != edited))
+    # A plan whose file has moved since the pass last read it goes first: it is
+    # the one thing this pass knows has changed, and it owes an answer the
+    # plans merely awaiting their turn do not. Otherwise the freshest edit
+    # first, because the burst that has just ended is the one most likely to
+    # belong to a session still holding its lane, and a preview that stops at
+    # its time bound should have weighed that one rather than an older authoring
+    # burst that happens to sort earlier.
+    candidates.sort(key=lambda row: (0 if row[3] else 1, -row[2]))
     if not dry_run:
+        # Start after the plan the last pass weighed, within each group. The pass
+        # takes one plan, so a plan near the top whose reason never settles would
+        # otherwise hold the only slot on every pass and starve every plan behind
+        # it. A changed plan is not rotated away: there is usually one, and it is
+        # the one this pass has a reason to weigh.
         cursor = _weighed_cursor(project)
-        names = [slug for slug, _path, _edited in candidates]
-        if cursor in names:
+        moved_first = [row for row in candidates if row[3]]
+        unchanged = [row for row in candidates if not row[3]]
+
+        def _after_cursor(group: list[tuple[str, Path, float, bool]]):
+            names = [slug for slug, _path, _edited, _moved in group]
+            if cursor not in names:
+                return group
             begin = names.index(cursor) + 1
-            candidates = candidates[begin:] + candidates[:begin]
+            return group[begin:] + group[:begin]
+
+        candidates = _after_cursor(moved_first) + _after_cursor(unchanged)
     if not candidates:
         report["skipped"].append(
             {"reason": "no plan was edited inside the authoring burst"}
@@ -4676,7 +5160,7 @@ def compose_owed_plan_reviews(
     # clock: the gate it feeds must finish inside thirty seconds whatever the
     # project's authoring activity.
     preview_stops_at = time.monotonic() + PLAN_REVIEW_PREVIEW_SECONDS
-    for plan_slug, path, edited in candidates:
+    for plan_slug, path, edited, _moved in candidates:
         if dry_run and time.monotonic() > preview_stops_at:
             report["skipped"].append({"reason": "the preview reached its time bound"})
             break
@@ -4701,6 +5185,7 @@ def compose_owed_plan_reviews(
             break
         report["read"].append(plan_slug)
         stopped_at = plan_slug
+        status, _read_now = _plan_fact(project, plan_slug, path, edited)
         try:
             reason = _owed_review_skip_reason(
                 project,
@@ -4709,7 +5194,7 @@ def compose_owed_plan_reviews(
                 base_dir=base_dir,
                 now_seconds=now_seconds,
                 authors=authors,
-                records=records,
+                status=status,
                 pointers=pointers,
                 include_design=include_design,
             )
@@ -4721,7 +5206,8 @@ def compose_owed_plan_reviews(
                     # Settled without a review, and nothing short of an edit
                     # can unsettle it. Every other reason may clear on its own
                     # (a quiet period expires, a review in flight finishes), so
-                    # those plans are read again on the next pass.
+                    # those plans are revisited when their timer runs rather
+                    # than read again on every pass.
                     passed[plan_slug] = edited
                 continue
             if dry_run:
@@ -4783,7 +5269,13 @@ def compose_owed_plan_reviews(
             continue
 
     if not dry_run:
-        _record_weighed_edits(project, passed, cursor=stopped_at, composed=held)
+        _record_weighed_edits(
+            project,
+            passed,
+            cursor=stopped_at,
+            composed=held,
+            observed=observations,
+        )
     return report
 
 
@@ -6214,6 +6706,7 @@ def dispatch_code_review(
     config: Mapping[str, Any] | None = None,
     dry_run: bool = False,
     launcher: Any = None,
+    priority: int = 0,
 ) -> dict[str, Any]:
     """Dispatch one read-only review node for a code subject, or preview it.
 
@@ -6272,7 +6765,10 @@ def dispatch_code_review(
         # from these options: the waiver passed above is not carried onto the
         # queued request, so the option must be recorded here or the relaunch
         # refuses the review for the run it exists to reconcile.
-        dispatch_options={"allow_unreconciled_runs": True},
+        dispatch_options={
+            "allow_unreconciled_runs": True,
+            **({"priority": int(priority)} if priority > 0 else {}),
+        },
     )
     return {**result, "brief_text": fields["brief_text"]}
 
@@ -6970,6 +7466,7 @@ def dispatch_portfolio_review(
     config: Mapping[str, Any] | None = None,
     dry_run: bool = False,
     launcher: Any = None,
+    priority: int = 0,
 ) -> dict[str, Any]:
     """Dispatch one read-only portfolio review node, or preview it."""
     import importlib
@@ -7017,7 +7514,10 @@ def dispatch_portfolio_review(
         unreconciled_override=True,
         route="deterministic",
         local=bool(subject.get("local")),
-        dispatch_options={"allow_unreconciled_runs": True},
+        dispatch_options={
+            "allow_unreconciled_runs": True,
+            **({"priority": int(priority)} if priority > 0 else {}),
+        },
     )
     return {**result, "brief_text": fields["brief_text"]}
 

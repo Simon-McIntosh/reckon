@@ -1,0 +1,80 @@
+<section id="wlsr-worker-behaviour-is-the-same-on-every-harness-landing">
+  <h2>One lane, several harnesses, one treatment for the worker launched on it</h2>
+
+  <p><strong>What changed.</strong> A worker's treatment is now composed in one
+  place, <code>reckon/crew/worker_behaviour.py</code>, and carried on the launch
+  plan as facts a reader can compare: the lane identity taken from the lane
+  document, the inbox directory inside the run directory, the MCP server
+  allowlist, the fence's write roots and protections, the review duty taken from
+  the role, and the landing route. The four differences the harness interface
+  forces &mdash; launch argv, harness-home layout, stream format, model
+  identifier &mdash; are the only ones excluded from that comparison.</p>
+
+  <p><strong>The defect the record named, repaired.</strong> The inbox hook was
+  seeded into a run home only for the dialect whose name is <code>claude</code>.
+  A claude-shaped wrapper was therefore given no run home at all: no inbox hook,
+  no MCP allowlist and no exclusion list, while its harness read the sealed
+  operator home. That is the local lane&rsquo;s own case, because the configured
+  local backend moved to a wrapper on 20 November. A dialect now declares the
+  interface it speaks &mdash; <code>home_interface</code>,
+  <code>settings_file</code>, <code>mcp_config_file</code>,
+  <code>mcp_refusal_list</code> &mdash; and the seeding and the behaviour facts
+  read those attributes instead of a name, so a wrapper and the harness it wraps
+  are seeded identically. The shipped home-file defaults resolve through the same
+  interface, so a wrapper inherits the instruction files and settings group its
+  harness reads rather than starting empty.</p>
+
+  <figure id="wlsr-worker-behaviour-is-the-same-on-every-harness-figure">
+    <img src="/reckon/figures/work-of-a-lost-session-is-raised-not-left/wlsr-worker-behaviour-is-the-same-on-every-harness/composed-treatment.svg"
+         alt="One node's treatment composed once and carried by every backend of its lane">
+  </figure>
+
+  <h3 id="wlsr-worker-behaviour-is-the-same-on-every-harness-arms">Measured</h3>
+
+  <p>Every arm is a log whose header names its revision, tree and command, and
+  whose last line is a bare <code>EXIT=&lt;code&gt;</code>. The logs live in the
+  run directory
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010315547304-wlsr-worker-behaviour-is-the-same...</code>.</p>
+
+  <table id="wlsr-worker-behaviour-is-the-same-on-every-harness-arm-table">
+    <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>gate, head <code>77cedb1ddf</code></td>
+        <td>7 passed, <code>EXIT=0</code></td>
+        <td><code>gate-worker-behaviour.log</code></td></tr>
+      <tr><td>negative control 1: one backend&rsquo;s inbox removed</td>
+        <td><strong>1 failed, 6 passed</strong>, <code>EXIT=1</code> &mdash;
+        <code>test_every_local_backend_gives_one_node_the_same_treatment</code></td>
+        <td><code>negative-control-no-inbox.log</code></td></tr>
+      <tr><td>negative control 2: the drainer&rsquo;s lane-document comparison
+        replaced by a name comparison</td>
+        <td><strong>2 failed, 5 passed</strong>, <code>EXIT=1</code> &mdash; both
+        parametrisations of
+        <code>test_the_gate_admits_either_backend_of_one_lane_identically</code></td>
+        <td><code>negative-control-gate-by-name.log</code></td></tr>
+      <tr><td>neighbouring suites (launch plan, fence home, local drainer, lane
+        model, worktree, backend resolution, old names, image attachment)</td>
+        <td>72 passed, one unrelated failure: an inode-equality assertion in
+        <code>test_a_second_launch_keeps_a_live_worktree.py</code>, which passes at
+        the base revision and passes in isolation at this one, so it is
+        inode reuse under a combined run rather than this change</td>
+        <td>recorded under <code>outside_scope</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Why the second control mutates the drainer.</strong> The gate-hold
+  predicate delegates to <code>drainer_serves_the_local_lane</code>, which is the
+  one reader that compares the two backends&rsquo; lane documents; the case starts
+  the drainer under the name the configuration has moved away from, so a
+  name-only comparison admits nothing and both parametrisations fail. A first
+  attempt mutated the wrapper instead and stayed green, which showed the wrapper
+  restated a rule the drainer already owns &mdash; that duplication is removed.</p>
+
+  <h3 id="wlsr-worker-behaviour-is-the-same-on-every-harness-scope">Not in this node</h3>
+
+  <p>Delivery to a harness that declares neither a settings group nor an argv
+  override is recorded as <code>file-only</code>: the message is written into the
+  run directory&rsquo;s inbox and read on the next resume. Giving such a harness a
+  live delivery trigger needs that harness&rsquo;s own hook interface, which this
+  node cannot verify and does not invent.</p>
+</section>

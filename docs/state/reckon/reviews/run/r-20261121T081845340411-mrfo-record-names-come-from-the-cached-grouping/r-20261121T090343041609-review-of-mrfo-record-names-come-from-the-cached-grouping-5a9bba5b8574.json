@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_memo.py:390",
+    "reckon/crew/recovery_memo.py:456",
+    "reckon/crew/plan_review.py:761",
+    "reckon/crew/plan_review.py:2855",
+    "reckon/crew/plan_review.py:3075",
+    "reckon/crew/plan_review.py:6801",
+    "reckon/crew/review.py:4466"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T09:08:03Z",
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "The changed reader is reached from reckon/crew/recovery_memo.py:390 (_own_review_record_exists) and :456 (_review_input_identities); the writer upkeep the change removes sits on the record_written path, whose production callers are reckon/crew/plan_review.py:761, :2855, :3075, :6801 and reckon/crew/review.py:4466; both reader sites test the result against None before use, which the new implementation still returns for a directory that keeps no index (reckon/crew/review_records.py:2643-2645).",
+    "diff": "Read 80eb238ff0..5a9bba5b85 commit by commit: one commit, refactor(crew), changing 3 files (+119 -80) -- review_records.py drops the run_names key, its rebuild, its writer upkeep and its reconcile upkeep (-80 +9); the new 104-line test; and the 6-line evidence fragment; nothing outside the declared scope.",
+    "done_when": "The done_when has four clauses; the gate asserts three directly -- the new case at tests/test_a_record_written_after_the_index_is_found_by_its_run.py:78-103 writes through record_written after the build and finds the name by its run, section 50's test runs in both suite arms, and the removal is checked by the git grep -- while the fourth (tests importing reckon.crew.review_records add no failure against the base on all_debug) rests on a head-only 130-passed run in review-records-related.log that records no base arm and no host.",
+    "goal": "The node's goal is that a record written after the index is built is found by its run without a second per-run grouping; reckon/crew/review_records.py:2631 review_run_record_names now answers from _document_index_maps's cached `reviewed` map and the run_names map plus _run_name_map/_move_run_name/_drop_run_name are gone (git show 5a9bba5b85:reckon/crew/review_records.py | grep -nw run_names exits 1).",
+    "manifest": "Read manifest.md; it records status complete, commit 5a9bba5b85, the gate command and four log paths, a baseline arm (59 passed, 0 failures at base) and an after arm (60 passed, 0 failures at head), and a negative_control_log at logs/negative_control.log carrying EXIT=1 and one FAILED id.",
+    "write_paths": "Read the manifest's orientation_write_paths; all three files in the diff (reckon/crew/review_records.py, tests/test_a_record_written_after_the_index_is_found_by_its_run.py and the evidence fragment) are inside the declared write paths, while recovery_memo.py and tests/test_a_pointer_reads_only_its_runs_records.py are declared but unchanged."
+  },
+  "justifications": {
+    "durability": "logs/negative_control.log shows the new case failing with names == [] (EXIT=1, one FAILED id absent from the collection the head arm passes) when the grouping cache is keyed on generation alone, so the assertion at tests/test_a_record_written_after_the_index_is_found_by_its_run.py:97 reddens on the regression it guards.",
+    "evidence": "The after arm records 60 passed 0 failed at 5a9bba5b85 and the baseline arm 59 passed 0 failed at 80eb238ff0, but the done_when's importer-set clause is supported only by review-records-related.log (130 passed at head) with no base arm and no recorded host.",
+    "fit": "The change reuses the module's existing _index_maps/_document_index_maps idiom and introduces no forbidden name; only the new evidence fragment lacks a trailing newline (git diff shows 'No newline at end of file).",
+    "goal_fidelity": "reckon/crew/review_records.py:2646-2647 reads the cached `reviewed` grouping and the run_names map and its three upkeep helpers are absent from the head blob (git show 5a9bba5b85:reckon/crew/review_records.py | grep -nw run_names exits 1), so the delivered change is exactly the goal.",
+    "reuse": "The change removes the duplicate per-run grouping rather than adding one and answers through _document_index_maps, the owner of that capability (reckon/crew/review_records.py:2547-2566); the search over reckon/crew for a second builder of the reviewed map found none.",
+    "scope_discipline": "Every path in the diff -- reckon/crew/review_records.py, tests/test_a_record_written_after_the_index_is_found_by_its_run.py and the evidence fragment -- is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261121T090343041609-review-of-mrfo-record-names-come-from-the-cached-grouping-5a9bba5b8574",
+  "reviewed_base_sha": "80eb238ff01eb47620e1db2599eb7f9ce7aff656",
+  "reviewed_head_sha": "5a9bba5b8574b5ed13ce4b9b9bd8adfc4900444d",
+  "reviewed_run_id": "r-20261121T081845340411-mrfo-record-names-come-from-the-cached-grouping",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T09:22:08+00:00",
+  "total": 113
+}

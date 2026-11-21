@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:_require_declared_negative_control",
+    "reckon/crew/promotion_checks.py:3047",
+    "reckon/crew/promotion.py:3788",
+    "reckon/crew/promotion_evidence.py:_control_run_shows_a_failure"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:09:20Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_negative_control_header.py",
+      "id": "f23c3575785",
+      "line": "164",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert control[\"declaration\"] == mutation` compares promotion's echoed declaration against the same string the test handed to _write_pointer, so it cannot redden on a defect in the admission rule it sits beside; the surrounding assertions at :166-168 carry the guard."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-negative-control-header.html",
+      "id": "f28494fe59d",
+      "line": "71",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"scope's suite\" rows report 58 passed on both arms without naming the command, and the two files those arms ran (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) cannot reach the changed test, so the \"0 added failures\" row reads as a measurement of the changed file when it measures two unrelated files."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read cf817ac9a168 (the test repair, +54 -9) and bd5ae0efbcb9 (the arms fragment, +19) against b24fe95a789c; the first swaps a fixture whose FAILED record admission now admits for a green log, restates the refusal assertion as \"reports no failure\", and adds one case pinning runner-record admission, and the second adds the evidence fragment only.",
+    "done_when": "the done_when names the file's full pass as an all_debug job with SLURM_JOB_ID unset, the base run measured first with its failing ids beside the head run, both suite arms as inline JSON, and the base red log; the manifest records all four and head-run-named-file.log (job 1329878, env -u SLURM_JOB_ID) reads 3 passed, EXIT=0 against negative-control-base-red.log's 1 failed, 1 passed, EXIT=1.",
+    "goal": "the node's goal is to make tests/test_crew_negative_control_header.py pass in full at head; the diff retires the case that pinned a refusal retired by 8901431b8a and the head run at tests/test_crew_negative_control_header.py reads 3 passed, EXIT=0.",
+    "manifest": "read; status complete, commits cf817ac9a168,bd5ae0efbcb9, changed_paths naming the test file and the fragment, tests the two-file scope gate, baseline_suite at b24fe95a789c with 0 failures and after_suite at cf817ac9a168 with 0 failures, negative_control_log naming negative-control-base-red.log, and the cause recorded as test wrong rather than product wrong.",
+    "write_paths": "read the node's declared fence (reckon, tests, the plan's evidence fragment directory and its named fragment, and the figures directory); both paths in the diff, tests/test_crew_negative_control_header.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-negative-control-header.html, are inside it and no path outside it changed."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_negative_control_header.py:168-169 reddens if the runner's own FAILED record stops being read from the log, and :123 reddens if the refusal reverts to \"records no EXIT status\"; :164 is an echo of the declaration the test itself passed in.",
+    "evidence": "head-run-named-file.log reads \"3 passed\", EXIT=0 and negative-control-base-red.log reads \"1 failed, 1 passed\", EXIT=1 with the failing id, matching the manifest's recorded figures; the suite arms are 58 passed on both sides, a delta those two files cannot show since neither imports the changed test.",
+    "fit": "the added case at tests/test_crew_negative_control_header.py:131 and the section banner above it follow the file's existing per-rule grouping and its docstring-per-case style, with no plan or ticket identifier in the added names or comments.",
+    "goal_fidelity": "tests/test_crew_negative_control_header.py at bd5ae0ef passes 3 of 3 as its own all_debug job (head-run-named-file.log, EXIT=0), which is the goal's deliverable measured at the landed head.",
+    "reuse": "the diff adds no production definition; the two added definitions are one test case and one HTML evidence section, so there is no capability the repository owns to extend or duplicate.",
+    "scope_discipline": "git diff --stat b24fe95a789c..bd5ae0efbcb9 lists only tests/test_crew_negative_control_header.py and the declared evidence fragment, and no product source changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_crew_negative_control_header.py pass in full at head; the diff retires the case that pinned a refusal retired by 8901431b8a and the head run at tests/test_crew_negative_control_header.py reads 3 passed, EXIT=0.\nVERDICT done_when: the done_when names the file's full pass as an all_debug job with SLURM_JOB_ID unset, the base run measured first with its failing ids beside the head run, both suite arms as inline JSON, and the base red log; the manifest records all four and head-run-named-file.log (job 1329878, env -u SLURM_JOB_ID) reads 3 passed, EXIT=0 against negative-control-base-red.log's 1 failed, 1 passed, EXIT=1.\nVERDICT write_paths: read the node's declared fence (reckon, tests, the plan's evidence fragment directory and its named fragment, and the figures directory); both paths in the diff, tests/test_crew_negative_control_header.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-negative-control-header.html, are inside it and no path outside it changed.\nVERDICT manifest: read; status complete, commits cf817ac9a168,bd5ae0efbcb9, changed_paths naming the test file and the fragment, tests the two-file scope gate, baseline_suite at b24fe95a789c with 0 failures and after_suite at cf817ac9a168 with 0 failures, negative_control_log naming negative-control-base-red.log, and the cause recorded as test wrong rather than product wrong.\nVERDICT diff: read cf817ac9a168 (the test repair, +54 -9) and bd5ae0efbcb9 (the arms fragment, +19) against b24fe95a789c; the first swaps a fixture whose FAILED record admission now admits for a green log, restates the refusal assertion as \"reports no failure\", and adds one case pinning runner-record admission, and the second adds the evidence fragment only.\nCALL_SITES: reckon/crew/promotion_checks.py:_require_declared_negative_control, reckon/crew/promotion_checks.py:3047, reckon/crew/promotion.py:3788, reckon/crew/promotion_evidence.py:_control_run_shows_a_failure\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_negative_control_header.py at bd5ae0ef passes 3 of 3 as its own all_debug job (head-run-named-file.log, EXIT=0), which is the goal's deliverable measured at the landed head.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-run-named-file.log reads \"3 passed\", EXIT=0 and negative-control-base-red.log reads \"1 failed, 1 passed\", EXIT=1 with the failing id, matching the manifest's recorded figures; the suite arms are 58 passed on both sides, a delta those two files cannot show since neither imports the changed test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b24fe95a789c..bd5ae0efbcb9 lists only tests/test_crew_negative_control_header.py and the declared evidence fragment, and no product source changed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_crew_negative_control_header.py:168-169 reddens if the runner's own FAILED record stops being read from the log, and :123 reddens if the refusal reverts to \"records no EXIT status\"; :164 is an echo of the declaration the test itself passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the added case at tests/test_crew_negative_control_header.py:131 and the section banner above it follow the file's existing per-rule grouping and its docstring-per-case style, with no plan or ticket identifier in the added names or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition; the two added definitions are one test case and one HTML evidence section, so there is no capability the repository owns to extend or duplicate.\nFINDING tests/test_crew_negative_control_header.py:164 non-blocking: `assert control[\"declaration\"] == mutation` compares promotion's echoed declaration against the same string the test handed to _write_pointer, so it cannot redden on a defect in the admission rule it sits beside; the surrounding assertions at :166-168 carry the guard.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-negative-control-header.html:71 non-blocking: the \"scope's suite\" rows report 58 passed on both arms without naming the command, and the two files those arms ran (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) cannot reach the changed test, so the \"0 added failures\" row reads as a measurement of the changed file when it measures two unrelated files.\n",
+  "review_run_id": "r-20261119T062110395364-review-of-qwnw-red-file-crew-negative-control-header-bd5ae0efbcb9",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "bd5ae0efbcb927de68dd088b4a6cdf68c0518f1f",
+  "reviewed_run_id": "r-20261118T063130416592-qwnw-red-file-crew-negative-control-header",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T062110395364-review-of-qwnw-red-file-crew-negative-control-header-bd5ae0efbcb9"
+  },
+  "reviewer_run_id": "r-20261119T062110395364-review-of-qwnw-red-file-crew-negative-control-header-bd5ae0efbcb9",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:33:57.254398+00:00",
+  "total": 113
+}

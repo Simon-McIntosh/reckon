@@ -10,8 +10,9 @@ limit and unpushable.
 
 Two shapes are guarded here. ``ledger.write`` refuses a write that would fold
 rows the aggregate does not hold while their per-run files exist, naming how
-many it would have folded. ``record_hold_checks`` reads the aggregate's own
-rows, so the hold transition it records cannot carry them in.
+many it would have folded. ``record_hold_checks`` reads the roster and the
+holds from their own store, so the hold transition it records cannot carry the
+aggregate's per-run rows in.
 
 Every case drives a throwaway project under ``tmp_path`` whose aggregate holds
 ten rows and whose ``runs/`` holds fifty files, so the two sources disagree by
@@ -21,12 +22,16 @@ Six further cases drive one production writer each over that project: the idle
 session-member reap, the disposable-identity retirement, the gate re-run record,
 the completion repair, and the figure and duration backfills. Each writer reads
 the aggregate's own rows and leaves the fifty files standing, and each case
-asserts that. Against the base tree, with no guard, all ten cases fail — the
-writer cases because each writer folds the fifty rows into the aggregate, which
-is the defect reproduced through the production path rather than asserted. With
-the guard present and the writers unrepaired they fail the other way, each
-writer refused. The cases hold the guard and the repairs together; neither half
-is green alone.
+asserts that. Roster rows and budget holds are not among the aggregate's rows:
+mutable state lives in the run store, whose mutations touch no committed path,
+so the reap and the retirement seed a roster row in the store and read its
+removal there, and the hold case reads its transition there, each asserting
+the aggregate is unchanged. Against the base tree, with no guard, all ten
+cases fail — the writer cases because each writer folds the fifty rows into the
+aggregate, which is the defect reproduced through the production path rather
+than asserted. With the guard present and the writers unrepaired they fail the
+other way, each writer refused. The cases hold the guard and the repairs
+together; neither half is green alone.
 """
 
 from __future__ import annotations
@@ -188,26 +193,33 @@ def test_a_hold_check_leaves_the_aggregate_row_count_unchanged(
     assert [row["run_id"] for row in stored["runs"]] == [
         row["run_id"] for row in before
     ]
-    assert [item["hold_id"] for item in stored["holds"]] == [
+    assert [item["hold_id"] for item in ledger.holds(PROJECT, project)] == [
         "hold-alpha-20261017120000"
     ]
+    assert stored["holds"] == []
     assert _run_files(project) == files_before
     assert "f-000" not in _aggregate_text(project)
     reread, _ = ledger.load(PROJECT, project)
     assert len(reread["runs"]) == AGGREGATE_ROWS + PER_RUN_FILES
 
 
-@pytest.fixture()
-def crew_home(tmp_path, monkeypatch) -> Path:
-    """Move the crew home into the temp tree, leaving this workstation's alone."""
+@pytest.fixture(autouse=True)
+def store_home(tmp_path, monkeypatch) -> Path:
+    """Point the crew home and its run store at a temp tree.
+
+    The roster and the budget holds live in the run store, so a case that seeds
+    or reads one resolves its store under ``tmp_path``: naming it keeps a case
+    off this workstation's own store whatever the config home resolves to.
+    """
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("RECKON_RUN_STORE", str(config_home / "run_store.db"))
     return config_home
 
 
 @pytest.fixture()
-def git_project(project: Path, crew_home: Path) -> Path:
+def git_project(project: Path) -> Path:
     """The split-state project as a git checkout the writers can commit in."""
     _git(project, "init", "-q", "-b", "main")
     _git(project, "config", "user.email", "worker@example.invalid")
@@ -218,12 +230,10 @@ def git_project(project: Path, crew_home: Path) -> Path:
 
 
 def _seed_member(root: Path, member_id: str, created: str) -> None:
-    """Add one roster row to the aggregate's own members, never the union's."""
-    data, version = ledger.load_aggregate(PROJECT, root)
+    """Add one roster row to the store's roster, never the aggregate's."""
+    data, version = ledger.load_auxiliary(PROJECT, root)
     data["members"] = [*data["members"], {"id": member_id, "created": created}]
-    ledger.write(PROJECT, data, version, root)
-    _git(root, "add", "--", "docs")
-    _git(root, "commit", "-q", "-m", "chore: seed a roster row")
+    ledger.write_members(PROJECT, data["members"], version, root)
 
 
 def _assert_aggregate_untouched(root: Path, files_before: dict[str, bytes]) -> None:
@@ -247,10 +257,13 @@ def _assert_aggregate_rows_unchanged(root: Path) -> None:
 def test_the_idle_reap_leaves_the_aggregate_row_count_unchanged(
     git_project: Path,
 ) -> None:
-    """The reap writes the aggregate's own rows with its roster removal applied."""
+    """The reap removes its roster row from the store, carrying no run row with it."""
     from reckon.crew import routing
 
     _seed_member(git_project, "session-idle-one", "2020-01-01T00:00:00Z")
+    assert [row["id"] for row in ledger.members(PROJECT, git_project)] == [
+        "session-idle-one"
+    ]
     files_before = _run_files(git_project)
 
     result = routing.reap_idle_session_members(
@@ -260,6 +273,7 @@ def test_the_idle_reap_leaves_the_aggregate_row_count_unchanged(
     )
 
     assert result["reaped"] == ["session-idle-one"]
+    assert ledger.members(PROJECT, git_project) == []
     assert _aggregate(git_project)["members"] == []
     _assert_aggregate_untouched(git_project, files_before)
 
@@ -273,6 +287,7 @@ def test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged(
     run_id = "a-000"
     member_id = routing._disposable_member_id(run_id)
     _seed_member(git_project, member_id, "2026-10-01T00:00:00Z")
+    assert ledger.member(PROJECT, member_id, root=git_project) is not None
     files_before = _run_files(git_project)
 
     result = promotion_records._retire_disposable_identity(
@@ -285,6 +300,7 @@ def test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged(
     )
 
     assert result.get("identity_retired") is True, result
+    assert ledger.member(PROJECT, member_id, root=git_project) is None
     assert _aggregate(git_project)["members"] == []
     _assert_aggregate_untouched(git_project, files_before)
 

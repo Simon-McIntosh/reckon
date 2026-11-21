@@ -1,0 +1,103 @@
+<section id="qwnw-red-file-a-decline-only-round-names-what-it-declined-landing">
+  <h2>A decline-only round names what it declined</h2>
+
+  <p><strong>What changed.</strong> The review reflex composes a repair round
+  from a review's blocking findings and declines one whose blocking findings
+  cite no path the worker can reach. A review that also scored a dimension
+  under its declared floor reaches the composition through that dimension
+  finding, which cites no file of its own. When the composition then yielded an
+  empty write scope, the round was recorded declined with
+  <code>the composed write scope filtered to empty, so the round is
+  decline-only</code>. That sentence states a mechanism and never the decision:
+  it does not say that no blocking finding cites a repairable path, it does not
+  name the dimension that scored below its floor, and it does not name the
+  repository paths the follow-on findings cited. A coordinator reading the
+  round record concluded the review raised nothing repairable, and the
+  sub-floor dimension had no stated next step.</p>
+
+  <p>The cited-path read in <code>dispatch_repair_for_run</code>
+  (<code>reckon/crew/recovery_repair_dispatch.py</code>) is now taken once and
+  both decline branches decide from it. A round whose blocking population cites
+  nothing the worker holds carries the decline-only reason the earlier guard
+  records — the blocking-only decision, each sub-floor dimension as
+  <code>name score/floor</code>, and each follow-on repository path. A blocking
+  path that passed the guard while the composition still granted nothing keeps
+  its own wording, because that round did cite a repairable path and
+  <code>test_an_empty_composed_scope_records_a_decline</code> still measures
+  it.</p>
+
+  <p>One cause, product wrong. The test asserts a recorded rule the code had
+  stopped keeping when the composition path changed; no assertion was deleted,
+  weakened or re-pinned. Nothing else in the file failed, and the two other
+  cases in it already passed at base and still pass at head: the decision is
+  unchanged, so a blocking source finding composes exactly as before.</p>
+
+  <h3 id="qwnw-red-file-a-decline-only-round-names-what-it-declined-reproduced">Reproduction at base</h3>
+
+  <p>The file was run at the base revision before any edit, as a job on
+  <code>all_debug</code> with the tree extracted from the revision:</p>
+
+  <pre id="qwnw-red-file-a-decline-only-round-names-what-it-declined-base-run"><code>FAILED tests/test_a_decline_only_round_names_what_it_declined.py::test_a_decline_only_round_names_its_decision_and_what_it_left
+E  AssertionError: assert 'no blocking finding cites a repairable path' in
+   'the composed write scope filtered to empty, so the round is decline-only'
+1 failed, 2 passed in 0.82s
+EXIT=1</code></pre>
+
+  <p>The reason recorded at head for the same case, read back from the run's
+  pointer:</p>
+
+  <pre id="qwnw-red-file-a-decline-only-round-names-what-it-declined-head-reason"><code>no blocking finding cites a repairable path, so the round is decline-only;
+no finding cites a repository path among the 2 blocking finding(s);
+blocking finding(s) out of reach, citing neither a repository path nor a file
+the run holds: f1476d89b68 (runs/r-work/gate.log), dimension-reuse;
+sub-floor dimension(s): reuse 4/10;
+non-blocking finding(s) cite repository path(s): reckon/crew/queue_admission.py,
+tests/test_each_admission_pass_records_its_verdict.py</code></pre>
+
+  <h3 id="qwnw-red-file-a-decline-only-round-names-what-it-declined-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-decline-only-round-names-what-it-declined-arms">
+    <caption>Each arm is a job log whose header names the revision, host, tree
+    and command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file</td>
+        <td><code>4584a203aafa020e0709da3db0bb51c7a94ade41</code>, extraction</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file</td>
+        <td><code>2525b92dfabd7ef8d747497b7e640a6a0281569e</code>, extraction</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite</td>
+        <td><code>4584a203aafa020e0709da3db0bb51c7a94ade41</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite</td>
+        <td><code>2525b92dfabd7ef8d747497b7e640a6a0281569e</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>files importing the changed module</td>
+        <td><code>4584a203aafa020e0709da3db0bb51c7a94ade41</code>, extraction</td>
+        <td id="qwnw-red-file-a-decline-only-round-names-what-it-declined-importers-base">8 failed, 294 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>files importing the changed module</td>
+        <td><code>2525b92dfabd7ef8d747497b7e640a6a0281569e</code>, extraction</td>
+        <td id="qwnw-red-file-a-decline-only-round-names-what-it-declined-importers-head">8 failed, 294 passed, <code>EXIT=1</code>; the same eight failure ids, none added</td></tr>
+    </tbody>
+  </table>
+
+  <p>The eight failures are carried by both arms, in
+  <code>test_a_conflicting_*</code>, <code>test_crew_record_liveness</code> and
+  <code>test_the_consequence_gate_runs_the_nodes_tests</code>; the two arms'
+  sorted failure-id sets compare equal, so the change adds none. The armed suite
+  arms were measured through <code>crew suite run</code>, which returned
+  <code>completed: true</code> and <code>EXIT=0</code> for both revisions.</p>
+
+  <p id="qwnw-red-file-a-decline-only-round-names-what-it-declined-gate-route">The
+  composer's scoped-gate route, <code>crew verify-gate --worker</code>, was
+  attempted four times against <code>all_debug</code> and returned
+  <code>exit_status: 3</code> with <code>carries no exit receipt</code> each
+  time: the submitted job landed on <code>98dci4-clu-3141</code> and its fenced
+  task died at <code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on
+  /newroot/tmp/auto2I1S9T</code> before pytest started. The same command
+  submitted directly with <code>sbatch</code> landed on
+  <code>98dci4-clu-3143</code> and measured the file. That refusal is the route
+  defect §33 records, not this node's; it carries no measurement of its own.
+  </p>
+</section>

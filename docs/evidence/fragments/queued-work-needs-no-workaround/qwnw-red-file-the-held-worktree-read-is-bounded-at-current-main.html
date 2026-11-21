@@ -1,0 +1,116 @@
+<section id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-landing">
+  <h2>The held-worktree read is bounded at the current primary branch</h2>
+
+  <p><strong>Outcome: the file is green at base, and no code change is needed.</strong>
+  The dispatch recorded that <code>tests/test_the_held_worktree_read_is_bounded.py</code>
+  had gone red again at the current primary branch. Reading it at the base
+  revision <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code> — the worktree's
+  head as the brief was composed, one commit behind
+  <code>origin/main</code> at <code>46c938b2e8f7c1e369d29bb68165a7f1af29cc9e</code> —
+  did not reproduce that: the file passes in full, as the base run, as a
+  current-main run, and as the named all_debug job. The base run is the pass
+  the done-when asks to be delivered, and it is delivered unchanged.</p>
+
+  <p><strong>The test has not moved since its repair.</strong>
+  <code>git log --oneline -1 -- tests/test_the_held_worktree_read_is_bounded.py</code>
+  still answers <code>4f04392824</code>, the repair commit, so no repair of this
+  file has landed and been undone in between. What <em>has</em> moved since that
+  repair is the product underneath it — the ledger and store seams every
+  <code>land(…)</code> commit between <code>1f13983b74</code> and the recorded
+  base touched — and the file still holds over the current code.</p>
+
+  <h3 id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-reproduction">Reproduction attempts</h3>
+
+  <p>Each row is a run of the same file. The last is the named check: a batch
+  job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> and
+  <code>SLURM_JOBID</code> unset, its output on shared storage.</p>
+
+  <table id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-arms">
+    <caption>Every arm is a log whose header names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base — in place, no branch merged or pulled</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, this worktree</td>
+        <td>6 passed in 19.27s, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>current primary branch</td>
+        <td><code>46c938b2e8f7c1e369d29bb68165a7f1af29cc9e</code>, <code>git archive</code> extraction</td>
+        <td>6 passed in 20.14s, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>named check — batch job on <code>all_debug</code></td>
+        <td><code>5b0a1f53</code>, this worktree; job 1328544</td>
+        <td>6 passed in 14.76s, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Base run, quoted.</strong> The base run reported no failing id,
+  which is the whole reason no cause list follows:</p>
+
+  <pre id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-base">......                                                                   [100%]
+6 passed in 19.27s</pre>
+
+  <p><strong>The named check, quoted.</strong> Job 1328544, from
+  <code>logs/held-bound-2-1328544.out</code> in the run directory:</p>
+
+  <pre id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-job"># revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_held_worktree_read_is_bounded.py
+......                                                                   [100%]
+6 passed in 14.76s
+EXIT=0</pre>
+
+  <h3 id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-controls">The guards still fire</h3>
+
+  <p>A green file shows nothing about whether its checks measure anything, so
+  each of the file's two guarded seams was falsified in its own copy of the
+  base tree and the refusal recorded. These are the node's negative controls,
+  not a claim about the base run — the base run has no failing id.</p>
+
+  <p><strong>The decode bound, falsified.</strong> With
+  <code>obligations._run_namings</code> answering <code>None</code> — the screen
+  dropped, which is exactly the fallback the product keeps for a refused
+  reader — the derivation reads every per-run document and the bound case
+  fails on its own number:</p>
+
+  <pre id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-nc-screen">FAILED tests/test_the_held_worktree_read_is_bounded.py::test_one_derivation_reads_only_the_documents_that_can_change_it - AssertionError: {'record': 500, 'deepcopy': 0, 'stat': 1125, 'active': False}
+assert 500 &lt;= 15
+1 failed, 5 passed in 19.94s
+EXIT=1</pre>
+
+  <p><strong>The amendment seam, falsified.</strong> With
+  <code>RunStore.sync_run</code> comparing only the durable payload — the
+  half-a-row comparison the earlier repair replaced — a retention written after
+  publication reads as <em>unchanged</em>, and the case that isolates it fails
+  against the whole-ledger answer:</p>
+
+  <pre id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-nc-store">FAILED tests/test_the_held_worktree_read_is_bounded.py::test_a_run_retaining_a_tree_after_the_index_is_published_is_read - AssertionError: assert {'/tmp/reckon...node-00', ...} == {'/tmp/reckon...node-03', ...}
+1 failed, 5 passed in 17.47s
+EXIT=1</pre>
+
+  <p>Both mutations live only in scratch copies under
+  <code>$TMPDIR</code>; this worktree carries no product or test edit, and
+  <code>git status --porcelain</code> is empty.</p>
+
+  <h3 id="qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-suite">The suite arms</h3>
+
+  <p>The node's declared suite, resolved over this tree at the same revision
+  twice (the change touches no product or test file, so the arms are the same
+  tree): <code>58 passed</code> and <code>EXIT=0</code> on each side, run as
+  batch jobs on <code>all_debug</code> by <code>crew suite run</code>.</p>
+
+  <p><strong>One measurement caveat, recorded because it is not this node's to
+  repair.</strong> A fenced worker's <code>sbatch</code> job re-enters the
+  worker's mount recipe on the compute node, and the recipe's session-scratch
+  grant (<code>--bind /tmp/auto…</code>) has no source there, so every
+  submission from this fenced session failed at start with
+  <code>bwrap: Can't bind mount /oldroot/tmp…: No such file or directory</code>
+  until the fence was unset for the submitting process. The runs recorded here
+  were made with <code>RECKON_WORKER_FENCE</code> unset on the submitter; the
+  job's own roots are then the node's, which is all a measurement needs. This
+  is reported under <code>outside_scope</code> and no fence code was edited.</p>
+</section>

@@ -1,0 +1,98 @@
+<section id="qwnw-red-file-follower-settles-a-promoted-row-landing">
+  <h3>A delivered promotion settles its row instead of flapping it</h3>
+  <p>At the base revision this file failed in two cases from one cause. The fold
+  recognised a run settled on its ledger row only by the <em>word</em> that row
+  produced, and since <code>5f81f71e4c</code> ("read a promoted run as delivered
+  until its landing merges") a row whose delivered head no branch carries yet
+  words the run delivered rather than <code>promoted</code>. The settled family —
+  <code>promoted</code> and <code>recorded</code> — therefore did not cover the
+  window a promotion leaves its live pointer in. A pointer still reading its own
+  phase drove the row <code>complete → dispatched → complete</code> on every poll,
+  and the pointer's later disappearance was worded <code>withdrawn</code> against
+  a run whose row records that run's commits.</p>
+  <p>Both halves were reproduced against the base tree before the repair. The
+  fold drew <code>[('completed_unpromoted', 'complete'), ('complete',
+  'dispatched'), ('dispatched', 'complete'), ('complete', 'dispatched'),
+  ('dispatched', 'complete'), ('complete', 'dispatched')]</code> across the six
+  observations the first case feeds it, and a departure of the same settled run
+  drew <code>[('complete', 'withdrawn')]</code>.</p>
+  <table id="qwnw-red-file-follower-settles-a-promoted-row-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_a_promoted_row_settles_once_and_does_not_alternate</code>
+        — <code>AssertionError: assert 'complete' == 'promoted'</code>, and
+        behind it the alternating fold above</td>
+        <td>product wrong; the word the test expected is the older rule</td>
+        <td>A run holding a committed ledger row is settled, and the row alone
+        words it. The fold carries that authority beside the word and admits only
+        a word the row can produce — landed as <code>promoted</code> or
+        <code>recorded</code>, delivered as <code>complete</code> while the merge
+        is owed.</td>
+      </tr>
+      <tr>
+        <td><code>test_removing_the_pointer_emits_nothing_further</code> —
+        <code>AssertionError: a settled run's disappearance is not news</code>,
+        the departure worded <code>withdrawn</code></td>
+        <td>product wrong</td>
+        <td>A departure of a run whose ledger row exists emits nothing, whether
+        the row words it landed or delivered; the run still gives up its slot, so
+        a genuine re-dispatch of the same id reads as an arrival.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The repair is in <code>reckon/crew/recovery_watch.py</code>.
+  <code>_watch_verdict</code> reports the authority its word was read under —
+  <code>promotion_recorded</code>, true when the run's own committed row worded it
+  — and <code>_compute_watch_snapshot</code> carries it on the snapshot, because
+  the word alone cannot tell a delivered promotion from an ordinary completion.
+  The fold then holds such a run on its row: only a word the row can produce may
+  move it (<code>_is_ledger_word</code>), its pointer's disappearance is not news
+  (<code>_settled_by_ledger</code>), and the landed word still arrives once a
+  branch carries the head, because that is a word the row itself earns.</p>
+  <p>The test keeps every assertion it had; the word it expected changed to the
+  one the code now words a promoted-but-unmerged run with, and the case says why:
+  the fixture's repository is not a checkout with a primary branch, so the landing
+  its row records is unverified and the row words the run delivered. The flap case
+  and the silence-on-reap case both still assert their full strength; no assertion
+  was deleted or relaxed.</p>
+  <p id="qwnw-red-file-follower-settles-a-promoted-row-arms">Both arms ran as
+  <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> unset and their output
+  on shared storage, both running
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_follower_settles_a_promoted_row.py</code>. At base
+  <code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code> the file reads
+  <code>2 failed, 1 passed</code> with <code>EXIT=1</code> and the two ids in the
+  table; at head the file reads <code>3 passed</code> with <code>EXIT=0</code>.
+  The base log is <code>negative-control-base-follower-settles.log</code>; the head
+  log is the scoped-gate log the manifest names, both in the run directory
+  <code>r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row</code>.</p>
+  <p id="qwnw-red-file-follower-settles-a-promoted-row-collateral">The arm over
+  the test files that reach the changed module — every file naming
+  <code>recovery_watch</code>, <code>fleet_transitions</code>,
+  <code>_watch_snapshot</code> or the recovery package, 448 files — reads
+  <code>132 failed, 3250 passed, 1 skipped, 14 errors</code> at base
+  <code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code> and
+  <code>130 failed, 3252 passed, 1 skipped, 14 errors</code> at head
+  <code>d49b396f5b8c66d9a7eaf5da803d7baf97ad7eff</code>. The failing-id sets differ
+  by exactly the two ids in the table, and by nothing else in either direction:
+  <strong>no failure is added</strong>. The 14 errors in both arms are one
+  scaffolding cause — the arms run in a <code>git archive</code> extraction, so the
+  inventory test's <code>git ls-tree HEAD</code> finds no repository — and they are
+  unchanged in count between the arms.</p>
+  <pre id="qwnw-red-file-follower-settles-a-promoted-row-collateral-arms">{"base": {"revision": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed",
+          "command": "env -u SLURM_JOB_ID PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row/collateral-base-4066683/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q &lt;448 test files&gt;",
+          "exit_status": 1, "completed": true, "failure_count": 132,
+          "log_path": "collateral-base.log",
+          "tree": "/tmp/reckon-crew-scratch/r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row/collateral-base-4066683/tree",
+          "module_file": "/tmp/reckon-crew-scratch/r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row/collateral-base-4066683/tree/reckon/__init__.py"},
+ "head": {"revision": "d49b396f5b8c66d9a7eaf5da803d7baf97ad7eff",
+          "command": "env -u SLURM_JOB_ID PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row/collateral-head-4075261/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q &lt;448 test files&gt;",
+          "exit_status": 1, "completed": true, "failure_count": 130,
+          "log_path": "collateral-head.log",
+          "tree": "/tmp/reckon-crew-scratch/r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row/collateral-head-4075261/tree",
+          "module_file": "/tmp/reckon-crew-scratch/r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row/collateral-head-4075261/tree/reckon/__init__.py"},
+ "added_at_head": [],
+ "cleared_at_head": ["tests/test_follower_settles_a_promoted_row.py::test_a_promoted_row_settles_once_and_does_not_alternate",
+                     "tests/test_follower_settles_a_promoted_row.py::test_removing_the_pointer_emits_nothing_further"]}</pre>
+</section>

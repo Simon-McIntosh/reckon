@@ -1,0 +1,97 @@
+<section id="qwnw-red-file-a-promotion-profile-refresh-costs-its-row-landing">
+  <h2>A promotion's profile refresh folds instead of decoding its history</h2>
+
+  <p><strong>What changed.</strong> The file was red in nine cases, from three
+  causes, and each cause was a product rule, repaired rather than restated:</p>
+
+  <ul>
+    <li><strong>The index maintenance writer published a row the index schema
+      no longer accepts.</strong> <code>_index_record_written_document</code>
+      inserted five values into the six-column <code>records</code> table the
+      full index build fills, and its <code>OperationalError</code> was caught
+      and dropped. Reproduced at
+      <code>6699d0257d</code>:
+      <code>sqlite3.OperationalError: table records has 6 columns but 5 values
+      were supplied</code>, with
+      <code>metadata.generation</code> still <code>1</code> against a ledger
+      generation of <code>2</code>. So every append left the index at the
+      generation before it, the profile fold found no current index, and a
+      promotion's refresh rebuilt from the ledger and decoded every retained
+      payload: 51 decodes where the test allows 0. The writer now inserts the
+      same six columns the rebuild does (<code>reckon/ledger.py</code>).</li>
+
+    <li><strong>A run store created by one append held that run alone.</strong>
+      Every reader answers from the store once it holds a row, so the first
+      append for a project whose committed aggregate carried history answered
+      that history as one row: measured at <code>6699d0257d</code>, 5 committed
+      rows plus one append read back as 1 row while the ledger held 6. A
+      promotion therefore hid the runs already committed.
+      <code>append_run</code> now imports the committed ledger before the
+      project's first stored row exists, once per project
+      (<code>_complete_store_from_ledger</code>), and an ordinary append still
+      writes one row.</li>
+
+    <li><strong>The fold read only the file index.</strong> A store-backed read
+      no longer builds that index, so a project with no index had no fold
+      inputs and wrote no samples at all. The refresh now falls back to the
+      store's picker projection, selected in SQL, so a retained full payload is
+      still never decoded
+      (<code>reckon/crew/picker/lane_context.py</code>).</li>
+  </ul>
+
+  <p><strong>Two tests encoded a rule the code no longer keeps</strong>, and both
+  were updated to the rule it now asserts, without weakening an assertion. A
+  refused file index used to send the refresh to a raw document scan
+  (<code>len(raw) == 1</code>) or to a single index retry
+  (<code>len(attempts) &gt;= 2</code>); since reads answer from the store, a
+  refused index reaches neither. <code>raw == []</code> with
+  <code>fallback.call_count == 0</code>, and <code>attempts == []</code>, now
+  assert the absence the old assertions could only infer, beside the figure the
+  old cases kept.</p>
+
+  <h3 id="qwnw-red-file-a-promotion-profile-refresh-costs-its-row-arms">Measured</h3>
+
+  <table id="qwnw-red-file-a-promotion-profile-refresh-costs-its-row-arm-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head, as an <code>all_debug</code> job with
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>57edff12f41ec24500093f48fc7fbf570983d4f4</code></td>
+        <td>23 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base, extraction</td>
+        <td><code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code></td>
+        <td>9 failed, 14 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's scoped gate</td>
+        <td><code>57edff12f4</code></td>
+        <td>23 passed, 0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>importers of the changed modules</td>
+        <td>base <code>6699d0257d</code> against head
+        <code>57edff12f4</code></td>
+        <td>0 added failures, 1 fixed</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> The base run of the named file, logged
+  at revision <code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code> in an
+  extraction, whose failing ids the head run does not fail:</p>
+
+  <pre id="qwnw-red-file-a-promotion-profile-refresh-costs-its-row-red-log"><code>FFFFFF....F..F........F                                                  [100%]
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_refresh_decodes_no_full_payload_and_persists_the_appended_row[False] - assert 1 == 51
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_refresh_decodes_no_full_payload_and_persists_the_appended_row[True] - assert 1 == 51
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row::test_a_refused_index_build_can_serve_a_snapshot_missing_the_append - assert 0 == 1
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_an_unusable_stored_profile_gets_one_full_build[missing] - AssertionError: assert 1 &gt;= 51
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_an_unusable_stored_profile_gets_one_full_build[corrupt] - AssertionError: assert 1 &gt;= 51
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_an_unusable_stored_profile_gets_one_full_build[mismatched] - AssertionError: assert 1 &gt;= 51
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_a_generation_move_during_a_fold_does_not_publish_mixed_inputs - assert 1 == 51
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_fold_samples_are_bounded_by_the_window_and_one_forward_day - assert None is not None
+FAILED tests/test_a_promotion_profile_refresh_costs_its_row.py::test_an_index_recovery_refreshes_the_profile_without_a_raw_scan - assert 0 &gt;= 2
+9 failed, 14 passed in 1.59s
+EXIT=1</code></pre>
+
+  <p>The head run of the same file reads
+  <code>23 passed in 2.41s</code> with <code>EXIT=0</code>, and its log names
+  <code>reckon/crew/picker/lane_context.py</code> under the worktree as the
+  module it imported.</p>
+</section>

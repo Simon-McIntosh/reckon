@@ -468,15 +468,27 @@ def test_a_lane_change_preview_of_a_live_harness_task_is_refused(
 def test_a_lane_change_preview_of_an_observed_death_reports_without_writing(
     home: Path, tmp_path: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An observed end is licensed in a preview too, and a preview writes nothing."""
+    """An observed end is licensed in a preview too, and a preview writes nothing.
+
+    The reading compared is the pointer's own, taken through the accessor the
+    preview's write would go through: a pointer write moves the dispatch-time
+    detail — the argv among it — into the run's own file, so the fixture's
+    in-memory record is not the shape on disk and a comparison against it would
+    fail on the write's shape rather than on a preview that moved the run. The
+    file's bytes are compared beside that reading, because a write that
+    re-splits dispatch detail leaves the hydrated reading equal while the
+    pointer on disk has been rewritten.
+    """
     _stub_destination(monkeypatch)
-    before = _lane_pointer(
+    _lane_pointer(
         tmp_path,
         repo,
         DEAD_PID_RUN,
         pid=liveness._absent_pid(),
         launcher_host=HOST,
     )
+    before = runs.read_pointer(DEAD_PID_RUN)
+    stored = pointer_path(DEAD_PID_RUN).read_bytes()
 
     preview = change_lane(
         DEAD_PID_RUN, "beta", "the lane is spent", config=CONFIG, launch=False
@@ -487,3 +499,4 @@ def test_a_lane_change_preview_of_an_observed_death_reports_without_writing(
     assert preview["run_id"] == DEAD_PID_RUN
     # A preview decides and reports; it stops no worker and records no move.
     assert runs.read_pointer(DEAD_PID_RUN) == before
+    assert pointer_path(DEAD_PID_RUN).read_bytes() == stored

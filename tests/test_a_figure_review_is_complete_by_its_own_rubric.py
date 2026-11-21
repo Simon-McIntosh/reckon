@@ -25,7 +25,10 @@ from reckon import _plan_html, crew
 from reckon.crew import review as review_module
 from reckon.crew.node import CrewError
 from reckon.crew.recovery_review_delivery import review_delivery_refusal
-from reckon.crew.recovery_review_subject import _review_is_complete
+from reckon.crew.recovery_review_subject import (
+    _review_is_complete,
+    _review_missing_measures,
+)
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.helpers.git import git as _git
 
@@ -301,3 +304,136 @@ def test_an_incomplete_code_record_is_refused_for_its_own_measure(
 
     assert "not a complete review" in refusal, refusal
     assert MISSING_TEXT_DIMENSION in refusal, refusal
+
+
+def _verdict_line(item: str, verdict: str = "pass") -> str:
+    return f"RUBRIC {item}: {verdict} - the rendered artifact was read for {item}."
+
+
+def _line_stated_round(*, missing_item: str | None = None) -> dict:
+    """A figure record stating its verdicts as lines and a summary map only.
+
+    It carries no ``rubric_items``: a reviewer wrote the verdict lines its brief
+    asked for and a ``rubric_verdicts`` summary beside them, and the record was
+    stored as written. A line is also present for an item outside the rubric,
+    as a real record carries, so the fold must ignore what it was not asked for.
+    """
+    items = [item for item in review_module.FIGURE_REVIEW_ITEMS if item != missing_item]
+    return {
+        "status": "parsed",
+        "project": PROJECT,
+        "reviewed_run_id": REVIEWED_RUN_ID,
+        "review_run_id": FIGURE_REVIEW_RUN_ID,
+        "reviewed_base_sha": REVIEWED_BASE,
+        "reviewed_head_sha": DISPATCHED_HEAD,
+        "rubric": review_module.FIGURE_REVIEW_RUBRIC,
+        "rubric_lines": [_verdict_line(item) for item in items]
+        + [_verdict_line("caption_not_title_repeat")],
+        "rubric_verdicts": dict.fromkeys(items, "pass"),
+        "findings": [],
+        "added_failure_count": 0,
+        "added_failure_ids": [],
+        "timestamp": "2026-10-21T13:20:00Z",
+    }
+
+
+def test_a_figure_record_stating_every_verdict_line_is_complete() -> None:
+    """The record the promotion gate refused: six verdict lines, no item map."""
+    body = _line_stated_round()
+
+    assert _review_missing_measures(body) == []
+    assert _review_is_complete(body) is True
+
+
+def test_a_figure_record_missing_a_verdict_line_names_only_that_item() -> None:
+    """Five verdict lines report that one item and no other."""
+    missing = review_module.FIGURE_REVIEW_ITEMS[-1]
+    body = _line_stated_round(missing_item=missing)
+
+    assert _review_missing_measures(body) == [missing]
+    assert _review_is_complete(body) is False
+
+
+def test_a_figure_record_with_an_item_map_reads_as_before() -> None:
+    """A flat item map is still judged by its own entries."""
+    complete = _figure_round()
+    assert _review_missing_measures(complete) == []
+
+    missing = review_module.FIGURE_REVIEW_ITEMS[-1]
+    incomplete = _figure_round(missing_item=missing)
+    assert _review_missing_measures(incomplete) == [missing]
+
+
+def test_the_figure_lines_are_read_by_the_one_rubric_grammar() -> None:
+    """The figure lines read the module's single compiled RUBRIC pattern."""
+    assert not hasattr(review_module, "FIGURE_LINE_RE")
+    body = {"rubric_lines": ["RUBRIC   Legibility  :  pass - spacing tolerated"]}
+
+    assert review_module.figure_line_verdicts(body) == {
+        "legibility": "pass - spacing tolerated"
+    }
+
+
+def test_a_verdict_line_does_not_overwrite_a_recorded_item_verdict() -> None:
+    """A line adds no verdict to an item the record already answers."""
+    body = _figure_round()
+    body["rubric_lines"] = ["RUBRIC legibility: defect - a contradictory line"]
+
+    answers, _shortfalls = review_module.figure_rubric_verdicts(body)
+
+    assert answers["legibility"] == "the rendered figure passes this measure"
+    assert _review_missing_measures(body) == []
+
+
+def test_a_verdict_line_answers_an_item_the_map_leaves_blank() -> None:
+    """A blank map entry is not an answer, so the line's verdict is read."""
+    body = _figure_round()
+    body["rubric_items"]["contrast"] = "   "
+    body["rubric_lines"] = ["RUBRIC Contrast: pass - read as near-black on white"]
+
+    assert _review_missing_measures(body) == []
+
+
+def test_a_per_figure_record_answered_in_lines_is_complete() -> None:
+    """A line answers its item for every figure the record names."""
+    missing = review_module.FIGURE_REVIEW_ITEMS[-1]
+    per_figure = dict.fromkeys(
+        review_module.FIGURE_REVIEW_ITEMS, "the rendered figure passes this measure"
+    )
+    per_figure.pop(missing)
+    body = _figure_round()
+    body.pop("rubric_items")
+    body["figures"] = {"a.png": dict(per_figure), "b.png": dict(per_figure)}
+    body["rubric_lines"] = [_verdict_line(missing)]
+
+    answers, shortfalls = review_module.figure_rubric_verdicts(body)
+
+    assert answers.get(missing) == _verdict_line(missing).split(": ", 1)[1]
+    assert shortfalls == []
+    assert _review_missing_measures(body) == []
+
+
+def test_a_figure_record_filed_under_the_reviewers_own_key_is_complete() -> None:
+    """A flat map filed as ``rubric_verdicts`` answers the rubric.
+
+    Two reviewers on two projects, told only to include the rubric verdicts,
+    filed the six items under that name with no ``rubric_items`` and no verdict
+    lines, and each record was refused as lacking all six.
+    """
+    body = {
+        "status": "parsed",
+        "rubric": review_module.FIGURE_REVIEW_RUBRIC,
+        "rubric_verdicts": dict.fromkeys(review_module.FIGURE_REVIEW_ITEMS, "pass"),
+    }
+    assert _review_missing_measures(body) == []
+    missing = review_module.FIGURE_REVIEW_ITEMS[0]
+    del body["rubric_verdicts"][missing]
+    assert _review_missing_measures(body) == [missing]
+
+
+def test_the_figure_brief_names_the_key_the_gate_reads() -> None:
+    """The reviewer is told the key by name rather than left to choose one."""
+    brief = (
+        Path(review_module.__file__).parent / "prompts" / "figure_review.md"
+    ).read_text(encoding="utf-8")
+    assert '"rubric_items"' in brief

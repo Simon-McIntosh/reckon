@@ -14,9 +14,9 @@ same assertions as one that always refuses: the same run promotes when the
 remote read answers promotable, so the refusal is the remote answer and not
 something else about the fixture.
 
-The declared mutation reverts the question to the local checkout: at the base
-revision the run whose commits are only on local ``main`` is promoted, which is
-the red log the manifest names.
+The run only on local ``main`` is no longer a refusal: an implementation the
+primary branch does not carry is landed by acceptance itself, measured at its
+merge candidate, so the arm below reads a promotion and a published head.
 """
 
 from __future__ import annotations
@@ -36,6 +36,7 @@ from tests.helpers.landing_repository import (
     PLAN,
     PROJECT,
     _write_origin_and_checkout,
+    install_in_place_scheduler,
 )
 
 RUN_ID = "r-20261109T120000000000-reflex-acceptance"
@@ -122,7 +123,15 @@ def _store_review(*, base: str, head: str) -> None:
     review_module.store_review(record)
 
 
-def _write_run(repository: Path, tmp_path: Path, *, base: str, commit: str) -> None:
+def _write_run(
+    repository: Path,
+    tmp_path: Path,
+    *,
+    base: str,
+    commit: str,
+    worktree: Path | None = None,
+    role: str = "implement",
+) -> None:
     manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
@@ -140,10 +149,10 @@ def _write_run(repository: Path, tmp_path: Path, *, base: str, commit: str) -> N
             "run_id": RUN_ID,
             "project": PROJECT,
             "repo": str(repository),
-            "worktree": str(repository),
+            "worktree": str(worktree or repository),
             "base_sha": base,
             "launch": "in-harness",
-            "role": "implement",
+            "role": role,
             "backend": "native",
             "created_at": "2026-01-01T00:00:00Z",
             "manifest_path": str(manifest),
@@ -152,7 +161,7 @@ def _write_run(repository: Path, tmp_path: Path, *, base: str, commit: str) -> N
                 "plan": PLAN,
                 "section": "s7",
                 "time_budget": "25m",
-                "role": "implement",
+                "role": role,
                 "write_paths": ["candidate.txt"],
             },
         },
@@ -189,13 +198,50 @@ def _read_as_promotable(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_a_run_only_on_local_main_is_not_promoted(
+def test_a_run_only_on_local_main_is_landed_by_acceptance(
+    origin_and_repository: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The measured state: local ``main`` carries the run, the remote does not.
+
+    An implementation the primary branch does not carry is one acceptance
+    lands itself, so the run is measured at its merge candidate and, with the
+    gate it recorded still passing there, promoted, merged and pushed: the
+    remote carries the reviewed head rather than being left behind by a
+    checkout whose own push failed.
+    """
+    install_in_place_scheduler(monkeypatch)
+    origin, repository = origin_and_repository
+    base, commit = _land_run_commit(repository, push=False)
+    worker = tmp_path / "run-worktree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(worker), commit)
+    _write_run(repository, tmp_path, base=base, commit=commit, worktree=worker)
+    _store_review(base=base, head=commit)
+
+    report = _sweep()
+
+    assert report.get("accepted") == [RUN_ID], report
+    rows = ledger.runs(PROJECT, root=repository)
+    assert rows[0].get("promoted_by") == "review-acceptance"
+    assert not pointer_path(RUN_ID).exists()
+    _git(origin, "merge-base", "--is-ancestor", commit, "refs/heads/main")
+
+
+def test_a_role_acceptance_does_not_land_keeps_the_unmerged_refusal(
     origin_and_repository: tuple[Path, Path], tmp_path: Path
 ) -> None:
-    """The measured defect: local ``main`` carries the run, the remote does not."""
+    """Only an implementation is landed by acceptance; another role waits.
+
+    A reviewed run of a role acceptance does not land is refused with the
+    commits the primary branch does not carry, so it waits for a coordinator to
+    merge it rather than being published on a reviewer's say-so. The arm beside
+    this one covers the implementation the same state promotes, so both halves
+    of the rule are asserted.
+    """
     _origin, repository = origin_and_repository
     base, commit = _land_run_commit(repository, push=False)
-    _write_run(repository, tmp_path, base=base, commit=commit)
+    _write_run(repository, tmp_path, base=base, commit=commit, role="test")
     _store_review(base=base, head=commit)
 
     report = _sweep()
@@ -204,7 +250,7 @@ def test_a_run_only_on_local_main_is_not_promoted(
     refusal = _refusal_for(report)
     assert refusal["accepted"] is False
     assert refusal["unmerged_commits"] == [commit]
-    assert commit[:12] in refusal["reason"]
+    assert "not on the primary branch yet" in refusal["reason"]
     assert pointer_path(RUN_ID).is_file()
     assert ledger.runs(PROJECT, root=repository) == []
 

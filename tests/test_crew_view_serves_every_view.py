@@ -332,18 +332,32 @@ _VOLATILE_KEYS = frozenset(
 #: the review views carry a ``checked_at`` copied from a stored review record at
 #: a nested position, and that one records what was written rather than when the
 #: answer was composed, so the two surfaces must still agree on it.
-_TOP_LEVEL_COMPOSITION_STAMPS = {"budget": frozenset({"checked_at"})}
+_TOP_LEVEL_COMPOSITION_STAMPS = {
+    "budget": frozenset({"checked_at"}),
+    "queue": frozenset({"generated_at"}),
+}
+
+#: The fields one view measures from the instant it read, at every depth of its
+#: own document. The queue read reports how long each waiting request has waited
+#: and how long the oldest promotion has waited, both measured from the read's
+#: own instant, so two reads seconds apart legitimately differ there. They are
+#: named per view rather than added to :data:`_VOLATILE_KEYS` because the drain
+#: view carries a ``waited_seconds`` taken from a stored promotion request,
+#: which records what was written and must still agree.
+_VIEW_COMPOSITION_AGES = {
+    "queue": frozenset({"waited_seconds", "oldest_wait_seconds"}),
+}
 
 
-def _without_the_named_keys(value):
+def _without_the_named_keys(value, names: frozenset[str]):
     if isinstance(value, dict):
         return {
-            key: _without_the_named_keys(item)
+            key: _without_the_named_keys(item, names)
             for key, item in value.items()
-            if key not in _VOLATILE_KEYS
+            if key not in names
         }
     if isinstance(value, list):
-        return [_without_the_named_keys(item) for item in value]
+        return [_without_the_named_keys(item, names) for item in value]
     return value
 
 
@@ -352,12 +366,15 @@ def _without_the_composition_instant(value, *, view: str) -> object:
 
     ``view`` selects the stamps dropped at the document's own top level, so a
     stored field that happens to share a name with a composition stamp survives
-    at every position below it.
+    at every position below it, and the ages dropped at every depth of that
+    view's answer only.
     """
     stamps = _TOP_LEVEL_COMPOSITION_STAMPS.get(view, frozenset())
     if isinstance(value, dict) and stamps:
         value = {key: item for key, item in value.items() if key not in stamps}
-    return _without_the_named_keys(value)
+    return _without_the_named_keys(
+        value, _VOLATILE_KEYS | _VIEW_COMPOSITION_AGES.get(view, frozenset())
+    )
 
 
 #: The instant the budget view is told it is composing at, and how far the

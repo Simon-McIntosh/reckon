@@ -327,3 +327,59 @@ def test_a_rollback_of_three_writes_spends_one_bound(repository, monkeypatch):
             "the refusal must name every landing write it could not restore"
         )
     assert _staged_names(root) == ["ledger.json", "notes.html", "plan.html"]
+
+
+def test_a_retried_commit_stages_a_new_file_a_peer_dropped_from_the_index(
+    repository, monkeypatch
+):
+    """A new file a peer's index write dropped is committed by the retry.
+
+    The landing stages a new, untracked ledger row. While its commit waits on
+    the held lock, the peer holding it rewrites the index without that row,
+    which is what a peer that read the index before the landing's add does.
+    The retry stages the row again, so the landing commits it rather than
+    refusing a pathspec the index no longer knows.
+    """
+    root, plan = repository
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_ATTEMPTS", 600)
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_INTERVAL_SECONDS", 0.02)
+    row = root / "runs" / "new-row.json"
+    row.parent.mkdir()
+    row.write_text("{}\n", encoding="utf-8")
+    lock = _stage_then_hold(root, monkeypatch)
+    dropped = {"done": False}
+
+    def release() -> None:
+        deadline = time.monotonic() + 60.0
+        while time.monotonic() < deadline:
+            if _steps(_landing_entries(RUN), "commit_retry"):
+                lock.unlink(missing_ok=True)
+                _git(root, "rm", "--cached", "-q", "--", str(row))
+                dropped["done"] = True
+                lock.write_text("", encoding="utf-8")
+                lock.unlink()
+                return
+            time.sleep(0.01)
+
+    # The peer's drop must land before the retry reads the index, so the retry
+    # interval is long enough to cover it.
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_INTERVAL_SECONDS", 0.5)
+    releaser = threading.Thread(target=release, daemon=True)
+    releaser.start()
+    try:
+        result = promotion._commit_landing_writes(
+            run_id=RUN,
+            verdict="passed",
+            checkout=root,
+            paths=[row],
+        )
+    finally:
+        releaser.join(timeout=70)
+        lock.unlink(missing_ok=True)
+    assert dropped["done"]
+    assert result["committed"] is True
+    assert (
+        "runs/new-row.json"
+        in _git(root, "show", "--name-only", "--format=", "HEAD").stdout
+    )
+    assert _staged_names(root) == []

@@ -554,6 +554,30 @@ def _announce_fence_warning(run_id: str, line: str) -> None:
     print(line, file=sys.stderr)
 
 
+def resolve_brief_source(source: str, repo: str | Path | None) -> str:
+    """Resolve a brief path named at dispatch into an absolute one.
+
+    The brief a run reads is the path its request stores, and the launcher that
+    reads it is not always the shell that named it: a queued request is launched
+    by the admit service from the directory that service was started in. A path
+    kept as typed would resolve there against nothing.
+
+    The request's repository is the root a coordinator dispatches from, so a
+    relative path is read against it. A request that names no repository keeps a
+    path resolved against the dispatching process's own directory, which is
+    where a coordinator's relative path was meant. An absolute path is returned
+    unchanged so a resume or a re-launch reads exactly the path it was given.
+    """
+    text = str(source or "").strip()
+    if not text:
+        return ""
+    path = Path(text).expanduser()
+    if path.is_absolute():
+        return str(path)
+    base = Path(repo).expanduser() if repo is not None else Path.cwd()
+    return str((base / path).resolve())
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -800,6 +824,13 @@ def plan_dispatch(
     default_token_budget = _resolved_token_budget(config, backend)
     node.time_budget = node.time_budget or default_budget
     node.section = normalize_section(node.section)
+    # A launch reads the brief from the path the request stored, and a queued
+    # request is launched by the admit service from the directory that service
+    # was started in. A relative path kept as typed would resolve there against
+    # nothing, so the request would refuse on every pass and read queued while
+    # it could never run. Resolving once here, against the request's own
+    # repository, is the path every launcher then reads.
+    node.brief = resolve_brief_source(node.brief, repo)
     # A plan-review finding its author answered ``carried`` is work this node
     # owes, so it is appended to the node's done-when here rather than edited
     # into the plan: editing the plan reopens the review gate, whose next review

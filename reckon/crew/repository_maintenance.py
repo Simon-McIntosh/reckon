@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon._store import write_atomically
+from reckon._timestamps import parse_utc
 
 #: How old a repository's last recorded pass must be before another is due.
 MAINTENANCE_INTERVAL_SECONDS = 24 * 60 * 60
@@ -280,12 +281,9 @@ def maintenance_due(
     if record is None:
         return True
     ran_at = record.get("ran_at")
-    try:
-        stamp = datetime.fromisoformat(str(ran_at))
-    except (TypeError, ValueError):
+    stamp = parse_utc(ran_at)
+    if stamp is None:
         return True
-    if stamp.tzinfo is None:
-        stamp = stamp.replace(tzinfo=UTC)
     moment = now or datetime.now(tz=UTC)
     return (moment.astimezone(UTC) - stamp.astimezone(UTC)).total_seconds() >= (
         interval_seconds

@@ -10,6 +10,9 @@ from reckon.cli import main
 from reckon.crew import runs
 
 COMMAND = "python -m pytest tests/test_example.py -q"
+# A suite arm records the commit object id its command ran against, so the
+# fixture cites a full id and writes the same one into each log's head.
+REVISION = "0123456789abcdef0123456789abcdef01234567"
 LOG_FIELDS = ("test_logs", "baseline_suite", "after_suite", "negative_control_log")
 
 
@@ -34,7 +37,7 @@ def run(tmp_path, monkeypatch, isolated_reckon_home):
 def _log(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        f"# revision=abc1234 tree={path.parent} command: {COMMAND}\n1 passed\nEXIT=0\n",
+        f"# revision={REVISION} tree={path.parent} command: {COMMAND}\n1 passed\nEXIT=0\n",
         encoding="utf-8",
     )
     return path
@@ -47,7 +50,7 @@ def _manifest(path, fields):
             payload[field] = [str(log)]
         elif field in ("baseline_suite", "after_suite"):
             payload[field] = {
-                "revision": "abc1234",
+                "revision": REVISION,
                 "command": COMMAND,
                 "exit_status": 0,
                 "log_path": str(log),

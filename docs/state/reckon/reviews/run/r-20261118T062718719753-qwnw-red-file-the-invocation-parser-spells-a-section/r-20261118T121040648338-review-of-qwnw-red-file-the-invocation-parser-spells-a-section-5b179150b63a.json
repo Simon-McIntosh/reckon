@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/plan_review.py:2048 (_normalise_sections matches a token with _SECTION_TOKEN)",
+    "reckon/crew/plan_review.py:3346 (_section_references reads references with _SECTION_REFERENCE)",
+    "reckon/doccheck.py:461 (deferred_work_terms reads terms with _DEFERRED_WORK_TERM)",
+    "reckon/_store.py:1129 (the plan-write refusal quotes the term the detector returns)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:43:24Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-the-invocation-parser-spells-a-section-5b179150b63a",
+      "recorded_at": "2026-11-18T14:54:27.242834+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section/manifest.md",
+      "line": "11",
+      "severity": "blocking",
+      "text": "blocking: the tests line at :11 and both inline arms at :15-16 name `pytest tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py` \u2014 two census files whose only reckon import is `from reckon import interface_counts` (tests/test_staged_write_inventory.py:11, tests/test_every_shared_home_lock_holds_across_nodes.py:30) \u2014 so the done_when's arm over the test files that import the change is recorded over a population that imports neither reckon/crew/plan_review.py nor reckon/doccheck.py; the four files the evidence fragment names at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html:94-99 carry no log, so that arm cannot be re-run from the record, and a promotion receipt drawn from this tests line measures nothing the change touched."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim that the anchored languages are the same is false for `_SECTION_TOKEN` \u2014 the base `^[sS][0-9]+(?:[.-][0-9]+)*$` accepted ASCII digits only, and the head pattern at reckon/crew/plan_review.py:2031 interpolates `\\d`, so `s\u0663` matches at the head and not at the base (both patterns compiled and compared); the widening is defensible because reckon/_plan_html.py:88 already uses `\\d` one level down, but the record asserts an equivalence the code does not keep and no assertion pins that language."
+    }
+  ],
+  "head_log_revision": "5b179150b63a1613debe06318dd4ddef0e8f8e41",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production readers reached by the change: _normalise_sections through _SECTION_TOKEN, _section_references through _SECTION_REFERENCE, deferred_work_terms through _DEFERRED_WORK_TERM, and the plan-write refusal that quotes the term the detector returns.",
+    "diff": "read both commits against 250d9cf3 \u2014 plan_review.py composes SECTION_NUMBER_PATTERN in _SECTION_TOKEN and _SECTION_REFERENCE, doccheck.py composes it in _DEFERRED_WORK_TERM, the test renames the census and adds three census sites, and a 143-line evidence fragment is new.",
+    "done_when": "the done_when names that file passing as an all_debug job with SLURM_JOB_ID unset plus a base control and an arm over the test files importing the change; logs/head-run.log carries revision, tree, imported module __file__ and EXIT=0 and logs/base-run.log carries the failing id, but the arm pair recorded in the manifest runs two census files that import only reckon.interface_counts.",
+    "goal": "the node's goal is that tests/test_the_invocation_parser_spells_a_section.py passes in full at head; at 5b179150 the file reads 12 passed in an independent re-run against 1 failed, 11 passed at 250d9cf3, and reckon/crew/plan_review.py:2031 and reckon/doccheck.py:432 are where the composition landed.",
+    "manifest": "read; status complete with both commit ids, changed_paths for all four files, the head and base runs under test_logs, and a 52-passed arm stated in prose with no log of its own.",
+    "write_paths": "the fence was reckon, tests, the evidence fragment directory and a figures directory; the four delivered paths are all inside it and the diff touches nothing outside."
+  },
+  "justifications": {
+    "durability": "reinstating the base alternative at reckon/doccheck.py:429 reddens tests/test_the_invocation_parser_spells_a_section.py:162 \u2014 reproduced, the base tree reads 1 failed, 11 passed naming that assertion \u2014 and the census's literal expected set at :164-176 is independent of the code, but no assertion pins the [0-9] to \\d shift at reckon/crew/plan_review.py:2031.",
+    "evidence": "logs/head-run.log records revision 7e91f9b4, the imported module __file__, cwd, all_debug with SLURM_JOB_ID unset and EXIT=0, but the manifest's tests line and both inline arms at lines 11-16 name tests/test_staged_write_inventory.py, which imports only reckon.interface_counts, so a done_when clause is recorded over a population that cannot reach the change.",
+    "fit": "the interpolation idiom matches reckon/_plan_html.py:88 and reckon/crew/reports.py:1702, and the rename at tests/test_the_invocation_parser_spells_a_section.py:109 drops the stale site count from the test name.",
+    "goal_fidelity": "the landed change makes the named file pass at 5b179150 (12 passed, re-run independently against 1 failed at 250d9cf3), and reckon/crew/plan_review.py:2031 plus reckon/doccheck.py:432 are the compositions that do it.",
+    "reuse": "every changed pattern interpolates reckon/_plan_html.py:85 SECTION_NUMBER_PATTERN, the owner of the section-number grammar, and the diff adds no definition of its own; the section-sign alternation still overlaps reckon/crew/reports.py:1702, which predates this change.",
+    "scope_discipline": "git diff 250d9cf3..5b179150 touches reckon/crew/plan_review.py, reckon/doccheck.py, the test file and the declared evidence fragment and nothing outside the fence, though the declared figures directory went unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_the_invocation_parser_spells_a_section.py passes in full at head; at 5b179150 the file reads 12 passed in an independent re-run against 1 failed, 11 passed at 250d9cf3, and reckon/crew/plan_review.py:2031 and reckon/doccheck.py:432 are where the composition landed.\nVERDICT done_when: the done_when names that file passing as an all_debug job with SLURM_JOB_ID unset plus a base control and an arm over the test files importing the change; logs/head-run.log carries revision, tree, imported module __file__ and EXIT=0 and logs/base-run.log carries the failing id, but the arm pair recorded in the manifest runs two census files that import only reckon.interface_counts.\nVERDICT write_paths: the fence was reckon, tests, the evidence fragment directory and a figures directory; the four delivered paths are all inside it and the diff touches nothing outside.\nVERDICT manifest: read; status complete with both commit ids, changed_paths for all four files, the head and base runs under test_logs, and a 52-passed arm stated in prose with no log of its own.\nVERDICT diff: read both commits against 250d9cf3 \u2014 plan_review.py composes SECTION_NUMBER_PATTERN in _SECTION_TOKEN and _SECTION_REFERENCE, doccheck.py composes it in _DEFERRED_WORK_TERM, the test renames the census and adds three census sites, and a 143-line evidence fragment is new.\nCALL_SITES: reckon/crew/plan_review.py:2048 (_normalise_sections matches a token with _SECTION_TOKEN), reckon/crew/plan_review.py:3346 (_section_references reads references with _SECTION_REFERENCE), reckon/doccheck.py:461 (deferred_work_terms reads terms with _DEFERRED_WORK_TERM), reckon/_store.py:1129 (the plan-write refusal quotes the term the detector returns)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the landed change makes the named file pass at 5b179150 (12 passed, re-run independently against 1 failed at 250d9cf3), and reckon/crew/plan_review.py:2031 plus reckon/doccheck.py:432 are the compositions that do it.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/head-run.log records revision 7e91f9b4, the imported module __file__, cwd, all_debug with SLURM_JOB_ID unset and EXIT=0, but the manifest's tests line and both inline arms at lines 11-16 name tests/test_staged_write_inventory.py, which imports only reckon.interface_counts, so a done_when clause is recorded over a population that cannot reach the change.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 250d9cf3..5b179150 touches reckon/crew/plan_review.py, reckon/doccheck.py, the test file and the declared evidence fragment and nothing outside the fence, though the declared figures directory went unused.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the base alternative at reckon/doccheck.py:429 reddens tests/test_the_invocation_parser_spells_a_section.py:162 \u2014 reproduced, the base tree reads 1 failed, 11 passed naming that assertion \u2014 and the census's literal expected set at :164-176 is independent of the code, but no assertion pins the [0-9] to \\d shift at reckon/crew/plan_review.py:2031.\nSCORE fit: 19\nJUSTIFICATION fit: the interpolation idiom matches reckon/_plan_html.py:88 and reckon/crew/reports.py:1702, and the rename at tests/test_the_invocation_parser_spells_a_section.py:109 drops the stale site count from the test name.\nSCORE reuse: 18\nJUSTIFICATION reuse: every changed pattern interpolates reckon/_plan_html.py:85 SECTION_NUMBER_PATTERN, the owner of the section-number grammar, and the diff adds no definition of its own; the section-sign alternation still overlaps reckon/crew/reports.py:1702, which predates this change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section/manifest.md:11 blocking: the tests line at :11 and both inline arms at :15-16 name `pytest tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py` \u2014 two census files whose only reckon import is `from reckon import interface_counts` (tests/test_staged_write_inventory.py:11, tests/test_every_shared_home_lock_holds_across_nodes.py:30) \u2014 so the done_when's arm over the test files that import the change is recorded over a population that imports neither reckon/crew/plan_review.py nor reckon/doccheck.py; the four files the evidence fragment names at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html:94-99 carry no log, so that arm cannot be re-run from the record, and a promotion receipt drawn from this tests line measures nothing the change touched.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html:26 non-blocking: the claim that the anchored languages are the same is false for `_SECTION_TOKEN` \u2014 the base `^[sS][0-9]+(?:[.-][0-9]+)*$` accepted ASCII digits only, and the head pattern at reckon/crew/plan_review.py:2031 interpolates `\\d`, so `s\u0663` matches at the head and not at the base (both patterns compiled and compared); the widening is defensible because reckon/_plan_html.py:88 already uses `\\d` one level down, but the record asserts an equivalence the code does not keep and no assertion pins that language.",
+  "review_run_id": "r-20261118T121040648338-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-5b179150b63a",
+  "reviewed_base_sha": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "reviewed_head_sha": "5b179150b63a1613debe06318dd4ddef0e8f8e41",
+  "reviewed_run_id": "r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T121040648338-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-5b179150b63a"
+  },
+  "reviewer_run_id": "r-20261118T121040648338-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-5b179150b63a",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:17:56.786395+00:00",
+  "total": 101
+}

@@ -239,11 +239,41 @@ def _roadmap_priority_keys(
     return keys
 
 
+def _priority(pointer: Mapping[str, Any]) -> int:
+    """The points a request carries, zero when it carries none."""
+    return _override(pointer) or 0
+
+
 def _override(pointer: Mapping[str, Any]) -> int | None:
-    value = pointer.get("priority_override")
-    return (
-        int(value) if isinstance(value, int) and not isinstance(value, bool) else None
-    )
+    """The points a request carries, or None when it carries none.
+
+    ``priority`` is the field a submission and ``crew queue reprioritise`` both
+    write. ``priority_override`` is read beside it because a request stored
+    before the priority field existed carries only the override, and the two
+    name one figure: the points this request spends from its session's budget.
+
+    This is the only reader of those fields, so every surface that ranks or
+    hoists a request follows one definition of what a priority is, and a test
+    that patches this name moves all of them together.
+    """
+    for key in ("priority", "priority_override"):
+        value = pointer.get(key)
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+            return int(value)
+    return None
+
+
+def priority_reason(pointer: Mapping[str, Any]) -> str:
+    """The reason string a placed request reports for its points.
+
+    A request reprioritised after it was stored carries the override field, and
+    the reason says so; a request submitted with points carries only the
+    submission's own field and reports those points plainly.
+    """
+    points = _priority(pointer)
+    if "priority_override" in pointer:
+        return f"priority override {points}"
+    return f"priority {points}"
 
 
 def partition_placeable(
@@ -296,13 +326,25 @@ def _precedence(
     now: datetime,
     review: bool,
 ) -> tuple[tuple[int, int], str]:
-    """The urgency classes shared by admission and promotion."""
+    """The urgency classes shared by admission and promotion.
+
+    A review leads every other request, and within its own class the points its
+    run held when it launched order two reviews. The run paid for its place and
+    the review is what lets that run land, so a review of a prioritised run is
+    admitted before an earlier one that nobody placed points on; the points ride
+    the review's own queued record, written by the dispatch that composed it.
+    Below both, ageing sits above priority on purpose, so a spent budget can
+    move work ahead but cannot starve another session.
+    """
+    points = _override(pointer)
     if review:
+        if points is not None:
+            return (0, -points), f"delivered review at priority {points}"
         return (0, 0), "delivered review"
     if _starved(queued_at, now):
         return (1, 0), "ageing"
-    if (priority := _override(pointer)) is not None:
-        return (2, -priority), f"priority override {priority}"
+    if points is not None:
+        return (2, -points), f"priority override {points}"
     return (3, 0), "session fair share; oldest request"
 
 
@@ -355,7 +397,7 @@ def _next_to_launch(
     keys: Mapping[int, tuple[Any, ...]],
     moment: datetime,
 ) -> tuple[datetime, int, Mapping[str, Any]]:
-    """Take a delivered review first, then aged or explicitly ranked work.
+    """Take a delivered review, then aged work, then the highest priority.
 
     A review of a delivered run is what lets that run land, so it launches ahead
     of the session's queued implementation however long that has waited. The
@@ -432,12 +474,22 @@ def admission_order_details(
         and str(pointer.get("phase") or "") != "queued"
     )
 
-    def _rank(group: tuple[str, str]) -> tuple[bool, int, datetime, int]:
+    def _rank(group: tuple[str, str]) -> tuple[Any, ...]:
         oldest = waiting[group][0]
         launch = _next_to_launch(waiting[group], keys, moment)
+        pointer = launch[2]
+        # The urgency class leads, so a request the session placed points on is
+        # chosen before the fair-share count of live runs: the points are the
+        # points the budget charged for, and counting the session's running
+        # workers first would rank the request its session paid for behind one
+        # nobody prioritised. Occupancy still breaks ties inside a class.
+        urgency, _reason = _precedence(
+            pointer, queued_at=launch[0], now=moment, review=_is_review_run(pointer)
+        )
         return (
+            urgency,
             not _starved(oldest[0], moment),
-            occupancy[(str(launch[2].get("backend") or ""), group[1])],
+            occupancy[(str(pointer.get("backend") or ""), group[1])],
             oldest[0],
             oldest[1],
         )

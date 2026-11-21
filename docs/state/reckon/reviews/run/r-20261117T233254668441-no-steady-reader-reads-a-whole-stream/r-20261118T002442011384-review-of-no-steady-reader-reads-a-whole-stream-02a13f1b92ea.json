@@ -1,0 +1,102 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1259 _latest_attempt_capacity_refusal",
+    "reckon/crew/recovery_classification.py:1693 _admission_refusal",
+    "reckon/crew/promotion_checks.py:179 _backends.observe_log",
+    "reckon/crew/resumption.py:710",
+    "reckon/crew/resumption.py:980",
+    "reckon/crew/dispatch_sessions.py:268",
+    "reckon/crew/dispatch_sessions.py:948",
+    "reckon/crew/recovery_stream.py:600"
+  ],
+  "completed_at": "2026-11-18T02:05:00.000Z",
+  "dispatched_at": "2026-11-18T00:25:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "no-steady-reader-reads-a-whole-stream",
+      "recorded_at": "2026-11-18T00:41:52.321810+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "no-steady-reader-reads-a-whole-stream",
+      "recorded_at": "2026-11-18T00:41:55.214200+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "no-steady-reader-reads-a-whole-stream",
+      "recorded_at": "2026-11-18T00:41:58.305481+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "no-steady-reader-reads-a-whole-stream",
+      "recorded_at": "2026-11-18T00:42:01.441085+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "4206",
+      "severity": "blocking",
+      "text": "blocking: the summarised observation path folds with elapsed_seconds=None and the re-rate at :4223 cannot restore a clock a dialect baked into its carry, so for the claude lane (_ClaudeDialect computes throughput at :2498 when the result event is folded) a stream whose result carries no duration_ms loses its wall rate \u2014 measured on one stream, base reports wall_tokens_per_second 33.33 at elapsed 12.0 and head reports null, which breaks the done_when's \"each reader's answer equals its answer at the base revision\" clause and contradicts the parity row the RCA claims."
+    },
+    {
+      "file": "tests/test_no_steady_reader_reads_a_whole_stream.py",
+      "line": "321",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parity arm compares the second pass against _fresh, which runs the same three readers through the same summarised path, so both sides move together and the elapsed-clock regression above stays green; an independent arm would fold the whole stream through _backends.observe_stream with the tick's elapsed, which is what the done_when's base-revision clause asks."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3928",
+      "severity": "non-blocking",
+      "text": "non-blocking: _StreamScan is a second fold store beside _StreamFold at :3917 on the same summary, carrying its own copy of the extend-and-store loop at reckon/_backends.py:4128, so the next per-stream derived value has two precedents to follow instead of one generic fold keyed by name."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "4521",
+      "severity": "non-blocking",
+      "text": "non-blocking: _STREAM_HEAD_SAMPLE drops from 8 KiB to 1 KiB, shrinking the only discriminator between an append and an in-place rewrite that preserves the opening, so a producer rewrite that keeps the first kilobyte but replaces later records is resumed as an append and the fold extends from records the stream no longer holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read all four commits against 5b784ef \u2014 42ec5eacaf folds the three readers and tightens the resumed-answer check in tests/test_watch_stream_parse_is_cached.py:252, ebabf72ca7 writes the RCA station and the fragment, 42c37933d2 gates the scan store on the summary's version at reckon/_backends.py:4275, and 02a13f1b92 removes the unreached _StreamCursor.as_resume.",
+    "done_when": "the gate asserts the done_when's own quantitative bound at tests/test_no_steady_reader_reads_a_whole_stream.py:312 (spent <= 40 x 2,000 B) with the instrument shown seeing both passes at :294 and :313, and the base arm reproduces the required red \u2014 85,307,840 B on the second pass, EXIT=1, in logs/negative-control-base-revision.log; the answer-parity clause is measured only against a fresh parse at head (:321), never against base-revision answers, and the manifest records no ruff result though the done-when asks for one.",
+    "goal": "the goal is that the capacity check, the admission scan and observe_log read only the bytes a stream gained, and the diff does that \u2014 reckon/crew/dispatch_sessions.py:1219 and reckon/crew/recovery_stream.py:828 fold through _backends.cached_stream_fold (reckon/_backends.py:4241) and _summarised_observation (reckon/_backends.py:4168) answers from the held fold, so the fixture's second pass reads 60,960 B against 85,307,840 B at base.",
+    "manifest": "read the source run's manifest.md; it states complete, names the four commits 5b784ef..02a13f1b92, the scoped gate at 62 passed, both suite arms (61 passed at 5b784ef, 62 passed at 02a13f1b92), both negative-control logs and the as_resume grep log, and it records no ruff result.",
+    "write_paths": "all seven changed paths \u2014 reckon/_backends.py, reckon/crew/dispatch_sessions.py, reckon/crew/recovery_stream.py, both test files, docs/research/monitor-storage-load-rca.html and the fragment \u2014 are inside the declared list, and the declared figure directory carries no figure at head."
+  },
+  "justifications": {
+    "durability": "the byte bound at tests/test_no_steady_reader_reads_a_whole_stream.py:312 is proven to redden at base and the resumed-answer check at tests/test_watch_stream_parse_is_cached.py:252 is proven to redden on the reinstated one-record drop, but no assertion fails on the elapsed-clock regression the parity arm at :321 cannot see.",
+    "evidence": "the byte measure is recorded and reproducible (85,307,840 B red at base, 60,960 B at head, logs/negative-control-base-revision.log), but the parity row at docs/research/monitor-storage-load-rca.html:625 is not what the gate measures, since tests/test_no_steady_reader_reads_a_whole_stream.py:321 compares head against head.",
+    "fit": "cached_stream_fold and _StreamScan follow the module's existing cached_stream_* and per-stream summary idiom at reckon/_backends.py:4241, and no name the repository rules forbid is introduced.",
+    "goal_fidelity": "reckon/_backends.py:4241 holds each question as a fold the summary extends with gained bytes only, and a probe of one stream through reckon/crew/dispatch_sessions.py:1219 and reckon/crew/recovery_stream.py:828 returns the same capacity model and admission refusal as the base tree.",
+    "reuse": "cached_stream_fold extends the per-stream summary owner rather than forking it, but _StreamFold's extend-and-store loop at reckon/_backends.py:4128 is copied for _StreamScan at :4121 instead of one generic fold owning both.",
+    "scope_discipline": "every path in 5b784ef..02a13f1b92 is one of the declared write paths, and no plan, state or unrelated module is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the capacity check, the admission scan and observe_log read only the bytes a stream gained, and the diff does that \u2014 reckon/crew/dispatch_sessions.py:1219 and reckon/crew/recovery_stream.py:828 fold through _backends.cached_stream_fold (reckon/_backends.py:4241) and _summarised_observation (reckon/_backends.py:4168) answers from the held fold, so the fixture's second pass reads 60,960 B against 85,307,840 B at base.\nVERDICT done_when: the gate asserts the done_when's own quantitative bound at tests/test_no_steady_reader_reads_a_whole_stream.py:312 (spent <= 40 x 2,000 B) with the instrument shown seeing both passes at :294 and :313, and the base arm reproduces the required red \u2014 85,307,840 B on the second pass, EXIT=1, in logs/negative-control-base-revision.log; the answer-parity clause is measured only against a fresh parse at head (:321), never against base-revision answers, and the manifest records no ruff result though the done-when asks for one.\nVERDICT write_paths: all seven changed paths \u2014 reckon/_backends.py, reckon/crew/dispatch_sessions.py, reckon/crew/recovery_stream.py, both test files, docs/research/monitor-storage-load-rca.html and the fragment \u2014 are inside the declared list, and the declared figure directory carries no figure at head.\nVERDICT manifest: read the source run's manifest.md; it states complete, names the four commits 5b784ef..02a13f1b92, the scoped gate at 62 passed, both suite arms (61 passed at 5b784ef, 62 passed at 02a13f1b92), both negative-control logs and the as_resume grep log, and it records no ruff result.\nVERDICT diff: read all four commits against 5b784ef \u2014 42ec5eacaf folds the three readers and tightens the resumed-answer check in tests/test_watch_stream_parse_is_cached.py:252, ebabf72ca7 writes the RCA station and the fragment, 42c37933d2 gates the scan store on the summary's version at reckon/_backends.py:4275, and 02a13f1b92 removes the unreached _StreamCursor.as_resume.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1259 _latest_attempt_capacity_refusal, reckon/crew/recovery_classification.py:1693 _admission_refusal, reckon/crew/promotion_checks.py:179 _backends.observe_log, reckon/crew/resumption.py:710, reckon/crew/resumption.py:980, reckon/crew/dispatch_sessions.py:268, reckon/crew/dispatch_sessions.py:948, reckon/crew/recovery_stream.py:600\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_backends.py:4241 holds each question as a fold the summary extends with gained bytes only, and a probe of one stream through reckon/crew/dispatch_sessions.py:1219 and reckon/crew/recovery_stream.py:828 returns the same capacity model and admission refusal as the base tree.\nSCORE evidence: 12\nJUSTIFICATION evidence: the byte measure is recorded and reproducible (85,307,840 B red at base, 60,960 B at head, logs/negative-control-base-revision.log), but the parity row at docs/research/monitor-storage-load-rca.html:625 is not what the gate measures, since tests/test_no_steady_reader_reads_a_whole_stream.py:321 compares head against head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 5b784ef..02a13f1b92 is one of the declared write paths, and no plan, state or unrelated module is touched.\nSCORE durability: 11\nJUSTIFICATION durability: the byte bound at tests/test_no_steady_reader_reads_a_whole_stream.py:312 is proven to redden at base and the resumed-answer check at tests/test_watch_stream_parse_is_cached.py:252 is proven to redden on the reinstated one-record drop, but no assertion fails on the elapsed-clock regression the parity arm at :321 cannot see.\nSCORE fit: 18\nJUSTIFICATION fit: cached_stream_fold and _StreamScan follow the module's existing cached_stream_* and per-stream summary idiom at reckon/_backends.py:4241, and no name the repository rules forbid is introduced.\nSCORE reuse: 13\nJUSTIFICATION reuse: cached_stream_fold extends the per-stream summary owner rather than forking it, but _StreamFold's extend-and-store loop at reckon/_backends.py:4128 is copied for _StreamScan at :4121 instead of one generic fold owning both.\nFINDING reckon/_backends.py:4206 blocking: the summarised observation path folds with elapsed_seconds=None and the re-rate at :4223 cannot restore a clock a dialect baked into its carry, so for the claude lane (_ClaudeDialect computes throughput at :2498 when the result event is folded) a stream whose result carries no duration_ms loses its wall rate \u2014 measured on one stream, base reports wall_tokens_per_second 33.33 at elapsed 12.0 and head reports null, which breaks the done_when's \"each reader's answer equals its answer at the base revision\" clause and contradicts the parity row the RCA claims.\nFINDING tests/test_no_steady_reader_reads_a_whole_stream.py:321 non-blocking: the parity arm compares the second pass against _fresh, which runs the same three readers through the same summarised path, so both sides move together and the elapsed-clock regression above stays green; an independent arm would fold the whole stream through _backends.observe_stream with the tick's elapsed, which is what the done_when's base-revision clause asks.\nFINDING reckon/_backends.py:3928 non-blocking: _StreamScan is a second fold store beside _StreamFold at :3917 on the same summary, carrying its own copy of the extend-and-store loop at reckon/_backends.py:4128, so the next per-stream derived value has two precedents to follow instead of one generic fold keyed by name.\nFINDING reckon/_backends.py:4521 non-blocking: _STREAM_HEAD_SAMPLE drops from 8 KiB to 1 KiB, shrinking the only discriminator between an append and an in-place rewrite that preserves the opening, so a producer rewrite that keeps the first kilobyte but replaces later records is resumed as an append and the fold extends from records the stream no longer holds.\n",
+  "review_run_id": "r-20261118T002442011384-review-of-no-steady-reader-reads-a-whole-stream-02a13f1b92ea",
+  "reviewed_base_sha": "5b784ef59c665ce0a7781419e720474ba22c3376",
+  "reviewed_head_sha": "02a13f1b92ea944bf7aecc707f626871ad8f2a32",
+  "reviewed_run_id": "r-20261117T233254668441-no-steady-reader-reads-a-whole-stream",
+  "scores": {
+    "durability": 11,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T02:05:00Z",
+  "total": 90
+}

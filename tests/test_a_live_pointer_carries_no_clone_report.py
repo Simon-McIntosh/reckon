@@ -5,14 +5,14 @@ or modified whose normalised window duplicates one already in the tree. It is
 committed on the run's ledger row, which is where ``velocity`` and every other
 history reader take it. A live pointer is a different thing — every fleet-state
 derivation on the node lists the live directory on every pass, and none of them
-asks for the report — so a pointer that outlives its promotion carries the row
-without it, and a pointer written before that rule still parses without it.
+asks for the report. Promotion retires the pointer, and a landing cannot
+recreate it. Permitted pointer writes and listings omit the report.
 
-Three facts are asserted here, all on a temporary crew home: the promoted row
-keeps its report while the pointer written from it carries no key, a pointer
-file that already holds a 5 MB report is listed without it and parsed for under
-1 MB, and ``velocity``'s clone figures for the run are the ones its report
-states.
+All checks use a temporary crew home. A promoted row keeps its report without
+recreating its pointer, and an unpromoted pointer written from report-bearing
+data carries no report key. A pointer file that already holds a 5 MB report is
+listed without it and parsed for under 1 MB. ``velocity``'s clone figures for
+the run are the ones its report states.
 """
 
 from __future__ import annotations
@@ -164,24 +164,26 @@ class _RecordingJSON:
 def test_a_promoted_run_keeps_its_report_on_the_row_and_not_on_its_pointer(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """(a) The row keeps the 5 MB report; the pointer written from it has none."""
+    """The row retains its report while permitted live writes omit it."""
     run_id, receipt = _promote_with_report(repository, tmp_path, monkeypatch)
     row = receipt["record"]
     assert row["clone_matches"], "the promotion recorded no clone report at all"
     assert len(json.dumps(row["clone_matches"])) >= REPORT_BYTES
 
-    # The pointer a promoted run's landing writes is built from the promoted
-    # record: one writer owns the mark, and a merge repair hands it exactly the
-    # row the promotion returned.
-    pending_landing.mark_pending_landing_repair(run_id, dict(row))
+    assert not pointer_path(run_id).exists()
+    with pytest.raises(runs.CrewError, match="cannot write a live pointer"):
+        pending_landing.mark_pending_landing_repair(run_id, dict(row))
+    assert not pointer_path(run_id).exists()
 
-    written = json.loads(pointer_path(run_id).read_text())
+    unpromoted_id = "r-unpromoted-pointer-report"
+    unpromoted = {**dict(row), "run_id": unpromoted_id, "project": PROJECT}
+    assert pending_landing._promoted_row_absent(PROJECT, unpromoted_id)
+    pending_landing.mark_pending_landing_repair(unpromoted_id, unpromoted)
+    written = json.loads(pointer_path(unpromoted_id).read_text())
     assert written.get("pending_landing_repair") is True
     assert "clone_matches" not in written, (
         "the live pointer carries the promotion's clone report"
     )
-    # The guard is on the pointer write, not on the row: the committed evidence
-    # a history reader takes is still there, whole.
     stored = _ledger_row(repository, run_id)
     assert len(json.dumps(stored["clone_matches"])) >= REPORT_BYTES
 

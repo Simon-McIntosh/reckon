@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass-landing">
+  <h2>A review duty reads the ledger once per pass</h2>
+
+  <p><strong>What changed.</strong> The file was red on the primary branch, and
+  the cause was the test, not the product.</p>
+
+  <p>The station pass answers a delivered run's closure through
+  <code>open_run_index.has_row</code>, which reads the run's own file identity,
+  and never enumerates membership. That is the rule the code keeps now: a
+  named-row lookup in place of a fleet-wide set read. The test's control arm
+  still patched <code>ledger.run_ids</code>, the membership reader the duty no
+  longer reaches,
+  so the arm measured nothing and never reached
+  <code>_load_aggregate</code> at all.</p>
+
+  <p>The control arm now patches the reader the duty does reach and answers it
+  from membership rebuilt from the committed sources on every call
+  (<code>ledger.run_ids(..., use_index=False)</code>) — the per-run aggregate
+  parse the pass must not pay. Its assertions are unchanged in kind and one is
+  stronger: the count now requires one aggregate read per delivered run rather
+  than any read at all. No assertion is deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass-arms">Measured</h3>
+
+  <p>The base arm runs the file at <code>b24fe95a78</code> in a scratch
+  extraction, with the module under test imported as
+  <code>/tmp/reckon-crew-scratch/.../base-qwnw-review-duty/reckon/ledger.py</code>.
+  The named gate and both suite arms run on <code>all_debug</code>.</p>
+
+  <h3 id="qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass-arms-table">Arms</h3>
+
+  <table id="qwnw-red-file-a-review-duty-reads-the-ledger-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control: the file at base</td>
+        <td><code>b24fe95a789c</code>, extraction</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code>; failing id
+        <code>tests/test_a_review_duty_reads_the_ledger_once_per_pass.py::test_a_station_pass_reads_the_ledger_once</code></td></tr>
+      <tr><td>the node's named gate, head</td>
+        <td><code>93f600a71b58</code>, <code>all_debug</code></td>
+        <td>3 passed, 0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, base</td>
+        <td><code>b24fe95a789c</code>, <code>all_debug</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, after</td>
+        <td><code>93f600a71b58</code>, <code>all_debug</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass-base">The base run</h3>
+  <pre>F..                                                                      [100%]
+FAILED tests/test_a_review_duty_reads_the_ledger_once_per_pass.py::test_a_station_pass_reads_the_ledger_once
+  AssertionError: the control path does read the aggregate per run
+  assert (0 - 0)
+1 failed, 2 passed in 1.36s
+EXIT=1</pre>
+
+  <p>Head run: <code>3 passed</code>, <code>EXIT=0</code>.</p>
+
+  <p>The counter was shown to see what it counts before the absence was
+  reported: with the control arm answering from the index rather than the
+  aggregate, the same case failed with <code>assert (0 - 0) &gt;= 3</code>.</p>
+</section>

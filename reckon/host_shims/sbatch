@@ -11,7 +11,11 @@
 set -eu
 
 tool=$(basename -- "$0")
-self_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# A fence that puts this shim in front of the tool's absolute path runs it
+# from that path, where only the file differs and the directory it sits in is
+# the system one. The fence names the real home rather than leaving it to be
+# read from $0; see reckon/_worker_fence.py:scheduler_shields.
+self_dir=${RECKON_SHIM_HOME:-$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}
 repo_root=$(CDPATH= cd -- "$self_dir/../.." && pwd)
 
 # The package needs Python 3.12. A bare `python3` on PATH is often an older

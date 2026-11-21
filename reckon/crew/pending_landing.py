@@ -70,6 +70,130 @@ def save_group(group: Mapping[str, Any]) -> None:
     write_json_atomically(group_path(str(group["run_id"])), dict(group))
 
 
+def _release_integrated_pointer(
+    pointer: Mapping[str, Any],
+    repository: Path,
+    primary: str,
+    row: Mapping[str, Any] | None,
+) -> tuple[str, dict[str, Any], str]:
+    """Record a safe workspace release before retiring the unchanged pointer."""
+    from reckon.crew import promotion, promotion_release
+    from reckon.crew.review_landing import finish_landing
+
+    run_id = str(pointer["run_id"])
+    project = str(pointer["project"])
+    refusal = ""
+    outcome: dict[str, Any] = {}
+
+    def release(current: Mapping[str, Any]) -> bool:
+        nonlocal refusal, outcome
+        if dict(current) != pointer:
+            refusal = "the live pointer changed before workspace release"
+            return False
+        refusal = landed_workspace_refusal(current, repository, primary)
+        if refusal:
+            return False
+        outcome = promotion_release._release_run_workspace(
+            current,
+            integration_repo=repository,
+            integration_commit=primary,
+            gate=str(row.get("gate") or "") if row is not None else "passed",
+        )
+        if row is not None:
+            outcome, recorded = promotion._record_release_on_ledger(
+                project=project,
+                root=repository,
+                run_id=run_id,
+                release=outcome,
+                checkout=repository,
+                after_merge=True,
+            )
+            if (
+                recorded is None
+                or (outcome.get("landing_check") or {}).get("ok") is False
+            ):
+                refusal = "the workspace outcome could not be recorded"
+                return False
+        if not outcome.get("worktree_released"):
+            refusal = str(
+                outcome.get("worktree_withheld") or "workspace release withheld"
+            )
+            return False
+        refusal = finish_landing(current, run_id)
+        return not refusal
+
+    retired = retire_pointer_if(run_id, release)
+    return retired, outcome, refusal
+
+
+def _release_integrated_group_member(
+    run_id: str, member: Mapping[str, Any], primary: str
+) -> None:
+    """Release an integrated member without replaying its stored pointer."""
+    from reckon.crew import promotion
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+
+    try:
+        pointer = runs.read_pointer(run_id)
+    except runs.CrewError:
+        if runs.pointer_path(run_id).exists():
+            raise
+        clear_pending(run_id)
+        return
+    busy = _reviewed_run_is_busy(pointer)
+    if busy:
+        raise runs.CrewError(f"group member {run_id}: {busy}")
+    repository = Path(str(member["pointer"]["repo"]))
+    row = _promoted_row(str(member["pointer"]["project"]), run_id)
+    retired, _outcome, refusal = _release_integrated_pointer(
+        pointer, repository, primary, row
+    )
+    if retired == POINTER_HELD:
+        raise runs.CrewError(f"group member {run_id}: {refusal or 'pointer held'}")
+    clear_pending(run_id)
+    promotion._release_waiters_of_the_landed_section(pointer)
+
+
+def retire_integrated_group_members(group: dict[str, Any]) -> dict[str, Any] | None:
+    """Remove primary ancestors before repair, measurement or pointer replay."""
+    from reckon.crew import merge, queue_landing
+
+    for run_id, member in list(group["members"].items()):
+        pointer = member["pointer"]
+        primary = queue_landing._primary_revision(pointer)
+        if not merge._is_ancestor(
+            Path(str(pointer["repo"])), str(member["head"]), primary
+        ):
+            continue
+        _release_integrated_group_member(run_id, member, primary)
+        group.setdefault("finished_members", {})[run_id] = {
+            "head": member["head"],
+            "primary": primary,
+            "status": "already-landed",
+        }
+        del group["members"][run_id]
+        (group.get("merge_repairs") or {}).pop(run_id, None)
+        for field in ("head", "primary", "measurements", "refusal"):
+            group.pop(field, None)
+        save_group(group)
+    if group["members"]:
+        return None
+    finished = group.get("finished_members") or {}
+    outcome = {
+        "ok": True,
+        "run_id": group["run_id"],
+        "members": list(finished),
+        "candidate": queue_landing._primary_revision(
+            group["request"]["options"]["members"][0]["pointer"]
+        ),
+        "commits": [member["head"] for member in finished.values()],
+        "outcome": "all member heads are on the primary branch",
+    }
+    runs._write_json(runs.run_dir(str(group["run_id"])) / "landing-group.json", outcome)
+    group_path(str(group["run_id"])).unlink()
+    return outcome
+
+
 def refresh_group_repairs(group: dict[str, Any]) -> None:
     """Accept completed member repairs through the ordinary fresh-gate reader."""
     from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
@@ -90,14 +214,17 @@ def refresh_group_repairs(group: dict[str, Any]) -> None:
             Path(str(pointer["repo"])),
         )
         if not repaired:
-            dispatch_merge_repair(
+            repair = dispatch_merge_repair(
                 pointer,
                 head=str(conflict["head"]),
                 primary=str(conflict["main_revision"]),
                 paths=conflict["paths"],
                 promoted=bool(member.get("promotion")),
             )
-            raise runs.CrewError(f"group member {run_id} is awaiting merge repair")
+            raise runs.CrewError(
+                f"group member {run_id} is awaiting merge repair: "
+                + str(repair.get("reason") or "repair has not delivered")
+            )
         if member.get("promotion"):
             member.setdefault("promoted_head", member["head"])
         member.update(head=repaired, pointer=pointer)
@@ -118,7 +245,11 @@ def finish_landing_groups(*, only_run: str = "") -> list[dict[str, Any]]:
     results = []
     for path in sorted((pending_dir() / "groups").glob("*.json")):
         group = _read(path)
-        if not group or (only_run and only_run not in group["members"]):
+        if not group or (
+            only_run
+            and only_run not in group["members"]
+            and only_run not in (group.get("finished_members") or {})
+        ):
             continue
         run_id = str(group["run_id"])
         if read_promotion(run_id).get("phase") in PENDING:
@@ -135,7 +266,7 @@ def finish_landing_groups(*, only_run: str = "") -> list[dict[str, Any]]:
                 "run_id": member,
                 "status": "finished" if result.get("ok") else "group-refused",
             }
-            for member in group["members"]
+            for member in result.get("members", group["members"])
         )
     return results
 
@@ -235,10 +366,8 @@ def _settled_landing(
             pointer = runs.read_pointer(run_id)
         except runs.CrewError:
             pointer = None
-        if (
-            pointer is not None
-            and pointer.get("pending_landing_repair")
-            and _release_marked_pointer(run_id, pointer)
+        if pointer is not None and _release_journal_pointer(
+            run_id, pointer, _read(_record_path(run_id)) or {}
         ):
             merge.release_landed_worktrees(
                 repository,
@@ -316,8 +445,111 @@ def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool])
         return POINTER_RETIRED
 
 
+def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
+    """Retire a proved promotion with no journal, group or live workspace owner.
+
+    Retirement never creates merge work. Journals keep their cited head, and
+    existing workspaces finish through the integrated release path so its
+    safety checks, receipts and section waiters precede pointer removal.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    project = str(pointer.get("project") or "")
+    if not run_id or not project or pointer.get("landing_group"):
+        return POINTER_HELD
+
+    def promoted(current: Mapping[str, Any]) -> bool:
+        if dict(current) != pointer or _record_path(run_id).exists():
+            return False
+        workspace = str(current.get("worktree") or "")
+        if workspace and Path(workspace).exists():
+            return False
+        row = _promoted_row(project, run_id)
+        if row is None or row.get("run_id") != run_id:
+            return False
+        return bool(row.get("promoted_revision") or row.get("promoted_by"))
+
+    return retire_pointer_if(run_id, promoted)
+
+
+def retire_promoted_pointers(
+    *,
+    project: str | None = None,
+    session: str | None = None,
+    only_run: str = "",
+    release_workspaces: bool = True,
+) -> list[dict[str, Any]]:
+    """Release integrated workspaces, then retire ownerless promoted pointers."""
+    from reckon.node_exclusive_lock import LockHeld, exclusive_lock
+
+    retired = (
+        release_merged_promotions(project=project, session=session, only_run=only_run)
+        if release_workspaces
+        else []
+    )
+    live = runs.list_live() if project is None else runs.list_live(project=project)
+    selected = [
+        pointer
+        for pointer in live
+        if (not only_run or pointer.get("run_id") == only_run)
+        and (session is None or pointer.get("session") == session)
+    ]
+    groups = {
+        str(pointer["landing_group"])
+        for pointer in selected
+        if pointer.get("landing_group")
+    }
+    for group_id in sorted(groups):
+        path = group_path(group_id)
+        try:
+            with exclusive_lock(path.with_suffix(".lock"), blocking=False):
+                group = _read(path)
+                if group is not None:
+                    present = {
+                        run_id
+                        for run_id in group["members"]
+                        if runs.pointer_path(run_id).exists()
+                    }
+                    retire_integrated_group_members(group)
+                    retired.extend(
+                        {"run_id": run_id, "status": "retired-promoted-pointer"}
+                        for run_id in sorted(present)
+                        if not runs.pointer_path(run_id).exists()
+                    )
+        except LockHeld:
+            continue
+        except (runs.CrewError, OSError, ValueError) as exc:
+            retired.append(
+                {"run_id": group_id, "status": "group-refused", "error": str(exc)}
+            )
+    retired.extend(
+        {"run_id": str(pointer["run_id"]), "status": "retired-promoted-pointer"}
+        for pointer in selected
+        if retire_promoted_pointer(pointer) == POINTER_RETIRED
+    )
+    return retired
+
+
+def promoted_pointer_write_refusal(run_id: str, pointer: Mapping[str, Any]) -> str:
+    """Name the journal requiring intervention rather than recreate a promoted run."""
+    project = str(pointer.get("project") or "")
+    if _promoted_row_absent(project, run_id):
+        return ""
+    state = (
+        "is promoted"
+        if _promoted_row(project, run_id) is not None
+        else "has unreadable promotion evidence; row absence is unproved"
+    )
+    group_id = str(pointer.get("landing_group") or "")
+    path = (
+        group_path(group_id)
+        if group_id and group_path(group_id).exists()
+        else _record_path(run_id)
+    )
+    return f"run {run_id} {state}; pending-landing record {path} cannot write a live pointer"
+
+
 def mark_pending_landing_repair(
-    run_id: str, pointer: Mapping[str, Any]
+    run_id: str, pointer: Mapping[str, Any], *, opening_repair: bool = False
 ) -> dict[str, Any]:
     """Write ``pointer`` as the run's live pointer, marked for the landing pass.
 
@@ -327,7 +559,20 @@ def mark_pending_landing_repair(
     is recorded because the pointer that is live when the mark is written may
     already belong to a newer attempt, and the pass must remove only the attempt
     it finished rather than whichever pointer happens to be there later.
+
+    ``opening_repair`` is the one caller a promoted run may be rebuilt for: a
+    delivery that was promoted and then met a merge conflict still owes that
+    merge, and its retained worker is the only owner of the conflict, so the
+    round it opens needs the pointer back to be resumed. Every other write is
+    the journal replay this refusal exists for, where recreating the pointer of
+    a promoted run would let a landing that already ran be read as live again.
     """
+    if opening_repair and _record_path(run_id).is_file():
+        refusal = ""
+    else:
+        refusal = promoted_pointer_write_refusal(run_id, pointer)
+    if refusal:
+        raise runs.CrewError(refusal)
     marked = {
         **dict(pointer),
         "pending_landing_repair": True,
@@ -346,6 +591,23 @@ def _release_marked_pointer(run_id: str, marked: Mapping[str, Any]) -> bool:
     )
 
 
+def _release_journal_pointer(
+    run_id: str, pointer: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
+    """Retire only the attempt captured by the journal or an existing legacy mark."""
+    expected = record.get("retained_attempt") or pointer.get(
+        "pending_landing_repair_attempt"
+    )
+    if not isinstance(expected, Mapping):
+        return False
+    return (
+        retire_pointer_if(
+            run_id, lambda current: marked_identity(current) == dict(expected)
+        )
+        == POINTER_RETIRED
+    )
+
+
 def _read(path: Path) -> dict[str, Any] | None:
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
@@ -354,20 +616,38 @@ def _read(path: Path) -> dict[str, Any] | None:
     return loaded if isinstance(loaded, dict) else None
 
 
-def _promoted_row(project: str, run_id: str) -> Mapping[str, Any] | None:
-    """The run's ledger row in the project's mount, or None when it has none."""
+def _promotion_evidence(
+    project: str, run_id: str, *, root: str | Path | None = None
+) -> Mapping[str, Any] | None:
+    """Read the authoritative store before its legacy file, refusing unreadability."""
+    from reckon import ledger, run_store
+    from reckon.crew import merge
+
+    rows = run_store.stored_run_rows(project, run_ids=[run_id])
+    if rows:
+        return rows[0]
+    repository = merge.project_repository(project) if root is None else Path(root)
+    path = ledger.run_path(project, run_id, repository)
+    try:
+        row = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
+        raise ValueError(f"invalid promotion evidence at {path}")
+    return row
+
+
+def _promoted_row(
+    project: str, run_id: str, *, root: str | Path | None = None
+) -> Mapping[str, Any] | None:
+    """The run's promoted row, or None when absent or unreadable."""
     from reckon import ledger
     from reckon.crew import merge
 
     try:
-        repository = merge.project_repository(project)
-        path = ledger.run_path(project, run_id, repository)
-        if not path.is_file():
-            return None
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger.LedgerError, merge.MergeError):
+        return _promotion_evidence(project, run_id, root=root)
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError, merge.MergeError):
         return None
-    return row if isinstance(row, Mapping) else None
 
 
 def _reviewed_head(row: Mapping[str, Any]) -> str:
@@ -379,7 +659,7 @@ def _reviewed_head(row: Mapping[str, Any]) -> str:
 
 
 def _promoted_row_absent(project: str, run_id: str) -> bool:
-    """Whether the project's ledger proves the run has no row.
+    """Whether successful store and legacy-file reads prove the run has no row.
 
     A row that exists but cannot be read is not evidence of absence: retiring
     the record of a promoted-but-unmerged run would strand its head off the
@@ -389,9 +669,8 @@ def _promoted_row_absent(project: str, run_id: str) -> bool:
     from reckon.crew import merge
 
     try:
-        repository = merge.project_repository(project)
-        return not ledger.run_path(project, run_id, repository).is_file()
-    except (OSError, ledger.LedgerError, merge.MergeError):
+        return _promotion_evidence(project, run_id) is None
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError, merge.MergeError):
         return False
 
 
@@ -496,6 +775,26 @@ def pending_repair_head(pointer: Mapping[str, Any]) -> str:
         return ""
 
 
+def _recorded_review_waiver(pointer: Mapping[str, Any]) -> str:
+    """The reason the delivery's own promotion waived its review, or "".
+
+    A run promoted under a waiver landed without the review its delivery owed,
+    on the waiver's stated reason. The repair round then finishes that landing's
+    merge and owes no review the promotion did not: a repaired head held for a
+    review the operator already waived is the run held by a rule its own
+    promotion record answered.
+    """
+    project = str(pointer.get("project") or "")
+    run_id = str(pointer.get("run_id") or "")
+    if not project or not run_id:
+        return ""
+    row = _promoted_row(project, run_id) or {}
+    waiver = row.get("review_waiver")
+    if not isinstance(waiver, Mapping):
+        return ""
+    return str(waiver.get("reason") or "").strip()
+
+
 def _repair_review_wait(pointer: Mapping[str, Any], head: str) -> dict[str, Any] | None:
     """Read every review owed at the repair head through the lander's readers."""
     from reckon.crew import queue_landing
@@ -503,6 +802,8 @@ def _repair_review_wait(pointer: Mapping[str, Any], head: str) -> dict[str, Any]
 
     run_id, project = str(pointer["run_id"]), str(pointer["project"])
     tree = Path(str(pointer.get("worktree") or pointer["repo"]))
+    if _recorded_review_waiver(pointer):
+        return None
     for tier in queue_landing._owed_review_tiers(pointer):
         try:
             review, stale = queue_landing._review_for_tier(
@@ -840,14 +1141,24 @@ def landed_workspace_refusal(
     """Read the evidence that must survive before a merged run can be retired."""
     from reckon.crew import merge, routing
     from reckon.crew.promotion_checks import _fresh_manifest
-    from reckon.crew.promotion_evidence import _commit_canonical_id
+    from reckon.crew.promotion_evidence import (
+        _commit_canonical_id,
+        _presented_commits_without_a_declaration,
+    )
 
     manifest = _fresh_manifest(pointer)
     if manifest is None:
         return "the manifest is unreadable or does not belong to this attempt"
     if manifest.get("status") != "complete":
         return "the manifest does not declare a completed delivery"
-    for citation in manifest.get("commits") or ():
+    # A report-only run has no repository work to commit, so its field states
+    # the absence instead of a revision. The list reader leaves that sentence
+    # where a citation list would be, so the release path asks the promotion
+    # reader whether the declaration means none rather than resolving the
+    # prose as a revision and refusing a delivery that changed nothing.
+    for citation in _presented_commits_without_a_declaration(
+        pointer, manifest.get("commits") or ()
+    ):
         resolved = _commit_canonical_id(repository, str(citation))
         if not resolved:
             return f"manifest commit {citation!r} does not resolve"
@@ -870,7 +1181,118 @@ def landed_workspace_refusal(
     return ""
 
 
-def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
+def _recorded_process_proved_dead(pointer: Mapping[str, Any]) -> bool:
+    """Whether the process a promoted run records is proved to have stopped.
+
+    One read, through the crew's own liveness primitive, so the arm that
+    answered is the one every other caller sees: the placed run's scheduler job
+    first, then the pid the record wrote under the kernel start tick taken at
+    registration, then the session walk. Only ``dead`` is proof; a record
+    naming no process, a record whose pid cannot be read, and a scheduler that
+    cannot be queried all leave the answer unknown, and unknown is not proof
+    that a turn has finished.
+    """
+    from reckon.crew import process_liveness
+
+    return process_liveness.record_process_liveness(pointer).alive is False
+
+
+def _measured_workspace_refusal(
+    pointer: Mapping[str, Any], repository: Path, head: str
+) -> str:
+    """What a promoted measurement run's worktree holds that must be kept.
+
+    Integration ancestry cannot be asked of a measurement run — its head is
+    never merged — so the tree is judged against the promoted head itself: a
+    dirty tree, or one carrying commits beyond that head, is the only copy of
+    work nobody recorded elsewhere and is kept with the reason.
+    """
+    from reckon.crew import merge, routing
+
+    run_id = str(pointer.get("run_id") or "")
+    value = str(pointer.get("worktree") or "")
+    if not value or not Path(value).exists():
+        return ""
+    tree = Path(value)
+    claims = [
+        claim
+        for claim in routing._live_pointer_worktrees().get(tree.resolve(), ())
+        if claim != run_id
+    ]
+    inspected = routing._inspect_workspace(repository, tree, head, claims)
+    if inspected["dirty"]:
+        return "worktree has uncommitted files: " + "; ".join(inspected["dirty"])
+    if not merge._is_ancestor(repository, str(inspected["head"]), head):
+        return f"worktree carries commits beyond the promoted head {head}"
+    return ""
+
+
+def _release_measured_pointer(
+    pointer: Mapping[str, Any],
+    repository: Path,
+    head: str,
+    row: Mapping[str, Any] | None,
+) -> tuple[str, dict[str, Any], str]:
+    """Retire a promoted measurement run's pointer after releasing its tree.
+
+    A measurement run's head is never merged: it replays work the primary
+    branch already carries, so the integration ancestry every ordinary release
+    proves cannot exist for it and requiring it kept measurement trees forever.
+    Its promotion row states the measurement, which is the whole proof this
+    path has; the tree leaves through the same removal promotion itself makes,
+    and the outcome is recorded on the row before the pointer is retired.
+    """
+    from reckon.crew import promotion, promotion_release
+
+    run_id = str(pointer["run_id"])
+    project = str(pointer["project"])
+    refusal = ""
+    outcome: dict[str, Any] = {}
+
+    def release(current: Mapping[str, Any]) -> bool:
+        nonlocal refusal, outcome
+        if dict(current) != pointer:
+            refusal = "the live pointer changed before workspace release"
+            return False
+        refusal = _measured_workspace_refusal(current, repository, head)
+        if refusal:
+            return False
+        removed = promotion._release_measurement_worktree(current)
+        outcome = promotion_release._release_after_promotion(
+            run_id,
+            current,
+            gate=str(row.get("gate") or "") if row is not None else "passed",
+            integration_repo=repository,
+            integration_commit=head,
+        )
+        if removed:
+            outcome["measurement_worktree"] = removed
+        if row is not None:
+            outcome, recorded = promotion._record_release_on_ledger(
+                project=project,
+                root=repository,
+                run_id=run_id,
+                release=outcome,
+                checkout=repository,
+                after_merge=True,
+            )
+            if recorded is None:
+                refusal = "the workspace outcome could not be recorded"
+                return False
+        if not outcome.get("worktree_released"):
+            refusal = str(
+                outcome.get("worktree_withheld") or "workspace release withheld"
+            )
+            return False
+        return True
+
+    retired = retire_pointer_if(run_id, release)
+    return retired, outcome, refusal
+
+
+def release_merged_promotions(
+    *, only_run: str = "", project: str | None = None, session: str | None = None
+) -> list[dict[str, Any]]:
     """Finish promoted live workspaces after an independently published merge.
 
     The promotion row proves delivery and the published branch proves integration.
@@ -879,37 +1301,94 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
     The release receipt and section declaration precede pointer retirement; a
     failed write leaves the pointer for the next pass to finish.
     """
-    from reckon.crew import merge, promotion, promotion_release
+    from reckon.crew import merge, promotion
+    from reckon.crew.promotion import _measurement_reason
     from reckon.crew.promotion_requests import COMMAND_REPLY, PENDING, read_promotion
     from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
-    from reckon.crew.review_landing import finish_landing
 
     results: list[dict[str, Any]] = []
     for pointer in runs.list_live():
+        if (project is not None and pointer.get("project") != project) or (
+            session is not None and pointer.get("session") != session
+        ):
+            continue
         run_id = str(pointer.get("run_id") or "")
-        project = str(pointer.get("project") or "")
-        if not run_id or not project or (only_run and run_id != only_run):
+        run_project = str(pointer.get("project") or "")
+        if not run_id or not run_project or (only_run and run_id != only_run):
             continue
         if not pointer.get("worktree") or pointer.get("landing_group"):
             continue
         # A journaled landing already has an owner in the pending-record pass.
-        # Its repair mark also keeps a newer attempt outside that owner's reach.
         if _record_path(run_id).exists():
-            continue
-        marked = pointer.get("pending_landing_repair_attempt")
-        if pointer.get("pending_landing_repair") and marked_identity(pointer) != marked:
             continue
         if (
             COMMAND_REPLY.get() is None
             and read_promotion(run_id).get("phase") in PENDING
         ):
             continue
-        row = _promoted_row(project, run_id)
+        row = _promoted_row(run_project, run_id)
         head = _reviewed_head(row) if row else ""
-        if not head or _promotion_lease_held(run_id) or _reviewed_run_is_busy(pointer):
+        if not head or _promotion_lease_held(run_id):
             continue
+        # A repair mark names the attempt that wrote it, and the pointer may
+        # since belong to a later one. A pointer that has moved on shows a turn
+        # in progress for that later attempt, and so does a resumed turn its
+        # stream never finished: both are finished once the process the pointer
+        # records is proved dead, and only then is the rest of the release
+        # allowed to look at them. Without that proof the run is kept — silently
+        # where the mark alone is the evidence, since a newer attempt may simply
+        # have superseded it, and reported once with the reason where a turn is
+        # in progress and nothing can say whether it ended.
+        marked = pointer.get("pending_landing_repair_attempt")
+        superseded = bool(
+            pointer.get("pending_landing_repair")
+            and marked is not None
+            and (
+                not isinstance(marked, Mapping)
+                or any(
+                    pointer.get(field) != marked.get(field)
+                    for field in MARKED_FIELDS
+                    if field != "phase"
+                )
+            )
+        )
+        busy = _reviewed_run_is_busy(pointer)
+        if (superseded or busy) and not _recorded_process_proved_dead(pointer):
+            if busy:
+                results.append(
+                    {"run_id": run_id, "status": "release-held", "reason": busy}
+                )
+            continue
+        # A run showing no turn in progress is released exactly as it always
+        # was, whether or not it names a process at all.
         try:
-            repository = merge.project_repository(project)
+            repository = merge.project_repository(run_project)
+            if _measurement_reason(pointer) or _measurement_reason(row or {}):
+                # A measurement run's head is never merged — not landing is what
+                # the run is for — so its promotion alone is the whole proof.
+                retired, release, refusal = _release_measured_pointer(
+                    pointer, repository, head, row
+                )
+                if retired == POINTER_RETIRED:
+                    clear_pending(run_id)
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "already-landed",
+                            "head": head,
+                            "release": release,
+                            "measured": True,
+                        }
+                    )
+                elif refusal:
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "release-refused",
+                            "error": refusal,
+                        }
+                    )
+                continue
             remote = merge.head_on_remote_branch(repository, head)
             primary = str(remote["remote_head"] or "")
             on_branch = remote["on_branch"]
@@ -920,55 +1399,9 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
                 on_branch = merge._is_ancestor(repository, head, primary)
             if on_branch is not True:
                 continue
-            refusal = landed_workspace_refusal(pointer, repository, primary)
-            release = {}
-
-            def finish(
-                current: Mapping[str, Any],
-                *,
-                expected=pointer,
-                repository=repository,
-                primary=primary,
-                row=row,
-                project=project,
-                run_id=run_id,
-            ) -> bool:
-                nonlocal refusal, release
-                if dict(current) != expected:
-                    refusal = "the live pointer changed before workspace release"
-                    return False
-                refusal = landed_workspace_refusal(current, repository, primary)
-                if refusal:
-                    return False
-                release = promotion_release._release_run_workspace(
-                    current,
-                    integration_repo=repository,
-                    integration_commit=primary,
-                    gate=str(row.get("gate") or ""),
-                )
-                release, updated = promotion._record_release_on_ledger(
-                    project=project,
-                    root=repository,
-                    run_id=run_id,
-                    release=release,
-                    checkout=repository,
-                    after_merge=True,
-                )
-                if (
-                    updated is None
-                    or (release.get("landing_check") or {}).get("ok") is False
-                ):
-                    refusal = "the workspace outcome could not be recorded"
-                    return False
-                if not release.get("worktree_released"):
-                    refusal = str(
-                        release.get("worktree_withheld") or "workspace release withheld"
-                    )
-                    return False
-                refusal = finish_landing(current, run_id)
-                return not refusal
-
-            retired = retire_pointer_if(run_id, finish) if not refusal else POINTER_HELD
+            retired, release, refusal = _release_integrated_pointer(
+                pointer, repository, primary, row
+            )
             if retired == POINTER_RETIRED:
                 clear_pending(run_id)
                 waiters = promotion._release_waiters_of_the_landed_section(pointer)
@@ -1001,17 +1434,21 @@ def finish_pending_landings(
     pointer; both are parameters so a test can drive the pass.
     """
     from reckon.crew import merge
+    from reckon.crew.resumption import release_judged_resume_holds
 
     moment = time.time() if now is None else now
     lander = land or merge.land
-    results: list[dict[str, Any]] = finish_landing_groups(only_run=only_run)
+    results: list[dict[str, Any]] = release_judged_resume_holds(only_run=only_run)
+    results.extend(finish_landing_groups(only_run=only_run))
     results.extend(retire_stuck_review_pointers(only_run=only_run))
     released = release_merged_promotions(only_run=only_run)
     results.extend(released)
     handled = {row["run_id"] for row in released}
     directory = pending_dir()
     if not directory.is_dir():
-        return results
+        return results + retire_promoted_pointers(
+            only_run=only_run, release_workspaces=False
+        )
     live = (
         set(live_run_ids)
         if live_run_ids is not None
@@ -1058,6 +1495,15 @@ def finish_pending_landings(
         if settled:
             results.append({"run_id": run_id, "status": settled, "head": head})
             continue
+        from reckon.crew.resume import hold_reason
+
+        try:
+            held = hold_reason(runs.read_pointer(run_id), head)
+        except runs.CrewError:
+            held = ""
+        if held:
+            results.append({"run_id": run_id, "status": "held", "reason": held})
+            continue
         if int(record.get("attempts") or 0) >= MAX_FINISH_ATTEMPTS and not record.get(
             "merge_conflict"
         ):
@@ -1066,7 +1512,9 @@ def finish_pending_landings(
         if row is None:
             age = moment - float(record.get("written_at") or moment)
             if run_id not in live:
-                if age > UNPROMOTED_RECORD_SECONDS:
+                if age > UNPROMOTED_RECORD_SECONDS and _promoted_row_absent(
+                    project, run_id
+                ):
                     clear_pending(run_id)
                     results.append({"run_id": run_id, "status": "dropped-unpromoted"})
                 continue
@@ -1116,6 +1564,7 @@ def finish_pending_landings(
             continue
         conflict = record.get("merge_conflict") or {}
         pointer = None
+        repair_delivered = False
         # A live pointer is read even without a recorded conflict, because the
         # promotion that could not remove it also reads it here: a marked
         # pointer names the attempt this landing finishes, and an unmarked one
@@ -1133,6 +1582,7 @@ def finish_pending_landings(
             run_id in live
             and not (pointer or {}).get("pending_landing_repair")
             and not record.get("pointer")
+            and not _released_pending_delivery(pointer or {}, record, head)
         ):
             continue
         head = cited or _reviewed_head(row)
@@ -1163,40 +1613,29 @@ def finish_pending_landings(
             if not repaired:
                 from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
 
-                dispatch_merge_repair(
+                repair = dispatch_merge_repair(
                     record.get("pointer") or row,
                     head=head,
                     primary=str(conflict.get("main_revision") or ""),
                     paths=conflict.get("paths") or (),
                     promoted=True,
                 )
-                results.append({"run_id": run_id, "status": "awaiting-merge-repair"})
-                continue
-            head = repaired
-            if pointer.get("pending_landing_repair_attempt") != marked_identity(
-                pointer
-            ):
-
-                def mark_delivery(current, delivered=pointer):
-                    if attempt_identity(current) != attempt_identity(delivered):
-                        raise runs.CrewError("the delivered repair attempt moved")
-                    return {
-                        **current,
-                        "pending_landing_repair": True,
-                        "pending_landing_repair_attempt": marked_identity(current),
-                    }
-
-                try:
-                    pointer = runs._mutate_pointer(run_id, mark_delivery)
-                except runs.CrewError as exc:
+                if repair.get("record"):
                     results.append(
                         {
                             "run_id": run_id,
-                            "status": "repair-gate-refused",
-                            "error": str(exc),
+                            "status": "record-obligation",
+                            "record": repair["record"],
+                            "error": repair["reason"],
                         }
                     )
-                    continue
+                else:
+                    results.append(
+                        {"run_id": run_id, "status": "awaiting-merge-repair"}
+                    )
+                continue
+            head = repaired
+            repair_delivered = True
             if _cited_head(record) != head:
                 record.update(head=head, attempts=0)
             record["pointer"] = {**(record.get("pointer") or {}), **dict(pointer)}
@@ -1211,6 +1650,16 @@ def finish_pending_landings(
                 repair = dispatch_merge_repair(
                     pointer, head=head, primary=primary, paths=conflicts, promoted=True
                 )
+                if repair.get("record"):
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "record-obligation",
+                            "record": repair["record"],
+                            "error": repair["reason"],
+                        }
+                    )
+                    continue
                 queue_landing._record_attempt(
                     run_id,
                     head=head,
@@ -1299,14 +1748,21 @@ def finish_pending_landings(
                 path.write_text(json.dumps(record), encoding="utf-8")
             results.append({"run_id": run_id, "status": "failed", "error": str(exc)})
             continue
-        # Only the attempt the mark names is released: a pointer a newer attempt
-        # has since written belongs to work still in flight, and removing it or
-        # its tree would strand that attempt mid-run.
-        if (
-            pointer is not None
-            and pointer.get("pending_landing_repair")
-            and _release_marked_pointer(run_id, pointer)
-        ):
+        # A delivered repair is compared with the pointer the reader accepted;
+        # a retained promotion pointer is compared with its existing mark.
+        retired = False
+        if pointer is not None:
+            if repair_delivered:
+                retired = (
+                    retire_pointer_if(
+                        run_id,
+                        lambda current, delivered=pointer: dict(current) == delivered,
+                    )
+                    == POINTER_RETIRED
+                )
+            else:
+                retired = _release_journal_pointer(run_id, pointer, record)
+        if retired:
             merge.release_landed_worktrees(
                 repository, str(landed["commit"]), head=head, projects=[project]
             )
@@ -1332,4 +1788,29 @@ def finish_pending_landings(
                 "commit": str((landed or {}).get("commit") or ""),
             }
         )
-    return results
+    handled = {row["run_id"] for row in results}
+    retired_pointers = retire_promoted_pointers(
+        only_run=only_run, release_workspaces=False
+    )
+    return results + [row for row in retired_pointers if row["run_id"] not in handled]
+
+
+def _released_pending_delivery(
+    pointer: Mapping[str, Any], record: Mapping[str, Any], head: str
+) -> bool:
+    """A manual release can settle an unmarked journal's same delivered attempt."""
+    from reckon._timestamps import parse_utc
+    from reckon.crew import recovery
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+
+    released = parse_utc((pointer.get("delivery_hold") or {}).get("released_at"))
+    if released is None or released.timestamp() <= float(record.get("written_at") or 0):
+        return False
+    if _reviewed_run_is_busy(pointer):
+        return False
+    manifest = _fresh_manifest(pointer) or {}
+    if manifest.get("status") != "complete":
+        return False
+    current_head, _tree = recovery._review_head_and_tree(pointer)
+    return bool(head and recovery.same_revision(head, current_head))

@@ -100,9 +100,7 @@ def test_refresh_decodes_no_full_payload_and_persists_the_appended_row(
     assert persisted["groups"][0]["wall_seconds_median"] == 26
 
 
-def test_a_refused_index_build_can_serve_a_snapshot_missing_the_append(
-    history, monkeypatch
-):
+def test_a_refused_index_build_still_serves_the_appended_row(history, monkeypatch):
     lane_context.refresh_run_time_profile(PROJECT, now=NOW)
     with monkeypatch.context() as patch:
         patch.setattr(ledger, "_index_record_written_document", lambda *a: None)
@@ -117,9 +115,9 @@ def test_a_refused_index_build_can_serve_a_snapshot_missing_the_append(
         call for call in load.call_args_list if call.kwargs.get("use_index") is False
     ]
     print(f"raw_profile_fallbacks={len(raw)}")
-    assert len(raw) == 1
+    assert raw == [], "the store answers, so no refused index reaches a document scan"
     print(f"last_good_reads={fallback.call_count} rows={profile['rows']}")
-    assert fallback.call_count >= 1
+    assert fallback.call_count == 0
     assert profile["rows"] == 51
 
 
@@ -344,9 +342,7 @@ def test_fold_inputs_do_not_overwrite_another_projects_served_profile(history):
     assert other.read_bytes() == before
 
 
-def test_an_index_recovery_refreshes_the_profile_without_a_raw_scan(
-    history, monkeypatch
-):
+def test_a_refused_index_never_costs_a_raw_document_scan(history, monkeypatch):
     lane_context.refresh_run_time_profile(PROJECT, now=NOW)
     with monkeypatch.context() as patch:
         patch.setattr(ledger, "_index_record_written_document", lambda *a: None)
@@ -364,7 +360,8 @@ def test_an_index_recovery_refreshes_the_profile_without_a_raw_scan(
     load = Mock(wraps=ledger.load)
     monkeypatch.setattr(ledger, "load", load)
     actual = lane_context.refresh_run_time_profile(PROJECT, now=NOW)
-    assert len(attempts) >= 2
+    print(f"index_attempts={len(attempts)} rows={actual['rows']}")
+    assert attempts == [], "the store answers, so the refused index is never consulted"
     assert actual["rows"] == 51
     assert not any(
         call.kwargs.get("use_index") is False for call in load.call_args_list

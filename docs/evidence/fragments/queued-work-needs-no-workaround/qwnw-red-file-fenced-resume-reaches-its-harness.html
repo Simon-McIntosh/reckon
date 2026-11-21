@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-fenced-resume-reaches-its-harness-landing">
+  <h2>The fenced-resume file is already green; the roster entry outlived its defect</h2>
+
+  <p><strong>What was found.</strong> This node was queued against a red-file
+  roster compiled from a whole-suite run at <code>8d50b0333f</code>, where two
+  cases of <code>tests/test_fenced_resume_reaches_its_harness.py</code> failed:
+  <code>test_a_fenced_clive_resume_reaches_the_clive_harness</code> and
+  <code>test_a_placed_records_command_field_is_still_the_harness</code>. At the
+  node's base revision <code>6699d0257d</code> — and at the merged head — the
+  file passes in full, in four cases. The behaviour the file guards —
+  <code>_names_the_fence</code> in
+  <code>reckon/crew/dispatch_sessions.py</code>, which refuses a recorded
+  <code>command</code> field naming the fence and lets
+  <code>_harness_behind_the_fence</code> supply the harness from the composed
+  argv — already landed in <code>49ecff80d7</code> (25 September), and the
+  test's patch seams were repointed to that module in <code>b39ffc3150</code>
+  (8 October). The roster row was stale, not a live failure.</p>
+
+  <p><strong>What changed.</strong> Nothing in product source and nothing in
+  tests. This node's deliverable is the passing run its done-when names, plus
+  the control that shows the run can fail.</p>
+
+  <h3 id="qwnw-red-file-fenced-resume-reaches-its-harness-arms">Measured</h3>
+
+  <table id="qwnw-red-file-fenced-resume-reaches-its-harness-arms-table">
+    <caption>Every arm is a log under the run directory whose first lines name
+    the revision, tree and command and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>. All arms run with
+    <code>SLURM_JOB_ID</code> unset.</caption>
+    <thead><tr><th>arm</th><th>revision / tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base run, the named file</td>
+        <td><code>6699d0257d</code>, extraction</td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+      <tr><tr><td>head run, the named file</td>
+        <td><code>21b69555c7</code> (origin/main merged into the node tree), worktree</td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: declared mutation
+        (<code>_names_the_fence</code> returns <code>False</code>)</td>
+        <td><code>6699d0257d</code>, extraction</td>
+        <td>2 failed, 2 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The failing ids under the mutation are
+  <code>test_a_fenced_clive_resume_reaches_the_clive_harness</code>
+  (<code>assert [0, 47] == [0]</code> — a second fence element composed as the
+  harness) and
+  <code>test_a_fenced_codex_resume_finds_the_runs_own_rollout</code>
+  (<code>assert 2 == 1</code>). The control therefore fires on both the clive
+  and the codex resume path, and the file's own fourth case
+  (<code>test_the_negative_control_reads_the_command_field_as_today</code>)
+  passes both before and after the mutation, so it is a description of the
+  correct rule rather than a second copy of it.</p>
+
+  <p><strong>Why the roster row was wrong.</strong> The suite run that produced
+  the row ran the tree as a 14-worker archive with <code>bwrap</code> unable to
+  create a user namespace, and the log it left behind carries only failure ids,
+  not the tracebacks for these two cases; the same two ids did not reproduce in
+  isolation at either revision. Since the product rule and its tests are
+  unchanged between <code>8d50b0333f</code> and the merged head, the row
+  records a run-context failure rather than a defect in this file — a
+  distinction this node can state but could not turn into a repair without a
+  reproduction, which would require replicating a 14-worker suite order.</p>
+</section>

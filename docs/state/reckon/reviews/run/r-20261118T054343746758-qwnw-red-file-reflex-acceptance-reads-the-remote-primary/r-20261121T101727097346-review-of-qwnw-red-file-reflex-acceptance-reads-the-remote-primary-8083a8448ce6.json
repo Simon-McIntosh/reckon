@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:accept_clean_review",
+    "reckon/crew/landing_measure.py:measure_run"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T10:18:06Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054343746758-qwnw-red-file-reflex-acceptance-reads-the-remote-primary/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite.command is the literal string PLACEHOLDER-COMMAND and baseline_suite.command at :21 is elided mid-path ('tests/test_every_..'), so neither suite arm can be re-run from the record and a reader must fall back to the log header in suite-repair-head.log; crew check --manifest on the run reports no findings, so nothing refuses it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054343746758-qwnw-red-file-reflex-acceptance-reads-the-remote-primary/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: changed_paths names tests/test_cleanly_reviewed_run_holds_itself.py, which does not exist at 8083a844 (git cat-file exits 128), and omits tests/test_cleanly_reviewed_run_lands_itself.py, which 9116590e changes, so the record names a phantom path and hides a landed one."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: 9116590e lifts the in-place scheduler into tests/helpers/landing_repository.py:26 and imports it from the three landing files, adds a role parameter to _write_run and a role refusal arm; 8083a844 rewrites the fragment's head rows to the revisions its cited logs name and records the repair round",
+    "done_when": "read at the reviewed run's dispatch-detail.json:5; the gate at head with SLURM_JOB_ID unset is gate-job.sh:12 and gate-head.log, the suite arms are suite-base.log and suite-repair-head.log (58 passed each), and both arms carry full 40-character revisions, but after_suite.command at manifest.md:22 is a placeholder, and the ruff clause is unrecorded (verified clean by this review at the reviewed head)",
+    "goal": "the source node's goal is that tests/test_reflex_acceptance_reads_the_remote_primary.py passes in full on the primary branch; the gained commits answer three review findings and leave the arm green, and gate-head.log:1 names 9116590e76 with a 13 passed EXIT=0 summary",
+    "manifest": "read; status complete, five full commit ids at :7, 13 passed at 9116590e, suite arms 58 passed on both revisions, three controls named, but changed_paths at :12 names a file that does not exist at the head and omits one the diff changes",
+    "write_paths": "declared reckon, tests, the fragment file and its figure directory; the five diff paths (tests/helpers/landing_repository.py, tests/test_an_acceptance_check_holds_no_lease.py, tests/test_cleanly_reviewed_run_lands_itself.py, tests/test_reflex_acceptance_reads_the_remote_primary.py, the fragment) all sit inside those, and no reckon/ path changed"
+  },
+  "justifications": {
+    "durability": "tests/test_reflex_acceptance_reads_the_remote_primary.py:252 reddens with KeyError: 'unmerged_commits' when negative-controls.sh:43 removes the not-implementation conjunct, but the transport fold is guarded only by the grep check in negative-control-reuse.log, so re-adding a local copy fails no test.",
+    "evidence": "gate-head.log, suite-base.log, suite-head.log, suite-repair-head.log and importer-base.log all carry a header revision and a final EXIT= line, but manifest.md:22 records after_suite.command as PLACEHOLDER-COMMAND and manifest.md:21 elides baseline_suite.command, so the suite pair is only re-runnable from the log headers.",
+    "fit": "tests/helpers/landing_repository.py:26 follows that module's existing helper-and-docstring idiom, and in_place_scheduler carries no plan, stage or ticket label.",
+    "goal_fidelity": "tests/test_reflex_acceptance_reads_the_remote_primary.py:233-256 adds the role refusal arm the prior review found unasserted, and gate-head.log reads 13 passed EXIT=0 at the commit that carries it.",
+    "reuse": "the capability now has one owner, tests/helpers/landing_repository.py:26, which the three landing files import instead of carrying copies; the remaining --wrap readers in tests/test_a_landing_measure_runs_on_its_partition.py:69 synthesise output rather than executing the product's script, so they are a different capability.",
+    "scope_discipline": "every one of the five changed paths lies under the declared tests or the declared fragment, and no reckon/ source file changed in 9116590e or 8083a844."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_reflex_acceptance_reads_the_remote_primary.py passes in full on the primary branch; the gained commits answer three review findings and leave the arm green, and gate-head.log:1 names 9116590e76 with a 13 passed EXIT=0 summary\nVERDICT done_when: read at the reviewed run's dispatch-detail.json:5; the gate at head with SLURM_JOB_ID unset is gate-job.sh:12 and gate-head.log, the suite arms are suite-base.log and suite-repair-head.log (58 passed each), and both arms carry full 40-character revisions, but after_suite.command at manifest.md:22 is a placeholder, and the ruff clause is unrecorded (verified clean by this review at the reviewed head)\nVERDICT write_paths: declared reckon, tests, the fragment file and its figure directory; the five diff paths (tests/helpers/landing_repository.py, tests/test_an_acceptance_check_holds_no_lease.py, tests/test_cleanly_reviewed_run_lands_itself.py, tests/test_reflex_acceptance_reads_the_remote_primary.py, the fragment) all sit inside those, and no reckon/ path changed\nVERDICT manifest: read; status complete, five full commit ids at :7, 13 passed at 9116590e, suite arms 58 passed on both revisions, three controls named, but changed_paths at :12 names a file that does not exist at the head and omits one the diff changes\nVERDICT diff: read commit by commit: 9116590e lifts the in-place scheduler into tests/helpers/landing_repository.py:26 and imports it from the three landing files, adds a role parameter to _write_run and a role refusal arm; 8083a844 rewrites the fragment's head rows to the revisions its cited logs name and records the repair round\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:accept_clean_review, reckon/crew/landing_measure.py:measure_run\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_reflex_acceptance_reads_the_remote_primary.py:233-256 adds the role refusal arm the prior review found unasserted, and gate-head.log reads 13 passed EXIT=0 at the commit that carries it.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log, suite-base.log, suite-head.log, suite-repair-head.log and importer-base.log all carry a header revision and a final EXIT= line, but manifest.md:22 records after_suite.command as PLACEHOLDER-COMMAND and manifest.md:21 elides baseline_suite.command, so the suite pair is only re-runnable from the log headers.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the five changed paths lies under the declared tests or the declared fragment, and no reckon/ source file changed in 9116590e or 8083a844.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_reflex_acceptance_reads_the_remote_primary.py:252 reddens with KeyError: 'unmerged_commits' when negative-controls.sh:43 removes the not-implementation conjunct, but the transport fold is guarded only by the grep check in negative-control-reuse.log, so re-adding a local copy fails no test.\nSCORE fit: 18\nJUSTIFICATION fit: tests/helpers/landing_repository.py:26 follows that module's existing helper-and-docstring idiom, and in_place_scheduler carries no plan, stage or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the capability now has one owner, tests/helpers/landing_repository.py:26, which the three landing files import instead of carrying copies; the remaining --wrap readers in tests/test_a_landing_measure_runs_on_its_partition.py:69 synthesise output rather than executing the product's script, so they are a different capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054343746758-qwnw-red-file-reflex-acceptance-reads-the-remote-primary/manifest.md:22 non-blocking: after_suite.command is the literal string PLACEHOLDER-COMMAND and baseline_suite.command at :21 is elided mid-path ('tests/test_every_..'), so neither suite arm can be re-run from the record and a reader must fall back to the log header in suite-repair-head.log; crew check --manifest on the run reports no findings, so nothing refuses it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054343746758-qwnw-red-file-reflex-acceptance-reads-the-remote-primary/manifest.md:12 non-blocking: changed_paths names tests/test_cleanly_reviewed_run_holds_itself.py, which does not exist at 8083a844 (git cat-file exits 128), and omits tests/test_cleanly_reviewed_run_lands_itself.py, which 9116590e changes, so the record names a phantom path and hides a landed one.\n",
+  "reuse_search": "searched tests/ and tests/helpers/ for an existing in-place scheduler transport; none of the other --wrap readers execute the product's script, and the landed helper is the first owner",
+  "review_run_id": "r-20261121T101727097346-review-of-qwnw-red-file-reflex-acceptance-reads-the-remote-primary-8083a8448ce6",
+  "reviewed_base_sha": "5ddc05c379b8671731c14daa8e88b1ebd432e800",
+  "reviewed_head_sha": "8083a8448ce6de03b8f77fe9bf98fa6c134294c1",
+  "reviewed_run_id": "r-20261118T054343746758-qwnw-red-file-reflex-acceptance-reads-the-remote-primary",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_count": 0,
+    "added_failure_derivation": "after_suite failure_ids minus baseline_suite failure_ids over the same suite: suite-base.log reads 58 passed with no FAILED line, suite-repair-head.log reads 58 passed with no FAILED line, so the delta is empty",
+    "added_failure_ids": [],
+    "after_suite": {
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_first_line": "# revision 8083a8448ce6de03b8f77fe9bf98fa6c134294c1",
+      "log_last_line": "EXIT=0",
+      "log_path": "suite-repair-head.log",
+      "revision": "8083a8448ce6de03b8f77fe9bf98fa6c134294c1",
+      "summary": "58 passed in 51.89s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_first_line": "# revision 42fe90d0b0a46060bafde2490dda7d4002cda478",
+      "log_last_line": "EXIT=0",
+      "log_path": "suite-base.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+      "summary": "58 passed in 39.61s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:34:03.658869+00:00",
+  "total": 105
+}

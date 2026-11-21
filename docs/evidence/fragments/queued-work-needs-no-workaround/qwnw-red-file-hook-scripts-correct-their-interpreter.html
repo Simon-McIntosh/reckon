@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-hook-scripts-correct-their-interpreter-arms">
+<h2>The inbox hook's missing interpreter hand-off</h2>
+<p>The named check <code>tests/test_hook_scripts_correct_their_interpreter.py</code>
+ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in the
+test process, twice: once over an extraction of the base revision
+<code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> (job 1329289) and once over
+the worktree at its head (job 1329334, whose log's own header names the revision
+and the tree it ran at). The base arm failed two cases and passed four; the base failing ids are
+<code>test_every_reckon_importing_hook_uses_the_shared_bootstrap</code> and
+<code>test_importing_hooks_reexecute_under_old_python</code>. The head arm passed
+all seven.</p>
+<p>Two causes, one per failing case.</p>
+<p><strong>Cause 1, product wrong.</strong> <code>reckon/hooks/worker_inbox.py</code>
+imports a <code>reckon</code> module (<code>reckon._store</code>) and did not load
+the shared <code>interpreter_bootstrap</code> that the three hooks beside it load,
+so a bare <code>python3 worker_inbox.py</code> on a system interpreter reaches that
+lazy import under a Python that cannot import the package. The file landed after
+the bootstrap rule and was never brought under it. The reproduction is the base
+arm's own assertion: the population the source walker finds is
+<code>coordinator_obligations.py</code>, <code>worker_git_guard.py</code>,
+<code>worker_inbox.py</code>, <code>worker_stop.py</code>, and only
+<code>worker_inbox.py</code> carries no <code>with_name(&quot;interpreter_bootstrap.py&quot;)</code>
+line. The product fix loads the bootstrap in that script and calls it from
+<code>main</code> — deferred rather than at import, because the fleet and the MCP
+view import this module to compose a message and a module that re-executed on
+import would replace the caller. A checkout with no <code>.venv</code> reports
+<code>checkout interpreter is missing</code> on stderr and exits non-zero, the
+harness surfacing that without blocking the tool call the hook followed, rather
+than exiting silently and dropping the head instruction it exists to deliver.</p>
+<p><strong>Cause 2, test wrong.</strong> The file pinned the importing-hook
+population as three literal names and keyed its re-execution cases by that list,
+so a fourth importing hook could only arrive as a <code>KeyError</code> from the
+case map rather than as a measured result. The case map keyed the error
+<code>KeyError: 'worker_inbox.py'</code>; it now names the four hooks and carries
+a case that seeds one waiting message before each interpreter, so the two arms
+compare a real delivery and the delivery is asserted rather than assumed. No
+assertion was weakened; the population assertion was kept and its expected set
+extended, and the missing-interpreter case now covers the new hook too.</p>
+<h2>The declared suite, both arms</h2>
+<p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>
+reports the same figure at both arms: 58 passed, exit 0 (jobs 1329313 at the base
+revision and 1329336 at head). One earlier base arm (job 1329284) read 2 failed
+because the extraction it ran against was extracted with <code>git archive</code>
+and carried no repository, so the inventory test's own tree reader saw no bytes at
+all; the extraction's content was then committed and the arm re-run. The first
+run is recorded here rather than dropped, because an empty population reading as a
+failure is the instrument's fault and not the base revision's.</p>
+<h2>Lint</h2>
+<p><code>ruff check</code> and <code>ruff format --check</code> over both changed
+files report no findings (exit 0 both).</p>
+<h2>Logs</h2>
+<p>Base read log <code>gate-baseline.log</code> and head read log
+<code>gate-after.log</code>, suites <code>suite-base.log</code> (base) and
+<code>suite-head.log</code>, all under
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062428237659-qwnw-red-file-hook-scripts-correct-their-interpreter/</code>.</p>
+<pre># base arm, job 1329289, all_debug, revision 42fe90d0b0a46060bafde2490dda7d4002cda478
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hook_scripts_correct_their_interpreter.py
+FAILED tests/test_hook_scripts_correct_their_interpreter.py::test_every_reckon_importing_hook_uses_the_shared_bootstrap - AssertionError: assert {'coordinator...rker_stop.py'} == {'coordinator...rker_stop.py'}
+FAILED tests/test_hook_scripts_correct_their_interpreter.py::test_importing_hooks_reexecute_under_old_python - KeyError: 'worker_inbox.py'
+2 failed, 4 passed in 4.74s
+EXIT=1
+</pre>
+<pre># head arm, job 1329334, all_debug, revision 16c1b885031a64711ab07833753ecc818abd27ab
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hook_scripts_correct_their_interpreter.py
+.......                                                                  [100%]
+7 passed in 3.50s
+EXIT=0
+</pre>
+</section>

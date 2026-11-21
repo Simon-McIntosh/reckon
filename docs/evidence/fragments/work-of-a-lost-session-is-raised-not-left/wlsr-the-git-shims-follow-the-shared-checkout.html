@@ -1,0 +1,61 @@
+<section id="wlsr-the-git-shims-follow-the-shared-checkout-landing">
+  <h2>The git shim directory follows the image rule the scheduler shims use</h2>
+
+  <p><strong>What changed.</strong> The scheduler shim directory already named
+  the checkout a published reload image was published from, so a worker placed
+  on another node can read the shims the fence binds. The git shim directory did
+  not: <code>worker_shim_directory()</code> in
+  <code>reckon/worker_git_shim.py</code> was <code>Path(__file__).resolve().parent
+  / "worker_shims"</code> with no exception, so a process running from an image
+  named the image's copy on the launching node's local disk. That directory is
+  on the worker's search path and the shim script it names is executed there, so
+  a worker on another node got a directory it cannot read and a script it cannot
+  run.</p>
+
+  <p>The rule itself moved into <code>reckon.nested_launch.shims_beside(module_file,
+  directory)</code>, which both families now ask:
+  <code>shim_directory()</code> passes this module and <code>host_shims</code>,
+  and <code>worker_shim_directory()</code> passes its own module and
+  <code>worker_shims</code>. The rule is stated once, so the two directories
+  cannot come to different answers about where a launched worker reads its
+  shims, and the image test now holds the git directory to the same four cases
+  as the scheduler one: the carried root, the interpreter's checkout, no
+  checkout found (keep its own), and a checkout keeping its own whatever root is
+  carried.</p>
+
+  <h3 id="wlsr-the-git-shims-follow-the-shared-checkout-arms">Measured</h3>
+
+  <p>Each arm is a log whose header names its revision, tree and command and
+  whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="wlsr-the-git-shims-follow-the-shared-checkout-arm-table">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate, head</td>
+        <td><code>1d55a47021</code>, this worktree</td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control, base</td>
+        <td><code>e689315bb7</code>, <code>git archive</code> extraction with the
+        new test copied in</td>
+        <td><strong>2 failed, 6 passed</strong>, <code>EXIT=1</code> &mdash; both
+        git image cases, which assert the checkout's directory and were handed
+        the image's; the other six pass, so the instrument reaches the code</td></tr>
+      <tr><td>neighbouring suites</td>
+        <td><code>e689315bb7</code> plus this node's diff, working tree, fence env removed</td>
+        <td>24 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The two failing ids:
+  <code>test_an_image_names_the_shims_of_the_git_checkout_its_launcher_carried</code>
+  and
+  <code>test_an_image_without_a_carried_root_names_the_git_checkout_of_the_interpreter</code>.
+  The four scheduler cases are unchanged in substance and keep their own names.</p>
+
+  <p>The neighbouring suites copy <code>os.environ</code> into their fixtures,
+  so run inside a fenced worker they inherit <code>RECKON_SHIM_HOME</code> and
+  the other relocation names; the shim then forwards to the fence's real
+  binary instead of the fixture's fake, and the fake records nothing. That is a
+  property of the harness, not of this change: with those names removed the
+  three files pass 24 of 24 at this revision.</p>
+</section>

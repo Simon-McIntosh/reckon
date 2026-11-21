@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T09:51:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-departure-row-says-how-and-what-it-spent.html",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "the arms table still names eac99bb1 as the head arm and after-arm revision while the delivered head is 26cab180, so the record's table cannot be reconciled with the 26cab180 head gate log the Repair paragraph added at :48 rests on."
+    },
+    {
+      "file": "tests/test_the_departure_row_says_how_and_what_it_spent.py",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the repair carries no committed guard: a reinstated local _git passes every assertion unless the suite runs under the worker git shim, so the reuse regression is only demonstrated in logs/negative-control-reuse.log rather than caught by a test."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the delta 7908c5f3..26cab180 commit by commit; the single commit 26cab180 deletes the file-local _git wrapper and its subprocess import from tests/test_the_departure_row_says_how_and_what_it_spent.py and adds one Repair paragraph to the evidence fragment, 10 insertions and 10 deletions across two files.",
+    "done_when": "the done-when asks for the named file passing in full at head as an all_debug job, a base arm reproducing the base red, a no-added-failure suite pair at both full revisions and a negative control; the manifest records the head arm 5 passed EXIT=0 at 26cab180, the base arm 3 failed 2 passed EXIT=1 at 4d464485, baseline_suite 58 passed EXIT=0 at 4d464485, after_suite 58 passed EXIT=0 at 26cab180, and negative-control-reuse.log at 7908c5f3 2 failed 3 passed against 26cab180 5 passed.",
+    "goal": "the source node's goal is that tests/test_the_departure_row_says_how_and_what_it_spent.py passes in full on the primary branch; the delta commit 26cab180 changes only the helper that the fixture's _repository uses, and the reviewed run's gate log scoped-gate-1795254380602581310.log at 26cab180 reads 5 passed EXIT=0.",
+    "manifest": "read the run's manifest.md; status complete, five commits named ending 26cab180, the tests line is the literal pytest invocation for the named file, test_logs name scoped-gate-1795254380602581310.log at 26cab180 (5 passed EXIT=0) and logs/negative-control-reuse.log, and baseline_suite and after_suite both completed at full 40-character revisions with 0 failures.",
+    "write_paths": "the reviewed node was fenced to reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that fragment's html file and its figures directory; the delta touches tests/test_the_departure_row_says_how_and_what_it_spent.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-departure-row-says-how-and-what-it-spent.html, both inside."
+  },
+  "justifications": {
+    "durability": "the delta adds no assertion and no committed test runs the suite under the worker git shim, so restoring a local _git at tests/test_the_departure_row_says_how_and_what_it_spent.py:12 leaves every test green outside a worker environment.",
+    "evidence": "scoped-gate-1795254380602581310.log carries '# revision: 26cab180...' with '5 passed' and EXIT=0, and logs/negative-control-reuse.log records the pre-repair arm failing 2 of 5 with exit 97, so the repair's effect is measured at the delivered head rather than claimed.",
+    "fit": "the 'from tests.helpers.git import git as _git' alias at tests/test_the_departure_row_says_how_and_what_it_spent.py:12 matches the 326 test modules that import the same owner, and no name it introduces is in the forbidden vocabulary.",
+    "goal_fidelity": "tests/test_the_departure_row_says_how_and_what_it_spent.py:12 imports tests/helpers/git.py:12 git, so the fixture's git calls go through the shared owner and the file the goal names passes 5 of 5 in scoped-gate-1795254380602581310.log at the delivered head.",
+    "reuse": "the deleted wrapper at tests/test_the_departure_row_says_how_and_what_it_spent.py:30 re-implemented tests/helpers/git.py:12 git; the delta removes it and extends the owner by import without adding a definition of its own.",
+    "scope_discipline": "git diff --stat 7908c5f3..26cab180 names only tests/test_the_departure_row_says_how_and_what_it_spent.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-departure-row-says-how-and-what-it-spent.html, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 7908c5f30b4944254c21aae131da303faa42eb09\nreviewed_head_sha: 26cab180e8b49a209b4e4395d947b2200ebdff72\nVERDICT goal: the source node's goal is that tests/test_the_departure_row_says_how_and_what_it_spent.py passes in full on the primary branch; the delta commit 26cab180 changes only the helper that the fixture's _repository uses, and the reviewed run's gate log scoped-gate-1795254380602581310.log at 26cab180 reads 5 passed EXIT=0.\nVERDICT done_when: the done-when asks for the named file passing in full at head as an all_debug job, a base arm reproducing the base red, a no-added-failure suite pair at both full revisions and a negative control; the manifest records the head arm 5 passed EXIT=0 at 26cab180, the base arm 3 failed 2 passed EXIT=1 at 4d464485, baseline_suite 58 passed EXIT=0 at 4d464485, after_suite 58 passed EXIT=0 at 26cab180, and negative-control-reuse.log at 7908c5f3 2 failed 3 passed against 26cab180 5 passed.\nVERDICT write_paths: the reviewed node was fenced to reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that fragment's html file and its figures directory; the delta touches tests/test_the_departure_row_says_how_and_what_it_spent.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-departure-row-says-how-and-what-it-spent.html, both inside.\nVERDICT manifest: read the run's manifest.md; status complete, five commits named ending 26cab180, the tests line is the literal pytest invocation for the named file, test_logs name scoped-gate-1795254380602581310.log at 26cab180 (5 passed EXIT=0) and logs/negative-control-reuse.log, and baseline_suite and after_suite both completed at full 40-character revisions with 0 failures.\nVERDICT diff: read the delta 7908c5f3..26cab180 commit by commit; the single commit 26cab180 deletes the file-local _git wrapper and its subprocess import from tests/test_the_departure_row_says_how_and_what_it_spent.py and adds one Repair paragraph to the evidence fragment, 10 insertions and 10 deletions across two files.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_departure_row_says_how_and_what_it_spent.py:12 imports tests/helpers/git.py:12 git, so the fixture's git calls go through the shared owner and the file the goal names passes 5 of 5 in scoped-gate-1795254380602581310.log at the delivered head.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795254380602581310.log carries '# revision: 26cab180...' with '5 passed' and EXIT=0, and logs/negative-control-reuse.log records the pre-repair arm failing 2 of 5 with exit 97, so the repair's effect is measured at the delivered head rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 7908c5f3..26cab180 names only tests/test_the_departure_row_says_how_and_what_it_spent.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-departure-row-says-how-and-what-it-spent.html, both inside the node's declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: the delta adds no assertion and no committed test runs the suite under the worker git shim, so restoring a local _git at tests/test_the_departure_row_says_how_and_what_it_spent.py:12 leaves every test green outside a worker environment.\nSCORE fit: 20\nJUSTIFICATION fit: the 'from tests.helpers.git import git as _git' alias at tests/test_the_departure_row_says_how_and_what_it_spent.py:12 matches the 326 test modules that import the same owner, and no name it introduces is in the forbidden vocabulary.\nSCORE reuse: 20\nJUSTIFICATION reuse: the deleted wrapper at tests/test_the_departure_row_says_how_and_what_it_spent.py:30 re-implemented tests/helpers/git.py:12 git; the delta removes it and extends the owner by import without adding a definition of its own.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-departure-row-says-how-and-what-it-spent.html:68 non-blocking: the arms table still names eac99bb1 as the head arm and after-arm revision while the delivered head is 26cab180, so the arms cannot be reconciled with the 26cab180 head gate log the Repair paragraph added at :48 rests on.\nFINDING tests/test_the_departure_row_says_how_and_what_it_spent.py:12 non-blocking: the repair carries no committed guard: a reinstated local _git passes every assertion unless the suite runs under the worker git shim, so the reuse regression is only demonstrated in logs/negative-control-reuse.log rather than caught by a test.",
+  "review_run_id": "r-20261121T095102416268-review-of-qwnw-red-file-the-departure-row-says-how-and-what-it-spent-26cab180e8b4",
+  "reviewed_base_sha": "7908c5f30b4944254c21aae131da303faa42eb09",
+  "reviewed_commits": [
+    "26cab180e8b49a209b4e4395d947b2200ebdff72"
+  ],
+  "reviewed_head_sha": "26cab180e8b49a209b4e4395d947b2200ebdff72",
+  "reviewed_run_id": "r-20261118T054128002906-qwnw-red-file-the-departure-row-says-how-and-what-it-spent",
+  "reviewer_run_id": "r-20261121T095102416268-review-of-qwnw-red-file-the-departure-row-says-how-and-what-it-spent-26cab180e8b4",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:06:22.773386+00:00",
+  "total": 108
+}

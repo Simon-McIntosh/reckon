@@ -1,0 +1,44 @@
+<section id="qwnw-red-file-a-damaged-run-record-stops-only-its-run-landing">
+  <h2>A damaged run record stops only its own run</h2>
+
+  <p><strong>What changed.</strong> The test's <code>_complete</code> helper now
+  passes <code>--wait</code> to <code>crew complete</code>. All three test cases
+  and every assertion are unchanged.</p>
+
+  <p><strong>The cause and its verdict.</strong> Test wrong. The test was written
+  when <code>crew complete</code> carried out a promotion in the call. The
+  product's rule has since become the one
+  <code>tests/test_no_caller_waits_on_a_promotion.py</code> states: a plain
+  <code>crew complete</code> only requests promotion and answers with the
+  request receipt.</p>
+
+  <p>The third case watched for a refusal that therefore never ran: the second
+  <code>crew complete</code> queued a promotion for the damaged run, printed
+  <code>{"ok": true, "phase": "promotion-requested", ...}</code> and exited
+  <code>0</code> — the assertion that caught it was
+  <code>assert refused.exit_code != 0</code> at <code>assert 0 != 0</code>.
+  Because the request path returns before any promotion runs, <code>--wait</code>
+  is what makes the call carry the promotion out and hand back its outcome,
+  which is where the damaged record is read.</p>
+
+  <p><strong>Reproduction, then the same check at head.</strong> Both arms run
+  <code>tests/test_a_damaged_run_record_stops_only_its_run.py</code> as a job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset.</p>
+
+  <table id="qwnw-red-file-a-damaged-run-record-stops-only-its-run-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base arm</td>
+        <td><code>d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72</code>, extraction</td>
+        <td>2 passed, 1 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head arm</td>
+        <td><code>b630eda026b6f8cd3b4f9328e6540bc76c367a53</code>, extraction</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm's failing id is
+  <code>tests/test_a_damaged_run_record_stops_only_its_run.py::test_promotion_refuses_only_the_damaged_run</code>.</p>
+</section>

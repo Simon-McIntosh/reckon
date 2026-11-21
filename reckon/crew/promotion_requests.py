@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from reckon import checkout_trust
+from reckon import checkout_trust, file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import runs, stage_receipts
 from reckon.crew.host_lease import HostLease, local_host
@@ -58,6 +58,9 @@ ERRORS = frozenset({FAILED, REFUSED})
 # pointer is no longer the coordinator's to answer: the phase records that the
 # request is settled, and the file is kept so the refusal stays readable.
 SETTLED = "promotion-settled"
+# The kinds that ask for a run's own promotion, and so are the ones a delivery
+# the primary branch already carries can settle in place of a gate replay.
+SETTLEABLE_KINDS = frozenset({"command", "complete"})
 
 # How long the drain waits for a wakeup before looking for requests another
 # process queued. A freed slot wakes it immediately, so this only bounds the
@@ -171,10 +174,9 @@ def _drained_log_path() -> Path:
 
 
 def _waited_seconds(requested_at: Any, finished_at: Any) -> float | None:
-    try:
-        requested = datetime.fromisoformat(str(requested_at))
-        finished = datetime.fromisoformat(str(finished_at))
-    except (TypeError, ValueError):
+    requested = parse_utc(str(requested_at))
+    finished = parse_utc(str(finished_at))
+    if requested is None or finished is None:
         return None
     return round(max(0.0, (finished - requested).total_seconds()), 3)
 
@@ -246,7 +248,10 @@ def _recent_drained(moment: datetime, window_seconds: float) -> list[dict[str, A
 
 
 def promotion_queue_report(
-    *, now: datetime | None = None, window_seconds: float = 3600.0
+    *,
+    now: datetime | None = None,
+    window_seconds: float = 3600.0,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """What the queue holds now and how fast it has drained recently.
 
@@ -261,7 +266,7 @@ def promotion_queue_report(
     waiting: list[dict[str, Any]] = []
     running = 0
     parked = 0
-    for request in _pending_requests(now=moment):
+    for request in _pending_requests(now=moment, pointers=pointers):
         phase = request.get("phase")
         if phase == REQUESTED:
             waiting.append(request)
@@ -271,9 +276,8 @@ def promotion_queue_report(
             parked += 1
     oldest = None
     for request in waiting:
-        try:
-            requested_at = datetime.fromisoformat(str(request.get("requested_at")))
-        except (TypeError, ValueError):
+        requested_at = parse_utc(str(request.get("requested_at")))
+        if requested_at is None:
             continue
         if oldest is None or requested_at < oldest[0]:
             oldest = (requested_at, request)
@@ -298,6 +302,8 @@ def promotion_queue_report(
             {
                 "run_id": request["run_id"],
                 "session": request.get("session", ""),
+                "project": str(request.get("project") or ""),
+                "requested_at": str(request.get("requested_at") or ""),
                 "position": position,
                 "reason": request["ordering_reason"],
             }
@@ -333,6 +339,85 @@ def _read(path: Path) -> dict[str, Any]:
     return value
 
 
+# One decode per version of each request file. A publish reads the directory
+# once and slices it per subscribed session, and the next publish reuses every
+# request whose file has not changed, so the decodes a sweep pays for are the
+# requests it changed rather than the population it re-reads. The identity, the
+# re-verification after the read and the storage are ``file_memo``'s.
+REQUEST_MEMO = "promotion_request"
+
+
+def _request_record(path: Path) -> dict[str, Any]:
+    """One request's record, decoded once per version of its file.
+
+    ``file_memo.memoized`` owns the identity-keyed decode: it keys on the file's
+    stat signature, re-verifies it after the read so a write landing in between
+    stores nothing, and decodes uncached when the file cannot be stat'ed.
+    """
+    return file_memo.memoized(REQUEST_MEMO, path, lambda: _read(path))
+
+
+class RequestIndex:
+    """One publish's reading of the promotion request directory.
+
+    Derived once per publish and sliced per session, so the directory is listed
+    and each changed request decoded once however many sessions a publish
+    serves. Requests are grouped by the owner they are owed to, because every
+    reader of this directory asks for one owner's requests.
+    """
+
+    def __init__(self, records: Iterable[tuple[Path, dict[str, Any]]]) -> None:
+        self.records = list(records)
+        self._by_owner: dict[tuple[str, str], list[tuple[Path, dict[str, Any]]]] = {}
+        for path, record in self.records:
+            owner = (str(record.get("project") or ""), str(record.get("session") or ""))
+            self._by_owner.setdefault(owner, []).append((path, record))
+        self._settled: set[str] = set()
+
+    def for_owner(
+        self, project: str, session: str
+    ) -> list[tuple[Path, dict[str, Any]]]:
+        """The requests owed to one session, as the files stand now.
+
+        A drain outside this publish may have answered one of these requests
+        since the index was built — settled it, requeued it, moved it on — so
+        each request this slice would raise a duty for is re-read through the
+        memo's identity check. That costs one stat per candidate and decodes
+        only a file that changed, which is what makes a slice read what the
+        directory says rather than what it said when the publish began.
+        """
+        entries: list[tuple[Path, dict[str, Any]]] = []
+        for path, record in self._by_owner.get((project, session), ()):
+            if str(path) in self._settled:
+                continue
+            if record.get("phase") not in ERRORS and record.get("phase") != WAITING:
+                continue
+            entries.append((path, _request_record(path)))
+        return entries
+
+    def note_settled(self, path: Path) -> None:
+        """Leave a request this publish settled out of its later slices.
+
+        A later slice of the same publish would otherwise read the record as it
+        stood before the settle and settle it a second time.
+        """
+        self._settled.add(str(path))
+
+
+def request_index() -> RequestIndex:
+    """Read the promotion request directory once, from the decodes on hand."""
+    directory = _requests_dir()
+    paths = sorted(directory.glob("*.json"))
+    # The region hands each stored record as the cached read-only view, so a
+    # slice reads what the publish's one decode produced rather than a copy of
+    # it, and a caller that tries to change a request record is refused.
+    with file_memo.read_only_region():
+        records = [
+            (path, record) for path in paths if (record := _request_record(path))
+        ]
+    return RequestIndex(records)
+
+
 def read_promotion(run_id: str) -> dict[str, Any]:
     """Read a pending request or its durable terminal outcome."""
     record = _read(_request_path(run_id)) or _read(_receipt_path(run_id))
@@ -365,9 +450,10 @@ def _mark_pointer(
                 else str(request.get("previous_phase") or "complete")
             )
             runs._write_json(runs.pointer_path(run_id), pointer)
-    except runs.PointerLockHeldError:
+    except (runs.PointerLockHeldError, CrewError, FileNotFoundError):
         # The durable request remains readable while another pointer mutation
-        # holds its short lock; requesting never waits behind that mutation.
+        # holds its short lock, and a promotion removes the pointer before its
+        # request is closed: neither is a reason to fail the request.
         return
 
 
@@ -447,7 +533,12 @@ def request_promotion(
                 default=request["priority_override"],
             )
         runs._write_json(path, request)
-        stage_receipts.record_stage(run_id, "promotion_requested", at=request["requested_at"], attempt=request["request_id"])
+        stage_receipts.record_stage(
+            run_id,
+            "promotion_requested",
+            at=request["requested_at"],
+            attempt=request["request_id"],
+        )
         _mark_pointer(request, REQUESTED)
         return request
 
@@ -535,9 +626,67 @@ def _execute_command(options: Mapping[str, Any]) -> dict[str, Any]:
     return replies[-1]
 
 
+def _carried_delivery_settlement(
+    request: Mapping[str, Any], pointer: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Settle a promotion whose delivery the primary branch already carries.
+
+    A coordinator re-request, or a sweep's hand-off, for a run whose reviewed
+    head and changed paths are on the primary branch and whose ledger row is
+    written asks for work that is done. Running the promotion again could only
+    replay its gate at a revision that already carries the delivery, which
+    refuses a run with nothing left to do and leaves its pointer live. The
+    pointer is retired through the release path a completed merge uses instead,
+    so the ledger keeps its one row and the verdict that row recorded.
+
+    Answers an empty mapping whenever the delivery is not proved carried, so
+    every other request — a head off the branch, a changed path the branch no
+    longer holds, a run with no row — takes the ordinary promotion path.
+    """
+    from reckon.crew import queue_landing
+
+    run_id = str(request["run_id"])
+    try:
+        row = queue_landing._ledger_row(pointer, run_id)
+    except CrewError:
+        return {}
+    if row is None:
+        return {}
+    head = queue_landing._promoted_row_head(pointer, run_id)
+    if not head:
+        return {}
+    carried, _detail = queue_landing._primary_carries_the_delivery(
+        pointer, head, queue_landing._primary_revision(pointer)
+    )
+    if carried != "carried":
+        return {}
+    status, refusal = queue_landing.settle_a_carried_delivery(pointer, row)
+    if status != queue_landing.CARRIED_SETTLED:
+        raise CrewError(
+            "the primary branch carries this run's delivery but its workspace "
+            f"could not be released: {refusal}"
+        )
+    return {
+        "run_id": run_id,
+        "project": str(request.get("project") or ""),
+        "promoted": True,
+        "settled": "landed-elsewhere",
+        "record": row,
+    }
+
+
 def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
     run_id = str(request["run_id"])
     options = request.get("options") or {}
+    if request["kind"] in SETTLEABLE_KINDS:
+        try:
+            pointer = runs.read_pointer(run_id)
+        except CrewError:
+            pointer = None
+        if pointer is not None:
+            settled = _carried_delivery_settlement(request, pointer)
+            if settled:
+                return settled
     if request["kind"] == "landing-group":
         from reckon.crew_run_commands import _complete_landing_group
 
@@ -581,6 +730,19 @@ def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
         else acceptance.promote_review_run_itself
     )
     return operation(pointer, config=options.get("config"))
+
+
+def _outcome_already_recorded(request: Mapping[str, Any], phase: str) -> bool:
+    """Whether this attempt's outcome is already durable on its receipt.
+
+    A promotion writes its receipt before the request is unlinked, so the
+    receipt is the record a later fault must not overwrite.
+    """
+    receipt = _read(_receipt_path(str(request["run_id"])))
+    return (
+        receipt.get("request_id") == request.get("request_id")
+        and receipt.get("phase") == phase
+    )
 
 
 def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, Any]:
@@ -655,33 +817,52 @@ def _reviewed_run_id(
 
 def _reviewed_request_runs(
     requests: Iterable[Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> Iterator[tuple[Mapping[str, Any], str]]:
-    """Resolve a pass lazily, sharing one listing across source-node reviews."""
+    """Resolve a pass lazily, sharing one listing across source-node reviews.
+
+    ``pointers`` is a reading the caller already holds, so a pass composed
+    inside a fleet read does not list the fleet again. A reading answers only
+    the projects it carries: a request naming a project it does not hold is
+    still resolved against a listing, because one project's scoped reading must
+    not narrow another project's review to the durable fallback.
+    """
     from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
     from reckon.crew.repair import round_node_source
 
-    pointers = None
+    held = None if pointers is None else list(pointers)
+    covered = {str(pointer.get("project") or "") for pointer in held or ()}
+    listed = None
     listing_failed = False
     for request in requests:
         source = round_node_source(str(request.get("node") or ""), REVIEW_NODE_PREFIX)
         needs_population = bool(source and not source.startswith("r-"))
-        if needs_population and pointers is None:
-            try:
-                pointers = runs.list_live()
-            except Exception:  # noqa: BLE001 — ordering must never stop the drain
-                pointers, listing_failed = [], True
+        population = held
+        if needs_population and (
+            population is None or str(request.get("project") or "") not in covered
+        ):
+            if listed is None:
+                try:
+                    listed = runs.list_live()
+                except Exception:  # noqa: BLE001 — ordering must never stop the drain
+                    listed, listing_failed = [], True
+            population = listed
         yield (
             request,
             (
                 ""
                 if needs_population and listing_failed
-                else _reviewed_run_id(request, pointers=pointers)
+                else _reviewed_run_id(request, pointers=population)
             ),
         )
 
 
 def _pending_requests(
-    *, now: datetime | None = None, window_seconds: float = 3600.0
+    *,
+    now: datetime | None = None,
+    window_seconds: float = 3600.0,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Reviews, aged requests and priorities precede fair session turns.
 
@@ -693,10 +874,15 @@ def _pending_requests(
     requested rows consume simulated future turns: running rows are already
     charged, and parked rows take no slot.
     """
-    moment = now or datetime.fromisoformat(_now())
+    moment = now or parse_utc(_now()) or datetime.now(UTC)
     pending = []
     for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+        # The report shares ``_request_record``'s decode, so a directory read
+        # once per tick costs one decode per request rather than one per call,
+        # and a request unchanged since the previous tick decodes not at all.
+        # The copy is this call's own: the loop below writes an override onto
+        # it, which a read-only region's view of the memo would refuse.
+        request = dict(_request_record(path))
         if request.get("phase") in QUEUED:
             if "priority_override" not in request:
                 # Requests written without a priority snapshot still inherit
@@ -709,7 +895,7 @@ def _pending_requests(
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
         str(request.get("run_id") or "")
-        for request, reviewed in _reviewed_request_runs(pending)
+        for request, reviewed in _reviewed_request_runs(pending, pointers=pointers)
         if reviewed in waiting
     }
     served = Counter(
@@ -779,21 +965,97 @@ def _defer_to_a_queued_review(
         }
         requeued.pop("started_at", None)
         runs._write_json(_request_path(run_id), requeued)
-        stage_receipts.note_promotion_outcome(request, DEFERRED, {"reason": str(refusal)})
+        stage_receipts.note_promotion_outcome(
+            request, DEFERRED, {"reason": str(refusal)}
+        )
         _mark_pointer(requeued, REQUESTED)
     return True
 
 
-def _promoted_commits(result: Mapping[str, Any]) -> list[str]:
+def _declared_commits(result: Mapping[str, Any]) -> list[str]:
+    """The commits a promotion result already carries, without reading the store."""
     promoted = result.get("promotion") or result
-    record = promoted.get("record") or {}
-    commits = record.get("commits") or result.get("commits")
-    if commits:
-        return list(commits)
-    location = (result.get("ledger") or {}).get("path")
-    if location:
-        return list(_read(Path(location)).get("commits") or [])
+    record = promoted.get("record") if isinstance(promoted, Mapping) else {}
+    record = record if isinstance(record, Mapping) else {}
+    commits = record.get("commits") or result.get("commits") or ()
+    return [str(commit) for commit in commits]
+
+
+def _stored_commits(request: Mapping[str, Any], result: Mapping[str, Any]) -> list[str]:
+    """The commits of a promoted run read by its identity, never by its location.
+
+    A promotion whose ledger has retired returns the run store as the location
+    it wrote, and a run file it names need not be kept in the checkout. The
+    store answers for both: its rows are keyed by run, so a promoted run with no
+    commit in the checkout is read without decoding a database as JSON.
+    """
+    run_id = str(result.get("run_id") or request.get("run_id") or "")
+    project = str(result.get("project") or request.get("project") or "")
+    if not run_id or not project:
+        return []
+    try:
+        from reckon import run_store
+
+        rows = run_store.stored_run_rows(project, run_ids=[run_id]) or ()
+    except Exception:  # noqa: BLE001 - a stored read never fails a promoted run
+        return []
+    for row in rows:
+        if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
+            return [str(commit) for commit in row.get("commits") or ()]
     return []
+
+
+def _location_commits(result: Mapping[str, Any]) -> list[str]:
+    """Commits from a run document the promotion names as its write location.
+
+    Only a run file is a document. A retired ledger names the store, a
+    database, and a checkout may no longer keep the file at all, so a location
+    that does not decode as one object is answered as no commit rather than
+    failing the request.
+    """
+    location = str((result.get("ledger") or {}).get("path") or "")
+    if not location:
+        return []
+    try:
+        document = json.loads(Path(location).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return []
+    if not isinstance(document, Mapping):
+        return []
+    return [str(commit) for commit in document.get("commits") or ()]
+
+
+def _promoted_commits(
+    request: Mapping[str, Any], result: Mapping[str, Any]
+) -> list[str]:
+    """A promoted run's commits, from wherever its record is held."""
+    commits = _declared_commits(result)
+    if commits:
+        return commits
+    commits = _stored_commits(request, result)
+    if commits:
+        return commits
+    return _location_commits(result)
+
+
+def _raising_site(exc: BaseException) -> str:
+    """The module, function and line that raised, so a failure names its step."""
+    trace = exc.__traceback__
+    if trace is None:
+        return ""
+    while trace.tb_next is not None:
+        trace = trace.tb_next
+    frame = trace.tb_frame
+    module = str(frame.f_globals.get("__name__") or "")
+    function = frame.f_code.co_name
+    return f"{module}:{function}:{trace.tb_lineno}"
+
+
+def _failure_text(exc: BaseException) -> str:
+    """A stored error carrying the message beside the site that raised it."""
+    site = _raising_site(exc)
+    text = f"{type(exc).__name__}: {exc}"
+    return f"{text} (raised at {site})" if site else text
 
 
 class PromotionService:
@@ -1063,6 +1325,7 @@ class PromotionService:
             stage, stage_began = name, now
 
         stage_token = PROMOTION_STAGE.set(mark_stage)
+        result: Mapping[str, Any] | None = None
         try:
             run_id = str(request["run_id"])
             with runs._pointer_lock(f"promotion-request-{run_id}"):
@@ -1090,7 +1353,12 @@ class PromotionService:
                     "stage_seconds": stage_seconds,
                 }
                 runs._write_json(_request_path(run_id), request)
-                stage_receipts.record_stage(run_id, "promotion_attempt", at=request["started_at"], attempt=request["attempt_id"])
+                stage_receipts.record_stage(
+                    run_id,
+                    "promotion_attempt",
+                    at=request["started_at"],
+                    attempt=request["attempt_id"],
+                )
                 _mark_pointer(request, RUNNING)
             from reckon.crew.promotion_scope import _branch_write_scope
 
@@ -1129,15 +1397,20 @@ class PromotionService:
                     result=result,
                 )
                 return
-            commits = _promoted_commits(result)
-            _finish(request, PROMOTED, result=result, commits=commits)
+            committed = _promoted_commits(request, result)
+            _finish(request, PROMOTED, result=result, commits=committed)
         except Exception as exc:  # noqa: BLE001 - retain every run's own failure
-            mark_stage("failed")
             request = {**request, "stage_seconds": stage_seconds}
+            if _outcome_already_recorded(request, PROMOTED):
+                # The promotion's outcome is durable already, so a fault while
+                # the request is closed cannot change what it recorded.
+                _request_path(str(request["run_id"])).unlink(missing_ok=True)
+                return
+            mark_stage("failed")
             phase = REFUSED if isinstance(exc, CrewError) else FAILED
             if isinstance(exc, CrewError) and _defer_to_a_queued_review(request, exc):
                 return
-            _finish(request, phase, ok=False, error=f"{type(exc).__name__}: {exc}")
+            _finish(request, phase, ok=False, error=_failure_text(exc))
         finally:
             PREPARATION_DONE.reset(token)
             PROMOTION_STAGE.reset(stage_token)
@@ -1155,6 +1428,26 @@ class PromotionService:
         deadline = time.monotonic() + timeout
         for thread in self._threads:
             thread.join(max(0.0, deadline - time.monotonic()))
+
+
+def _landing_checkout(project: str) -> str:
+    """The checkout a project's promoted heads land in, or "" when unknown.
+
+    A refusal's request records the project and never a checkout, so a reader
+    asking whether the run's delivered head is on the primary branch has no
+    repository to ask about unless it resolves one. The project's registered
+    mount is the authority for "the branch its landed heads move", so its
+    resolution failure is an unknown checkout rather than an error: the caller
+    fails closed and reads the landing as unverified.
+    """
+    if not project:
+        return ""
+    from reckon.crew import merge
+
+    try:
+        return str(merge.project_repository(project))
+    except (OSError, ValueError, merge.MergeError):
+        return ""
 
 
 def _settled_state(request: Mapping[str, Any]) -> str:
@@ -1188,11 +1481,15 @@ def _settled_state(request: Mapping[str, Any]) -> str:
     if landed:
         from reckon.crew.recovery_classification import _promoted_awaiting_merge
 
+        record = {**request, "project": landed}
+        if not (record.get("worktree") or record.get("repo")):
+            # A request names its project but never a checkout, so the ancestry
+            # question would be asked of nothing and every landed run would read
+            # as promoted. The checkout a promoted head lands in answers it.
+            record["repo"] = _landing_checkout(landed)
         return (
             "promoted"
-            if _promoted_awaiting_merge(
-                {**request, "project": landed}, moment=time.time()
-            )
+            if _promoted_awaiting_merge(record, moment=time.time())
             else "landed"
         )
     if not runs.pointer_path(run_id).exists():
@@ -1217,11 +1514,16 @@ def _settle(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
         "settled_at": _now(),
     }
     with runs._pointer_lock(f"promotion-request-{run_id}"):
-        current = _read(_request_path(run_id))
+        # The guard's read is identity-verified like every memoised decode, so it
+        # reports the file as it stands now without decoding a version this
+        # process already holds.
+        current = _request_record(_request_path(run_id))
         if current.get("request_id") != request.get("request_id"):
             return {}
         runs._write_json(_request_path(run_id), settled)
-    stage_receipts.record_stage(run_id, "promotion_settled", at=settled["settled_at"], outcome=reason)
+    stage_receipts.record_stage(
+        run_id, "promotion_settled", at=settled["settled_at"], outcome=reason
+    )
     return settled
 
 
@@ -1247,33 +1549,41 @@ def settle_requests_for(run_id: str, *, settled_as: str = "promoted") -> list[st
 
 
 def failure_obligations(
-    project: str, session: str, *, now: datetime | None = None
+    project: str,
+    session: str,
+    *,
+    now: datetime | None = None,
+    index: RequestIndex | None = None,
 ) -> list[dict[str, Any]]:
     """Project failures and overdue waits into the owning session's duties.
 
     A waiting request takes no promotion slot, but after half an hour its
     owner needs its condition and last observation. Rechecking never resets
     the age, which is measured from the original request.
+
+    ``index`` is the publish's own reading of the directory: a publish serving
+    many sessions derives one and passes it to each, so every changed request
+    is decoded once for the publish rather than once per session. A caller
+    without one reads an index here, from the decode this process already
+    holds for every request whose file has not changed.
     """
     items: list[dict[str, Any]] = []
-    for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+    moment = now or datetime.now(UTC)
+    source = request_index() if index is None else index
+    for path, request in source.for_owner(project, session):
         waiting = request.get("phase") == WAITING
         if request.get("phase") not in ERRORS and not waiting:
-            continue
-        if request.get("project") != project or request.get("session") != session:
             continue
         settled = _settled_state(request)
         if settled:
             # The run has arrived where the refusal asked it to go, or can no
             # longer go anywhere: the request is settled here rather than
             # raising a duty whose next command cannot apply.
-            _settle(request, settled)
+            if _settle(request, settled):
+                source.note_settled(path)
             continue
         if waiting:
-            age = _waited_seconds(
-                request.get("requested_at"), (now or datetime.now(UTC)).isoformat()
-            )
+            age = _waited_seconds(request.get("requested_at"), moment.isoformat())
             if age is None or age <= WAITING_OBLIGATION_SECONDS:
                 continue
             checked_at = str(request.get("checked_at") or "unknown")
@@ -1300,8 +1610,7 @@ def failure_obligations(
                     0,
                     int(
                         (
-                            (now or datetime.now(UTC))
-                            - datetime.fromisoformat(request["finished_at"])
+                            moment - (parse_utc(request.get("finished_at")) or moment)
                         ).total_seconds()
                     ),
                 ),

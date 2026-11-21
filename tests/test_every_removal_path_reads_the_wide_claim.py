@@ -19,6 +19,19 @@ standing rather than remove it under the peer. Every path discovered here —
 releasing or reclaiming — decides liveness through the wide claim, so calling
 it directly must leave a parked run's tree in place.
 
+The wide claim has two spellings and both are wide: ``_live_pointer_worktrees``
+reads every live pointer, and ``_launch_pointer_worktrees`` reads the same set
+from a launch's own side. Neither consults what phase a pointer carries.
+
+A function that removes a tree this same body registered itself with ``git
+worktree add`` is not a removal path of a run's worktree: the path was
+generated here and never handed to a pointer. The exemption is identity of the
+freed path, so only a removal call that frees a name the registration's own
+path argument read may use it — the release helper's options (a run id, the
+trash root the move must land on) say what the tree is released *as*, not which
+tree it is, and a call tied to the registration by nothing but an option stays
+a removal path judged by the claim.
+
 Every case works on synthesised pointers, mounts and repositories under a
 temporary config home; no real fleet directory is read or written.
 """
@@ -45,7 +58,7 @@ promotion_module = importlib.import_module("reckon.crew.promotion")
 PROJECT = "wide-claim-removal-fixture"
 SESSION = "wide-claim-fixture-session"
 
-WIDE_CLAIM = "_live_pointer_worktrees"
+WIDE_CLAIMS = ("_live_pointer_worktrees", "_launch_pointer_worktrees")
 PHASE_GATED_CLAIM = "_live_worktree_claims"
 RELEASE_HELPER = "_release_worktree_whole"
 
@@ -135,18 +148,91 @@ def _references(node: ast.AST, name: str) -> bool:
     )
 
 
+def _is_registration_call(node: ast.AST) -> bool:
+    """Whether a call registers a worktree with ``git worktree add``."""
+    if not isinstance(node, ast.Call):
+        return False
+    argv = _literal_argv(node)
+    return any(
+        first == "worktree" and second == "add"
+        for first, second in itertools.pairwise(argv)
+    )
+
+
+def _registered_path(node: ast.Call) -> ast.AST | None:
+    """The path expression a ``git worktree add`` call registers, if any.
+
+    The path is the first argument after the ``add`` subcommand that is not a
+    flag, so ``git worktree add --detach <path> <rev>`` yields ``<path>``.
+    """
+    for index, argument in enumerate(node.args):
+        if not (isinstance(argument, ast.Constant) and argument.value == "add"):
+            continue
+        for later in node.args[index + 1 :]:
+            if (
+                isinstance(later, ast.Constant)
+                and isinstance(later.value, str)
+                and later.value.startswith("-")
+            ):
+                continue
+            return later
+    return None
+
+
+def _path_expression(node: ast.AST) -> ast.AST:
+    """The path a call argument denotes, with a ``str(...)`` cast stripped."""
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "str"
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        return node.args[0]
+    return node
+
+
+def _removes_own_registration(
+    node: ast.FunctionDef | ast.AsyncFunctionDef, call: ast.Call
+) -> bool:
+    """Whether a removal call frees the path this same body registered.
+
+    Identity is the freed path, not every name the call mentions: the release
+    helper takes options of its own — a run id, the trash root it must stay on
+    — and those are values about the tree, not the tree. A call whose only tie
+    to the registration is an option is still a removal path judged by the
+    claim, while a call that frees the very expression the registration read is
+    not.
+    """
+    registered: set[str] = set()
+    for child in ast.walk(node):
+        if not _is_registration_call(child):
+            continue
+        target = _registered_path(child)
+        if target is not None:
+            registered.add(ast.dump(_path_expression(target)))
+    if not registered:
+        return False
+    return any(
+        ast.dump(_path_expression(argument)) in registered for argument in call.args
+    )
+
+
 def _scan_source(source: str, module_key: str) -> dict[str, _RemovalPath]:
     """The removal paths in one module's source, keyed by module and function."""
     found: dict[str, _RemovalPath] = {}
     for node in ast.parse(source).body:
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        if not any(_is_removal_call(child) for child in ast.walk(node)):
+        removals = [child for child in ast.walk(node) if _is_removal_call(child)]
+        if not removals:
+            continue
+        if all(_removes_own_registration(node, call) for call in removals):
             continue
         key = f"{module_key}::{node.name}"
         found[key] = _RemovalPath(
             key=key,
-            reads_wide=_references(node, WIDE_CLAIM),
+            reads_wide=any(_references(node, name) for name in WIDE_CLAIMS),
             reads_phase_gated=_references(node, PHASE_GATED_CLAIM),
         )
     return found
@@ -195,7 +281,28 @@ def _driver_release_run_workspace(fleet: Path, tree: Path) -> None:
     assert "live run pointer" in str(result.get("worktree_withheld") or "")
 
 
+MEASURED_RUN = "r-20261003T120048839647-measurement-subject"
+
+
+def _driver_release_measurement_worktree(fleet: Path, tree: Path) -> None:
+    """A measurement run's own tree, which a parked peer also names. The
+    tree's path is shared, and a peer parked on an external wait holds its
+    share, so the release must leave the tree where it is."""
+    record = {
+        "run_id": MEASURED_RUN,
+        "worktree": str(tree),
+        "repo": str(fleet),
+        "measure_only": "the replay measures a landed section",
+    }
+    result = promotion_module._release_measurement_worktree(record)
+    assert result["released"] is False, result
+    assert "another live run names this worktree" in str(result.get("withheld") or "")
+
+
 REMOVAL_DRIVERS = {
+    "reckon/crew/promotion.py::_release_measurement_worktree": (
+        _driver_release_measurement_worktree
+    ),
     "reckon/crew/routing.py::_remove_worktree": _driver_remove_worktree,
     "reckon/crew/gc.py::garbage_collect": _driver_garbage_collect,
     "reckon/crew/routing.py::_save_and_release_worktree": (
@@ -303,3 +410,68 @@ def test_the_scan_flags_a_phase_gated_reclaim_path() -> None:
     planted = found["reckon/scratch.py::_scratch_reclaim"]
     assert planted.reads_phase_gated
     assert not planted.reads_wide
+
+
+def test_the_scan_reads_the_launch_side_view_as_the_wide_claim() -> None:
+    """A path reading the launch's side of the wide claim is protected.
+
+    ``_launch_pointer_worktrees`` keeps every peer's pointer and drops only
+    the launching run's own replaceable one, so a removal path that reads it
+    spares a parked peer exactly as ``_live_pointer_worktrees`` does.
+    """
+    source = (
+        "def _reclaim(repo, path):\n"
+        "    if _launch_pointer_worktrees().get(path):\n"
+        "        raise CrewError('claimed')\n"
+        "    _release_worktree_whole(repo, path)\n"
+    )
+    found = _scan_source(source, "reckon/scratch.py")
+    assert list(found) == ["reckon/scratch.py::_reclaim"]
+    assert found["reckon/scratch.py::_reclaim"].reads_wide
+
+
+def test_the_scan_exempts_only_a_tree_the_body_registers() -> None:
+    """The exemption covers a tree the body registers, never a tree it is
+    handed: a removal call that frees the registration's own path is exempt,
+    while one freeing anything else stays a removal path judged by the claim.
+    """
+    own = (
+        "def _scratch_checkout(repo, sha):\n"
+        "    target = scratch / 'tree'\n"
+        "    _git(repo, 'worktree', 'add', '--detach', str(target), sha)\n"
+        "    try:\n"
+        "        yield target\n"
+        "    finally:\n"
+        "        _git(repo, 'worktree', 'remove', '--force', str(target))\n"
+    )
+    assert _scan_source(own, "reckon/scratch.py") == {}
+
+    released = (
+        "def _scratch_checkout(repo, sha):\n"
+        "    target = scratch / 'tree'\n"
+        "    _git(repo, 'worktree', 'add', '--detach', str(target), sha)\n"
+        "    try:\n"
+        "        yield target\n"
+        "    finally:\n"
+        "        _release_worktree_whole(\n"
+        "            repo, target, run_id='landing-base', trash_root=scratch\n"
+        "        )\n"
+    )
+    assert _scan_source(released, "reckon/scratch.py") == {}
+
+    handed = (
+        "def _reclaim(repo, path):\n"
+        "    _git(repo, 'worktree', 'add', str(scratch / 'other'), 'HEAD')\n"
+        "    _git(repo, 'worktree', 'remove', str(path))\n"
+    )
+    found = _scan_source(handed, "reckon/scratch.py")
+    assert list(found) == ["reckon/scratch.py::_reclaim"]
+
+    option_only = (
+        "def _reclaim(repo, path):\n"
+        "    target = scratch / 'tree'\n"
+        "    _git(repo, 'worktree', 'add', str(target), 'HEAD')\n"
+        "    _release_worktree_whole(repo, path, trash_root=target)\n"
+    )
+    found = _scan_source(option_only, "reckon/scratch.py")
+    assert list(found) == ["reckon/scratch.py::_reclaim"]

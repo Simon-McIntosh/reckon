@@ -105,6 +105,9 @@ LIVE_CLASSIFICATION_FIELDS = (
     "budget_seconds",
     "classification",
     "commits_beyond_base",
+    # The promotion debt the classifier reads off the settled row, set for
+    # every classification so a caller may ask for it on any row.
+    "delivery",
     "detail",
     "effective_phase",
     "elapsed_seconds",
@@ -138,6 +141,9 @@ LIVE_CLASSIFICATION_FIELDS = (
     "needs_help_complete",
     "next_action",
     "node",
+    # The orientation the worker's first write must echo, carried on every row
+    # so a request for it is not refused on a run that has none.
+    "orientation_check",
     "phase",
     "plan",
     "process_alive",
@@ -154,9 +160,16 @@ LIVE_CLASSIFICATION_FIELDS = (
     "run_id",
     "session",
     "stored_phase",
+    # The one stuck verdict and its reason, carried on every row beside the
+    # classifier's own so this row and the drain view agree.
+    "stuck",
+    "stuck_reason",
     "terminal_age_seconds",
     "terminal_at",
     "wait_age_seconds",
+    # What could release a request held on its upstream waits, as the admission
+    # pass resolved it: progressing, idle or stranded.
+    "wait_class",
     "wait_condition_state",
     "waiting_seconds",
     "wait_key_defect",

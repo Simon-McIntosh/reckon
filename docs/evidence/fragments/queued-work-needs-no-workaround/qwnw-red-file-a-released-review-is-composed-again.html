@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-a-released-review-is-composed-again-landing">
+  <h3>A composed budget is not evidence that a worker spawned</h3>
+  <p>The file failed in two cases on the primary branch, both at the same
+  assertion: <code>_release()</code> returned <code>[]</code> where the review
+  the admission pass was meant to release was expected. The cause is a product
+  rule, so the verdict is <strong>product wrong</strong> and one product rule is
+  repaired.</p>
+  <p>Every dispatch composes its live pointer with
+  <code>reckon._backends.unknown_budget("no events yet")</code> before anything
+  launches, and <code>recovery_liveness._spawn_evidence</code> counted any
+  <code>budget</code> mapping as proof a worker had spawned. A launch that
+  stopped before it spawned therefore read as spawned for as long as its pointer
+  lived, so <code>_release_stranded_launches</code> never released a real
+  dispatch: the review kept its claim and its run directory, and the reviewed
+  run kept a dispatch record reading <code>dispatched</code>.</p>
+  <p>The reproduction, quoted from the base arm at the base revision, is the
+  release returning nothing for a pointer whose only remaining record is the
+  composition placeholder:</p>
+  <pre id="qwnw-red-file-a-released-review-is-composed-again-repro">FAILED tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again - AssertionError: assert [] == ['r-20261118T...834106a7c27d']
+FAILED tests/test_a_released_review_is_composed_again.py::test_a_released_review_of_a_gone_run_is_not_composed_again - AssertionError: assert [] == ['r-20261118T...5b9a7e8560bb']
+EXIT=1</pre>
+  <p>The probe behind the reading, on a pointer holding a pre-spawn phase, no
+  pid, no stream and the placeholder budget, gives the stranded reading; the
+  same pointer with a folded token count or a refusal gives the spawned
+  reading. Both directions fire, so the guard is not merely always-false:</p>
+  <pre id="qwnw-red-file-a-released-review-is-composed-again-probe">placeholder evidence False stranded True
+folded evidence True stranded False
+refusal evidence True stranded False
+nobudget evidence False stranded True</pre>
+  <table id="qwnw-red-file-a-released-review-is-composed-again-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base, tests importing <code>recovery_liveness</code> plus this file
+        (<code>baseline_importers-1794999361018529412.log</code>)</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>12 failed, both cases above among them</td>
+      </tr>
+      <tr>
+        <td>head, same population
+        (<code>after_importers-1794999506878660028.log</code>)</td>
+        <td><code>e27681fb7237f4712be4a05d7a225b45e05d46a8</code></td>
+        <td>10 failed; the two cases above pass and the ten are a subset of the
+        base's twelve</td>
+      </tr>
+      <tr>
+        <td>head gate, this file alone
+        (<code>scoped-gate-1794999041074633324.log</code>)</td>
+        <td><code>e27681fb7237f4712be4a05d7a225b45e05d46a8</code></td>
+        <td>2 passed, EXIT=0</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The ten failures the arms share are outside this node's change: the
+  in-harness liveness case fails identically at the base revision, and the
+  process-table, stopped-run and server-version cases are environment-tier
+  readings of the same partition. They are recorded under
+  <code>outside_scope</code>.</p>
+  <p>The repair is <code>recovery_liveness._budget_reports_a_reading</code>: a
+  budget block counts as spawn evidence only when it carries a reading — a
+  headroom label other than unknown, a numeric utilisation, a token count, a
+  cost, a rate-limit window, a threshold verdict or a refusal. A placeholder
+  that measures nothing is the launcher's own act, and a fold that read a
+  stream is separately evidence through the stream reader.</p>
+</section>

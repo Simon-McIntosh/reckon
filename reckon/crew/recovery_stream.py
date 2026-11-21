@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import math
 import re
-from functools import lru_cache
 from pathlib import Path
 from statistics import median
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
+from reckon._worker_fence import BackendError
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     WAITING_REQUEST_PHASES,
@@ -89,7 +89,16 @@ def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
     key = _completion_stamp_key(record)
     if key is not None and key in _COMPLETION_STAMPS:
         return _COMPLETION_STAMPS[key]
-    stamp = _terminal_stream_data(record).completed_at
+    try:
+        stamp = _terminal_stream_data(record).completed_at
+    except BackendError:
+        # A stream its backend's dialect refuses carries no finish stamp this
+        # reader can take. A pointer moved to another harness keeps the stream
+        # its first harness wrote, and the refusal used to leave every
+        # classification of that run, and with it the whole pass that was
+        # classifying the project. The answer is not kept, so the stamp is
+        # read again once the pointer and its stream agree.
+        return None
     if key is not None:
         if len(_COMPLETION_STAMPS) >= _COMPLETION_STAMPS_LIMIT:
             _COMPLETION_STAMPS.clear()
@@ -151,37 +160,61 @@ def _positive_rate(value: Any) -> float | None:
     return rate if math.isfinite(rate) and rate > 0 else None
 
 
-@lru_cache(maxsize=16)
-def _lane_reference_rates(
-    project: str, window_bucket: int
-) -> dict[tuple[str, str], tuple[float, ...]]:
-    """Every backend and model's recent committed rates, from one ledger read.
+#: One rate entry per run: its completion instant and its measured rate.
+_LaneRateEntry = tuple[float, float]
+_LaneRateContributions = dict[tuple[str, str], dict[Any, _LaneRateEntry]]
 
-    The rate a run is judged against is a per-lane median, but reading the
-    ledger is the cost. Keying that read on the lane as well made each lane and
-    model pay for its own decode of the whole ledger in every five-minute
-    bucket, and the station classifies runs of several lanes and several
-    projects on every tick, so one read per project and bucket now answers
-    every lane.
+_BUCKET_SECONDS = 300
+_REFERENCE_WINDOW_SECONDS = 7 * 86400
 
-    The read is bounded by the window it judges against rather than by the
-    ledger's length, because a station that pays a whole-history decode once
-    per bucket runs out of memory on a long history. ``activity_since`` filters
-    on the index's own activity scalar, so a warm index fetches only the rows
-    whose newest stamp is no older than the window's start. Every row that
-    completed inside the window has a completion stamp inside it too, and that
-    stamp is one of the stamps the activity scalar takes the maximum over, so
-    the bound admits a superset of the rows this function can use.
+#: Each project's last answered bucket and the contributions that answered it.
+#: A bucket roll then reads only the rows whose newest stamp reaches past the
+#: previous bucket's end, and drops the rows that aged out of the window,
+#: instead of decoding the window again. A project this process has not seen
+#: yet reads its window once. The population a project's window can hold is the
+#: bound on memory, and the projects kept are capped like the read cache was.
+_LANE_RATE_BUCKETS: dict[str, tuple[int, _LaneRateContributions]] = {}
+_LANE_RATE_BUCKETS_LIMIT = 16
+
+
+def _lane_rate_contributions(
+    project: str, *, activity_since: float
+) -> _LaneRateContributions | None:
+    """The usable rows a bounded ledger read returns, keyed by lane and run.
+
+    ``activity_since`` filters on the index's own activity scalar, which is the
+    newest of a row's dispatch, launch and completion stamps, so a bound at a
+    bucket's end admits every row that completed after it and any row that was
+    touched after it. The completion instant is kept beside the rate because
+    the caller drops a row when the window's start passes it. None means the
+    read failed, which the caller treats as a reason to widen the read once. If
+    the failure was a genuine defect, the fallback returns None too.
+
+    Inside a derivation the rows come from the history the derivation's own pass
+    already read, bounded to the same instant by the rule the index applies.
+    Both readers then name one ledger file through one decode rather than
+    decoding one index twice for one derivation's answer. Outside a derivation
+    there is no history to share, and this bounded read is what keeps a
+    long-lived monitor from decoding a whole history it will not use.
     """
     from reckon import ledger as ledger_module
+    from reckon.crew import obligations as obligations_module
 
-    end = window_bucket * 300
-    start = end - 7 * 86400
-    try:
-        rows = ledger_module.load(project, activity_since=start)[0]["runs"]
-    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
-        return {}
-    rates: dict[tuple[str, str], list[float]] = {}
+    shared = obligations_module.derivation_run_rows(project)
+    if shared is None:
+        try:
+            rows = ledger_module.load(project, activity_since=activity_since)[0]["runs"]
+        except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
+            return None
+    else:
+        rows = [
+            row
+            for row in shared
+            if isinstance(row, Mapping)
+            and (moment := ledger_module.run_activity_seconds(row)) is not None
+            and moment >= activity_since
+        ]
+    contributions: _LaneRateContributions = {}
     for row in rows:
         if not isinstance(row, Mapping):
             continue
@@ -189,7 +222,7 @@ def _lane_reference_rates(
         if not isinstance(agent, Mapping):
             continue
         completed = parse_utc(str(row.get("completed_at") or ""))
-        if completed is None or not start <= completed.timestamp() <= end:
+        if completed is None:
             continue
         throughput = row.get("throughput")
         if not isinstance(throughput, Mapping):
@@ -198,8 +231,114 @@ def _lane_reference_rates(
         if rate is None:
             continue
         lane = (str(row.get("backend") or ""), str(agent.get("model") or ""))
-        rates.setdefault(lane, []).append(rate)
-    return {lane: tuple(values) for lane, values in rates.items()}
+        stamp, rate_value = completed.timestamp(), rate
+        # A row is identified by its run id so a row the next bucket's read
+        # returns again replaces its entry rather than counting twice. A row
+        # without one — an imported or hand-built fixture — is identified by
+        # the facts a lane's median sees, so distinct rows still count apart.
+        identity: Any = str(row.get("run_id") or "") or (
+            "",
+            stamp,
+            rate_value,
+        )
+        contributions.setdefault(lane, {})[identity] = (stamp, rate_value)
+    return contributions
+
+
+def _lane_rate_window(
+    contributions: _LaneRateContributions, start: float, end: float
+) -> _LaneRateContributions:
+    """The contributions the window admits, and nothing else.
+
+    The previous bucket's contributions are both the roll's working set and
+    the answer it stores, so a row the new window's start has passed is
+    removed here rather than merely filtered out of the returned rates. A
+    long-lived process's memory and its per-bucket walk are then bounded by
+    the population the window can hold, not by how long it has been reading.
+    """
+    windowed: _LaneRateContributions = {}
+    for lane, entries in contributions.items():
+        kept = {
+            run_id: entry
+            for run_id, entry in entries.items()
+            if start <= entry[0] <= end
+        }
+        if kept:
+            windowed[lane] = kept
+    return windowed
+
+
+def _lane_reference_rates(
+    project: str, window_bucket: int
+) -> dict[tuple[str, str], tuple[float, ...]]:
+    """Every backend and model's recent committed rates, from one ledger read.
+
+    The rate a run is judged against is a per-lane median, but reading the
+    ledger is the cost. One read per project answers every lane, and the read
+    is bounded by the window it judges against rather than by the ledger's
+    length, because a station that pays a whole window every five minutes on a
+    long history runs out of memory.
+
+    Between two consecutive buckets the window changes only by the rows that
+    completed since the previous bucket and the rows that aged out of it, so a
+    bucket roll reads the rows whose newest stamp reaches past the previous
+    bucket's end and folds them into the previous bucket's contributions. A
+    project with no previous bucket, or one that skipped a bucket, still reads
+    its window once. Whatever the path, every lane's median is the median over
+    exactly the rows completed inside the window.
+    """
+    end = window_bucket * _BUCKET_SECONDS
+    start = end - _REFERENCE_WINDOW_SECONDS
+    previous = _LANE_RATE_BUCKETS.get(project)
+    if previous is not None and previous[0] == window_bucket:
+        return _lane_rates_from(previous[1], start, end)
+    contributions: _LaneRateContributions | None = None
+    if previous is not None and previous[0] == window_bucket - 1:
+        contributions = {lane: dict(entries) for lane, entries in previous[1].items()}
+        added = _lane_rate_contributions(
+            project, activity_since=previous[0] * _BUCKET_SECONDS
+        )
+        if added is None:
+            contributions = None
+        else:
+            for lane, entries in added.items():
+                contributions.setdefault(lane, {}).update(entries)
+    if contributions is None:
+        contributions = _lane_rate_contributions(project, activity_since=start)
+    if contributions is None:
+        _LANE_RATE_BUCKETS.pop(project, None)
+        return {}
+    contributions = _lane_rate_window(contributions, start, end)
+    _LANE_RATE_BUCKETS.pop(project, None)
+    _LANE_RATE_BUCKETS[project] = (window_bucket, contributions)
+    while len(_LANE_RATE_BUCKETS) > _LANE_RATE_BUCKETS_LIMIT:
+        _LANE_RATE_BUCKETS.pop(next(iter(_LANE_RATE_BUCKETS)))
+    return _lane_rates_from(contributions, start, end)
+
+
+def _lane_rates_from(
+    contributions: _LaneRateContributions, start: float, end: float
+) -> dict[tuple[str, str], tuple[float, ...]]:
+    """The window's rates by lane, in the order the ledger read would give."""
+    rates: dict[tuple[str, str], tuple[float, ...]] = {}
+    for lane, entries in contributions.items():
+        kept = [
+            (completed, run_id, rate)
+            for run_id, (completed, rate) in entries.items()
+            if start <= completed <= end
+        ]
+        if kept:
+            kept.sort()
+            rates[lane] = tuple(rate for _completed, _run_id, rate in kept)
+    return rates
+
+
+def _clear_lane_reference_rates() -> None:
+    """Forget every project's bucket, so the next read widens to its window."""
+    _LANE_RATE_BUCKETS.clear()
+
+
+_lane_reference_rates.cache_clear = _clear_lane_reference_rates  # type: ignore[attr-defined]
 
 
 def _historical_reference_rate(
@@ -793,6 +932,47 @@ def _result_turned_no_tokens(event: Mapping[str, Any]) -> bool:
     return True
 
 
+def _admission_marks(
+    state: tuple[str, str, bool], events: Sequence[Mapping[str, Any]]
+) -> tuple[str, str, bool]:
+    """Fold a stream's records into the marks an admission refusal leaves.
+
+    The refusal text and the terminal reason are the last ones the stream
+    states, and a zero-token result anywhere is remembered: a stream that wrote
+    an attempt and then a retry does not lose the refusal of the attempt that
+    was refused. Folding forward lets a later read extend the state it already
+    holds instead of re-reading the stream from its first record.
+    """
+    refusal_reason, terminal_reason, zero_token_error = state
+    for event in events:
+        kind = str(event.get("type") or "")
+        if kind == "assistant":
+            message = event.get("message")
+            if not isinstance(message, Mapping):
+                continue
+            if str(message.get("model") or "") != _SYNTHETIC_MODEL:
+                continue
+            if str(event.get("error") or "") != "invalid_request":
+                continue
+            text = _assistant_refusal_text(message)
+            if text:
+                refusal_reason = text
+        elif kind == "result":
+            terminal_reason = str(event.get("terminal_reason") or "")
+            if _result_turned_no_tokens(event):
+                zero_token_error = True
+    return refusal_reason, terminal_reason, zero_token_error
+
+
+def _admission_scan(log: Path) -> tuple[str, str, bool]:
+    """The admission marks for a stream, folding only the bytes it gained."""
+    from reckon import _backends
+
+    return _backends.cached_stream_fold(
+        log, "admission", _admission_marks, ("", "", False)
+    )
+
+
 def _admission_refusal(
     record: Mapping[str, Any], *, memo: dict[str, Any] | None = None
 ) -> dict[str, Any] | None:
@@ -814,9 +994,10 @@ def _admission_refusal(
     cannot reach this reading. None means the ordinary dead-process arms
     classify the run, so this gate never widens them.
 
-    The scan's result is memoised against the stream's stat identity. Decoded
-    events come from the shared stream cache, so a grown stream parses only its
-    append and an unchanged stream needs no decoding here.
+    The scan's result is memoised against the stream's stat identity. The marks
+    come from the per-stream fold, which holds the stream's own record sequence
+    and folds only the bytes a stream gained, so a grown stream costs its append
+    and an unchanged stream costs nothing here.
     """
     if record.get("launch") != "cli":
         return None
@@ -828,33 +1009,11 @@ def _admission_refusal(
     if isinstance(cached, Mapping) and str(cached.get("ident") or "") == ident:
         refusal = cached.get("refusal")
         return dict(refusal) if isinstance(refusal, Mapping) else None
-    refusal_reason = ""
-    terminal_reason = ""
-    zero_token_error = False
-    from reckon import _backends
-
     try:
-        events, _malformed = _backends.cached_stream_events(log, whole=True)
+        refusal_reason, terminal_reason, zero_token_error = _admission_scan(log)
         size = log.stat().st_size
     except OSError:
         return None
-    for event in events:
-        kind = str(event.get("type") or "")
-        if kind == "assistant":
-            message = event.get("message")
-            if not isinstance(message, Mapping):
-                continue
-            if str(message.get("model") or "") != _SYNTHETIC_MODEL:
-                continue
-            if str(event.get("error") or "") != "invalid_request":
-                continue
-            text = _assistant_refusal_text(message)
-            if text:
-                refusal_reason = text
-        elif kind == "result":
-            terminal_reason = str(event.get("terminal_reason") or "")
-            if _result_turned_no_tokens(event):
-                zero_token_error = True
     _count_admission_bytes(size)
     refusal: dict[str, Any] | None = None
     if refusal_reason and terminal_reason == "blocking_limit" and zero_token_error:

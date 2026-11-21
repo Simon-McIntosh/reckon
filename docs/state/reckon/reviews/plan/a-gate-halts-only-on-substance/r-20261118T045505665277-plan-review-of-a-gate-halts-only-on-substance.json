@@ -1,0 +1,141 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s11": "7d98df4b9dd8542989e1e17324c6a5b11112d7a89e1867652cbceac4551c1d65"
+      },
+      "reason": "s11's body and its declared wait were rewritten to answer reasoning-1, done_when-1 and wiring-1 of the review at v50; no other section changed",
+      "units": [
+        "s11"
+      ],
+      "when": "2026-11-18T05:53:47.942598+00:00"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T05:20:23Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html:88",
+      "id": "reasoning-1",
+      "reason": "as written a node would build an already-shipped cycle-breaker, and the review of the run that requested it cannot even be reproduced at base.",
+      "text": "s11 says \"the review cannot be filed without the waived delta, and the waiver cannot be recorded without a filed review\", but at base `_record_suite_delta_waiver` (reckon/crew_run_commands.py:3578, called at :3995 before any promotion check) writes the waiver onto the run's pointer on the completion request itself and its docstring says so (\"including a request the promotion then refuses: ... the reviewer needs the waiver in hand before the landing that would record it can succeed\"), while the cited `crew repair --review` refusal \"repaired review remains unfileable: missing or invalid added_failure_count\" is the null-count branch at reckon/crew/review.py:1287, not the no-waiver branch, so the quoted evidence cannot show the cycle it is offered to prove",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html:88",
+      "id": "done_when-1",
+      "reason": "an ambiguous base arm either measures nothing or measures the store rather than \u00a711's endpoint, so the node's whole gate rests on it.",
+      "text": "the negative control asserts that at base case (a) is refused with \"no review of the promoted revision is stored\" or \"missing or invalid added_failure_count\", but on a run never completed before a review record carrying the waived count is refused when it is stored by `waived_failure_count_refusals` (reckon/crew/review.py:1324) for having no recorded waiver, so the arm fails in the test's setup rather than at either named refusal, and once the record is merely delivered the same completion call records the waiver at request time before the review check runs, so case (a) may pass at base with no control left",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html:21",
+      "id": "wiring-1",
+      "reason": "both upstream sections are declared `done` and landed, so the missing wait changes no dispatch or gate today.",
+      "text": "the section-declarations map moves s11 to `implementable` but `plan-section-depends-on` still carries only `{\"s10\":[\"a-gate-halts-only-on-substance#s9\"]}`, so \u00a711's dependence on the \u00a79/\u00a710 waived-form mechanism is nowhere declared",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "0235228bcbb8340debec6f95877273f209e4c10d",
+  "plan_fingerprint": "8947560b01079158b19da0a8f63cd86eb1c98d04c7d249e2a7cffb6db2881007",
+  "plan_slug": "a-gate-halts-only-on-substance",
+  "plan_version": 50,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "0235228bcbb8340debec6f95877273f209e4c10d",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "right: the waiver is recorded on the completion request before any check, so filing works after a first refused completion, which is how nova filed its waived review; \u00a711 is rewritten around the defect nova hit next, a completion that raises TypeError in normalized_suite_observation on an arm with a null count",
+      "reason": "",
+      "when": "2026-11-18T05:43:44.489572+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "0235228bcbb8340debec6f95877273f209e4c10d",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the negative control is now the base revision raising TypeError at reckon/ledger.py near 563 for a waived completion whose arms carry null counts, set up with the waiver recorded and the review filed first",
+      "reason": "",
+      "when": "2026-11-18T05:43:50.523605+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "0235228bcbb8340debec6f95877273f209e4c10d",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "plan-section-depends-on now declares s11 waiting on a-gate-halts-only-on-substance#s10",
+      "reason": "",
+      "when": "2026-11-18T05:43:58.688872+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "0235228bcbb8340debec6f95877273f209e4c10d",
+      "commit_basis": "edit",
+      "note": "the negative control is now the base revision raising TypeError at reckon/ledger.py near 563 for a waived completion whose arms carry null counts, set up with the waiver recorded and the review filed first",
+      "reason": "",
+      "when": "2026-11-18T05:43:50.523605+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "0235228bcbb8340debec6f95877273f209e4c10d",
+      "commit_basis": "edit",
+      "note": "right: the waiver is recorded on the completion request before any check, so filing works after a first refused completion, which is how nova filed its waived review; \u00a711 is rewritten around the defect nova hit next, a completion that raises TypeError in normalized_suite_observation on an arm with a null count",
+      "reason": "",
+      "when": "2026-11-18T05:43:44.489572+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "0235228bcbb8340debec6f95877273f209e4c10d",
+      "commit_basis": "edit",
+      "note": "plan-section-depends-on now declares s11 waiting on a-gate-halts-only-on-substance#s10",
+      "reason": "",
+      "when": "2026-11-18T05:43:58.688872+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-gate-halts-only-on-substance/r-20261118T045505665277-plan-review-of-a-gate-halts-only-on-substance.json",
+  "review_run_id": "r-20261118T045505665277-plan-review-of-a-gate-halts-only-on-substance",
+  "reviewed_blob_sha": "0bcbf087109fc7185c56ffdd882b4f442398d9c5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recorded_suite_delta_waiver` resolves to the line s11 names (reckon/crew/review.py:1247) and the cited refusal resolves to the constant at reckon/crew/promotion_checks.py:1704; no other resolvable anchor is named.",
+    "done_when": "a finding \u2014 s11's negative control names two `crew complete` refusals, but at base the case-(a) precondition cannot be reached and the named refusals may not be producible (a-gate-halts-only-on-substance.html:88).",
+    "evidence_paths": "pass \u2014 s11 puts each arm's log under the run directory and the gate under the run's own record, no scratchpad path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number is carried into a symbol or file name by s11; write paths are plainly named.",
+    "reasoning": "a finding \u2014 s11's stated root cause (a cycle in which the waiver cannot be recorded without a filed review) is contradicted by the base revision, which records the waiver on the run when the completion is asked for, even when it then refuses (a-gate-halts-only-on-substance.html:88).",
+    "single_goal": "pass \u2014 s11 names one deliverable fact (\u00a711's title, Deliverable and done-when all say \"lands from its first completion\").",
+    "wiring": "a finding \u2014 s11 declares no plan-section-depends-on on the \u00a79/\u00a710 mechanism it builds on, though both are already `done` so nothing is held."
+  },
+  "section_digests": {
+    "_document": "ce590df0d3998e21c14112cd46dc289d099eef4170ef874fff3665648a071254",
+    "s1": "da96e9775c5ac3c922e7c9262b6c95659f8a63dd7ecaefbf9c9ea72c3d506b61",
+    "s10": "4e1c5c0d2515be5c19dca2e0f81107e36e2a3c581b2b9c59dec3fe77094e64b8",
+    "s11": "24156f0ff53236003d761cacfd8927ef87b4cc9cbb5b62bf6fecd571db568a7e",
+    "s2": "34659f8a9f7d766af00602047920116071d6c4a45beb59504f09c79856fe4449",
+    "s3": "7d5900898dccbca711f2ba5f009a9d77a8106e6c95850afa29ea353bee133ea1",
+    "s4": "0e123dd962d8cd12c2e71ad44abb85e97ccaf736d952b19140641c3426beab23",
+    "s5": "8693ffa47dece4b7d7becaed1cc17e2eae2192270529686416237848fcfe3d7d",
+    "s6": "c1a4e9a4b81527a7a273e421018eb3a5b58b491f8eb6afe57798b77df653c903",
+    "s7": "02f674f3ab07d57d2a9a4a13805c075967cd59e063bf39eb470a940c1e9e9897",
+    "s8": "6a840e82c44d918c74c527bb0bc07eed5fa4efdfb5dc69fc1e3b7dfbe1ff477f",
+    "s9": "c8b306703470d37f30d14f4daf3bab517ea9c8695de15fd5f03a0fa83a6a3408"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T05:36:36.971842+00:00",
+  "total": null
+}

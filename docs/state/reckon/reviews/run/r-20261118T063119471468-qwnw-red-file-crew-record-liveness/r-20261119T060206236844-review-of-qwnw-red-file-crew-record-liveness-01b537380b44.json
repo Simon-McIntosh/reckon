@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:59:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063119471468-qwnw-red-file-crew-record-liveness/manifest.md",
+      "line": 30,
+      "severity": "non-blocking",
+      "text": "The import arm exists in the manifest only as 'same ids' prose: line 30 records counts (base 4 failed / 156 passed, head 4 failed / 156 passed) and names no failing id and no revision, while the two JSON objects the record does carry (baseline_suite/after_suite at manifest.md:24-25) name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, not the 25-file import arm. The done_when asks both arm results to be recorded as inline JSON carrying full 40-character revisions, so the shape is unmet in the record promotion reads; the substance is verifiable and I verified it, comparing import-arm-base.log and import-arm-head.log (25 test files each, identical four FAILED ids, both EXIT=1)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063119471468-qwnw-red-file-crew-record-liveness/manifest.md",
+      "line": 34,
+      "severity": "non-blocking",
+      "text": "The done_when's 'ruff check and ruff format --check report nothing new on the changed paths' clause is answered by a claim in evidence_inputs with no command and no log path, so the lint result is asserted rather than recorded and cannot be re-run from the record."
+    }
+  ],
+  "notes": "Scores are per dimension and independent. Durability: the diff adds no assertion, so the guard is the pre-existing case at tests/test_crew_record_liveness.py:181 (test_no_module_decides_record_liveness_with_a_bare_pid) whose assertion is 'assert offenders == {}' over an AST scan of LIVENESS_MODULES; reinstating the regression puts the record['pid'] shape back in recovery_liveness.py, which is one of the scanned modules, and the base log records exactly that id failing with 'assert {\\'recovery_li...cord\\': True}]} == {}' at 42fe90d0 with EXIT=1, so the assertion is independent of any value the test supplied and reddens on the exact code change it guards. The scanner carries its own positive control at tests/test_crew_record_liveness.py:193 ensuring the scan is not blind. It is pre-existing rather than added by this run, so it is not evidence the run wrote but it is a real guard over the landed line. Reuse: the change routes the stopped arm through runs.record_process_alive... see the record_process_alive owner at reckon/crew/process_liveness.py:453, which already owns the start-tick comparison and the placed-run and session-walk rules, and it matches the idiom the same module already uses at reckon/crew/recovery_liveness.py:312 (_worker_record_liveness hands in its own probe) and at :1777, so no capability is forked. Fit: one expression swapped, no new names, two conventional commit subjects with bodies. Added failures: baseline_suite and after_suite both record completed true, exit_status 0, failure_count 0 with empty failure_ids, so the delta is zero added failures, derived from those two gate logs rather than from the worker's account.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T060206236844-review-of-qwnw-red-file-crew-record-liveness-01b537380b44",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_commits": [
+    "e65dc54e0477ed60c4f0dda74b735de6cca26628",
+    "01b537380b448f063a72cf665a4ba949cc41d953"
+  ],
+  "reviewed_head_sha": "01b537380b448f063a72cf665a4ba949cc41d953",
+  "reviewed_node": "qwnw-red-file-crew-record-liveness",
+  "reviewed_run_id": "r-20261118T063119471468-qwnw-red-file-crew-record-liveness",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:18:20.691625+00:00",
+  "total": 113,
+  "verdicts": {
+    "call_sites": "The changed line sits in local_liveness, and the production readers of that function are reckon/crew/routing.py:1174, reckon/crew/dispatch_claims.py:2544, reckon/crew/recovery_watch.py:1743, reckon/crew/resumption.py:269 and :1589, reckon/crew/recovery_classification.py:1519 and :3696, reckon/crew/runs.py:3470, reckon/sprint_liveness.py:147 and reckon/crew_run_commands.py:2971, all reached through the re-export at reckon/crew/recovery.py:128; each reads a tuple answer from the same function, so the swapped arm is reachable from every one of them.",
+    "diff": "Read both commits against base 42fe90d0: e65dc54e04 replaces process_alive(record['pid']) with runs.record_process_alive(record, process_alive) in local_liveness at reckon/crew/recovery_liveness.py:1779, and 01b537380b adds the 46-line evidence fragment; nothing else in the tree moved.",
+    "done_when": "Read the clauses against the artefacts: base run first with its failing id (base-run-tests-test_crew_record_liveness.log, EXIT=1, test_no_module_decides_record_liveness_with_a_bare_pid), the head run on all_debug with SLURM_JOB_ID unset and output on shared storage (fragment:29-38), the cause with 'Verdict: product wrong' (fragment:12), the negative control logged beside the head run (fragment:14-26), the import arm over 25 files with identical four failing ids at both revisions (import-arm-base.log / import-arm-head.log), the commits field carrying two full ids (manifest.md:5), and no assertion deleted or weakened (the diff touches no test file) \u2014 the one clause not met in shape is that the import arms are not recorded as inline JSON with full revisions (see FINDING manifest.md:30).",
+    "goal": "Read the node goal 'Make tests/test_crew_record_liveness.py pass in full on the primary branch' against scoped-gate-1795066389101643123.log, which records '9 passed in 1.59s' with EXIT=0 at 01b537380b448f063a72cf665a4ba949cc41d953, and against head-run-tests-test_crew_record_liveness.log, '9 passed in 2.05s' EXIT=0 at e65dc54 as job 1329763 on all_debug with SLURM_JOB_ID unset; the same file at base 42fe90d0 is '1 failed, 8 passed' EXIT=1, so the file is green at the head and was red at the base.",
+    "manifest": "Read manifest.md: status complete, commits e65dc54e0477ed60c4f0dda74b735de6cca26628 and 01b537380b448f063a72cf665a4ba949cc41d953, the gate command on the tests line, five test_logs, a negative_control_log with its note, and baseline_suite/after_suite as inline JSON both at exit_status 0, completed true, failure_count 0, failure_ids []; the import arms are prose only (manifest.md:30) and the lint clause is unlogged (manifest.md:34).",
+    "write_paths": "Read the declared write paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its html file, its figures directory) against git diff --stat 42fe90d0..01b5373: the two changed paths are reckon/crew/recovery_liveness.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-record-liveness.html, both inside the declared scope, and no test file is touched."
+  }
+}

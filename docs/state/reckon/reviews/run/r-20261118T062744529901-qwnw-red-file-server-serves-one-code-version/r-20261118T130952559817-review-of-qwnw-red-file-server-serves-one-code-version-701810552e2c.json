@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite-1795007209263606524-headered.log records 58 passed EXIT=0 at 39c536f2 with no FAILED line and after_suite-1795007209263606524-headered.log records 58 passed EXIT=0 at 701810552e2c with no FAILED line, so the added set difference is empty (0); the path the manifest actually cites, baseline_suite-1795006141258608797-headered.log, also reads 58 passed EXIT=0 at 39c536f2, so the count is 0 under either arm file.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:2517 (Handler._refuse_stale_code)",
+    "reckon/serve.py:3091",
+    "reckon/serve.py:4094",
+    "reckon/crew/recovery_liveness.py:1793 (the line the fixture rewrites)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:13:15Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suite arms name two test files that import nothing this node changed, so the done-when's importing arm is measured on a population that cannot fail on this change."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-server-serves-one-code-version.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate in the fragment names 00fdb25847 while the node landed at 701810552e2c, so the fragment does not carry the landed head's run."
+    },
+    {
+      "file": "tests/test_server_serves_one_code_version.py",
+      "line": "205",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert changed != source is entailed by the preceding count assertion and cannot fail independently."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all three commits against 39c536f2; 00fdb25847 re-anchors the lazy-import mutation, 19bae56778 and 701810552e2c write the fragment, 2 paths and no product source.",
+    "done_when": "the done_when asks for that file passing in full at head, an importing arm recorded as inline JSON with 40-character revisions, and the base red log beside the head log in the fragment; the red and green receipts exist but manifest.md:16-17 arm the suite over two unrelated test files.",
+    "goal": "the node goal is to make tests/test_server_serves_one_code_version.py pass in full on the primary branch; scoped-gate-1795006979582788371.log records 4 passed EXIT=0 at 701810552e2c with SLURM_JOB_ID=unset.",
+    "manifest": "read; status complete, three commits, the scoped gate command, two 58-passed suite arms and a negative control disabling Handler._refuse_stale_code, each confirmed against its log.",
+    "write_paths": "the declared set is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html plus a figures directory; the two delivered paths are inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_server_serves_one_code_version.py:204 reddens on the reinstated anchor, proven at base by AssertionError: assert 0 == 1, while :205 is entailed by it.",
+    "evidence": "manifest.md:16-17 arm the done-when's importing arm over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cannot fail on this change.",
+    "fit": "the repair keeps the assertion shape at tests/test_server_serves_one_code_version.py:202-207 and the fragment follows its siblings under docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal_fidelity": "scoped-gate-1795006979582788371.log records 4 passed EXIT=0 at 701810552e2c against base-arm-target-test.log 1 failed, 3 passed at 39c536f2.",
+    "reuse": "the diff adds no definition to duplicate, only a re-anchored literal inside tests/test_server_serves_one_code_version.py:202.",
+    "scope_discipline": "every path in git diff 39c536f2..701810552e2c lies inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_server_serves_one_code_version.py pass in full on the primary branch; scoped-gate-1795006979582788371.log records 4 passed EXIT=0 at 701810552e2c with SLURM_JOB_ID=unset.\nVERDICT done_when: the done_when asks for that file passing in full at head, an importing arm recorded as inline JSON with 40-character revisions, and the base red log beside the head log in the fragment; the red and green receipts exist but manifest.md:16-17 arm the suite over two unrelated test files.\nVERDICT write_paths: the declared set is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html plus a figures directory; the two delivered paths are inside it.\nVERDICT manifest: read; status complete, three commits, the scoped gate command, two 58-passed suite arms and a negative control disabling Handler._refuse_stale_code, each confirmed against its log.\nVERDICT diff: read all three commits against 39c536f2; 00fdb25847 re-anchors the lazy-import mutation, 19bae56778 and 701810552e2c write the fragment, 2 paths and no product source.\nCALL_SITES: reckon/serve.py:2517 (Handler._refuse_stale_code), reckon/serve.py:3091, reckon/serve.py:4094, reckon/crew/recovery_liveness.py:1793 (the line the fixture rewrites)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: scoped-gate-1795006979582788371.log records 4 passed EXIT=0 at 701810552e2c against base-arm-target-test.log 1 failed, 3 passed at 39c536f2.\nSCORE evidence: 14\nJUSTIFICATION evidence: manifest.md:16-17 arm the done-when's importing arm over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cannot fail on this change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 39c536f2..701810552e2c lies inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_server_serves_one_code_version.py:204 reddens on the reinstated anchor, proven at base by AssertionError: assert 0 == 1, while :205 is entailed by it.\nSCORE fit: 18\nJUSTIFICATION fit: the repair keeps the assertion shape at tests/test_server_serves_one_code_version.py:202-207 and the fragment follows its siblings under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition to duplicate, only a re-anchored literal inside tests/test_server_serves_one_code_version.py:202.\nFINDING manifest.md:16 non-blocking: the suite arms name two test files that import nothing this node changed, so the done-when's importing arm is measured on a population that cannot fail on this change.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-server-serves-one-code-version.html:11 non-blocking: the head gate in the fragment names 00fdb25847 while the node landed at 701810552e2c, so the fragment does not carry the landed head's run.\nFINDING tests/test_server_serves_one_code_version.py:205 non-blocking: assert changed != source is entailed by the preceding count assertion and cannot fail independently.",
+  "review_node": "review-of-qwnw-red-file-server-serves-one-code-version-701810552e2c",
+  "review_run_id": "r-20261118T130952559817-review-of-qwnw-red-file-server-serves-one-code-version-701810552e2c",
+  "reviewed_base_sha": "39c536f25e471db929ddf93c09240e236f22a637",
+  "reviewed_head_sha": "701810552e2c2bdff39fff4ae9edf2027f445684",
+  "reviewed_run_id": "r-20261118T062744529901-qwnw-red-file-server-serves-one-code-version",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T130952559817-review-of-qwnw-red-file-server-serves-one-code-version-701810552e2c"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:44:29.343513+00:00",
+  "total": 110
+}

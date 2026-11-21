@@ -1,0 +1,94 @@
+<section id="qwnw-red-file-one-refusal-on-main-landing">
+  <h2>One refused promotion reports every failing independent precondition</h2>
+
+  <p><strong>What was wrong.</strong> <code>tests/test_one_refusal_on_main.py</code>
+  asks the promotion to report two independent preconditions in one refusal — an
+  unmoved plan impl, and a passing gate whose check names its command but no log —
+  with the leading refusal's wording unchanged and the two in the order the
+  promotion checks them. On the primary branch at
+  <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code> the first of the three
+  cases fails, and the refusal it reads</p>
+
+  <blockquote id="qwnw-red-file-one-refusal-on-main-quote"><code>a gate check is
+  a command and the evidence it ran against: pass --gate-command and
+  --gate-log-path (or --gate-log-digest) together, or neither, because a command
+  beside a log the promotion found elsewhere records a run that never
+  happened</code></blockquote>
+
+  <p>names neither precondition the case asserts, because the half-stated check
+  is refused inside <code>_default_gate_evidence_from_manifest</code> before the
+  promotion's precondition sweep runs at all.</p>
+
+  <p><strong>Cause and verdict: the product.</strong> One cause, and the product
+  is wrong, not the test. The refusal's own stated reason is that the missing
+  half <em>would be derived</em> from the manifest or the stored record — the
+  hazard is a completed check, pairing the caller's half with evidence found
+  elsewhere. A run whose manifest and record supply nothing for the other half
+  completes nothing, and its check is simply missing a field, which
+  <code>ledger.gate_check_missing_fields</code> already names inside the
+  promotion's one-refusal sweep. Raising up front also contradicts the contract
+  that file asserts: a refusal assembled from every independent precondition, in
+  the order they run. So the refusal now stands at each place the missing half
+  would be filled, and a check the fill completes nothing for falls through to
+  the gate precondition beside every other precondition. No assertion was
+  deleted, weakened or rewritten, and no test file changed.</p>
+
+  <p><strong>The guard still fires.</strong> A half-stated check the manifest
+  <em>can</em> complete is refused wherever it would be completed: a command
+  with no log is refused when the manifest's own <code>test_logs</code> entry
+  would be cited, a log with no command when the manifest's <code>tests</code>
+  line or the cited log's header names the command, and both directions on a
+  review run whose stored record supplies the whole check.
+  <code>test_a_review_runs_promotion_derives_its_own_gate.py::test_case6</code>
+  (both arms) passes, and the review-run refusal precedes the derived-log
+  capture, so a refused promotion leaves no file behind it.</p>
+
+  <h3 id="qwnw-red-file-one-refusal-on-main-measured">Measured</h3>
+
+  <p>Each arm is a log whose header names the revision, tree and command — and,
+  for a scratch tree, the module under test as imported — and whose last line
+  reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-one-refusal-on-main-arms">
+    <caption>Arms. Full commit ids; the widened arm is every test file that
+    imports the changed module plus the target file.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the target file, base (negative control)</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code>, worktree</td>
+        <td>1 failed, 2 passed, 1 failing id,
+        <code>EXIT=1</code></td></tr>
+      <tr><td>the target file, head, as a job on <code>all_debug</code></td>
+        <td><code>955abd6e171c2a494f7a49a84a6c885bbcfda2f4</code>, scratch tree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>widened arm, base</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code>, extraction</td>
+        <td>23 failed, 255 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>widened arm, head</td>
+        <td><code>955abd6e171c2a494f7a49a84a6c885bbcfda2f4</code>, worktree</td>
+        <td>22 failed, 256 passed, <code>EXIT=1</code></td></tr>
+<tr><td>widened arm, delta</td>
+        <td>base ids against head ids</td>
+        <td>0 added failures, 1 fixed:
+        <code>tests/test_one_refusal_on_main.py::test_two_independent_preconditions_are_reported_by_one_refusal</code></td></tr>
+      <tr><td>declared suite arms</td>
+        <td><code>23b90169</code> and <code>955abd6e</code>, <code>all_debug</code></td>
+        <td>0 failures, <code>EXIT=0</code> both</td></tr>
+    </tbody>
+  </table>
+
+  <p>The one failing id the negative control carries, and the head does not, is
+  <code>tests/test_one_refusal_on_main.py::test_two_independent_preconditions_are_reported_by_one_refusal</code>.
+<p>The 22 ids the widened arm still fails belong to seven other test files of
+  the same section, are identical on both arms, and predate this change; they
+  are reported as outside this node's scope rather than touched.</p>
+
+  <p><strong>Probe of the guard's reach.</strong> Driving
+  <code>_default_gate_evidence_from_manifest</code> directly: with a manifest
+  holding <code>test_logs: [gate.log]</code>, a command with no log and a log
+  with no command are both refused naming the flags; with a manifest holding
+  neither, the same half-stated check is returned unchanged and
+  <code>ledger.gate_check_missing_fields</code> answers
+  <code>['log path or digest']</code>, which is the wording the target file
+  asserts.</p>
+</section>

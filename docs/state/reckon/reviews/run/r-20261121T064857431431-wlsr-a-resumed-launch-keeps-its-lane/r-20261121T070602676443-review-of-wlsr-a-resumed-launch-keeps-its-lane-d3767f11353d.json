@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:252 admit_once -> gate_admits_request -> drainer_serves_the_local_lane"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:07:10Z",
+  "findings": [
+    {
+      "file": "tests/test_a_resumed_launch_keeps_its_lane.py",
+      "line": "221",
+      "severity": "non-blocking",
+      "text": "non-blocking: the drainer assertion at :221 passes identically against the base revision \u2014 the reviewed test file run on a base tree where reckon/crew/admission/selection.py is unchanged gives 3 passed \u2014 so no added assertion fails if the production change is reverted, and the change's durability rests on nothing. The node's own negative control exercises the resume carry in dispatch_sessions, not the drainer edit."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "852",
+      "severity": "non-blocking",
+      "text": "non-blocking: `served != lane` infers 'the backend declared no lane document' from a string comparison rather than from whether a document was declared, which is correct only because lane_identity always returns an absolute realpath for a declared document and the lane argument is a backend name; the condition is also behaviour-preserving against the base `bool(served)`, so the edit unifies a duplicated computation without changing any admission decision the tests can observe."
+    }
+  ],
+  "head_log_revision": "d3767f11353d80d880014e5f9ee0d7d766ce6dd2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/selection.py:252 admit_once -> gate_admits_request is the single production route into the changed decision, reached from the admission pass's lane filter; no other production caller exists.",
+    "diff": "read commit by commit against 65c0479b14: one commit, d3767f1135, replacing the drainer's inline realpath comparison with a call to worker_behaviour.lane_identity plus a `served != lane` guard, deleting the now-unused `import os`, and adding the 227-line test file.",
+    "done_when": "the done_when names tests/test_a_resumed_launch_keeps_its_lane.py with a resume case per local backend and a two-spellings drainer case; the manifest records that file in the gate (3 passed, EXIT=0) and its declared negative control reddens the resume cases at EXIT=1, which the log confirms.",
+    "goal": "the node's goal is 'keep one recorded lane across a launch and its resume'; reckon/crew/admission/selection.py:841-852 removes the drainer's second lane resolution and tests/test_a_resumed_launch_keeps_its_lane.py:195 asserts a launch and its resume record one lane on each local backend.",
+    "manifest": "read; status complete, commits d3767f1135, changed_paths the two landed files, tests the three-file gate at EXIT=0, baseline_suite and after_suite both 0 failures, and negative_control_log pathed to negative-control.log with its mutation described.",
+    "write_paths": "the declared fence listed resume.py, _backends.py, worker_behaviour.py, admission/selection.py, lane_document.py, the test file, an evidence fragment and a figures directory; the delivered diff changes only admission/selection.py and the test file, a strict subset."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resumed_launch_keeps_its_lane.py:195 is a real guard on the resume carry \u2014 the recorded mutation reddens both parametrised cases at negative-control.log EXIT=1 \u2014 but the only production change is unguarded: reverting selection.py to base leaves all three cases green, and the cross-consistency line at :206 compares two outputs of the code under test and would pass if both named the same wrong lane.",
+    "evidence": "the manifest records baseline_suite (65c0479b14, 0 failures, EXIT=0) and after_suite (d3767f1135, 0 failures, EXIT=0) with log paths, and the negative control at negative-control.log reads '2 failed, 1 passed ... EXIT=1', but the gate does not discriminate the selection.py change: the reviewed test file run against the base tree passes 3/3 with selection.py unmodified (measured this review, scratch tree under $TMPDIR).",
+    "fit": "reckon/crew/admission/selection.py:841 imports lane_identity lazily inside the function, matching the module's existing lazy-import idiom, and the docstring at :827-830 states the mechanism; the retained inner `document` wrapper at :843-848 is now a one-line forward and reads as vestigial.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:852 resolves the drainer's lane through lane_identity, so the drainer's answer and the lane a launch records are one computation, and tests/test_a_resumed_launch_keeps_its_lane.py:195 proves a resumed launch records the lane its first launch ran on; the plan's stated symptom was already absent at base, which the manifest states honestly, so the landing unifies the mechanism rather than repairing an observed divergence.",
+    "reuse": "reckon/crew/worker_behaviour.py:72 lane_identity is the owner of resolving a backend to the lane it serves, and selection.py:845 now calls it instead of carrying a second copy of the realpath resolution, so the change extends the owner and removes a duplicate rather than adding a third implementation.",
+    "scope_discipline": "git diff 65c0479b14..d3767f1135 touches only reckon/crew/admission/selection.py and the new tests/test_a_resumed_launch_keeps_its_lane.py, both inside the declared write paths, and the removed `import os` is unused elsewhere in the module (grep for 'os.' at head returns nothing)."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261121T070602676443-review-of-wlsr-a-resumed-launch-keeps-its-lane-d3767f11353d",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "d3767f11353d80d880014e5f9ee0d7d766ce6dd2",
+  "reviewed_run_id": "r-20261121T064857431431-wlsr-a-resumed-launch-keeps-its-lane",
+  "reviewer_run_id": "r-20261121T070602676443-review-of-wlsr-a-resumed-launch-keeps-its-lane-d3767f11353d",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T07:16:30.385393+00:00",
+  "total": 97
+}

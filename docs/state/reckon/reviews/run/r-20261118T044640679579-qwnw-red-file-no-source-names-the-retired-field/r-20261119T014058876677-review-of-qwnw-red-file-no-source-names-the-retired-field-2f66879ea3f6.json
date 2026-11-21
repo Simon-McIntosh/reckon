@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:1132 _prose_deferred_work_term -> reckon.doccheck.deferred_work_term",
+    "reckon/_store.py:1190 _deferred_work_term_a_text_edit_adds -> reckon.doccheck.deferred_work_terms",
+    "reckon/doccheck.py:1812 audit_html -> deferred_work_term(soup)",
+    "reckon/_store_section_ops.py:389 _refuse_deferred_work_term (plan store write path)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:34:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field/manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: rubric.correctness states that ruff check and ruff format --check report nothing new on reckon/doccheck.py, but no ruff log appears in test_logs or anywhere under the run directory, so the done_when's ruff measure is a prose claim a later reader cannot open; a recorded run would make it checkable."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms table describes the importers base arm as \"73b9ac21a5, extraction with the node's own test added\", but tests/test_no_source_names_the_retired_field.py exists at that revision (git cat-file -e succeeds) and is the file that produced the red, so nothing was added and the cell misdescribes what the arm read."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says \"Both gate arms ran as batch jobs\", but neither head-gate.log nor negative-control-base.log records a SLURM job id or partition (gate-run.sh writes only revision, host, tree, module.__file__, cwd and command), so the run being a job on all_debug as the done_when requires is asserted rather than receipted."
+    }
+  ],
+  "head_log_revision": "2f66879ea3f66983adeef8c3057e758fbd57e2c9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production path from the changed constant to its readers: reckon/_store.py:1143 deferred_work_term, reckon/_store.py:1200 deferred_work_terms, and reckon/doccheck.py:1812 audit_html, reached from reckon/_store_section_ops.py:389-391 and reckon/_store.py:1177/2842/3572/4326/4368.",
+    "diff": "read both commits against the base: 06b868c0864c rewrites three comment lines above _DEFERRED_WORK_TERM in reckon/doccheck.py:419-422 and leaves the pattern and its exemption untouched; 2f66879ea3 adds the 67-line evidence fragment recording the arms, and carries no source change.",
+    "done_when": "the done_when names the node file green at head as a job, both importer arms as inline JSON with full revisions, a base-run negative control logged beside the head run in the fragment, and clean ruff on the changed paths; head-gate.log reads 3 passed EXIT=0 at 2f66879ea3, negative-control-base.log reads 1 failed 2 passed EXIT=1 at 73b9ac21a5, baseline_suite/after_suite carry the 58-test template pair at 73b9ac21a5 and 2f66879ea3 with 0 failures each, and the fragment carries the arms table and the failing id; the ruff measure is claimed at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field/manifest.md:24 with no log in test_logs.",
+    "goal": "the node's goal is that tests/test_no_source_names_the_retired_field.py passes in full; reckon/doccheck.py:419-422 at head describes the detector's exclusions as \"the hyphenated and run-together spellings of the retired term itself\" instead of quoting it, and the recorded head gate reads 3 passed EXIT=0 over that file at 2f66879ea3.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field/manifest.md; status complete, commits 06b868c086 2f66879ea3, changed_paths reckon/doccheck.py and the node fragment, tests naming the node file gate, test_logs naming head-gate.log, negative-control-base.log, baseline-arm.log, head-arm.log, baseline-suite.log and after-suite.log, baseline_suite and after_suite each completed with 0 failures at full 40-character revisions.",
+    "write_paths": "the declared fence is reckon, tests, the queued-work fragment directory and its node fragment, and the node's figure directory; git diff --stat 73b9ac21a5..2f66879ea3 lists only reckon/doccheck.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html, both inside the fence."
+  },
+  "justifications": {
+    "durability": "reverting the reworded comment at reckon/doccheck.py:420 to spell the term reddens tests/test_no_source_names_the_retired_field.py::test_no_reckon_source_names_the_retired_field, which negative-control-base.log demonstrates as a real red run at 73b9ac21a5 and which I reproduced at this worktree's head 48b22118e8 (1 failed, 2 passed); the diff adds no assertion of its own and needs none.",
+    "evidence": "head-gate.log and negative-control-base.log carry revision, tree, module.__file__, the literal command and a bare EXIT line at each end, and the manifest's baseline_suite/after_suite record 0 failures at 73b9ac21a5 and 2f66879ea3; these name the 58-test suite template rather than the 45-file importer arm, whose two arms are only in baseline-arm.log and head-arm.log, and the ruff measure has no log.",
+    "fit": "the reworded prose at reckon/doccheck.py:419-422 keeps the surrounding sphinx-comment idiom and its ``follow-up`` example, and neither the comment nor the fragment names a plan, sprint or ticket, though the fragment ends without a trailing newline at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html:67.",
+    "goal_fidelity": "reckon/doccheck.py:419-422 at head no longer spells the retired term, and head-gate.log shows the named file 3 passed EXIT=0 at 2f66879ea3, which is exactly the goal.",
+    "reuse": "the diff adds no definition at all: it edits one comment and adds an evidence fragment, and the rule it describes is still owned by _DEFERRED_WORK_TERM itself and scanned by tests/test_no_source_names_the_retired_field.py, so there is no capability to fork.",
+    "scope_discipline": "reckon/doccheck.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html are the whole diff and both sit inside the declared fence at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_no_source_names_the_retired_field.py passes in full; reckon/doccheck.py:419-422 at head describes the detector's exclusions as \"the hyphenated and run-together spellings of the retired term itself\" instead of quoting it, and the recorded head gate reads 3 passed EXIT=0 over that file at 2f66879ea3.\nVERDICT done_when: the done_when names the node file green at head as a job, both importer arms as inline JSON with full revisions, a base-run negative control logged beside the head run in the fragment, and clean ruff on the changed paths; head-gate.log reads 3 passed EXIT=0 at 2f66879ea3, negative-control-base.log reads 1 failed 2 passed EXIT=1 at 73b9ac21a5, baseline_suite/after_suite carry the 58-test template pair at 73b9ac21a5 and 2f66879ea3 with 0 failures each, and the fragment carries the arms table and the failing id; the ruff measure is claimed at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field/manifest.md:24 with no log in test_logs.\nVERDICT write_paths: the declared fence is reckon, tests, the queued-work fragment directory and its node fragment, and the node's figure directory; git diff --stat 73b9ac21a5..2f66879ea3 lists only reckon/doccheck.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html, both inside the fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field/manifest.md; status complete, commits 06b868c086 2f66879ea3, changed_paths reckon/doccheck.py and the node fragment, tests naming the node file gate, test_logs naming head-gate.log, negative-control-base.log, baseline-arm.log, head-arm.log, baseline-suite.log and after-suite.log, baseline_suite and after_suite each completed with 0 failures at full 40-character revisions.\nVERDICT diff: read both commits against the base: 06b868c0864c rewrites three comment lines above _DEFERRED_WORK_TERM in reckon/doccheck.py:419-422 and leaves the pattern and its exemption untouched; 2f66879ea3 adds the 67-line evidence fragment recording the arms, and carries no source change.\nCALL_SITES: reckon/_store.py:_prose_deferred_work_term, reckon/_store.py:_deferred_work_term_a_text_edit_adds, reckon/doccheck.py:audit_html, reckon/_store_section_ops.py:389\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:419-422 at head no longer spells the retired term, and head-gate.log shows the named file 3 passed EXIT=0 at 2f66879ea3, which is exactly the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-gate.log and negative-control-base.log carry revision, tree, module.__file__, the literal command and a bare EXIT line at each end, and the manifest's baseline_suite/after_suite record 0 failures at 73b9ac21a5 and 2f66879ea3; these name the 58-test suite template rather than the 45-file importer arm, whose two arms are only in baseline-arm.log and head-arm.log, and the ruff measure has no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: reckon/doccheck.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html are the whole diff and both sit inside the declared fence at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the reworded comment at reckon/doccheck.py:420 to spell the term reddens tests/test_no_source_names_the_retired_field.py::test_no_reckon_source_names_the_retired_field, which negative-control-base.log demonstrates as a real red run at 73b9ac21a5 and which I reproduced at this worktree's head 48b22118e8 (1 failed, 2 passed); the diff adds no assertion of its own and needs none.\nSCORE fit: 19\nJUSTIFICATION fit: the reworded prose at reckon/doccheck.py:419-422 keeps the surrounding sphinx-comment idiom and its ``follow-up`` example, and neither the comment nor the fragment names a plan, sprint or ticket, though the fragment ends without a trailing newline at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html:67.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all: it edits one comment and adds an evidence fragment, and the rule it describes is still owned by _DEFERRED_WORK_TERM itself and scanned by tests/test_no_source_names_the_retired_field.py, so there is no capability to fork.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field/manifest.md:24 non-blocking: rubric.correctness states that ruff check and ruff format --check report nothing new on reckon/doccheck.py, but no ruff log appears in test_logs or anywhere under the run directory, so the done_when's ruff measure is a prose claim a later reader cannot open; a recorded run would make it checkable.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html:38 non-blocking: the arms table describes the importers base arm as \"73b9ac21a5, extraction with the node's own test added\", but tests/test_no_source_names_the_retired_field.py exists at that revision (git cat-file -e succeeds) and is the file that produced the red, so nothing was added and the cell misdescribes what the arm read.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-no-source-names-the-retired-field.html:64 non-blocking: the fragment says \"Both gate arms ran as batch jobs\", but neither head-gate.log nor negative-control-base.log records a SLURM job id or partition (gate-run.sh writes only revision, host, tree, module.__file__, cwd and command), so the run being a job on all_debug as the done_when requires is asserted rather than receipted.",
+  "review_run_id": "r-20261119T014058876677-review-of-qwnw-red-file-no-source-names-the-retired-field-2f66879ea3f6",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "2f66879ea3f66983adeef8c3057e758fbd57e2c9",
+  "reviewed_run_id": "r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T014058876677-review-of-qwnw-red-file-no-source-names-the-retired-field-2f66879ea3f6"
+  },
+  "reviewer_run_id": "r-20261119T014058876677-review-of-qwnw-red-file-no-source-names-the-retired-field-2f66879ea3f6",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:57:46.822754+00:00",
+  "total": 114
+}

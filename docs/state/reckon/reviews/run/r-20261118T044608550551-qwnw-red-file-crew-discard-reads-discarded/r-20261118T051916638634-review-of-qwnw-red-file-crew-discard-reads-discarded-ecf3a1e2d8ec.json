@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T05:22:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "qwnw-discard-test-imports-the-shared-git-helper",
+      "recorded_at": "2026-11-18T06:02:14.259887+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the two extra controls are narrative in the fragment and carry no log; the file's own base and head runs are the recorded evidence and both are logged",
+      "recorded_at": "2026-11-18T06:02:16.937659+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_crew_discard_reads_discarded.py",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added `_git` re-implements tests/helpers/git.py:12, the shared helper 310 test modules import, and omits its RUN_ID_ENV stripping, so a fixture's git call can be refused by the worker shim in exactly the way commit 49e8cbcc20 removed from this kind of local copy; the helper should be imported rather than forked."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-discard-reads-discarded.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states that two further controls were run, an unmerged head reading complete and a withheld ledger row reading discarded, but neither has a log path and neither is in the manifest's test_logs, so the claim cannot be re-read by anyone holding only the recorded artifacts."
+    }
+  ],
+  "head_log_revision": "50d40937a2cdff870c0f22205e80f16d832c5671",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change touches only a test file and an evidence fragment, so no production call site reaches it; the production surface the test drives is reckon/crew/recovery_watch.py:2562 fleet_transitions into reckon/crew/recovery_classification.py:1170 _promoted_awaiting_merge, and that reader is unchanged by this diff.",
+    "diff": "read both commits against base 6699d0257: 50d40937a2 adds _git (:39) and _landed_repository (:48), threads a repo and head through _blocked_run (:66) and _record_ledger_row (:110), and leaves every assertion as it was; ecf3a1e2d8 adds the 50-line evidence fragment.",
+    "done_when": "the done_when asks for the named file green at head, each cause listed with its verdict, no assertion deleted or weakened, an arm adding no failure with both arms as inline JSON, and a base control logged beside the head run; the manifest carries the base log (2 failed, EXIT=1) and the head log (6 passed, EXIT=0), one cause 'test wrong' naming rule 0f3f363ec8, unchanged assertions, suite arms at 58 passed each with 0 failures, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-discard-reads-discarded.html:6 quotes both failing ids, while ruff is unrecorded though `ruff check` and `ruff format --check` on the head file both read clean when run for this review.",
+    "goal": "the node's goal is 'Make tests/test_crew_discard_reads_discarded.py pass in full on the primary branch'; node-file-head.log reads 6 passed EXIT=0 at 50d40937a2 against 2 failed EXIT=1 at base 6699d0257, so the named file is green at its head and putting it on the primary branch is the landing's step, not this node's.",
+    "manifest": "read; status complete, commits 50d40937a2 and ecf3a1e2d8, changed_paths the two landed files, tests the PYTHONPATH pytest command on the named file, five test_logs, baseline_suite 6699d0257 (58 passed, 0 failures) and after_suite 50d40937a2 (58 passed, 0 failures), negative_control_log .../negative-control-node-base.log, and every rubric line answered.",
+    "write_paths": "the node declared 'reckon', 'tests' and 'docs/evidence/fragments/queued-work-needs-no-workaround'; the diff's two paths, tests/test_crew_discard_reads_discarded.py and the fragment in that directory, both sit inside them."
+  },
+  "justifications": {
+    "durability": "restoring the base row at tests/test_crew_discard_reads_discarded.py:110 (only run_id and commits [\"HEAD\"]) reddens both promoted assertions at :162 and :182, which is the red the base arm logged at negative-control-node-base.log.",
+    "evidence": "negative-control-node-base.log (2 failed, EXIT=1 at 6699d0257) and node-file-head.log (6 passed, EXIT=0 at 50d40937a2) record the gate and its base arm, and both suite arms read 58 passed EXIT=0, so added_failure_count is 0 from those arms.",
+    "fit": "the fixture keeps the module's own one-private-helper-per-concern shape (tests/test_crew_discard_reads_discarded.py:39, :48, :110) and the docstring style of the neighbouring tests.",
+    "goal_fidelity": "tests/test_crew_discard_reads_discarded.py:162 and :182 keep assert folded[0][2] == \"promoted\" unchanged while :110 gives the ledger row a checkout and a head its primary branch carries, so the named file's six cases pass at head where the base read each promoted case as complete.",
+    "reuse": "tests/test_crew_discard_reads_discarded.py:39 adds a local `_git` duplicating tests/helpers/git.py:12, which 310 test modules import, and drops the RUN_ID_ENV removal commit 49e8cbcc20 added there for the worker shim.",
+    "scope_discipline": "the diff 6699d025..ecf3a1e2 changes only tests/test_crew_discard_reads_discarded.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-discard-reads-discarded.html, both inside the declared paths 'tests' and 'docs/evidence/fragments/queued-work-needs-no-workaround'."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_crew_discard_reads_discarded.py pass in full on the primary branch'; node-file-head.log reads 6 passed EXIT=0 at 50d40937a2 against 2 failed EXIT=1 at base 6699d0257, so the named file is green at its head and putting it on the primary branch is the landing's step, not this node's.\nVERDICT done_when: the done_when asks for the named file green at head, each cause listed with its verdict, no assertion deleted or weakened, an arm adding no failure with both arms as inline JSON, and a base control logged beside the head run; the manifest carries the base log (2 failed, EXIT=1) and the head log (6 passed, EXIT=0), one cause 'test wrong' naming rule 0f3f363ec8, unchanged assertions, suite arms at 58 passed each with 0 failures, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-discard-reads-discarded.html:6 quotes both failing ids, while ruff is unrecorded though `ruff check` and `ruff format --check` on the head file both read clean when run for this review.\nVERDICT write_paths: the node declared 'reckon', 'tests' and 'docs/evidence/fragments/queued-work-needs-no-workaround'; the diff's two paths, tests/test_crew_discard_reads_discarded.py and the fragment in that directory, both sit inside them.\nVERDICT manifest: read; status complete, commits 50d40937a2 and ecf3a1e2d8, changed_paths the two landed files, tests the PYTHONPATH pytest command on the named file, five test_logs, baseline_suite 6699d0257 (58 passed, 0 failures) and after_suite 50d40937a2 (58 passed, 0 failures), negative_control_log .../negative-control-node-base.log, and every rubric line answered.\nVERDICT diff: read both commits against base 6699d0257: 50d40937a2 adds _git (:39) and _landed_repository (:48), threads a repo and head through _blocked_run (:66) and _record_ledger_row (:110), and leaves every assertion as it was; ecf3a1e2d8 adds the 50-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_discard_reads_discarded.py:162 and :182 keep assert folded[0][2] == \"promoted\" unchanged while :110 gives the ledger row a checkout and a head its primary branch carries, so the named file's six cases pass at head where the base read each promoted case as complete.\nSCORE evidence: 16\nJUSTIFICATION evidence: negative-control-node-base.log (2 failed, EXIT=1 at 6699d0257) and node-file-head.log (6 passed, EXIT=0 at 50d40937a2) record the gate and its base arm, and both suite arms read 58 passed EXIT=0, so added_failure_count is 0 from those arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 6699d025..ecf3a1e2 changes only tests/test_crew_discard_reads_discarded.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-discard-reads-discarded.html, both inside the declared paths 'tests' and 'docs/evidence/fragments/queued-work-needs-no-workaround'.\nSCORE durability: 17\nJUSTIFICATION durability: restoring the base row at tests/test_crew_discard_reads_discarded.py:110 (only run_id and commits [\"HEAD\"]) reddens both promoted assertions at :162 and :182, which is the red the base arm logged at negative-control-node-base.log.\nSCORE fit: 16\nJUSTIFICATION fit: the fixture keeps the module's own one-private-helper-per-concern shape (tests/test_crew_discard_reads_discarded.py:39, :48, :110) and the docstring style of the neighbouring tests.\nSCORE reuse: 4\nJUSTIFICATION reuse: tests/test_crew_discard_reads_discarded.py:39 adds a local `_git` duplicating tests/helpers/git.py:12, which 310 test modules import, and drops the RUN_ID_ENV removal commit 49e8cbcc20 added there for the worker shim.\nFINDING tests/test_crew_discard_reads_discarded.py:39 non-blocking: the added `_git` re-implements tests/helpers/git.py:12, the shared helper 310 test modules import, and omits its RUN_ID_ENV stripping, so a fixture's git call can be refused by the worker shim in exactly the way commit 49e8cbcc20 removed from this kind of local copy; the helper should be imported rather than forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-discard-reads-discarded.html:26 non-blocking: the fragment states that two further controls were run, an unmerged head reading complete and a withheld ledger row reading discarded, but neither has a log path and neither is in the manifest's test_logs, so the claim cannot be re-read by anyone holding only the recorded artifacts.",
+  "review_run_id": "r-20261118T051916638634-review-of-qwnw-red-file-crew-discard-reads-discarded-ecf3a1e2d8ec",
+  "reviewed_base_sha": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed",
+  "reviewed_head_sha": "ecf3a1e2d8eca9537b1bffa180ed9cd0e4acef95",
+  "reviewed_run_id": "r-20261118T044608550551-qwnw-red-file-crew-discard-reads-discarded",
+  "reviewer_run_id": "r-20261118T051916638634-review-of-qwnw-red-file-crew-discard-reads-discarded-ecf3a1e2d8ec",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T05:54:23.046000+00:00",
+  "total": 92
+}

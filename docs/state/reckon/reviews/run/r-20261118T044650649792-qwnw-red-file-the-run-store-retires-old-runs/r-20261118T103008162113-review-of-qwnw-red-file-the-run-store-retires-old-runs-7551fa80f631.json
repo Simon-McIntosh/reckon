@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/review_lifecycle.py:414 ledger.run_ids",
+    "reckon/run_store.py:1830 RunStore.records -> _refresh",
+    "reckon/run_store.py:1837 RunStore.get_run -> _refresh",
+    "reckon/run_store.py:1873 RunStore.get_detail -> _refresh",
+    "reckon/run_store.py:1900 RunStore.durable_rows -> _refresh"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-the-run-store-retires-old-runs-7551fa80f631",
+      "recorded_at": "2026-11-18T13:01:30.677405+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-18T12:00:04Z",
+  "evidence_checks": {
+    "absent_documents_probe_base": "same probe over git archive 97dec20b -> rows_before_documents_removed=3 rows_after=3 PROBE_KEPT",
+    "absent_documents_probe_head": "/tmp/reckon-crew-scratch/r-20261118T103008162113-review-of-qwnw-red-file-the-run-store-retires-old-runs-7551fa80f631/review-qwnw-membership/probe_absent_documents.py -> rows_before_documents_removed=3 rows_after=0 PROBE_EMPTIED",
+    "node_test_head": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py -> 18 passed in 5.93s at 7551fa80f631"
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-the-run-store-retires-old-runs-7551fa80f631",
+      "recorded_at": "2026-11-18T13:01:29.643717+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": "1732",
+      "severity": "blocking",
+      "text": "blocking: making the membership comparison fire leaves it comparing a project's rows against an empty committed set when that project's ledger documents are absent, and the rebuild then deletes the rows \u2014 a probe against the reviewed head kept 3 store rows at 97dec20b and emptied them to 0 at 7551fa80 when docs/state/sample held no files, while the method's own docstring at :1705 promises no absent mount deletes a project's cached history; main already carries the missing guard at reckon/run_store.py:_refresh (\"if not ledger._ledger_holds_content(name, root): continue\", commit 693f3f4ccb) and this branch must keep it through the merge."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1237",
+      "severity": "non-blocking",
+      "text": "non-blocking: file_run_ids duplicates document-only membership that main's reckon/ledger.py:1237 run_ids(..., use_index=False) already owns, added by 693f3f4ccb which also switched reckon/run_store.py's refresh comparison to it; the addition is a second entry point for one capability rather than a parameter on the existing owner, so the merge has to choose one and cannot keep both."
+    },
+    {
+      "file": "test_the_run_store_retires_old_runs.py",
+      "line": "171",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node's done_when requires the measured file to run as an all_debug job with SLURM_JOB_ID unset, but logs/head-node-test.log and logs/base-node-test.log carry no scheduler banner and no batch log in the run directory names tests/test_the_run_store_retires_old_runs.py, so the recorded measurement is a local run rather than the job the done_when specified; the result reproduces (I re-ran the file at 7551fa80 for 18 passed)."
+    }
+  ],
+  "head_log_revision": "7551fa80f63127490c9c9e41ef2c2c7593f0dc13",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/run_store.py:1701 _refresh reached from records (:1830), get_run (:1837), get_detail (:1873) and durable_rows (:1900), and reckon/crew/review_lifecycle.py:414 which reads the unchanged run_ids.",
+    "diff": "read all four commits against 97dec20b: c54a59d4b6 splits ledger.run_ids into file_run_ids plus a store-first run_ids and points _refresh at the file-only reader, f255b18a02 adds _membership_stamps keyed on ledger.index_state_stamp, and the two evidence commits add and then re-date the fragment at f255b18a02.",
+    "done_when": "the done_when names tests/test_the_run_store_retires_old_runs.py run as an all_debug job with SLURM_JOB_ID unset; the manifest records head 18 passed (logs/head-node-test.log, EXIT=0) and base 1 failed/17 passed (logs/base-node-test.log, EXIT=1, \"assert 7 == 19\"), but both are local runs and no batch log in the run directory names that file.",
+    "goal": "the goal is that tests/test_the_run_store_retires_old_runs.py passes in full at head; I re-ran that file at 7551fa80f631 and got 18 passed, and reckon/run_store.py:1716-1732 compares its rows with ledger.file_run_ids instead of with itself.",
+    "manifest": "read; status complete, commits c54a59d4b6, 30e2064531, f255b18a02, 7551fa80f6, changed_paths the three landed files, tests the scoped gate command, baseline_suite and after_suite both 0 failures with 40-character revisions, and negative_control_log logs/base-node-test.log.",
+    "write_paths": "the declared paths are reckon, tests and the queued-work-needs-no-workaround fragment directory; the four commits 97dec20b..7551fa80 touch reckon/ledger.py, reckon/run_store.py and one fragment inside that directory and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_run_store_retires_old_runs.py:171 is a real guard \u2014 its base arm at logs/base-node-test.log reddens on \"assert 7 == 19\" with EXIT=1 and its head arm passes 18 \u2014 but the newly reachable deletion path at reckon/run_store.py:1732 has no test and my probe empties a project's rows when its documents are absent.",
+    "evidence": "the done_when asks for the node test as an all_debug job with SLURM_JOB_ID unset, but the only batch arms in the run directory (scoped-gate-1794995304487370687.log, baseline_suite-1794995897097963156.log, after_suite-1794995939910113876.log) run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, while the node test itself is recorded only as local runs in logs/base-node-test.log and logs/head-node-test.log.",
+    "fit": "reckon/ledger.py:1237 follows the module's docstring-and-fallback idiom and reckon/run_store.py:1127 names the memo in the diff's own vocabulary, matching the neighbouring _archive_attached initialiser without a plan or ticket identifier.",
+    "goal_fidelity": "the goal is that tests/test_the_run_store_retires_old_runs.py passes in full at head, and I re-ran that file at 7551fa80f631 in the reviewed tree for 18 passed, matching the manifest.",
+    "reuse": "reckon/ledger.py:1237 file_run_ids re-implements document-only membership that main already owns through run_ids(..., use_index=False) added by 693f3f4ccb, which also rebuilt reckon/run_store.py's refresh comparison from the same capability.",
+    "scope_discipline": "git diff --stat 97dec20b..7551fa80 lists only reckon/ledger.py, reckon/run_store.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-run-store-retires-old-runs.html, all inside the declared reckon and fragment-directory paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_the_run_store_retires_old_runs.py passes in full at head; I re-ran that file at 7551fa80f631 in the reviewed tree for 18 passed, and reckon/run_store.py:1716-1732 compares the store's rows with ledger.file_run_ids instead of with itself.\nVERDICT done_when: the done_when asks for the node test as an all_debug job with SLURM_JOB_ID unset; the manifest records head 18 passed (logs/head-node-test.log, EXIT=0) and base 1 failed/17 passed (logs/base-node-test.log, EXIT=1, \"assert 7 == 19\"), but both are local runs and no batch log in the run directory names that file.\nVERDICT write_paths: the declared paths are reckon, tests and the queued-work-needs-no-workaround fragment directory; the four commits 97dec20b..7551fa80 touch reckon/ledger.py, reckon/run_store.py and one fragment inside that directory and nothing else.\nVERDICT manifest: read; status complete, commits c54a59d4b6, 30e2064531, f255b18a02, 7551fa80f6, baseline_suite and after_suite both 0 failures at their 40-character revisions, and negative_control_log logs/base-node-test.log.\nVERDICT diff: read all four commits against 97dec20b: c54a59d4b6 splits ledger.run_ids into file_run_ids plus a store-first run_ids and points _refresh at the file-only reader, f255b18a02 adds _membership_stamps keyed on ledger.index_state_stamp, and the two evidence commits add and then re-date the fragment at f255b18a02.\nCALL_SITES: reckon/crew/review_lifecycle.py:414, reckon/run_store.py:1830, reckon/run_store.py:1837, reckon/run_store.py:1873, reckon/run_store.py:1900\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal is that tests/test_the_run_store_retires_old_runs.py passes in full at head, and I re-ran that file at 7551fa80f631 for 18 passed, matching the manifest.\nSCORE evidence: 13\nJUSTIFICATION evidence: the only batch arms in the run directory run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so the node test the done_when names is recorded only as local runs in logs/head-node-test.log and logs/base-node-test.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 97dec20b..7551fa80 lists only reckon/ledger.py, reckon/run_store.py and the one evidence fragment, all inside the declared paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_run_store_retires_old_runs.py:171 reddens on \"assert 7 == 19\" at the base arm, but the deletion path newly reachable at reckon/run_store.py:1732 has no test and my probe emptied a project's rows when its documents were absent.\nSCORE_PLACEHOLDER\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1237 follows the module's docstring-and-fallback idiom and reckon/run_store.py:1127 matches the neighbouring _archive_attached initialiser without a plan or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/ledger.py:1237 file_run_ids re-implements document-only membership that main already owns through run_ids(..., use_index=False) added by 693f3f4ccb, which also rebuilt main's refresh comparison from the same capability.\nFINDING reckon/run_store.py:1732 blocking: the now-firing comparison deletes a project's store rows when its ledger documents are absent (probe: 3 rows kept at 97dec20b, 0 at 7551fa80), contradicting the method docstring at :1705; keep main's _ledger_holds_content guard through the merge.\nFINDING reckon/ledger.py:1237 non-blocking: file_run_ids duplicates the document-only membership main owns as run_ids(..., use_index=False) at 693f3f4ccb, so the merge must choose one owner.\nFINDING test_the_run_store_retires_old_runs.py:171 non-blocking: the done_when's all_debug job condition was not met; the recorded node-test runs are local and carry no scheduler banner, though the head result reproduces.\n",
+  "review_run_id": "r-20261118T103008162113-review-of-qwnw-red-file-the-run-store-retires-old-runs-7551fa80f631",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "7551fa80f63127490c9c9e41ef2c2c7593f0dc13",
+  "reviewed_run_id": "r-20261118T044650649792-qwnw-red-file-the-run-store-retires-old-runs",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T103008162113-review-of-qwnw-red-file-the-run-store-retires-old-runs-7551fa80f631"
+  },
+  "reviewer_run_id": "r-20261118T103008162113-review-of-qwnw-red-file-the-run-store-retires-old-runs-7551fa80f631",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T12:19:28.608191+00:00",
+  "total": 87
+}

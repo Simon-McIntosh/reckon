@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertions": "A backfilled row keeps project == 'proj' after its activity_seconds column is dropped and the schema record is rolled back.",
+      "fails_if": "Restoring the record-derived project in the backfill leaves the column NULL, and the final assert reads None != 'proj' (logs/backfill-negative.log).",
+      "path": "tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:263-322"
+    },
+    {
+      "assertions": "The can_retire gate receives 'sample' for a promotion record that names no project, and the row is offered for retirement.",
+      "fails_if": "Removing _answer_identity from RunStore.retire leaves record['project'] unset and the gate raises KeyError (logs/retire-negative.log).",
+      "path": "tests/test_the_run_store_retires_old_runs.py:262-295"
+    },
+    {
+      "assertions": "The sqlite fallback records a row with record_source sqlite_fallback_for_reachable_promotion and project == 'reckon'.",
+      "fails_if": "The fallback reading the payload's project instead of the runs column raises KeyError before either assertion (logs/velocity-fallback-negative.log).",
+      "path": "tests/test_revision_reads_restate_against_the_store.py:450-484"
+    },
+    {
+      "assertions": "The durable payload of an appended run carries no project key.",
+      "fails_if": "Reinstating the append's project injection makes the key present and the assertion reddens.",
+      "path": "tests/test_ledger.py:3323"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T03:55:51Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "19-20",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite record a command over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and neither file names run_store or velocity (grep -c returns 0 for both), so the arm recorded against the done_when's \"test files that import what you changed\" never reaches the changed code and its 58-passed result at each end measures an unaffected population. The importer arm that does reach it is logs/arm-base.log (76 failed, 318 passed, EXIT=1) against logs/arm-head.log (70 failed, 324 passed, EXIT=1 at 7c0619ebc8, three commits before the delivered head), neither recorded as inline JSON; the set difference is empty, so no failure was added by substance, but the delivered head's importer population was never measured."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html",
+      "line": "115-116",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites its green runs (97 passed for tests/test_ledger.py, 135 passed for the six-file gate) at d4263fb8ee, which is two product commits before the delivered head; the delivered head's own six-file gate exists only as logs/head-gate.log at 400f65d2d2, so a reader of the plan cannot see the delivered revision's gate from the evidence page."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/gc.py:2121-2131 (released passed as can_retire), reckon/run_store.py:1520 (RunStore.retire gate), reckon/ledger.py:3617 (RunStore.append), reckon/velocity.py:823 (_read_store_records -> stored_run_rows), reckon/velocity.py:1055-1060 (sqlite fallback), reckon/crew/open_run_index.py:309 (stored_run_rows)",
+    "diff": "Read commit by commit from f4403247ef: cf900063c1 through 72e6d48ecf stop injecting the project into the durable payload and take the column from the writer's argument, 9ed78406f6/474d0edbbc follow the read sides, d4263fb8ee gives the duration case a corpus it owns, 3cf9c5830e and d7d09336a5 declare the project on the retire gate, the velocity fallback and the column backfill, and three commits write the evidence fragment.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a red base log beside it, an importer arm with no added failure and both arms as inline JSON; head-gate.log meets the job, partition and unset-variable conditions over a set including tests/test_ledger.py and logs/base-ledger.log records the f4403247ef base red with 8 failed, but the inline baseline_suite/after_suite in manifest.md:19-20 name two files that import neither changed module.",
+    "goal": "The node goal is \"Make tests/test_ledger.py pass in full on the primary branch\"; logs/head-gate.log at 400f65d2d2 runs that file inside a six-file set and reads 135 passed in 77.82s with EXIT=0 under 'env -u SLURM_JOB_ID' and '# job: 1324629 on all_debug', and logs/head-full.log reads 97 passed in 71.44s EXIT=0 for the file alone at d4263fb8ee.",
+    "manifest": "Read manifest.md: it records the seventeen commits, the six-file gate at 400f65d2d2 reading 135 passed EXIT=0 (head-gate.log), the three repair gates and their red counterparts (retire-negative.log KeyError, backfill-negative.log assert None == 'proj', velocity-fallback-negative.log KeyError), both suite arms at 58 passed, negative_control_log at logs/backfill-negative.log, and the ruff parity claim that logs/lint-repair.log and logs/lint-parity.log support.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every one of the node's seventeen own commits touches only reckon/run_store.py, reckon/velocity.py, files under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html, all inside them; the other paths in the delivered diff arrive with the merge 54c887213f."
+  },
+  "justifications": {
+    "durability": "tests/test_the_run_store_retires_old_runs.py:262 fails with KeyError: 'project' when 3cf9c5830e is reverted (logs/retire-negative.log), tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:263 fails with assert None == 'proj' without d7d09336a5 (logs/backfill-negative.log), tests/test_revision_reads_restate_against_the_store.py:450 fails with KeyError without the same commit (logs/velocity-fallback-negative.log), and tests/test_ledger.py:3323 'assert \"project\" not in durable' reddens if the injection returns; the retire case's expected value is the project the test itself passed to append, so its independent strength rests on that reproduced KeyError.",
+    "evidence": "logs/head-gate.log:4 names '# job: 1324629 on all_debug' and its command wraps the run in 'env -u SLURM_JOB_ID', but the inline arms in manifest.md:19-20 cover two test files that import neither changed module, and the importer arm logs/arm-head.log stops at 7c0619ebc8.",
+    "fit": "The new helpers in reckon/run_store.py:929 (_answer_identity) and :1862 (_row_projects) follow the module's private-helper, docstring and keyword-only-argument idiom, and the column wording in reckon/velocity.py:1052 matches the store's own vocabulary.",
+    "goal_fidelity": "logs/head-gate.log at 400f65d2d2 lists tests/test_ledger.py first among six files and reads 135 passed with EXIT=0, so the file the goal names passes in full at the delivered head.",
+    "reuse": "The earlier duplicate project reader is gone from the delivered head (git show 400f65d2d2:reckon/run_store.py has no _run_project; get_run and durable_rows both read :1862 _row_projects), _query_values at :61 gains a keyword argument instead of forking a second index writer, and the capability search over reckon for 'select run_id, project' found no other owner of the column read.",
+    "scope_discipline": "Every node-authored commit (cf900063c1 through 400f65d2d2) touches only reckon/run_store.py, reckon/velocity.py, tests/ and the section's evidence fragment, and the imported paths such as reckon/_backends.py arrive through the merge 54c887213f."
+  },
+  "limitations": [
+    "No test rerun; the run's recorded logs were read and only their summaries and FAILED lines were counted.",
+    "The importer arm's head measurement predates three commits and was not re-run for this review.",
+    "The reviewed diff includes a merge with main; the foreign paths it imports were not reviewed."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is \"Make tests/test_ledger.py pass in full on the primary branch\"; logs/head-gate.log at 400f65d2d2 runs that file inside a six-file set and reads 135 passed in 77.82s with EXIT=0 under 'env -u SLURM_JOB_ID' and '# job: 1324629 on all_debug', and logs/head-full.log reads 97 passed in 71.44s EXIT=0 for the file alone at d4263fb8ee.\nVERDICT done_when: The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a red base log beside it, an importer arm with no added failure and both arms as inline JSON; head-gate.log meets the job, partition and unset-variable conditions over a set including tests/test_ledger.py and logs/base-ledger.log records the f4403247ef base red with 8 failed, but the inline baseline_suite/after_suite in manifest.md:19-20 name two files that import neither changed module.\nVERDICT write_paths: The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every one of the node's seventeen own commits touches only reckon/run_store.py, reckon/velocity.py, files under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html, all inside them; the other paths in the delivered diff arrive with the merge 54c887213f.\nVERDICT manifest: Read manifest.md: it records the seventeen commits, the six-file gate at 400f65d2d2 reading 135 passed EXIT=0 (head-gate.log), the three repair gates and their red counterparts (retire-negative.log KeyError, backfill-negative.log assert None == 'proj', velocity-fallback-negative.log KeyError), both suite arms at 58 passed, negative_control_log at logs/backfill-negative.log, and the ruff parity claim that logs/lint-repair.log and logs/lint-parity.log support.\nVERDICT diff: Read commit by commit from f4403247ef: cf900063c1 through 72e6d48ecf stop injecting the project into the durable payload and take the column from the writer's argument, 9ed78406f6/474d0edbbc follow the read sides, d4263fb8ee gives the duration case a corpus it owns, 3cf9c5830e and d7d09336a5 declare the project on the retire gate, the velocity fallback and the column backfill, and three commits write the evidence fragment.\nCALL_SITES: reckon/crew/gc.py:2121-2131, reckon/run_store.py:1520, reckon/ledger.py:3617, reckon/velocity.py:823, reckon/velocity.py:1055-1060, reckon/crew/open_run_index.py:309\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: logs/head-gate.log at 400f65d2d2 lists tests/test_ledger.py first among six files and reads 135 passed with EXIT=0, so the file the goal names passes in full at the delivered head.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-gate.log:4 names '# job: 1324629 on all_debug' and its command wraps the run in 'env -u SLURM_JOB_ID', but the inline arms in manifest.md:19-20 cover two test files that import neither changed module, and the importer arm logs/arm-head.log stops at 7c0619ebc8.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: Every node-authored commit (cf900063c1 through 400f65d2d2) touches only reckon/run_store.py, reckon/velocity.py, tests/ and the section's evidence fragment, and the imported paths such as reckon/_backends.py arrive through the merge 54c887213f.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_run_store_retires_old_runs.py:262 fails with KeyError: 'project' when 3cf9c5830e is reverted (logs/retire-negative.log), tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:263 fails with assert None == 'proj' without d7d09336a5 (logs/backfill-negative.log), tests/test_revision_reads_restate_against_the_store.py:450 fails with KeyError without the same commit (logs/velocity-fallback-negative.log), and tests/test_ledger.py:3323 'assert \"project\" not in durable' reddens if the injection returns.\nSCORE fit: 19\nJUSTIFICATION fit: The new helpers in reckon/run_store.py:929 (_answer_identity) and :1862 (_row_projects) follow the module's private-helper, docstring and keyword-only-argument idiom, and the column wording in reckon/velocity.py:1052 matches the store's own vocabulary.\nSCORE reuse: 18\nJUSTIFICATION reuse: The earlier duplicate project reader is gone from the delivered head (no _run_project in git show 400f65d2d2:reckon/run_store.py; get_run and durable_rows both read :1862 _row_projects), and _query_values at :61 gains a keyword argument instead of forking a second index writer.\nFINDING manifest.md:19-20 non-blocking: baseline_suite and after_suite record a command over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which names run_store or velocity (grep -c returns 0 for both), so the recorded arm never reaches the changed code, while the importer arm that does is logs/arm-base.log (76 failed, 318 passed, EXIT=1) against logs/arm-head.log (70 failed, 324 passed, EXIT=1 at 7c0619ebc8, three commits before the delivered head); the set difference is empty so no failure was added, but the delivered head's importer population was never measured.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html:115-116 non-blocking: the fragment cites its green runs at d4263fb8ee, two product commits before the delivered head, so the delivered revision's six-file gate exists only in logs/head-gate.log and a reader of the plan cannot see it from the evidence page.\n",
+  "review_run_id": "r-20261118T035405242718-review-of-qwnw-red-file-ledger-promoted-rows-400f65d2d2d3",
+  "reviewed_base_sha": "f4403247ef233a2efb644c2deceb8165611da16c",
+  "reviewed_head_sha": "400f65d2d2d393d1df2a8f3ffec6f7278285a03b",
+  "reviewed_run_id": "r-20261117T215340422091-qwnw-red-file-ledger-promoted-rows",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T04:07:38.393434+00:00",
+  "total": 107
+}

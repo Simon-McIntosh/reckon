@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:4218",
+    "reckon/crew/runs.py:4427",
+    "reckon/crew/runs.py:4592",
+    "reckon/crew/runs.py:4611",
+    "reckon/crew/runs.py:4633",
+    "reckon/crew/runs.py:4930",
+    "reckon/crew/admission/holds.py:528",
+    "reckon/crew/recovery_classification.py:3574",
+    "reckon/crew/promotion_requests.py:684"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:49:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "4924",
+      "severity": "non-blocking",
+      "text": "non-blocking: watch_stream_cursor builds its transitions with pointers=records at reckon/crew/runs.py:4930 but counts the fleet with _fleet_counts(snapshots) without that reading, so a snapshot carrying delivery still reaches delivery_summary and lists the fleet again, leaving one avoidable listing inside the hunk the node edited."
+    },
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": "526",
+      "severity": "non-blocking",
+      "text": "non-blocking: _report_queued_failure passes the live reading at reckon/crew/admission/holds.py:528 but leaves counts=_fleet_counts(snapshots) on the line above without it, so the same report re-lists the fleet through promotion_queue_report when a delivery row is present."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044649367048-qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers/manifest.md",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests: line carries <head tree> and <base tree> placeholders rather than the literal command, so a gate receipt can only be filled from the logs/node-head.log and logs/node-base.log command headers."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read both commits against 97dec20bfb8603ab71c4e9deeefddab685e0a42e; 2b8f8a21b9 adds an optional pointers reading to _stream_transition, _fleet_counts, _session_fleet_counts, _transition_counts, delivery_summary, promotion_queue_report, _pending_requests and _reviewed_request_runs and passes it from the ticker, the sweep and admission, and 1ba5b832 adds only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_delivered_review_stop_reads_the_tick_pointers.py; manifest.md:21-22 records after_suite 1 passed EXIT=0 at 2b8f8a21b9 and baseline_suite 1 failed EXIT=1 at 97dec20bfb, with logs/node-head.log and logs/node-base.log carrying both.",
+    "goal": "the node's goal is that a delivered-review stop reads the tick's single live-pointer listing; reckon/crew/runs.py:4592 and reckon/crew/recovery_watch.py:4218 now thread the sweep's own reading into the review-row composition, and the named guard went from 6 listings at base to 1 at head.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044649367048-qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers/manifest.md; it states the head arm passed and the base arm failed, names four log paths, and its tests: line carries <head tree>/<base tree> placeholders rather than the literal command the log headers hold.",
+    "write_paths": "the declared paths are reckon, tests, the plan's evidence-fragment directory and its figure directory; git diff 97dec20..1ba5b832 touches six paths, five under reckon/crew/ and one evidence fragment, all inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:111 asserts listing.call_count == 1, which reddens on the reinstated regression exactly as the base log shows at 6, but the diff adds no assertion of its own and the two count sites it left unthreaded are unguarded.",
+    "evidence": "logs/node-base.log ends 1 failed EXIT=1 on tests/test_a_delivered_review_stop_reads_the_tick_pointers.py::test_delivered_reviews_share_the_ticks_single_live_read and logs/node-head.log ends EXIT=0, both command headers carrying revision, tree and the literal command, and my own re-run of that file in the reviewed tree read 1 passed in 3.18s.",
+    "fit": "the change copies the optional pointers= reading already carried by reckon/crew/recovery_watch.py:2987 rather than adding a cache or a second source, and each new parameter is documented in its own docstring.",
+    "goal_fidelity": "reckon/crew/runs.py:4592 passes the sweep's record list into _transition_counts and reckon/crew/recovery_watch.py:4218 passes the ticker's listing, so the named guard reads listing.call_count 1 at head against 6 at base.",
+    "reuse": "every added definition extends the existing owner of its capability - _watch_transition already accepted pointers and _resolved_reviewed_run_id already scoped a reading by project - and the search over reckon/crew found no separate fleet-reading mechanism to fork.",
+    "scope_discipline": "every added hunk sits in the five reckon/crew modules and the evidence fragment the node declared, and tests/test_a_delivered_review_stop_reads_the_tick_pointers.py is byte-identical at base and head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a delivered-review stop reads the tick's single live-pointer listing; reckon/crew/runs.py:4592 and reckon/crew/recovery_watch.py:4218 now thread the sweep's own reading into the review-row composition, and the named guard went from 6 listings at base to 1 at head.\nVERDICT done_when: the done_when names tests/test_a_delivered_review_stop_reads_the_tick_pointers.py; manifest.md:21-22 records after_suite 1 passed EXIT=0 at 2b8f8a21b9 and baseline_suite 1 failed EXIT=1 at 97dec20bfb, with logs/node-head.log and logs/node-base.log carrying both.\nVERDICT write_paths: the declared paths are reckon, tests, the plan's evidence-fragment directory and its figure directory; git diff 97dec20..1ba5b832 touches six paths, five under reckon/crew/ and one evidence fragment, all inside that fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044649367048-qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers/manifest.md; it states the head arm passed and the base arm failed, names four log paths, and its tests: line carries <head tree>/<base tree> placeholders rather than the literal command the log headers hold.\nVERDICT diff: read both commits against 97dec20bfb8603ab71c4e9deeefddab685e0a42e; 2b8f8a21b9 adds an optional pointers reading to _stream_transition, _fleet_counts, _session_fleet_counts, _transition_counts, delivery_summary, promotion_queue_report, _pending_requests and _reviewed_request_runs and passes it from the ticker, the sweep and admission, and 1ba5b832 adds only the evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:4218, reckon/crew/runs.py:4427, reckon/crew/runs.py:4592, reckon/crew/runs.py:4611, reckon/crew/runs.py:4633, reckon/crew/runs.py:4930, reckon/crew/admission/holds.py:528, reckon/crew/recovery_classification.py:3574, reckon/crew/promotion_requests.py:684\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:4592 passes the sweep's record list into _transition_counts and reckon/crew/recovery_watch.py:4218 passes the ticker's listing, so the named guard reads listing.call_count 1 at head against 6 at base.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/node-base.log ends 1 failed EXIT=1 on tests/test_a_delivered_review_stop_reads_the_tick_pointers.py::test_delivered_reviews_share_the_ticks_single_live_read and logs/node-head.log ends EXIT=0, both command headers carrying revision, tree and the literal command, and my own re-run of that file in the reviewed tree read 1 passed in 3.18s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every added hunk sits in the five reckon/crew modules and the evidence fragment the node declared, and tests/test_a_delivered_review_stop_reads_the_tick_pointers.py is byte-identical at base and head.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:111 asserts listing.call_count == 1, which reddens on the reinstated regression exactly as the base log shows at 6, but the diff adds no assertion of its own and the two count sites it left unthreaded are unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the change copies the optional pointers= reading already carried by reckon/crew/recovery_watch.py:2987 rather than adding a cache or a second source, and each new parameter is documented in its own docstring.\nSCORE reuse: 20\nJUSTIFICATION reuse: every added definition extends the existing owner of its capability - _watch_transition already accepted pointers and _resolved_reviewed_run_id already scoped a reading by project - and the search over reckon/crew found no separate fleet-reading mechanism to fork.\nFINDING reckon/crew/runs.py:4924 non-blocking: watch_stream_cursor builds its transitions with pointers=records at reckon/crew/runs.py:4930 but counts the fleet with _fleet_counts(snapshots) without that reading, so a snapshot carrying delivery still reaches delivery_summary and lists the fleet again, leaving one avoidable listing inside the hunk the node edited.\nFINDING reckon/crew/admission/holds.py:526 non-blocking: _report_queued_failure passes the live reading at reckon/crew/admission/holds.py:528 but leaves counts=_fleet_counts(snapshots) on the line above without it, so the same report re-lists the fleet through promotion_queue_report when a delivery row is present.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044649367048-qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers/manifest.md:26 non-blocking: the tests: line carries <head tree> and <base tree> placeholders rather than the literal command, so a gate receipt can only be filled from the logs/node-head.log and logs/node-base.log command headers.\n",
+  "review_run_id": "r-20261118T101250360229-review-of-qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers-1ba5b832aa21",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "1ba5b832aa2136fa14ad42fb85ad04124d597a7c",
+  "reviewed_run_id": "r-20261118T044649367048-qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers",
+  "reviewer_run_id": "r-20261118T101250360229-review-of-qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers-1ba5b832aa21",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:08:21Z",
+  "total": 116
+}

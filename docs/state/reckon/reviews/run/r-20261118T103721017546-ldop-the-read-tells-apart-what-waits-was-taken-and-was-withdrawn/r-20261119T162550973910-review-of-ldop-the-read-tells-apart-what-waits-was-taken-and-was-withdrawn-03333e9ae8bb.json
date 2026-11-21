@@ -1,0 +1,154 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "_ids(view, 'decisions') == [ready['id']]",
+      "fails_if": "The plan-block branch at reckon/crew/lead_decisions.py:494 is removed, so the plan decision lands back in the ready list; recorded as the base-revision failure in s5-negative-control.log.",
+      "file": "tests/test_the_read_sorts_each_decision_into_its_own_list.py",
+      "line": 176,
+      "test": "test_each_state_lands_in_its_own_list_and_in_no_other"
+    },
+    {
+      "assertion": "view['total_count'] == len(reported) == 4",
+      "fails_if": "A record appears in two lists or a list is dropped; the literal 4 keeps both sides from moving together.",
+      "file": "tests/test_the_read_sorts_each_decision_into_its_own_list.py",
+      "line": 188,
+      "test": "test_each_state_lands_in_its_own_list_and_in_no_other"
+    },
+    {
+      "assertion": "row['absent'] == ['session', 'recorded_at', 'held_work']",
+      "fails_if": "The absent-by-name block at reckon/crew/lead_decisions.py:496-497 is deleted or renamed; s5-negative-control.log records 'plan_block' absent as a KeyError at the base.",
+      "file": "tests/test_the_read_sorts_each_decision_into_its_own_list.py",
+      "line": 200,
+      "test": "test_a_plan_block_record_names_its_absent_fields"
+    },
+    {
+      "assertion": "withdrawn['id'] not in reported",
+      "fails_if": "The withdrawn_by exclusion at reckon/crew/lead_decisions.py:405 is removed.",
+      "file": "tests/test_the_read_sorts_each_decision_into_its_own_list.py",
+      "line": 256,
+      "test": "test_a_withdrawn_report_stands_in_no_list_and_releases_what_it_held"
+    },
+    {
+      "assertion": "result['released_withdrawn'] == ['r-held']",
+      "fails_if": "The sweep call at reckon/crew/admission/selection.py:141 is removed or the sweep stops matching the hold's decision_id.",
+      "file": "tests/test_the_read_sorts_each_decision_into_its_own_list.py",
+      "line": 263,
+      "test": "test_a_withdrawn_report_stands_in_no_list_and_releases_what_it_held"
+    }
+  ],
+  "assertion_independence": "No assertion compares a value against the same variable the test handed in: the ids on the left of :176, :178 and :180 are returned by record_decision and the lists on the right are read back from the view, and the absent/state literals at :196-200 are written in the test. The weakness is not echo but coverage: the withdrawn_by refusals are unasserted (finding 1) and :265 asserts only that the phase left 'held'.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:4485 serve_crew_view reads the decisions view",
+    "reckon/crew/admission/selection.py:141 release_withdrawn_holds in admit_once",
+    "reckon/crew_run_commands.py:725 crew view decisions",
+    "reckon/crew/queue_edit.py:899 release"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:12:22Z",
+  "evidence_limits": [
+    "The scoped gate ran at f34ab28799, not the head commit; 03333e9ae8 changes only docs, so the code measured is the code at head.",
+    "The manifest's per-branch mutation runs are not logged as separate files; only the base-revision red run is on disk.",
+    "This review re-ran no test; the figures quoted are the recorded logs."
+  ],
+  "findings": [
+    {
+      "file": "reckon/crew/lead_decisions.py",
+      "line": "113",
+      "severity": "non-blocking",
+      "text": "the new withdrawn_by guards - the identity check at :116 and the refusal of a choice at :118-121 - have no assertion in tests/test_the_read_sorts_each_decision_into_its_own_list.py, so deleting both leaves all three new tests green; fold a refusal test into the next node touching these tests."
+    },
+    {
+      "file": "docs/evidence/fragments/lead-decisions-reach-one-place/ldop-the-read-tells-apart-what-waits-was-taken-and-was-withdrawn.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the landing fragment states the pointer's 'queue_hold is None' while the test it cites asserts that the queue_hold key is absent at tests/test_the_read_sorts_each_decision_into_its_own_list.py:266, so a release that left an empty queue_hold would match the prose and fail the test; fold a wording correction into the next node that touches this fragment."
+    },
+    {
+      "file": "reckon/crew/lead_decisions.py",
+      "line": "320",
+      "severity": "non-blocking",
+      "text": "withdrawn_records enumerates and validates the decisions directory a second way beside read_decisions at :402 and runs on every admission pass through reckon/crew/admission/selection.py:141, so each pass parses every decision file twice; fold a shared record iterator or a cheap no-withdrawn pre-check into the next node in this area."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read both commits against 906d212e: f34ab28799 adds plan_block, the absent-field reporting, withdrawn_by validation, withdrawn_records() and release_withdrawn_holds() in reckon/crew/lead_decisions.py, wires the sweep into reckon/crew/admission/selection.py:135-145, adds the new test file and re-pins two plan-decision tests to the plan_block list; 03333e9ae8 adds only the two evidence fragments.",
+    "done_when": "The done_when requires four lists over a temporary crew home with two mounted projects, a plan-block record naming session, recorded time and held work as absent, a withdrawn report in no list whose hold the next admission pass releases, and a base-revision negative control logged to docs/evidence/fragments/lead-decisions-reach-one-place/s5.html; tests/test_the_read_sorts_each_decision_into_its_own_list.py:166-266 asserts each, and s5-negative-control.log records the same file at 906d212e as 3 failed with EXIT=1.",
+    "goal": "The node's goal is that the decision read sorts every open question into ready, pending, taken-and-reversible and plan-block and records its state on each row; docs/plans/lead-decisions-reach-one-place.html section s5 states it and reckon/crew/lead_decisions.py:487-519 returns those four lists.",
+    "manifest": "The source manifest reads status complete with commits f34ab28799 and 03333e9ae8, a scoped gate of 33 passed, a base negative control of 3 failed and both suite arms at 0 failures; scoped-gate-1795104863129838225.log (33 passed, EXIT=0), s5-negative-control.log (3 failed, EXIT=1), baseline_suite-1795105028924485651.log and after_suite-1795105072179567407.log (58 passed each, EXIT=0) record those figures.",
+    "write_paths": "The source manifest declares reckon, tests, the section's fragment directory and its s5 fragment; git diff --stat 906d212e..03333e9a changes six paths - reckon/crew/lead_decisions.py, reckon/crew/admission/selection.py, tests/test_lead_decision_read.py, tests/test_the_read_sorts_each_decision_into_its_own_list.py, the s5 negative-control fragment and the landing fragment - and every one is inside those declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_read_sorts_each_decision_into_its_own_list.py:176, 197 and 256 redden at 906d212e and green at the head, but the withdrawn_by refusals at reckon/crew/lead_decisions.py:113-121 have no assertion and line 265 only asserts the pointer left held.",
+    "evidence": "scoped-gate-1795104863129838225.log records 33 passed with EXIT=0 on host 98dci4-clu-3141, which sinfo reports in partition all_debug, and s5-negative-control.log records 3 failed with EXIT=1 at 906d212e.",
+    "fit": "The new state rides the existing row dictionary and sort at reckon/crew/lead_decisions.py:479-496 and the sweep is wired beside the plan-review release at reckon/crew/admission/selection.py:141.",
+    "goal_fidelity": "reckon/crew/lead_decisions.py:487-519 returns the decisions, pending, taken_and_reversible and plan_block lists and skips rows carrying withdrawn_by, which is the four-state sort the section names.",
+    "reuse": "release_withdrawn_holds reuses queue_edit.release at reckon/crew/queue_edit.py:899, but withdrawn_records at reckon/crew/lead_decisions.py:320 re-implements the enumeration read_decisions already performs at line 402.",
+    "scope_discipline": "git diff --stat 906d212e..03333e9a lists six paths, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the decision read sorts every open question into ready, pending, taken-and-reversible and plan-block and records its state on each row; docs/plans/lead-decisions-reach-one-place.html section s5 states it and reckon/crew/lead_decisions.py:487-519 returns those four lists.\nVERDICT done_when: The done_when requires four lists over a temporary crew home with two mounted projects, a plan-block record naming session, recorded time and held work as absent, a withdrawn report in no list whose hold the next admission pass releases, and a base-revision negative control logged to docs/evidence/fragments/lead-decisions-reach-one-place/s5.html; tests/test_the_read_sorts_each_decision_into_its_own_list.py:166-266 asserts each, and s5-negative-control.log records the same file at 906d212e as 3 failed with EXIT=1.\nVERDICT write_paths: The source manifest declares reckon, tests, the section's fragment directory and its s5 fragment; git diff --stat 906d212e..03333e9a changes six paths - reckon/crew/lead_decisions.py, reckon/crew/admission/selection.py, tests/test_lead_decision_read.py, tests/test_the_read_sorts_each_decision_into_its_own_list.py, the s5 negative-control fragment and the landing fragment - and every one is inside those declared paths.\nVERDICT manifest: The source manifest reads status complete with commits f34ab28799 and 03333e9ae8, a scoped gate of 33 passed, a base negative control of 3 failed and both suite arms at 0 failures; scoped-gate-1795104863129838225.log (33 passed, EXIT=0), s5-negative-control.log (3 failed, EXIT=1), baseline_suite-1795105028924485651.log and after_suite-1795105072179567407.log (58 passed each, EXIT=0) record those figures.\nVERDICT diff: Read both commits against 906d212e: f34ab28799 adds plan_block, the absent-field reporting, withdrawn_by validation, withdrawn_records() and release_withdrawn_holds() in reckon/crew/lead_decisions.py, wires the sweep into reckon/crew/admission/selection.py:135-145, adds the new test file and re-pins two plan-decision tests to the plan_block list; 03333e9ae8 adds only the two evidence fragments.\nCALL_SITES: reckon/mcp_views.py:4485 serve_crew_view reads the decisions view, reckon/crew/admission/selection.py:141 release_withdrawn_holds in admit_once, reckon/crew_run_commands.py:725 crew view decisions, reckon/crew/queue_edit.py:899 release\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/lead_decisions.py:487-519 returns the decisions, pending, taken_and_reversible and plan_block lists and skips rows carrying withdrawn_by, which is the four-state sort the section names.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-1795104863129838225.log records 33 passed with EXIT=0 on host 98dci4-clu-3141, which sinfo reports in partition all_debug, and s5-negative-control.log records 3 failed with EXIT=1 at 906d212e.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 906d212e..03333e9a lists six paths, all inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_read_sorts_each_decision_into_its_own_list.py:176, 197 and 256 redden at 906d212e and green at the head, but the withdrawn_by refusals at reckon/crew/lead_decisions.py:113-121 have no assertion and line 265 only asserts the pointer left held.\nSCORE fit: 18\nJUSTIFICATION fit: The new state rides the existing row dictionary and sort at reckon/crew/lead_decisions.py:479-496 and the sweep is wired beside the plan-review release at reckon/crew/admission/selection.py:141.\nSCORE reuse: 16\nJUSTIFICATION reuse: release_withdrawn_holds reuses queue_edit.release at reckon/crew/queue_edit.py:899, but withdrawn_records at reckon/crew/lead_decisions.py:320 re-implements the enumeration read_decisions already performs at line 402.\nFINDING reckon/crew/lead_decisions.py:113 non-blocking: the new withdrawn_by guards - the identity check at :116 and the refusal of a choice at :118-121 - have no assertion in tests/test_the_read_sorts_each_decision_into_its_own_list.py, so deleting both leaves all three new tests green; fold a refusal test into the next node touching these tests.\nFINDING docs/evidence/fragments/lead-decisions-reach-one-place/ldop-the-read-tells-apart-what-waits-was-taken-and-was-withdrawn.html:21 non-blocking: the landing fragment states the pointer's 'queue_hold is None' while the test it cites asserts that the queue_hold key is absent at tests/test_the_read_sorts_each_decision_into_its_own_list.py:266, so a release that left an empty queue_hold would match the prose and fail the test; fold a wording correction into the next node that touches this fragment.\nFINDING reckon/crew/lead_decisions.py:320 non-blocking: withdrawn_records enumerates and validates the decisions directory a second way beside read_decisions at :402 and runs on every admission pass through reckon/crew/admission/selection.py:141, so each pass parses every decision file twice; fold a shared record iterator or a cheap no-withdrawn pre-check into the next node in this area.",
+  "reuse_search": {
+    "capabilities": [
+      "releasing held queue requests",
+      "enumerating stored decision records",
+      "binding a hold to a decision"
+    ],
+    "judgement": "The release write is queue_edit.release, already owned; the plan-review sweep is a different capability reached from the same pass. The record enumeration is the one duplication: withdrawn_records re-globs and re-validates the decisions directory.",
+    "owners_opened": [
+      "reckon/crew/queue_edit.py:899",
+      "reckon/crew/admission/reviews.py:682",
+      "reckon/crew/lead_decisions.py:402"
+    ]
+  },
+  "review_run_id": "r-20261119T162550973910-review-of-ldop-the-read-tells-apart-what-waits-was-taken-and-was-withdrawn-03333e9ae8bb",
+  "reviewed_base_sha": "906d212eaeb58ff648ab042b8190a3d4d21be6cb",
+  "reviewed_head_sha": "03333e9ae8bb249e36e9a1f317d9ca49592e9bef",
+  "reviewed_run_id": "r-20261118T103721017546-ldop-the-read-tells-apart-what-waits-was-taken-and-was-withdrawn",
+  "reviewed_worker_commits": [
+    "f34ab28799b1eb8192b3cb2ef53483d7c33ab259",
+    "03333e9ae8bb249e36e9a1f317d9ca49592e9bef"
+  ],
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T103721017546-ldop-the-read-tells-apart-what-waits-was-taken-and-was-withdrawn/after_suite-1795105072179567407.log",
+      "revision": "03333e9ae8bb249e36e9a1f317d9ca49592e9bef",
+      "sha256": "66d8462c716f478d02720dc36e165ddf2ead58e2256d4a9f0191a41dfdef2c40",
+      "summary": "58 passed in 0:35.93"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T103721017546-ldop-the-read-tells-apart-what-waits-was-taken-and-was-withdrawn/baseline_suite-1795105028924485651.log",
+      "revision": "906d212eaeb58ff648ab042b8190a3d4d21be6cb",
+      "sha256": "370dd327d8bab26723f2e8e1e5730cde72ee25bf49d5128e5fd982edb60cc4d0",
+      "summary": "58 passed in 36.63s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:35:55.658526+00:00",
+  "total": 107
+}

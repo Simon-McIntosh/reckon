@@ -1,0 +1,91 @@
+<section id="qwnw-red-file-an-activity-read-costs-what-was-active-landing">
+  <h2>An activity read costs what was active</h2>
+
+  <p><strong>What changed.</strong>
+  <code>reckon/run_store.py</code> gains <code>stored_run_exists(project)</code>:
+  whether the store holds any row for a project, answered by one indexed row
+  over the same schemas, main then the archive, that the read it decides walks.
+  <code>reckon/ledger.py</code> asks that question at both places that asked for
+  the whole membership to learn whether it was non-empty: <code>read_records</code>
+  and <code>_complete_store_from_ledger</code>.</p>
+
+  <p><strong>Causes, and which side was wrong.</strong></p>
+
+  <ul id="qwnw-red-file-an-activity-read-costs-what-was-active-causes">
+    <li><strong>test wrong.</strong> The fixture replaced
+    <code>ledger._aggregate_headers</code> with a stub answering only
+    <code>{"runs": []}</code>. Both real paths of that function end at
+    <code>{**data, "runs": []}</code>, so its answer always carries the
+    <code>members</code> and <code>holds</code> collections that
+    <code>load</code> merges unconditionally; every case raised
+    <code>KeyError: 'members'</code> at <code>ledger.py:2584</code> before it
+    reached a cost assertion. The stub now returns the three collections its
+    stand-in returns. No assertion was changed, deleted or weakened.</li>
+    <li><strong>product wrong.</strong> With the stub repaired the read answered
+    the right rows and paid for history beside them: over the fixture's 20,000
+    rows a window of 50 recent runs cost 20,101 row reads, because the
+    membership probe walked the project's whole history to answer a boolean.
+    It now costs 102.</li>
+  </ul>
+
+  <h3 id="qwnw-red-file-an-activity-read-costs-what-was-active-measured">Measured</h3>
+
+  <p>The node's check at both revisions. The head run is an
+  <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset.</p>
+
+  <table id="qwnw-red-file-an-activity-read-costs-what-was-active-arms">
+    <thead>
+      <tr>
+        <th>arm</th>
+        <th>revision</th>
+        <th>result</th>
+        <th>log</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td>5417b373ff9230f07c1c8f403632835808fffc15</td>
+        <td>4 failed, 1 passed, EXIT=1</td>
+        <td>logs/base-run-tests-test_an_activity_read_costs_what_was_active.log</td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td>0286810fff4e70ab26dc73860206993cb592f406</td>
+        <td>5 passed, EXIT=0</td>
+        <td>scoped-gate-1795049811700474600.log</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Rows read per storage: fresh, migrated and archive 20,101 before and 102
+  after; amended 20,107 before and 106 after. The passing assertions above them
+  are the per-storage budgets of three rows and 200 steps per active row, and
+  the fixture's positive control proves the instruments see all 20,000 rows
+  when the history is read.</p>
+
+  <h3 id="qwnw-red-file-an-activity-read-costs-what-was-active-control">Negative control</h3>
+
+  <p>At the base revision the activity cases fail: four ids, every one
+  <code>KeyError: 'members'</code>, with the one passing test the same file's
+  interrupted-backfill case, and the run exits 1. The log is
+  <code>logs/base-run-tests-test_an_activity_read_costs_what_was_active.log</code>
+  beside this node's run; the head log is
+  <code>scoped-gate-1795049811700474600.log</code>.</p>
+
+  <p>That base run cannot show the second cause, because the stub raises before
+  any case reaches a cost assertion. The cost guard was made to fire on its own
+  instead: the head test file against the base product tree, with no source
+  change of mine, fails all four ids with row counts of 20,101, 20,101, 20,101
+  and 20,107 against budgets of 150, 150, 150 and 156. The log is
+  <code>logs/product-control.log</code>; the head run of the same file reads 102
+  rows for the first three and 106 for the last.</p>
+
+  <h3 id="qwnw-red-file-an-activity-read-costs-what-was-active-outside">Outside scope</h3>
+
+  <p>None of this node's change reaches elsewhere. Two failures were found in
+  <code>tests/test_every_ledger_question_reads_the_store.py</code> (the
+  plan-owner cases) and they fail identically in an unmodified base extraction,
+  so they are carried by the primary branch and are not this node's to repair.
+  A later node owns that file.</p>
+</section>

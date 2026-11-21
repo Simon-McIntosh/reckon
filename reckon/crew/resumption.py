@@ -74,6 +74,8 @@ from reckon.crew.dispatch import (
     resume_plan,
 )
 from reckon.crew.node import CrewError
+from reckon.crew.open_run_index import operational_read
+from reckon.crew.open_run_index import pointers as scoped_pointers
 from reckon.crew.process_liveness import _process_start_time as process_start_time
 from reckon.crew.recovery import (
     LAUNCH_WINDOW_SECONDS,  # noqa: F401 -- re-exported: resume doors read it here
@@ -324,7 +326,18 @@ def launch_mark_holds(record: Mapping[str, Any]) -> bool:
     a mark whose presence means nothing about what is running now. Presence
     alone therefore must not refuse a review, or one abandoned door withholds
     a run's review for as long as the pointer holding the mark survives.
+
+    A launch this process has begun stands whatever the pointer says. The
+    pointer mark exempts its own writer, so a sweep's review pass running
+    inside the launch that door began would read the previous attempt's answer
+    as the mark being spent and compose a review of the head the resume has
+    not yet replaced. The registry separates the two cases the pointer cannot:
+    a launch of this run under way in this process never counts as spent,
+    while a mark left in the pointer by an earlier launch still does.
     """
+    run_id = str(record.get("run_id") or "")
+    if run_id and run_id in _LAUNCHES_IN_THIS_PROCESS:
+        return True
     if not launch_in_flight(record):
         return False
     marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
@@ -1119,7 +1132,8 @@ def _claimed_write_paths(record: Mapping[str, Any]) -> list[str]:
     run_id = str(record.get("run_id") or "")
     repo = str(record.get("repo") or "")
     claimed: set[str] = set()
-    for other in list_live():
+    snapshot = scoped_pointers()
+    for other in list_live() if snapshot is None else snapshot:
         if str(other.get("run_id") or "") == run_id:
             continue
         if str(other.get("repo") or "") != repo:
@@ -1425,6 +1439,34 @@ def _attempt_detail(
     return ". " + "; ".join(parts) + "."
 
 
+def surviving_step_refusal(record: Mapping[str, Any]) -> CrewError | None:
+    """The refusal a resume owes a run whose stop left its scheduler step up.
+
+    A placed worker runs as a step on the node holding the allocation, and a
+    stop that could not settle the step records it on the run with the command
+    that ends it. The local process may be gone while the step still works, so
+    the generic live-process refusal would name no step and offer no remedy;
+    the step's own reason is read first and repeated exactly.
+    """
+    step = record.get("step_stop")
+    if not isinstance(step, Mapping):
+        return None
+    if step.get("surviving") is False:
+        return None
+    step_id = str(step.get("step") or "")
+    if not step_id:
+        return None
+    run_id = str(record.get("run_id") or "")
+    command = str(step.get("command") or f"scancel {step_id}")
+    reason = str(record.get("stop_reason") or "").strip()
+    detail = f" ({reason})" if reason else ""
+    return CrewError(
+        f"run {run_id!r} is refused: its stop left scheduler step {step_id!r} "
+        f"running, so ending its local worker did not end its work; "
+        f"end the step with `{command}` before resuming{detail}"
+    )
+
+
 def live_process_refusal(record: Mapping[str, Any], *, reading: str) -> CrewError:
     """The one message that refuses a second worker over a run that still has one.
 
@@ -1497,6 +1539,12 @@ def _launcher_refusal(
     run_id = str(record.get("run_id") or "")
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
+    # The step a stop could not settle is read before the process table, and
+    # through the one helper the real resume uses, so a preview cannot offer a
+    # resume the launcher refuses.
+    step_refusal = surviving_step_refusal(record)
+    if step_refusal is not None:
+        return step_refusal
     if record_process_alive(record, process_alive) is True and not _parked_on_a_wait(
         record
     ):
@@ -1652,6 +1700,12 @@ def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
     act on a reading the reader was never shown, and the reason names the
     reading it is holding.
     """
+    step_refusal = surviving_step_refusal(record)
+    if step_refusal is not None:
+        # A step still running under the allocation is work this host cannot
+        # see, so no reading of the local process table can license a lift over
+        # it.
+        return step_refusal
     if _parked_on_a_wait(record):
         # A parked worker has ended its turn and declared what ends its park,
         # so the end of the *work that matters* is observed on the declaration
@@ -1720,6 +1774,28 @@ def _refusal_entry(entry: Mapping[str, Any], exc: BaseException) -> dict[str, An
             ),
         }
     return {**entry, "reason": "resume-refused", "detail": str(exc)}
+
+
+def _clear_launch_failure(run_id: str) -> None:
+    """Return a launch-failed run to the live phase a hand-typed resume earns.
+
+    The phase and its failure list are what stop the lift loop, so a person who
+    has repaired the command lifts them by resuming: the new attempt starts from
+    a live phase rather than reading as the failure it supersedes. The recorded
+    history survives in the retired attempt receipts, so clearing the pointer's
+    copy loses no evidence.
+    """
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return
+        if str(current.get("phase") or "") != "launch-failed":
+            return
+        current["phase"] = "starting"
+        current.pop("launch_failures", None)
+        current.pop("detail", None)
+        _write_json(pointer_path(run_id), current)
 
 
 def _launch_failure_block(record: Mapping[str, Any]) -> dict[str, str] | None:
@@ -1897,6 +1973,72 @@ def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
     advice_path.write_text(prompt_text.rstrip("\n") + "\n", encoding="utf-8")
 
 
+def release_judged_resume_holds(*, only_run: str = "") -> list[dict[str, Any]]:
+    """End resume deferrals only on evidence belonging to the resumed attempt.
+
+    Head-bearing holds are resume deferrals; explicit coordinator holds carry
+    no head. A live worker, an unchanged manifest generation, and a review
+    predating the attempt cannot settle that attempt. Compare the pointer again
+    under its write lock so a new resume or explicit hold keeps its authority.
+    """
+    from reckon.crew import resume
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+    from reckon.crew.recovery_review_acceptance import _record_is_complete
+    from reckon.crew.recovery_review_dispatch import _review_head_and_tree
+    from reckon.crew.recovery_review_subject import select_review_for_head
+
+    released = []
+    for pointer in runs.list_live():
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or (only_run and run_id != only_run):
+            continue
+        hold = resume.delivery_hold(pointer)
+        if not hold or not hold.get("head"):
+            continue
+        started = parse_utc(pointer.get("attempt_started_at")) or parse_utc(
+            (pointer.get("resume_superseded_head") or {}).get("at")
+        )
+        held_at = parse_utc(hold.get("at"))
+        if started is None or held_at is None or started < held_at:
+            continue
+        if _reviewed_run_is_busy(pointer) or launch_mark_holds(pointer):
+            continue
+        manifest = _fresh_manifest(pointer) or {}
+        status = str(manifest.get("status") or "")
+        # A generation is the precise ordering. Legacy pointers without one
+        # need a manifest written after the attempt's recorded start.
+        fresh = bool(manifest) and pointer.get("manifest_baseline_mtime_ns") is not None
+        if not fresh and pointer.get("manifest_path"):
+            try:
+                fresh = (
+                    Path(pointer["manifest_path"]).stat().st_mtime > started.timestamp()
+                )
+            except OSError:
+                fresh = False
+        reason = ""
+        if fresh and status in {"complete", "failed", "blocked"}:
+            reason = f"the resumed attempt declared {status} in its terminal manifest"
+        else:
+            head, tree = _review_head_and_tree(pointer)
+            review, _ = select_review_for_head(
+                str(pointer.get("project") or ""), run_id, head, tree=tree
+            )
+            judged_at = parse_utc((review or {}).get("timestamp"))
+            if _record_is_complete(review) and judged_at and judged_at >= started:
+                reason = "the resumed attempt was judged by its stored review"
+        if not reason:
+            continue
+        try:
+            receipt = resume.release_hold(
+                run_id, reason, by="resume-judgment", expected=pointer
+            )
+        except CrewError:
+            continue
+        released.append({**receipt, "status": "resume-hold-released"})
+    return released
+
+
 def _record_resume_supersedes_head(run_id: str) -> str:
     """Record the head a resume leaves behind, with the instant it was resumed.
 
@@ -2023,9 +2165,10 @@ def _resume(
             flag="the run's recorded repository",
         )
     failure = _launch_failure_block(record)
-    if failure is not None:
+    if failure is not None and not coordinator:
         # A launch that produced no stream has no session to continue, so a
-        # lift would repeat the failed exec every tick. It waits for a person.
+        # lift would repeat the failed exec every tick. It waits for a person,
+        # and only a person's own command may relaunch it.
         raise CrewError(
             f"run {run_id!r} is in phase {failure['phase']!r}: "
             f"{failure['detail']} — repair the launch ("
@@ -2100,6 +2243,15 @@ def _resume(
             # its verdict so the supervisor does not read the new worker's first
             # edit as that delivery.
             _reset_delivered_manifest_status(run_id, record)
+            if failure is not None:
+                # A hand-typed resume is the repair the launch-failure refusal
+                # names, so it retires the failure and its phase here, at the
+                # last point before a worker is started: every gate that can
+                # still decline the launch has run, and a resume that one of
+                # them refuses leaves the state that stops the lift loop in
+                # place. The history survives in the retired attempt records.
+                _clear_launch_failure(run_id)
+                record = read_pointer(run_id)
             if launcher is None:
                 pid = _spawn(
                     plan,
@@ -2631,6 +2783,7 @@ def writer_sweep_status(project: str, writer: Any) -> dict[str, Any] | None:
     return read_sweep_status(project).get("writers", {}).get(_writer_key(kind, key))
 
 
+@operational_read(live_reader=lambda: list_live(project=None))
 def sweep(
     project: str,
     *,
@@ -2687,6 +2840,8 @@ def sweep(
     skipped: list[dict[str, Any]] = []
     considered = 0
 
+    if pointers is None:
+        pointers = scoped_pointers(project=project)
     live = list_live(project=project) if pointers is None else pointers
     for pointer in runs._tick_pointers(live):
         # A session-scoped sweep resumes only the runs that session owns: a
@@ -2981,18 +3136,41 @@ def sweep(
     # is idempotent — a plan whose review is stored or in flight is left alone
     # — and it notes the findings a review it composed marked as not changing
     # the plan, so the coordinator is woken only for the ones that would.
+    # The pass also answers whether it has anything new to read: it composes
+    # from the project's plans, its stored plan reviews and its authoring runs,
+    # and those move on the scale of minutes rather than of one tick, so a pass
+    # whose inputs still carry the footprint it last read is left to the pass
+    # that finds one moved, or to the interval. The gate is out here rather than
+    # inside the pass because it decides whether to call the pass at all.
     plan_reviews: dict[str, Any] = {}
+    moment = _now(now).timestamp()
+    gate: dict[str, Any] = {}
     try:
-        plan_reviews = plan_review.compose_owed_plan_reviews(
-            project,
-            config=config,
-            launcher=launch,
-            now_seconds=_now(now).timestamp(),
-            dry_run=dry_run,
-            pointers=live,
+        # A preview that the gate held back would report nothing to preview, so
+        # a dry run always weighs. It records nothing, so it leaves the next
+        # real pass due.
+        gate = (
+            {"due": True, "reason": "a preview weighs whatever changed"}
+            if dry_run
+            else plan_review.owed_plan_review_pass_due(
+                project, now_seconds=moment, pointers=live
+            )
         )
+        if gate.get("due"):
+            plan_reviews = plan_review.compose_owed_plan_reviews(
+                project,
+                config=config,
+                launcher=launch,
+                now_seconds=moment,
+                dry_run=dry_run,
+                pointers=live,
+            )
     except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
         plan_reviews = {"error": str(exc)}
+    if gate.get("due") and not dry_run:
+        plan_review.record_owed_plan_review_pass(
+            project, now_seconds=moment, pointers=live
+        )
 
     report = {
         "project": project,
@@ -3003,6 +3181,60 @@ def sweep(
         "reviews": reviews,
         "swept_at": _utc_now(),
     }
+    # The request's own reading, taken on the same pass that makes the request.
+    # A delivered run whose review was never asked for is an obligation with the
+    # reason its record gives, and the interval between the delivery and the
+    # request is reported apart from the interval between the request and its
+    # launch, so a late request and a slow launch are told apart. Only the
+    # obligations ride the sweep's report: the intervals are the census's own
+    # reading, and a sweep that printed them on every tick would be reporting a
+    # distribution nobody asked it for.
+    review_requests: dict[str, Any] = {}
+    if not dry_run:
+        try:
+            from reckon.crew.recovery_review_dispatch import review_request_census
+
+            census = review_request_census(
+                [str(pointer.get("run_id") or "") for pointer in live],
+                pointers=live,
+            )
+            # Both readings travel on the report: a request that took four
+            # minutes is a fact about the fleet whether or not the run owes an
+            # obligation, and the returned report is where a reader of a sweep
+            # receives the census's own fields rather than a retelling of them.
+            review_requests = {
+                "obligations": census["obligations"],
+                "deadline_seconds": census["deadline_seconds"],
+                "late_requests": census["late_requests"],
+                "request_window_seconds": census["request_window_seconds"],
+            }
+        except Exception as exc:  # noqa: BLE001 - a reading must not fail a sweep
+            review_requests = {"error": str(exc)}
+    if review_requests.get("obligations") or review_requests.get("late_requests"):
+        report["review_requests"] = review_requests
+    if review_requests.get("obligations"):
+        # The obligation has to reach the row a coordinator reads, not only this
+        # pass's return value: the station keeps the review pass's owed rows per
+        # session and turns each into a duty, which is the one channel from a
+        # sweep to the pane and to the obligations view. The row says what the
+        # pass failed to do — request the review — and carries the run's own
+        # reason, so the duty names both.
+        owed = [
+            {
+                "run_id": str(obligation["run_id"]),
+                "error": (
+                    "the review pass requested no review for this delivered run "
+                    f"within {review_requests['deadline_seconds']} s: "
+                    f"{obligation['reason']}"
+                ),
+            }
+            for obligation in review_requests["obligations"]
+            if obligation.get("run_id")
+        ]
+        if owed:
+            block = reviews if isinstance(reviews, dict) else {}
+            block["failed"] = [*(block.get("failed") or ()), *owed]
+            report["reviews"] = block
     if any(
         plan_reviews.get(key)
         for key in ("composed", "skipped", "notes", "failed", "error")

@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2751 compose_landed_record (HTTP evidence record read)",
+    "reckon/mcp.py:1344 compose_landed_record (MCP evidence record read)",
+    "reckon/doccheck.py:1971 compose_landed_record (doccheck plan read)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:31:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-view-serves-every-view.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the fragment's first section is headed 'passes in full at 42fe90d0', the node's base, and carries no block for the delivered head ad5f343b1d, so a reader of the composed plan record sees a base run and a stale-revision negative control but no run at the revision that landed, the head run existing only as scoped-gate-1795066438681474614.log in the run directory."
+    }
+  ],
+  "head_log_revision": "ad5f343b1da74aa2f8990ff339f54ada0a5b00b9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production call sites: the HTTP evidence read, the MCP evidence read, and the doccheck plan read.",
+    "diff": "read the single commit ad5f343b1d against 42fe90d0: a 20-line new fragment with three sections carrying the base gate log, the a0bf002e72 negative-control log and the cause verdict prose; no product or test line is touched.",
+    "done_when": "the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, the base run first, both suite arms as inline JSON with 40-character revisions, and the negative control beside the head run; the scoped gate log, both manifest arm records and negative-control-a0bf002e72.log supply every clause but the head run in the fragment.",
+    "goal": "the goal is that tests/test_crew_view_serves_every_view.py pass in full on the primary branch; the delivered commit ad5f343b1d adds only the evidence fragment, and scoped-gate-1795066438681474614.log records the same six cases passing at that head.",
+    "manifest": "read; status complete, commits ad5f343b1d, changed_paths naming the one file, tests carrying the literal pytest command, test_logs the scoped gate log, baseline_suite and after_suite completed true with exit 0 and empty failure ids at full 40-character revisions, negative_control_log named as a bare path with its EXIT=1 and two failing ids.",
+    "write_paths": "the node was fenced to reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; git diff 42fe90d0..ad5f343b1d touches exactly that fragment path."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_view_serves_every_view.py:278-293 compares the schema Literal against the dispatcher's crew_view_names() with one control per direction, and it reddens at a0bf002e72, but no test fails if the delivered fragment is removed.",
+    "evidence": "scoped-gate-1795066438681474614.log records 6 passed EXIT=0 at ad5f343b1d and negative-control-a0bf002e72.log records 2 failed, 4 passed EXIT=1, so the gate asserts the done_when's measure, with the all_debug placement carried by the harness wrapper rather than the log and the ruff clause unrecorded.",
+    "fit": "the fragment's section ids follow the <node>-<suffix> form used across docs/evidence/fragments/queued-work-needs-no-workaround/ and its h2 root heading matches the 202 of 335 siblings that open at h2.",
+    "goal_fidelity": "tests/test_crew_view_serves_every_view.py's six cases pass at the delivered head ad5f343b1d as scoped-gate-1795066438681474614.log records, and the commit changes no product or test code, which is what the goal states.",
+    "reuse": "the diff adds no definition and forks no capability, supplying content for the existing composition owner reckon/evidence.py:1658 compose_landed_record.",
+    "scope_discipline": "git diff 42fe90d0..ad5f343b1d touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-view-serves-every-view.html, inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_crew_view_serves_every_view.py pass in full on the primary branch; the delivered commit ad5f343b1d adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-view-serves-every-view.html while scoped-gate-1795066438681474614.log records the same six cases passing at that head, so the goal is met with no product or test change.\nVERDICT done_when: the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, the base run first, both suite arms as inline JSON with 40-character revisions, and the negative control beside the head run in the fragment; scoped-gate-1795066438681474614.log records '6 passed in 2.45s' with EXIT=0 at ad5f343b1d, the manifest records both arms at 42fe90d0 and ad5f343b1d with zero failures, and negative-control-a0bf002e72.log records '2 failed, 4 passed' with EXIT=1, while the all_debug placement rests on the harness's sbatch wrapper rather than on the log.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 42fe90d0..ad5f343b1d touches exactly docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-view-serves-every-view.html, inside that fence.\nVERDICT manifest: read; status complete, commits ad5f343b1d, changed_paths naming the one fragment, tests carrying the literal pytest command, test_logs the scoped gate log, baseline_suite and after_suite both completed true with exit 0 and empty failure ids at full 40-character revisions, and negative_control_log naming negative-control-a0bf002e72.log with its EXIT=1 and two failing ids.\nVERDICT diff: read the single commit ad5f343b1d against base 42fe90d0, one new 20-line evidence fragment with three sections holding the base gate log, the a0bf002e72 negative-control log and the verdict prose; no product or test line is touched and no assertion is added or removed.\nCALL_SITES: reckon/serve.py:2751 compose_landed_record (HTTP evidence read), reckon/mcp.py:1344 compose_landed_record (MCP evidence read), reckon/doccheck.py:1971 compose_landed_record (doccheck plan read)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: scoped-gate-1795066438681474614.log records the six cases of tests/test_crew_view_serves_every_view.py passing at the delivered head ad5f343b1d, which is what the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795066438681474614.log and negative-control-a0bf002e72.log carry both EXIT= receipts, but the gate log names no partition and the done_when's ruff clause is unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 42fe90d0..ad5f343b1d touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-view-serves-every-view.html.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_view_serves_every_view.py:278-293 fails if the advertised views drift from the dispatcher's and reddens at a0bf002e72, while nothing guards the delivered fragment itself.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment's section ids follow the node-prefixed form used across docs/evidence/fragments/queued-work-needs-no-workaround/ and its h2 root heading matches the majority of its siblings.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and the fragment supplies content to the existing composer at reckon/evidence.py:1658.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-view-serves-every-view.html:1 non-blocking: the fragment's first section is headed at the base revision 42fe90d0 and no block records the delivered head ad5f343b1d, so the composed plan record shows a base run but not the run at the revision that landed.\n",
+  "review_run_id": "r-20261119T055915535052-review-of-qwnw-red-file-crew-view-serves-every-view-ad5f343b1da7",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "ad5f343b1da74aa2f8990ff339f54ada0a5b00b9",
+  "reviewed_run_id": "r-20261118T063106869692-qwnw-red-file-crew-view-serves-every-view",
+  "reviewer_run_id": "r-20261119T055915535052-review-of-qwnw-red-file-crew-view-serves-every-view-ad5f343b1da7",
+  "rubric": "node",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:55:45.048499+00:00",
+  "total": 110
+}

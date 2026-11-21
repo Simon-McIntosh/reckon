@@ -1,0 +1,92 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/landing_measure.py:submit_measurement",
+    "reckon/crew/landing_measure.py:measurement_job_state",
+    "reckon/crew/recovery_review_acceptance.py:accept_clean_review"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T10:57:45Z",
+  "findings": [
+    {
+      "file": "tests/test_cleanly_reviewed_run_lands_itself.py",
+      "line": "121",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delta swaps this fixture onto install_in_place_scheduler and manifest.md:14 claims the shared transport serves it, yet no recorded log's command names this file at 6464e6d, so a break in its use of the rewritten transport would land unmeasured."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-acceptance-reads-the-remote-primary.html",
+      "line": "77",
+      "severity": "non-blocking",
+      "text": "non-blocking: the row attributes the importing file's failure to primary measured at 67e8dea40e03, but no log at that revision exists in the run directory; only importer-merge-head.log at 6464e6d is on disk, so the attribution cannot be re-read from a receipt."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths, and neither manifest.md nor the fragment records either result, so the clause is asserted nowhere and a later reader cannot tell it was measured."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "read the production paths the changed transport must satisfy: reckon/crew/landing_measure.py:230 submits without --wait and returns the parsed job id, :264-268 asks squeue then sacct with -j, and reckon/crew/recovery_review_acceptance.py drives acceptance; no runtime module imports the test helper.",
+    "diff": "read commit by commit against 8083a844: 6464e6d763 merges primary 67e8dea40e into the branch and resolves tests/helpers/landing_repository.py by keeping both fixtures and rewriting the transport to answer squeue and sacct, and fe90f259 carries only the fragment's merge-round rows plus a newline-free tail.",
+    "done_when": "the done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset, a red base control, suite arms at full 40-character revisions, a green ruff record and inline JSON arms; gate-head.log:1-5 and suite-final-head.log:1-5 record the gate and the suite at 6464e6d763 and fe90f259, importer-base.log and importer-merge-head.log record one importer arm, and the ruff clause is unrecorded.",
+    "goal": "the source node's goal is tests/test_reflex_acceptance_reads_the_remote_primary.py passing in full on the primary branch; the delta's merge at 6464e6d763 reconciles primary's landed_checkout and record_promoted_row with this node's transport in tests/helpers/landing_repository.py:59-178, and gate-head.log:1 names that head with 13 passed EXIT=0.",
+    "manifest": "read; status complete, seven commits through fe90f259, gate-head.log named as the gate log, baseline_suite and after_suite inline JSON at 42fe90d0ba and fe90f259 with zero failures each, outside_scope naming the inherited red, blockers none.",
+    "write_paths": "the declared paths are reckon, tests, the fragment and its figures directory; the whole delta 8083a844..fe90f259 touches only the fragment, tests/helpers/landing_repository.py, tests/test_an_acceptance_check_holds_no_lease.py, tests/test_cleanly_reviewed_run_lands_itself.py and tests/test_reflex_acceptance_reads_the_remote_primary.py, all inside them."
+  },
+  "justifications": {
+    "durability": "restoring the pre-merge transport would make tests/test_reflex_acceptance_reads_the_remote_primary.py:214 fail at collection or reach the scheduler shim, but the delta adds no assertion of its own and leaves tests/test_cleanly_reviewed_run_lands_itself.py:121 unmeasured.",
+    "evidence": "suite-final-head.log:1-5 records 58 passed at fe90f259 and gate-head.log records the scoped gate, but the done_when's ruff line is unrecorded and no log runs tests/test_cleanly_reviewed_run_lands_itself.py at 6464e6d.",
+    "fit": "tests/helpers/landing_repository.py:120 install_in_place_scheduler follows the module's helper-and-docstring idiom and names no plan or stage label.",
+    "goal_fidelity": "gate-head.log:1 names 6464e6d763 as the tree revision and gate-head.log:5 reads 13 passed with EXIT=0 for tests/test_reflex_acceptance_reads_the_remote_primary.py.",
+    "reuse": "tests/helpers/landing_repository.py:59 is the single executor of the product's wrap, and the other reader tests/test_a_landing_measure_runs_on_its_partition.py:68 synthesises scheduler output instead of running the script, so nothing is forked.",
+    "scope_discipline": "all five paths in git diff 8083a844..fe90f259 sit under tests/ or the declared fragment, and no reckon/ path changed in the delta."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is tests/test_reflex_acceptance_reads_the_remote_primary.py passing in full on the primary branch, and the delta's merge at 6464e6d763 reconciles primary's landed_checkout and record_promoted_row with this node's transport in tests/helpers/landing_repository.py:59-178 while gate-head.log:1 names that head and gate-head.log:5 reads 13 passed EXIT=0.\nVERDICT done_when: the done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset, a red base control, suite arms carrying full 40-character revisions, a green ruff record and inline JSON arms; gate-head.log:1-5 and suite-final-head.log:1-5 record the gate and the suite at 6464e6d763 and fe90f259, importer-base.log and importer-merge-head.log record one importer arm, and the ruff clause is unrecorded.\nVERDICT write_paths: the declared paths are reckon, tests, the fragment and its figures directory; the whole delta 8083a844..fe90f259 touches only the fragment, tests/helpers/landing_repository.py, tests/test_an_acceptance_check_holds_no_lease.py, tests/test_cleanly_reviewed_run_lands_itself.py and tests/test_reflex_acceptance_reads_the_remote_primary.py, all inside them.\nVERDICT manifest: read; status complete, seven commits through fe90f259, gate-head.log named as the gate log, baseline_suite and after_suite inline JSON at 42fe90d0ba and fe90f259 with zero failures each, outside_scope naming the inherited red, blockers none.\nVERDICT diff: read commit by commit against 8083a844: 6464e6d763 merges primary 67e8dea40e into the branch and resolves tests/helpers/landing_repository.py by keeping both fixtures and rewriting the transport to answer squeue and sacct, and fe90f259 carries only the fragment's merge-round rows.\nCALL_SITES: reckon/crew/landing_measure.py:submit_measurement, reckon/crew/landing_measure.py:measurement_job_state, reckon/crew/recovery_review_acceptance.py:accept_clean_review\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: gate-head.log:1 names 6464e6d763 as the tree revision and gate-head.log:5 reads 13 passed with EXIT=0 for tests/test_reflex_acceptance_reads_the_remote_primary.py.\nSCORE evidence: 15\nJUSTIFICATION evidence: suite-final-head.log:1-5 records 58 passed at fe90f259 and gate-head.log records the scoped gate, but the done_when's ruff line is unrecorded and no log runs tests/test_cleanly_reviewed_run_lands_itself.py at 6464e6d.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five paths in git diff 8083a844..fe90f259 sit under tests/ or the declared fragment, and no reckon/ path changed in the delta.\nSCORE durability: 16\nJUSTIFICATION durability: restoring the pre-merge transport would make tests/test_reflex_acceptance_reads_the_remote_primary.py:214 fail at collection or reach the scheduler shim, but the delta adds no assertion of its own and leaves tests/test_cleanly_reviewed_run_lands_itself.py:121 unmeasured.\nSCORE fit: 18\nJUSTIFICATION fit: tests/helpers/landing_repository.py:120 install_in_place_scheduler follows the module's helper-and-docstring idiom and names no plan or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: tests/helpers/landing_repository.py:59 is the single executor of the product's wrap, and the other reader tests/test_a_landing_measure_runs_on_its_partition.py:68 synthesises scheduler output instead of running the script, so nothing is forked.\nFINDING tests/test_cleanly_reviewed_run_lands_itself.py:121 non-blocking: the delta swaps this fixture onto install_in_place_scheduler and manifest.md:14 claims the shared transport serves it, yet no recorded log's command names this file at 6464e6d, so a break in its use of the rewritten transport would land unmeasured.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-acceptance-reads-the-remote-primary.html:77 non-blocking: the row attributes the importing file's failure to primary measured at 67e8dea40e03, but no log at that revision exists in the run directory, so the attribution cannot be re-read from a receipt.\nFINDING manifest.md:15 non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths, and neither manifest.md nor the fragment records either result, so the clause is asserted nowhere.",
+  "review_run_id": "r-20261121T105649712083-review-of-qwnw-red-file-reflex-acceptance-reads-the-remote-primary-fe90f259579f",
+  "reviewed_base_sha": "8083a8448ce6de03b8f77fe9bf98fa6c134294c1",
+  "reviewed_head_sha": "fe90f259579f8b409582994fe030ef0ec801d8be",
+  "reviewed_run_id": "r-20261118T054343746758-qwnw-red-file-reflex-acceptance-reads-the-remote-primary",
+  "reviewer_run_id": "r-20261121T105649712083-review-of-qwnw-red-file-reflex-acceptance-reads-the-remote-primary-fe90f259579f",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_derivation": "after_suite failure_ids minus baseline_suite failure_ids over the same command: suite-base.log reads 58 passed with no FAILED line and suite-final-head.log reads 58 passed, so the delta is empty",
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_first_line": "# revision fe90f259579f8b409582994fe030ef0ec801d8be",
+      "log_last_line": "EXIT=0",
+      "log_path": "suite-final-head.log",
+      "revision": "fe90f259579f8b409582994fe030ef0ec801d8be",
+      "summary": "58 passed in 53.91s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_first_line": "# revision 42fe90d0b0a46060bafde2490dda7d4002cda478",
+      "log_last_line": "EXIT=0",
+      "log_path": "suite-base.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+      "summary": "58 passed in 39.61s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T11:23:33.302880+00:00",
+  "total": 106
+}

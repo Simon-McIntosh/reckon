@@ -9,6 +9,7 @@ from reckon.serve import discover_plans
 from tests.spa_browser_harness import BrowserProbeError, installed_browser_or_skip
 from tests.spa_containment_harness import (
     OFFSCREEN_MARKER,
+    PLANS_READY_SELECTOR,
     VIEWPORT_WIDTHS,
     aggregate_verdict,
     assert_horizontally_contained,
@@ -19,6 +20,13 @@ from tests.spa_containment_harness import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# A component rename leaves a readiness selector naming a class nothing
+# renders. Spell that class from the live selector so this case keeps naming an
+# absent class when the live one is renamed again; the plans list still renders
+# `.r-list .r-row`, so hand-writing a retired-looking selector here asserted
+# nothing once both list components rendered at the same time.
+STALE_PLANS_READY_SELECTOR = f"{PLANS_READY_SELECTOR}-retired"
 
 
 def _composed_state() -> dict[str, object]:
@@ -131,16 +139,17 @@ def test_every_routable_surface_is_horizontally_contained(tmp_path: Path) -> Non
 def test_stale_readiness_selector_is_reported_loudly(tmp_path: Path) -> None:
     """A declared readiness selector matching nothing fails loud, not by timeout.
 
-    The plans-surface selector once named classes a component rename stopped
-    rendering, and the walk spent twelve seconds waiting on it before measuring
-    anything. Re-declare that stale selector and require the loud fast failure
-    instead.
+    A component rename leaves a readiness selector naming a class nothing
+    renders, and the walk spends its stale-selector grace waiting on it before
+    measuring anything. Re-declare the plans selector at a class no component
+    renders and require the loud fast failure, naming the selector it could not
+    find, instead of the generic timeout.
     """
 
     browser = installed_browser_or_skip()
     state = _composed_state()
     surfaces = [
-        {**surface, "ready": ".r-list .r-row"}
+        {**surface, "ready": STALE_PLANS_READY_SELECTOR}
         if surface["name"] == "plans"
         else surface
         for surface in routable_surfaces(state)
@@ -151,6 +160,6 @@ def test_stale_readiness_selector_is_reported_loudly(tmp_path: Path) -> None:
     ):
         run_containment_probe(spa, state, VIEWPORT_WIDTHS[0], surfaces=surfaces)
     message = str(raised.value)
-    assert ".r-list .r-row" in message
+    assert STALE_PLANS_READY_SELECTOR in message
     assert "matched nothing in the rendered surface" in message
     assert "timed out waiting for" not in message

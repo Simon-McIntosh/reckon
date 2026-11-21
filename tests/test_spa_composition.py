@@ -157,11 +157,15 @@ def test_shell_module_skew_renders_a_legible_failure() -> None:
 def test_sprint_surface_consumes_composed_review_without_a_review_fetch() -> None:
     source = (Path(__file__).parents[1] / "docs/ui/sprint.jsx").read_text()
 
-    assert "const review = M.review || null" in source
+    # The module state is read with an optional chain: the index answers the
+    # first paint before the derived pass lands. The guard still reads the
+    # served review and the served inventory, and the state rows project them.
+    assert "const review = M?.review || null" in source
     assert "review.sprint_order" in source
     # Composed sprint metrics now reach the surface through the state-row
     # projection over the served inventory, not a distinct review metrics dump.
-    assert "sprintStateRows(allSprints, M.inventory)" in source
+    assert "const inventory = M?.inventory || []" in source
+    assert "sprintStateRows(allSprints, inventory)" in source
     assert "review.priority || []" in source
     assert "review?.findings || []" in source
     assert "fetch(`/review" not in source
@@ -283,7 +287,7 @@ def test_ready_lanes_replace_the_status_board_and_consume_served_readiness() -> 
     for retired in ("r-sprint-board", "r-kanban", "r-kcard", "renderCard"):
         assert retired not in source
         assert retired not in styles
-    assert "M.ready_set" in source
+    assert "readyLaneRows(M?.ready_set, sprints, inventory)" in source
     assert "readySet?.ready || []" in row_derivation
     assert "sectionRow.ready !== false" in row_derivation
     assert "depends_on" not in row_derivation

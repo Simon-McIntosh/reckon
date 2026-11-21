@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_fleet_counts",
+    "reckon/crew/recovery_watch.py:watch_ticker",
+    "reckon/crew/ticker.py:_stats",
+    "reckon/crew/recovery_classification.py:delivery_summary"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:59:19Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "183",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expectation was moved to the primary branch's delivered-row counting, so the file fails at the reviewed head 847838504f (1 failed, 26 passed; expected (1, 0, 1), got (1, 0, 0)); the manifest's landing line presents the green run from cherry-picked revision a1f3a571 as passing at this head."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when gates on, so promotion's gate receipt records a command that never measures the deliverable, and it names a relative .venv/bin/python that only exists inside a built tree."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the merged-head run records revision a1f3a571a7ec8fe5a2057007a7b762e7ea708d77, which is not an object in this repository (git cat-file exits 1), so the measured tree cannot be re-derived from the recorded revision."
+    }
+  ],
+  "gate_run": {
+    "command": "cd /home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T211526752640-review-of-qwnw-red-file-crew-ticker-847838504f4d/head-tree-847838504f && PYTHONPATH=/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T211526752640-review-of-qwnw-red-file-crew-ticker-847838504f4d/head-tree-847838504f /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py",
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261120T211526752640-review-of-qwnw-red-file-crew-ticker-847838504f4d/head-847838504f-gate.log",
+    "revision": "847838504f4df10c473221e56e15852aac8f9b04"
+  },
+  "item_verdicts": {
+    "diff": "read commit by commit against 6fa2b177c5; the gained commits 72fe68cc06 (tests/test_crew_ticker.py:169-183 comment plus one expected triple) and 847838504f (fragment row 3 and the merged-head section) are the only changes, and the earlier four commits were reviewed at 9425652cb7.",
+    "done_when": "the done_when requires the file to pass at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict, a suite-arm pair as inline JSON with full revisions, a negative control and ruff clean; the run records repro-ticker.log (27 passed, revision a1f3a571), repro-suite.log (58 passed), baseline_suite at 6fa2b177 and after_suite at 847838504f (0 failures each) and negative-control-ticker-base.log (3 failed, EXIT=1), but the file fails 1 of 27 at the head itself.",
+    "goal": "the node goal is 'Make tests/test_crew_ticker.py pass in full on the primary branch'; 72fe68cc06 sets tests/test_crew_ticker.py:183 to (1, 0, 1), which is the count reckon/crew/recovery_watch.py:2354 returns for a row whose delivery reads delivered, and 847838504f records the merged-tree run beside it, but the branch's own head still reports 0 there; no file under reckon/ is touched.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md; it names six commits and status complete, names tests/test_crew_ticker.py in its landing line and revision a1f3a571 in its artifacts line, while its tests line names the importer-arm suite tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py.",
+    "write_paths": "brief-for-worker.md:99-104 declares reckon, tests, the fragment directory and fragment file; the gained diff touches only tests/test_crew_ticker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_ticker.py:183 reddens when the delivered-row fold is absent, which the head's own failure shows, but it is red at the revision it was committed to.",
+    "evidence": "the 27-passed gate in r-20261118T054237825179-qwnw-red-file-crew-ticker/repro-ticker.log ran at revision a1f3a571, and a clean extraction of 847838504f fails 1 of 27 with unpromoted 0 read where tests/test_crew_ticker.py:183 expects 1.",
+    "fit": "the change keeps the comment-beside-expectation idiom at tests/test_crew_ticker.py:169-183 and rewrites one <tr> of the fragment table in the same idiom.",
+    "goal_fidelity": "tests/test_crew_ticker.py:183 now states (1, 0, 1), matching reckon/crew/recovery_watch.py:2354 where a delivered row is counted by its drawn state or its delivery status.",
+    "reuse": "no definition is added; reckon/crew/recovery_watch.py:_fleet_counts owns the counting the assertion reads, and the search of tests/ and reckon/crew for unpromoted-cell expectations found no second owner to fork.",
+    "scope_discipline": "the gained diff is two files, tests/test_crew_ticker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html, both inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_crew_ticker.py pass in full on the primary branch'; 72fe68cc06 sets tests/test_crew_ticker.py:183 to (1, 0, 1), which is the count reckon/crew/recovery_watch.py:2354 returns for a row whose delivery reads delivered, and 847838504f records the merged-tree run beside it, but the branch's own head still reports 0 there; no file under reckon/ is touched.\nVERDICT done_when: the done_when requires the file to pass at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict, a suite-arm pair as inline JSON with full revisions, a negative control and ruff clean; the run records repro-ticker.log (27 passed, revision a1f3a571), repro-suite.log (58 passed), baseline_suite at 6fa2b177 and after_suite at 847838504f (0 failures each) and negative-control-ticker-base.log (3 failed, EXIT=1), but the file fails 1 of 27 at the head itself.\nVERDICT write_paths: brief-for-worker.md:99-104 declares reckon, tests, the fragment directory and fragment file; the gained diff touches only tests/test_crew_ticker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html, both inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md; it names six commits and status complete, names tests/test_crew_ticker.py in its landing line and revision a1f3a571 in its artifacts line, while its tests line names the importer-arm suite tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py.\nVERDICT diff: read commit by commit against 6fa2b177c5; the gained commits 72fe68cc06 (tests/test_crew_ticker.py:169-183 comment plus one expected triple) and 847838504f (fragment row 3 and the merged-head section) are the only changes, and the earlier four commits were reviewed at 9425652cb7.\nCALL_SITES: reckon/crew/recovery_watch.py:_fleet_counts, reckon/crew/recovery_watch.py:watch_ticker, reckon/crew/ticker.py:_stats, reckon/crew/recovery_classification.py:delivery_summary\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/test_crew_ticker.py:183 now states (1, 0, 1), matching reckon/crew/recovery_watch.py:2354 where a delivered row is counted by its drawn state or its delivery status.\nSCORE evidence: 10\nJUSTIFICATION evidence: the 27-passed gate in r-20261118T054237825179-qwnw-red-file-crew-ticker/repro-ticker.log ran at revision a1f3a571, and a clean extraction of 847838504f fails 1 of 27 with unpromoted 0 read where tests/test_crew_ticker.py:183 expects 1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff is two files, tests/test_crew_ticker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html, both inside the declared paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_crew_ticker.py:183 reddens when the delivered-row fold is absent, which the head's own failure shows, but it is red at the revision it was committed to.\nSCORE fit: 17\nJUSTIFICATION fit: the change keeps the comment-beside-expectation idiom at tests/test_crew_ticker.py:169-183 and rewrites one <tr> of the fragment table in the same idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; reckon/crew/recovery_watch.py:_fleet_counts owns the counting the assertion reads, and the search of tests/ and reckon/crew for unpromoted-cell expectations found no second owner to fork.\nFINDING tests/test_crew_ticker.py:183 non-blocking: the expectation was moved to the primary branch's delivered-row counting, so the file fails at the reviewed head 847838504f (1 failed, 26 passed; expected (1, 0, 1), got (1, 0, 0)); the manifest's landing line presents the green run from cherry-picked revision a1f3a571 as passing at this head.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md:11 non-blocking: the tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when gates on, so promotion's gate receipt records a command that never measures the deliverable, and it names a relative .venv/bin/python that only exists inside a built tree.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html:37 non-blocking: the merged-head run records revision a1f3a571a7ec8fe5a2057007a7b762e7ea708d77, which is not an object in this repository (git cat-file exits 1), so the measured tree cannot be re-derived from the recorded revision.",
+  "review_method": "Read-only review of the two commits gained since the prior review at 9425652cb7: the node, its manifest, both commits, the base/head/merged gate logs and the production counter; one re-run of the node's own file in a clean extraction of the reviewed head, no mutation of the node.",
+  "review_run_id": "r-20261120T211526752640-review-of-qwnw-red-file-crew-ticker-847838504f4d",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "847838504f4df10c473221e56e15852aac8f9b04",
+  "reviewed_run_id": "r-20261118T054237825179-qwnw-red-file-crew-ticker",
+  "scope_reviewed": "9425652cb70628b22764b1af9eb588e07b4c5e0f..847838504f4df10c473221e56e15852aac8f9b04 \u2014 the commits gained since the prior review at 9425652cb7; reviewed_base_sha records the dispatch's diff base 6fa2b177c5.",
+  "scores": {
+    "durability": 14,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "72fe68cc06a310ec4d3e43fee0695aa2158d6789",
+    "847838504f4df10c473221e56e15852aac8f9b04"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:25:21.027261+00:00",
+  "total": 96
+}

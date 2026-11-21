@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T003510955035-review-of-an-admission-pass-decides-within-its-budget-59b148f2273a/assertion-audit.md",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/service.py:admit_until_stopped once branch at 429",
+    "reckon/crew/admission/service.py:admit_until_stopped service branch at 494",
+    "reckon/crew/admission/selection.py:admit_once at 140",
+    "reckon/crew/admission/wait_refs.py:derive_wait_refs at 265",
+    "reckon/crew/plan_review.py:_readiness_inventory at 6767",
+    "reckon/crew/plan_review.py:_plan_inventory_item at 6672"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:36:22Z",
+  "failure_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/after_suite.log",
+      "revision": "59b148f2273a4ed8a74e6bd988470bba86b2cc22"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/baseline_suite.log",
+      "revision": "a290999a7dd5aaf099d00cfdf918eb1fde02a878"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "6588",
+      "severity": "blocking",
+      "text": "blocking: the new dependency parser requires quoted name and content attributes, so valid <meta name=plan-depends-on content=upstream> yields no wait while the existing BeautifulSoup read_state in reckon/_plan_html.py:1455 yields upstream; this changes release decisions, and the local regex parser duplicates rather than extends that metadata owner."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "6647",
+      "severity": "blocking",
+      "text": "blocking: the body-free fast path always uses _meta_head_fields, which truncates at 16384 characters and requires name= and content= without intervening whitespace; a plan with no data-reckon body and section declarations below that cut, or authored as name = \"plan-section-declarations\", now returns an empty section_declarations map at :6707 whereas the former _read_readiness_state parsed the full document."
+    },
+    {
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": "245",
+      "severity": "non-blocking",
+      "text": "non-blocking: BASE_DECISIONS expects launched=[] and two refused verdicts in both lane cases, including once_two_slots, so the new base comparison never proves a successful launch survives sweep reuse; fold a valid launchable fixture and a nonempty independent launch expectation into the repair node for these findings."
+    },
+    {
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": "228",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added source comment embeds a transient base revision and added prose in wait_refs.py:234 describes what the code used to do; replace these with mechanism descriptions in the repair node to satisfy the repository's naming and comment rules."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the source-worker patches 2ad4707fd7265240e79f0c5f977ea337725c014b, 29fd41eb4cb1795e476c1ccfed664b38e895738d, e1ed853197901e5afe3a7dac0a4a26b144253824, 6f4a096aa36eb3873a0fd1c687dbeeef44105fcf and 59b148f2273a4ed8a74e6bd988470bba86b2cc22 against base a290999a7dd5aaf099d00cfdf918eb1fde02a878; the final metadata fast paths retain parser-equivalence defects.",
+    "done_when": "docs/plans/dispatch-admission-and-landing-take-seconds.html:s10 requires the timed fixture, base decision equality and ten post-landing receipts; logs/after_suite.log records 66 passed and the base negative control records 101.479 seconds, while the manifest explicitly leaves live receipts to post-landing measurement.",
+    "goal": "dispatch-detail.json names unchanged launch decisions inside 20 seconds at 240 pointers and 80 requests; admission/service.py:429 reuses a release sweep, but plan_review.py:6588 and :6647 can change the authored readiness inputs.",
+    "manifest": "source manifest.md names five worker commits and completed baseline_suite/after_suite arms at the reviewed revisions; their opened logs report 60 passed and 66 passed respectively, with EXIT=0 and no failing ids.",
+    "write_paths": "the ten declared paths in this review brief cover the seven source-worker changed paths in manifest.md; the remaining base-to-head paths come from integrated primary history rather than these five implementation and repair commits."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_decides_within_its_budget.py:315 and :422 independently constrain release phases and sweep invalidation, but :245 asserts an empty launched set for the available-slot case and :445 covers only quoted edge attributes.",
+    "evidence": "source logs/baseline_suite.log and logs/after_suite.log record zero added failures and logs/negative-control-base-pass.log records the 101.479-second refusal, while tests/test_an_admission_pass_decides_within_its_budget.py:245 expects no launches even with two slots and the ten live receipts remain unmeasured.",
+    "fit": "reckon/crew/admission/selection.py:140 and service.py:203 extend the existing sweep and receipt interfaces, while plan_review.py:6570 forks metadata parsing outside its owner and the added test commentary at :229 embeds a transient revision.",
+    "goal_fidelity": "reckon/crew/admission/service.py:429 avoids the second sweep and the timed gate passes, but reckon/crew/plan_review.py:6588 and :6647 do not preserve all metadata accepted by the base parser.",
+    "reuse": "searches for metadata readers and readiness fingerprints found reckon/_plan_html.py:1455/:2720 and admission/readiness.py:49; plan_review.py:6579 duplicates the metadata owner's capability rather than extending it, although wait_refs.py:231 wraps the new reader and release.py:443 extends the existing release owner.",
+    "scope_discipline": "the seven worker-authored paths listed in source manifest.md fall within this review brief's expanded declared scope, and unrelated paths in the 54-path range are inherited integration history."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names unchanged launch decisions inside 20 seconds at 240 pointers and 80 requests; admission/service.py:429 reuses a release sweep, but plan_review.py:6588 and :6647 can change the authored readiness inputs.\nVERDICT done_when: docs/plans/dispatch-admission-and-landing-take-seconds.html:s10 requires the timed fixture, base decision equality and ten post-landing receipts; logs/after_suite.log records 66 passed and the base negative control records 101.479 seconds, while the manifest explicitly leaves live receipts to post-landing measurement.\nVERDICT write_paths: the ten declared paths in this review brief cover the seven source-worker changed paths in manifest.md; the remaining base-to-head paths come from integrated primary history rather than these five implementation and repair commits.\nVERDICT manifest: source manifest.md names five worker commits and completed baseline_suite/after_suite arms at the reviewed revisions; their opened logs report 60 passed and 66 passed respectively, with EXIT=0 and no failing ids.\nVERDICT diff: read the source-worker patches 2ad4707fd7265240e79f0c5f977ea337725c014b, 29fd41eb4cb1795e476c1ccfed664b38e895738d, e1ed853197901e5afe3a7dac0a4a26b144253824, 6f4a096aa36eb3873a0fd1c687dbeeef44105fcf and 59b148f2273a4ed8a74e6bd988470bba86b2cc22 against base a290999a7dd5aaf099d00cfdf918eb1fde02a878; the final metadata fast paths retain parser-equivalence defects.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped once branch at 429, reckon/crew/admission/service.py:admit_until_stopped service branch at 494, reckon/crew/admission/selection.py:admit_once at 140, reckon/crew/admission/wait_refs.py:derive_wait_refs at 265, reckon/crew/plan_review.py:_readiness_inventory at 6767, reckon/crew/plan_review.py:_plan_inventory_item at 6672\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/admission/service.py:429 avoids the second sweep and the timed gate passes, but reckon/crew/plan_review.py:6588 and :6647 do not preserve all metadata accepted by the base parser.\nSCORE evidence: 15\nJUSTIFICATION evidence: source logs/baseline_suite.log and logs/after_suite.log record zero added failures and logs/negative-control-base-pass.log records the 101.479-second refusal, while tests/test_an_admission_pass_decides_within_its_budget.py:245 expects no launches even with two slots and the ten live receipts remain unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the seven worker-authored paths listed in source manifest.md fall within this review brief's expanded declared scope, and unrelated paths in the 54-path range are inherited integration history.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_an_admission_pass_decides_within_its_budget.py:315 and :422 independently constrain release phases and sweep invalidation, but :245 asserts an empty launched set for the available-slot case and :445 covers only quoted edge attributes.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/admission/selection.py:140 and service.py:203 extend the existing sweep and receipt interfaces, while plan_review.py:6570 forks metadata parsing outside its owner and the added test commentary at :229 embeds a transient revision.\nSCORE reuse: 5\nJUSTIFICATION reuse: searches for metadata readers and readiness fingerprints found reckon/_plan_html.py:1455/:2720 and admission/readiness.py:49; plan_review.py:6579 duplicates the metadata owner's capability rather than extending it, although wait_refs.py:231 wraps the new reader and release.py:443 extends the existing release owner.\nFINDING reckon/crew/plan_review.py:6588 blocking: the new dependency parser requires quoted name and content attributes, so valid <meta name=plan-depends-on content=upstream> yields no wait while the existing BeautifulSoup read_state in reckon/_plan_html.py:1455 yields upstream; this changes release decisions, and the local regex parser duplicates rather than extends that metadata owner.\nFINDING reckon/crew/plan_review.py:6647 blocking: the body-free fast path always uses _meta_head_fields, which truncates at 16384 characters and requires name= and content= without intervening whitespace; a plan with no data-reckon body and section declarations below that cut, or authored as name = \"plan-section-declarations\", now returns an empty section_declarations map at :6707 whereas the former _read_readiness_state parsed the full document.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:245 non-blocking: BASE_DECISIONS expects launched=[] and two refused verdicts in both lane cases, including once_two_slots, so the new base comparison never proves a successful launch survives sweep reuse; fold a valid launchable fixture and a nonempty independent launch expectation into the repair node for these findings.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:228 non-blocking: the added source comment embeds a transient base revision and added prose in wait_refs.py:234 describes what the code used to do; replace these with mechanism descriptions in the repair node to satisfy the repository's naming and comment rules.\n\n",
+  "review_run_id": "r-20261118T003510955035-review-of-an-admission-pass-decides-within-its-budget-59b148f2273a",
+  "reviewed_base_sha": "a290999a7dd5aaf099d00cfdf918eb1fde02a878",
+  "reviewed_head_sha": "59b148f2273a4ed8a74e6bd988470bba86b2cc22",
+  "reviewed_run_id": "r-20261117T111346928196-an-admission-pass-decides-within-its-budget",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:40:08.472513+00:00",
+  "total": 83
+}

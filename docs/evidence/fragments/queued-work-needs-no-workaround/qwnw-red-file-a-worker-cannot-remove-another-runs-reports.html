@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-a-worker-cannot-remove-another-runs-reports</title>
+</head>
+<body>
+<h1 id="qwnw-red-file-a-worker-cannot-remove-another-fragment-title">A worker cannot remove another run's reports — the red file is green</h1>
+
+<section id="qwnw-red-file-a-worker-cannot-remove-another-red-file-arm">
+<h2>The file, red at base and green at head</h2>
+<p>Base revision <code>8a9d873cb91d05af20ae5c6530880c260e1c5dbe</code>, tree extracted with
+<code>git archive</code> from that revision, <code>SLURM_JOB_ID</code> unset:
+<code>2 failed, 6 passed</code>, <code>EXIT=1</code>. The two failing ids, both raised at
+<code>Stores.results_text()</code> as <code>FileNotFoundError</code> for the run's own
+<code>results.txt</code>:</p>
+<ul>
+<li><code>test_a_fenced_run_under_the_production_composition_cannot_remove_a_siblings_report_tree</code></li>
+<li><code>test_a_fenced_run_under_the_production_composition_cannot_remove_a_siblings_review_record</code></li>
+</ul>
+<p>Head <code>7e49e73b9d8a9d934c13d9b2ddbc19bd554797fb</code>: <code>8 passed</code>, <code>EXIT=0</code>,
+run as a job on <code>all_debug</code> (host <code>98dci4-clu-3142</code>), and again in place.
+Logs: <code>target-file-base-8a9d873.log</code> and <code>target-file-head-7e49e73.log</code> in the run directory.</p>
+</section>
+
+<section id="qwnw-red-file-a-worker-cannot-remove-another-cause">
+<h2>Cause and verdict: the test, not the product</h2>
+<p>The failing arms are the two that <em>execute</em> the fence composed over the roots a real launch hands it.
+Reproduced directly on the composed argv: <code>bwrap: execvp
+/tmp/reckon-crew-scratch/&lt;run&gt;/stores-j19t59oj/stub.sh: No such file or directory</code>,
+exit 1, and no
+results file written. The fixture hands the run its scratch directory, so the fence seals the node tmp
+<code>/tmp</code> and mounts the run's own scratch over it — the rule landed on 14 November as
+<em>a fenced worker's /tmp is its own scratch</em>. Every other path under the node tmp then reads as absent,
+including the fixture's own synthetic tree, because pytest's temporary root is under <code>/tmp</code> on a compute node.</p>
+<p>Verdict: <strong>test wrong</strong>. The rule the code keeps is that a fenced launch's node tmp is the run's own
+scratch; the test assumed its synthetic tree could sit inside the node tmp it composes against. No product file changed
+and no assertion was deleted or weakened. The fixture now pins <code>NODE_TMP_ROOT</code> and the runtime carve-outs
+inside its own tree, the same seam the node-tmp suite already uses, so the composition and its executions exercise the
+store seal rather than a host <code>/tmp</code> the fixture does not own.</p>
+</section>
+
+<section id="qwnw-red-file-a-worker-cannot-remove-another-guard-fires">
+<h2>The guard still fires</h2>
+<p>Both declared negative controls were applied after the fixture change, and both go red through the executed refusals,
+in the hand-made composition and in the production composition:</p>
+<ul>
+<li><code>RECKON_TEST_REPORTS_SEAL_NEGATIVE=1</code>: <code>2 failed, 6 passed</code> —
+<code>the fenced rm of a sibling report tree exited 0, not non-zero</code>, and the same id under the production composition.</li>
+<li><code>RECKON_TEST_REVIEW_SEAL_NEGATIVE=1</code>: <code>2 failed, 6 passed</code> —
+<code>the fenced rm of a sibling review record exited 0, not non-zero</code>, and the same id under the production composition.</li>
+</ul>
+<p>Each arm removes one store from the sealed set through <code>shared_store_seal_roots</code>, so no read-only overlay
+of that store is composed and the fenced <code>rm</code> succeeds. The positive control <code>own-write-delete-ok</code>
+still holds in every arm, so the stub ran and its own declared directory stayed writable.</p>
+</section>
+</body>
+</html>

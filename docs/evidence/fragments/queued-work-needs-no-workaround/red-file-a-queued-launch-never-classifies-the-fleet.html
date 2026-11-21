@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Red file: a queued launch never classifies the fleet</title>
+</head>
+<body>
+<article class="r-evidence" data-node="qwnw-red-file-a-queued-launch-never-classifies-the-fleet">
+
+<h2 id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-headline">tests/test_a_queued_launch_never_classifies_the_fleet.py: 1 failed at the base revision, 3 passed at the head</h2>
+
+<p id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-measure">The file held <strong>1 failure</strong> at revision
+<code>6699d0257d</code> and reads <strong>3 passed</strong> at <code>f1dbee11de</code>, both run as a job on the
+<code>all_debug</code> partition with <code>SLURM_JOB_ID</code> unset and both logs on the shared config home. The
+base run's failing id is <code>test_direct_dispatch_records_the_ten_session_runs</code>; the head run fails none.</p>
+
+<table id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-runs">
+<caption id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-runs-caption">Base and head runs of the named file</caption>
+<thead>
+<tr><th scope="col">Arm</th><th scope="col">Revision</th><th scope="col">Command</th><th scope="col">Read</th></tr>
+</thead>
+<tbody>
+<tr>
+<td id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-base">base (negative control)</td>
+<td><code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code></td>
+<td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_launch_never_classifies_the_fleet.py</code></td>
+<td>1 failed, 2 passed; <code>EXIT=1</code></td>
+</tr>
+<tr>
+<td id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-head">head</td>
+<td><code>f1dbee11debb14117d65917f1be52b25b67a0f66</code></td>
+<td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_launch_never_classifies_the_fleet.py</code></td>
+<td>3 passed; <code>EXIT=0</code></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-cause-heading">The cause, and whether the product or the test was wrong</h3>
+
+<table id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-causes">
+<thead>
+<tr><th scope="col">Cause</th><th scope="col">What the code now keeps</th><th scope="col">Verdict</th><th scope="col">Repair</th></tr>
+</thead>
+<tbody>
+<tr>
+<td id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-cause-fleet-scope">
+<code>test_direct_dispatch_records_the_ten_session_runs</code> ended with
+<code>assert set(calls) &gt;= {f"r-delivered-{index:02}" for index in range(50)}</code>: every live pointer, whichever
+session owns it, had to pass through <code>recovery.classify_pointer</code> during a dispatch.
+</td>
+<td>A dispatch's backlog fence is scoped to the dispatching session: <code>_recorded_backlog</code> passes
+<code>session=</code> to <code>overdue_unreconciled_runs</code>, which skips a pointer another session owns before
+reading it, because classification is the costly part (commit <code>4fcdfc2791</code>, "scope the backlog fence to the
+dispatching session", the change the plan records as §16's landing). Only the dispatching session's own rows are
+classified; the fixture's 40 <code>peer-session</code> rows are neither counted nor read.</td>
+<td>test wrong</td>
+<td>The assertion now names the rule the code keeps, exactly rather than by containment: the ten rows of the
+dispatching session are the whole set the classifier sees, so a peer row reaching the classifier fails the test. The
+waived-runs assertion keeps its content and compares against the same named set.</td>
+</tr>
+</tbody>
+</table>
+
+<p id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-controls">The file's two other cases passed at both
+revisions, so the repair touches no working guard: a queued launch classifies at most the one request it launches,
+and the launch handoff equals the immutable base implementation except for the backlog.</p>
+
+<p id="qwnw-red-file-a-queued-launch-never-classifies-the-fleet-logs">Logs:
+<code>~/.config/reckon/crew/runs/r-20261118T044611596106-qwnw-red-file-a-queued-launch-never-classifies-the-fleet/logs/base-file-6699d025.log</code>
+(base) and
+<code>~/.config/reckon/crew/runs/r-20261118T044611596106-qwnw-red-file-a-queued-launch-never-classifies-the-fleet/scoped-gate-1794978331201874660.log</code>
+(head).</p>
+
+</article>
+</body>
+</html>

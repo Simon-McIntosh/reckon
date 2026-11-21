@@ -1,0 +1,22 @@
+<section id="qwnw-red-file-review-reflex-skips-a-superseded-head-landing">
+  <h2>A sweep reviews no head the resume it is replacing</h2>
+
+  <p><strong>What changed.</strong> <code>launch_mark_holds</code> reads
+  the per-process launch registry before the pointer mark, so a resume
+  this process has begun withholds the review of the head it is about
+  to replace, while a mark left by an earlier launch still reads
+  as spent.</p>
+
+  <p><strong>Reproduced at base 42fe90d0.</strong> The node file reads
+  <code>1 failed, 5 passed</code>. The failing case is
+  <code>test_a_sweep_snapshot_from_before_resume_dispatches_no_superseded_review</code>
+  with <code>superseded head dispatched</code> naming the head the resume
+  was replacing.</p>
+
+  <p><strong>Measured at head eb23726.</strong> The node file reads
+  <code>6 passed</code> as an <code>all_debug</code> job with
+  <code>SLURM_JOB_ID</code> unset and its log on shared storage. The
+  declared census arms read <code>2 failed, 56 passed</code> at both
+  revisions with the same two ids, so the change adds no failure.</p>
+
+</section>

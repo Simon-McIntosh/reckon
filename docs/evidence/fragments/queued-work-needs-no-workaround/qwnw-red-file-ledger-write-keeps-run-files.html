@@ -1,0 +1,28 @@
+<section id="qwnw-red-file-ledger-write-keeps-run-files-logs">
+<h3>tests/test_ledger_write_keeps_run_files.py — base red, head green</h3>
+<p><strong>Verdict: the test was wrong, not the product.</strong> The refused-envelope case called <code>monkeypatch.undo()</code> in the middle of its body. That instance is the one the autouse <code>isolated_reckon_home</code> fixture set <code>RECKON_HOME</code> through, so the undo restored the operator's own configuration home for the case's closing read. The read then answered from the ambient home's run store instead of from the repository the test had just built — the aggregate came back without the field the refused write had withheld (<code>KeyError: 'time_budget'</code>) — and the session's cache-root guard recorded a resolution outside the temporary tree. Scoping the patch with <code>monkeypatch.context()</code>, as the case immediately above it already does, keeps the isolation in force across the read. No assertion was changed, added or removed; the two claims the case makes (the refusal is raised, and both copies stay at the revision the reader had) are the same before and after.</p>
+<p>Both runs below are the same command, measured by the same instrument: a separate <code>all_debug</code> job submitted by <code>crew verify-gate --worker</code>, which unsets <code>SLURM_JOB_ID</code> at submission. Each resolves over its own revision's tree.</p>
+<h4>Base arm — 23b901694b4bfec73d95be3a082d4c336d9a4101 (red)</h4>
+<pre># revision: 23b901694b4bfec73d95be3a082d4c336d9a4101
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-9d63a819e58b-VziGr6/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger_write_keeps_run_files.py'
+...F..E                                                                  [100%]
+FAILED tests/test_ledger_write_keeps_run_files.py::test_a_refused_envelope_puts_the_run_file_back - KeyError: 'time_budget'
+ERROR tests/test_ledger_write_keeps_run_files.py::test_a_refused_refresh_opens_the_aggregate_rather_than_a_stale_index - AssertionError: a test or fixture resolved a cache root outside the session temp tree:
+  pick-input -&gt; /home/ITER/mcintos/.config/reckon/cache
+  from .../reckon/ledger.py:1512 in _index_directory
+  during tests/test_ledger_write_keeps_run_files.py::test_a_refused_envelope_puts_the_run_file_back
+1 failed, 5 passed, 1 error in 1.19s
+EXIT=1</pre>
+<h4>Head arm — aefd7b73d2573f93e21df29380f0e481026135f0 (green)</h4>
+<pre># revision: aefd7b73d2573f93e21df29380f0e481026135f0
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-cf7fe4c98767-i4ea0z/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger_write_keeps_run_files.py'
+......                                                                   [100%]
+6 passed in 6.51s
+EXIT=0</pre>
+<p>The red arm is reproduced by an environment variable that reaches the test process: with <code>RECKON_HOME</code> pointed at the operator's configuration home, the base revision's own run of the file fails the same two ids in the same way on the worktree, and the head revision passes all six in every environment tried — the operator's home exported, a temporary home exported, and none exported.</p>
+<p>Full logs, with the trees' teardown output, are under <code>~/.config/reckon/crew/runs/r-20261118T062931577460-qwnw-red-file-ledger-write-keeps-run-files/</code>: <code>scoped-gate-1795010862914107698.log</code> (base, <code>EXIT=1</code>) and <code>scoped-gate-1795011757597093462.log</code> (head, <code>EXIT=0</code>).</p>
+</section>

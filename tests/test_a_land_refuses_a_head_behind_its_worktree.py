@@ -126,6 +126,16 @@ def chain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     }
 
 
+def _record(result) -> dict:
+    """The full landing record the bounded CLI reply links by ``record_path``.
+
+    ``crew complete`` answers with a compact reply and points at the retained
+    completion record, so the steps, the refusal text and the release verdict
+    are read from that record rather than from the reply on stdout.
+    """
+    return json.loads(Path(json.loads(result.output)["record_path"]).read_text())
+
+
 def _run(fixture: dict, head: str) -> dict:
     return {
         "run_id": RUN_ID,
@@ -139,7 +149,7 @@ def test_a_head_behind_the_worktree_is_refused_before_merging(chain: dict) -> No
     result = _complete_land(_run(chain, chain["third"]))
 
     assert result.exit_code != 0, result.output
-    report = json.loads(result.output)
+    report = _record(result)
     assert report["ok"] is False, report
     assert report["steps"]["promote"]["ok"] is True, report
     land = report["steps"]["land"]
@@ -161,7 +171,7 @@ def test_a_head_equal_to_the_worktree_merges_as_today(chain: dict) -> None:
     result = _complete_land(_run(chain, chain["fourth"]))
 
     assert result.exit_code == 0, result.output
-    report = json.loads(result.output)
+    report = _record(result)
     assert report["ok"] is True, report
     assert report["steps"]["land"]["ok"] is True, report["steps"]["land"]
     assert _git(chain["origin"], "show", "main:step4.txt") == "fourth"
@@ -180,7 +190,7 @@ def test_a_released_worktree_merges_and_reports_the_release(chain: dict) -> None
 
     result = _complete_land(_run(chain, chain["third"]))
 
-    report = json.loads(result.output)
+    report = _record(result)
     land = report["steps"]["land"]
     assert land["ok"] is True, land
     assert land["pushed"] is True, land

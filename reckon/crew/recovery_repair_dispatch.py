@@ -72,6 +72,40 @@ def dispatch_merge_repair(
         )
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
+    refusal = pending_landing.promoted_pointer_write_refusal(run_id, record)
+    # A round already open on the live pointer is reported as it stands: the
+    # pass reads it every sweep, and re-deciding it here either resumes a worker
+    # twice or turns a running repair into an obligation.
+    open_round = (_live_pointer_or_absent(run_id) or {}).get("merge_conflict") or {}
+    if open_round.get("round_id") == round_id and open_round.get("status") == "resumed":
+        return dict(open_round)
+    # A promoted delivery whose pending landing record names no conflict yet is
+    # a landing interrupted by the conflict being reported now: this round is
+    # the first owner of that conflict, so it rebuilds the pointer it resumes.
+    # Every other caller keeps the refusal. A round the record already names has
+    # an owner, and replaying it would read a promotion that already ran as
+    # though its worker were still live; and a promotion whose row cannot be
+    # read has no proved absence, so the wider refusal stands there too.
+    pending = pending_landing._read(pending_landing._record_path(run_id))
+    project = str(record.get("project") or "")
+    first_round = bool(
+        promoted
+        and pending is not None
+        and not pending.get("merge_conflict")
+        and project
+        and not record.get("landing_group")
+        and pending_landing._promoted_row(project, run_id) is not None
+    )
+    if refusal and not first_round:
+        receipt.update(
+            status="refused",
+            reason=refusal,
+            record=str(pending_landing._record_path(run_id)),
+        )
+        runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
+        if promoted:
+            _record_the_conflict(run_id, receipt)
+        return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
     other_side = merge._run(
         Path(str(record.get("repo") or "")),
@@ -118,7 +152,9 @@ def dispatch_merge_repair(
 
         pending = pending_landing._read(pending_landing._record_path(run_id))
         if pending is not None:
-            fresh = pending_landing.mark_pending_landing_repair(run_id, record)
+            fresh = pending_landing.mark_pending_landing_repair(
+                run_id, record, opening_repair=True
+            )
     previous = (fresh or {}).get("merge_conflict") or {}
     if previous.get("round_id") == round_id and previous.get("status") == "resumed":
         return dict(previous)
@@ -155,13 +191,24 @@ def dispatch_merge_repair(
         _mutate_pointer(run_id, save)
     runs._write_json(receipt_path, receipt)
     if promoted:
-        from reckon.crew import pending_landing
-
-        pending = pending_landing._read(pending_landing._record_path(run_id))
-        if pending is not None:
-            pending["merge_conflict"] = receipt
-            runs._write_json(pending_landing._record_path(run_id), pending)
+        _record_the_conflict(run_id, receipt)
     return receipt
+
+
+def _record_the_conflict(run_id: str, receipt: Mapping[str, Any]) -> None:
+    """Write the conflict onto the pending record, which is the obligation.
+
+    A promoted run's live pointer is never written back, so the record is the
+    only journal a landing pass can read this conflict from: without it the pass
+    re-attempts the merge every sweep and names no obligation.
+    """
+    from reckon.crew import pending_landing
+
+    path = pending_landing._record_path(run_id)
+    pending = pending_landing._read(path)
+    if pending is not None:
+        pending["merge_conflict"] = dict(receipt)
+        runs._write_json(path, pending)
 
 
 def _dimension_floors(project: str, config: Mapping[str, Any] | None) -> dict[str, int]:
@@ -1742,12 +1789,15 @@ def dispatch_repair_for_run(
     # run holding a test path; the cited paths are the only place the findings'
     # own files appear, and they are read here. A path inside the run's own fence
     # is repairable whatever its spelling, so an in-fence figure or evidence
-    # finding is not mistaken for the fleet's own record.
-    if not dimension_findings and not _repairable_scope(
+    # finding is not mistaken for the fleet's own record. The read is taken once
+    # here and reused below, so the decline guard and the empty-scope decline
+    # decide from the same population rather than two reads that could drift.
+    cited = _repairable_scope(
         (str(finding.get("file") or "") for finding in blocking),
         fence=run_fence,
         reach=opening_reach,
-    ):
+    )
+    if not dimension_findings and not cited:
         reason = _decline_only_reason(
             review,
             blocking,
@@ -1776,10 +1826,26 @@ def dispatch_repair_for_run(
     # A composed scope that filters to empty while blocking findings exist is a
     # dead end: the round would otherwise resume with the advice line "Write
     # scope for this round: none", which is no scope for work the review's
-    # blocking findings named. Record it declined instead of resuming it.
+    # blocking findings named. Record it declined instead of resuming it. A
+    # round reaching here with no blocking finding citing a repairable path is
+    # the same decline the guard above records, entered because a sub-floor
+    # dimension forced the composition, so it carries that decision's reason and
+    # names the dimension and the follow-on paths the decision left. A blocking
+    # path that passed the guard while the composition granted nothing is a
+    # different outcome and keeps its own wording, because the guard's reason
+    # would claim no blocking finding cited a repairable path when one did.
     if not scope:
         reason = (
             "the composed write scope filtered to empty, so the round is decline-only"
+            if cited
+            else _decline_only_reason(
+                review,
+                blocking,
+                fence=run_fence,
+                project=project,
+                config=config,
+                reach=opening_reach,
+            )
         )
         _record_repair_dispatch(
             run_id,

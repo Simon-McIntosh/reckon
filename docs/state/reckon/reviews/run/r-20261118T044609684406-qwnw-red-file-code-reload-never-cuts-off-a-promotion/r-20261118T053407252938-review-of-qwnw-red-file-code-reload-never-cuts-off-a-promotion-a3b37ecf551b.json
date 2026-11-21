@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T08:04:51Z",
+  "findings": [
+    {
+      "file": "tests/test_code_reload_never_cuts_off_a_promotion.py",
+      "line": 127,
+      "severity": "non-blocking",
+      "text": "tests/test_code_reload_never_cuts_off_a_promotion.py:127 non-blocking: the persisted schedule record is the only thing that makes the moved stamp due, and nothing in the file asserts the product's ReloadWindow consumed it, so a renamed record key or a moved schedule path would restore the silent hang this node repaired instead of failing on an assertion."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-code-reload-never-cuts-off-a-promotion.html",
+      "line": 31,
+      "severity": "non-blocking",
+      "text": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-code-reload-never-cuts-off-a-promotion.html:31 non-blocking: the fragment states the file and the scoped gate ran on all_debug with SLURM_JOB_ID unset, but no cited log records a partition, a job id or that variable, so the done_when's job condition is stated rather than recorded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044609684406-qwnw-red-file-code-reload-never-cuts-off-a-promotion/manifest.md",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "manifest.md:22 non-blocking: both recorded suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import the repaired file, so the arm pair establishes no delta over the changed file; only the scoped gate measures it, as the run's outside_scope line discloses."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_code_reload_never_cuts_off_a_promotion.py passes in full, and the diff at head repairs its _LoopDriver fixture (tests/test_code_reload_never_cuts_off_a_promotion.py:120-127) so the loop's ReloadWindow is due, with the promotion scoped gate at that head reading \"3 passed in 1.36s\".\nVERDICT done_when: the measure asks for the file passing as an all_debug job with SLURM_JOB_ID unset, each cause given a verdict, no assertion deleted, and a suite-arm pair; the manifest records the test-wrong verdict, the untouched assertions and both arms, but no log shows a partition, a job id or SLURM_JOB_ID, and the arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the repaired file.\nVERDICT write_paths: the declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the delivered diff touches only tests/test_code_reload_never_cuts_off_a_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-code-reload-never-cuts-off-a-promotion.html.\nVERDICT manifest: read at ~/.config/reckon/crew/runs/r-20261118T044609684406-qwnw-red-file-code-reload-never-cuts-off-a-promotion/manifest.md; it cites 2 failed, 1 passed in 60.35s at base 6699d025 and 3 passed in 1.36s at head a3b37ecf, and its suite arms are recorded as inline JSON at lines 22-23 with zero failures on both sides.\nVERDICT diff: read both commits against 6699d025; abe4e20796 adds the pass-path environment, the reload_paths schedule write and the docstring change in one hunk, and a3b37ecf55 adds the 35-line evidence fragment, with nothing else in the tree.\nCALL_SITES: reckon/crew/admission/service.py:495-497, reckon/crew/follower_reload.py:36, reckon/crew/follower_reload.py:105, reckon/crew/queue_admission.py:admit_until_stopped\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_code_reload_never_cuts_off_a_promotion.py:120-127 makes the window the production loop consults due, which is exactly what the hung cases lacked.\nSCORE evidence: 12\nJUSTIFICATION evidence: the head gate is recorded in scoped-gate-1794979302105282251.log:6 as \"3 passed in 1.36s\", but the all_debug/SLURM_JOB_ID-unset condition the done_when states appears in no log and the arms at manifest.md:22-23 do not cover the other file.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only two paths in 6699d025..a3b37ecf are the test file and its evidence fragment, both inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the repaired cases redden when the loop's drain is removed (assert driver.reexecs_while_work_held == 0 at tests/test_code_reload_never_cuts_off_a_promotion.py:181), but that control is quoted only in prose and a regression in the schedule record's key would hang rather than fail.\nSCORE fit: 18\nJUSTIFICATION fit: the fixture extends the existing monkeypatch idiom of _LoopDriver.__init__ (tests/test_code_reload_never_cuts_off_a_promotion.py:100-116) and introduces no new name outside it.\nSCORE reuse: 18\nJUSTIFICATION reuse: the fixture calls the owning helper reckon/crew/follower_reload.py:36 reload_paths instead of spelling the schedule path from runs.crew_home() itself, so the schedule location has one owner.\nFINDING tests/test_code_reload_never_cuts_off_a_promotion.py:127 non-blocking: the persisted schedule record is the only thing that makes the moved stamp due, and nothing asserts the product's ReloadWindow consumed it, so a renamed record key or moved schedule path would restore the silent hang rather than a red assertion.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-code-reload-never-cuts-off-a-promotion.html:31 non-blocking: the all_debug job and SLURM_JOB_ID-unset condition is stated but recorded in no cited log, so the written evidence is a claim about the host rather than a measurement of it.\nFINDING manifest.md:22 non-blocking: both suite arms measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import the repaired file, so the pair establishes no delta over the changed file.",
+  "review_run_id": "r-20261118T053407252938-review-of-qwnw-red-file-code-reload-never-cuts-off-a-promotion-a3b37ecf551b",
+  "reviewed_base_sha": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed",
+  "reviewed_head_sha": "a3b37ecf551b6485aaf2abfc19465ddd1dc1d013",
+  "reviewed_run_id": "r-20261118T044609684406-qwnw-red-file-code-reload-never-cuts-off-a-promotion",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:24:22.193998+00:00",
+  "total": 100
+}

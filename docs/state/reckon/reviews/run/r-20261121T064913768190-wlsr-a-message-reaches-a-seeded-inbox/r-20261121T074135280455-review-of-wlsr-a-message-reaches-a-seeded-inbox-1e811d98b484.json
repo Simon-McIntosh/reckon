@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:866",
+    "reckon/serve.py"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:42:42Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html",
+      "id": "fceba6ab3de",
+      "line": 39,
+      "severity": "non-blocking",
+      "text": "The closing sentence keeps the claim 'The whole inbox family reads 59 passed, 2 skipped', a count no log in the run directory records (a grep of every *.log under r-20261121T064913768190-wlsr-a-message-reaches-a-seeded-inbox for '59 passed' returns nothing), so the same class of unsourced count the table repair removed survives in the prose."
+    },
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html",
+      "id": "f2999414f36",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "The count-versus-log check that caught the original disagreement is a scratch script under /tmp (negative-control-doc-counts.log header names /tmp/reckon-crew-scratch/.../check_gate_table.py) and is not committed, so nothing fails if the gate table drifts from its cited logs again."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The reviewed delta is an HTML evidence fragment, so no runtime path executes it; I examined the two sites that serve and link it, reckon/evidence.py:862-869 (the /<project>/evidence/fragments/... URL it builds) and reckon/serve.py, which serves docs/.",
+    "diff": "Read 378528d4854c7607ad410939b716482b249ec4c6..1e811d98b48421371fce6b8c16b44e147a03f32e commit by commit: one commit, docs(evidence), changing 1 file (+4 -4) \u2014 the gate table's three count rows and the eight-failures sentence; no file outside the declared evidence-fragment path.",
+    "done_when": "The done_when asks the record to state the counts its own logs carry; I read each row of docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html:22-30 against its named log's pytest summary line and all four agree (62 passed; 8 failed, 91 passed; 102 passed; 1 failed, 3 deselected).",
+    "goal": "The reviewed node's goal is that a message reaches whatever live run seeded a hook; the gained commit's job is narrower, to make the landing record's gate table state the counts its cited logs record, and docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html:25-28 does exactly that.",
+    "manifest": "Read the reviewed manifest; its artifacts line and its baseline_suite/after_suite rows state 62, 8 failed/91 passed and 102 passed, matching the fragment's repaired table, and its negative_control_log line names negative-control-base.log, which I read and which shows the first case failing with the harness-named refusal.",
+    "write_paths": "Read the manifest's declared paths and this run's scope; the one path in the 378528d485..1e811d98b4 diff is docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html, which is declared."
+  },
+  "justifications": {
+    "durability": "No committed test fails if the repaired counts drift: the check that caught the original mismatch is the scratch script named in negative-control-doc-counts.log, not a test in the tree, so the repair rests on a one-off verification.",
+    "evidence": "Every count in the repaired table at docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html:25-28 matches the summary line of the log named beside it, and negative-control-doc-counts.log records EXIT=1 against the pre-repair fragment and EXIT=0 against the repaired working tree.",
+    "fit": "The edit keeps the fragment's own published shape (meta plan-* tags, r-table gate rows, log filename in <code>) and introduces no name; only the prose count at line 39 is still unsourced.",
+    "goal_fidelity": "The gained commit changes exactly the three gate-table rows and the eight-failures sentence of docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html:25-28,39, turning a table that contradicted its cited logs into one that states them.",
+    "reuse": "The commit adds no definition and no capability; it edits an existing evidence fragment, so there is nothing to fork and nothing new to own.",
+    "scope_discipline": "The whole gained diff is one file, docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-message-reaches-a-seeded-inbox.html, inside the delta scope the dispatch names."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261121T074135280455-review-of-wlsr-a-message-reaches-a-seeded-inbox-1e811d98b484",
+  "reviewed_base_sha": "378528d4854c7607ad410939b716482b249ec4c6",
+  "reviewed_head_sha": "1e811d98b48421371fce6b8c16b44e147a03f32e",
+  "reviewed_run_id": "r-20261121T064913768190-wlsr-a-message-reaches-a-seeded-inbox",
+  "scores": {
+    "durability": 13,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:23:19.772674+00:00",
+  "total": 110
+}

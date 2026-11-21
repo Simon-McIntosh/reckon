@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:16:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-waived-review-is-reachable",
+      "recorded_at": "2026-11-18T00:43:44.701638+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-waived-review-is-reachable",
+      "recorded_at": "2026-11-18T00:43:59.777698+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-waived-review-is-reachable",
+      "recorded_at": "2026-11-18T00:44:14.705290+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-waived-review-is-reachable",
+      "recorded_at": "2026-11-18T00:44:31.425127+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_waived_review_lands_a_waived_run.py",
+      "line": 303,
+      "severity": "non-blocking",
+      "text": "`assert first.exit_code == 1` accepts any non-zero exit, so a promotion that crashes or refuses for a reason other than the missing review still satisfies it; the case asserts that the request the waiver is recorded on is refused but never names the refusal, and line 364 repeats the shape. Asserting the refusal text (as cases (b) and (c) do) would make the case fail on the condition it claims to measure."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": 1315,
+      "severity": "non-blocking",
+      "text": "The new `suite_delta_waiver` parameter has no production caller: crew_run_commands.py:1446, queue_landing.py:266 and reports.py:2293 all take the default, which resolves the waiver by reading the run's live pointer and then the run store from inside a predicate that is otherwise pure. A caller already holding the run's record cannot hand the answer in, so the seam exists for tests only."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": 1263,
+      "severity": "non-blocking",
+      "text": "The committed-row fallback accepts only `suite_delta.status == \"waived\"`, but `crew complete --waive-suite-delta` over a matched pair that added no failure lands with status \"clean\" and the operator's reason in `suite_delta.waiver_reason` (promotion_records.py:1836-1854). Once the pointer is deleted, that recorded waiver is invisible here, so a waived-count review of such a run is refused as unwaived even though the run's row carries the waiver \u2014 the fallback reads one of the two spellings the row can record."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": 1505,
+      "severity": "non-blocking",
+      "text": "The reviewer brief every review node is dispatched with still asks only for \"added_failure_count and added_failure_ids derived from the reviewed run's own baseline_suite and after_suite gate logs\"; no prompt in reckon/crew/prompts/ or this builder names the waived form, so a reviewer whose arms abort has no documented way to file it and arrives at the null count that is still refused. The capability is landed but undocumented where its only caller reads."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261118T001608433369-review-of-a-waived-review-lands-a-waived-run-03b003a26dad",
+  "reviewed_base_sha": "33b6d0d203e10c717008b966a7be7d466a1cf885",
+  "reviewed_head_sha": "03b003a26dad95379042cbff21f218c7d99323ee",
+  "reviewed_run_id": "r-20261117T234307925423-a-waived-review-lands-a-waived-run",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:33:22.689434+00:00",
+  "total": 106
+}

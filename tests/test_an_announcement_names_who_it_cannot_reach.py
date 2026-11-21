@@ -197,10 +197,8 @@ def test_a_live_session_with_no_follower_is_named_unreached(
     """
     import os
 
-    from reckon.crew_run_commands import (
-        HARNESS_SESSIONS_DIR_ENV,
-        _budget_reset_reach,
-    )
+    from reckon.crew.harness_sessions import HARNESS_SESSIONS_DIR_ENV
+    from reckon.crew_run_commands import _budget_reset_reach
 
     _mount(tmp_path, monkeypatch, PROJECT)
     sessions = tmp_path / "harness-sessions"

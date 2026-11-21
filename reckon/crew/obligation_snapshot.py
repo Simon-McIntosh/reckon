@@ -166,6 +166,62 @@ def live_pointer_path(run_id: str) -> Path:
     return crew_home() / "live" / f"{run_id}.json"
 
 
+def _deferral_files() -> list[Path]:
+    """Every file that could hold one deferral, promoted records first."""
+    paths: list[Path] = []
+    for directory in (crew_home() / "acknowledgements", crew_home() / "live"):
+        try:
+            paths.extend(sorted(directory.glob("*.json")))
+        except OSError:
+            continue
+    return paths
+
+
+def _read_deferral(path: Path) -> dict[str, Any]:
+    """One deferral record from a file, or an empty mapping."""
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return record if isinstance(record, dict) else {}
+
+
+def _carried_deferral(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The deferral a live pointer or a promoted record carries, or None.
+
+    A live run keeps its deferral beside its closure disposition, under the
+    ``acknowledgement`` field; a run already promoted has no pointer, so the
+    deferral is a file of its own whose top level *is* the deferral, carrying
+    ``reason`` and ``until`` with the run and project it names.
+    """
+    recorded = record.get("acknowledgement")
+    if isinstance(recorded, Mapping):
+        return recorded
+    if record.get("until") or record.get("until_condition"):
+        return record
+    return None
+
+
+def deferrals_recorded(project: str) -> bool:
+    """Whether any run of this project carries a recorded deferral.
+
+    Applying a deferral can only change a list when one is recorded, and
+    reading the records and their conditions costs the crew facade -- every
+    derivation module with it -- which the prompt path must not load. A
+    deferral lives on a live run's pointer and, once the run is promoted, in
+    one file under the record's own directory; both paths are repeated here for
+    the reason this module repeats the config home.
+    """
+    for path in _deferral_files():
+        record = _read_deferral(path)
+        if not record or _carried_deferral(record) is None:
+            continue
+        if str(record.get("project") or project) != project:
+            continue
+        return True
+    return False
+
+
 def cleanup_intent_path(run_id: str) -> Path:
     """Path of the release the terminal cleanup queue holds for one run.
 
@@ -315,16 +371,14 @@ def station_runtime_candidate(
 ) -> tuple[Path | None, str]:
     """The node's station root and which candidate produced it.
 
-    The order is the store's own -- this node's runtime directory, then the
-    per-user runtime directory, then ``TMPDIR`` -- asked of the store rather
-    than restated, so a test pins the two against each other. The store is
-    imported at the call: the prompt hook loads this module by file path on a
-    turn's opening, and the crew package a module-scope import would drag in is
-    paid only by a read that has reached the point of opening the database.
+    Resolved by :func:`reckon.node_runtime.runtime_root_candidate`, which the
+    station's store and the dispatch that asks a session host read too. It is
+    stated outside the crew package because the prompt hook loads this module
+    by file path and cannot reach ``reckon.crew``.
     """
-    from reckon.crew import station_store
+    from reckon import node_runtime
 
-    return station_store.runtime_root_source(
+    return node_runtime.runtime_root_candidate(
         environ=environ, run_user_root=run_user_root
     )
 
@@ -334,10 +388,10 @@ STATION_HEARTBEAT_NAME = "station-heartbeat.json"
 
 
 def station_database_name() -> str:
-    """The store's own file name, asked of the store rather than restated."""
-    from reckon.crew import station_store
+    """The store's own file name, read from the one definition of it."""
+    from reckon import node_runtime
 
-    return station_store.DATABASE_NAME
+    return node_runtime.STATION_DATABASE_NAME
 
 
 # A heartbeat older than this is reported stale rather than trusted: the
@@ -355,6 +409,11 @@ STATION_TICK_STAGE_KEY = "tick_stage"
 STATION_TICK_STARTED_AT_KEY = "tick_started_at"
 STATION_TICK_FINISHED_AT_KEY = "tick_finished_at"
 STATION_LAST_TICK_KEY = "last_tick"
+# The last finished sweep pass, carrying what it recomputed beside the tick's
+# own counts. It is a station key like ``last_tick`` so a reader off the node
+# answers both passes from the one published reading rather than reaching the
+# sweep's per-project files.
+STATION_LAST_SWEEP_KEY = "last_sweep"
 STATION_TICK_STAGES = (
     "store-tick",
     "classify",
@@ -470,6 +529,20 @@ def _last_tick_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
     return {"last_tick": record} if isinstance(record, dict) else {}
 
 
+def _last_sweep_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
+    """The last finished sweep pass, with what it recomputed.
+
+    Present only once a pass has finished, so a station that has ticked but
+    never swept reports no sweep reading rather than an empty one a reader
+    would take for a pass that did no work.
+    """
+    try:
+        record = json.loads(markers.get(STATION_LAST_SWEEP_KEY) or "null")
+    except (TypeError, ValueError):
+        return {}
+    return {"last_sweep": record} if isinstance(record, dict) else {}
+
+
 def _running_tick_start(markers: Mapping[str, Any], tick_age: int | None) -> str:
     """The instant the running tick started, and "" when no tick is running.
 
@@ -531,7 +604,7 @@ def _station_markers(connection: Any) -> dict[str, str]:
     markers = {
         str(key): str(value)
         for key, value in connection.execute(
-            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?)",
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?, ?)",
             (
                 "heartbeat",
                 STATION_TICK_STAGE_KEY,
@@ -539,6 +612,7 @@ def _station_markers(connection: Any) -> dict[str, str]:
                 STATION_TICK_FINISHED_AT_KEY,
                 "store_identity",
                 STATION_LAST_TICK_KEY,
+                STATION_LAST_SWEEP_KEY,
             ),
         )
     }
@@ -648,6 +722,7 @@ def read_station_tick(
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": age > STATION_STALE_SECONDS,
         **_last_tick_reading(markers),
+        **_last_sweep_reading(markers),
     }
 
 
@@ -1179,7 +1254,58 @@ def _row_with_age(row: Any, instant: datetime) -> Any:
         return row
     measured = dict(row)
     measured[_AGE_SECONDS] = _age_in_seconds(measured.pop(_AGE_SINCE, None), instant)
-    return _derivation_module().refresh_overdue_remedy(measured, now=instant)
+    return refresh_overdue_remedy(measured, now=instant)
+
+
+def _age_of_instant(value: Any, *, now: datetime) -> int:
+    """The non-negative age in seconds of one stored instant."""
+    stamp = _parse_instant(value)
+    if stamp is None:
+        return 0
+    return max(0, int((now - stamp).total_seconds()))
+
+
+def _overdue_figure(seconds: int) -> str:
+    """How an overdue interval is printed in a duty's remedy text."""
+    digits = max(0, int(seconds))
+    return f"{digits // 60}m {digits % 60}s"
+
+
+def _render_overdue_remedy(
+    remedy: Mapping[str, Any], *, age: int, now: datetime
+) -> str:
+    """Compose an overdue duty's text from its intervals at one clock reading."""
+    figure = _overdue_figure(int(age))
+    stage = str(remedy.get("stage") or "")
+    if stage:
+        stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
+        text = (
+            f"review overdue by {figure}: the station's tick has run "
+            f"{_overdue_figure(stage_age)} in its {stage} stage, which holds "
+            "the reflex's sweep"
+        )
+        dispatch = str(remedy.get("dispatch") or "")
+        if dispatch:
+            return f"{text}; dispatch the review now with: {dispatch}"
+        return f"{text}; dispatch the review for session {remedy.get('session')!r} now"
+    return (
+        f"review overdue by {figure}: session {remedy.get('session')!r} "
+        "has an armed follower, but its reflex has not dispatched this "
+        "run's review; inspect the follower's review pass"
+    )
+
+
+def refresh_overdue_remedy(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
+    """One duty row whose time-dependent remedy text is composed at ``now``."""
+    refreshed = dict(row)
+    remedy = refreshed.get("overdue_remedy")
+    age = refreshed.get("age_seconds")
+    if not isinstance(remedy, Mapping) or isinstance(age, bool):
+        return refreshed
+    if not isinstance(age, int):
+        return refreshed
+    refreshed["next_command"] = _render_overdue_remedy(remedy, age=age, now=now)
+    return refreshed
 
 
 def _unreadable_record_remedy(finding: Mapping[str, Any]) -> str:
@@ -1226,6 +1352,13 @@ def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
             {
                 "kind": _UNREADABLE_RECORD_KIND,
                 "run_id": path,
+# The view projects every duty row through its own action form,
+                # which names the ids the row concerns; this duty's identity is
+                # the path it could not read, so the row states it here. A
+                # snapshot reader rebuilds the row from the stored finding with
+                # no derivation to project it with, so the builder both sides
+                # share is what makes the two rows equal.
+                "run_ids": [path],
                 "node": Path(path).name,
                 "age_seconds": 0,
                 "next_command": _unreadable_record_remedy(finding),
@@ -1853,6 +1986,10 @@ class FleetState:
     merged_sections: dict[str, list[dict[str, Any]]] = dataclass_field(
         default_factory=dict
     )
+    unlanded_source: list[dict[str, Any]] = dataclass_field(default_factory=list)
+    # One reading of the promotion request directory for the whole sweep. A
+    # slice that builds its own would decode every request once per session.
+    promotion_index: Any = None
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
@@ -1888,10 +2025,10 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
         ledger_module.index_reuse(),
         head_module.review_heads_resolve_once(),
     ):
-        return _derive_fleet_state(project, now=now)
+        return _build_fleet_state(project, now=now)
 
 
-def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
+def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
     """Build the fleet state, inside the regions :func:`fleet_state` opened."""
     module = _derivation_module()
     instant = _utc_now() if now is None else now
@@ -1920,30 +2057,50 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
         # reach the review store -- so what could not be read is collected here,
         # once, and travels with the state every session's slice is built from. A
         # read outside the region has nobody to name its skips to, so another
-        # reader in this process never reaches this sweep's findings.
+        # reader in this process never reaches this sweep's findings. A review
+        # read this view memoises replays the skips that read reported, so a
+        # derivation here names the same unreadable record a first one did
+        # rather than publishing fewer duties than the snapshot beside it.
         with module.review_module.collect_read_failures() as skipped_records:
-            state = FleetState(
-                project=project,
-                now=instant,
-                config=config,
-                grace=grace,
-                floors=floors,
-                rows=module._classified_rows(project),
-                pointers=pointers,
-                acknowledged=module._acknowledgements_in_force(project, now=instant),
-                reviews_in_flight=reviews_in_flight,
-                sub_floor=module._sub_floor_items_by_session(
-                    project, floors, now=instant
-                ),
-                held_worktrees=module._held_worktrees_by_session(project, now=instant),
-                unreconciled=module.runs.drain_unreconciled_by_session(
-                    project, pointers=listing
-                ),
-                findings=[],
-                merged_sections=merged_section_items_by_session(
-                    project, list(pointers.values()), now=instant
-                ),
-            )
+            # The held-worktree pass reads the ledger's run history, and the
+            # utilisation reader the classification below reaches needs a
+            # window of that same history. Reading it first is what lets one
+            # derivation keep to one index decode; the two reads share no
+            # input, so neither answer depends on which ran first.
+            held_worktrees = module._held_worktrees_by_session(project, now=instant)
+            with module.derivation_history(project):
+                from reckon.crew.promotion_requests import request_index
+
+                # One publish reads the request directory once and slices it
+                # for every session it serves; deriving the index per slice
+                # decoded every request once per session.
+                promotion_index = request_index()
+                state = FleetState(
+                    project=project,
+                    now=instant,
+                    config=config,
+                    grace=grace,
+                    floors=floors,
+                    rows=module._classified_rows(project),
+                    pointers=pointers,
+                    acknowledged=module._acknowledgements_in_force(
+                        project, now=instant
+                    ),
+                    reviews_in_flight=reviews_in_flight,
+                    sub_floor=module._sub_floor_items_by_session(
+                        project, floors, now=instant
+                    ),
+                    held_worktrees=held_worktrees,
+                    unreconciled=module.runs.drain_unreconciled_by_session(
+                        project, pointers=listing
+                    ),
+                    findings=[],
+                    merged_sections=merged_section_items_by_session(
+                        project, list(pointers.values()), now=instant
+                    ),
+                    unlanded_source=module._unlanded_source_items(project),
+                    promotion_index=promotion_index,
+                )
     state.findings = list(skipped_records)
     return state
 
@@ -2044,13 +2201,39 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     findings are the one addition: each names a record the sweep could not
     read, and travels in the duty list so the reader that formats it names the
     path rather than leaving the reader to open the snapshot store.
+
+    The state's pointers are published as this slice's live snapshot for its
+    length, so every per-duty reader below answers from the listing the sweep
+    has already taken. Without that publication each review duty listed the
+    live directory once per duty — twice, through the duty's own read and the
+    review queue it consults — and a sweep cost the number of review duties
+    times the live population, which on a fleet of 200 pointers and 60 review
+    duties was 122 listings and 24,400 copied records for one sweep.
     """
+    module = _derivation_module()
+    with module.live_pointer_snapshot(state.project, pointers=state.pointers.values()):
+        return _payload_for_state(state, session)
+
+
+def _payload_for_state(state: FleetState, session: str) -> dict[str, Any]:
+    """One session's payload, over the live snapshot :func:`payload_for` publishes."""
     module = _derivation_module()
     in_flight = state.reviews_in_flight.get(session, set())
     items: list[dict[str, Any]] = []
-    from reckon.crew.fleet_supervisor import fleet_test_obligations
+    from reckon.crew.fleet_supervisor import (
+        fleet_test_obligations,
+        producer_start_failure_obligations,
+    )
 
     items.extend(fleet_test_obligations(state.project, session, now=state.now))
+    items.extend(
+        producer_start_failure_obligations(
+            state.project,
+            session,
+            now=state.now,
+            pointers=state.pointers.values(),
+        )
+    )
     # Read once, for the first queued row this session owns, from the ordering
     # the admission pass admits by; a session with nothing queued never orders
     # anything.
@@ -2153,7 +2336,11 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     items.extend(state.merged_sections.get(session, []))
     from reckon.crew.promotion_requests import failure_obligations
 
-    items.extend(failure_obligations(state.project, session, now=state.now))
+    items.extend(
+        failure_obligations(
+            state.project, session, now=state.now, index=state.promotion_index
+        )
+    )
     items.extend(module.session_scratch_items(state.project, session, now=state.now))
     # The project's main checkout is read here exactly as the derivation reads
     # it, through the derivation's own detector rather than a second one, so a
@@ -2166,6 +2353,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     index_lag = module._index_lag_notice(state.project, now=state.now)
     if index_lag is not None:
         items.append(index_lag)
+    items.extend(state.unlanded_source)
     items.extend(_unreadable_record_items(state.findings))
     items, acknowledged = module._partition_acknowledged(items, state.acknowledged)
     items.sort(
@@ -2192,12 +2380,16 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
         "oldest_age_seconds": max(
             (int(item["age_seconds"]) for item in items), default=0
         ),
-        "unreconciled_runs": int(
-            state.unreconciled.get(session, state.unreconciled.get("", 0))
+        "unreconciled_runs": module.runs.unreconciled_for_session(
+            state.unreconciled, session
         ),
     }
-    delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
-    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
+    delivery = module.recovery_classification.delivery_summary(
+        state.rows, session=session
+    )
+    summary.update(
+        {key: value for key, value in delivery.items() if key != "remove_pointers"}
+    )
     return {
         "project": state.project,
         "session": session,

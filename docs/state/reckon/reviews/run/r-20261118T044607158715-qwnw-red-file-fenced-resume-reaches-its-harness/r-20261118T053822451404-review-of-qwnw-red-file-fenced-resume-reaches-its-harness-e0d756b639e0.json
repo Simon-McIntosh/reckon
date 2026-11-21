@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T06:54:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fenced-resume-reaches-its-harness.html",
+      "line": 35,
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run row opens with a nested <tr><tr>, so a strict HTML parser closes the previous row and drops the empty one, attaching these cells to the wrong row."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fenced-resume-reaches-its-harness.html",
+      "line": 36,
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run row names revision 21b69555c7, the base merge commit, while the only recorded head run of the named file is scoped-gate-1794978774320829731.log at e0d756b639, so the caption's claim at lines 26-28 that every arm is a log under the run directory does not hold for this row."
+    }
+  ],
+  "justifications": {
+    "durability": "no assertion is added by this node; the durable guard is the pre-existing four-case test file, and negative-control-fenced-resume.log reddens two of those four under the declared _names_the_fence mutation.",
+    "evidence": "scoped-gate-1794978774320829731.log names revision e0d756b639 and prints 4 passed with EXIT=0 for the node's own file, but the delivered fragment's head row at line 36 cites revision 21b69555c7, which no log in the run directory records for that file.",
+    "fit": "the fragment follows the sibling idiom at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-2, and the one break is the nested <tr><tr> at line 35.",
+    "goal_fidelity": "the goal is tests/test_fenced_resume_reaches_its_harness.py passing on the primary branch; that file reported 4 passed at this worktree's main head 335723e1b2, and the landed fragment states at its line 19-21 that no product source changed.",
+    "reuse": "the diff adds no function, class or module; fragment composition is owned by reckon/resources.py:69, which this record writes into rather than beside.",
+    "scope_discipline": "the whole diff 21b69555c7..e0d756b639 touches one path, inside the declared fragment directory, and adds nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_fenced_resume_reaches_its_harness.py passes in full on the primary branch; the file passes at the reviewed head and at this worktree's main head, and the landed change is the landing fragment that records that measure.\nVERDICT done_when: read in full; it asks for the named file passing at head as an all_debug job with SLURM_JOB_ID unset and output on shared storage, and scoped-gate-1794978774320829731.log records revision e0d756b639 on host 98dci4-clu-3141 (partitions all_debug and sun_debug) with 4 passed, EXIT=0, while reckon/crew/landing_measure.py:913-916 strips every SLURM_* variable from the submitted job's environment.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's single path is inside the third.\nVERDICT manifest: read; it records the scoped gate at e0d756b639 (4 passed, EXIT=0), the base run at 6699d0257d (4 passed, EXIT=0), the negative control (2 failed, 2 passed, EXIT=1), both suite arms at 58 passed with full 40-character revisions, and a landing line stating no product rule and no test changed.\nVERDICT diff: read as one commit e0d756b639 against base 21b69555c7; it adds 65 lines of HTML evidence fragment and nothing else.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the named file reports 4 passed at this worktree's main head and at e0d756b639, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fenced-resume-reaches-its-harness.html:19-21 states no product source changed.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1794978774320829731.log records revision e0d756b639 and EXIT=0 for the node's file, but the fragment's head row at line 36 names revision 21b69555c7 with no log for that arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 21b69555c7..e0d756b639 diff touches one path, inside the declared fragment directory.\nSCORE durability: 15\nJUSTIFICATION durability: negative-control-fenced-resume.log reddens two of the four cases of the pre-existing tests/test_fenced_resume_reaches_its_harness.py under the declared _names_the_fence mutation, and the node adds no assertion of its own.\nSCORE fit: 16\nJUSTIFICATION fit: the fragment mirrors docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-2, and its only idiom break is the nested <tr><tr> at line 35.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added, and fragment composition is owned by reckon/resources.py:69, which the node uses rather than duplicates.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fenced-resume-reaches-its-harness.html:35 non-blocking: the head-run row opens with a nested second opening tag, so a strict parser closes the previous row and attaches these cells to the wrong row.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fenced-resume-reaches-its-harness.html:36 non-blocking: the head-run row names revision 21b69555c7, the base merge commit, while the recorded head run of the named file is scoped-gate-1794978774320829731.log at e0d756b639, so the caption's promise that every arm is a log under the run directory does not hold for that row.\n",
+  "review_run_id": "r-20261118T053822451404-review-of-qwnw-red-file-fenced-resume-reaches-its-harness-e0d756b639e0",
+  "reviewed_base_sha": "21b69555c731ae5390dc953649571cd29bdd5fd1",
+  "reviewed_head_sha": "e0d756b639e0bc075aea15c9a512f28299f7565a",
+  "reviewed_run_id": "r-20261118T044607158715-qwnw-red-file-fenced-resume-reaches-its-harness",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T07:21:05.594809+00:00",
+  "total": 104
+}

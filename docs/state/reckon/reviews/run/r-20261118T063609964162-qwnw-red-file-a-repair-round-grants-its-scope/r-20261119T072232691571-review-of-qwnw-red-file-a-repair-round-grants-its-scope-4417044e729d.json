@@ -1,0 +1,154 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own arms: baseline_suite-1795069472893806946.log at b24fe95 and after_suite-1795069547976362997.log at c641bedc each end with a summary line reading 58 passed and EXIT=0, with no line beginning FAILED, so each failing-id set is empty and their difference is empty. The instrument is shown able to see a failure present: base-run-test_a_repair_round_grants_its_scope-base.log, produced by the same runner on this node's own file, records one FAILED id and 1 failed, 3 passed with EXIT=1.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "EXCLUSIVE not in pointer[node][write_paths]",
+      "fails_if": "the grant lands for a path a merge cannot reconcile, as when docs/state leaves DEFAULT_EXCLUSIVE_PATHS; mutation-exclusive-class-dropped.log records that redness",
+      "file": "tests/test_a_repair_round_grants_its_scope.py",
+      "independent": true,
+      "line": 371
+    },
+    {
+      "assertion": "no declared_write_grant names EXCLUSIVE",
+      "fails_if": "the refused path is still recorded as a grant on the claim, which declared_write_grants reads from the reflex",
+      "file": "tests/test_a_repair_round_grants_its_scope.py",
+      "independent": true,
+      "line": 372
+    },
+    {
+      "assertion": "PEER_RUN_ID in advice",
+      "fails_if": "the refusal stops naming the live peer that holds the path",
+      "file": "tests/test_a_repair_round_grants_its_scope.py",
+      "independent": true,
+      "line": 375
+    },
+    {
+      "assertion": "EXCLUSIVE not in _scope_line(advice)",
+      "fails_if": "the refused path is left in the advice's scope line, telling the worker to edit a file it must not",
+      "file": "tests/test_a_repair_round_grants_its_scope.py",
+      "independent": true,
+      "line": 376
+    },
+    {
+      "assertion": "GRANTED in pointer[node][write_paths]",
+      "fails_if": "the sharing policy reverts so a peer's live claim on a source path refuses the repair grant, which is the base-revision behaviour the old case encoded",
+      "file": "tests/test_a_repair_round_grants_its_scope.py",
+      "independent": true,
+      "line": 389
+    },
+    {
+      "assertion": "grant entry with path GRANTED, source repair-round, reason repair.finding_id(FINDING)",
+      "fails_if": "the grant is not recorded or loses its source; the reason field is not independent, because both sides call repair.finding_id on the same FINDING",
+      "file": "tests/test_a_repair_round_grants_its_scope.py",
+      "independent": false,
+      "line": 390
+    }
+  ],
+  "assertion_independence": "One added assertion is not independent for one field: tests/test_a_repair_round_grants_its_scope.py:390 builds its expected reason with repair.finding_id, the same function the reflex uses, so a regression in the recorded reason cannot redden it. The path and source fields of the same assertion stay independent, and the durability score rests on :371 and :389.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_repair_dispatch.py:841",
+    "reckon/crew/claims.py:83",
+    "reckon/crew/dispatch_claims.py:2563"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:45:46Z",
+  "evidence_limits": [
+    "No suite re-run: the reviewed run's own arms and their EXIT=0 summary lines were read instead.",
+    "The file's head gate was not re-run: scoped-gate-1795071422166163074.log records 5 passed at revision 4417044 and EXIT=0.",
+    "Both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which share no import with the changed file, and no production file changed, so the arm pair is recorded but measures nothing about this node."
+  ],
+  "finding_dispositions": [],
+  "findings": [
+    {
+      "file": "tests/test_a_repair_round_grants_its_scope.py",
+      "line": "390",
+      "severity": "non-blocking",
+      "text": "non-blocking: the grant entry reason is compared against repair.finding_id(FINDING), the same function the code under test calls, so those two sides move together and a regression in the recorded reason cannot redden it; the path and source fields of that assertion stay independent."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-grants-its-scope.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment is a whole document with doctype, head and main while its siblings are bare section elements that reckon/evidence.py:1640 composes by stripping a wrapper, and the file ends without a trailing newline."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed manifest records no ruff result for the changed paths although its done_when names ruff check and ruff format --check on them; both are clean at head 4417044 when read by hand, but the record carries no evidence of it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "two commits, one test-file change and one fragment; c641bedcb5 moves the peer case to docs/state/generated.json and adds the shared-source case; no production file touched.",
+    "done_when": "demands head pass, base run first, a cause verdict, both arms at 40-char revisions, base red log in the fragment, ruff clean; manifest.md has all but the ruff line.",
+    "goal": "dispatch node goal is \"Make tests/test_a_repair_round_grants_its_scope.py pass in full on the primary branch\"; the diff is that file plus a fragment, and its head gate reads 5 passed at 4417044.",
+    "manifest": "read; status complete, both commits, changed paths, landing line, arms as JSON, negative_control_log, scaffolding retry note; no ruff record.",
+    "write_paths": "declared reckon, tests, the fragment dir and file, the node figure dir; the diff touches only tests/test_a_repair_round_grants_its_scope.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-grants-its-scope.html, both inside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_repair_round_grants_its_scope.py:371 reddens when the exclusive class stops fencing, as mutation-exclusive-class-dropped.log shows, and :389 reddens if source paths become exclusive again.",
+    "evidence": "scoped-gate-1795071422166163074.log:2-7 names revision 4417044 with 5 passed, the base arm log opens 1 failed, 3 passed at b24fe95, and the mutation log reddens the moved case; the manifest records no ruff result.",
+    "fit": "the test keeps the module fixtures and helpers, but the fragment file at line 1 is a whole document while its siblings are bare section elements.",
+    "goal_fidelity": "tests/test_a_repair_round_grants_its_scope.py:389 asserts the shared-source grant, and :371 keeps the refusal on docs/state/generated.json, a class reckon/crew/runs.py:2276 lists as exclusive.",
+    "reuse": "no definition is added; the new case drives the existing owners at reckon/crew/claims.py:83 and reckon/crew/dispatch_claims.py:2563 and reuses DEFAULT_EXCLUSIVE_PATHS at reckon/crew/runs.py:2276.",
+    "scope_discipline": "the two paths in the delivered diff are both inside the declared write paths, and no production file or unrelated test is changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch node goal is \"Make tests/test_a_repair_round_grants_its_scope.py pass in full on the primary branch\"; the diff is that file plus a fragment, and its head gate reads 5 passed at 4417044.\nVERDICT done_when: demands head pass, base run first, a cause verdict, both arms at 40-char revisions, base red log in the fragment, ruff clean; manifest.md has all but the ruff line.\nVERDICT write_paths: declared reckon, tests, the fragment dir and file, the node figure dir; the diff touches only tests/test_a_repair_round_grants_its_scope.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-grants-its-scope.html, both inside.\nVERDICT manifest: read; status complete, both commits, changed paths, landing line, arms as JSON, negative_control_log, scaffolding retry note; no ruff record.\nVERDICT diff: two commits, one test-file change and one fragment; c641bedcb5 moves the peer case to docs/state/generated.json and adds the shared-source case; no production file touched.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:841, reckon/crew/claims.py:83, reckon/crew/dispatch_claims.py:2563\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_repair_round_grants_its_scope.py:389 asserts the shared-source grant, and :371 keeps the refusal on docs/state/generated.json, a class reckon/crew/runs.py:2276 lists as exclusive.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795071422166163074.log:2-7 names revision 4417044 with 5 passed, the base arm log opens 1 failed, 3 passed at b24fe95, and the mutation log reddens the moved case; the manifest records no ruff result.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two paths in the delivered diff are both inside the declared write paths, and no production file or unrelated test is changed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_repair_round_grants_its_scope.py:371 reddens when the exclusive class stops fencing, as mutation-exclusive-class-dropped.log shows, and :389 reddens if source paths become exclusive again.\nSCORE fit: 15\nJUSTIFICATION fit: the test keeps the module fixtures and helpers, but the fragment file at line 1 is a whole document while its siblings are bare section elements.\nSCORE reuse: 19\nJUSTIFICATION reuse: no definition is added; the new case drives the existing owners at reckon/crew/claims.py:83 and reckon/crew/dispatch_claims.py:2563 and reuses DEFAULT_EXCLUSIVE_PATHS at reckon/crew/runs.py:2276.\nFINDING tests/test_a_repair_round_grants_its_scope.py:390 non-blocking: the grant entry reason is compared against repair.finding_id(FINDING), the same function the code under test calls, so those two sides move together and a regression in the recorded reason cannot redden it; the path and source fields of that assertion stay independent.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-grants-its-scope.html:1 non-blocking: the fragment is a whole document with doctype, head and main while its siblings are bare section elements that reckon/evidence.py:1640 composes by stripping a wrapper, and the file ends without a trailing newline.\nFINDING manifest.md:1 non-blocking: the reviewed manifest records no ruff result for the changed paths although its done_when names ruff check and ruff format --check on them; both are clean at head 4417044 when read by hand, but the record carries no evidence of it.\n",
+  "reuse_search": {
+    "capabilities": [
+      "judging a widened claim path by the class a merge can reconcile",
+      "naming the live peer that holds a path in a refusal",
+      "recording a repair round's grant with its source and reason",
+      "composing a node's evidence fragment into a plan's cumulative record"
+    ],
+    "judgement": "Every capability is already owned and the diff extends nothing: the class judgement is reckon/crew/dispatch_claims.py:2563 over DEFAULT_EXCLUSIVE_PATHS at reckon/crew/runs.py:2276, the grant record is widen_claim at reckon/crew/claims.py:83 entered from reckon/crew/recovery_repair_dispatch.py:841, and the fragment is read by _fragment_body_bytes at reckon/evidence.py:1640. The new case also does not duplicate the bare widen rule owned by tests/test_only_unmergeable_paths_are_claimed.py:140. The diff adds no production definition."
+  },
+  "review_run_id": "r-20261119T072232691571-review-of-qwnw-red-file-a-repair-round-grants-its-scope-4417044e729d",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "4417044e729dd4eee6bcfe3be82b6db2d34e66b9",
+  "reviewed_run_id": "r-20261118T063609964162-qwnw-red-file-a-repair-round-grants-its-scope",
+  "reviewed_worker_commits": [
+    "c641bedcb5ad2bc90934feaa61a21ad72c2334bd",
+    "4417044e729dd4eee6bcfe3be82b6db2d34e66b9"
+  ],
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063609964162-qwnw-red-file-a-repair-round-grants-its-scope/after_suite-1795069547976362997.log",
+      "revision": "c641bedcb5ad2bc90934feaa61a21ad72c2334bd"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063609964162-qwnw-red-file-a-repair-round-grants-its-scope/baseline_suite-1795069472893806946.log",
+      "revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:10:32.710759+00:00",
+  "total": 104
+}

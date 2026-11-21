@@ -1,0 +1,113 @@
+<section id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-landing">
+  <h2>An unreadable record named</h2>
+
+  <p><strong>What changed.</strong> A review record the reader cannot use
+  becomes a duty row, and the row's remedy comes from the fault that read
+  reported. That fault was produced by the first read, and the review reads
+  this derivation memoises answered every later derivation without touching the
+  file, so the fault was dropped: the second derivation published fewer duties
+  than the snapshot written beside it, and the record disappeared from the view
+  on the sweep after the one that reported it.</p>
+
+  <p>The skips a read reported now travel with the memoised answer
+  (<code>review_records.memoised_read</code>) and are replayed into the region
+  the current derivation opened. One holder serves every call site: the four
+  obligation memos whose keys name the store's current entries — presence,
+  selection, rounds and the headless read — in
+  <code>reckon/crew/obligations.py</code>, and the stored-review answer in
+  <code>recovery_memo._read_review_once</code>, whose key is the run's
+  classification inputs rather than the store's entries. That last key outlives
+  a record's deletion, so the replay itself decides: a finding is noted only
+  while the file it names is still there. A store index that has not
+  revalidated can answer for a removed record, and a duty naming a path nobody
+  can open is worse than no duty. The unreadable row also states the id list the
+  view's own projection gives it
+  (<code>obligation_snapshot._unreadable_record_items</code>), which is what
+  makes the row a snapshot reader rebuilds equal to the row the writer derived.</p>
+
+  <p><strong>Merged with primary main.</strong> Main reached the same intent by
+  another route (<code>3573a365</code>: a stored-review answer carries the
+  findings its read collected, replayed through <code>note_read_failure</code>)
+  and renamed the shared appender to <code>_append_read_failure</code>. The
+  merge keeps one mechanism: <code>memoised_read</code> is the carry-and-replay
+  holder, <code>note_read_failure</code> is where the file-must-still-exist rule
+  lives, and <code>_read_review_once</code> calls the holder instead of
+  repeating the carry.</p>
+
+  <h3 id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-reproduced">Reproduced before repair</h3>
+
+  <p>At the base revision one process produced the writer's rows and a second
+  derivation of the same fleet, and the second carried no row:</p>
+
+  <pre id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-repro">snapshot rows: [{'kind': 'unreadable-review-record', 'run_id': '.../r-reviewed.at-236d4ed0....json',
+                 'next_command': '1 claimless finding(s) in this record: rewrite the record or resume ...'}]
+second derivation findings: []
+second derivation rows: []</pre>
+
+  <p>Clearing only the <code>obligation_*</code> memos restored the row while
+  the stored-review memo stayed warm, which names the cache as the cause rather
+  than the record or the reader. The verdict is <strong>product wrong</strong>:
+  no assertion was weakened or deleted. The base run of the node's own file is
+  the negative control, and its failing id is
+  <code>tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot</code>.</p>
+
+  <p>A second control disables the replay alone
+  (<code>note_read_failure</code> replaced with a no-op) and runs the same file
+  at the delivered head: it reads <code>3 failed, 2 passed</code> including the
+  base failing id, so the replay is what carries those cases rather than the
+  surrounding change.</p>
+
+  <h3 id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-measured">Measured</h3>
+
+  <p>Every arm is a batch job on <code>all_debug</code> run from an archived
+  checkout of its own revision, with <code>SLURM_JOB_ID</code> unset for the
+  command. Each log's first lines name the revision, tree and command and its
+  last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-arms">
+    <caption>The gate is this node's own file; the suite is the standing pair
+    promotion resolves for the run.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm — the negative control (job 1327169)</td>
+        <td><code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code></td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head arm (job 1327487)</td>
+        <td><code>175c772e163ab00c07b841982fede10d2ff932b1</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the standing suite, base arm (job 1327176)</td>
+        <td><code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the standing suite, after arm (job 1327488)</td>
+        <td><code>175c772e163ab00c07b841982fede10d2ff932b1</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's file, merge head <code>f0e03154</code> folded in (job 1331789)</td>
+        <td><code>e7e4d9b7e0f638954f35baa18465cb394e2309ad</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the standing suite, merge head (job 1331790)</td>
+        <td><code>e7e4d9b7e0f638954f35baa18465cb394e2309ad</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The arm over the test files that mention a changed module is 226 files,
+  run once per revision: base at job 1327316, the pre-merge head at job 1327361
+  and the merge head at job 1331791. The base arm reads
+  <code>56 failed, 1466 passed</code>, the pre-merge head
+  <code>52 failed, 1470 passed</code>, and the merge head
+  <code>33 failed, 1489 passed</code>. Against the base the merge head adds five
+  ids, and every one of them also fails on primary main itself: the four in
+  <code>test_a_merged_primary_run_keeps_its_own_commits.py</code> and
+  <code>test_in_flight_review_has_one_predicate.py</code>'s
+  <code>test_a_non_object_pointer_is_not_in_flight_to_either</code> reproduce in
+  an archived checkout of <code>f0e03154</code>, while the fifth,
+  <code>test_manifest_accepts_owned_commits_and_ignores_imported_primary</code>,
+  passes when run on its own and fails only inside the batch. Four ids the base
+  names and the merge head does not are this node's
+  <code>test_the_duty_is_the_same_row_read_back_from_the_snapshot</code>,
+  <code>test_skipped_record_reaches_the_checklist</code>'s
+  <code>test_the_reader_reproduces_the_findings_the_writer_carried</code> and
+  <code>test_a_skipped_record_is_named_in_the_prompt_checklist</code>, and
+  <code>test_obligations_read_the_station.py</code>'s
+  <code>test_an_exported_snapshot_with_a_stale_heartbeat_names_its_age</code>.</p>
+</section>

@@ -1,0 +1,25 @@
+<section id="qwnw-red-file-a-spent-global-lift-control-logs">
+<h3>Control logs: the base run red, the head run green</h3>
+<p>Both logs are verbatim captures in this run's directory. The base run used the base revision's own test file; the head run used the delivered head; the gate strips <code>SLURM_JOB_ID</code>/<code>SLURM_JOBID</code> so the suite runs without a scheduler identity.</p>
+
+<h4 id="qwnw-red-file-a-spent-global-lift-base-log">Base run: 2 failed, 2 passed</h4>
+<pre>
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py
+# revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76
+F..F                                                                     [100%]
+FAILED tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py::test_a_live_session_lift_admits_its_own_session - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py::test_a_session_lift_judges_its_own_spend_on_the_fallback_path - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+2 failed, 2 passed in 2.40s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-a-spent-global-lift-head-log">Head run: 4 passed</h4>
+<pre>
+# revision: 9e47ddce84727c3115afab42798b35b9f67fd17f
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py'
+....                                                                     [100%]
+4 passed in 1.38s
+EXIT=0
+</pre>
+</section>

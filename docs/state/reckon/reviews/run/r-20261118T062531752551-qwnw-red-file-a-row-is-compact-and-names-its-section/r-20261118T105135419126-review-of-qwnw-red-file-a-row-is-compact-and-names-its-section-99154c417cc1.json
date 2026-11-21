@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1794998037589455490.headed.log records 58 passed EXIT=0 at 2f00851c42f247cba1c81c80ed0cf7b41045de76 with no FAILED line, and after_suite-1794998112507753164.headed.log records 58 passed EXIT=0 at 2f00851c42f247cba1c81c80ed0cf7b41045de76 with no FAILED line, so the set difference is empty (0). Both arms name the base revision, so the zero holds by construction; the head's only change is a docs fragment no test imports.",
+  "call_site_count": "2",
+  "call_sites": [
+    "reckon/evidence.py:854 _fragment_href",
+    "reckon/evidence.py:1657 compose_landed_record"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:27:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html:41",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after arm is recorded at 2f00851c42f247cba1c81c80ed0cf7b41045de76, the base arm's own revision per after_suite-1794998112507753164.headed.log, so the zero added failures at line 51 reads zero whatever the head is; the head commit 99154c417c is measured by no suite arm, and the record cannot be told apart from one whose after arm did not run."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html:1",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the file is named without the qwnw- prefix the declared write path spells and the fragment's own section id carries, so the link reckon/evidence.py:854 builds from the file's node name resolves to no file and reckon/evidence.py:1657 composes the fragment only by its directory scan; the plan's closing overview therefore links no fragment for this node."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html:78",
+      "line": "78",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm named for the negative control is the declared-suite after arm, which runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and never the file the control reddens; the comparable arm is node-gate-head.log at 99154c417c with 18 passed EXIT=0. The control itself is real and its ten ids match negative-control.log."
+    }
+  ],
+  "item_aggregate": "5",
+  "item_verdicts": {
+    "diff": "One commit 99154c417c against base 2f00851c adds docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html (+82 -0) and changes neither product source nor test.",
+    "done_when": "The done_when's escape clause governs the node: node-gate-base.log at 2f00851c reads 18 passed EXIT=0 from all_debug job 1325804 (sacct: all_debug, exit 0:0), the suite arms are inline JSON with full revisions but both at the base revision, and negative-control.log holds the ten failing ids the fragment lists.",
+    "goal": "The node goal is to make tests/test_a_row_is_compact_and_names_its_section.py pass in full on the primary branch; that file is 18 passed EXIT=0 at head 99154c417c in node-gate-head.log and already green at base 2f00851c, so the goal's end state holds and the commit carries the record rather than a repair.",
+    "manifest": "Read in full; status complete, both node-gate arms 18 passed EXIT=0, both declared-suite arms 58 passed EXIT=0 at 2f00851c, the control 10 failed 8 passed EXIT=1, and every log it names exists and reads as claimed.",
+    "write_paths": "Declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the qwnw-red-file file it names and a figures directory; the single changed path is inside that fragment directory but named without the qwnw- prefix."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, so its claims rest on the pre-existing tests/test_a_row_is_compact_and_names_its_section.py, which negative-control.log reddens at ten ids when reckon/crew/query.py:302 is broken.",
+    "evidence": "node-gate-head.log records 18 passed EXIT=0 at 99154c417c in all_debug job 1325833 (sacct: all_debug, exit 0:0), but after_suite-1794998112507753164.headed.log names revision 2f00851c, the base arm's own revision, so the zero delta at line 51 is true by construction rather than measured against the head.",
+    "fit": "the fragment follows the section/h2/p idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1 and introduces no new name.",
+    "goal_fidelity": "node-gate-head.log records tests/test_a_row_is_compact_and_names_its_section.py as 18 passed EXIT=0 at 99154c417c, so the goal's end state holds and the landed commit adds only the record the done_when asks for.",
+    "reuse": "no definition is added; the owner of a fragment's path and composition is reckon/evidence.py:854 and reckon/evidence.py:1657, and a search of reckon/ for evidence-fragment path construction found no second owner.",
+    "scope_discipline": "the only changed path sits inside docs/evidence/fragments/queued-work-needs-no-workaround/, though not the qwnw-red-file file the declared write path spells."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_row_is_compact_and_names_its_section.py pass in full on the primary branch; node-gate-head.log records that file as 18 passed EXIT=0 at 99154c417c and it was already green at base 2f00851c, so the goal's end state holds and the commit carries the record rather than a repair.\nVERDICT done_when: the done_when's escape clause governs this node; node-gate-base.log at 2f00851c reads 18 passed EXIT=0 from all_debug job 1325804 (sacct: all_debug, exit 0:0), its suite-delta arms are inline JSON with full 40-character revisions but both at the base revision, and negative-control.log carries the ten failing ids the fragment lists.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the qwnw-red-file file it names and a figures directory; the single changed path is inside that fragment directory but named without the qwnw- prefix.\nVERDICT manifest: read in full; status complete, both node-gate arms 18 passed EXIT=0, both declared-suite arms 58 passed EXIT=0 at 2f00851c, the control 10 failed 8 passed EXIT=1, and every log it names exists and reads as claimed.\nVERDICT diff: one commit 99154c417c against base 2f00851c adds docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html with 82 insertions and no deletions, and changes neither product source nor test.\nCALL_SITES: reckon/evidence.py:854 _fragment_href, reckon/evidence.py:1657 compose_landed_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: node-gate-head.log records tests/test_a_row_is_compact_and_names_its_section.py as 18 passed EXIT=0 at 99154c417c, so the goal's end state holds.\nSCORE evidence: 16\nJUSTIFICATION evidence: node-gate-head.log records 18 passed EXIT=0 at 99154c417c in all_debug job 1325833, but after_suite-1794998112507753164.headed.log names revision 2f00851c, the base arm's own revision, so the zero delta is true by construction.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the only changed path sits inside docs/evidence/fragments/queued-work-needs-no-workaround/, though not the qwnw-red-file file the declared write path spells.\nSCORE durability: 14\nJUSTIFICATION durability: the diff adds no assertion, so its claims rest on the pre-existing tests/test_a_row_is_compact_and_names_its_section.py, which negative-control.log reddens at ten ids when reckon/crew/query.py:302 is broken.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the section/h2/p idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1 and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added, and the owner of a fragment's path and composition is reckon/evidence.py:854 and reckon/evidence.py:1657, with a search of reckon/ finding no second owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html:41 non-blocking: the after arm is recorded at 2f00851c, the base arm's own revision, so the zero added failures at line 51 holds whatever the head is and the head commit 99154c417c is measured by no suite arm.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html:1 non-blocking: the file's name drops the qwnw- prefix the declared write path spells and the fragment's own section id carries, so the link reckon/evidence.py:854 builds from the node name resolves to no file and the plan overview links no fragment for this node.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-row-is-compact-and-names-its-section.html:78 non-blocking: the head arm named for the negative control is the declared-suite after arm, whose two modules never include the file the control reddens; the comparable arm is node-gate-head.log at 99154c417c with 18 passed EXIT=0.\n",
+  "review_node": "review-of-qwnw-red-file-a-row-is-compact-and-names-its-section-99154c417cc1",
+  "review_run_id": "r-20261118T105135419126-review-of-qwnw-red-file-a-row-is-compact-and-names-its-section-99154c417cc1",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "99154c417cc14424a0e1d027b17f86653938f704",
+  "reviewed_run_id": "r-20261118T062531752551-qwnw-red-file-a-row-is-compact-and-names-its-section",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T105135419126-review-of-qwnw-red-file-a-row-is-compact-and-names-its-section-99154c417cc1"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T12:48:29.766768+00:00",
+  "total": 103
+}

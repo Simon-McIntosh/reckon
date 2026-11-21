@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite-1795019790417371845.log at 9e1dc0dc3e and after_suite-1795019865515929273.log at 0869ce7985 both read \"58 passed\" with EXIT=0 and no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3808 supervised_launch (the drain the case measures)",
+    "reckon/crew/dispatch_launch.py:3902 _start_supervisor (the fixture's launch path)",
+    "reckon/crew/process_signal.py:917 signal_worker (writes the sender records the assertions read)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:23:06Z",
+  "findings": [
+    {
+      "file": "tests/test_a_stopped_run_ends_its_supervisor.py",
+      "line": "308",
+      "severity": "non-blocking",
+      "text": "_stop inlines os.killpg(os.getpgid(...), SIGTERM) where the file's own _kill_group at line 176 and the group-signal owner reckon/crew/process_signal.py:_signal_process_group at line 1010 already carry that mechanism; a _signal_group(pid, sig) helper beside _kill_group would keep one home, though the owner cannot be called here because it writes its own sender record into the run directory the assertions read."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-ends-its-supervisor.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "the fragment says the run's senders record reads run-stop seven times, but the receipt the same paragraph cites, repro-terminate-senders.jsonl, holds six run-stop rows and four run-stop-escalation rows, so the quoted count does not match its own receipt."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-ends-its-supervisor.html",
+      "line": "67",
+      "severity": "non-blocking",
+      "text": "the two mutation-control rows at lines 67 and 70 cite results (the 90 s ceiling failure and 62.17 s against a 40 s bound) with no log path, and no log under the run directory contains either measurement, so the controls cannot be re-derived from the receipts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063528631019-qwnw-red-file-a-stopped-run-ends-its-supervisor/manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the baseline_suite and after_suite arms record tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, two files that import nothing the change touches, so they are green for reasons unrelated to the fix and only the scoped gate measures the change."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/dispatch_launch.py:supervised_launch and _start_supervisor, and reckon/crew/process_signal.py:signal_worker, as the production code the changed fixture drives and whose records its assertions read.",
+    "diff": "read commit 0869ce7985 and 5aeb79bca5 against base 9e1dc0dc3e; the first touches only tests/test_a_stopped_run_ends_its_supervisor.py (27 insertions, 9 deletions, no assertion changed), the second adds only the 86-line fragment.",
+    "done_when": "the done_when is that one file passes in full as an all_debug job with the base failure logged beside it; scoped-gate-1795019595947862399.log names the command, the revision 0869ce7985 and 3 passed, and negative-control-base.log carries the base failing id with EXIT=1.",
+    "goal": "the node goal is that tests/test_a_stopped_run_ends_its_supervisor.py passes in full; the scoped gate ran that one file at the code head 0869ce7985 and recorded 3 passed in 13.59s with EXIT=0, the final head adding only the evidence fragment.",
+    "manifest": "read; it records status complete, the scoped gate 3 passed at 0869ce7985, the base arm 1 failed/2 passed at 9e1dc0dc3e, both suite arms 58 passed with full 40-character revisions, and names the two logs, which match disk.",
+    "write_paths": "the declared paths are reckon, tests, the queued-work-needs-no-workaround fragment directory and its html, and a figures directory; the diff touches only the test file and the fragment, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_run_ends_its_supervisor.py:339 reddens if the supervisor never escalates, since the worker's 120 s sleep then outlives the 90 s ceiling and _wait_until fails on the supervisor's exit, but the case no longer drives dispatch.terminate, whose regression is caught only by tests/test_a_worker_never_outlives_its_supervisor.py:278.",
+    "evidence": "scoped-gate-1795019595947862399.log records revision, tree, command, 3 passed and EXIT=0, but the recorded suite arms import nothing the change touches, so the scoped gate is the only arm that measures it.",
+    "fit": "the fixture change follows the module's own idiom at tests/test_a_stopped_run_ends_its_supervisor.py:172 and keeps the derived-bound comments the file is written in.",
+    "goal_fidelity": "the file at 5aeb79bca5:tests/test_a_stopped_run_ends_its_supervisor.py passes in full, 3 passed at 0869ce7985 per scoped-gate-1795019595947862399.log.",
+    "reuse": "tests/test_a_stopped_run_ends_its_supervisor.py:308 inlines the group signal that the same file's _kill_group at line 176 and reckon/crew/process_signal.py:1010 already own, without extending either.",
+    "scope_discipline": "both diff paths, tests/test_a_stopped_run_ends_its_supervisor.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-ends-its-supervisor.html, sit inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_a_stopped_run_ends_its_supervisor.py passes in full; the scoped gate ran that one file at the code head 0869ce7985 and recorded \"3 passed in 13.59s\" with EXIT=0, with the final head adding only the evidence fragment.\nVERDICT done_when: the done_when is that one file passes in full as an all_debug job with the base failure logged beside it; scoped-gate-1795019595947862399.log carries \"# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stopped_run_ends_its_supervisor.py'\" and \"3 passed\", and negative-control-base.log carries the base failure id test_the_supervisor_exits_within_the_bound_after_a_stop with EXIT=1.\nVERDICT write_paths: the declared paths are reckon, tests, the queued-work-needs-no-workaround fragment directory and its qwnw-red-file-a-stopped-run-ends-its-supervisor.html, and a figures directory; the diff touches only tests/test_a_stopped_run_ends_its_supervisor.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-ends-its-supervisor.html, both inside that fence.\nVERDICT manifest: read; it records status complete, the scoped gate 3 passed at 0869ce7985, the base arm 1 failed/2 passed at 9e1dc0dc3e, both suite arms 58 passed with full 40-character revisions, and names negative-control-base.log and scoped-gate-1795019595947862399.log, all of which match the log files on disk.\nVERDICT diff: read commit by commit against 9e1dc0dc3e; 0869ce7985 changes only tests/test_a_stopped_run_ends_its_supervisor.py (27 insertions, 9 deletions: docstrings plus _stop's one signal line, no assertion touched) and 5aeb79bca5 adds only the 86-line fragment, both inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_launch.py:supervised_launch, reckon/crew/dispatch_launch.py:_start_supervisor, reckon/crew/process_signal.py:signal_worker\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the file at 5aeb79bca5:tests/test_a_stopped_run_ends_its_supervisor.py passes in full, 3 passed at 0869ce7985 per scoped-gate-1795019595947862399.log.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795019595947862399.log records revision, tree, command, \"3 passed\", and EXIT=0, but the recorded suite arms (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) import nothing this change touches, so the scoped gate is the only arm that measures it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both diff paths, tests/test_a_stopped_run_ends_its_supervisor.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-ends-its-supervisor.html, sit inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_stopped_run_ends_its_supervisor.py:339 reddens if the supervisor never escalates, since the worker's 120 s sleep then outlives the 90 s ceiling and _wait_until fails on the supervisor's exit, but the case no longer drives dispatch.terminate, so a regression in that call is caught only by tests/test_a_worker_never_outlives_its_supervisor.py:278.\nSCORE fit: 18\nJUSTIFICATION fit: the fixture change follows the module's own idiom at tests/test_a_stopped_run_ends_its_supervisor.py:172 and keeps the derived-bound comments the file is written in.\nSCORE reuse: 14\nJUSTIFICATION reuse: tests/test_a_stopped_run_ends_its_supervisor.py:308 inlines the group signal that the same file's _kill_group at line 176 and reckon/crew/process_signal.py:1010 already own, without extending either.\nFINDING tests/test_a_stopped_run_ends_its_supervisor.py:308 non-blocking: _stop inlines os.killpg(os.getpgid(...), SIGTERM) where the file's own _kill_group at line 176 and the group-signal owner reckon/crew/process_signal.py:_signal_process_group at line 1010 already carry that mechanism; a _signal_group(pid, sig) helper beside _kill_group would keep one home, though the owner cannot be called here because it writes its own sender record into the run directory the assertions read.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-ends-its-supervisor.html:45 non-blocking: the fragment says the run's senders record reads run-stop seven times, but the receipt the same paragraph cites, repro-terminate-senders.jsonl, holds six run-stop rows and four run-stop-escalation rows, so the quoted count does not match its own receipt.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-ends-its-supervisor.html:67 non-blocking: the two mutation-control rows at lines 67 and 70 cite results (the 90 s ceiling failure and 62.17 s against a 40 s bound) with no log path, and no log under the run directory contains either measurement, so the controls cannot be re-derived from the receipts.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063528631019-qwnw-red-file-a-stopped-run-ends-its-supervisor/manifest.md:1 non-blocking: the baseline_suite and after_suite arms record tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, two files that import nothing the change touches, so they are green for reasons unrelated to the fix.\n",
+  "review_node": "review-of-qwnw-red-file-a-stopped-run-ends-its-supervisor-5aeb79bca599",
+  "review_run_id": "r-20261118T165919023249-review-of-qwnw-red-file-a-stopped-run-ends-its-supervisor-5aeb79bca599",
+  "reviewed_base_sha": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246",
+  "reviewed_head_sha": "5aeb79bca5995f21db304b32707871c576ab0d3a",
+  "reviewed_run_id": "r-20261118T063528631019-qwnw-red-file-a-stopped-run-ends-its-supervisor",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T165919023249-review-of-qwnw-red-file-a-stopped-run-ends-its-supervisor-5aeb79bca599"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:44:35.100736+00:00",
+  "total": 104
+}

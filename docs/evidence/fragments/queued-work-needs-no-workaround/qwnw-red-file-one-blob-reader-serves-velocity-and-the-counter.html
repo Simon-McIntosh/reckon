@@ -1,0 +1,77 @@
+<section id="qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter-landing">
+  <h2>One blob reader serves velocity and the counter</h2>
+
+  <p><strong>What was red.</strong> At the base revision
+  <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code> the file failed one of
+  its three cases:
+  <code>test_the_batched_read_happens_in_one_function</code> asserted that
+  exactly one function under <code>reckon/</code> holds the string constant
+  <code>--batch</code>, and the scan found two:
+  <code>reckon/velocity.py:read_blobs</code> and
+  <code>reckon/crew_dispatch_commands.py:crew_dispatch</code>. The two other
+  cases passed, so the product already had the one batched reader the file
+  describes: <code>interface_counts.read_sources is velocity.read_sources</code>,
+  <code>velocity.read_blobs</code> answers the whole spec list in one
+  <code>git cat-file --batch</code> process, and
+  <code>velocity._plan_metas</code> and
+  <code>interface_counts.read_trees</code> both reach it.</p>
+
+  <p><strong>Cause and verdict: the test was wrong, the product was right.</strong>
+  The detector used the bare literal <code>--batch</code> as its proxy for a
+  batched object read. <code>crew dispatch --batch</code> is a CLI flag on the
+  dispatch command and holds the same literal, so the scan reported the batch
+  queueing command as a second blob reader. The rule the file keeps is one
+  batched <em>object</em> read, whose grammar is <code>git cat-file --batch</code>;
+  the repair requires <code>cat-file</code> beside <code>--batch</code> in the
+  same function's constants. No assertion was deleted or weakened: a reader
+  reintroduced on either side still names both halves, and the mutation
+  control below shows the narrowed scan firing on exactly that shape. The
+  function is the only one under <code>reckon/</code> holding both literals;
+  <code>crew_dispatch</code> holds <code>--batch</code> and no
+  <code>cat-file</code>.</p>
+
+  <h3 id="qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter-arms">Measured</h3>
+
+  <table id="qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter-arms-table">
+    <caption>The node's whole test file, each arm over its own revision's tree
+    from <code>git archive</code>, resolved with the root environment's
+    interpreter. Every log names its revision, tree, <code>module.__file__</code>
+    and command on its header lines and ends with a bare
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base arm</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head arm</td>
+        <td><code>27a001dcead3df4e23fc6b26e4f6bdc2bbef7f62</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate, all_debug job</td>
+        <td><code>27a001dcead3df4e23fc6b26e4f6bdc2bbef7f62</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The only failing id in the base arm is
+  <code>tests/test_one_blob_reader_serves_velocity_and_the_counter.py::test_the_batched_read_happens_in_one_function</code>,
+  and the head arm fails nothing, so the change adds no failure and removes
+  one.</p>
+
+  <h3 id="qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter-control">Negative controls</h3>
+
+  <p>Two, because the repair narrowed a detector and a narrower detector can be
+  a dead one.</p>
+
+  <ol>
+    <li>The base revision's own file, run verbatim at the head revision's
+    product code, fails with the recorded id and <code>EXIT=1</code> — the
+    defect reproduces before the repair.</li>
+    <li>A throwaway module <code>reckon/_nc_probe_blob_reader.py</code> holding
+    <code>def read_one_blob(repo, spec): return run_git(repo, "cat-file",
+    "--batch", ...)</code> was placed in the tree and the repaired file run
+    against it: <code>test_the_batched_read_happens_in_one_function</code> failed
+    with the probe named as the extra item and <code>EXIT=1</code>. The probe
+    module was then removed and the file run again at <code>3 passed</code>. A
+    second batched object read therefore still reddens the check.</li>
+  </ol>
+</section>

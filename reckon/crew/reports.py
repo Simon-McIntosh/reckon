@@ -859,6 +859,24 @@ def _declares_derived(fields: dict[str, Any]) -> bool:
     return str(fields.get("derived") or "").strip().lower() in {"1", "true", "yes"}
 
 
+def _suite_arm_field_names(fields: Mapping[str, Any] | dict[str, Any]) -> list[str]:
+    """The suite-arm keys a manifest records, unlabelled pair first.
+
+    A run armed on more than one population reports each population's arms
+    apart, as ``baseline_suite_UNIT`` beside ``after_suite_UNIT`` and so on, so
+    neither population's failures are judged against the other's baseline. A
+    labelled arm is typed exactly as the unlabelled one is, so a reader of the
+    parsed mapping sees a decoded observation whether the arm is labelled or
+    not.
+    """
+    names = ["baseline_suite", "after_suite"]
+    for key in fields:
+        for prefix in ("baseline_suite_", "after_suite_"):
+            if key.startswith(prefix) and key != prefix and key not in names:
+                names.append(key)
+    return names
+
+
 def _normalise_manifest_fields(
     fields: dict[str, Any], *, path: str | None = None
 ) -> dict[str, Any]:
@@ -883,7 +901,7 @@ def _normalise_manifest_fields(
             coerced = _split_entry_tokens(coerced)
         fields[name] = coerced
     _refuse_changed_path_redirections(fields.get("changed_paths"), path=path)
-    for name in ("baseline_suite", "after_suite"):
+    for name in _suite_arm_field_names(fields):
         fields[name] = _typed_suite_observation(fields.get(name))
     fields["failure_attribution"] = _typed_failure_attribution(
         fields.get("failure_attribution")
@@ -1501,6 +1519,58 @@ def _names_the_same_revision(left: str, right: str) -> bool:
     return first.startswith(second) or second.startswith(first)
 
 
+# The tool whose name prefixes the fence notice, so a log line is recognised as
+# the launch's prologue only when a scheduler's own name stands in front of the
+# notice's text rather than merely quoting it.
+_FENCE_NOTICE_TOOLS = frozenset({"salloc", "sbatch", "srun"})
+
+
+# The notices a fence has written as its launch prologue. A log written before
+# the notice was reworded is still a log whose first line is the launch's, so
+# the retired wording is kept here rather than dropped: recognition is what
+# keeps a measure's own header reading as the first recorded line in every log
+# a review may still open.
+_RETIRED_FENCE_NOTICE_TEXTS = (
+    "task re-enters the worker fence; absolute scheduler paths bypass this guard.",
+)
+
+
+def _fence_notice_texts() -> tuple[str, ...]:
+    """The fence notice, current wording first, with its tool prefix removed.
+
+    Read at call time: the launcher imports ``reckon.nested_launch`` first, and
+    that module reaches this one while it is still initialising, so a
+    module-level import of the notice here would close an import cycle.
+    """
+    from reckon.nested_launch import SCHEDULER_FENCE_NOTICE
+
+    current = SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
+    return (current, *_RETIRED_FENCE_NOTICE_TEXTS)
+
+
+def _is_fence_prologue(line: str) -> bool:
+    """Whether a log line is the launch fence's notice rather than a record."""
+    tool, _, rest = line.partition(":")
+    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() in _fence_notice_texts()
+
+
+def _first_recorded_line(text: str) -> str:
+    """The first line a log records, past the launch fence's own notice.
+
+    A fenced launch writes its notice to the task's stderr before the task
+    itself runs, so a job log a measure captures opens with that line rather
+    than with the header the measure writes. The notice is the launch's, not
+    the log's, so it is skipped; only that exact notice with a scheduler's own
+    name in front of it is, and a log whose next line still names no revision
+    is reported exactly as before.
+    """
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    index = 0
+    while index < len(lines) and _is_fence_prologue(lines[index]):
+        index += 1
+    return lines[index] if index < len(lines) else ""
+
+
 def _gate_log_revision_findings(
     manifest: dict[str, Any],
     *,
@@ -1523,6 +1593,14 @@ def _gate_log_revision_findings(
     not compared, and one that cites no log for an arm is not judged. A
     relative path resolves beside the manifest, the same way the control log's
     does, so one manifest is not judged two ways by where the check is called.
+
+    The line judged is the first one the log records, which is not always the
+    file's first line: a launch through the worker fence writes its notice to
+    the task's stderr before the task runs, so every arm log the suite
+    measurement captures on a fenced partition opens with that notice and the
+    header the measure writes lands second. Judging the literal first line
+    reported a log its own writer had produced, so the notice is skipped and
+    the header it precedes is judged in its place.
     """
     findings: list[str] = []
     for key, arm in _GATE_LOG_ARMS:
@@ -1538,9 +1616,7 @@ def _gate_log_revision_findings(
         text, resolved = _read_control_log(cited, manifest_path=manifest_path)
         if text is None:
             continue
-        first_line = next(
-            (line.strip() for line in text.splitlines() if line.strip()), ""
-        )
+        first_line = _first_recorded_line(text)
         named = [match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line)]
         if not named:
             findings.append(
@@ -1848,13 +1924,9 @@ def _revision_is_committed(store: Path, revision: str) -> bool:
     a store that simply cannot answer. Asking first keeps that refusal to a
     readable store.
     """
-    probe = subprocess.run(
-        ["git", "-C", str(store), "cat-file", "-e", f"{revision}^{{commit}}"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return probe.returncode == 0
+    from reckon.crew.recovery import _resolve_commit
+
+    return bool(_resolve_commit(store, revision))
 
 
 def _committed_head_paths(store: Path) -> set[str]:
@@ -1901,6 +1973,10 @@ def _png_twin_findings_for_base(
     for png in sorted(path for path in added if path.endswith(".png")):
         svg = png[:-4] + ".svg"
         if svg not in head:
+            continue
+        if png not in head:
+            # Added and then removed by the run itself: the committed head
+            # holds no copy, so there is nothing left to remove.
             continue
         findings.append(
             f"{png} adds a PNG twin of the SVG figure {svg} in the same "
@@ -2019,6 +2095,52 @@ def _figure_findings(
         if relative not in carried
     )
     return findings
+
+
+def _fragment_reconciliation_findings(
+    text: str,
+    *,
+    node: TaskNode | None = None,
+    worktree: Path | None = None,
+) -> list[str]:
+    """Report each figure a node's landing record states that its logs contradict.
+
+    A record can quote a timing no arm produced, and every other reader of a
+    manifest reads the log's own header without ever comparing it to the prose
+    beside it, so the comparison belongs where the worker still holds the turn.
+    The record lives at ``docs/evidence/fragments/<plan>/<node>.html``; a node
+    that wrote none is not held to it, and a body the reader cannot use is left
+    to the arm rules that already refuse it.
+
+    Every finding carries the module's own words, because the repair is always
+    the same one: quote the figure the log recorded, under the revision that log
+    names, or repoint the arm at the log that holds the figure.
+    """
+    if worktree is None or node is None:
+        return []
+    plan = str(getattr(node, "plan", "") or "").strip()
+    node_id = str(getattr(node, "id", "") or "").strip()
+    if not plan or not node_id:
+        return []
+    fragment_path = (
+        Path(worktree) / "docs" / "evidence" / "fragments" / plan / f"{node_id}.html"
+    )
+    if not fragment_path.is_file():
+        return []
+    from reckon.crew.fragment_reconcile import ManifestUnreadableError, reconcile
+
+    try:
+        fragment = fragment_path.read_text(encoding="utf-8")
+        failures = reconcile(fragment, text)
+    except (OSError, UnicodeDecodeError):
+        return []
+    except ManifestUnreadableError:
+        return []
+    return [
+        f"the landing record {fragment_path.name!r} does not reconcile with the "
+        f"logs the manifest cites: {failure}"
+        for failure in failures
+    ]
 
 
 def _read_source_or_none(path: Path) -> str | None:
@@ -2758,6 +2880,114 @@ def _fragment_plan_of(changed: Any) -> str | None:
     return None
 
 
+# A fragment cites the logs behind its measurements by name, and a sentence
+# beside such a citation can also name the revision it believes the log
+# records. That second copy is what fails: the run directory's logs are
+# rewritten in place by every rerun, so a revision frozen into the prose is
+# contradicted by the artefact the same sentence points at, and the record can
+# no longer be rechecked. Measured 2026-11-20 on this run: the merged-head
+# sentence named main ``c422a8f5`` beside ``logs/merged-head.log``, whose header
+# by then recorded ``46602c8f``, and the gate, the suite arms and an independent
+# review all read past it because nothing resolved the citation. The log's own
+# header is the authority for the pair, so a claim written in prose is compared
+# against it here rather than trusted.
+_FRAGMENT_CITED_LOG = re.compile(r"logs/[A-Za-z0-9_.\-]+\.log")
+
+# The revision a fragment sentence asserts, behind the role it asserts. Only
+# ``main`` and ``revision`` are read: those are the two roles a replay header
+# records, so those are the only claims a cited log can be held against.
+_FRAGMENT_REVISION_CLAIM = re.compile(
+    r"\b(main|revision)\b[^0-9A-Za-z]{0,8}([0-9a-fA-F]{7,64})",
+    re.IGNORECASE,
+)
+
+# The roles a capture header records, as ``# main: <sha>`` and
+# ``# revision: <sha>``.
+_FRAGMENT_LOG_HEADER = re.compile(
+    r"^#\s*(main|revision)\s*:\s*([0-9a-fA-F]{7,64})\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# A log captured into a fragment is a quotation, not a claim the fragment makes:
+# the header block is copied whole, so its revision pair is the log's own and
+# cannot contradict the file it was copied from. Judging it would refuse an
+# honest quotation.
+_QUOTED_LOG_BLOCK = re.compile(r"<pre\b[^>]*>.*?</pre\s*>", re.IGNORECASE | re.DOTALL)
+
+
+def _fragment_prose_lines(text: str) -> list[str]:
+    """A fragment's lines with quoted log blocks dropped and numbering kept."""
+    stripped = _QUOTED_LOG_BLOCK.sub(
+        lambda block: "\n" * block.group(0).count("\n"), text
+    )
+    return stripped.splitlines()
+
+
+def _fragment_citation_findings(
+    manifest: dict[str, Any],
+    *,
+    worktree: Path | None,
+    manifest_path: Path | None,
+) -> list[str]:
+    """Judge a run's landing fragment against the logs it cites on the same line.
+
+    A claim that a cited log records a revision is only as good as the log, and
+    the log is the copy that moves: a rerun rewrites it, so the fragment keeps a
+    pair nobody can recheck and a reader cannot tell a stale claim from a fresh
+    one. The comparison is made only where a line does both — cites a log and
+    names a revision — because a fragment that cites a log and says nothing
+    about its header leaves the header to speak for itself, which is the shape
+    this check wants.
+    """
+    if manifest_path is None:
+        return []
+    tree = Path.cwd() if worktree is None else Path(worktree)
+    findings: list[str] = []
+    for changed in manifest.get("changed_paths") or ():
+        if _fragment_plan_of(changed) is None:
+            continue
+        fragment = _normalized_scope_path(changed)
+        path = Path(fragment)
+        if not path.is_absolute():
+            path = tree / path
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        for number, line in enumerate(_fragment_prose_lines(text), start=1):
+            cited = _FRAGMENT_CITED_LOG.findall(line)
+            claims = {
+                (role.lower(), revision.lower())
+                for role, revision in _FRAGMENT_REVISION_CLAIM.findall(line)
+            }
+            if not cited or not claims:
+                continue
+            for name in dict.fromkeys(cited):
+                log_text, _ = _read_control_log(name, manifest_path=manifest_path)
+                if log_text is None:
+                    continue
+                recorded = {
+                    role.lower(): revision.lower()
+                    for role, revision in _FRAGMENT_LOG_HEADER.findall(log_text)
+                }
+                for claimed_role, claimed in sorted(claims):
+                    recorded_value = recorded.get(claimed_role)
+                    if recorded_value is None:
+                        continue
+                    if _names_the_same_revision(claimed, recorded_value):
+                        continue
+                    findings.append(
+                        f"fragment {fragment!s} line {number} names "
+                        f"{claimed_role} {claimed} on the same line that cites "
+                        f"{name!r}, whose header records {claimed_role} "
+                        f"{recorded_value}: a revision written beside a cited "
+                        "log is contradicted by that log as soon as it is "
+                        "rewritten, so the sentence must leave the pair to the "
+                        "log's own header"
+                    )
+    return findings
+
+
 def _landing_record_beside(root: Path, plan: str) -> Path | None:
     """The landing record a plan's fragments compose into, when one exists.
 
@@ -3037,7 +3267,15 @@ def audit_manifest(
         _figure_findings(manifest, node=node, worktree=worktree, repository=repository)
     )
     findings.extend(
+        _fragment_reconciliation_findings(text, node=node, worktree=worktree)
+    )
+    findings.extend(
         _commit_citation_findings(manifest, worktree=worktree, repository=repository)
+    )
+    findings.extend(
+        _fragment_citation_findings(
+            manifest, worktree=worktree, manifest_path=resolved_manifest_path
+        )
     )
     findings.extend(_unmarked_finding_severity_findings(node))
     findings.extend(_unresolved_revision_findings(node))
@@ -3072,18 +3310,18 @@ def _write_scope_findings(
 ) -> list[str]:
     """Report changed paths outside the write scope, naming a joined list as one.
 
-    A list field is split on commas, not spaces, so a value whose entries are
-    separated by spaces arrives as one item holding internal whitespace. That
-    item lies outside every declared root, and a scope finding printing it among
-    the strays would render the single joined item as the several paths it names,
-    leaving the missing commas as the only sign it parsed one. When the item's
-    own whitespace-separated parts each lie within the declared scope, the value
-    is a space-separated list rather than a stray path, and the audit names that
-    reading in place of a scope finding for the item — the field, the single item
-    it parsed and the comma rule — so its author rewrites the value rather than
-    hunting a record the check is not comparing against. The parse is unchanged,
-    so the value stays a defect the worker fixes; every remaining stray path is
-    quoted, so one path can never read as several.
+    The guarded list fields are read entry by entry before this runs, so a
+    ``changed_paths`` value whose entries are separated by spaces has already
+    been split into those entries and each is read against the declared roots.
+    This rule therefore guards the shape for any caller that hands it an item
+    still holding internal whitespace: such an item lies outside every declared
+    root, and a scope finding printing it among the strays would render the
+    single joined item as the several paths it names, so when the item's own
+    whitespace-separated parts each lie within the declared scope the audit
+    names that reading in place of a scope finding for the item — the field, the
+    single item it parsed and the comma rule — and its author rewrites the value
+    rather than hunting a record the check is not comparing against. Every
+    remaining stray path is quoted, so one path can never read as several.
     """
     declared = tuple(declared)
     separated: set[str] = set()

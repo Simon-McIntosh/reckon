@@ -1,0 +1,35 @@
+
+<section id="qwnw-red-file-lane-reading-at-dispatch-cause">
+<h2>Cause and verdict</h2>
+<p>One cause: the test was wrong. The case expected a real dispatch on a zero
+reading to exit 75 with nothing created. The launch path now stores the held request
+as one queued pointer and reports the router's own verdict.</p>
+<p>The four refusal assertions became the queued ones (exit 0, <code>ok</code> and
+<code>queued</code> true, <code>lane_gate</code> at an allowance of 0.0 and held) and the run's
+pointer is read in the queued phase. No assertion was dropped; the ample and absent readings still proceed.</p>
+</section>
+
+<section id="qwnw-red-file-lane-reading-at-dispatch-base-run">
+<h2>Base run: the failing id</h2>
+<pre>srun: task re-enters the worker fence; absolute scheduler paths bypass this guard.
+# revision: 06ed97e3a38086e2e5feabb18d5965f8ded3886b
+# host: 98dci4-clu-3144.iter.org
+# tree: /tmp/mcintos-landing-0f5c8d2334ae-IOzcJM/tree
+# command: env PYTHONPATH=. sh -c &#x27;PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_reading_at_dispatch.py&#x27;
+.........F                                                               [100%]</pre>
+<pre>=========================== short test summary info ============================
+FAILED tests/test_lane_reading_at_dispatch.py::test_a_zero_reading_holds_a_real_dispatch_while_ample_and_absent_proceed - assert 0 == 75
+ +  where 0 = &lt;Result okay&gt;.exit_code
+1 failed, 9 passed in 1.16s</pre>
+</section>
+
+<section id="qwnw-red-file-lane-reading-at-dispatch-head-run">
+<h2>Head run: all ten passing</h2>
+<pre>srun: task re-enters the worker fence; absolute scheduler paths bypass this guard.
+# revision: 61f3b0436da5ba1131da7c25082c648cd0f9fc8e
+# host: 98dci4-clu-3144.iter.org
+# tree: /tmp/mcintos-landing-f0064d037600-HEuunS/tree
+# command: env PYTHONPATH=. sh -c &#x27;PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_reading_at_dispatch.py&#x27;
+..........                                                               [100%]
+10 passed in 1.16s</pre>
+</section>

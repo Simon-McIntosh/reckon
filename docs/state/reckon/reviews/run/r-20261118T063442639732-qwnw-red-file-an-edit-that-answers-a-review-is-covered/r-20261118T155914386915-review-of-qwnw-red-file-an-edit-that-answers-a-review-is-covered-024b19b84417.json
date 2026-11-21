@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/plan_review.py:_compute_coverage",
+    "reckon/crew/plan_review.py:review_coverage",
+    "reckon/crew/admission/reviews.py:_build_plan_review_record",
+    "reckon/crew/routing.py:3161",
+    "reckon/mcp_edit_plan.py:2284",
+    "reckon/mcp_deadlines.py:742"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T17:40:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-edit-that-answers-a-review-is-covered.html",
+      "line": "35 non-blocking",
+      "severity": "the head block quotes revision 45d17d056f84deb29cb39501f3158d1df5c954f5 on host 98dci4-clu-3142 reading 9 passed in 2.50s, and no log under the run directory matches it (scoped-gate-1795016610226560493.log is host 98dci4-clu-3141 at the same revision reading 2.13s, head-run-final.log is host 98dci4-clu-3144 at revision 024b19b844173bd151d408a0efcf30f803b033a6 reading 5.43s), so the fragment's green run cannot be reconciled from the stored logs the manifest names.",
+      "text": "the head block quotes revision 45d17d056f84deb29cb39501f3158d1df5c954f5 on host 98dci4-clu-3142 reading 9 passed in 2.50s, and no log under the run directory matches it (scoped-gate-1795016610226560493.log is host 98dci4-clu-3141 at the same revision reading 2.13s, head-run-final.log is host 98dci4-clu-3144 at revision 024b19b844173bd151d408a0efcf30f803b033a6 reading 5.43s), so the fragment's green run cannot be reconciled from the stored logs the manifest names."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-edit-that-answers-a-review-is-covered.html",
+      "line": "20 non-blocking",
+      "severity": "the mutation claim that a decision ignoring the acceptance failed both acceptance cases names no stored log in the run directory, so the guard-is-load-bearing statement rests on prose alone; the required negative control, the base red run, is separately and correctly logged at base-run.log.",
+      "text": "the mutation claim that a decision ignoring the acceptance failed both acceptance cases names no stored log in the run directory, so the guard-is-load-bearing statement rests on prose alone; the required negative control, the base red run, is separately and correctly logged at base-run.log."
+    }
+  ],
+  "head_log_revision": "024b19b844173bd151d408a0efcf30f803b033a6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the CALL_SITES line names 6 production call sites: reckon/crew/plan_review.py:_compute_coverage, reckon/crew/plan_review.py:review_coverage, reckon/crew/admission/reviews.py:_build_plan_review_record, reckon/crew/routing.py:3161, reckon/mcp_edit_plan.py:2284, reckon/mcp_deadlines.py:742",
+    "diff": "read commit by commit against base 60ecc274f1bf7008b09057c6a5252423deb4cfe5; 45d17d056f84deb29cb39501f3158d1df5c954f5 adds _coverage_once at tests/test_an_edit_that_answers_a_review_is_covered.py:156 and switches the control's two reads to it with both assertions and their messages unchanged, and 024b19b844173bd151d408a0efcf30f803b033a6 adds the 42-line evidence fragment.",
+    "done_when": "the measure is that file green at head as an all_debug job with SLURM_JOB_ID unset, plus a base run carrying its failing id, no weakened assertion, and both arms as JSON with full 40-character revisions; head-run-final.log reads 9 passed EXIT=0 at 024b19b844173bd151d408a0efcf30f803b033a6, base-run.log reads 1 failed, 8 passed EXIT=1 at 60ecc274f1bf7008b09057c6a5252423deb4cfe5 naming test_ignoring_the_acceptance_leaves_the_section_uncovered, both assertions survive, and baseline_suite and after_suite each read 58 passed with no failure.",
+    "goal": "the node's goal is that tests/test_an_edit_that_answers_a_review_is_covered.py pass in full on the primary branch; the helper at tests/test_an_edit_that_answers_a_review_is_covered.py:156 routes the control through plan_review._compute_coverage (reckon/crew/plan_review.py:1222, whose acceptance loop at :1387 is what the control measures), and the file reads 9 passed EXIT=0 at head 024b19b844173bd151d408a0efcf30f803b033a6.",
+    "manifest": "read; status complete, commits 45d17d056f84deb29cb39501f3158d1df5c954f5,024b19b844173bd151d408a0efcf30f803b033a6, changed_paths the two delivered files, tests naming the pytest gate on that test file, test_logs naming the scoped gate, base and head logs, arms recorded inline as JSON with full 40-character revisions, and outside_scope recording that the resolved scoped suite names two files this node's done-when never names.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and that topic's figures directory; git diff 60ecc274f1bf7008b09057c6a5252423deb4cfe5..024b19b844173bd151d408a0efcf30f803b033a6 touches only tests/test_an_edit_that_answers_a_review_is_covered.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-edit-that-answers-a-review-is-covered.html, all inside it."
+  },
+  "justifications": {
+    "durability": "restoring the memoised second read at tests/test_an_edit_that_answers_a_review_is_covered.py:314 reddens the control by name at 60ecc274f1bf7008b09057c6a5252423deb4cfe5, so the assertion states the condition under which it fails; the control reads a private decision function, which the positive case at :277 covers through the memoising reader.",
+    "evidence": "head-run-final.log and base-run.log at the two recorded revisions carry the done_when's measure, and review.added_failures_from_gate_logs over the two arm logs returns (0, []) rather than a claim.",
+    "fit": "tests/test_an_edit_that_answers_a_review_is_covered.py:156 mirrors the adjacent _coverage helper at :152, and ruff check and ruff format --check are clean on the changed file.",
+    "goal_fidelity": "reckon/crew/plan_review.py:1387 is the acceptance loop the control now reaches, and tests/test_an_edit_that_answers_a_review_is_covered.py:302 makes the file pass in full at head without weakening either assertion.",
+    "reuse": "no production definition is added; the helper wraps the existing owner of the decision, plan_review._compute_coverage at reckon/crew/plan_review.py:1222, rather than re-implementing it.",
+    "scope_discipline": "git diff 60ecc274f1bf7008b09057c6a5252423deb4cfe5..024b19b844173bd151d408a0efcf30f803b033a6 touches exactly the test file and the fragment inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_an_edit_that_answers_a_review_is_covered.py pass in full on the primary branch; the helper at tests/test_an_edit_that_answers_a_review_is_covered.py:156 routes the control through plan_review._compute_coverage (reckon/crew/plan_review.py:1222, whose acceptance loop at :1387 is what the control measures), and the file reads 9 passed EXIT=0 at head 024b19b844173bd151d408a0efcf30f803b033a6.\nVERDICT done_when: the measure is that file green at head as an all_debug job with SLURM_JOB_ID unset, plus a base run carrying its failing id, no weakened assertion, and both arms as JSON with full 40-character revisions; head-run-final.log reads 9 passed EXIT=0 at 024b19b844173bd151d408a0efcf30f803b033a6, base-run.log reads 1 failed, 8 passed EXIT=1 at 60ecc274f1bf7008b09057c6a5252423deb4cfe5 naming test_ignoring_the_acceptance_leaves_the_section_uncovered, both assertions survive, and baseline_suite and after_suite each read 58 passed with no failure.\nVERDICT write_paths: the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and that topic's figures directory; git diff 60ecc274f1bf7008b09057c6a5252423deb4cfe5..024b19b844173bd151d408a0efcf30f803b033a6 touches only tests/test_an_edit_that_answers_a_review_is_covered.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-edit-that-answers-a-review-is-covered.html, all inside it.\nVERDICT manifest: read; status complete, commits 45d17d056f84deb29cb39501f3158d1df5c954f5,024b19b844173bd151d408a0efcf30f803b033a6, changed_paths the two delivered files, tests naming the pytest gate on that test file, test_logs naming the scoped gate, base and head logs, arms recorded inline as JSON with full 40-character revisions, and outside_scope recording that the resolved scoped suite names two files this node's done-when never names.\nVERDICT diff: read commit by commit against base 60ecc274f1bf7008b09057c6a5252423deb4cfe5; 45d17d056f84deb29cb39501f3158d1df5c954f5 adds _coverage_once at tests/test_an_edit_that_answers_a_review_is_covered.py:156 and switches the control's two reads to it with both assertions and their messages unchanged, and 024b19b844173bd151d408a0efcf30f803b033a6 adds the 42-line evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:_compute_coverage, reckon/crew/plan_review.py:review_coverage, reckon/crew/admission/reviews.py:_build_plan_review_record, reckon/crew/routing.py:3161, reckon/mcp_edit_plan.py:2284, reckon/mcp_deadlines.py:742\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1387 is the acceptance loop the control now reaches, and tests/test_an_edit_that_answers_a_review_is_covered.py:302 makes the file pass in full at head without weakening either assertion.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-run-final.log and base-run.log at the two recorded revisions carry the done_when's measure, and review.added_failures_from_gate_logs over the two arm logs returns (0, []) rather than a claim.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 60ecc274f1bf7008b09057c6a5252423deb4cfe5..024b19b844173bd151d408a0efcf30f803b033a6 touches exactly the test file and the fragment inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the memoised second read at tests/test_an_edit_that_answers_a_review_is_covered.py:314 reddens the control by name at 60ecc274f1bf7008b09057c6a5252423deb4cfe5, so the assertion states the condition under which it fails; the control reads a private decision function, which the positive case at :277 covers through the memoising reader.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_an_edit_that_answers_a_review_is_covered.py:156 mirrors the adjacent _coverage helper at :152, and ruff check and ruff format --check are clean on the changed file.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; the helper wraps the existing owner of the decision, plan_review._compute_coverage at reckon/crew/plan_review.py:1222, rather than re-implementing it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-edit-that-answers-a-review-is-covered.html:35 non-blocking: the head block quotes revision 45d17d056f84deb29cb39501f3158d1df5c954f5 on host 98dci4-clu-3142 reading 9 passed in 2.50s, and no log under the run directory matches it (scoped-gate-1795016610226560493.log is host 98dci4-clu-3141 at the same revision reading 2.13s, head-run-final.log is host 98dci4-clu-3144 at revision 024b19b844173bd151d408a0efcf30f803b033a6 reading 5.43s), so the fragment's green run cannot be reconciled from the stored logs the manifest names.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-edit-that-answers-a-review-is-covered.html:20 non-blocking: the mutation claim that a decision ignoring the acceptance failed both acceptance cases names no stored log in the run directory, so the guard-is-load-bearing statement rests on prose alone; the required negative control, the base red run, is separately and correctly logged at base-run.log.",
+  "review_run_id": "r-20261118T155914386915-review-of-qwnw-red-file-an-edit-that-answers-a-review-is-covered-024b19b84417",
+  "reviewed_base_sha": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "reviewed_head_sha": "024b19b844173bd151d408a0efcf30f803b033a6",
+  "reviewed_run_id": "r-20261118T063442639732-qwnw-red-file-an-edit-that-answers-a-review-is-covered",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T155914386915-review-of-qwnw-red-file-an-edit-that-answers-a-review-is-covered-024b19b84417"
+  },
+  "reviewer_run_id": "r-20261118T155914386915-review-of-qwnw-red-file-an-edit-that-answers-a-review-is-covered-024b19b84417",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:22:55.104013+00:00",
+  "total": 113
+}

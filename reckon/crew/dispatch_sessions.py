@@ -11,6 +11,7 @@ from typing import (
     Any,
     Iterable,
     Mapping,
+    Sequence,
 )
 from reckon import (
     _backends,
@@ -29,6 +30,7 @@ from reckon.crew.prompts import (
 from reckon.crew.recovery import (
     PLAN_REVIEW_NODE_PREFIX,
     REVIEW_NODE_PREFIX,
+    _pointer_role,
     _resolve_commit,
     resume_window_refusal,
 )
@@ -55,12 +57,14 @@ from reckon.crew.runs import (
     _utc_now,
     capture_run_session,
     dispatch_field,
+    node_definition,
     process_alive,
     read_pointer,
     record_process_alive,
     run_dir,
     unmergeable_patterns,
 )
+from reckon.crew.worker_behaviour import IMPLEMENT_ROLE
 
 
 def _shadow_mask_paths(
@@ -275,9 +279,8 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
             record["throughput"] = data["throughput"]
-            # What the worker called, by shape: an anchored-edit arm is only
-            # comparable to its baseline if the run store records how much of
-            # the editing went through the tool rather than the harness's own
+            # What the worker called, by shape: the run store records how much
+            # of the editing went through a tool rather than the harness's own
             # file-change items.
             if data["tools"]:
                 record["tools"] = data["tools"]
@@ -1182,6 +1185,26 @@ def _carry_fence_unprotected(
 MODEL_CAPACITY_REFUSAL_PREFIX = "Selected model is at capacity"
 
 
+def _terminal_capacity_scan(
+    state: tuple[str, str], events: Sequence[Mapping[str, Any]]
+) -> tuple[str, str]:
+    """Fold a stream's records into its latest terminal event's kind and detail.
+
+    The verdict is the last terminal event's, so an earlier one is replaced
+    rather than remembered: a stream that recovered after a failure is not a
+    refusal. Folding forward is what lets the reader answer from the state it
+    already holds instead of reading the stream again from its first record.
+    """
+    kind, detail = state
+    for event in events:
+        name = str(event.get("type") or "")
+        if name not in _TERMINAL_STREAM_KINDS:
+            continue
+        kind = name
+        detail = _backends._error_detail(event)
+    return (kind, detail)
+
+
 def _latest_attempt_capacity_refusal(record: Mapping[str, Any]) -> str | None:
     """The launched model when the latest attempt ended in a capacity turn.failed.
 
@@ -1190,26 +1213,25 @@ def _latest_attempt_capacity_refusal(record: Mapping[str, Any]) -> str | None:
     declines whatever prose the stream also carries. Only a ``turn.failed`` whose
     error message begins with the capacity prefix names the refusal. Returns the
     model id the attempt launched, or ``None`` for any other ending.
+
+    The answer is a fold over the stream's records, held per stream for the
+    version last read, so a steady tick folds only what the stream gained, and
+    a stream whose records the events cache dropped for size costs no whole
+    read to re-answer.
     """
     log_path = str(record.get("log_path") or "").strip()
     if not log_path or not Path(log_path).exists():
         return None
-    events, _malformed = _backends.cached_stream_events(log_path, whole=True)
-    for event in reversed(events):
-        kind = str(event.get("type") or "")
-        if kind not in _TERMINAL_STREAM_KINDS:
-            continue
-        if kind != "turn.failed":
-            return None
-        detail = _backends._error_detail(event)
-        if not detail.startswith(MODEL_CAPACITY_REFUSAL_PREFIX):
-            return None
-        agent = record.get("agent")
-        model = ""
-        if isinstance(agent, Mapping):
-            model = str(agent.get("model") or "").strip()
-        return model or None
-    return None
+    kind, detail = _backends.cached_stream_fold(
+        log_path, "capacity-refusal", _terminal_capacity_scan, ("", "")
+    )
+    if kind != "turn.failed" or not detail.startswith(MODEL_CAPACITY_REFUSAL_PREFIX):
+        return None
+    agent = record.get("agent")
+    model = ""
+    if isinstance(agent, Mapping):
+        model = str(agent.get("model") or "").strip()
+    return model or None
 
 
 #: The event kinds that end a stream. Only the latest of these decides how an
@@ -1321,6 +1343,16 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
+    # A stop that could not settle the run's scheduler step leaves work running
+    # where this host cannot see it, so the reason is read before any liveness
+    # probe: the local process may be gone while the step still works, and the
+    # generic refusal would name neither the step nor the command that ends it.
+    from reckon.crew import resumption as _resumption
+
+    step_refusal = _resumption.surviving_step_refusal(record)
+    if step_refusal is not None:
+        _resumption.store_refused_advice(run_id, advice)
+        raise step_refusal
     from reckon.crew.recovery_liveness import _record_is_known_foreign
 
     if (
@@ -1468,6 +1500,10 @@ def resume_plan(
             # same servers the dispatch did rather than to whatever the flight's
             # default list says now.
             worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
+            # A resume continues the same node, so it owes what that node was
+            # dispatched for rather than the implement default: a review run
+            # resumed without its role would owe a review of its own.
+            behaviour_role=_pointer_role(record) or IMPLEMENT_ROLE,
             unmergeable_patterns=_resume_unmergeable_patterns(record),
             masked_paths=_shadow_masks_for_record(record),
         )
@@ -1485,7 +1521,7 @@ def resume_plan(
         run_id=run_id,
         manifest_path=manifest_path,
         attempt_started_at=attempt_started_at,
-        coordinator_session=str(record.get("session") or ""),
+        coordinator_session=coordinator_session(record),
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
@@ -1560,9 +1596,12 @@ def resume_plan(
 
 def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
     """Rebuild the immutable dispatch request stored on a live run."""
-    data = record.get("node")
-    if not isinstance(data, Mapping):
+    # The refusal is tested on the record's own node, before hydration: the
+    # accessor answers a dict for every record, so a pointer carrying no node
+    # would otherwise rebuild as an empty task instead of being refused.
+    if not isinstance(record.get("node"), Mapping):
         raise CrewError(f"run {record.get('run_id')!r} records no node definition")
+    data = node_definition(record)
     return TaskNode(
         id=str(data.get("id") or ""),
         goal=str(data.get("goal") or ""),
@@ -1782,6 +1821,91 @@ def _restate_time_fence(
     return f"{prompt.rstrip()}\n\n{fence}"
 
 
+def _lane_change_launch_failure(
+    before: Mapping[str, Any],
+    current: Mapping[str, Any],
+    *,
+    pid: int | None,
+    log_path: Path | str | None,
+) -> Mapping[str, Any] | None:
+    """Whether this lane change's spawn started no worker, and why if it said so.
+
+    A spawn that returns a pid is an accepted launch, not a started worker: the
+    launch path records a failure on the run when the spawned process ended
+    without reaching a model, and it returns the pid regardless. The receipt
+    that writer adds is read first, because it names the cause; reading the
+    run's launch failures before and after the spawn isolates the one this move
+    caused from any an earlier attempt left.
+
+    That receipt cannot be the only witness. The writer leaves the pointer
+    untouched when it finds it already in the launch-failed phase, and that is
+    exactly the state a lane change that failed once leaves behind, so a second
+    attempt records nothing while still starting nothing. The launch path's own
+    no-worker fact is therefore read as well: a spawn whose process is gone
+    with its stream never begun reached no model. A launch that did reach one
+    leaves either a live process or a stream with a byte in it, so this asks
+    the same question the launch path asks rather than a second notion of a
+    started worker.
+
+    A run sitting in the launch-failed phase is a legitimate source for a move
+    that does start a worker, so the phase alone is never the answer: only a
+    spawn that left nothing running refuses the move.
+    """
+    recorded_before = before.get("launch_failures") or ()
+    recorded_after = current.get("launch_failures") or ()
+    if len(recorded_after) > len(recorded_before):
+        newest = recorded_after[-1]
+        return newest if isinstance(newest, Mapping) else {}
+    if str(current.get("phase") or "") == LAUNCH_FAILED_PHASE and str(
+        before.get("phase") or ""
+    ) != LAUNCH_FAILED_PHASE:
+        return {}
+    if pid is not None and process_alive(pid) is False:
+        stream = Path(str(log_path)) if log_path else None
+        if not _stream_began(stream):
+            return {}
+    return None
+
+
+def _refused_lane_change_result(
+    record: Mapping[str, Any],
+    destination: str,
+    *,
+    failure: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """The result of a lane change whose launch started no worker.
+
+    The pointer is left exactly as it was, so the four fields that name what
+    the run is executing move nowhere: the backend, attempt, agent and dialect
+    reported here are the source attempt's, not the destination's. The reason
+    names why no worker started, taken from the launch-failure receipt the
+    spawn recorded when it left any, so a reader meets the cause rather than a
+    bare failure.
+    """
+    source = str(record.get("backend") or "")
+    detail = str(
+        (failure or {}).get("detail")
+        or (failure or {}).get("kind")
+        or (failure or {}).get("scheduler_reason")
+        or ""
+    ).strip()
+    cause = f": {detail}" if detail else ""
+    return {
+        "ok": False,
+        "run_id": str(record.get("run_id") or ""),
+        "backend": source,
+        "attempt": int(record.get("attempt") or 1),
+        "agent": record.get("agent"),
+        "dialect": record.get("dialect"),
+        "reason": (
+            f"the lane change to backend {destination!r} was accepted but started "
+            f"no worker{cause}; the run stays on backend {source!r} at attempt "
+            f"{int(record.get('attempt') or 0) or 1}, and no lane-change record "
+            "was written"
+        ),
+    }
+
+
 def change_lane(
     run_id: str,
     backend_name: str,
@@ -1970,7 +2094,7 @@ def change_lane(
         run_id=run_id,
         manifest_path=manifest_path,
         attempt_started_at=lane_change["changed_at"],
-        coordinator_session=str(record.get("session") or ""),
+        coordinator_session=coordinator_session(record),
         claude_headers=False,
     )
     target_plan: _backends.LaunchPlan | None = None
@@ -1998,6 +2122,9 @@ def change_lane(
                 fence=FENCE_WORKERS,
                 fence_config=config,
                 worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
+                # The moved attempt runs the same node, so it keeps the role
+                # the run was dispatched for across the lane change.
+                behaviour_role=_pointer_role(record) or IMPLEMENT_ROLE,
                 unmergeable_patterns=_resume_unmergeable_patterns(record),
                 masked_paths=_shadow_masks_for_record(record),
             )
@@ -2007,7 +2134,7 @@ def change_lane(
             run_id=run_id,
             manifest_path=manifest_path,
             attempt_started_at=lane_change["changed_at"],
-            coordinator_session=str(record.get("session") or ""),
+            coordinator_session=coordinator_session(record),
         )
     preview: dict[str, Any] = {
         "run_id": run_id,
@@ -2097,6 +2224,22 @@ def change_lane(
             stderr_path=stderr_path,
             prompt_path=prompt_path,
         )
+        # A spawn that returned a pid is a supervisor that exists, not a worker
+        # that started: the launch path records a launch failure on the run
+        # when the process it started ended without reaching a model, and
+        # returns the pid regardless. The pointer move is committed only when
+        # the spawn left no such receipt, so a lane change that ran nowhere
+        # leaves the run on the backend and attempt it is actually executing.
+        failure = _lane_change_launch_failure(
+            record,
+            read_pointer(run_id),
+            pid=spawned_pid,
+            log_path=log_path,
+        )
+        if failure is not None:
+            return _refused_lane_change_result(
+                record, resolution.backend, failure=failure
+            )
 
     def move(current: dict[str, Any]) -> dict[str, Any]:
         if str(current.get("worktree") or "") != str(record.get("worktree") or ""):
@@ -2238,6 +2381,7 @@ def terminate(run_id: str) -> dict[str, Any]:
             _record_is_known_foreign,
             launcher_host_is_gone,
         )
+        from reckon.crew.process_signal import cancel_placed_step
 
         foreign = _record_is_known_foreign(record)
         if foreign and not launcher_host_is_gone(record):
@@ -2263,6 +2407,7 @@ def terminate(run_id: str) -> dict[str, Any]:
         # rather than the recorded pid's.
         # Foreign pids can collide with unrelated local processes. The
         # scheduler settles the remote end without probing or signalling them.
+        step_stop: dict[str, Any] | None = None
         if foreign:
             target_pids = []
             ended = []
@@ -2305,6 +2450,13 @@ def terminate(run_id: str) -> dict[str, Any]:
                 )
                 if not ended and not recorded_pid:
                     raise CrewError(f"run {run_id!r} has no process to stop")
+            # A placed worker's own worker runs on the node the allocation is
+            # held on, so no signal sent here reaches it and the step client
+            # waits for that step rather than ending with the signal. The step
+            # is ended where the scheduler holds it, before the wait below, so
+            # a client that was waiting on the step exits within the same
+            # bound rather than outliving the stop.
+            step_stop = cancel_placed_step(run_directory)
             alive_after = _await_run_processes_gone(
                 int(recorded_pid) if recorded_pid else None,
                 run_id=run_id,
@@ -2333,6 +2485,25 @@ def terminate(run_id: str) -> dict[str, Any]:
         record["killed_pids"] = killed
         record["alive_after"] = alive_after
         record["held_by"] = holders
+        # A step that was still listed after the bound is not a detail: it is
+        # work of this run that is still running where this host cannot see it,
+        # so the run records why it cannot be resumed rather than only what the
+        # stop did to the local tree.
+        step_unsettled = (
+            step_stop is not None and step_stop.get("surviving") is not False
+        )
+        if step_stop is not None:
+            record["step_stop"] = step_stop
+        if step_unsettled:
+            record["stop_reason"] = (
+                f"step {step_stop['step']} outlived the stop; "
+                f"end it with `{step_stop['command']}` before resuming"
+                if step_stop.get("surviving") is True
+                else (
+                    f"step {step_stop['step']} could not be observed after the "
+                    f"stop; end it with `{step_stop['command']}` before resuming"
+                )
+            )
         if alive_after:
             record["detail"] = (
                 f"run {run_id}: SIGTERM sent to {len(ended)} of "
@@ -2357,15 +2528,21 @@ def terminate(run_id: str) -> dict[str, Any]:
                 f"; {len(holders)} process(es) hold the worktree with no "
                 "ownership mark and were left alive"
             )
+        if step_stop is not None:
+            record["detail"] += f"; {step_stop['detail']}"
         record["phase"] = "stopped"
         record["stopped_at"] = _utc_now()
         # A stop owns the wait when its supervisor was ended before it could
         # file an exit. The receipt is written only after the whole tree is
-        # gone; a surviving worker must keep every resume door closed.
+        # gone; a surviving worker must keep every resume door closed, and so
+        # must an unsettled step — a receipt says an end was observed, which a
+        # step still running elsewhere contradicts.
         record["stop_exit_recorded"] = (
-            _record_stopped_attempt_exit(run_id, record) if not alive_after else False
+            _record_stopped_attempt_exit(run_id, record)
+            if not alive_after and not step_unsettled
+            else False
         )
-        if not alive_after and not record["stop_exit_recorded"]:
+        if not alive_after and not step_unsettled and not record["stop_exit_recorded"]:
             record["detail"] += "; the stopped attempt's exit could not be recorded"
         # The result a caller prints and the record it reads back both carry
         # what happened to the tree, so neither has to be opened to know
@@ -2731,8 +2908,10 @@ from .dispatch_launch import (  # noqa: E402
     _launched_prior_session,
     _plan_composed_the_fence,
     _spawn,
+    _stream_began,
     _worker_runtime_environment,
     _worker_runtime_plan,
+    coordinator_session,
     preflight_launch_command,
     resolve_backend_placement,
     resolve_launch_executable,

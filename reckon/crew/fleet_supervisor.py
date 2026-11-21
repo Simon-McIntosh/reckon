@@ -91,10 +91,11 @@ if TYPE_CHECKING:
     from reckon import served_code
 
 from reckon import service
-from reckon._store import write_json_atomically
+from reckon._store import _fsync_directory, write_json_atomically
 from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
+from reckon.node_exclusive_lock import exclusive_lock
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -388,6 +389,9 @@ def sample_interpreter_permissions() -> int:
 
 NODE_DISK_RECORD = "node-disk.json"
 NODE_DISK_ROOT_ENV = "FLEET_NODE_TMP_ROOT"
+# The sampler exports its own pid here, so the reading it publishes names the
+# process that published it and a stale reading can be attributed to one.
+NODE_DISK_SAMPLER_PID_ENV = "FLEET_HEALTH_SAMPLER_PID"
 DEFAULT_NODE_DISK_RESERVE_BYTES = 8 * 1024**3
 DEFAULT_NODE_DISK_SAMPLE_MAX_AGE_SECONDS = 180
 
@@ -419,21 +423,43 @@ def node_disk_sample_max_age_seconds(config: Mapping[str, Any] | None = None) ->
 
 
 class NodeDiskSampleError(ValueError):
-    """A known fleet has no usable current disk reading."""
+    """A known fleet has no usable current disk reading.
 
-    def __init__(self, state: str, reason: str):
+    A stale reading carries the age it read at and the sampler process that
+    published it, because the row raised for it is the only place a reader can
+    learn which process stopped publishing.
+    """
+
+    def __init__(
+        self,
+        state: str,
+        reason: str,
+        *,
+        age_seconds: float = 0,
+        sampler_pid: int | None = None,
+    ):
         super().__init__(reason)
         self.kind = f"node-disk-{state}"
+        self.age_seconds = age_seconds
+        self.sampler_pid = sampler_pid
 
 
 def node_disk_reading_obligation(error: NodeDiskSampleError) -> dict[str, Any]:
     """Keep an unavailable reading distinct from a measured low-space condition."""
+    sampler = (
+        "sampler process unrecorded"
+        if error.sampler_pid is None
+        else f"sampler pid {error.sampler_pid}"
+    )
     return {
         "kind": error.kind,
         "run_id": "",
-        "age_seconds": 0,
-        "reason": str(error),
-        "next_command": "Restore current fleet disk samples before admitting new launches",
+        "service": "fleet-health",
+        "age_seconds": int(error.age_seconds),
+        "reason": (
+            f"{error}. Service fleet-health ({sampler}) owes the published disk sample"
+        ),
+        "next_command": "Restore current disk publication from service fleet-health",
     }
 
 
@@ -490,7 +516,7 @@ def node_disk_snapshot(mount: Path, *, reserve_bytes: int) -> dict[str, Any]:
     entries, complete = (
         node_disk_largest_entries(mount) if under_reserve else ([], True)
     )
-    return {
+    sample = {
         "utc": datetime.now(UTC).isoformat(),
         "mount": str(mount),
         "total_bytes": stats.f_blocks * block,
@@ -504,6 +530,19 @@ def node_disk_snapshot(mount: Path, *, reserve_bytes: int) -> dict[str, Any]:
         "node": socket.gethostname().split(".")[0],
         "job_id": os.environ.get("SLURM_JOB_ID", ""),
     }
+    sampler_pid = _published_sampler_pid(os.environ)
+    if sampler_pid is not None:
+        sample["sampler_pid"] = sampler_pid
+    return sample
+
+
+def _published_sampler_pid(environ: Mapping[str, str] | None = None) -> int | None:
+    """The sampler process that publishes readings, when it named itself."""
+    environ = os.environ if environ is None else environ
+    raw = str(environ.get(NODE_DISK_SAMPLER_PID_ENV) or "").strip()
+    if not raw.isdigit():
+        return None
+    return int(raw)
 
 
 def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -518,6 +557,44 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         or "unavailable"
     )
     qualifier = "" if sample.get("entries_complete") else " (census incomplete)"
+    scratch = sample.get("crew_scratch", {})
+    scratch_groups: dict[str, list[str]] = {
+        "live": [],
+        "unowned": [],
+        "held": [],
+        "unreadable": [],
+    }
+    for entry in scratch.get("entries", []):
+        if entry.get("removed"):
+            continue
+        withheld = entry.get("withheld", "")
+        if "live pointer" in withheld:
+            group = "live"
+        elif "held by process" in withheld:
+            group = "held"
+        elif "unreadable" in withheld or "not a real directory" in withheld:
+            group = "unreadable"
+        else:
+            group = "unowned"
+        scratch_groups[group].append(entry["path"])
+    scratch_detail = "".join(
+        f"; {group} crew scratch: {', '.join(paths)}"
+        for group, paths in scratch_groups.items()
+        if paths
+    )
+    if scratch.get("error") or scratch.get("withheld"):
+        scratch_detail += f"; crew scratch census unavailable: {scratch.get('error') or scratch['withheld']}"
+    stale_live_entries = scratch.get("stale_live_entries", [])
+    for entry in stale_live_entries:
+        scratch_detail += (
+            f"; stale scratch retained for live run {entry['run_id']} "
+            f"(owner {entry['project']}/{entry['session']}): {entry['path']} "
+            f"({entry['bytes']} bytes, {entry['inactivity_seconds']:.0f} seconds inactive)"
+        )
+    if scratch.get("live_entries_complete") is False:
+        scratch_detail += "; live-run scratch census incomplete"
+    if scratch.get("entries_complete") is False:
+        scratch_detail += "; crew scratch census incomplete"
     return {
         "kind": "node-disk-reserve",
         "run_id": "",
@@ -525,15 +602,122 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         "reason": (
             f"Fleet node {sample['node']} mount {sample['mount']} has "
             f"{sample['free_bytes']} free bytes below its {sample['reserve_bytes']} "
-            f"byte reserve. Largest entries by owner{qualifier}: {largest}"
+            f"byte reserve. Largest entries by owner{qualifier}: {largest}{scratch_detail}"
         ),
         "next_command": "Review the named entries with their owners and free local disk space",
         "disk": dict(sample),
+        "stale_live_scratch": stale_live_entries,
     }
 
 
+def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Durably journal removal intents and reconcile interrupted operations.
+
+    A pending receipt survives even a partial audit-log write. Deletion starts
+    only after both that receipt and the intent log row are flushed to disk;
+    completion retires the pending receipt only after its log row is durable.
+    """
+    from reckon import flight
+    from reckon.crew.dispatch_launch import worker_scratch_root
+    from reckon.crew.gc import garbage_collect_orphan_scratch
+    from reckon.crew.node import CrewError
+
+    grace = flight.resolve().config["session_scratch"]["orphan_grace_seconds"]
+    directory = state_directory(environ)
+    path = directory / "scratch-removals.jsonl"
+    pending = directory / "scratch-removal-intents" / _short_hostname()
+    reconciled: list[dict[str, Any]] = []
+
+    def append(row: dict[str, Any]) -> None:
+        # Separate an interrupted partial write from the next complete row.
+        stream.seek(0, os.SEEK_END)
+        size = stream.tell()
+        prefix = b""
+        if size:
+            stream.seek(-1, os.SEEK_END)
+            if stream.read(1) != b"\n":
+                prefix = b"\n"
+        payload = prefix + (json.dumps(row, sort_keys=True) + "\n").encode()
+        if stream.write(payload) != len(payload):
+            raise OSError("short scratch audit write")
+        stream.flush()
+        os.fsync(stream.fileno())
+        _fsync_directory(directory)
+
+    def record(entry: dict[str, Any]) -> None:
+        identity = str(entry.get("removal_id") or "")
+        if re.fullmatch(r"[a-f0-9]{32}", identity) is None:
+            raise ValueError("scratch removal intent has no valid identity")
+        receipt = pending / f"{identity}.json"
+        row = {**entry, "utc": datetime.now(UTC).isoformat(), "node": _short_hostname()}
+        if row["state"] == "intent":
+            write_json_atomically(receipt, row, fsync_directory=True)
+        append(row)
+        if row["state"] != "intent":
+            receipt.unlink()
+            _fsync_directory(pending)
+        log(
+            f"crew scratch removal {row['state']}: {json.dumps(row, sort_keys=True)}",
+            file=sys.stderr,
+        )
+
+    def read_intent(receipt: Path) -> dict[str, Any]:
+        if receipt.is_symlink():
+            raise ValueError("scratch removal intent is a symlink")
+        row = json.loads(receipt.read_text())
+        required = {"path", "bytes", "ctime_age_seconds", "reason", "removal_id"}
+        if not isinstance(row, dict) or not required <= row.keys():
+            raise ValueError("scratch removal intent is unreadable")
+        if row["removal_id"] != receipt.stem:
+            raise ValueError("scratch removal intent identity differs from its file")
+        if Path(row["path"]).parent != worker_scratch_root().absolute():
+            raise ValueError("scratch removal intent belongs to another root")
+        return row
+
+    try:
+        pending.mkdir(parents=True, exist_ok=True)
+        _fsync_directory(pending.parent)
+        _fsync_directory(directory)
+        with path.open("a+b") as stream:
+            for number, receipt in enumerate(pending.glob("*.json")):
+                if number >= 32:
+                    break
+                row = read_intent(receipt)
+                target = Path(row["path"])
+                exists = target.exists() or target.is_symlink()
+                row.update(
+                    state="interrupted" if exists else "complete",
+                    removed=not exists,
+                    reconciled=True,
+                    outcome="path still present; retained"
+                    if exists
+                    else "path absent after interrupted removal",
+                )
+                record(row)
+                reconciled.append(row)
+            report = garbage_collect_orphan_scratch(
+                apply=True,
+                grace_seconds=grace,
+                inspect_activity=True,
+                record_removal=record,
+                cursor_path=directory / f"scratch-sweep-{_short_hostname()}.json",
+            )
+            report["reconciled_removals"] = reconciled
+            return report
+    except (OSError, ValueError, RuntimeError, CrewError) as exc:
+        log(f"crew scratch sweep unavailable: {exc}", file=sys.stderr)
+        return {"error": str(exc), "reconciled_removals": reconciled}
+
+
 def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
-    """Publish one local disk reading and emit the health series' four fields."""
+    """Publish one local disk reading and emit the health series' four fields.
+
+    The reading is published before anything else this pass does. The scratch
+    sweep runs in its own step afterwards (``reclaim_node_scratch``), because it
+    costs tens of seconds under load: inside this step it ran ahead of the
+    reading, outran the sampler's own bound, and left a pass that published
+    nothing at all.
+    """
     environ = os.environ if environ is None else environ
     mount = Path(environ.get(NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
     try:
@@ -549,6 +733,28 @@ def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
             for key in ("total_bytes", "used_bytes", "free_bytes", "free_inodes")
         )
     )
+    return 0
+
+
+def reclaim_node_scratch(environ: Mapping[str, str] | None = None) -> int:
+    """Reclaim unowned scratch and record the census on the published reading."""
+    environ = os.environ if environ is None else environ
+    scratch = reclaim_unowned_scratch(environ)
+    path = state_directory(environ) / NODE_DISK_RECORD
+    try:
+        sample = json.loads(path.read_text())
+    except (OSError, ValueError):
+        # No reading was published to annotate; the sweep's own outcome is
+        # reported by the row it wrote, and the pass keeps its next step.
+        return 0
+    if not isinstance(sample, dict):
+        return 0
+    sample["crew_scratch"] = scratch
+    try:
+        write_json_atomically(path, sample)
+    except OSError as exc:
+        log(f"scratch census not recorded: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -576,6 +782,8 @@ def published_node_disk_sample(
     target = f"Fleet node {fleet['node']} disk sample {path}"
     try:
         sample = json.loads(path.read_text())
+    except FileNotFoundError as exc:
+        raise NodeDiskSampleError("missing", f"{target} is missing") from exc
     except (OSError, ValueError) as exc:
         raise NodeDiskSampleError(
             "unreadable", f"{target} is unreadable: {exc}"
@@ -603,9 +811,23 @@ def published_node_disk_sample(
     if age < 0:
         raise NodeDiskSampleError("unreadable", f"{target} is dated in the future")
     if age > limit:
+        recorded = sample.get("sampler_pid")
+        sampler_pid = (
+            recorded
+            if isinstance(recorded, int) and not isinstance(recorded, bool)
+            else None
+        )
+        named = (
+            "sampler process unrecorded"
+            if sampler_pid is None
+            else f"published by sampler pid {sampler_pid}"
+        )
         raise NodeDiskSampleError(
             "stale",
-            f"{target} is {age:.1f} seconds old, beyond its {limit}-second freshness limit",
+            f"{target} is {age:.1f} seconds old, beyond its {limit}-second "
+            f"freshness limit ({named})",
+            age_seconds=age,
+            sampler_pid=sampler_pid,
         )
     for key in (
         "total_bytes",
@@ -875,13 +1097,16 @@ def fleet_test_obligations(
     project: str, session: str, *, now: datetime
 ) -> list[dict[str, Any]]:
     """Route a fresh fleet sample to the coordinator that owns each offending run."""
+    from reckon._timestamps import parse_utc
+
     directory = state_directory()
     try:
         sample = json.loads((directory / TEST_PROCESS_SAMPLE).read_text())
         record = json.loads((directory / RECORD_NAME).read_text())
-        observed = datetime.fromisoformat(sample["observed_at"])
+        observed = parse_utc(sample["observed_at"])
         if (
-            sample["job_id"] != str(record["job_id"])
+            observed is None
+            or sample["job_id"] != str(record["job_id"])
             or not 0 <= (now - observed).total_seconds() <= 180
         ):
             return []
@@ -897,6 +1122,59 @@ def fleet_test_obligations(
         }
         for tree in sample["trees"]
         if tree.get("project") == project and tree.get("session") == session
+    ]
+
+
+#: A duty naming a producer start that failed while the session holds work in
+#: the project. It is owed per session, not per run: one failing producer leaves
+#: every session whose work it would have swept with the same absence, and each
+#: of them reads it on the surface it already reads its duties from.
+PRODUCER_START_FAILED_DUTY_KIND = "producer-start-failed"
+
+
+def producer_start_failure_obligations(
+    project: str,
+    session: str,
+    *,
+    now: datetime,
+    pointers: Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """The duty a failed producer start owes a session holding work in its project.
+
+    The failure is read through the watcher's own state, so a producer that is
+    live, or one that took the seat after the failure, raises nothing: the
+    record is then history and the project is staffed. The row quotes the
+    producer's own last line, because the reason a producer could not start is
+    the only thing that says what to fix, and names the log the whole traceback
+    went to.
+    """
+    from reckon.crew import watch_unit
+
+    failure = watch_unit.producer_start_failure(project)
+    if failure is None:
+        return []
+    if str(failure.get("project") or project) != project:
+        return []
+    if not any(str(pointer.get("session") or "") == session for pointer in pointers):
+        return []
+    message = str(failure.get("message") or "").strip()
+    status = failure.get("exit_status")
+    log = str(failure.get("log_path") or watch_unit.watch_log_path(project))
+    return [
+        {
+            "kind": PRODUCER_START_FAILED_DUTY_KIND,
+            "run_id": "",
+            "age_seconds": max(0, int(now.timestamp() - float(failure["failed_at"]))),
+            "reason": (
+                f"the watch producer for {project} could not start "
+                f"(exit status {status}): {message or 'it exited without a message'}"
+            ),
+            "next_command": (
+                f"make the producer start and re-arm it with "
+                f"`reckon crew watch --ensure --project {project}`; its log is "
+                f"{log}"
+            ),
+        }
     ]
 
 
@@ -1465,32 +1743,138 @@ def apply_task_ceiling(environ: Mapping[str, str] | None = None) -> int:
 
 
 def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None:
-    """Start the node sampler as this batch step's own child, and return its pid.
-
-    The sampler holds a lock in the runtime directory, so a reload that calls
-    this again starts a copy that exits at once rather than a second sampler.
-    It leads its own session, so it ends with the allocation and with nothing
-    else.
-    """
+    """Replace the runtime's sampler with a child running the current script."""
     environ = os.environ if environ is None else environ
     name = environ.get(HEALTH_SAMPLER_ENV, DEFAULT_HEALTH_SAMPLER)
     if not name:
         return None
-    sampler = shutil.which(name, path=environ.get("PATH"))
+    checkout_script = _checkout_root() / "bin" / DEFAULT_HEALTH_SAMPLER
+    sampler = (
+        str(checkout_script)
+        if name == DEFAULT_HEALTH_SAMPLER and checkout_script.is_file()
+        else shutil.which(name, path=environ.get("PATH"))
+    )
     if sampler is None:
         log(f"no node sampler: {name} is not on PATH")
         return None
-    sampler_environment = {**environ, "RECKON_SHIM_PYTHON": sys.executable}
-    process = subprocess.Popen(
-        [sampler],
-        env=sampler_environment,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=None,
-        start_new_session=True,
-    )
+    runtime = Path(environ.get("XDG_RUNTIME_DIR") or runtime_directory(environ))
+    runtime.mkdir(parents=True, exist_ok=True)
+    with exclusive_lock(runtime / "fleet-health.handover.lock"):
+        if not _stop_health_sampler(runtime):
+            return None
+        sampler_environment = {
+            **environ,
+            "XDG_RUNTIME_DIR": str(runtime),
+            "RECKON_SHIM_PYTHON": sys.executable,
+        }
+        process = subprocess.Popen(
+            [sampler],
+            env=sampler_environment,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=None,
+            start_new_session=True,
+        )
     log(f"node sampler {sampler} started as pid {process.pid}")
     return process.pid
+
+
+def _health_sampler_processes(runtime: Path) -> dict[int, list[str]]:
+    """Processes sharing the exclusive sampler lock through descriptor 9."""
+    try:
+        inode = (runtime / "fleet-health.lock").stat()
+    except FileNotFoundError:
+        return {}
+    holders = {}
+    for pid, argv in all_process_cmdlines().items():
+        proc = Path(f"/proc/{pid}")
+        try:
+            if proc.stat().st_uid != os.getuid():
+                continue
+            held = (proc / "fd/9").stat()
+            if (held.st_dev, held.st_ino) != (inode.st_dev, inode.st_ino):
+                continue
+            info = (proc / "fdinfo/9").read_text()
+        except OSError:
+            continue
+        for line in info.splitlines():
+            if not line.startswith("lock:"):
+                continue
+            record = line.partition(":")[2].strip()
+            if record.split()[1:4] == [
+                "FLOCK",
+                "ADVISORY",
+                "WRITE",
+            ] and lock_holders_in(record, inode.st_dev, inode.st_ino):
+                holders[pid] = argv
+                break
+    return holders
+
+
+def _stop_health_sampler(runtime: Path) -> bool:
+    """Stop the lock-owning shell and its tree without assuming its launch path.
+
+    The held descriptor identifies the sampler independently of its script's
+    current location or parent. Descriptor inheritance identifies its children;
+    only the root shell is an incumbent. Signals target enumerated processes,
+    because a manually launched sampler can share its group with other work.
+    """
+    from reckon.crew.process_liveness import _process_start_time, _process_stat_fields
+    from reckon.crew.process_signal import _running_descendants, _signal_one
+
+    if not lock_held("fleet-health", runtime):
+        return True
+    holders = _health_sampler_processes(runtime)
+    candidates = []
+    for pid, argv in holders.items():
+        if len(argv) < 2 or Path(argv[0]).name not in {"bash", "sh", "dash"}:
+            continue
+        if argv[1].startswith("-"):
+            continue
+        fields = _process_stat_fields(pid)
+        if len(fields) > 1 and int(fields[1]) not in holders:
+            candidates.append(pid)
+    if len(candidates) != 1:
+        log(
+            f"sampler replacement refused: lock held with {len(candidates)} identified owners"
+        )
+        return False
+    pid = candidates[0]
+    targets = {}
+    for target in _running_descendants(pid):
+        try:
+            if Path(f"/proc/{target}").stat().st_uid != os.getuid():
+                continue
+        except OSError:
+            continue
+        started = _process_start_time(target)
+        if started is not None:
+            targets[target] = started
+    shown = {target: process_cmdline(target) for target in targets}
+    log(
+        f"replacing sampler pid {pid}; targets {shown}; its parent and peers are outside this tree"
+    )
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for target, started in targets.items():
+            if _process_start_time(target) == started:
+                _signal_one(
+                    target, sig, reason="fleet-health-replace", allow_group=False
+                )
+        deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
+        while time.monotonic() < deadline:
+            with suppress(ChildProcessError):
+                os.waitpid(pid, os.WNOHANG)
+            live = any(
+                _process_start_time(target) == started and process_cmdline(target)
+                for target, started in targets.items()
+            )
+            if not lock_held("fleet-health", runtime) and not live:
+                return True
+            time.sleep(SERVICE_POLL_SECONDS)
+    log(
+        f"sampler replacement refused: pid {pid} still owns its runtime or live children"
+    )
+    return False
 
 
 def config_directory(environ: Mapping[str, str] | None = None) -> Path:
@@ -4014,13 +4398,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     environ = os.environ
     if arguments == ["sample-node-disk"]:
         return sample_node_disk(environ)
+    if arguments == ["reclaim-node-scratch"]:
+        return reclaim_node_scratch(environ)
     if arguments == ["sample-session-scratch"]:
         return sample_session_scratch(environ)
     if arguments == ["check-interpreters"]:
         return sample_interpreter_permissions()
     if arguments == ["sample-test-processes"]:
         sample = sample_fleet_tests()
-        print(f"{sample['tree_count']}\t{sample['rss_bytes']}\t" + json.dumps(sample["trees"]))
+        print(
+            f"{sample['tree_count']}\t{sample['rss_bytes']}\t"
+            + json.dumps(sample["trees"])
+        )
         return 0
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a

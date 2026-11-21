@@ -20,6 +20,24 @@ from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 SECTIONS = ("s2", "s3")
 ENFORCING = {"plan_review_gate": "enforce"}
+# A request names the role it runs as, and both resolvers — the dispatch's own
+# and the one the queue writer uses — refuse a role the config does not
+# configure, so the config declares the role the fixtures queue.
+CONFIG = {
+    "default_backend": "worker",
+    "local_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "in-harness",
+            "model": "test-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
 
 
 def _report(items) -> str:
@@ -113,14 +131,15 @@ def _store_content(path, run_id: str, *, status=None) -> dict:
 
 
 def _node(section: str) -> TaskNode:
+    """A node carrying the whole contract a queue write judges."""
     return TaskNode(
         id=f"build-{section}",
         goal=f"Build {section}",
         plan="fixture",
         section=section,
         role="implement",
-        done_when="The section contract check passes.",
-        write_paths=[f"{section}.py"],
+        done_when=f"pytest reports passed for {section}",
+        write_paths=[f"{section}.txt"],
         time_budget="20m",
         spec_level="exact",
         manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
@@ -243,10 +262,12 @@ def test_its_own_section_text_change_holds_it_until_a_covering_review(
 def test_the_request_records_its_digests_at_queue_time(two_section_plan):
     """Queueing a request stamps the section and contract digests it reads."""
     _home, repo, path = two_section_plan
-    node = _node("s2")
-    config = {**CONFIG, "roles": {**CONFIG["roles"], "implement": {}}}
     stored = queue_admission.queue_requests(
-        [node], project="sample", session="coordinator", repo_root=repo, config=config
+        [_node("s2")],
+        project="sample",
+        session="coordinator",
+        repo_root=repo,
+        config=CONFIG,
     )
     run_id = next(iter(stored))
     pointer = runs.read_pointer(run_id)

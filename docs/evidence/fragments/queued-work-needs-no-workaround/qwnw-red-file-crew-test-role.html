@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-crew-test-role-causes">
+<h2>Two red cases, one cause: a verifier's tree read as its work</h2>
+<p>The node's file read <code>2 failed, 10 passed</code> at base revision
+<code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> and reads
+<code>12 passed</code> at head <code>e57562448a9c7f195b6e59ca6f94f1a24be03f04</code>.</p>
+<table id="qwnw-red-file-crew-test-role-causes-table">
+<thead><tr><th>Case</th><th>Cause</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td><code>test_synthetic_wave_attribution_survives_in_the_promoted_ledger</code></td>
+<td>promotion refused the commitless test-role run for a commit in its worktree (<code>_require_worktree_at_its_base</code>)
+— <em>run 'r-test-attributed-wave' has a passing gate and cites no commit, but its worktree is at a9897728ed6d rather than its base 19fb28191fe8</em>
+— then for a review of runtime source the run never wrote, and then tried to measure the merged primary suite at a revision the run never merged</td>
+<td>product wrong: each reading asks whether a refusal is owed by what the run changed, and the <code>test</code> role may not write repository paths, so its worktree is the tree it grades and registered nothing</td>
+</tr>
+<tr>
+<td><code>test_test_role_cannot_waive_missing_attribution_for_an_added_failure</code></td>
+<td>the same three refusals, reached before the attribution gate this case measures</td>
+<td>product wrong: the refusal it asserts is the attribution gate, not a commit or a review the role cannot produce</td>
+</tr>
+</tbody>
+</table>
+<p>No assertion was deleted or weakened. The two cases keep their expected
+ledger contents, and every guard they exercise still fires for a role that may
+write the repository: <code>tests/test_a_commitless_manifest_promotes.py</code>,
+<code>tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py</code>
+and <code>tests/test_a_base_failure_is_not_charged_to_the_run.py</code> read
+<code>34 passed</code> at head, unchanged.</p>
+</section>
+
+<section id="qwnw-red-file-crew-test-role-negative-control">
+<h2>Negative control: the base run of the same file</h2>
+<p>The same file at the base revision, extracted from that revision, run with
+the same command. Both failing ids are the two above.</p>
+<pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_test_role.py -k "synthetic_wave_attribution_survives or cannot_waive_missing_attribution" 
+FAILED tests/test_crew_test_role.py::test_synthetic_wave_attribution_survives_in_the_promoted_ledger
+FAILED tests/test_crew_test_role.py::test_test_role_cannot_waive_missing_attribution_for_an_added_failure
+2 failed, 10 deselected in 1.89s
+EXIT=1</pre>
+<p>The same two ids at the head pass, and the whole file at the head ran as a
+job on <code>all_debug</code> (host 98dci4-clu-3144, revision
+<code>e57562448a</code>) reading <code>12 passed in 1.56s</code> with
+<code>EXIT=0</code>; the log is under the run directory.</p>
+</section>

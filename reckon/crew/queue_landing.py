@@ -58,6 +58,102 @@ def _promoted_row_head(pointer: Mapping[str, Any], run_id: str) -> str:
     return str(row.get("promoted_revision") or "").strip()
 
 
+def _primary_carries_the_delivery(
+    pointer: Mapping[str, Any], head: str, primary: str
+) -> tuple[str, str]:
+    """Whether the primary branch already carries what this run delivered.
+
+    ``("carried", "")`` answers a run whose reviewed head is an ancestor of the
+    primary branch and every path its delivery changed is present there in the
+    shape the change left it. ``("removed", reason)`` answers a head the branch
+    carries while one of its changed paths was since removed or altered, which
+    is a delivery the primary no longer carries. Every other answer — a head
+    that is not an ancestor, an unreadable repository, branch or comparison —
+    is ``("not-carried", reason)`` or ``("unverified", reason)``, and neither
+    settles anything: a run is only settled on a positive reading.
+
+    The ancestry is the pointer classification's own reading, so the lander and
+    every other surface answer one question one way. The changed paths are
+    judged by the merge reader that already decides whether a change survived a
+    tree, so a deletion and a binary change are read as the addition beside
+    them is.
+    """
+    from reckon.crew import landing_measure, merge, recovery_classification
+
+    repo = Path(str(pointer.get("repo") or ""))
+    if not repo.is_dir() or not head or not primary:
+        return "unverified", "the repository, the head or the primary could not be read"
+    try:
+        on_branch = recovery_classification._head_on_primary_branch(
+            repo, head, time.time()
+        )
+    except (OSError, ValueError) as exc:
+        return "unverified", f"the head's ancestry could not be read: {exc}"
+    if on_branch is None:
+        return "unverified", "the head's ancestry could not be read"
+    if on_branch is not True:
+        return "not-carried", ""
+    if head == primary:
+        # The head is the branch's own tip, which is its own candidate rather
+        # than a delivery merged into history; nothing here settles it.
+        return "not-carried", ""
+    base_sha = str(pointer.get("base_sha") or "").strip()
+    if not base_sha:
+        return "unverified", "the run records no base revision"
+    try:
+        markers = merge.change_markers(repo, base_sha, head)
+        refusals = merge.surviving_change_refusals(repo, primary, markers)
+    except (OSError, merge.MergeError, landing_measure.BaseCheckoutError) as exc:
+        return "unverified", f"the run's changed paths could not be read: {exc}"
+    if not markers:
+        # A head with no change of its own — the run added nothing beyond its
+        # base — is an ancestor of the primary for a reason other than a landed
+        # delivery, so it keeps the ordinary path.
+        return "not-carried", "the run delivered no change of its own"
+    if refusals:
+        return "removed", "; ".join(refusals)
+    return "carried", ""
+
+
+#: A carried delivery's settlement answers: its pointer was retired, or it is
+#: held because its workspace could not be released.
+CARRIED_SETTLED = "settled"
+CARRIED_HELD = "held"
+
+
+def settle_a_carried_delivery(
+    pointer: Mapping[str, Any], row: Mapping[str, Any] | None
+) -> tuple[str, str]:
+    """Retire a run whose delivery the primary branch already carries.
+
+    The caller has already read the delivery as carried, so nothing is
+    promoted, measured, gated or merged again: the ledger keeps the row the
+    first promotion wrote, with the verdict recorded there. The workspace is
+    released through the same integrated release a completed merge uses, and
+    only then is the pointer removed.
+
+    ``("settled", "")`` means the pointer is gone. ``("held", reason)`` means
+    the delivery is carried but the workspace could not be released, so the
+    pointer stays and the caller reports the refusal it returns.
+    """
+    from reckon.crew import pending_landing
+    from reckon.crew.stage_receipts import record_stage
+
+    run_id = str(pointer["run_id"])
+    retired, _release, refusal = pending_landing._release_integrated_pointer(
+        pointer,
+        Path(str(pointer.get("repo") or "")),
+        _primary_revision(pointer),
+        row,
+    )
+    if retired != pending_landing.POINTER_RETIRED:
+        return CARRIED_HELD, refusal or (
+            "the settled run's workspace could not be released"
+        )
+    record_stage(run_id, "landing")
+    return CARRIED_SETTLED, ""
+
+
 def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
     """Read current ownership, not the live-set snapshot used for selection."""
     try:
@@ -1952,6 +2048,8 @@ def land_once() -> dict[str, Any]:
                     "awaiting-merge-repair",
                     "repair-gate-refused",
                     "review-refused",
+                    "record-obligation",
+                    "group-refused",
                 }
                 or row["run_id"] in named
             ):
@@ -2060,7 +2158,7 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     """Prove one combined candidate with the union of its members' own gates."""
     from reckon.crew import merge
 
-    leader = str(group["run_id"])
+    leader = next(iter(group["members"]))
     members = [
         group["members"][leader],
         *(
@@ -2155,7 +2253,7 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     # Completion's publication check reads the leader's command and candidate.
     # All other commands' receipts remain on the durable group itself.
     _record_suite_evidence(
-        str(group["run_id"]),
+        leader,
         landing_measure.Measurement.from_dict(records[0]),
         promoted=True,
     )
@@ -2177,12 +2275,29 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
     measured_this_pass = False
     eligible = []
     live = sorted(runs.list_live(), key=_delivery_order)
+    from reckon.crew.lost_session_work import (
+        sessions_with_open_decision,
+        skip_lost_session_landings,
+    )
+
+    lost_session_decision = sessions_with_open_decision()
     active_measurements = landing_measure.active_measurement_jobs(live)
     # One history read per project for the whole pass, not one per run: the
     # run directory holds thousands of entries on shared storage, and the pass
     # exists to stay off that cost.
     history: dict[str, list[dict[str, Any]]] = {}
     for pointer in live:
+        from reckon.crew.pending_landing import (
+            POINTER_RETIRED,
+            group_path,
+            retire_promoted_pointer,
+        )
+
+        if retire_promoted_pointer(pointer) == POINTER_RETIRED:
+            continue
+        group_id = str(pointer.get("landing_group") or "")
+        if group_id and group_path(group_id).exists():
+            continue
         if pointer.get("promotion_status") in {
             "promotion-requested",
             "promotion-running",
@@ -2197,6 +2312,21 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
                     "run_id": str(pointer.get("run_id") or ""),
                     "status": "measurement-run",
                     "reason": skipped_measurement,
+                }
+            )
+            continue
+        # A landing group containing a lost session's member is skipped with one
+        # reason, rather than refused on every pass: nothing lands under a
+        # session nobody can answer for, and the decision already names the work.
+        lost_reason = skip_lost_session_landings(
+            pointer, sessions=lost_session_decision
+        )
+        if lost_reason:
+            skipped.append(
+                {
+                    "run_id": str(pointer.get("run_id") or ""),
+                    "status": "lost-session",
+                    "reason": lost_reason,
                 }
             )
             continue
@@ -2418,6 +2548,65 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         # run itself did not come back clean on is a coordinator's decision, not
         # the admission service's. Refusing here also keeps the expensive
         # measurement off a run that cannot be promoted.
+        # A reviewed head the primary branch already carries needs no landing:
+        # settling it here is finished by the same release path a promoted run
+        # whose merge completed goes through, and it costs no promotion request
+        # and no gate replay. A head the branch carries while one of its changed
+        # paths is gone is a different fact — a delivery the primary no longer
+        # holds — and is reported rather than settled or promoted.
+        carried, carried_detail = _primary_carries_the_delivery(
+            pointer, head, _primary_revision(pointer)
+        )
+        if carried == "carried":
+            try:
+                row = _ledger_row(pointer, run_id)
+            except CrewError:
+                row = None
+            status, release_refusal = settle_a_carried_delivery(pointer, row)
+            if status == CARRIED_SETTLED:
+                skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+            else:
+                skipped.append(
+                    {
+                        "run_id": run_id,
+                        "status": "landed-elsewhere-held",
+                        "reason": release_refusal,
+                    }
+                )
+            continue
+        if carried == "removed":
+            guard = (
+                "the primary branch carries this run's head but not its change: "
+                + carried_detail
+            )
+            previous = pointer.get("admission_landing")
+            holds = (
+                isinstance(previous, Mapping)
+                and previous.get("status") == "refused"
+                and previous.get("guard") == guard
+                and recovery.same_revision(str(previous.get("head") or ""), head)
+            )
+            if not holds:
+                _record_attempt(
+                    run_id,
+                    head=head,
+                    guard=guard,
+                    status="refused",
+                    code_stamp=_landing_code_stamp(),
+                    previous=previous,
+                    remedy=(
+                        "the delivered change is no longer on the primary branch; "
+                        "dispatch a fresh node for it"
+                    ),
+                )
+                obligations.append(
+                    {
+                        "run_id": run_id,
+                        "session": str(pointer.get("session") or ""),
+                        "guard": guard,
+                    }
+                )
+            continue
         red_suite = _red_suite_guard(suite_arms, review)
         if red_suite:
             _record_attempt(
@@ -2651,6 +2840,7 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
             continue
         if accepted:
             from reckon.crew.stage_receipts import record_stage
+
             record_stage(run_id, "landing")
             landed.append(run_id)
             try:

@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-a-pane-counts-its-session-across-projects-landing">
+  <h2 id="qwnw-red-file-a-pane-counts-its-session-across-projects-title">A pane counts its session across projects</h2>
+
+  <p><strong>What was wrong.</strong> Nothing in the product. The file failed at
+  its base revision on the row it renders, not on the session-wide sum it
+  tests: it asserted the literal <code>" 8w  2n  3d"</code> against a pane that
+  draws <code>8w  0r  2h  3d  0q  0p@</code>. Two things had moved under it.
+  The action bucket's counter letter was renamed from <code>n</code>
+  (<code>needs you</code>) to <code>h</code> (<code>help</code>) after the test
+  was last updated, and the counter block grew from three cells to seven, so
+  the three counts are no longer adjacent in the row's text even with the
+  current letter.</p>
+
+  <p><strong>What changed.</strong> Only
+  <code>tests/test_a_pane_counts_its_session_across_projects.py</code>. Each
+  figure is now read off the row by the letter the pane's own
+  <code>STAT_LETTER</code> table supplies, through a <code>_counters</code>
+  helper, so a later vocabulary rename is spelled by the pane rather than
+  fossilised in the test. The counts are unchanged: 8 working, 2 help, 3
+  delivered for a session spread across three projects, with the third
+  project's older entry excluded by the newest-transition selection.</p>
+
+  <h3 id="qwnw-red-file-a-pane-counts-its-session-across-projects-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-pane-counts-its-session-across-projects-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base run of this file (negative control)</td>
+        <td><code>335723e1b29d</code>, extraction</td>
+        <td>1 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>head run of this file</td>
+        <td><code>d41374f2a60e</code>, working tree</td>
+        <td>1 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named check as a job on <code>all_debug</code></td>
+        <td><code>d41374f2a60e</code>, landing tree</td>
+        <td>1 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>mutation: cross-project sum removed</td>
+        <td><code>d41374f2a60e</code>, extraction</td>
+        <td>1 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>suite gate, base arm</td>
+        <td><code>335723e1b29d</code>, landing tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite gate, after arm</td>
+        <td><code>d41374f2a60e</code>, landing tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-a-pane-counts-its-session-across-projects-reproduction">The
+  base run failed at
+  <code>tests/test_a_pane_counts_its_session_across_projects.py:136</code> with
+  the row it printed in the message:
+  <strong><code>test_a_scoped_pane_sums_the_session_across_every_project</code></strong>
+  asserted <code>' 8w  2n  3d'</code> in
+  <code>8w  0r  2h  3d  0q  0p@</code>. The session sum itself was already
+  correct at the base; only the spelling of the row had moved.</p>
+
+  <p id="qwnw-red-file-a-pane-counts-its-session-across-projects-guard">The
+  updated file still fails when the behaviour it guards is removed: with
+  <code>_scoped_watch_event</code>'s cross-project sum disabled, the row
+  renders <code>1w  0r  0h  0d</code> and the test reports
+  <code>(1, 0, 0) == (8, 2, 3)</code>. A passing suite never shows a guard
+  fires, so that mutation is recorded beside the passing runs.</p>
+</section>

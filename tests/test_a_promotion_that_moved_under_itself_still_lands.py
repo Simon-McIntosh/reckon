@@ -1,20 +1,7 @@
-"""A --land promotion whose pointer moves under it still lands its reviewed head.
+"""A moved promotion lands its reviewed head using ownership kept in its journal.
 
-A ``crew complete --land`` promotes first: it appends the ledger row, commits the
-plan comment and the row, then removes the live pointer and merges the reviewed
-head. A resume that starts the same run again between those moments moves the
-pointer's attempt, so the removal guard refuses, the merge never runs, and the
-branch does not carry the change the row says landed.
-
-The promotion keeps the pointer it could not remove and marks it, and the landing
-pass finishes the run from the record ``--land`` wrote before it promoted. Two
-states have to end with the pointer released: the pass merging the head, and a
-head a session merged by hand before the pass ran, which the pass must recognise
-rather than merging a second time.
-
-A temporary repository with a bare origin stands in for the project, a temporary
-crew home for the crew state, and the real pointer directory is asserted
-untouched.
+A handover records the retained attempt without rewriting its live pointer.
+Integration releases that attempt, while a later attempt keeps its own pointer.
 """
 
 from __future__ import annotations
@@ -149,7 +136,9 @@ def _refused_landing(run: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> No
     assert result.exit_code != 0, result.output
     assert "changed while promotion ran" in result.output, result.output
     kept = read_pointer(run["run_id"])
-    assert kept.get("pending_landing_repair") is True, kept
+    assert not kept.get("pending_landing_repair"), kept
+    journal = pending_landing._read(pending_landing._record_path(run["run_id"]))
+    assert journal["retained_attempt"] == pending_landing.marked_identity(kept)
     assert pointer_path(run["run_id"]).exists()
     assert _records(), "the landing pass never learned the run was being landed"
 
@@ -165,6 +154,7 @@ def test_the_next_pass_lands_the_head_the_promotion_could_not_merge(
     assert [row.get("status") for row in results] == ["finished"], results
     assert results[0]["head"] == run["head"]
     assert _is_ancestor(run["origin"], run["head"], "main"), "head never landed"
+    assert _git(run["origin"], "show", "main:reviewed.txt") == MARKER.strip()
     assert not pointer_path(run["run_id"]).exists(), "the pointer stayed held"
     assert not _records(), "the finished landing left its record behind"
 
@@ -185,6 +175,7 @@ def test_a_head_merged_by_hand_is_recognised_without_a_second_merge(
     assert [row.get("status") for row in results] == ["already-landed"], results
     assert _git(run["repository"], "rev-parse", "HEAD") == hand_merged
     assert _is_ancestor(run["origin"], run["head"], "main")
+    assert _git(run["origin"], "show", "main:reviewed.txt") == MARKER.strip()
     assert not pointer_path(run["run_id"]).exists(), "the pointer stayed held"
     assert not _records()
 

@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-landing">
+  <h2>A sweep-launched review starts its worker: the named file is already green at base</h2>
+
+  <p><strong>What changed.</strong> Nothing in <code>reckon/</code> or
+  <code>tests/</code>. <code>tests/test_a_sweep_launched_review_starts_its_worker.py</code>
+  is green in full at the base revision this node was queued against, so the
+  node is delivered as the plan permits for that case — the passing run, with
+  the failing-ids record empty rather than the file edited to fit. No assertion
+  was deleted or weakened, because no assertion was touched.</p>
+
+  <p><strong>Why it was queued red and is not red now.</strong> The file and the
+  product rule it asserts arrived together in two commits that are both
+  ancestors of the base revision
+  <code>8a9d873cb91d05af20ae5c653880c260e1c5dbe</code>:
+  <code>3b938adfe635ec06628e8468e4db1cc6a299ef92</code> publishes the
+  attempt identity with the claim, and
+  <code>b0c4ba8e825f64144fdd50ca0ddab8c93b7599c5</code> drops a refused queue
+  launch's attempt record with its claim. <code>git log --all</code> over the
+  file names exactly those two commits and no others, so there is no earlier
+  revision in this history where it was red; the cause list is empty and each
+  of the four cases is green at base and at head.</p>
+
+  <p><strong>Measured</strong> — base run of the named file, as its own job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, in a tree
+  extracted at the base revision:
+
+  <pre id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-base"># revision: 8a9d873cb91d05af20ae5c6530880c260e1c5dbe
+# host: 98dci4-clu-3141.iter.org
+# slurm_job_id_inside: unset
+# module.__file__: .../scratch/base-8a9d873cb9/reckon/crew/dispatch.py
+....                                                                     [100%]
+4 passed in 3.90s
+EXIT=0</pre>
+
+  <p>The head run of the same file, at <code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code>,
+  as job <code>1324920</code> on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset:</p>
+
+  <pre id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-head">....                                                                     [100%]
+4 passed in 2.27s
+EXIT=0</pre>
+
+  <p>The composed scoped gate measured by <code>crew verify-gate --worker</code>
+  at the same revision reads <code>4 passed</code> with
+  <code>"exit_status": 0</code>, <code>"failure_ids": []</code>, and the two
+  suite arms
+  (<code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>):
+
+  <pre id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-arms">baseline 8a9d873cb91d05af20ae5c6530880c260e1c5dbe: 58 passed, EXIT=0
+head     6699d0257dd54f67be1f09ce02d9d6cc9ab117ed: 58 passed, EXIT=0</pre>
+
+  <p><strong>The negative control is a mutation, because the base run is
+  green.</strong> A green base run cannot show that the four cases still fire,
+  so the product's claim-time attempt-marker write was removed from the head
+  tree in a scratch copy and the named file re-run over it:</p>
+
+<pre id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-mutation"># revision: 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sweep_launched_review_starts_its_worker.py
+# mutation: reckon/crew/dispatching/preparation.py loses the claim-time attempt-marker write, so attempt.json is written only at the supervisor gate
+..F.                                                                     [100%]
+FAILED tests/test_a_sweep_launched_review_starts_its_worker.py::test_a_launcher_that_ends_stops_after_its_attempt_record
+E       AssertionError: the run kept its claim and no attempt record, which is the shape that reads afterwards as a launch that never started
+1 failed, 3 passed in 1.88s
+EXIT=1</pre>
+
+  <p>The mutating change is not a repository edit: the mutation lives only in
+  the scratch tree under the run directory's own scratch, and the worktree at
+  <code>6699d0257d</code> is unmodified.</p>
+
+  <h3 id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-verdicts">Causes and verdicts</h3>
+
+  <p>None. Four cases, zero failures at base, zero at head; the deliverable is
+  the passing run the plan names for a file another node's repair already
+  reached.</p>
+</section>

@@ -1,0 +1,79 @@
+{
+  "added_failure_basis": "derived from the reviewed run's own arms: baseline-suite.log is 58 passed with EXIT=0 and no FAILED id; after-suite.log is 67 passed with EXIT=0 and no FAILED id, the 58 plus the 9 gate cases. Zero failures at either arm, so no added failure id exists.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:162 LostSessionReads in admit_once (selection.py:40), reached from reckon/crew/admission/service.py:472 and :537",
+    "reckon/crew/directory.py:846 LostSessionReads, reached from reckon/crew_run_commands.py:567, reckon/mcp_views.py:4511 and reckon/crew/plan_coordinator.py:233",
+    "reckon/crew/admission/service.py:248 _READ_SOURCES registration of session_lost"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T03:53:46Z",
+  "findings": [
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "283",
+      "severity": "non-blocking",
+      "text": "the assertion started == NOW.timestamp() - 10*24*HOUR compares the patched reader's output against the same expression _backdate computed it from (days=10), and the companion assertion at :285 that _keyed_on_process_age returns True is arithmetic over that same supplied value, so both are satisfied by construction and guard no production behaviour; the production guard is the raising readers at :297-302."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "297",
+      "severity": "non-blocking",
+      "text": "only two of the repository's process-start readers are patched (reckon/crew/gc.py:794 _process_start_epoch and reckon/crew/process_liveness.py:539 _process_start_time); reckon/crew/host_lease.py:32 _process_start, reckon/crew/census.py:37 and reckon/mcp_deadlines.py:152 also parse a start time and are not patched, so the docstring's claim at :275-277 that a derivation reaching for a process's age at all fails here is broader than the mechanism enforces."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "305",
+      "severity": "non-blocking",
+      "text": "the reuse-boundary case is a textual scan of lost_sessions' source for 'btime' and 'SC_CLK_TCK', so a second reader built on os.stat, /proc/<pid>/stat via a helper, or psutil would pass it; the capability is guarded by spelling rather than behaviour."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "246",
+      "severity": "non-blocking",
+      "text": "the docstring says 'The derivation the plan names as the mutation, executed', a reference to the driving plan inside source; the mechanism (a derivation keyed on the carrying process's start instant) is what the code does and what the comment should state."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the production reaches at 2331438320: selection.py:162 LostSessionReads in admit_once (selection.py:40) reached from service.py:472 and :537; directory.py:846 LostSessionReads reached from crew_run_commands.py:567, mcp_views.py:4511 and plan_coordinator.py:233; service.py:248 _READ_SOURCES registers session_lost.",
+    "diff": "read commit by commit; 2331438320 is the only commit in the delta and changes only the test file, replacing a fixture that supplied its own ten-day age with a real process backdated through gc._process_start_epoch, an executed process-age analog, and a new reuse-boundary case.",
+    "done_when": "the done_when's six clauses are asserted in tests/test_a_lost_session_is_a_derived_fact.py -- 71 h/73 h boundary at 98-110, a running process at 197-203, the ten-day process at 266-302, the setting at 113-127 and 140-174, the three directory fields at 321-343, and at most six reads over forty pointers at 346-368 -- and gate.log records 9 passed with EXIT=0 at 2331438320 with a revision/tree/command header.",
+    "goal": "the node goal is plan section 2's derived lost flag; the delta 651056eab2..2331438320 leaves reckon/crew/lost_sessions.py:290 session_lost unchanged and repairs the gate that must falsify its process-age control.",
+    "manifest": "read; status complete, four commits, gate_result 9 passed EXIT=0, negative_control_log mutation-process-age.log, baseline 58 passed and after 67 passed with EXIT=0 each, but baseline_suite and after_suite still cite angle-bracket placeholder commands and their logs carry no revision or command header.",
+    "write_paths": "the node declared eleven paths; the delta touches exactly tests/test_a_lost_session_is_a_derived_fact.py (+75/-18), one declared path."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lost_session_is_a_derived_fact.py:297-302 makes both patched start readers raise and the derivation still answers live, and mutation-process-age.log reddens exactly that case, so the regression it names fails the gate.",
+    "evidence": "gate.log carries a revision/tree/command header with 9 passed and EXIT=0 at 2331438320, and mutation-process-age.log shows the named case failing at tests/test_a_lost_session_is_a_derived_fact.py:291 under the applied mutation-process-age mutation.",
+    "fit": "the added helpers _backdate and _keyed_on_process_age follow the module's existing fixture idiom and the commit is conventional with a body, but the docstring at tests/test_a_lost_session_is_a_derived_fact.py:246 cites the plan rather than the mechanism.",
+    "goal_fidelity": "the delta leaves reckon/crew/lost_sessions.py:290 session_lost intact and repairs the only gate that can falsify its process-age control, so the plan section 2 deliverable stands and is now measured rather than assumed.",
+    "reuse": "the delta reuses reckon/crew/gc.py:794 _process_start_epoch for its control and adds tests/test_a_lost_session_is_a_derived_fact.py:305 to forbid a second reader in the module, while the pre-existing live_process_sessions duplicate of reckon/crew/process_liveness.py:291 remains as previously recorded.",
+    "scope_discipline": "git diff 651056eab2..2331438320 changes exactly tests/test_a_lost_session_is_a_derived_fact.py, +75/-18, one of the eleven declared paths and no other file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is plan section 2's derived lost flag; the delta 651056eab2..2331438320 leaves reckon/crew/lost_sessions.py:290 session_lost unchanged and repairs the gate that must falsify its process-age control.\nVERDICT done_when: the done_when's six clauses are asserted in tests/test_a_lost_session_is_a_derived_fact.py (98-110, 197-203, 266-302, 113-127 and 140-174, 321-343, 346-368) and gate.log records 9 passed with EXIT=0 at revision 2331438320 with a revision/tree/command header.\nVERDICT write_paths: the node declared eleven paths; the delta touches exactly tests/test_a_lost_session_is_a_derived_fact.py (+75/-18), one declared path.\nVERDICT manifest: read; status complete, four commits, gate_result 9 passed EXIT=0, negative_control_log mutation-process-age.log, baseline 58 passed and after 67 passed with EXIT=0 each, but the suite commands still carry angle-bracket placeholders and their logs carry no header.\nVERDICT diff: read commit by commit; 2331438320 is the only commit in the delta and changes only the test file, replacing a fixture that supplied its own ten-day age with a real process backdated through gc._process_start_epoch, an executed process-age analog, and a new reuse-boundary case.\nCALL_SITES: reckon/crew/admission/selection.py:162 LostSessionReads in admit_once (selection.py:40) reached from reckon/crew/admission/service.py:472 and :537, reckon/crew/directory.py:846 LostSessionReads reached from reckon/crew_run_commands.py:567, reckon/mcp_views.py:4511 and reckon/crew/plan_coordinator.py:233, reckon/crew/admission/service.py:248 _READ_SOURCES registration of session_lost\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta leaves reckon/crew/lost_sessions.py:290 session_lost intact and repairs the only gate that can falsify its process-age control, so the plan section 2 deliverable stands and is now measured rather than assumed.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log carries a revision/tree/command header with 9 passed and EXIT=0 at 2331438320, and mutation-process-age.log shows the named case failing at tests/test_a_lost_session_is_a_derived_fact.py:291 under the applied mutation-process-age mutation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 651056eab2..2331438320 changes exactly tests/test_a_lost_session_is_a_derived_fact.py, +75/-18, one of the eleven declared paths and no other file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_lost_session_is_a_derived_fact.py:297-302 makes both patched start readers raise and the derivation still answers live, and mutation-process-age.log reddens exactly that case, so the regression it names fails the gate.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers _backdate and _keyed_on_process_age follow the module's existing fixture idiom and the commit is conventional with a body, but the docstring at tests/test_a_lost_session_is_a_derived_fact.py:246 cites the plan rather than the mechanism.\nSCORE reuse: 17\nJUSTIFICATION reuse: the delta reuses reckon/crew/gc.py:794 _process_start_epoch for its control and adds tests/test_a_lost_session_is_a_derived_fact.py:305 to forbid a second reader in the module, while the pre-existing live_process_sessions duplicate of reckon/crew/process_liveness.py:291 remains as previously recorded.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:283 non-blocking: the assertion started == NOW.timestamp() - 10*24*HOUR compares the patched reader's output against the same expression _backdate computed it from (days=10), and the companion assertion at :285 that _keyed_on_process_age returns True is arithmetic over that same supplied value, so both are satisfied by construction and guard no production behaviour; the production guard is the raising readers at :297-302.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:297 non-blocking: only two of the repository's process-start readers are patched (reckon/crew/gc.py:794 _process_start_epoch and reckon/crew/process_liveness.py:539 _process_start_time); reckon/crew/host_lease.py:32 _process_start, reckon/crew/census.py:37 and reckon/mcp_deadlines.py:152 also parse a start time and are not patched, so the docstring's claim at :275-277 that a derivation reaching for a process's age at all fails here is broader than the mechanism enforces.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:305 non-blocking: the reuse-boundary case is a textual scan of lost_sessions' source for 'btime' and 'SC_CLK_TCK', so a second reader built on os.stat, /proc/<pid>/stat via a helper, or psutil would pass it; the capability is guarded by spelling rather than behaviour.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:246 non-blocking: the docstring says 'The derivation the plan names as the mutation, executed', a reference to the driving plan inside source; the mechanism (a derivation keyed on the carrying process's start instant) is what the code does and what the comment should state.\n",
+  "review_run_id": "r-20261121T035225926266-review-of-wlsr-a-lost-session-is-a-derived-fact-23314383207a",
+  "reviewed_base_sha": "651056eab2a2461397b5a29ea8aef48b25df5bff",
+  "reviewed_head_sha": "23314383207a3ff96b57e8dc578260630e78178d",
+  "reviewed_run_id": "r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T035225926266-review-of-wlsr-a-lost-session-is-a-derived-fact-23314383207a"
+  },
+  "reviewer_run_id": "r-20261121T035225926266-review-of-wlsr-a-lost-session-is-a-derived-fact-23314383207a",
+  "scope_note": "Delta review: the base is the head the prior review read (651056eab2); the node's own base is e689315bb7. The only changed path is tests/test_a_lost_session_is_a_derived_fact.py.",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T04:03:57.870877+00:00",
+  "total": 108
+}

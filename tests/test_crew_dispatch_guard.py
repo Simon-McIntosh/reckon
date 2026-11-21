@@ -204,6 +204,20 @@ def _dispatch(
         )
 
 
+def _pointer_shape(record: dict) -> dict:
+    """One dispatch record as its live pointer stores it.
+
+    ``process_alive`` is a read-side liveness derivation no pointer carries, and
+    dispatch moves its dispatch-time detail into the run's own detail file, so
+    the pointer keeps that file's path in place of the fields themselves.
+    """
+    return {
+        key: value
+        for key, value in record.items()
+        if key != "process_alive" and key not in runs.DISPATCH_DETAIL_FIELDS
+    }
+
+
 def test_first_dispatch_arms_a_watcher_without_a_waiver(
     isolated_project: tuple[Path, Path],
 ) -> None:
@@ -227,12 +241,18 @@ def test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch(
 
     assert accepted["watch"]["watcher_live"] is True
     assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
-    # list_live attaches a read-side liveness re-derivation to each row without
-    # writing it to the pointer, so compare the pointer fields dispatch defines.
+    # list_live returns each pointer as stored: it attaches no liveness probe,
+    # and dispatch writes its dispatch-time detail into the run's own detail
+    # file, leaving only that file's path on the pointer. Compare the pointer
+    # shape, and hold the detached detail to the value the record concluded.
     assert [
         {key: value for key, value in row.items() if key != "process_alive"}
         for row in crew.list_live(project="sample")
-    ] == [owner, accepted]
+    ] == [_pointer_shape(record) for record in (owner, accepted)]
+    for record in (owner, accepted):
+        detail = json.loads(Path(record["dispatch_detail"]).read_text(encoding="utf-8"))
+        for name in runs.DISPATCH_DETAIL_FIELDS:
+            assert detail.get(name) == record.get(name)
     worktrees = subprocess.run(
         ["git", "worktree", "list"],
         cwd=repo,

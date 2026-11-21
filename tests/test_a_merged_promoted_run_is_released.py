@@ -181,10 +181,37 @@ def test_a_repair_mark_cannot_release_a_newer_attempt(cohort: dict) -> None:
     member = cohort["members"]["clean"]
     pointer = {**member["pointer"], "attempt": 1}
     run_id = pointer["run_id"]
-    marked = pending_landing.mark_pending_landing_repair(run_id, pointer)
+    marked = {
+        **pointer,
+        "pending_landing_repair": True,
+        "pending_landing_repair_attempt": pending_landing.pointer_attempt(pointer),
+    }
     marked["attempt"] = 2
     runs._write_json(runs.pointer_path(run_id), marked)
     before = runs.pointer_path(run_id).read_bytes()
     assert pending_landing.release_merged_promotions(only_run=run_id) == []
     assert runs.pointer_path(run_id).read_bytes() == before
     assert member["tree"].exists()
+
+
+@pytest.mark.parametrize("mark", ["absent", "matching", "phase-rewritten"])
+def test_a_complete_merged_repair_without_a_journal_is_retired(cohort, mark):
+    member = cohort["members"]["clean"]
+    pointer = {**member["pointer"], "pending_landing_repair": True}
+    run_id = pointer["run_id"]
+    assert pointer["phase"] == "complete"
+    assert not pending_landing._record_path(run_id).exists()
+    if mark != "absent":
+        pointer["pending_landing_repair_attempt"] = pending_landing.pointer_attempt(
+            pointer
+        )
+        if mark == "phase-rewritten":
+            pointer["pending_landing_repair_attempt"]["phase"] = "awaiting-promotion"
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    results = pending_landing.finish_pending_landings(only_run=run_id)
+    assert [row["status"] for row in results] == ["already-landed"], results
+    assert not runs.pointer_path(run_id).exists()
+    assert not member["tree"].exists()
+    row = json.loads(ledger.run_path(PROJECT, run_id, cohort["repo"]).read_text())
+    assert row["release"]["worktree_released"] is True
+    assert runs.read_pointer("r-waiter")["phase"] == "queued"

@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/host_shims/sbatch:69",
+    "reckon/host_shims/srun:69",
+    "reckon/host_shims/salloc:69",
+    "reckon/nested_launch.py:1075",
+    "reckon/nested_launch.py:1123",
+    "reckon/crew/dispatch_launch.py:4389",
+    "reckon/crew/dispatch_sessions.py:1519",
+    "reckon/crew/dispatch_sessions.py:2092",
+    "reckon/crew/dispatch_sessions.py:2129",
+    "reckon/crew/fleet_node.py:777",
+    "reckon/project_setup_commands.py:237"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-21T07:47:45Z",
+  "findings": [
+    {
+      "disposition": null,
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1185",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring calls coordinator_session \"the one read of that key\", but the same run record's session is still read directly at reckon/crew/dispatch_sessions.py:1299, 1981 and 2015, so a change to where the record keeps the session would leave those call sites behind while the docstring says otherwise."
+    },
+    {
+      "disposition": null,
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-session-job-names-its-session.html",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure paragraph cites head b3872f30 and says the node's file carries 19 cases, but the delivered head bb1619d3 carries 21 and the manifest's own arms name bb1619d3, so the fragment's account of the measure lags the revision it was landed at."
+    },
+    {
+      "disposition": null,
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T064855311922-wlsr-a-session-job-names-its-session/negative-control-session-comment.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header names revision 65c0479b for a run that collected 19 tests, a count the test file reaches only at b3872f30, so the record's revision line misstates the tree the control was measured at and the control cannot be re-run from the record as written."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "Read commit by commit against 65c0479b148; b3872f30fc adds the session-only owner branch, the script-comment lift and the fleet token reader, 94721267f2 adds the evidence fragment, and bb1619d3 folds the duplicate comment scan into reckon/nested_launch.py:981 and ends a directive comment at the next option word at reckon/nested_launch.py:958-967.",
+    "done_when": "The done_when asks for one added case per deliverable in tests/test_a_scheduler_job_names_its_owner.py and for the dispatch-side case to fail with the dispatch launch environment's session export removed; the head file carries those cases at tests/test_a_scheduler_job_names_its_owner.py:172,184,193,211,232,248 and the manifest records the declared control red at negative-control-dispatch-export.log (1 failed, EXIT=1).",
+    "goal": "The goal is \"name the coordinator session on every job reckon submits for it\"; reckon/nested_launch.py:884-906 names the session alone when a run is absent and returns nothing only when neither is set, reckon/nested_launch.py:938-1010 lifts a submitted script's own #SBATCH --comment onto the command line beside the owner, and reckon/crew/fleet_node.py:652 keeps a fleet allocation findable once its comment gains that owner.",
+    "manifest": "Read; it records status complete, the three commits, the scoped gate at 131 passed and the after arm at 79 passed, both EXIT=0, with the baseline arm at 70 passed, and its negative-control note records the declared control's 4 failed / 1 failed at EXIT=1.",
+    "write_paths": "Read the ten declared paths against the six changed paths in 65c0479b..bb1619d3; reckon/nested_launch.py, reckon/crew/fleet_node.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, tests/test_a_scheduler_job_names_its_owner.py and docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-session-job-names-its-session.html are all inside the declared scope, and reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch.py carry no diff."
+  },
+  "justifications": {
+    "durability": "tests/test_a_scheduler_job_names_its_owner.py:172 reddens on the owner_comment regression and :211,:223 on the directive tokenisation, each measured red in repair-negative-control-session-comment.log and repair-negative-control-script-options.log, and the composed-launch case at :248 asserts against the SESSION constant rather than a value it echoed from the code.",
+    "evidence": "scoped-gate-1795246206198201779.log reads 131 passed EXIT=0 at bb1619d3 and after_suite-1795246363740467076.log reads 79 passed EXIT=0 at the same head, but negative-control-session-comment.log:1 names revision 65c0479b for nodes the file only carries from b3872f30.",
+    "fit": "reckon/nested_launch.py:981 follows the surrounding one-line summaries and mechanism-only comments and no symbol carries a plan or section label, but the docstring at reckon/crew/dispatch_launch.py:1185 calls itself the one read of a key that three sites in reckon/crew/dispatch_sessions.py still read directly.",
+    "goal_fidelity": "reckon/nested_launch.py:895-906 returns a session-only comment \"reckon session=<id>\" when no run id is set and \"\" only when neither exists, which is what the goal asks a submitted job to name.",
+    "reuse": "reckon/nested_launch.py:922 delegates to the one scan at reckon/nested_launch.py:981, so the comment-merge capability has a single owner and no fork remains.",
+    "scope_discipline": "every path in the 65c0479b..bb1619d3 diff is a declared write path, with reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch.py declared and untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is \"name the coordinator session on every job reckon submits for it\"; reckon/nested_launch.py:884-906 now names the session alone when a run is absent and returns nothing only when neither is set, reckon/nested_launch.py:938-1010 lifts a submitted script's own #SBATCH --comment onto the command line beside the owner, and reckon/crew/fleet_node.py:652 keeps a fleet allocation findable once its comment gains that owner.\nVERDICT done_when: the done_when asks for one added case per deliverable in tests/test_a_scheduler_job_names_its_owner.py and for the dispatch-side case to fail with the dispatch launch environment's session export removed; the head file carries those cases at tests/test_a_scheduler_job_names_its_owner.py:172,184,193,211,232,248 and the manifest records the declared control red at negative-control-dispatch-export.log (1 failed, EXIT=1).\nVERDICT write_paths: read the ten declared paths against the six changed paths in 65c0479b..bb1619d3; reckon/nested_launch.py, reckon/crew/fleet_node.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, tests/test_a_scheduler_job_names_its_owner.py and docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-session-job-names-its-session.html are all inside the declared scope, and reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch.py carry no diff.\nVERDICT manifest: read; it records status complete, the three commits, the scoped gate at 131 passed and the after arm at 79 passed, both EXIT=0, with the baseline arm at 70 passed, and its negative-control note records the declared control's 4 failed / 1 failed at EXIT=1.\nVERDICT diff: read commit by commit against 65c0479b148; b3872f30fc adds the session-only owner branch, the script-comment lift and the fleet token reader, 94721267f2 adds the evidence fragment, and bb1619d3 folds the duplicate comment scan into reckon/nested_launch.py:981 and ends a directive comment at the next option word at reckon/nested_launch.py:958-967.\nCALL_SITES: reckon/host_shims/sbatch:69, reckon/host_shims/srun:69, reckon/host_shims/salloc:69, reckon/nested_launch.py:1075, reckon/nested_launch.py:1123, reckon/crew/dispatch_launch.py:4389, reckon/crew/dispatch_sessions.py:1519, reckon/crew/dispatch_sessions.py:2092, reckon/crew/dispatch_sessions.py:2129, reckon/crew/fleet_node.py:777, reckon/project_setup_commands.py:237\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:895-906 returns a session-only comment \"reckon session=<id>\" when no run id is set and \"\" only when neither exists, which is what the goal asks a submitted job to name.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795246206198201779.log reads 131 passed EXIT=0 at bb1619d3 and after_suite-1795246363740467076.log reads 79 passed EXIT=0 at the same head, but negative-control-session-comment.log:1 names revision 65c0479b for nodes the file only carries from b3872f30.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the 65c0479b..bb1619d3 diff is a declared write path, with reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch.py declared and untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_scheduler_job_names_its_owner.py:172 reddens on the owner_comment regression and :211,:223 on the directive tokenisation, each measured red in repair-negative-control-session-comment.log and repair-negative-control-script-options.log, and the composed-launch case at :248 asserts against the SESSION constant rather than a value it echoed from the code.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/nested_launch.py:981 follows the surrounding one-line summaries and mechanism-only comments and no symbol carries a plan or section label, but the docstring at reckon/crew/dispatch_launch.py:1185 calls itself the one read of a key that three sites in reckon/crew/dispatch_sessions.py still read directly.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/nested_launch.py:922 delegates to the one scan at reckon/nested_launch.py:981, so the comment-merge capability has a single owner and no fork remains.\nFINDING reckon/crew/dispatch_launch.py:1185 non-blocking: the docstring calls coordinator_session \"the one read of that key\", but the same run record's session is still read directly at reckon/crew/dispatch_sessions.py:1299, 1981 and 2015, so a change to where the record keeps the session would leave those call sites behind while the docstring says otherwise.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-session-job-names-its-session.html:22 non-blocking: the measure paragraph cites head b3872f30 and says the node's file carries 19 cases, but the delivered head bb1619d3 carries 21 and the manifest's own arms name bb1619d3, so the fragment's account of the measure lags the revision it was landed at.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T064855311922-wlsr-a-session-job-names-its-session/negative-control-session-comment.log:1 non-blocking: the header names revision 65c0479b for a run that collected 19 tests, a count the test file reaches only at b3872f30, so the record's revision line misstates the tree the control was measured at and the control cannot be re-run from the record as written.",
+  "review_run_id": "r-20261121T074709548207-review-of-wlsr-a-session-job-names-its-session-bb1619d3593a",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "bb1619d3593a98c10ea8344a5be6c4154985228e",
+  "reviewed_run_id": "r-20261121T064855311922-wlsr-a-session-job-names-its-session",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:27:50.983937+00:00",
+  "total": 108
+}

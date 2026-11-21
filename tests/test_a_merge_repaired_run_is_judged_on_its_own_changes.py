@@ -104,12 +104,16 @@ def test_merged_primary_files_are_not_charged_to_the_run(
 def test_scope_escape_names_only_the_runs_own_file(delivery):
     repo, tree, record, own, main_paths = delivery
     _merge_primary(repo, tree)
-    (tree / "outside.txt").write_text("outside grant\n")
-    head = _commit(tree, "outside.txt")
+    # A declared write path is a hint: only a class a merge cannot reconcile
+    # is refused, so the escape here is a plan document rather than a source
+    # file beside the declared receipt.
+    (tree / "docs" / "plans").mkdir(parents=True)
+    (tree / "docs" / "plans" / "outside.html").write_text("outside grant\n")
+    head = _commit(tree, "docs/plans/outside.html")
     with pytest.raises(crew.CrewError) as refused:
         crew.complete(record["run_id"], gate="passed", commits=[own, head], root=repo)
     message = str(refused.value)
-    assert "outside.txt" in message
+    assert "docs/plans/outside.html" in message
     assert all(path not in message for path in main_paths)
     assert ledger.runs(PROJECT, root=repo) == []
     assert pointer_path(record["run_id"]).exists()
@@ -120,9 +124,12 @@ def test_unmerged_run_keeps_its_scope_guard(delivery, escape):
     repo, tree, record, own, main_paths = delivery
     commits = [own]
     if escape:
-        (tree / "outside.txt").write_text("outside grant\n")
-        commits.append(_commit(tree, "outside.txt"))
-        with pytest.raises(crew.CrewError, match=r"outside\.txt") as refused:
+        (tree / "docs" / "plans").mkdir(parents=True)
+        (tree / "docs" / "plans" / "outside.html").write_text("outside grant\n")
+        commits.append(_commit(tree, "docs/plans/outside.html"))
+        with pytest.raises(
+            crew.CrewError, match=r"docs/plans/outside\.html"
+        ) as refused:
             crew.complete(record["run_id"], gate="passed", commits=commits, root=repo)
         assert all(path not in str(refused.value) for path in main_paths)
     else:

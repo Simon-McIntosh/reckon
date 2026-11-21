@@ -1,0 +1,99 @@
+{
+  "added_failure_basis": "derived from the reviewed run's own arms: baseline-suite.log is 58 passed, EXIT=0; after-suite.log is 66 passed, EXIT=0 (the 8 gate cases plus the same 58). Zero failures at either arm, so no failure id is added; 66-58=8 is exactly the new test module.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:162 admit_once wraps LostSessionReads in _service._read_tally() and records result['reads']['lost sessions'] at :174 (the repair's changed path)",
+    "reckon/crew/admission/service.py:248 _READ_SOURCES row ('reckon.crew.lost_sessions', 'session_lost', 'lost-session reads') patched by _read_tally at service.py:320",
+    "reckon/crew/directory.py:846 directory -> LostSessionReads.answer per row (:848), consumed by reckon/crew_run_commands.py:565, reckon/mcp_views.py:4473 and reckon/crew/plan_coordinator.py:233",
+    "reckon/crew/lost_sessions.py:322 session_lost -> lost_session_after_hours at :42 (flight layer, :46-57)"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-a-lost-session-is-a-derived-fact-e9d4f446b8bf",
+      "recorded_at": "2026-11-21T03:43:41.588084+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T03:18:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/lost_sessions.py",
+      "line": "116",
+      "severity": "non-blocking",
+      "text": "process_started_at duplicates a capability the repository already owns: reckon/crew/gc.py:794 _process_start_epoch already returns a pid's start instant in epoch seconds from /proc/<pid>/stat, and does it correctly. The addition neither extends nor wraps that helper, and because it is called only by the test it adds production surface with no production caller."
+    },
+    {
+      "file": "reckon/crew/lost_sessions.py",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "The docstring at :128-130 says the fields are split after the closing parenthesis of the comm field, but the code does a naive .split() of the whole line and reads fields[21]; a process whose comm contains a space shifts every later field, so the start instant is wrong for exactly the case the docstring claims to handle (compare gc.py:803-805 and obligation_snapshot._process_stat_fields, which split after the final ')')."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "271",
+      "severity": "non-blocking",
+      "text": "The control assertion compares a value the test itself supplied: monkeypatch at :266-270 substitutes started = NOW - 10 days as process_started_at's answer, and _keyed_on_process_age at :232-249 then computes (NOW - started) > 72h, which is arithmetic over the test's own literals and holds whatever the production code does. The genuine guard against the named regression is the following never_read trap at :278-284, and the executed mutation in mutation-process-age.log is what actually demonstrates the case reddens."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "`from reckon.crew.admission import service as _service` is now unused (ruff F401): the repair removed the in-test _read_tally block that used it and left the import. The file is new in this node, so this is a finding the node added."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "The repair re-adds `parse_utc` to the .shared import, and it has no use in the module (ruff F401); the import was present and unused at the node's base e689315bb7, removed in 8ce5592505, and re-added here, so it is dead code carried in the repair's own hunk rather than a new delta-vs-base finding."
+    },
+    {
+      "file": "gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The log the manifest cites for the gate (test_logs: gate.log) contains only its three header lines -- revision, tree, command -- with no pytest summary and no EXIT= sentinel, so '8 passed, EXIT=0' cannot be read from the log named for it; after-suite.log corroborates the result (66 passed including this module, EXIT=0) and negative-control.log restates '8 passed'."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the derivation's reaches at the reviewed head: admit_once's tally block at selection.py:162-174, the _READ_SOURCES row at service.py:248 patched at service.py:320, directory() at directory.py:846-848 with its three consumers, and session_lost's flight read at lost_sessions.py:42-57.",
+    "diff": "read e9d4f446b8 against 8ce55925051e: +197/-54 across three files -- the flight-layer tests and a broken-layer test, the production tally around the admit pass's lost derivation, zero honoured as a threshold, a real process fixture and an executed process-age control, and a new process_started_at helper that duplicates gc.py's.",
+    "done_when": "the done_when's cases are asserted in tests/test_a_lost_session_is_a_derived_fact.py: the 71h/73h boundary, the running process, the ten-day process now backed by a real process (:253-262), the boundary moved through the flight layer (:147-167), the broken layer (:170-178), the three directory fields (:293-316) and the read bound read from the production receipt (:323-331); the named gate log itself is empty of results.",
+    "goal": "the node's goal is to derive whether a coordinator session is lost from the last instant it was heard; the delta preserves that: reckon/crew/lost_sessions.py:322 session_lost still answers lost/lost_since from the reviewed evidence and never reads a start time, and the repair's changes are to the control, the receipt and the flight layer.",
+    "manifest": "read; status complete, commits 8ce55925051e and e9d4f446b8, gate_result '8 passed, EXIT=0', test_logs gate.log, negative_control_log mutation-process-age.log with two further mutation logs, and both suite arms recorded (58 passed baseline, 66 passed after, EXIT=0 each).",
+    "write_paths": "the delta e689315bb7..e9d4f446b8 touches nine declared paths in the node; the repair commit under review touches only three -- reckon/crew/admission/selection.py, reckon/crew/lost_sessions.py and tests/test_a_lost_session_is_a_derived_fact.py -- and nothing outside the declared scope."
+  },
+  "justifications": {
+    "durability": "three applied mutations each redden a named case (mutation-flight.log 'assert 72.0 == 74.0', mutation-receipt.log KeyError 'lost sessions', mutation-process-age.log AssertionError 'the derivation read a process start time'), but the in-test control assertion at tests/test_a_lost_session_is_a_derived_fact.py:271 compares against a start instant the test itself monkeypatched in.",
+    "evidence": "tests/test_a_lost_session_is_a_derived_fact.py:147-178 and :323-331 now assert the flight layer and the production receipt, which the prior review named as unverified, but the gate log the manifest cites (gate.log) carries only its header and no result line.",
+    "fit": "reckon/crew/lost_sessions.py:128-130 states a comm-safe split its code at :134 does not perform, and both touched files carry an unused import (selection.py:34, tests/test_a_lost_session_is_a_derived_fact.py:36) that ruff F401 flags.",
+    "goal_fidelity": "reckon/crew/lost_sessions.py:322 answers lost and lost_since from the last instant the session was heard, and the delta changes neither that reading nor its evidence set, so the deliverable stands.",
+    "reuse": "reckon/crew/lost_sessions.py:116 process_started_at re-implements reckon/crew/gc.py:794 _process_start_epoch (the same /proc stat read and the same tick-to-epoch conversion) without extending or wrapping that owner.",
+    "scope_discipline": "git diff --stat 8ce55925051e..e9d4f446b8 touches only the three declared paths, and the reformatting at selection.py:136-205 restores the node's base e689315bb7 layout rather than adding churn."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to derive whether a coordinator session is lost from the last instant it was heard; reckon/crew/lost_sessions.py:322 answers lost and lost_since from the last instant the session was heard, and the repair changes neither that reading nor its evidence set.\nVERDICT done_when: the done_when's cases are asserted in tests/test_a_lost_session_is_a_derived_fact.py -- 71 h/73 h boundary (76-103), a running process (:126-136), a ten-day process backed by a real process (:253-262), the boundary moved through the flight layer (:147-167) with a broken layer falling back (:170-178), the three directory fields (:293-316) and the at-most-six-reads bound read from the production receipt (:323-331) -- but the gate log the manifest names (gate.log) carries only its header and no result line.\nVERDICT write_paths: the node declared eleven paths; the repair under review touches three of them -- reckon/crew/admission/selection.py, reckon/crew/lost_sessions.py and tests/test_a_lost_session_is_a_derived_fact.py -- and nothing outside the declared scope.\nVERDICT manifest: read; status complete, commits 8ce55925051e and e9d4f446b8, gate_result '8 passed, EXIT=0', test_logs gate.log, negative_control_log mutation-process-age.log, and both suite arms recorded (58 passed baseline, 66 passed after, EXIT=0 each).\nVERDICT diff: read e9d4f446b8 against 8ce55925051e: +197/-54 across three files -- flight-layer and broken-layer tests, a production tally around the admit pass's lost derivation (selection.py:162-174), zero honoured as a threshold (lost_sessions.py:54), a real process fixture and an executed process-age control, and a new process_started_at helper that duplicates gc.py's.\nCALL_SITES: reckon/crew/admission/selection.py:162 admit_once tally, reckon/crew/admission/service.py:248 _READ_SOURCES patched at :320, reckon/crew/directory.py:846-848 directory consumed by reckon/crew_run_commands.py:565, reckon/mcp_views.py:4473 and reckon/crew/plan_coordinator.py:233, reckon/crew/lost_sessions.py:42-57 flight read\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/lost_sessions.py:322 answers lost and lost_since from the last instant the session was heard, and the delta changes neither that reading nor its evidence set.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_lost_session_is_a_derived_fact.py:147-178 and :323-331 now assert the flight layer and the production receipt, but the cited gate.log carries only its three header lines and no result.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 8ce55925051e..e9d4f446b8 touches only the three declared paths, and the reformat at selection.py:136-205 restores the node's base e689315bb7 layout.\nSCORE durability: 15\nJUSTIFICATION durability: three applied mutations redden named cases (mutation-flight.log, mutation-receipt.log, mutation-process-age.log), but tests/test_a_lost_session_is_a_derived_fact.py:271 compares against a start instant the test itself monkeypatched in at :266-270.\nSCORE fit: 12\nJUSTIFICATION fit: reckon/crew/lost_sessions.py:128-130 states a comm-safe split that the code at :134 does not perform, and selection.py:34 and tests/test_a_lost_session_is_a_derived_fact.py:36 each carry an unused import ruff F401 flags.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/lost_sessions.py:116 process_started_at re-implements reckon/crew/gc.py:794 _process_start_epoch without extending or wrapping that owner.\nFINDING reckon/crew/lost_sessions.py:116 non-blocking: process_started_at duplicates reckon/crew/gc.py:794 _process_start_epoch (same /proc stat read, same tick-to-epoch conversion), which already owns this capability and handles it correctly.\nFINDING reckon/crew/lost_sessions.py:134 non-blocking: the docstring promises a split after the closing parenthesis of comm but the code naively splits the whole stat line and reads fields[21], so a comm containing a space yields the wrong start instant.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:271 non-blocking: the control assertion uses a start instant the test monkeypatched in at :266-270, so it is arithmetic over the test's own literal; the genuine guard is the never_read trap at :278-284 and the executed mutation log.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:36 non-blocking: the repair removed the in-test tally but left the now-unused `_service` import (ruff F401).\nFINDING reckon/crew/admission/selection.py:34 non-blocking: the repair re-adds `parse_utc`, which is unused (ruff F401); it was also unused at the node's base, so it is dead code carried, not a new delta-vs-base finding.\nFINDING gate.log:1 non-blocking: the log the manifest cites for the gate holds only revision/tree/command header lines with no pytest summary and no EXIT= sentinel, so '8 passed, EXIT=0' is not readable from it; after-suite.log corroborates (66 passed, EXIT=0).\n",
+  "review_run_id": "r-20261121T031700226228-review-of-wlsr-a-lost-session-is-a-derived-fact-e9d4f446b8bf",
+  "reviewed_base_sha": "8ce55925051e818a8b6b2fd87ae2607374f4f6ca",
+  "reviewed_head_sha": "e9d4f446b8bf14dc44c857589a539742ab2691aa",
+  "reviewed_run_id": "r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T031700226228-review-of-wlsr-a-lost-session-is-a-derived-fact-e9d4f446b8bf"
+  },
+  "reviewer_run_id": "r-20261121T031700226228-review-of-wlsr-a-lost-session-is-a-derived-fact-e9d4f446b8bf",
+  "scope_note": "Delta review: base is the head the prior review read (8ce5592505); the node's own base is e689315bb7. The three changed paths are exactly the repair commit.",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 12,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:29:06.508486+00:00",
+  "total": 83
+}

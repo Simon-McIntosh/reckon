@@ -1,0 +1,98 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:_record_is_complete",
+    "reckon/crew/recovery_review_delivery.py:_review_delivery_verdict",
+    "reckon/crew/recovery_classification.py:_filed_review_record",
+    "reckon/crew/recovery_classification.py:classify_pointer",
+    "reckon/crew/obligations.py:_review_duty_detail",
+    "reckon/crew/stage_receipts.py:note_review_record",
+    "reckon/crew/review_records.py:_record_reads_complete",
+    "reckon/crew/recovery_review_dispatch.py:review_head_move",
+    "reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-a-figure-review-is-complete-by-its-verdict-lines-2d5be14d7451",
+      "recorded_at": "2026-11-21T10:14:03.534374+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T09:47:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "id": "a1c47f2e901",
+      "line": "517",
+      "severity": "non-blocking",
+      "text": "non-blocking: FIGURE_LINE_RE re-implements the RUBRIC <item>: <verdict> grammar the same module already owns as _PLAN_RUBRIC_LINE_RE at :1794, whose comment states its consumers read one compiled pattern; all six FIGURE_REVIEW_ITEMS names and all seven lines of the stored nova record match the owner's pattern exactly (no leading whitespace, letter-initial names), so this forks a grammar rather than extending it and the two now differ in leading-whitespace and case tolerance."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "id": "b2d58a3f712",
+      "line": "568",
+      "severity": "non-blocking",
+      "text": "non-blocking: the precedence rule that an existing item-map entry wins over a verdict line has no test -- the three added cases either omit rubric_items or carry no rubric_lines -- so replacing the blank check with an unconditional `stated[item] = verdict` keeps all 13 tests green while a line could silently overwrite a contradictory recorded verdict."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "id": "c3e69b4a823",
+      "line": "574",
+      "severity": "non-blocking",
+      "text": "non-blocking: when the record carries a per-figure `figures` map the `stated` map built from the verdict lines is discarded and the folded per-figure map returned, so a multi-figure record answered in lines is still refused every item; this is latent rather than active -- 9 of 552 stored figure records carry both shapes and 0 of those are incomplete at head."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "id": "d4f70c5b934",
+      "line": "510",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new comment narrates the prior defect (\"was read as carrying no verdict at all, and a complete review was refused naming every item\") where the repository's naming rules ask the mechanism the code enforces, so it should state what the fold guarantees rather than what once went wrong."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 2189513a to 2d5be14d; five commits touch four files (+158/-9) all inside the declared scope, the source change being a new figure_line_verdicts writer plus a blank-filling fold in figure_rubric_verdicts (reckon/crew/review.py:516-569) and the reader swap in _figure_missing_measures (reckon/crew/recovery_review_subject.py:1891), with the evidence fragment tabulating the three arms against their logs.",
+    "done_when": "the done_when names tests/test_a_figure_review_is_complete_by_its_own_rubric.py with three added cases and a base-revision negative control; the cases sit at :340, :348 and :357 and the manifest records 71 passed EXIT=0 in the after arm, with the negative control at base reading 2 failed and 0 ids the head arm fails.",
+    "goal": "the node's goal is to read a figure review as complete from its verdict lines; reckon/crew/review.py:522 parses the RUBRIC <item>: <verdict> lines and :567 folds them into the item map, and run against the real stored record r-20261114T144505738776-icm-iron-field-source.figure.at-a0479e6acdd7bf3ba29f4ebebe29ff642b0fe8b2.json the head reports no missing measure while a five-line copy of it reports exactly ['label_collision'].",
+    "manifest": "read in full; it carries both suite arms as JSON with revision, literal command, exit_status 0, completed true, failure_count 0 and log paths, one landing line, and a rubric self-check line per dimension, though its artifacts line calls 13 tests the after-suite figure when 13 is the single-file count and the after-suite log reads 71 passed.",
+    "write_paths": "the manifest declares five paths and all four changed paths -- reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_figure_review_is_complete_by_its_own_rubric.py and docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-figure-review-is-complete-by-its-verdict-lines.html -- are inside them, the fifth (docs/figures/...) correctly unused."
+  },
+  "item_verdicts_note": "see item_verdicts",
+  "justifications": {
+    "durability": "tests/test_a_figure_review_is_complete_by_its_own_rubric.py:340 and :348 redden at the base revision (negative-control.log, 2 failed), but the precedence rule at reckon/crew/review.py:568 -- an item map entry wins over a line -- has no assertion, so replacing that blank check with an unconditional overwrite leaves every test green.",
+    "evidence": "the three done_when cases are the tests at tests/test_a_figure_review_is_complete_by_its_own_rubric.py:340,348,357 and both arms' logs name their revision and EXIT=0, though the manifest's artifacts line conflates the 13-test single-file count with the 71-passed three-file arm.",
+    "fit": "the writer follows the module's Mapping-and-compiled-regex idiom, but the comment at reckon/crew/review.py:510-515 narrates a past defect (\"was read as carrying no verdict at all, and a complete review was refused\") where the repository's naming rules ask for the mechanism.",
+    "goal_fidelity": "reckon/crew/review.py:567 folds the parsed lines into the item map, and the real nova record reads complete at head while a five-line copy of it reports exactly ['label_collision'].",
+    "reuse": "reckon/crew/review.py:517 declares FIGURE_LINE_RE for the RUBRIC verdict grammar the same module already owns as _PLAN_RUBRIC_LINE_RE at :1794, whose comment states all its consumers read that one compiled pattern.",
+    "scope_discipline": "every path in git diff 2189513a..2d5be14d is one of the four declared write paths, so no fifth path is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a figure review as complete from its verdict lines; reckon/crew/review.py:522 parses the RUBRIC <item>: <verdict> lines and :567 folds them into the item map, and run against the real stored record r-20261114T144505738776-icm-iron-field-source.figure.at-a0479e6acdd7bf3ba29f4ebebe29ff642b0fe8b2.json the head reports no missing measure while a five-line copy of it reports exactly ['label_collision'].\nVERDICT done_when: the done_when names tests/test_a_figure_review_is_complete_by_its_own_rubric.py with three added cases and a base-revision negative control; the cases sit at :340, :348 and :357 and the manifest records 71 passed EXIT=0 in the after arm, with the negative control at base reading 2 failed and 0 ids the head arm fails.\nVERDICT write_paths: the manifest declares five paths and all four changed paths -- reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_figure_review_is_complete_by_its_own_rubric.py and docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-figure-review-is-complete-by-its-verdict-lines.html -- are inside them, the fifth (docs/figures/...) correctly unused.\nVERDICT manifest: read in full; it carries both suite arms as JSON with revision, literal command, exit_status 0, completed true, failure_count 0 and log paths, one landing line, and a rubric self-check line per dimension, though its artifacts line calls 13 tests the after-suite figure when 13 is the single-file count and the after-suite log reads 71 passed.\nVERDICT diff: read commit by commit from 2189513a to 2d5be14d; five commits touch four files (+158/-9) all inside the declared scope, the source change being a new figure_line_verdicts writer plus a blank-filling fold in figure_rubric_verdicts (reckon/crew/review.py:516-569) and the reader swap in _figure_missing_measures (reckon/crew/recovery_review_subject.py:1891), with the evidence fragment tabulating the three arms against their logs.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:_record_is_complete, reckon/crew/recovery_review_delivery.py:_review_delivery_verdict, reckon/crew/recovery_classification.py:_filed_review_record, reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/obligations.py:_review_duty_detail, reckon/crew/stage_receipts.py:note_review_record, reckon/crew/review_records.py:_record_reads_complete, reckon/crew/recovery_review_dispatch.py:review_head_move, reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 17\nSCORE reuse: 4\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:567 folds the parsed lines into the item map, and the real nova record reads complete at head while a five-line copy of it reports exactly ['label_collision'].\nJUSTIFICATION evidence: the three done_when cases are the tests at tests/test_a_figure_review_is_complete_by_its_own_rubric.py:340,348,357 and both arms' logs name their revision and EXIT=0, though the manifest's artifacts line conflates the 13-test single-file count with the 71-passed three-file arm.\nJUSTIFICATION scope_discipline: every path in git diff 2189513a..2d5be14d is one of the four declared write paths, so no fifth path is touched.\nJUSTIFICATION durability: tests/test_a_figure_review_is_complete_by_its_own_rubric.py:340 and :348 redden at the base revision (negative-control.log, 2 failed), but the precedence rule at reckon/crew/review.py:568 -- an item map entry wins over a line -- has no assertion, so replacing that blank check with an unconditional overwrite leaves every test green.\nJUSTIFICATION fit: the writer follows the module's Mapping-and-compiled-regex idiom, but the comment at reckon/crew/review.py:510-515 narrates a past defect (\"was read as carrying no verdict at all, and a complete review was refused\") where the repository's naming rules ask for the mechanism.\nJUSTIFICATION reuse: reckon/crew/review.py:517 declares FIGURE_LINE_RE for the RUBRIC verdict grammar the same module already owns as _PLAN_RUBRIC_LINE_RE at :1794, whose comment states all its consumers read that one compiled pattern.\nFINDING reckon/crew/review.py:517 non-blocking: FIGURE_LINE_RE re-implements the RUBRIC <item>: <verdict> grammar the same module already owns as _PLAN_RUBRIC_LINE_RE at :1794, whose comment states its consumers read one compiled pattern; all six FIGURE_REVIEW_ITEMS names and all seven lines of the stored nova record match the owner's pattern exactly (no leading whitespace, letter-initial names), so this forks a grammar rather than extending it and the two now differ in leading-whitespace and case tolerance.\nFINDING reckon/crew/review.py:568 non-blocking: the precedence rule that an existing item-map entry wins over a verdict line has no test -- the three added cases either omit rubric_items or carry no rubric_lines -- so replacing the blank check with an unconditional `stated[item] = verdict` keeps all 13 tests green while a line could silently overwrite a contradictory recorded verdict.\nFINDING reckon/crew/review.py:574 non-blocking: when the record carries a per-figure `figures` map the `stated` map built from the verdict lines is discarded and the folded per-figure map returned, so a multi-figure record answered in lines is still refused every item; this is latent rather than active -- 9 of 552 stored figure records carry both shapes and 0 of those are incomplete at head.\nFINDING reckon/crew/review.py:510 non-blocking: the new comment narrates the prior defect (\"was read as carrying no verdict at all, and a complete review was refused naming every item\") where the repository's naming rules ask the mechanism the code enforces, so it should state what the fold guarantees rather than what once went wrong.\n",
+  "reuse_search": {
+    "added_definitions": "FIGURE_LINES_KEY (reckon/crew/review.py:516), FIGURE_LINE_RE (:517) and figure_line_verdicts (:522); no other product definition is added",
+    "judgement": "the RUBRIC-line grammar already has an owner in the same module, _PLAN_RUBRIC_LINE_RE at :1794, whose comment says the plan-review parser, the health parser and the delivered-report check all read that one compiled pattern; the addition duplicates it rather than extending it, so reuse scores 4."
+  },
+  "review_run_id": "r-20261121T094515927021-review-of-wlsr-a-figure-review-is-complete-by-its-verdict-lines-2d5be14d7451",
+  "reviewed_base_sha": "2189513a6c94cef3cffdffc756a31d4132ca67d9",
+  "reviewed_head_sha": "2d5be14d7451634d78f73bac19e36a9c5a7dbf77",
+  "reviewed_run_id": "r-20261121T090238596926-wlsr-a-figure-review-is-complete-by-its-verdict-lines",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "derivation": "The reviewed run's baseline_suite (2189513a6c94cef3cffdffc756a31d4132ca67d9, failure_count 0, completed true, exit_status 0) and after_suite (2d5be14d7451634d78f73bac19e36a9c5a7dbf77, failure_count 0, completed true, exit_status 0) ran the same literal command over the same three test files and read 68 passed and 71 passed respectively, so after-minus-baseline is empty: added_failure_count 0 with an empty added_failure_ids.",
+    "reviewed_manifest_suite_fields": "baseline_suite and after_suite are both present with revision, command, exit_status, log_path, completed true and empty failure_ids; negative_control_log is the bare path to negative-control.log, whose last line reads EXIT=1 and which records 2 failed, 11 passed at 2189513a."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:00:15.939371+00:00",
+  "total": 93
+}

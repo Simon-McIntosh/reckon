@@ -125,9 +125,22 @@ def answer(reader, home, rows):
         return store.durable_rows(PROJECT)
 
 
+def reader_row(row):
+    """The record a ledger reader answers, derived from the row the file holds.
+
+    ``store_write`` records what happened at one promotion rather than what the
+    run is, so a reader answers the durable record and the field is not part of
+    it — whichever cache answered the read. The committed file keeps the field
+    (``test_serialisation_is_stable_and_keeps_every_field`` and the
+    ``use_index=False`` reads below hold that half), so the fixture carries it
+    and every reader is asserted not to return it.
+    """
+    return {key: value for key, value in row.items() if key != "store_write"}
+
+
 def expected(reader, rows):
     if reader in {"load", "runs", "records"}:
-        return rows
+        return [reader_row(row) for row in rows]
     if reader == "death":
         return {row["run_id"]: {**row["agent"], "role": row["role"]} for row in rows}
     if reader == "carryover":
@@ -182,7 +195,7 @@ def test_identical_duplicate_is_read_once(corpus, monkeypatch):
         return original_read(source, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", read_once)
-    assert ledger.load(PROJECT)[0]["runs"] == rows
+    assert ledger.load(PROJECT)[0]["runs"] == expected("load", rows)
     assert reads == [path.parent / "runs" / f"{rows[0]['run_id']}.json"]
 
 
@@ -239,7 +252,7 @@ def test_run_files_survive_without_an_aggregate_run_list(corpus, aggregate_state
         del envelope["data"]["runs"]
         path.write_text(json.dumps(envelope))
     data, version = ledger.load(PROJECT)
-    assert data["runs"] == rows
+    assert data["runs"] == expected("load", rows)
     assert version == (0 if aggregate_state == "absent" else 7)
     with run_store.RunStore() as store:
         assert (
@@ -254,7 +267,7 @@ def test_bad_run_file_is_not_silently_omitted(corpus, payload, caplog):
     path = place_rows(rows, "files").parent / "runs" / f"{rows[0]['run_id']}.json"
     path.write_text(payload)
     data, _version = ledger.load(PROJECT)
-    assert data["runs"] == rows[1:]
+    assert data["runs"] == expected("load", rows[1:])
     assert ledger.damaged_run_records(PROJECT) == (path,)
     assert str(path) in caplog.text
 
@@ -387,5 +400,5 @@ def test_promotion_order_survives_a_split(corpus, placement):
         row["completed_at"] = f"2020-01-{day:02d}T00:00:00Z"
     rows.reverse()
     place_rows(rows, placement)
-    assert ledger.runs(PROJECT) == rows
-    assert ledger.runs(PROJECT, limit=1) == rows[-1:]
+    assert ledger.runs(PROJECT) == expected("runs", rows)
+    assert ledger.runs(PROJECT, limit=1) == expected("runs", rows)[-1:]

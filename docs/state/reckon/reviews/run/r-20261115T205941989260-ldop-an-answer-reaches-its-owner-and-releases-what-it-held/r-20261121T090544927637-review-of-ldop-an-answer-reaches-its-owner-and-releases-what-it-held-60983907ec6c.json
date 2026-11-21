@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/admission/release.py:536 advance_waiting_requests reached from reckon/crew/admission/selection.py:133",
+    "reckon/crew/obligations.py:4833 _obligations_view reached from reckon/hooks/coordinator_obligations.py:199"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-ldop-an-answer-reaches-its-owner-and-releases-what-it-held-60983907ec6c",
+      "recorded_at": "2026-11-21T10:13:33.990105+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T09:41:28Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-ldop-an-answer-reaches-its-owner-and-releases-what-it-held-60983907ec6c",
+      "recorded_at": "2026-11-21T10:13:32.681442+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/lead-decisions-reach-one-place/s3.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the done_when names this fragment as where the failing negative-control run is logged, and no such file exists at the reviewed head (the directory holds only s1.html and ldop-every-decision-waiting-on-the-lead-is-one-read-codex.html), so a declared evidence artefact is missing and the reproduction survives only in the run directory's negative-control-base.log."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "249",
+      "severity": "non-blocking",
+      "text": "non-blocking: the crew answer is written with a bare write_json_atomically(decision_path(...)) instead of reckon/crew/lead_decisions.py:198 close_decision_at, which owns persisting a decision's recorded answer; the addition duplicates that owner rather than extending it, so a change to the answer store has two writers to update."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "463",
+      "severity": "non-blocking",
+      "text": "non-blocking: release_answered_holds re-implements the loop that reckon/crew/lead_decisions.py:381 release_withdrawn_holds owns, reaching into the private queue_edit._change_hold instead of the public queue_edit.release, and it leaves the in-memory pointer at phase held where the sibling writes the released phase back, so a request released here is invisible to the rest of the same admission pass."
+    },
+    {
+      "file": "tests/test_a_decision_answer_releases_what_it_held.py",
+      "line": "133",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert saved[\"choice\"] == \"route\" and the answer_note line following it compare the call's return value against the value the test itself passed in, so they stay green for a regression that returns the input without recording it; the persistence guard is the separate stored[\"choice\"] assertion at line 137."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: RELEASE_FROM_PHASES names a tuple nothing in the module reads, and the phases it restates are enforced by queue_edit._change_hold, so the constant is a second statement of a rule that can drift from the one that acts on it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit 60983907ec against base 5417b373; it adds a 493-line module, a 258-line test, three lines wiring the duty into reckon/crew/obligations.py:4833, and a six-line hook at reckon/crew/admission/release.py:536-541.",
+    "done_when": "the done_when asks for four temporary-crew-home behaviours and a negative control logged to docs/evidence/fragments/lead-decisions-reach-one-place/s3.html; tests/test_a_decision_answer_releases_what_it_held.py:125,166,190,241 assert the four behaviours and gate.log records 4 passed EXIT=0, but that fragment is absent from the tree at the reviewed head.",
+    "goal": "the goal is \"an answer reaches its owner and releases what it held\"; reckon/crew/decision_answers.py:191 accepts an answer only from the session holding the presentation claim and stores choice, note and time on the question record, reckon/crew/decision_answers.py:405 gives the owning session one duty row, and reckon/crew/admission/release.py:539 releases the recorded holds inside the admission pass.",
+    "manifest": "read in full; it names commit 60983907ec, the gate command with 4 passed EXIT=0, both suite arms at 58 passed EXIT=0 with empty failure_ids, both negative-control logs, and states the base arm fails with 'held' == 'queued' while the head arm passes.",
+    "write_paths": "the declared paths are reckon, tests, the plan fragment directory and file, and the plan figure directory; the delivered diff touches only reckon/crew/admission/release.py, reckon/crew/decision_answers.py, reckon/crew/obligations.py and tests/test_a_decision_answer_releases_what_it_held.py, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_decision_answer_releases_what_it_held.py:158-163 asks the pass whether each pointer left hold and reads the phase back from disk, and lines 176-187 show a refused answer leaving the question bytes, the monitor stream and the pointer untouched.",
+    "evidence": "the gate, both suite arms and both negative-control logs are on disk with their literal commands and EXIT lines, but docs/evidence/fragments/lead-decisions-reach-one-place/s3.html, the file the done_when names for the failing run, exists nowhere in the tree at the reviewed head.",
+    "fit": "reckon/crew/decision_answers.py follows the surrounding lazy-import and single-store idiom and passes ruff check and ruff format --check, but line 46 defines RELEASE_FROM_PHASES and never reads it.",
+    "goal_fidelity": "reckon/crew/decision_answers.py:191-260 refuses every non-presenter before any write and stores the answer, and reckon/crew/decision_answers.py:463 lifts the holds the answer recorded.",
+    "reuse": "reckon/crew/decision_answers.py extends the obligations view, the run watch stream, the plan-lock owner and the atomic store, but line 249 repeats the answer write that reckon/crew/lead_decisions.py:198 close_decision_at owns and line 463 repeats the release loop that reckon/crew/lead_decisions.py:381 release_withdrawn_holds owns.",
+    "scope_discipline": "every changed path lies inside reckon/ or tests/, though reckon/crew/admission/release.py:5 gains a blank line the change does not need."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"an answer reaches its owner and releases what it held\"; reckon/crew/decision_answers.py:191 accepts an answer only from the session holding the presentation claim and stores choice, note and time on the question record, reckon/crew/decision_answers.py:405 gives the owning session one duty row, and reckon/crew/admission/release.py:539 releases the recorded holds inside the admission pass.\nVERDICT done_when: the done_when asks for four temporary-crew-home behaviours and a negative control logged to docs/evidence/fragments/lead-decisions-reach-one-place/s3.html; tests/test_a_decision_answer_releases_what_it_held.py:125,166,190,241 assert the four behaviours and gate.log records 4 passed EXIT=0, but that fragment is absent from the tree at the reviewed head.\nVERDICT write_paths: the declared paths are reckon, tests, the plan fragment directory and file, and the plan figure directory; the delivered diff touches only reckon/crew/admission/release.py, reckon/crew/decision_answers.py, reckon/crew/obligations.py and tests/test_a_decision_answer_releases_what_it_held.py, all inside them.\nVERDICT manifest: read in full; it names commit 60983907ec, the gate command with 4 passed EXIT=0, both suite arms at 58 passed EXIT=0 with empty failure_ids, both negative-control logs, and states the base arm fails with 'held' == 'queued' while the head arm passes.\nVERDICT diff: read the single commit 60983907ec against base 5417b373; it adds a 493-line module, a 258-line test, three lines wiring the duty into reckon/crew/obligations.py:4833, and a six-line hook at reckon/crew/admission/release.py:536-541.\nCALL_SITES: reckon/crew/admission/release.py:536 advance_waiting_requests reached from reckon/crew/admission/selection.py:133, reckon/crew/obligations.py:4833 _obligations_view reached from reckon/hooks/coordinator_obligations.py:199\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/decision_answers.py:191-260 refuses every non-presenter before any write and stores the answer, and reckon/crew/decision_answers.py:463 lifts the holds the answer recorded.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate, both suite arms and both negative-control logs are on disk with their literal commands and EXIT lines, but docs/evidence/fragments/lead-decisions-reach-one-place/s3.html, the file the done_when names for the failing run, exists nowhere in the tree at the reviewed head.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path lies inside reckon/ or tests/, though reckon/crew/admission/release.py:5 gains a blank line the change does not need.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_decision_answer_releases_what_it_held.py:158-163 asks the pass whether each pointer left hold and reads the phase back from disk, and lines 176-187 show a refused answer leaving the question bytes, the monitor stream and the pointer untouched.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/decision_answers.py follows the surrounding lazy-import and single-store idiom and passes ruff check and ruff format --check, but line 46 defines RELEASE_FROM_PHASES and never reads it.\nSCORE reuse: 8\nJUSTIFICATION reuse: reckon/crew/decision_answers.py extends the obligations view, the run watch stream, the plan-lock owner and the atomic store, but line 249 repeats the answer write that reckon/crew/lead_decisions.py:198 close_decision_at owns and line 463 repeats the release loop that reckon/crew/lead_decisions.py:381 release_withdrawn_holds owns.\nFINDING docs/evidence/fragments/lead-decisions-reach-one-place/s3.html:1 blocking: the done_when names this fragment as where the failing negative-control run is logged, and no such file exists at the reviewed head (the directory holds only s1.html and ldop-every-decision-waiting-on-the-lead-is-one-read-codex.html), so a declared evidence artefact is missing and the reproduction survives only in the run directory's negative-control-base.log.\nFINDING reckon/crew/decision_answers.py:249 non-blocking: the crew answer is written with a bare write_json_atomically(decision_path(...)) instead of reckon/crew/lead_decisions.py:198 close_decision_at, which owns persisting a decision's recorded answer; the addition duplicates that owner rather than extending it, so a change to the answer store has two writers to update.\nFINDING reckon/crew/decision_answers.py:463 non-blocking: release_answered_holds re-implements the loop that reckon/crew/lead_decisions.py:381 release_withdrawn_holds owns, reaching into the private queue_edit._change_hold instead of the public queue_edit.release, and it leaves the in-memory pointer at phase held where the sibling writes the released phase back, so a request released here is invisible to the rest of the same admission pass.\nFINDING tests/test_a_decision_answer_releases_what_it_held.py:133 non-blocking: assert saved[\"choice\"] == \"route\" and the answer_note line following it compare the call's return value against the value the test itself passed in, so they stay green for a regression that returns the input without recording it; the persistence guard is the separate stored[\"choice\"] assertion at line 137.\nFINDING reckon/crew/decision_answers.py:46 non-blocking: RELEASE_FROM_PHASES names a tuple nothing in the module reads, and the phases it restates are enforced by queue_edit._change_hold, so the constant is a second statement of a rule that can drift from the one that acts on it.\n",
+  "review_run_id": "r-20261121T090544927637-review-of-ldop-an-answer-reaches-its-owner-and-releases-what-it-held-60983907ec6c",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "60983907ec6cd986a16f96348c7d5a45b30c8c3e",
+  "reviewed_run_id": "r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:05:48.550589+00:00",
+  "total": 89
+}

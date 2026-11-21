@@ -1,0 +1,130 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "payload['time_budget'] == '35m'",
+      "fails_if": "The verb's answer stops echoing the edited budget; the literal is the value handed in, so this is a weak echo check rather than an independent oracle.",
+      "file": "tests/test_queue_verbs.py",
+      "line": 246
+    },
+    {
+      "assertion": "record['node']['time_budget'] == '35m'",
+      "fails_if": "Removing the time_budget write in queue_edit.py leaves 20m stored and reddens this.",
+      "file": "tests/test_queue_verbs.py",
+      "line": 248
+    },
+    {
+      "assertion": "record['node']['over_fence_note'] == 'budget 35m exceeds the resolved fence 25m'",
+      "fails_if": "Reverting reckon/crew/queue_edit.py:512 drops the key and reddens this with a KeyError; the expected text is the literal reckon/crew/node.py:1552 produces.",
+      "file": "tests/test_queue_verbs.py",
+      "line": 249
+    },
+    {
+      "assertion": "record['node']['time_budget'] == '20m'",
+      "fails_if": "A lowered budget that is not stored keeps 35m and reddens this.",
+      "file": "tests/test_queue_verbs.py",
+      "line": 258
+    },
+    {
+      "assertion": "record['node']['over_fence_note'] == ''",
+      "fails_if": "Preserving the old note instead of the recomputed one leaves a 35m note on a request declaring 20m; reckon/crew/node.py:1540 is what clears it.",
+      "file": "tests/test_queue_verbs.py",
+      "line": 259
+    }
+  ],
+  "assertion_independence": "No assertion compares a call result against a variable the test itself passed in; the note assertions compare against literals reckon/crew/node.py:1552 produces, and the budget assertions compare against the literals handed in, which is a weak echo check rather than a self-comparison.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3141 -> queue_edit.edit",
+    "reckon/mcp_crew_actions.py:308 -> crew_queue_edit (MCP crew action)",
+    "reckon/crew/dispatching/requests.py:93 -> TaskNode.as_dict (a queued dispatch stores the same note)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:21:42Z",
+  "evidence_limits": [
+    "No suite rerun; the reviewed run's own baseline_suite and after_suite logs were read at 0 failures on both arms, so no failure ids are counted as added.",
+    "The queue-verb gate logs name host, revision, tree, command, module.__file__, cwd and slurm_job_id_in_env <unset> but not the all_debug partition or a job id; those appear only in the manifest's artifacts line.",
+    "The ruff check and ruff format --check obligations are stated in the manifest and fragment but no log of either run is stored.",
+    "The fragment's head suite timing (36.55s) does not match the after_suite log at the reviewed head (35.61s), recorded as a non-blocking finding."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-verbs.html",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites the head arm as revision c88854f81763df3724e6bde1577cb48761c1c1dc (job 1326336) for logs/head-queue-verbs.log, but that log's header names revision 3630be724acbfc5bfa65659a3abcaf1b344ff4ae and the manifest names job 1326365 for its head arm, so a reader cannot reconcile the quoted arm with the cited log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-verbs.html",
+      "line": "67",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suite head figure is quoted as 58 passed in 36.55s, but 36.55s is the after-arm summary at c88854f817, while the after_suite arm the manifest records at the reviewed head 3630be724acbfc5bfa65659a3abcaf1b344ff4ae reads 58 passed in 35.61s, so the quoted metric belongs to an arm the record does not cite."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "512",
+      "severity": "non-blocking",
+      "text": "non-blocking: the note is copied from the node re-judged before the pointer lock while the stored node_block is re-read under it, so a concurrent edit that changes time_budget between the read and the lock can store a budget beside a note describing a different budget."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against the base: c88854f817 adds six lines at reckon/crew/queue_edit.py:512 persisting node.over_fence_note and rewrites tests/test_queue_verbs.py:226-260 to the recorded-note rule plus a budget-lowering arm; 3630be724a adds the 80-line evidence fragment.",
+    "done_when": "Read the dispatch's evidence fence and compared it with logs/base-queue-verbs.log and logs/head-queue-verbs.log, which carry revision, tree, command, module.__file__, cwd, slurm_job_id_in_env <unset> and bare EXIT lines, and with the fragment, which quotes the base failing id beside the head run; the log itself names neither all_debug nor a job id.",
+    "goal": "Read the node goal in the reviewed prompt.txt ('Make tests/test_queue_verbs.py pass in full on the primary branch'); logs/head-queue-verbs.log records 15 passed, EXIT=0 at 3630be724acbfc5bfa65659a3abcaf1b344ff4ae against 1 failed, 14 passed, EXIT=1 at 7191ae15e776ab99300334a96cc53c71754c3acf.",
+    "manifest": "Read; it reports status complete with commits c88854f817 and 3630be724a, 15 of 15 at head against 1 failed/14 passed at base, a named negative control log, and baseline_suite and after_suite as inline JSON with full revisions and zero failures.",
+    "write_paths": "Read the reviewed manifest's declared paths (reckon, tests, the fragment directory and file, docs/figures/queued-work-needs-no-workaround/qwnw-red-file-queue-verbs); every path in 7191ae15..3630be7 sits inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_verbs.py:249 reddens with a KeyError if reckon/crew/queue_edit.py:512 is reverted, and tests/test_queue_verbs.py:259 reddens if the recomputed note is not cleared on a lowered budget.",
+    "evidence": "logs/head-queue-verbs.log records revision, tree, module.__file__ path, cwd, slurm_job_id_in_env <unset> and EXIT=0 for the named file, but the all_debug job identity and the ruff results are claims in the manifest rather than recorded runs.",
+    "fit": "reckon/crew/queue_edit.py:509-512 follows the surrounding field-write idiom of the same lock block and reuses the attribute named at reckon/crew/node.py:810; tests/test_queue_verbs.py:226 names the behaviour the case now asserts.",
+    "goal_fidelity": "tests/test_queue_verbs.py passes 15 of 15 at 3630be724acbfc5bfa65659a3abcaf1b344ff4ae per logs/head-queue-verbs.log (EXIT=0) against 1 failed, 14 passed at base, so the goal's passing file is delivered.",
+    "reuse": "The capability search over reckon/crew found reckon/crew/node.py:1540-1552 owning the note's computation and reckon/crew/node.py:843 already serialising it, so the change reads that owner's value rather than re-deriving the fence rule.",
+    "scope_discipline": "Every path in 7191ae15..3630be7 lies inside the declared write paths, though reckon/crew/queue_edit.py:512 changes product behaviour the literal goal does not by itself require."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_queue_verbs.py pass in full; logs/head-queue-verbs.log records 15 passed, EXIT=0 at 3630be724acbfc5bfa65659a3abcaf1b344ff4ae against 1 failed, 14 passed, EXIT=1 at 7191ae15e776ab99300334a96cc53c71754c3acf.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset and output on shared storage, each cause carrying a product/test verdict, the import arm adding no failure, and the base failing ids logged in the fragment; logs/base-queue-verbs.log and logs/head-queue-verbs.log carry revision, tree, command, module.__file__, cwd, slurm_job_id_in_env <unset> and bare EXIT lines, and the fragment quotes the failing id beside the head run.\nVERDICT write_paths: the manifest declares reckon, tests, the fragment directory and file and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-queue-verbs; every path in 7191ae15..3630be7 sits inside them.\nVERDICT manifest: read; it reports status complete with commits c88854f817 and 3630be724a, 15 of 15 at head against 1 failed/14 passed at base, a named negative control log, and both suite arms as inline JSON with full revisions and zero failures.\nVERDICT diff: read both commits against the base; c88854f817 adds six lines at reckon/crew/queue_edit.py:512 and rewrites tests/test_queue_verbs.py:226-260, and 3630be724a adds the 80-line evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:3141 -> queue_edit.edit, reckon/mcp_crew_actions.py:308 -> crew_queue_edit, reckon/crew/dispatching/requests.py:93 -> TaskNode.as_dict\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_queue_verbs.py passes 15 of 15 at 3630be724acbfc5bfa65659a3abcaf1b344ff4ae per logs/head-queue-verbs.log, so the named file the goal requires is green.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-queue-verbs.log records revision, tree, module.__file__, cwd, slurm_job_id_in_env <unset> and EXIT=0 for the named file, but the all_debug job identity and the ruff results are claims in the manifest rather than recorded runs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in 7191ae15..3630be7 (reckon/crew/queue_edit.py, tests/test_queue_verbs.py, the fragment) is inside the declared write paths, though reckon/crew/queue_edit.py:512 changes product behaviour the literal goal does not by itself require.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_queue_verbs.py:249 reddens with a KeyError if reckon/crew/queue_edit.py:512 is reverted, and tests/test_queue_verbs.py:259 reddens if the recomputed note is not cleared on a lowered budget.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_edit.py:509-512 follows the surrounding field-write idiom of the same lock block and reuses the attribute named at reckon/crew/node.py:810, and tests/test_queue_verbs.py:226 names the behaviour the case now asserts.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/crew found reckon/crew/node.py:1540-1552 owning the note's computation and reckon/crew/node.py:843 already serialising it, so the change reads that owner's value rather than re-deriving the fence rule.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-verbs.html:58 non-blocking: the fragment cites the head arm as c88854f81763df3724e6bde1577cb48761c1c1dc and job 1326336 for logs/head-queue-verbs.log, whose header names revision 3630be724acbfc5bfa65659a3abcaf1b344ff4ae with the manifest naming job 1326365, so the quoted arm cannot be reconciled with the cited log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-verbs.html:67 non-blocking: the suite head figure is quoted as 58 passed in 36.55s while the after_suite arm recorded at the reviewed head 3630be724acbfc5bfa65659a3abcaf1b344ff4ae reads 58 passed in 35.61s, so the quoted metric belongs to the earlier c88854f817 arm.\nFINDING reckon/crew/queue_edit.py:512 non-blocking: the note is copied from the node re-judged before the pointer lock while the stored node_block is re-read under it, so a concurrent budget edit can pair a stored budget with a note describing a different budget.",
+  "review_run_id": "r-20261118T132005813610-review-of-qwnw-red-file-queue-verbs-3630be724acb",
+  "reviewed_base_sha": "7191ae15e776ab99300334a96cc53c71754c3acf",
+  "reviewed_head_sha": "3630be724acbfc5bfa65659a3abcaf1b344ff4ae",
+  "reviewed_run_id": "r-20261118T062822986614-qwnw-red-file-queue-verbs",
+  "reviewed_worker_commits": [
+    "c88854f81763df3724e6bde1577cb48761c1c1dc",
+    "3630be724acbfc5bfa65659a3abcaf1b344ff4ae"
+  ],
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062822986614-qwnw-red-file-queue-verbs/after_suite-1795007653950609908.log",
+      "revision": "3630be724acbfc5bfa65659a3abcaf1b344ff4ae",
+      "summary": "58 passed in 35.61s"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062822986614-qwnw-red-file-queue-verbs/baseline_suite-1795007322766609242.log",
+      "revision": "7191ae15e776ab99300334a96cc53c71754c3acf",
+      "summary": "58 passed in 35.66s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:41:22.602028+00:00",
+  "total": 111
+}

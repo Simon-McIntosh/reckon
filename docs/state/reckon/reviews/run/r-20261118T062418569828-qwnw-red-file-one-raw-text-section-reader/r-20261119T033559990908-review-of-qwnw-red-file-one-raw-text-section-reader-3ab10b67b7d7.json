@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795056777628905037.log at 42fe90d0 records '58 passed' EXIT=0 with no FAILED line, after_suite-1795056854687782268.log at 045cdcb0 records '58 passed' EXIT=0 with no FAILED line, so the set difference between the two arms is empty; the doccheck-importing arm records the same single id tests/test_no_source_names_the_retired_field.py::test_no_reckon_source_names_the_retired_field at both importer-arm-base.log and importer-arm-head.log, so it adds none either.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/doccheck.py:1705 (audit_html calls _write_paths_sentence_findings)",
+    "reckon/_store.py:827 (_unparsed_section_warnings calls _authored_child_counts)",
+    "reckon/_store.py:2584 (_plan_text_digest calls plan_text_projection)",
+    "reckon/crew/promotion_scope.py:1979 (_verified_plan_text_projection calls plan_text_projection)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:44:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062418569828-qwnw-red-file-one-raw-text-section-reader/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires both suite arms recorded as inline JSON carrying full 40-character revisions, a negative-control log and a per-cause product-or-test verdict for each base failure, but the manifest ends at test_logs with none of those keys; the measurements exist at baseline_suite-1795056777628905037.log, after_suite-1795056854687782268.log and negative-control-base.log and the fragment restates them, so the record is readable but not in the shape its done_when names."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1084",
+      "severity": "non-blocking",
+      "text": "non-blocking: the prefilter '\"write path\" not in authored.lower()' is stricter than the label regex it guards ('^write\\s+paths?\\b'), so a section whose paragraph opens 'Write  Paths:' or 'Write&nbsp;paths:' matched the label at base and is now skipped before the warning at reckon/doccheck.py:1097 can fire; no test covers either spelling, so the warning silently loses cases a whitespace variant of the same sentence used to reach."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-raw-text-section-reader.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the row labels the 32-passed arm 'all_debug job', but the log it cites (scoped-gate-1795056634921064302.log:2-4) records only host 98dci4-clu-3141 and a /tmp landing tree, with no partition and no SLURM_JOB_ID record, so nothing on disk shows the done_when's all_debug / unset-job-id execution condition."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against 42fe90d0; 045cdcb0 rewrites _write_paths_sentence_findings onto _plan_html.authored_section_headings, threads a marker parameter into _AuthoredChildCounter and swaps the store's two data-reckon literals for _plan_html.RECKON_ATTRIBUTE, 3ab10b67 adds the 71-line evidence fragment, and nothing falls outside the declared scope.",
+    "done_when": "the done_when asks for the file passing in full as a job on all_debug with SLURM_JOB_ID unset, each base failure with a product-or-test verdict, both arms as inline JSON carrying 40-character revisions, and a negative control; the two arms exist on disk (scoped-gate-1795056634921064302.log, baseline_suite-1795056777628905037.log, after_suite-1795056854687782268.log) and negative-control-base.log records 2 failed EXIT=1 at 42fe90d0, but manifest.md:16 stops at test_logs with no baseline_suite, after_suite, negative_control_log or per-cause list and no log names the all_debug partition.",
+    "goal": "the goal is to make tests/test_one_raw_text_section_reader.py pass in full on the primary branch; 045cdcb0 reworks reckon/doccheck.py:1049 and reckon/_store.py:791 and scoped-gate-1795056634921064302.log records 32 passed at 045cdcb0, so the file the goal names passes and only its landing is promotion's work.",
+    "manifest": "read the reviewed run's manifest.md; it reports status complete, commits 045cdcb0 and 3ab10b67, the four changed paths, and tests/test_one_raw_text_section_reader.py with scoped-gate-1795056634921064302.log, but the arm JSON, negative control and per-cause verdicts the done_when names are absent.",
+    "write_paths": "the declared paths are reckon, tests, the plan's fragment directory, this node's fragment and its figure directory; all four delivered paths (reckon/doccheck.py, reckon/_store.py, tests/test_one_raw_text_section_reader.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-raw-text-section-reader.html) are inside them."
+  },
+  "justifications": {
+    "durability": "the two cases of tests/test_one_raw_text_section_reader.py fail at base in negative-control-base.log and pass at head, but the prefilter added at reckon/doccheck.py:1084 is covered by no case.",
+    "evidence": "manifest.md:14 asserts the 32-passed all_debug arm while the log header at scoped-gate-1795056634921064302.log:1-4 names only revision, host, tree and command and the manifest carries no baseline_suite or after_suite JSON.",
+    "fit": "the rewrite resolves through _plan_html like its neighbours (reckon/_store.py:2310) and keeps the module's function-local import idiom (reckon/_store.py:2500).",
+    "goal_fidelity": "reckon/doccheck.py:1080 now takes each section's identity from the plan parser and tests/test_one_raw_text_section_reader.py reads 32 passed at 045cdcb0 in scoped-gate-1795056634921064302.log, which is the deliverable the goal names.",
+    "reuse": "both added behaviours extend owners rather than fork them: _plan_html.authored_section_headings (reckon/_plan_html.py:1098) and _plan_html.RECKON_ATTRIBUTE (reckon/_plan_html.py).",
+    "scope_discipline": "every path in 045cdcb0 and 3ab10b67 sits under the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_one_raw_text_section_reader.py pass in full on the primary branch, and 045cdcb0 reworks reckon/doccheck.py:1049 with scoped-gate-1795056634921064302.log recording 32 passed at 045cdcb0.\nVERDICT done_when: the done_when asks for the file passing in full as a job on all_debug with SLURM_JOB_ID unset, both arm JSONs, a negative control and a per-cause verdict, and while the arms and negative-control-base.log are on disk, manifest.md:16 stops at test_logs and carries none of the named JSON, control or cause fields.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and this node's fragment and figure directory, and all four delivered paths sit inside them.\nVERDICT manifest: read manifest.md at the reviewed run, which reports status complete, commits 045cdcb0 and 3ab10b67, the four changed paths and scoped-gate-1795056634921064302.log, but no baseline_suite, after_suite, negative_control_log or per-cause list.\nVERDICT diff: read both commits against 42fe90d0, where 045cdcb0 rewrites _write_paths_sentence_findings onto _plan_html.authored_section_headings and replaces _store's two data-reckon literals with _plan_html.RECKON_ATTRIBUTE, and 3ab10b67 adds the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/doccheck.py:1705 (audit_html), reckon/_store.py:827 (_unparsed_section_warnings), reckon/_store.py:2584 (_plan_text_digest), reckon/crew/promotion_scope.py:1979 (_verified_plan_text_projection)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:1080 now takes each section's identity from the plan parser and tests/test_one_raw_text_section_reader.py reads 32 passed at 045cdcb0, which is the deliverable the goal names.\nSCORE evidence: 12\nJUSTIFICATION evidence: manifest.md:14 asserts the 32-passed all_debug arm while scoped-gate-1795056634921064302.log:1-4 names only revision, host, tree and command and the manifest carries no arm JSON.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in 045cdcb0 and 3ab10b67 sits under the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\nSCORE durability: 15\nJUSTIFICATION durability: the two cases of tests/test_one_raw_text_section_reader.py fail at base in negative-control-base.log and pass at head, but the prefilter added at reckon/doccheck.py:1084 is covered by no case.\nSCORE fit: 18\nJUSTIFICATION fit: the rewrite resolves through _plan_html like its neighbours (reckon/_store.py:2310) and keeps the module's function-local import idiom (reckon/_store.py:2500).\nSCORE reuse: 20\nJUSTIFICATION reuse: both added behaviours extend owners rather than fork them: _plan_html.authored_section_headings (reckon/_plan_html.py:1098) and _plan_html.RECKON_ATTRIBUTE (reckon/_plan_html.py).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062418569828-qwnw-red-file-one-raw-text-section-reader/manifest.md:16 non-blocking: the done_when requires both suite arms recorded as inline JSON carrying full 40-character revisions, a negative-control log and a per-cause product-or-test verdict for each base failure, but the manifest ends at test_logs with none of those keys; the measurements exist at baseline_suite-1795056777628905037.log, after_suite-1795056854687782268.log and negative-control-base.log and the fragment restates them, so the record is readable but not in the shape its done_when names.\nFINDING reckon/doccheck.py:1084 non-blocking: the prefilter '\"write path\" not in authored.lower()' is stricter than the label regex it guards ('^write\\s+paths?\\b'), so a section whose paragraph opens 'Write  Paths:' or 'Write&nbsp;paths:' matched the label at base and is now skipped before the warning at reckon/doccheck.py:1097 can fire; no test covers either spelling, so the warning silently loses cases a whitespace variant of the same sentence used to reach.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-raw-text-section-reader.html:39 non-blocking: the row labels the 32-passed arm 'all_debug job', but the log it cites (scoped-gate-1795056634921064302.log:2-4) records only host 98dci4-clu-3141 and a /tmp landing tree, with no partition and no SLURM_JOB_ID record, so nothing on disk shows the done_when's all_debug / unset-job-id execution condition.\n",
+  "review_node": "review-of-qwnw-red-file-one-raw-text-section-reader-3ab10b67b7d7",
+  "review_run_id": "r-20261119T033559990908-review-of-qwnw-red-file-one-raw-text-section-reader-3ab10b67b7d7",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_base_sha_source": "committed run record and the reviewed run's orientation_base_sha",
+  "reviewed_head_sha": "3ab10b67b7d719046da7865b78ac85e8f54acbf4",
+  "reviewed_run_id": "r-20261118T062418569828-qwnw-red-file-one-raw-text-section-reader",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:15:00+00:00",
+  "total": 100
+}

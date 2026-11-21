@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite is baseline-arm.log, 58 passed with a bare EXIT=0 at eee07f8a5e18a6d5d98b26951db09a1504806918 and no failure id; after_suite is after-arm.log, 58 passed EXIT=0 at 11a9aa9cfb12aa08b2552b340c214a59ee4c8e09 and no failure id; the set difference of the two id lists is empty.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:5237 (_with_action_form projects the duties owed)",
+    "reckon/crew/obligations.py:5238 (_with_action_form projects the acknowledged list)",
+    "reckon/crew/obligation_snapshot.py:2345 (the slice a sweep publishes calls _with_action_form)",
+    "reckon/crew/obligation_snapshot.py:2346 (the same slice's acknowledged list)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:59:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tier-none-run-owes-no-review.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states both arms are jobs with SLURM_JOB_ID unset, but merged-gate-final.log:4 and scoped-gate-1795093609506227374.log:4 record their commands with no 'env -u SLURM_JOB_ID', so the head arm the fragment and manifest rest on ran with the variable set, which is the condition the done_when names."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tier-none-run-owes-no-review.html",
+      "line": "95",
+      "severity": "non-blocking",
+      "text": "non-blocking: it names fbe8c1b92b20 as 'the last merged head', but merged-gate-final.log:1 records the run's final merged head as 8eac5d047b18 (c422a8f5 plus all six commits), so a reader reproducing the fragment's 'last' tree lands two commits short of the reviewed head."
+    },
+    {
+      "file": "tests/test_a_tier_none_run_owes_no_review.py",
+      "line": "241",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture now declares changed_paths=(), so the case where a base-citing run does declare a changed path is no longer exercised; that state is refused at reckon/crew/recovery_classification.py:3708 with 'reckon crew observe', and nothing in this file asserts the refusal."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "670",
+      "severity": "non-blocking",
+      "text": "non-blocking: review_tier is added as a literal to the bounded row's hand-maintained field tuple while DUTY_ROW_FIELDS at reckon/crew/obligations.py:197 already declares it, so the same silent drift that dropped this field can drop the next one a duty's kind is decided by; recorded non-blocking because the repair is a refactor outside this delta and the earlier review raised the same line at e2eb2240."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from eee07f8a to 11a9aa9c: b930698b adds 'review_tier' to the bounded duty row at reckon/crew/obligations.py:670, c9ce3641fb rewrites the settlement expectation at tests/test_a_tier_none_run_owes_no_review.py:202 and narrows the base-citation fixture at :241, and 5949c606, e2eb2240, ada1c7c4 and 11a9aa9c add and revise the evidence fragment; no other path changed.",
+    "done_when": "dispatch-detail.json node.done_when requires the file to pass at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no weakened assertion, the importer arms as inline JSON, a logged base negative control and ruff clean; the manifest records each of those except that merged-gate-final.log:4 runs the head arm without 'env -u SLURM_JOB_ID'.",
+    "goal": "dispatch-detail.json node.goal states 'Make tests/test_a_tier_none_run_owes_no_review.py pass in full on the primary branch'; the merged head 8eac5d047b -- origin/main c422a8f5 plus this run's six commits -- reads 2 passed EXIT=0 in merged-gate-final.log, and the commits gained since the e2eb2240 review are what made that true.",
+    "manifest": "read; it records six commits, the base arm 2 failed EXIT=1 at eee07f8a with both ids on KeyError 'review_tier' (base-node-test-1795093651181687472.log), the merged head 2 passed and 58 passed EXIT=0, baseline_suite and after_suite as inline JSON over 40-character revisions with 0 failures each, and a product-or-test verdict per cause.",
+    "write_paths": "declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with this node's fragment, and an unused figures directory; 'git diff --numstat eee07f8a..11a9aa9c' lists only reckon/crew/obligations.py, tests/test_a_tier_none_run_owes_no_review.py and that fragment, all inside the declaration."
+  },
+  "justifications": {
+    "durability": "the assertions at tests/test_a_tier_none_run_owes_no_review.py:202-204 redden on the tree without c9ce3641fb (1 failed, merged-gate-1795207882213244046.log), but the fixture change at :241 drops the base-citing run that declares a changed path, whose refusal at reckon/crew/recovery_classification.py:3708 is then unasserted here.",
+    "evidence": "baseline-arm.log and after-arm.log each read 58 passed EXIT=0 and base-node-test-1795093651181687472.log reads 2 failed EXIT=1 with both ids, but merged-gate-final.log:4 omits the 'env -u SLURM_JOB_ID' the done_when states and the fragment at :28 claims.",
+    "fit": "the added entry sits in the field tuple _with_action_form declares at reckon/crew/obligations.py:664-675, and the comment added at :676 follows the module's reason-first style.",
+    "goal_fidelity": "reckon/crew/obligations.py:670 carries review_tier on the bounded delivery row, and merged-gate-final.log reads 2 passed EXIT=0 at 8eac5d047b while review-rerun-1b9727bb.log reads 2 failed with KeyError 'review_tier' on a tree without it.",
+    "reuse": "review_tier is the name DUTY_ROW_FIELDS already declares at reckon/crew/obligations.py:197, so the change extends a second hand-maintained subset of that vocabulary rather than deriving from its owner; no definition is added and no capability is forking another.",
+    "scope_discipline": "every path in 'git diff --numstat eee07f8a5e18..11a9aa9c' is inside the declared set, and the change adds only the tuple entry at reckon/crew/obligations.py:670, two test expectations and evidence prose."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json node.goal states 'Make tests/test_a_tier_none_run_owes_no_review.py pass in full on the primary branch'; the merged head 8eac5d047b reads 2 passed EXIT=0 in merged-gate-final.log, and the commits gained since the e2eb2240 review are what made that true.\nVERDICT done_when: node.done_when requires the file to pass at head as an all_debug job with SLURM_JOB_ID unset plus a verdict per cause, no weakened assertion, importer arms as inline JSON, a logged base negative control and ruff clean; the manifest records each except that merged-gate-final.log:4 runs the head arm without 'env -u SLURM_JOB_ID'.\nVERDICT write_paths: declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, plus an unused figures directory; the diff over eee07f8a..11a9aa9c touches only reckon/crew/obligations.py, tests/test_a_tier_none_run_owes_no_review.py and that fragment.\nVERDICT manifest: read; it records six commits, the base arm 2 failed EXIT=1 on KeyError 'review_tier' (base-node-test-1795093651181687472.log), the merged head 2 passed and 58 passed EXIT=0, and baseline_suite/after_suite as inline JSON over full 40-character revisions with 0 failures each.\nVERDICT diff: read commit by commit from eee07f8a to 11a9aa9c: b930698b adds review_tier at reckon/crew/obligations.py:670, c9ce3641fb rewrites the settlement expectation at tests/test_a_tier_none_run_owes_no_review.py:202 and narrows the base-citation fixture at :241, and three evidence commits add and revise the fragment.\nCALL_SITES: reckon/crew/obligations.py:5237, reckon/crew/obligations.py:5238, reckon/crew/obligation_snapshot.py:2345, reckon/crew/obligation_snapshot.py:2346\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:670 carries review_tier on the bounded delivery row and merged-gate-final.log reads 2 passed EXIT=0 at 8eac5d047b while review-rerun-1b9727bb.log reads 2 failed KeyError 'review_tier' on a tree without it.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline-arm.log and after-arm.log each read 58 passed EXIT=0 and base-node-test-1795093651181687472.log reads 2 failed EXIT=1 with both ids, but merged-gate-final.log:4 omits the 'env -u SLURM_JOB_ID' the done_when states and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tier-none-run-owes-no-review.html:28 claims.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 'git diff --numstat eee07f8a5e18..11a9aa9c' is inside the declared set and the change adds only the tuple entry at reckon/crew/obligations.py:670, two test expectations and evidence prose.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_tier_none_run_owes_no_review.py:202-204 redden on the tree without c9ce3641fb at merged-gate-1795207882213244046.log, but the fixture change at :241 drops the base-citing run that declares a changed path, whose refusal at reckon/crew/recovery_classification.py:3708 is then unasserted here.\nSCORE fit: 18\nJUSTIFICATION fit: the added entry sits in the field tuple _with_action_form declares at reckon/crew/obligations.py:664-675 and the comment added at :676 follows the module's reason-first style.\nSCORE reuse: 15\nJUSTIFICATION reuse: review_tier is the name DUTY_ROW_FIELDS already declares at reckon/crew/obligations.py:197, so the change extends a second hand-maintained subset of that vocabulary rather than deriving from its owner; no definition is added and no capability is forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tier-none-run-owes-no-review.html:28 non-blocking: both arms are said to run with SLURM_JOB_ID unset, but merged-gate-final.log:4 and scoped-gate-1795093609506227374.log:4 carry no 'env -u SLURM_JOB_ID'.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tier-none-run-owes-no-review.html:95 non-blocking: it names fbe8c1b92b20 as 'the last merged head' while merged-gate-final.log:1 records 8eac5d047b18 as the final merged head, so a reader reproducing the fragment's tree lands two commits short.\nFINDING tests/test_a_tier_none_run_owes_no_review.py:241 non-blocking: changed_paths=() removes the base-citing run that declares a changed path, whose 'reckon crew observe' refusal at reckon/crew/recovery_classification.py:3708 is left unasserted in this file.\nFINDING reckon/crew/obligations.py:670 non-blocking: review_tier is a literal in the bounded row's hand-maintained tuple while DUTY_ROW_FIELDS at :197 already declares it, so the drift that dropped the field can drop the next one a duty's kind is decided by.",
+  "review_node": "review-of-qwnw-red-file-a-tier-none-run-owes-no-review-11a9aa9cfb12",
+  "review_run_id": "r-20261120T212637763784-review-of-qwnw-red-file-a-tier-none-run-owes-no-review-11a9aa9cfb12",
+  "reviewed_base_sha": "eee07f8a5e18a6d5d98b26951db09a1504806918",
+  "reviewed_head_sha": "11a9aa9cfb12aa08b2552b340c214a59ee4c8e09",
+  "reviewed_run_id": "r-20261118T062516954084-qwnw-red-file-a-tier-none-run-owes-no-review",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T212637763784-review-of-qwnw-red-file-a-tier-none-run-owes-no-review-11a9aa9cfb12"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:23:45.090577+00:00",
+  "total": 102
+}

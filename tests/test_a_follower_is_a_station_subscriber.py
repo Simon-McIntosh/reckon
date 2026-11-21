@@ -637,3 +637,48 @@ def test_a_subscriber_keeps_renewing_its_delivery_lease(tmp_path, monkeypatch) -
     assert lease.is_relative_to(crew_home())
     assert lease.exists(), "the subscriber wrote no delivery lease"
     assert lease.is_relative_to(crew_home())
+
+
+def test_a_pane_that_ends_hands_over_the_row_it_was_holding(tmp_path) -> None:
+    """A block held as a possible flicker is delivered when the pane leaves.
+
+    ``working -> blocked`` opens a pair the pane waits five minutes to see
+    completed. A follower whose session's work drains inside that window ends,
+    and the block is the last thing it can say about the run.
+    """
+    store = _store(tmp_path)
+    clock = _Clock(BASE.timestamp())
+    subscriber = _subscriber(store, clock)
+    _write(
+        store,
+        BASE,
+        _event(
+            from_state="dispatched", to_state="working", observed_at=BASE.isoformat()
+        ),
+    )
+    drawn = _deliver(subscriber, clock)
+    assert [row["to_state"] for row in drawn] == ["working"], drawn
+
+    later = BASE + timedelta(minutes=10)
+    # Written through a second connection, as the station's own process writes:
+    # a subscriber sees the store move only when another connection moved it.
+    _write(
+        _store(tmp_path),
+        later,
+        _event(
+            from_state="working",
+            to_state="blocked",
+            classification="unreadable",
+            recovery_classification="unreadable",
+            observed_at=later.isoformat(),
+        ),
+    )
+    clock.now = later.timestamp()
+    held = _deliver(subscriber, clock)
+    assert held == [], held
+
+    released = subscriber.drain()
+    assert [(row["from_state"], row["to_state"]) for row in released] == [
+        ("working", "blocked")
+    ], released
+    assert subscriber.drain() == []

@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: the base arm /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044621063323-qwnw-red-file-a-pane-counts-its-session-across-projects/baseline_suite-1794986373947189884.log at 335723e1b29db38cdcaa332ee5c1a36e88e01d91 records '58 passed in 37.77s' with EXIT=0 and no FAILED line, and the after arm /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044621063323-qwnw-red-file-a-pane-counts-its-session-across-projects/after_suite-1794986448953368555.log at 11f1d4230fe2a9f09661fa2bbf0e3e2f49006c06 records '58 passed in 44.13s' with EXIT=0 and no FAILED line, so the set difference is 0.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3592 (format_watch_transition renders the row the test renders; the row carries no ANSI",
+    "so the letter-adjacent parse holds)",
+    "reckon/crew/ticker.py:758 (STAT_LETTER",
+    "the table the new helper reads)",
+    "reckon/crew/ticker.py:3946 (the counter cell a count and its letter are drawn into)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T08:23:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pane_counts_its_session_across_projects.py",
+      "id": "f8cd48f8278",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_counters` re-implements a capability two earlier test files already carry, so the vocabulary fix this node exists to make reaches only this file while tests/test_the_pane_counts_reviews_under_r.py:153 still hardcodes the letter class `[wrhdqs]`."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-counts-its-session-across-projects.html",
+      "id": "f7931c828bc",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two suite rows present a 58-passed delta as the done_when's arm over the test files importing what changed, but both files import only reckon.interface_counts, so the arm exercises no code the diff reached, and the files that do import obligation_snapshot, recovery, runs and ticker were never run against the base."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against 335723e1b29db38cdcaa332ee5c1a36e88e01d91; d41374f2a6 replaces seven literal-substring counter assertions in tests/test_a_pane_counts_its_session_across_projects.py:166-221 with parsed integer tuples and adds `_counters`/`_figures`, and 11f1d4230f adds the 66-line evidence fragment, so no assertion is deleted or weakened and no product source changed.",
+    "done_when": "the done_when names a full pass of that file as a job on all_debug plus an arm over the test files importing what changed, with both arms as inline JSON at full 40-character revisions; scoped-gate-1794986059228511617.log records 1 passed EXIT=0 at d41374f2a60e03fb1365afb8e384b3768b3b8ae4 in a landing tree on 98dci4-clu-3141, base-target-run.log records the same test failing at 335723e1b29db38cdcaa332ee5c1a36e88e01d91, and the manifest's baseline_suite/after_suite carry the full pair at 0 failures each, so two of the three arms assert the measure; the log header names no job id or partition, so the \"job on all_debug with SLURM_JOB_ID unset\" clause is not affirmable from the artefact alone, and the suite pair imports nothing the diff touched.",
+    "goal": "the goal is to make tests/test_a_pane_counts_its_session_across_projects.py pass in full; the landed file at this head is read at tests/test_a_pane_counts_its_session_across_projects.py:41-60 and head-target-run.log records 1 passed EXIT=0 over it, so the file passes.",
+    "manifest": "read in full; it states status complete, cites scoped-gate, base-target-run, head-target-run, mutant-run and both suite logs, records both suite arms as inline JSON with the full 40-character revision pair, and every cited log exists on disk with the summary lines it quotes.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and two narrower paths under it; the diff touches only tests/test_a_pane_counts_its_session_across_projects.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-counts-its-session-across-projects.html, both inside that fence."
+  },
+  "justifications": {
+    "durability": "mutant-run.log reinstates the regression by disabling the cross-project sum in `_scoped_watch_event` and the new assertion at tests/test_a_pane_counts_its_session_across_projects.py:168 reddens on it with (1, 0, 0) against the independent literal (8, 2, 3), while a rename of a bucket letter is deliberately followed rather than caught because the letters come from ticker.STAT_LETTER:758.",
+    "evidence": "scoped-gate-1794986059228511617.log records 1 passed EXIT=0 in a landing tree, but its header carries no job id or partition and its command globs tests/test_a_pane_counts_*.py while the recorded suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts and nothing the diff touched.",
+    "fit": "the new helpers at tests/test_a_pane_counts_its_session_across_projects.py:41 and :55 follow the private-helper style of the sibling tests/test_counter_carries_age.py:36-42 and carry no plan, sprint or run identifier in a name.",
+    "goal_fidelity": "tests/test_a_pane_counts_its_session_across_projects.py:166-221 now assert the counts the file's docstring names, and head-target-run.log at d41374f2a60e reads 1 passed EXIT=0.",
+    "reuse": "tests/helpers holds only git.py and landing_repository.py and owns no row reader, so no owner was forked, but `_counters` at tests/test_a_pane_counts_its_session_across_projects.py:41 is the third per-file parse of a rendered row's counters beside tests/test_the_pane_counts_reviews_under_r.py:153 and tests/test_counter_carries_age.py:42.",
+    "scope_discipline": "the two paths in the diff, tests/test_a_pane_counts_its_session_across_projects.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-counts-its-session-across-projects.html, are both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_a_pane_counts_its_session_across_projects.py pass in full; the landed file at this head is read at tests/test_a_pane_counts_its_session_across_projects.py:41-60 and head-target-run.log records 1 passed EXIT=0 over it, so the file passes.\nVERDICT done_when: the done_when names a full pass of that file as a job on all_debug plus an arm over the test files importing what changed, with both arms as inline JSON at full 40-character revisions; scoped-gate-1794986059228511617.log records 1 passed EXIT=0 at d41374f2a60e03fb1365afb8e384b3768b3b8ae4 in a landing tree on 98dci4-clu-3141, base-target-run.log records the same test failing at 335723e1b29db38cdcaa332ee5c1a36e88e01d91, and the manifest's baseline_suite/after_suite carry the full pair at 0 failures each, so two of the three arms assert the measure; the log header names no job id or partition, so the \"job on all_debug with SLURM_JOB_ID unset\" clause is not affirmable from the artefact alone, and the suite pair imports nothing the diff touched.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and two narrower paths under it; the diff touches only tests/test_a_pane_counts_its_session_across_projects.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-counts-its-session-across-projects.html, both inside that fence.\nVERDICT manifest: read in full; it states status complete, cites scoped-gate, base-target-run, head-target-run, mutant-run and both suite logs, records both suite arms as inline JSON with the full 40-character revision pair, and every cited log exists on disk with the summary lines it quotes.\nVERDICT diff: read both commits against 335723e1b29db38cdcaa332ee5c1a36e88e01d91; d41374f2a6 replaces seven literal-substring counter assertions in tests/test_a_pane_counts_its_session_across_projects.py:166-221 with parsed integer tuples and adds `_counters`/`_figures`, and 11f1d4230f adds the 66-line evidence fragment, so no assertion is deleted or weakened and no product source changed.\nCALL_SITES: reckon/crew/recovery_watch.py:3592 (format_watch_transition renders the row the test renders; the row carries no ANSI, so the letter-adjacent parse holds), reckon/crew/ticker.py:758 (STAT_LETTER, the table the new helper reads), reckon/crew/ticker.py:3946 (the counter cell a count and its letter are drawn into)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_pane_counts_its_session_across_projects.py:166-221 now assert the counts the file's docstring names, and head-target-run.log at d41374f2a60e reads 1 passed EXIT=0.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1794986059228511617.log records 1 passed EXIT=0 in a landing tree, but its header carries no job id or partition and its command globs tests/test_a_pane_counts_*.py while the recorded suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts and nothing the diff touched.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two paths in the diff, tests/test_a_pane_counts_its_session_across_projects.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-counts-its-session-across-projects.html, are both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: mutant-run.log reinstates the regression by disabling the cross-project sum in `_scoped_watch_event` and the new assertion at tests/test_a_pane_counts_its_session_across_projects.py:168 reddens on it with (1, 0, 0) against the independent literal (8, 2, 3), while a rename of a bucket letter is deliberately followed rather than caught because the letters come from ticker.STAT_LETTER:758.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at tests/test_a_pane_counts_its_session_across_projects.py:41 and :55 follow the private-helper style of the sibling tests/test_counter_carries_age.py:36-42 and carry no plan, sprint or run identifier in a name.\nSCORE reuse: 17\nJUSTIFICATION reuse: tests/helpers holds only git.py and landing_repository.py and owns no row reader, so no owner was forked, but `_counters` at tests/test_a_pane_counts_its_session_across_projects.py:41 is the third per-file parse of a rendered row's counters beside tests/test_the_pane_counts_reviews_under_r.py:153 and tests/test_counter_carries_age.py:42.\nFINDING tests/test_a_pane_counts_its_session_across_projects.py:41 non-blocking: `_counters` re-implements a capability two earlier test files already carry, so the vocabulary fix this node exists to make reaches only this file while tests/test_the_pane_counts_reviews_under_r.py:153 still hardcodes the letter class `[wrhdqs]`.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-counts-its-session-across-projects.html:44 non-blocking: the two suite rows present a 58-passed delta as the done_when's arm over the test files importing what changed, but both files import only reckon.interface_counts, so the arm exercises no code the diff reached, and the files that do import obligation_snapshot, recovery, runs and ticker were never run against the base.",
+  "review_node": "review-of-qwnw-red-file-a-pane-counts-its-session-across-projects-11f1d4230fe2",
+  "review_run_id": "r-20261118T072823558291-review-of-qwnw-red-file-a-pane-counts-its-session-across-projects-11f1d4230fe2",
+  "reviewed_base_sha": "335723e1b29db38cdcaa332ee5c1a36e88e01d91",
+  "reviewed_head_sha": "11f1d4230fe2a9f09661fa2bbf0e3e2f49006c06",
+  "reviewed_run_id": "r-20261118T044621063323-qwnw-red-file-a-pane-counts-its-session-across-projects",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T072823558291-review-of-qwnw-red-file-a-pane-counts-its-session-across-projects-11f1d4230fe2"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:42:14.197174+00:00",
+  "total": 107
+}

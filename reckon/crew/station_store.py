@@ -47,12 +47,12 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, NoReturn, Self
 
-from reckon import _backends, file_memo, host
+from reckon import _backends, file_memo, host, node_runtime
 from reckon._timestamps import parse_utc
 from reckon.crew import dispatch_watch, recovery
 from reckon.crew.run_paths import crew_home
 
-DATABASE_NAME = "station.sqlite3"
+DATABASE_NAME = node_runtime.STATION_DATABASE_NAME
 DAY_DIRECTORY = "events"
 DAY_FILE_PREFIX = "events-"
 DAY_FILE_SUFFIX = ".sqlite3"

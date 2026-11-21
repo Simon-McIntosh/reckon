@@ -34,7 +34,16 @@ process environment; sbatch and srun wrap the task with that recipe before
 forwarding, because the scheduler starts outside the submitting namespace. The
 real binary is the first one on ``PATH`` that is not a reckon shim (:mod:`reckon.shim_lookup`), so
 the shim never execs itself or the shim of another checkout on the same
-``PATH``. The nested-launch decision never changes the resource request.
+``PATH``. A fence puts this shim in front of the tool's own absolute paths too
+(:func:`reckon._worker_fence.scheduler_shields`) and names where it kept the
+real binary under :data:`SHIM_REAL_DIRECTORY_ENV`, so a name and an absolute
+path reach the same guard rather than one of them skipping it. The fence's
+recipe is read from the submitting process, and from the process tree that
+started it when the submitter has cleared its environment. A shell can drop
+every name it was handed, but not what the kernel recorded for its ancestors at
+the exec that started them, so a submission made from inside a fence is wrapped
+or refused rather than silently run unfenced. The nested-launch decision never
+changes the resource request.
 """
 
 from __future__ import annotations
@@ -45,7 +54,7 @@ import os
 import shlex
 import sys
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -61,8 +70,40 @@ from reckon.shim_lookup import (
 # scheduler tools so a caller can tell a refusal from a launch failure.
 REFUSAL_STATUS = 97
 
+# The variables a launch's environment names its run and the coordinator
+# session that dispatched it in. Dispatch exports them into every worker it
+# starts, so a job a worker submits can be traced back to both.
+RUN_ID_ENV = "RECKON_RUN_ID"
+SESSION_ID_ENVS = ("RECKON_SESSION_ID", "RECKON_CREW_SESSION")
+
+# The prefix every comment this module adds carries, so a reader of `squeue`
+# or `scontrol show job` can tell a run's identity from any other.
+OWNER_COMMENT_PREFIX = "reckon"
+
+# The line a fenced launch writes to stderr before the task's own first output,
+# so a job log it captures opens with this notice rather than with the header
+# the measure writes. Named here because the manifest audit has to recognise it
+# as the launch's prologue and not as the log's first recorded line.
+SCHEDULER_FENCE_NOTICE = (
+    "{tool}: task re-enters the worker fence; this is the shim, reached by name "
+    "or by absolute path."
+)
+
 # The status returned when no real binary can be found outside the shim.
 MISSING_BINARY_STATUS = 127
+
+# The status a job's task exits with when the fence program its carried recipe
+# resolves to cannot run on the node the task landed on. The task itself never
+# starts, so this is the launch's refusal rather than the command's outcome,
+# and it is deliberately not zero: a fence that cannot start must not read as
+# an unfenced success.
+FENCE_PROGRAM_STATUS = 127
+
+# The status a job's task exits with when a bind source the fence carries
+# cannot be supplied on the node the task landed on. Distinct from the fence
+# program's own status and never zero: a mount the job could not make is the
+# launch's refusal, not the command's outcome.
+FENCE_SOURCE_STATUS = 126
 
 # The one discharge from the refusal. Set to a truthy value and the launch is
 # forwarded unchanged.
@@ -75,6 +116,38 @@ OVERRIDE_ENV = "RECKON_ALLOW_NESTED_LAUNCH"
 # fence hands no fence down. One name, read by the shim, the task bootstrap and
 # :func:`job_fence`, so the three cannot disagree about where the fence lives.
 WORKER_FENCE_ENV = "RECKON_WORKER_FENCE"
+
+# The two names a fence sets when it re-points an absolute path to a scheduler
+# binary at the shim. Only the file differs there, never the name or the argv,
+# so the shim script cannot read its own location from ``$0``: it is told where
+# its home is, and :func:`real_binary` is told where the real tool was kept.
+# Both are set on the argv the fence composes, so they reach a submitted job
+# with the recipe, and both are only ever read by a shim.
+SHIM_HOME_ENV = "RECKON_SHIM_HOME"
+SHIM_REAL_DIRECTORY_ENV = "RECKON_SHIM_REAL_DIRECTORY"
+
+# What a fence adds to the environment of the process it starts, and so what a
+# submission made from inside it must still hold when the submitting process
+# has been emptied of it. The recipe and the run identity are the fence's own;
+# the relocation and the search path are what let a shim emptied of everything
+# still resolve, and still wrap, the real scheduler.
+FENCE_ENVIRONMENT_NAMES = (
+    WORKER_FENCE_ENV,
+    RUN_ID_ENV,
+    *SESSION_ID_ENVS,
+    SHIM_REAL_DIRECTORY_ENV,
+    "PATH",
+)
+
+# How far up the process tree the fence is looked for. A worker's own chain is
+# a handful of levels deep; the bound keeps a pathological tree from costing
+# more than a fixed number of reads.
+ANCESTRY_BOUND = 32
+
+# The checkout a process running from a published reload image was started
+# from. The supervisor sets it on a copy it starts from an image, and
+# :func:`shim_directory` reads it to name shims on storage every node shares.
+SOURCE_ROOT_ENV = "RECKON_FOLLOWER_SOURCE_ROOT"
 
 # The other route, and the partitions that show what a separate partition job
 # looks like here. The verb is part of the route: a separate partition job is
@@ -366,20 +439,98 @@ def refusal_message(tool: str, facts: HostFacts) -> str:
     return "\n".join(lines)
 
 
-def real_binary(tool: str, shim_dir: Path, path: str) -> str | None:
-    """The real ``tool`` on ``path``: never this shim, and never another one.
+def relocated_binary(tool: str, environ: Mapping[str, str] | None) -> str | None:
+    """The real ``tool`` a fence kept for this shim, or None.
+
+    A fence that put this shim in front of the tool's absolute path holds the
+    real binary under the directory it names in
+    :data:`SHIM_REAL_DIRECTORY_ENV`, and the shim reads that first: every copy
+    the search path would find is now the shim itself, so searching would
+    refuse a launch that the fence made possible. A location that holds
+    nothing runnable returns None, so the search still runs on a node the
+    relocation never reached.
+    """
+    from reckon.shim_lookup import is_shim
+
+    directory = str((environ or {}).get(SHIM_REAL_DIRECTORY_ENV) or "")
+    if not directory:
+        return None
+    candidate = os.path.join(directory, tool)
+    if (
+        os.path.isfile(candidate)
+        and os.access(candidate, os.X_OK)
+        and not is_shim(candidate)
+    ):
+        return candidate
+    return None
+
+
+def real_binary(
+    tool: str,
+    shim_dir: Path,
+    path: str,
+    environ: Mapping[str, str] | None = None,
+) -> str | None:
+    """The real ``tool``: never this shim, and never another one.
 
     The shim's own directory is dropped by resolved path, and any other
     candidate that is a reckon shim is skipped wherever it sits. Dropping only
     the own directory lets two checkouts' shims on one ``PATH`` exec each other
     in a loop that never reaches the scheduler.
+
+    A relocation a fence recorded is read first, because a fence that masked
+    this tool's absolute paths has left nothing on the search path but shims;
+    see :func:`relocated_binary`.
     """
+    relocated = relocated_binary(tool, environ)
+    if relocated is not None:
+        return relocated
     return real_executable(tool, path, skipped=[shim_dir])
 
 
+def shims_beside(module_file: Path, directory: str) -> Path:
+    """The shims directory beside the module at ``module_file``.
+
+    The directory is derived from the module's location, with one exception.
+    A service that reloads itself imports the package from a published reload
+    image, and an image lives on the launching node's local disk and never
+    travels between nodes. A worker placed on another node is handed this
+    directory twice — on its search path, and as the source of the mounts that
+    put a shim in front of each tool — and a mount whose source the worker's
+    node does not hold refuses the launch outright. A shim also looks for its
+    interpreter in the environment beside its own checkout, which an image
+    does not carry.
+
+    So a process running from an image names the shims of the checkout the
+    image was published from: the root its launcher carried, or else the
+    checkout that owns the running interpreter's environment. Either is on the
+    storage every node shares. An image whose checkout cannot be found keeps
+    its own directory, which is still right for a worker on the same node.
+
+    Both shim families a launch hands a worker ask here, so the rule is stated
+    once: the scheduler shims through :func:`shim_directory`, the git shims
+    through :func:`reckon.worker_git_shim.worker_shim_directory`.
+    """
+    own = module_file.resolve().parent / directory
+    from reckon.checkout_trust import published_reload_image
+
+    if not published_reload_image(own.parent.parent):
+        return own
+    for root in (
+        os.environ.get(SOURCE_ROOT_ENV, ""),
+        str(Path(sys.prefix).parent),
+    ):
+        if not root:
+            continue
+        candidate = (Path(root) / "reckon" / directory).resolve()
+        if candidate != own and candidate.is_dir():
+            return candidate
+    return own
+
+
 def shim_directory() -> Path:
-    """The directory the shims live in, derived from this module's location."""
-    return Path(__file__).resolve().parent / "host_shims"
+    """The scheduler shims a launched worker can read, wherever it runs."""
+    return shims_beside(Path(__file__), "host_shims")
 
 
 # The bubblewrap options a composed fence is built from, grouped by what they
@@ -483,17 +634,262 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
     return fence_roots([str(word) for word in argv])
 
 
+class FenceUnestablishedError(ValueError):
+    """A fence is named for this submission, and its recipe cannot be read.
+
+    Raised rather than read as "no fence": a submission made inside a fence
+    that cannot be established must not run unfenced, and the refusal names the
+    run so the submission can be traced back to it.
+    """
+
+    def __init__(self, run_id: str, detail: str) -> None:
+        super().__init__(detail)
+        self.run_id = str(run_id or "")
+        self.detail = str(detail)
+
+    def refusal(self, tool: str) -> str:
+        """The line a shim prints, naming the run and what is missing."""
+        run = f"run {self.run_id}" if self.run_id else "an unnamed run"
+        return (
+            f"{tool} shim: the fence could not be established for {run}, so the "
+            f"submission was not made: {self.detail}"
+        )
+
+
+def _process_environment(pid: int) -> dict[str, str] | None:
+    """One process's environment as the kernel recorded it at that exec.
+
+    ``/proc/<pid>/environ`` is the image the kernel was handed at the exec that
+    started the process. A shell that unsets a name, or exports a new value,
+    edits its own table and the environment it hands its children; neither
+    reaches this record, which is why a fence survives a shell that clears
+    itself. None is "could not read" — the process may have exited, or belong
+    to another user — never "carries nothing".
+
+    The repository reads this record already, for the run a process tree
+    carries, so the name resolves to that reader rather than to a second copy
+    of the same parse. It is imported here because only a submission that lost
+    its own environment consults the record at all, and the crew package is
+    heavier than this module's own decision.
+    """
+    from reckon.crew.process_signal import (
+        _process_environment as read_environment,
+    )
+
+    return read_environment(pid)
+
+
+def _parent_process(pid: int) -> int | None:
+    """The parent pid the kernel reports for ``pid``, or None.
+
+    The ancestor walk this feeds is the repository's own capability, for the
+    processes that own a session's obligations, so the link is read by that
+    owner's reader rather than by a second parse of the same record.
+    """
+    from reckon.hooks.coordinator_obligations import _parent_of as read_parent
+
+    return read_parent(pid)
+
+
+def _owned_by_another_user(pid: int) -> bool:
+    """Whether the kernel reports ``pid`` as owned by a user other than this one.
+
+    False when the owner cannot be read: an unreadable owner establishes
+    nothing, so the caller keeps treating the process as one it failed to see.
+    """
+    try:
+        return os.stat(f"/proc/{pid}").st_uid != os.getuid()
+    except OSError:
+        return False
+
+
+class AncestryIncompleteError(Exception):
+    """The ancestor search stopped before the top of the process tree.
+
+    Empty is only a valid answer for a search that reached the top and found
+    no fence there. One that stopped early — at the bound, or on a record it
+    could not read — has not seen every ancestor, so treating its silence as
+    "no fence" would pass the submission through unfenced on the strength of
+    an absence it never established. The detail names what stopped it.
+    """
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail)
+        self.detail = str(detail)
+
+
+def ancestry_fence(
+    *,
+    pid: int | None = None,
+    environment_of: Callable[[int], dict[str, str] | None] = _process_environment,
+    parent_of: Callable[[int], int | None] = _parent_process,
+    owned_by_another_user: Callable[[int], bool] | None = None,
+) -> dict[str, str]:
+    """The fence the submitting process tree carries, read from the kernel.
+
+    A submitter can unset, export over or discard its own environment, and a
+    child inherits only what it is handed. What the kernel recorded for each
+    process at the exec that started it is untouched by any of that, so the
+    fence that started the tree is still readable from an ancestor however its
+    descendants have edited themselves. The walk goes up the parent chain until
+    an environment names the fence, and stops at the tree's root.
+
+    Empty means the walk reached the top and no ancestor carried a fence, which
+    is the coordinator case. A walk that stopped before the top raises
+    :class:`AncestryIncompleteError` rather than returning empty: it cannot answer
+    "no fence", and a coordinator is reached only by actually arriving there.
+    """
+    if owned_by_another_user is None:
+        owned_by_another_user = _owned_by_another_user
+    current = os.getpid() if pid is None else pid
+    seen = {current}
+    for _ in range(ANCESTRY_BOUND):
+        parent = parent_of(current)
+        if parent is None:
+            raise AncestryIncompleteError(
+                f"the parent of process {current} could not be read"
+            )
+        # pid 0 is the kernel's own entry: the walk has reached the top. The
+        # fence's own payload is a child of the namespace's init, so the last
+        # process worth reading is that init itself.
+        if parent <= 0:
+            return {}
+        if parent in seen:
+            raise AncestryIncompleteError(
+                f"the parent chain repeated process {parent} without reaching the top"
+            )
+        seen.add(parent)
+        environment = environment_of(parent)
+        if environment is None and owned_by_another_user(parent):
+            # A fence is started by the submitting user, so a process another
+            # user owns (the host's init, a scheduler daemon) cannot carry it:
+            # the walk has left this user's tree, which is its top.
+            return {}
+        if environment is None:
+            raise AncestryIncompleteError(
+                f"the environment of parent process {parent} could not be read"
+            )
+        if environment.get(WORKER_FENCE_ENV):
+            return {
+                name: environment[name]
+                for name in FENCE_ENVIRONMENT_NAMES
+                if environment.get(name)
+            }
+        current = parent
+    raise AncestryIncompleteError(
+        f"the fence search stopped at its bound of {ANCESTRY_BOUND} processes "
+        "without reaching the top"
+    )
+
+
+def fence_environment(
+    environ: Mapping[str, str],
+    *,
+    ancestry: Callable[..., dict[str, str]] = ancestry_fence,
+) -> dict[str, str]:
+    """The fence ``environ`` is missing, taken from the process tree.
+
+    A name the submitting process itself carries is used as it stands: a caller
+    that hands a shim a recipe means that recipe. Only what is missing is
+    filled from the tree, so an unchanged submission reads exactly as it did
+    and an emptied one reads the same as an unchanged one. The search reaches
+    the top of the tree or raises :class:`AncestryIncompleteError`; a caller must not
+    read an empty result as "no fence" when the search never got there.
+    """
+    own = {
+        name: str(environ[name])
+        for name in FENCE_ENVIRONMENT_NAMES
+        if environ.get(name)
+    }
+    if own.get(WORKER_FENCE_ENV) and own.get(RUN_ID_ENV):
+        return own
+    return {**ancestry(), **own}
+
+
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
-_TASK_REENTRY = """import base64, json, os, pathlib, subprocess, sys, tempfile
+_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile
 spec = json.loads(base64.urlsafe_b64decode(sys.argv[-1]))
 recipe = spec["fence"]
+# The recipe's own list, not a copy: a seal this node repairs to the ``-try``
+# form below and the program substituted into the head must reach the recipe
+# the prepare step re-carries, or the inherited fence re-runs with the mount
+# that cannot be made.
+prefix = recipe["argv"]
+# The fence program is the location the dispatching node resolved, never a name
+# looked up here: a job node may hold no fence program on its search path, and
+# a search that found a different one would run a program nobody chose. A
+# recipe that names none, or names one this node cannot run, refuses before the
+# task starts and never falls back to running the task unfenced.
+program = str(recipe.get("program") or "")
+carried = recipe.get("carried_program")
+if not isinstance(carried, dict):
+    carried = {}
+name = os.path.basename(prefix[0]) if prefix else "the fence program"
+
+def _not_started(detail):
+    sys.stderr.write(
+        "fence program %s cannot run on %s: %s; the job's task was "
+        "not started and the fence was not dropped\\n"
+        % (name, socket.gethostname(), detail))
+    raise SystemExit(_FENCE_PROGRAM_STATUS)
+
+def _checksum(value):
+    text = str(value or "").strip().lower()
+    return text[7:] if text.startswith("sha256:") else text
+
+def _digest(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for block in iter(lambda: stream.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+if not (os.path.isabs(program) and os.access(program, os.X_OK)):
+    if program and os.path.isabs(program):
+        where = "%s (%s)" % (program, "absent" if not os.path.exists(program)
+                             else "not executable")
+    elif program:
+        where = "%s (not an absolute path)" % program
+    else:
+        where = "no carried location; PATH=%s was not searched" % os.environ.get("PATH", "")
+    carried_path = str(carried.get("path") or "")
+    if not carried_path:
+        _not_started("looked at %s" % where)
+    # A carried program on shared storage is used only when this node cannot
+    # run the one its dispatcher resolved, and only after its bytes match the
+    # checksum the flight settings recorded. An absent file or a different
+    # digest refuses before the task starts; neither ever falls back to a
+    # search of this node's path.
+    if not os.path.isfile(carried_path):
+        _not_started("looked at %s and the carried location %s (absent)"
+                     % (where, carried_path))
+    held = _checksum(carried.get("checksum"))
+    if not held:
+        _not_started("the carried location %s records no checksum to verify"
+                     % carried_path)
+    found = _digest(carried_path)
+    if found != held:
+        _not_started("the carried location %s does not match its recorded "
+                     "checksum: recorded %s, found %s"
+                     % (carried_path, held, found))
+    program = carried_path
+if not (os.path.isabs(program) and os.access(program, os.X_OK)):
+    _not_started("looked at %s (not executable)" % program)
+# Every later step runs the carried location: the prepare step and the task's
+# own fence both read prefix[0], so one substitution here is what stops either
+# from searching the job node's path.
+prefix[0] = program
+# The task's own temp directory and this node are named before the prepare
+# step, because both the refusal inside it and the source check after it read
+# them, and the re-entry the prepare step exec's skips that block entirely.
+overlay = str((recipe.get("temp_overlay") or {}).get("source") or "")
+node = socket.gethostname()
 if not spec.get("sources_prepared"):
     # Only sources known to be directory grants may be supplied empty. A
     # missing credential or executable must still refuse the task.
     directory_sources = set(recipe.get("directory_sources", ()))
-    prefix = recipe["argv"]
     seals = ("--ro-bind", "--ro-bind-try")
     grants = ("--bind", "--bind-try", "--dev-bind", "--dev-bind-try")
     index = 1
@@ -528,17 +924,57 @@ if not spec.get("sources_prepared"):
             for child in sorted(parent.iterdir()):
                 if child.is_symlink():
                     prepare += ["--symlink", os.readlink(child), str(child)]
+                elif child.is_dir() and not os.access(child, os.R_OK | os.X_OK):
+                    # A directory this user cannot enter cannot be bound by
+                    # name either: a job node's tmp holds other accounts'
+                    # private directories and stale mounts of deleted ones,
+                    # and one such child refused the whole fence before the
+                    # task started. The task could never have read it, so it
+                    # is left out of the private copy of its parent.
+                    continue
                 else:
                     prepare += ["--dev-bind", str(child), str(child)]
         for path in missing:
             prepare += ["--tmpfs", str(path)]
         for parent in sorted(ancestors, key=lambda p: -len(p.parts)):
             prepare += ["--remount-ro", str(parent)]
+        for path in missing:
+            if str(path) == overlay:
+                # Which temp directory stood in is recorded, so a gate log that
+                # measured the task's own temp says so rather than reading as if
+                # the worker's directory had been bound here.
+                sys.stderr.write(
+                    "fence: temp directory %s is absent on %s; the task's own "
+                    "empty temp directory stands in for it\\n" % (overlay, node))
         spec["sources_prepared"] = True
         encoded = base64.urlsafe_b64encode(json.dumps(spec).encode()).decode()
-        os.execvp(prepare[0], [*prepare, "--", sys.executable, "-I", "-c",
+        os.execv(prepare[0], [*prepare, "--", sys.executable, "-I", "-c",
                               sys.argv[1], sys.argv[1], encoded])
 command = spec["command"]
+# Every source the inherited fence mounts must be here before the fence runs.
+# The prepare step above supplies the task's temp directory and the other
+# directories the fence grants, but a source that is not one of those — a file
+# grant, or a directory the composing host never classified as one — refuses
+# here, naming each absent path and this node, rather than surfacing as
+# bubblewrap's own message about the first one it reached.
+absent = []
+index = 1
+while index < len(prefix) and prefix[index] != "--":
+    option = prefix[index]
+    if option in ("--bind", "--dev-bind", "--bind-try", "--dev-bind-try"):
+        source = prefix[index + 1]
+        if not os.path.lexists(source) and source != overlay:
+            absent.append(source)
+        index += 3
+        continue
+    index += 1
+absent = sorted(set(absent))
+if absent:
+    sys.stderr.write(
+        "fence cannot bind %s on %s: absent on this node, so the task was not "
+        "started and the fence was not dropped\\n"
+        % (", ".join(absent), node))
+    raise SystemExit(_FENCE_SOURCE_STATUS)
 script = None
 try:
     if "script" in spec:
@@ -547,7 +983,6 @@ try:
             stream.write(base64.b64decode(spec["script"]))
         os.chmod(script, 0o700)
         command = [script, *command]
-    prefix = recipe["argv"]
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
     prefix += ["--setenv", spec["env"], encoded]
     result = subprocess.run([*prefix, "--", *command], check=False)
@@ -556,6 +991,13 @@ finally:
         os.unlink(script)
 raise SystemExit(result.returncode if result.returncode >= 0 else 128-result.returncode)
 """
+# The number is substituted rather than written twice: the child is a string
+# the parent cannot import from, and a constant a reader edits in one place is
+# how the status the parent documents and the status the child exits with stay
+# the same figure.
+_TASK_REENTRY = _TASK_REENTRY_TEMPLATE.replace(
+    "_FENCE_PROGRAM_STATUS", str(FENCE_PROGRAM_STATUS)
+).replace("_FENCE_SOURCE_STATUS", str(FENCE_SOURCE_STATUS))
 
 
 def _task_command(
@@ -677,6 +1119,48 @@ def _scheduler_options(
     return options, []
 
 
+def owner_comment(environ: Mapping[str, str]) -> str:
+    """The comment naming the session and run that submits a job, or ``""``.
+
+    A submission made for a coordinator session with no run names that
+    session: the coordinator is the owner even when no worker's run id exists,
+    and a session is what a reader of ``squeue`` can trace the job back to. A
+    submission with neither a session nor a run carries nothing, because there
+    is no owner to name.
+    """
+    run_id = str(environ.get(RUN_ID_ENV) or "").strip()
+    session = ""
+    for name in SESSION_ID_ENVS:
+        session = str(environ.get(name) or "").strip()
+        if session:
+            break
+    if session and run_id:
+        return f"{OWNER_COMMENT_PREFIX} session={session} run={run_id}"
+    if session:
+        return f"{OWNER_COMMENT_PREFIX} session={session}"
+    if run_id:
+        return f"{OWNER_COMMENT_PREFIX} run={run_id}"
+    return ""
+
+
+def with_owner_comment(
+    argv: Sequence[str],
+    environ: Mapping[str, str],
+    *,
+    text: str = "",
+) -> list[str]:
+    """The argv with its comment field carrying ``text`` and the run's owner.
+
+    A comment the caller supplied is kept, ``text`` lifted out of a submitted
+    script is merged beside it, and the owner is appended, so a site that names
+    its own reason for the job does not lose it. The scan stops at the first
+    operand, because from there the words belong to the scheduler's command
+    rather than to its options.
+    """
+    parts = [part for part in (text.strip(), owner_comment(environ)) if part]
+    return with_comment_text(argv, " ".join(parts))
+
+
 def _batch_directives(script: bytes) -> list[str]:
     """Keep Slurm directives only where sbatch itself reads them."""
     directives = []
@@ -689,18 +1173,103 @@ def _batch_directives(script: bytes) -> list[str]:
     return directives
 
 
+def _script_comment(directives: Sequence[str]) -> tuple[str, list[str]]:
+    """The comment a submitted script declares, and its directives without it.
+
+    A scheduler gives its command line precedence over the script's own
+    directives, so a comment left inside the script is discarded as soon as a
+    command-line ``--comment`` is present. The shim adds one to name the
+    submitting session and run, so the script's text is lifted out here and
+    carried on the command line beside the owner instead of being silently
+    overridden.
+    """
+    text = ""
+    kept: list[str] = []
+    for line in directives:
+        words = line.strip()[len("#SBATCH") :].split()
+        declared: list[str] = []
+        rest: list[str] = []
+        found = False
+        index = 0
+        while index < len(words):
+            word = words[index]
+            if word == "--comment" or word.startswith("--comment="):
+                found = True
+                if word.startswith("--comment=") and word[len("--comment=") :]:
+                    declared.append(word[len("--comment=") :])
+                index += 1
+                # A directive's comment runs to the next option word, so an
+                # option declared after it stays an option instead of being
+                # swallowed into the comment text.
+                while index < len(words) and not words[index].startswith("-"):
+                    declared.append(words[index])
+                    index += 1
+                continue
+            rest.append(word)
+            index += 1
+        if not found:
+            kept.append(line)
+            continue
+        text = " ".join(filter(None, [text, " ".join(declared)])).strip()
+        if rest:
+            kept.append("#SBATCH " + " ".join(rest))
+    return text, kept
+
+
+def with_comment_text(argv: Sequence[str], text: str) -> list[str]:
+    """The argv with ``text`` merged into its comment field, other words kept.
+
+    The one scan of a scheduler command line's option words that places comment
+    text: a caller's existing comment keeps its words, ``text`` follows them,
+    and the field is prepended when the argv carries none. The owner comment
+    and a submitted script's directive both merge through this, so the two
+    cannot disagree about where a comment belongs.
+    """
+    if not text:
+        return list(argv)
+    arguments = list(argv)
+    for index, argument in enumerate(arguments):
+        if argument == "--":
+            break
+        if argument.startswith("--comment="):
+            existing = argument[len("--comment=") :]
+            arguments[index] = f"--comment={existing} {text}".strip()
+            return arguments
+        if argument == "--comment":
+            following = index + 1
+            if following < len(arguments) and not arguments[following].startswith("-"):
+                arguments[following] = f"{arguments[following]} {text}".strip()
+            else:
+                arguments[index] = f"--comment={text}"
+            return arguments
+        if not argument.startswith("-"):
+            break
+    return [f"--comment={text}", *arguments]
+
+
 def fenced_scheduler_task(
     tool: str, argv: Sequence[str], environ: Mapping[str, str]
 ) -> list[str]:
     """Re-enter the submitting fence at the task boundary, before user code.
 
-    A direct absolute scheduler call bypasses this PATH shim. Interpreter file
-    permissions remain the independent guard on that route.
+    A caller arrives here by name through the shim or by an absolute path the
+    fence has re-pointed at the shim; the wrap is the same either way, so the
+    task cannot be submitted unfenced by choosing a path.
     """
     encoded = environ.get(WORKER_FENCE_ENV)
     if not encoded or tool not in {"sbatch", "srun"}:
         return list(argv)
-    recipe = json.loads(base64.urlsafe_b64decode(encoded))
+    run_id = str(environ.get(RUN_ID_ENV) or "").strip()
+    try:
+        recipe = json.loads(base64.urlsafe_b64decode(encoded))
+    except (TypeError, ValueError) as exc:
+        raise FenceUnestablishedError(
+            run_id, f"{WORKER_FENCE_ENV} carries no readable fence recipe ({exc})"
+        ) from exc
+    if not isinstance(recipe, dict) or not isinstance(recipe.get("argv"), list):
+        raise FenceUnestablishedError(
+            run_id, f"{WORKER_FENCE_ENV}'s recipe names no fence argv"
+        )
     parsed, operands = _scheduler_options(tool, argv)
     if ":" in operands:
         raise ValueError(
@@ -730,7 +1299,7 @@ def fenced_scheduler_task(
     wraps = [value for name, value, _tokens in parsed if name == "wrap"]
     wrap = wraps[-1] if wraps else None
     print(
-        f"{tool}: task re-enters the worker fence; absolute scheduler paths bypass this guard.",
+        SCHEDULER_FENCE_NOTICE.format(tool=tool),
         file=sys.stderr,
     )
     if tool == "srun":
@@ -751,9 +1320,9 @@ def fenced_scheduler_task(
     if not script.startswith(b"#!"):
         raise ValueError("fenced sbatch script must start with an interpreter shebang")
     command = _task_command(recipe, operands[1:], script=script)
-    wrapper = "\n".join(
-        ["#!/bin/sh", *_batch_directives(script), "exec " + shlex.join(command), ""]
-    )
+    script_comment, directives = _script_comment(_batch_directives(script))
+    options = with_comment_text(options, script_comment)
+    wrapper = "\n".join(["#!/bin/sh", *directives, "exec " + shlex.join(command), ""])
     # The scheduler spools this stdin script before exec returns. An anonymous
     # file keeps it alive through exec without leaving a wrapper on disk.
     with tempfile.TemporaryFile() as stream:
@@ -772,7 +1341,26 @@ def main(
     replaces this process with the real binary. The return is for the refusal
     and the missing-binary cases only; a forwarded launch does not come back.
     """
-    env = caller_environment(os.environ if environ is None else environ)
+    source = os.environ if environ is None else environ
+    env = caller_environment(source)
+    # A submitter that cleared its own environment takes the fence's names with
+    # it, and with them the run and the recipe its task has to be wrapped in.
+    # The process tree still holds them, so only the names this process is
+    # missing are filled; a value the caller carries is never overridden. A
+    # search that stopped before the top cannot report "no fence": it has not
+    # seen every ancestor, so the submission is refused rather than passed
+    # through unfenced.
+    try:
+        filled = fence_environment(source)
+    except AncestryIncompleteError as exc:
+        run_id = str(source.get(RUN_ID_ENV) or "").strip()
+        print(
+            FenceUnestablishedError(run_id, exc.detail).refusal(tool),
+            file=sys.stderr,
+        )
+        return REFUSAL_STATUS
+    for name, value in filled.items():
+        env.setdefault(name, value)
     refusal = depth_refusal(tool, env)
     if refusal is not None:
         print(refusal, file=sys.stderr)
@@ -781,7 +1369,9 @@ def main(
     if refuses_implicit_launch(tool, argv, facts, env):
         print(refusal_message(tool, facts), file=sys.stderr)
         return REFUSAL_STATUS
-    found = real_binary(tool, shim_directory(), env.get("PATH", os.defpath))
+    found = real_binary(
+        tool, shim_directory(), env.get("PATH", os.defpath), environ=env
+    )
     if found is None:
         print(
             f"{tool} shim: no real {tool} on PATH outside {shim_directory()}",
@@ -793,8 +1383,12 @@ def main(
     # the exit status unchanged. The nesting count goes one higher with it.
     try:
         task_argv = fenced_scheduler_task(tool, argv, env)
+    except FenceUnestablishedError as exc:
+        print(exc.refusal(tool), file=sys.stderr)
+        return REFUSAL_STATUS
     except (ValueError, OSError) as exc:
         print(f"{tool}: refusing an unfenced scheduler task: {exc}", file=sys.stderr)
         return REFUSAL_STATUS
+    task_argv = with_owner_comment(task_argv, env)
     os.execve(found, [tool, *task_argv], deeper(env))  # noqa: S606
     raise AssertionError("os.execve returned; a forwarded launch cannot continue.")

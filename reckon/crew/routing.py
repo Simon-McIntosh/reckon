@@ -1143,7 +1143,10 @@ def _live_pointer_worktrees() -> dict[Path, list[str]]:
     holds its node claim and prepares the tree, its own pointer is excluded.
     """
     claims: dict[Path, list[str]] = {}
-    for record in list_live():
+    from reckon.crew.open_run_index import pointers
+
+    snapshot = pointers()
+    for record in list_live() if snapshot is None else snapshot:
         if LAUNCH_RUN_ID.get() and record.get("run_id") == LAUNCH_RUN_ID.get():
             continue
         worktree = record.get("worktree")
@@ -1537,6 +1540,7 @@ def _release_worktree_whole(
     path: str | Path,
     *,
     run_id: str = "",
+    trash_root: Path | None = None,
 ) -> dict[str, Any]:
     """Vacate a worktree's registered path in one rename, then delete the copy.
 
@@ -1550,6 +1554,11 @@ def _release_worktree_whole(
     trash — which ``crew gc`` sweeps — rather than a half-removed registered
     tree.
 
+    The rename must stay on one filesystem, so a tree the releasable roots do
+    not sit on passes the trash directory its own caller owns through
+    ``trash_root``; a node-local scratch tree's trash belongs in its scratch
+    directory, not beside the checkout on shared storage.
+
     A path that is not a disposable linked worktree is refused before anything
     moves, and the refusal comes back as a withheld release rather than an
     exception, so a caller holding a bad pointer leaves everything where it is.
@@ -1561,7 +1570,7 @@ def _release_worktree_whole(
     if _worktree_is_locked(repo, tree):
         raise CrewError(f"refusing to release locked worktree {tree}")
     admin = _worktree_admin_dir(repo, tree)
-    trash_root = _worktree_trash_root(repo, tree)
+    trash_root = trash_root or _worktree_trash_root(repo, tree)
     trash_root.mkdir(parents=True, exist_ok=True)
     label = run_id or tree.name
     stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S%fZ")
@@ -1934,6 +1943,7 @@ def _run_has_live_pointer(
 
 def _run_report_trees(
     *,
+    repo_root: Path | None = None,
     project: str | None,
     apply: bool,
     now: datetime | None,
@@ -1953,7 +1963,9 @@ def _run_report_trees(
 
     This rule replaces the run-tree rule for the reports store, so a tree a
     plan cites is never removed first on age. ``plan-review`` is skipped here
-    because its raw text keeps its own rule.
+    because its raw text keeps its own rule. A pass confined with ``--run``
+    owns the named run's tree, so that run's own live pointer withholds it
+    from a whole sweep and not from the confined pass.
     """
 
     from reckon.crew import report_retention
@@ -1971,6 +1983,16 @@ def _run_report_trees(
         if project and name != project:
             continue
         docs_dir = mounted.get(name)
+        if docs_dir is None and repo_root is not None:
+            # A repository that runs workers without being a registered mount
+            # still carries its project's own docs tree, and that tree is what
+            # its items are judged against: the same fallback the run-directory
+            # rule reads its project from. A project the sweep can name neither
+            # way is left alone, because nothing here could read what its items
+            # cite.
+            own_docs = repo_root / "docs"
+            if (own_docs / "state" / name).is_dir():
+                docs_dir = own_docs
         if docs_dir is None:
             continue
         context = report_retention.build_context(
@@ -1978,6 +2000,7 @@ def _run_report_trees(
             docs_dir=docs_dir,
             reports_root=reports_root,
             now=current,
+            confined_to=run_id,
         )
         for item in report_retention.report_items(project_dir):
             if run_id and item.name != run_id:
@@ -2013,7 +2036,6 @@ def _run_report_trees(
                         f"symlink target {target} lies outside the permitted "
                         "roots; left alone"
                     )
-                    print(f"keeping report item {item}: {entry['reason']}")
                     entries.append(entry)
                     continue
             if apply:
@@ -2025,12 +2047,6 @@ def _run_report_trees(
                 else:
                     item.unlink()
                 entry["removed"] = True
-                print(f"removing report item {item} ({size} bytes): {verdict.reason}")
-            else:
-                print(
-                    f"would remove report item {item} ({size} bytes, "
-                    f"{entry['age_days']} days old): {verdict.reason}"
-                )
             entries.append(entry)
     return entries
 

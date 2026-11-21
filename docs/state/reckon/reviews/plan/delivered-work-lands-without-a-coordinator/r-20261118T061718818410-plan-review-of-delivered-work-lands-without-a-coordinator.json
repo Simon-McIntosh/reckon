@@ -1,0 +1,201 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T06:28:07Z",
+  "findings": [
+    {
+      "anchor": "plan.html:200",
+      "id": "reasoning-1",
+      "reason": "a stated root cause its own base arm does not reproduce sends the repair at the wrong mechanism, and leaves the section's only negative control unreachable.",
+      "text": "\u00a725's Why states the failure as \"reported `awaiting-review` where the test requires `finished`\" and \"present at `8eaa4016bb`\", but at the base revision the test's own failure is `CrewError: no live run 'r-alpha-7'` raised out of `promotion_requests._execute_command` before any status is read, and an immediate rerun of the same revision passes; the root cause named is therefore not the one the base arm shows, and a node dispatched from this section cannot tell which failure it is repairing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:201",
+      "id": "done_when-1",
+      "reason": "without a reproducible control the node's measure is satisfied by a suite that may pass on unfixed code, which is exactly what the failing-then-passing pair shows.",
+      "text": "the negative control requires the named test to fail \"with `awaiting-review`\" at the base revision, yet at the reviewed base the test passed on one of two runs and, when it failed, failed on a missing live pointer rather than on a status reading, so the control as written cannot be observed and the done-when has no arm that must go red",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:200",
+      "id": "reasoning-2",
+      "reason": "a node composed from this snapshot would rebuild work that has already landed and re-declare a section that is closed, and the plan should record the landing rather than leave the section open.",
+      "text": "the section is already satisfied on the primary branch: `42ce9382a0` is `land(a-delivered-conflict-repair-finishes-through-its-gate)` at primary `HEAD` with `0450856b0f` under it, and the primary plan file declares `s25` `done`, while this snapshot still declares it `implementable`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:200",
+      "id": "done_when-2",
+      "reason": "an obligation that no arm can fail is one a worker may skip silently, and the archaeology is the part that decides which contract to keep.",
+      "text": "the Deliverable obliges the node to \"establish from the commits between the two revisions which change moved the behaviour and whether that change intended it\", and no arm measures it; the done-when checks only the test file and its new case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:24",
+      "id": "wiring-1",
+      "reason": "every section it leans on is already `done` in the same snapshot, so no batch order or wait changes; only the record of the relationship is incomplete.",
+      "text": "`plan-section-depends-on` carries no key for `s25` although its fixture drives \u00a721's landing-group completion and reads what \u00a723 landed, so the only new section is the one whose upstream is unrecorded",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "plan.html:201",
+      "id": "reasoning-3",
+      "reason": "the three paths are the right files with the right behaviour, so the failure mode this rubric guards against (a wrong guess about the code) does not arise here; the list belongs in the node brief, and moving it is editorial.",
+      "text": "the section closes with \"Write paths: `reckon/crew/pending_landing.py`, `reckon/crew/queue_landing.py` and `tests/test_concurrent_edits_land_unattended.py`\", naming the modules to change rather than the records and figures the section delivers",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c54a15a657da7d5abd88ee0d0a54b940c650a11f",
+  "plan_fingerprint": "4a69f96dc3110cfb8b34987a0019ac580cecbfa57b42aa263738e7f74a5e63fa",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 59,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "wiring-1",
+      "reason": "every section it leans on is already `done` in the same snapshot, so no batch order or wait changes; only the record of the relationship is incomplete.",
+      "when": "2026-11-18T06:40:20.154536+00:00"
+    },
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "reasoning-3",
+      "reason": "the three paths are the right files with the right behaviour, so the failure mode this rubric guards against (a wrong guess about the code) does not arise here; the list belongs in the node brief, and moving it is editorial.",
+      "when": "2026-11-18T06:40:20.513066+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:25:57.058146+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:04.463844+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:10.915688+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:18.030096+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:24.461013+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-3",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:30.871642+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:04.463844+00:00"
+    },
+    "done_when-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:18.030096+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:25:57.058146+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:10.915688+00:00"
+    },
+    "reasoning-3": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:30.871642+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 25 landed at 81a03146da before this review was read; its worker established the point this finding raises (the review requirement was introduced deliberately at 9fc6cd8715 and the base test failed earlier on a removed pointer) and the landed test holds that contract, so the section text is left as the record of what was asked",
+      "when": "2026-11-18T11:26:24.461013+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/delivered-work-lands-without-a-coordinator/r-20261118T061718818410-plan-review-of-delivered-work-lands-without-a-coordinator.json",
+  "review_run_id": "r-20261118T061718818410-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "f2915b83a5afbf993d73cfd3a3fdf2f155af8f96",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_concurrent_edits_land_unattended.py` exists and holds the named test; `reckon/crew/pending_landing.py` and `reckon/crew/queue_landing.py` exist; commits `8eaa4016bb` and `8b30b9344f` resolve, and `8b30b9344f` is the last commit touching the test file.",
+    "done_when": "a finding \u2014 \u00a725's negative control (\"at the base revision the named test fails with `awaiting-review`\") is not what the base revision produces: run at `9fd4655bbf` it failed with `no live run 'r-alpha-7'`, and on an immediate rerun at the same revision it passed (plan.html:201).",
+    "evidence_paths": "pass \u2014 the section's evidence is a test file and gate logs in the repository and the run's manifest, and the comments added to `_document` cite run ids under the crew's durable report root.",
+    "naming": "pass \u2014 \u00a725 and the comments name behaviour (a repaired landing finishing through its own gate), with no ticket number, stage name or version tag carried into a symbol or path.",
+    "reasoning": "a finding \u2014 \u00a725's Why asserts \"the primary branch carries one failing test\", but the state it describes is already spent: at the reviewed base the named test is not deterministically red and fails on a different symptom than the section names, and on primary the section's own landing commit `42ce9382a0` sits at `HEAD` with `s25` declared `done`.",
+    "single_goal": "pass \u2014 \u00a725 names one deliverable, one contract for a delivered conflict repair, held by product and test.",
+    "wiring": "a finding \u2014 in the snapshot `plan-section-depends-on` lists no entry for `s25` (plan.html:24), so \u00a725's upstream \u2014 \u00a721's landing-group completion, which the named test drives first, and \u00a723's newest-attempt reading its fixture depends on \u2014 is unrecorded."
+  },
+  "section_digests": {
+    "_document": "e6c1c9b8f9e282b9182805c96fa9569ab7ab51e437cb5c601407aef4acd66824",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s18": "952c184917351117b3f92f50b109c64b6edc963dc57f74f8d0e96e260b672454",
+    "s19": "fd99cdb85821b8f1cc753d60d3461ddda1e36227553a34ad710f3c4edbcb65dd",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s20": "73a59983728fec7eb3a28f9305c1846bab53db81049cdf361b7332b51458b9ab",
+    "s21": "c95db350871319247d9fa4cc2afa9694a54554ea9e31d2e9da533f29a2f8331f",
+    "s22": "af8c57fe3c0c211e820c487af5729bf215453da9640ec5c8b23d71e3f7418e41",
+    "s23": "3739019144c6377f7bee7906410475d1c3b4b1cb8c6cc230ed6a6ba1fb090517",
+    "s24": "2d55de204feeb4689a853af6b9a87571dcb196723395a8172af8276eb87eb3b3",
+    "s25": "5a7d62a0abe80ca6575854a16a19342fe76fea7420d61e441c7c934523ebb7fd",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T06:40:16.529270+00:00",
+  "total": null
+}

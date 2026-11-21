@@ -46,7 +46,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -551,19 +551,74 @@ def suite_observation_missing_fields(
     return missing
 
 
-def normalized_suite_observation(observation: Mapping[str, Any]) -> dict[str, Any]:
-    """Return the stable ledger shape of a validated suite observation."""
-    return {
+def suite_observation_is_uncounted(observation: Any) -> bool:
+    """Whether an arm never reached a count.
+
+    An arm whose program aborted before pytest printed its summary, or whose
+    summary carried no count, states exactly what it observed: no failure
+    count exists for an arm that never reached a summary, so ``completed`` is
+    false or the count is not a number. Such an arm is unmeasured rather than
+    malformed — it is the shape a gated run records when its suite cannot run
+    on the CPU it was armed for — and the difference from a measured zero is
+    the point.
+    """
+    if not isinstance(observation, Mapping):
+        return False
+    if observation.get("completed") is not True:
+        return True
+    failure_count = observation.get("failure_count")
+    return isinstance(failure_count, bool) or not isinstance(failure_count, int)
+
+
+def normalized_suite_observation(
+    observation: Mapping[str, Any],
+    *,
+    unmeasured_reason: str = "",
+) -> dict[str, Any]:
+    """Return the stable ledger shape of a validated suite observation.
+
+    An arm that never reached a count is recorded as unmeasured instead of
+    raising: its count is null, ``unmeasured`` is true, and the reason the
+    caller was given travels with it. A completion that waived its suite pair
+    for exactly this reason therefore lands, and the row says the arm measured
+    no count rather than that the arm passed.
+    """
+    shared = {
         "revision": str(observation.get("revision") or "").strip(),
         "command": str(observation.get("command") or "").strip(),
-        "exit_status": int(observation["exit_status"]),
         "log_path": str(observation.get("log_path") or "").strip() or None,
         "log_digest": str(observation.get("log_digest") or "").strip() or None,
+        "failure_ids": sorted(
+            {str(item).strip() for item in observation.get("failure_ids") or ()}
+        ),
+    }
+    if suite_observation_is_uncounted(observation):
+        exit_status = observation.get("exit_status")
+        return {
+            "revision": shared["revision"],
+            "command": shared["command"],
+            "exit_status": (
+                int(exit_status)
+                if isinstance(exit_status, int) and not isinstance(exit_status, bool)
+                else None
+            ),
+            "log_path": shared["log_path"],
+            "log_digest": shared["log_digest"],
+            "completed": False,
+            "failure_count": None,
+            "failure_ids": shared["failure_ids"],
+            "unmeasured": True,
+            "unmeasured_reason": str(unmeasured_reason).strip() or None,
+        }
+    return {
+        "revision": shared["revision"],
+        "command": shared["command"],
+        "exit_status": int(observation["exit_status"]),
+        "log_path": shared["log_path"],
+        "log_digest": shared["log_digest"],
         "completed": True,
         "failure_count": int(observation["failure_count"]),
-        "failure_ids": sorted(
-            {str(item).strip() for item in observation["failure_ids"]}
-        ),
+        "failure_ids": shared["failure_ids"],
     }
 
 
@@ -1179,22 +1234,33 @@ def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
     return ids
 
 
-def run_ids(project: str, root: str | Path | None = None) -> set[str]:
+def run_ids(
+    project: str, root: str | Path | None = None, *, use_index: bool = True
+) -> set[str]:
     """Read store membership without decoding any run payload.
 
     The document index remains available when no store exists, for projects
     awaiting import. An existing store is authoritative even when empty.
+
+    ``use_index=False`` reads membership from the committed sources alone —
+    the aggregate and the run documents — because a cache rebuild compares its
+    own membership against what the ledger holds. Asking a cache what its
+    sources hold, through that cache, answers with the cache's own claim and
+    can never detect that it is stale.
     """
     from reckon import run_store
 
-    stored = run_store.indexed_run_ids(project)
-    if stored is not None:
-        return stored
-    current = _indexed_run_ids(project, root)
-    if current is not None:
-        return current
-    if _run_index_path(project, root).is_file():
-        data, _version = load(project, root, headers_only=True)
+    if use_index:
+        stored = run_store.indexed_run_ids(project)
+        if stored is not None:
+            return stored
+        current = _indexed_run_ids(project, root)
+        if current is not None:
+            return current
+        if _run_index_path(project, root).is_file():
+            data, _version = load(project, root, headers_only=True)
+        else:
+            data, _version = _load_aggregate(project, root)
     else:
         data, _version = _load_aggregate(project, root)
     return {
@@ -1356,13 +1422,16 @@ def _index_record_written_document(
             runs_stamp = json.dumps(_file_identity(runs_directory))
             with connection:
                 connection.execute(
-                    "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?)",
+                    "INSERT OR REPLACE INTO records "
+                    "(name, stamp, activity, payload, picker, plan) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
                     (
                         target.stem,
                         json.dumps(stamp),
                         run_activity_seconds(record),
                         json.dumps(dict(record), sort_keys=True, separators=(",", ":")),
                         json.dumps(picker_record(record), separators=(",", ":")),
+                        row_plan(record),
                     ),
                 )
                 if generation is not None:
@@ -1668,8 +1737,190 @@ def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
     return projection
 
 
+# The rows one process has already decoded from a project's store, so a repeat
+# read decodes only what was promoted since. An entry is keyed by the store, the
+# project and the projection, because a picker-projected row and a full record
+# are different answers to the same history and neither can be derived from the
+# other once decoded (the picker projection leaves out fields the full record
+# keeps). It holds the token its rows were read under and the per-row signature
+# the store answered at that read.
+_Entry = tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]]
+
+# How many stored histories one process keeps: eight projects, each read
+# through both the picker projection and the full record. Each entry holds a
+# project's decoded rows, so the bound is what stops a monitor that reads many
+# projects from holding every project's history at once; a read whose entry was
+# evicted decodes its project's rows again, exactly as every read used to.
+# The container is :func:`reckon.file_memo.bounded_map`'s: the repository's own
+# bounded map, which holds the lock over a read or a replacement and is emptied
+# by ``file_memo.clear()`` like every other memo in the process, so this module
+# keeps no eviction loop and no lock of its own.
+_MAX_STORED_HISTORIES = 16
+
+_HELD_HISTORIES: file_memo.BoundedMap[_Entry] = file_memo.bounded_map(
+    "stored-history", limit=_MAX_STORED_HISTORIES
+)
+
+
+def clear_stored_history() -> None:
+    """Forget every history this process decoded from a run store."""
+    _HELD_HISTORIES.clear()
+
+
+def _held_history(key: tuple[str, str, bool]) -> _Entry | None:
+    """The entry one history holds now, or ``None`` when it holds none."""
+    return _HELD_HISTORIES.get(key)
+
+
+def _hold_history(key: tuple[str, str, bool], entry: _Entry) -> None:
+    """Replace one history's entry in a single store."""
+    _HELD_HISTORIES.put(key, entry)
+
+
+def _history_token(project: str, target: Path, *, run_store: Any) -> tuple[Any, ...]:
+    """What one stored history is a reading of: the store, its archive and writes.
+
+    The store's own change stamp moves on every write to it, including an
+    in-place update, and the archive is a second file a retirement writes. The
+    project's ledger-write generation is per project, so a write for another
+    project moves the stamps without moving that.
+    """
+    return (
+        run_store.store_stamp(target),
+        run_store.store_stamp(run_store._archive_path(target)),
+        ledger_generation(project),
+    )
+
+
+def _stored_rows(
+    project: str,
+    *,
+    target: Path,
+    run_ids: Iterable[str] | None,
+    picker_only: bool,
+) -> list[dict[str, Any]]:
+    """Decode the named rows, or every row when none are named."""
+    from reckon import run_store
+
+    stored = run_store.stored_run_rows(
+        project,
+        path=target,
+        run_ids=None if run_ids is None else sorted(run_ids),
+        fields=_PICKER_FIELDS if picker_only else None,
+    )
+    return list(stored or ())
+
+
+def _stored_auxiliary(project: str, root: str | Path | None) -> dict[str, Any]:
+    """The roster and holds a stored history is read beside.
+
+    The store's imported projection wins, as it does through :func:`load`, and
+    the committed aggregate answers a project the store holds no import for.
+    """
+    from reckon import run_store
+
+    data, aggregate_version = _aggregate_headers(project, root)
+    stored = run_store.read_auxiliary(project)
+    auxiliary, _version = stored or (
+        {"members": data["members"], "holds": data["holds"]},
+        aggregate_version,
+    )
+    return auxiliary
+
+
+def _handed_rows(rows: Mapping[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """One answer, in promotion order, with a dict of its own for every row.
+
+    The held history keeps the rows it decoded, so an answer that shared them
+    would let a caller change what the next reader is handed; :func:`load`
+    always handed out dicts of its own, and every reader keeps that. The values
+    inside a row are shared, which is what a reader of a record expects.
+    """
+    return sorted((dict(row) for row in rows.values()), key=promotion_order_key)
+
+
+def stored_history(
+    project: str,
+    root: str | Path | None = None,
+    *,
+    picker_only: bool = False,
+) -> tuple[list[dict[str, Any]], dict[str, Any]] | None:
+    """Read a project's stored history, decoding only rows new since the last read.
+
+    A process that holds no previous read reads the project's rows once; every
+    later read decodes only the rows whose signature moved since — an inserted
+    promotion, a retirement into the archive, or a rewrite that changed an
+    indexed column or the encoded size of the record. The answer is the same
+    one :func:`load` gives for the store's share of the history, so a caller
+    keeps the store as the authority for it, and the roster and holds beside
+    the rows are read fresh so an unchanged row still answers with the
+    attribution the current roster gives it.
+
+    A signature cannot see a rewrite that both stays inside the unindexed
+    durable fields and encodes to the same number of bytes. The project's write
+    generation covers that: a read whose generation moved while no signature
+    did is answered by decoding the project's rows again rather than from the
+    rows it holds.
+
+    None means the store holds no rows for this project, so a caller falls back
+    to the committed ledger exactly as :func:`load` does when the store answers
+    nothing.
+    """
+    from reckon import run_store
+
+    target = run_store.store_path()
+    key = (str(target), project, picker_only)
+    token = _history_token(project, target, run_store=run_store)
+    held = _held_history(key)
+    if held is not None and held[0] == token:
+        return _handed_rows(held[2]), _stored_auxiliary(project, root)
+
+    signature = run_store.stored_run_signature(project, path=target)
+    if signature is None:
+        return None
+    current = {str(row[0]): row for row in signature}
+    # The rows this read has to decode: everything when nothing is held, and
+    # otherwise only those whose signature moved.
+    wanted: list[str] | None
+    if held is None:
+        rows: dict[str, dict[str, Any]] = {}
+        wanted = None
+    else:
+        rows = {run_id: row for run_id, row in held[2].items() if run_id in current}
+        wanted = sorted(
+            run_id for run_id, row in current.items() if held[1].get(run_id) != row
+        )
+        if not wanted and held[0][2] != token[2]:
+            # The project's generation moved and no row the signature can see
+            # did, so this is a rewrite the signature cannot describe. Read the
+            # project's rows again rather than answer from what it does not
+            # hold.
+            wanted = None
+    decoded = {
+        str(row.get("run_id")): row
+        for row in _stored_rows(
+            project, target=target, run_ids=wanted, picker_only=picker_only
+        )
+    }
+    rows.update({run_id: row for run_id, row in decoded.items() if run_id})
+    if not rows:
+        return None
+    complete = wanted is None or all(run_id in decoded for run_id in wanted)
+    answer = _handed_rows(rows)
+    auxiliary = _stored_auxiliary(project, root)
+    # Kept only when no write landed under the read and every row this read
+    # asked for arrived: a row promoted between the signature and the rows, or
+    # one that vanished under them, would otherwise be cached as already seen.
+    if complete and _history_token(project, target, run_store=run_store) == token:
+        _hold_history(key, (token, current, rows))
+    return answer, auxiliary
+
+
 def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Read projected history without decoding retained full payloads."""
+    stored = stored_history(project, root, picker_only=True)
+    if stored is not None:
+        return stored[0]
     data, _version = load(project, root, True)
     return data["runs"]
 
@@ -1793,7 +2044,37 @@ def _payload_slot(
         return None, None, None
     database = connection.execute("PRAGMA database_list").fetchone()[2]
     key = (str(database), bool(headers_only), activity_since, plan)
-    return region, key, region.get(key)
+    held = region.get(key)
+    if held is None and plan is not None and not headers_only:
+        held = _plan_slice(region, (str(database), False, activity_since, None), plan)
+        if held is not None:
+            region[key] = held
+    return region, key, held
+
+
+def _plan_slice(
+    region: dict[
+        tuple[str, bool, float | None, str | None], tuple[dict[str, Any], int]
+    ],
+    unfiltered_key: tuple[str, bool, float | None, str | None],
+    plan: str,
+) -> tuple[dict[str, Any], int] | None:
+    """One plan's rows, sliced from a wider payload the read pass already holds.
+
+    A plan-filtered read is otherwise a decode of its own, so a batch that
+    reads the whole ledger and then each entry's plan pays a decode per read
+    shape. The unfiltered payload carries every row, so the plan's rows are
+    filtered and ordered here instead of read again. The order matches the
+    SQL path's: the unfiltered read preserves completion order, and re-sorting
+    the selected rows is stable over it, so the same ties break the same way.
+    """
+    wider = region.get(unfiltered_key)
+    if wider is None:
+        return None
+    data, version = wider
+    runs = [row for row in data["runs"] if row_plan(row) == plan]
+    runs.sort(key=promotion_order_key)
+    return {**data, "runs": runs}, version
 
 
 def _index_payload(
@@ -2459,6 +2740,21 @@ def _selected_rows(data: dict[str, Any], run_ids: set[str] | None) -> dict[str, 
     }
 
 
+def _reader_row(row: Any) -> Any:
+    """One run record as a ledger reader answers it.
+
+    ``store_write`` records what happened at one promotion rather than what
+    the run is, so the store has never held it and a store-backed read has
+    never returned it. The projection is applied on the document path as
+    well, so a reader's row does not gain a field merely because the cache
+    that answered it was absent. The committed file keeps the field for the
+    document readers that write, split and compare it.
+    """
+    if not isinstance(row, Mapping):
+        return row
+    return {name: value for name, value in row.items() if name != "store_write"}
+
+
 def load(
     project: str,
     root: str | Path | None = None,
@@ -2476,6 +2772,12 @@ def load(
     :func:`write`. ``auxiliary_version`` belongs to the projected roster and
     holds; mutations pair the state and version from :func:`load_auxiliary`
     with :func:`write_members` or the hold writer instead.
+
+    A row is the record a reader answers, which is the record the store holds:
+    the promotion's own ``store_write`` is not part of it, and the answer does
+    not gain that field when a document rather than the store answers the
+    read. ``use_index=False`` is the document read, verbatim, for the callers
+    that import, split or compare what was committed.
     """
     data, aggregate_version = _load_file_history(
         project,
@@ -2494,6 +2796,8 @@ def load(
         {"members": data["members"], "holds": data["holds"]},
         aggregate_version,
     )
+    if use_index:
+        data["runs"] = [_reader_row(row) for row in data["runs"]]
     return {
         **data,
         **auxiliary,
@@ -2546,10 +2850,30 @@ def _load_file_history(
             fields=fields,
             activity_since=activity_since,
         )
-        if stored is not None:
+        # The store answers a project's history once it holds a row for that
+        # project. A store opened for the project's mutable state alone holds
+        # none, and no reader unions the aggregate back in afterwards, so an
+        # empty store must fall through to the committed ledger rather than
+        # answer that history as though nothing had ever been promoted.
+        if stored:
             data, version = _aggregate_headers(project, root)
             data["runs"] = sorted(stored, key=promotion_order_key)
-            _report_damaged_run_records(project, ())
+            # A stored read does not decode the documents it answers from, so
+            # the damage it reports is the damage in the documents the store
+            # does not hold: those are the only copies of their own rows, and
+            # a torn one among them would otherwise be invisibly missing.
+            narrowed = bool(plan) or activity_since is not None or selected is not None
+            held = {str(row.get("run_id")) for row in stored}
+            if narrowed:
+                held = {
+                    str(row.get("run_id"))
+                    for row in (
+                        run_store.stored_run_rows(project, fields=("run_id",)) or ()
+                    )
+                }
+            _report_damaged_run_records(
+                project, _damaged_run_documents(project, root, held)
+            )
             return data, version
     _report_damaged_run_records(project, ())
     if use_index and _ledger_holds_content(project, root):
@@ -2598,6 +2922,37 @@ def _load_file_history(
             for row in data["runs"]
         ]
     return data, version
+
+
+def _damaged_run_documents(
+    project: str, root: str | Path | None, held: Collection[str]
+) -> tuple[Path, ...]:
+    """The run documents outside the store that will not read as a run.
+
+    A stored read answers history from rows the store already holds, so it
+    decodes no document and would report no damage at all. The documents it
+    never looks at are the ones whose run it does not hold, and each of those
+    is the only copy of its own row: one that will not parse is a loss a reader
+    must be told about rather than a redundant copy. The listing goes through
+    :func:`os.scandir` and a held document is never opened, so a store that
+    carries the project's history costs the directory walk and no decodes.
+    """
+    runs = ledger_path(project, root).parent / "runs"
+    try:
+        entries = list(os.scandir(runs))
+    except OSError:
+        return ()
+    damaged: list[Path] = []
+    for entry in entries:
+        name = entry.name
+        if not name.endswith(".json") or name.removesuffix(".json") in held:
+            continue
+        source = Path(entry.path)
+        try:
+            _read_run(source)
+        except LedgerError:
+            damaged.append(source)
+    return tuple(damaged)
 
 
 def promotion_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
@@ -2781,6 +3136,22 @@ def _roster_ids(entries: Any) -> set[str]:
         for entry in entries
         if isinstance(entry, Mapping) and entry.get("id")
     }
+
+
+def _reader_members(project: str, fallback: Sequence[Any]) -> list[Any]:
+    """The roster the same :func:`load` read would carry right now.
+
+    A history read answers the store's imported roster when one exists and the
+    aggregate's own otherwise. The roster guard must measure that roster rather
+    than the aggregate's copy, which the store may have moved past: judging a
+    projected payload against the stale copy would refuse a write that drops
+    nothing. The store is read without importing into it, so a guard never
+    creates a store as a side effect.
+    """
+    from reckon import run_store
+
+    stored = run_store.read_auxiliary(project)
+    return list(stored[0]["members"]) if stored else list(fallback)
 
 
 def dropped_member_ids(stored: Any, incoming: Any) -> list[str]:
@@ -2971,13 +3342,18 @@ def _write_state(
     orchestrators safe: the loser is told to re-read rather than silently
     overwriting a record it never saw.
 
-    A write that leaves out a member id the stored roster holds is refused
+    A write that leaves out a member id the roster the same read carries holds is
+    refused
     unless ``allow_member_removal`` states that the removal is intended. This
     is what stops a write emptying a roster through a call meant for another
     purpose: the caller that genuinely retires a member passes the flag, so
     the removal is stated where it is performed rather than inferred later
     from an absence. An absent ledger has no members, so creating one from
-    empty is unaffected.
+    empty is unaffected. The roster compared against is the one :func:`load`
+    would return now — the store's imported copy when one exists, the
+    aggregate's own otherwise — so a payload read through :func:`load` is
+    measured by the members it declares even though the aggregate keeps its
+    own copies: a truncation cannot ride an aggregate write.
 
     A write that cannot bring every per-run file it must change into line with
     its aggregate row is abandoned, and the files it had already changed are
@@ -3053,8 +3429,9 @@ def _write_state(
         # A run update preserves the aggregate's own copies instead of copying
         # that projection back into the file or judging it as a roster removal.
         projected_auxiliary = "auxiliary_version" in data
-        incoming_members = list(
-            aggregate["members"] if projected_auxiliary else data.get("members", [])
+        declared_members = list(data.get("members", []))
+        incoming_members = (
+            list(aggregate["members"]) if projected_auxiliary else declared_members
         )
         incoming_holds = list(
             aggregate["holds"] if projected_auxiliary else data.get("holds", [])
@@ -3066,8 +3443,17 @@ def _write_state(
         # view, and the per-run files it folds in are rows this write must leave
         # where they are.
         current_view = expected_version == stored_version
+        # The roster guard measures the members the caller declared against the
+        # roster the same read carries: a projected payload's members are that
+        # read's roster, and the aggregate's copy may be the one the store has
+        # moved past.
+        reference_members = (
+            _reader_members(project, stored["members"])
+            if projected_auxiliary
+            else stored["members"]
+        )
         dropped = (
-            dropped_member_ids(stored["members"], incoming_members)
+            dropped_member_ids(reference_members, declared_members)
             if current_view
             else []
         )
@@ -3075,8 +3461,8 @@ def _write_state(
             raise LedgerError(
                 f"refusing to write the ledger for {project!r}: this write drops "
                 f"roster member(s) {', '.join(dropped)} that the stored roster "
-                f"holds, taking the member count from {len(stored['members'])} to "
-                f"{len(incoming_members)}, which is how a roster empties itself "
+                f"holds, taking the member count from {len(reference_members)} to "
+                f"{len(declared_members)}, which is how a roster empties itself "
                 "without anyone asking; pass allow_member_removal=True when the "
                 "removal is intended"
             )
@@ -3597,6 +3983,27 @@ def register_member(
     return entry
 
 
+def _complete_store_from_ledger(project: str, root: str | Path | None) -> None:
+    """Import a project's committed history before its first stored row exists.
+
+    Every reader answers from the store once it holds a row, so a store created
+    by one append would answer that run's history as though the runs committed
+    before it never existed: the aggregate and the run documents are the copies
+    the store is built from, and a read no longer unions them. The import is
+    therefore part of creating the project's first row rather than a repair a
+    caller must remember, and it happens once per project — a store that already
+    holds a row for the project is left exactly as it is, so an ordinary append
+    still writes one row, and a project with nothing committed imports nothing.
+    """
+    from reckon import run_store
+
+    if not _ledger_holds_content(project, root):
+        return
+    if run_store.stored_run_exists(project):
+        return
+    run_store.import_ledger(project, root=root)
+
+
 def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """Record one run in the store, refusing when the store will not take it.
 
@@ -3823,6 +4230,7 @@ def append_run(
 
     stored_record = dict(record)
     stored_record.pop("store_write", None)
+    _complete_store_from_ledger(project, ledger_root)
     if git_state == "retired":
         store_outcome = _index_append(project, stored_record)
         from reckon.crew import open_run_index
@@ -4140,7 +4548,11 @@ def read_records(
     selected_ids = None if run_ids is None else {str(run_id) for run_id in run_ids}
     from reckon import run_store
 
-    stored = run_store.store_path().exists()
+    # The store answers a project's history once it holds a row for that
+    # project. A store created for its mutable state alone holds none, and the
+    # committed ledger is still the copy every row of that history came from,
+    # so its existence cannot be what selects the fleet-wide figure population.
+    stored = run_store.stored_run_exists(project)
     data, version = load(
         project,
         root,

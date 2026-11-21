@@ -64,7 +64,8 @@ Detail: `crew(project, view="live")`, `crew(project, view="scopes")`,
 `crew(project, view="lanes")`, `crew(project, view="models")`,
 `crew(project, view="runs")`, `crew(project, view="scores")`,
 `crew(project, view="forgotten")`, `crew(project, view="routing")`,
-`crew(project, view="findings")` and
+`crew(project, view="findings")`, `crew(project, view="queue")`,
+`crew(project, view="decisions")`, `crew(project, view="review-need")` and
 `crew(project, view="velocity")`; also `crew(view="directory")`,
 `crew(view="fleet")` and `crew(view="obligations", session=<session>)`.
 On `live`, `phase` keeps pointers in one phase and `mine` keeps only the rows
@@ -180,6 +181,11 @@ its node `awaiting-upstream` until the upstream has passed its review and gate
 and landed, with no further coordinator dispatch, so nothing builds on work
 that has not passed. Bring urgent work to the top with
 `reckon crew queue reprioritise`, and steer the queue as earlier results come back. The queue orders only waits declared in `plan-section-depends-on`.
+Read where the waiting work stands with `reckon crew view queue --project <project>`
+(the same document as `crew(view="queue")`): every queued and awaiting-upstream
+request in the order admission launches by, with its place, its reason, its wait
+and the hold that stops it, beside each session's priority budget and the points
+free. Narrow it to one session with `--session <id>`.
 Read progress through `crew view live` and steer the queue rather than feeding it:
 change a queued request's brief, done-when, write paths, time budget or route with
 `reckon crew queue edit --run <id>`; pause it with
@@ -277,18 +283,24 @@ reckon crew budget --list [--group <group>] [--pretty]
 reckon crew check --manifest --run <id>    reckon crew check --review (--run <id> | --record <path>)
 reckon crew census [--apply]    # Lists reckon processes whose recorded owner is dead; with --apply, stops exactly those, printing each.
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
+reckon crew decision record --record <file>    # records one question for the lead with its owning session, recommendation and the work it holds; read them back through `crew(view="decisions")`
+reckon crew decision answer --id <decision> --answers <json-or-file> [--by <who>]    # answers one raised decision per run record — adopt the work into a named live session or retire it — so the work it held is released rather than left orphaned
+reckon crew declare-gate --run <id> [--project <project>] [--command "<suite command>"] [--partition <partition>]    # names the suite command and partition a run's own gate arms ran with, when they differ from the project's armed command
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --regenerate-path <path> --input <path> --compares-with <measurement> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
 reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
 reckon crew follow --project <project>    reckon crew gc
 reckon crew gate (--pause <reason> | --open) [--pretty]    # prints the shared gate document before and after the change
+reckon crew hold --run <id> --reason <why>    # holds a delivered run out of automatic promotion and landing; `reckon crew release --run <id> --reason <why>` hands it back to the lander
 reckon crew member add    reckon crew member list --project <project>
 reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
+reckon crew promotions [--window <seconds>] [--pretty]    # reports the promotion queue's waiting count, oldest wait and drain rate, so a coordinator can tell whether it is draining
 reckon crew queue edit --run <id> [--brief <file>] [--done-when <measure>] [--write-path <path>] [--time-budget <duration>] [--backend <backend>] [--model <model>] [--project <project>] [--pretty]
 reckon crew queue reprioritise --run <id> --priority <integer> [--reason <why>] [--project <project>] [--pretty]
 reckon crew queue drop --run <id> [--reason <why>] [--project <project>] [--pretty]
+reckon crew record-merge --run <id> --merge <sha> --reason <why>    # records the primary-branch commit that carries a run's reviewed head because a hand merged it rather than the landing pass
 reckon crew recover    reckon crew resume --run <id> --backend <backend> --model <model> --reason <text>
 reckon crew repair --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew repair --review --run <id> --record <path> --set <field=value> --reason <text>
@@ -298,7 +310,7 @@ reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <pr
 reckon crew supersede-review --project <project> --run <id> --reason <text>    # call it when a promoted row's review block names another round: it appends a correction the readers honour and leaves the recorded fields in place
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>
-reckon crew view <name> [--project <project>] [--since <iso>] [--until <iso>] [--fields <block>] [--pretty]    # the one transport for every crew read view the crew MCP tool serves: summary, flight, live, scopes, drain, records, ledger, budget, lanes, routing, directory, fleet, runs, obligations, velocity, scores, plan-review, findings
+reckon crew view <name> [--project <project>] [--since <iso>] [--until <iso>] [--fields <block>] [--pretty]    # the one transport for every crew read view the crew MCP tool serves: summary, flight, live, scopes, drain, queue, records, ledger, budget, lanes, routing, directory, fleet, runs, obligations, velocity, scores, plan-review, findings
 reckon crew widen --run <id> --write-path <path>
 reckon flight --project <project>    reckon audit-doc    reckon crew suite
 ```
@@ -619,7 +631,8 @@ already has and register none.
 Admission is fair across sessions: each launch goes to the session using the
 least of the lane. Within your own session the queue launches, in order:
 
-1. the review of a delivered run, because it lets that run land;
+1. the review of a delivered run, because it lets that run land, and two
+   reviews are ordered by the points their runs carried, highest first;
 2. any request that has waited 30 minutes, so nothing starves;
 3. requests carrying a priority, highest first;
 4. the rest in roadmap order (critical path, then sprint order), then oldest.
@@ -642,8 +655,17 @@ not push work back. To defer work, hold it.
 
 **Change it in flight.** A priority is stored on the request and read on every
 admission pass, so raise or lower it whenever needs change while the request
-waits, queued or awaiting its upstream. Once the worker has launched, the
-router serves it and the priority no longer applies.
+waits, queued or awaiting its upstream. The points a run launched with carry to
+the review composed for it and to its promotion request, so both queues order by
+them — and a delivered run can be raised with the same verb while it waits to
+land, so its review and its promotion move ahead. A raise on a delivered run
+costs the session its points once, whichever record carries them: while the
+review is still queued it is the review that is charged, and the charge returns
+when the run lands or is discarded.
+
+```text
+reckon crew queue reprioritise --run <delivered-run-id> --priority 90 --reason "this run's landing gates the next wave"
+```
 
 **Take work out of the queue when it is no longer wanted.**
 

@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/roadmap.py:1936",
+    "reckon/mcp_views.py:4911",
+    "reckon/mcp_views.py:4942",
+    "reckon/ledger.py:1878",
+    "reckon/ledger.py:4002",
+    "reckon/ledger.py:4555",
+    "reckon/budget.py:689",
+    "reckon/run_store.py:809"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:34:48Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1790",
+      "severity": "non-blocking",
+      "text": "non-blocking: _history_token rebuilds run_store.change_token's (store, archive) stamp pair by hand rather than extending it, so the set of store files a read answers from is stated twice in the same landed delta and a future third store file would be added to only one of the two."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit over ff12c6836ae52c35c0ebbf409677aa2e4c2369cc..8e3001a9c9264d3d89130f3efa57d254557a90d3 \u2014 one commit, the merge \"merge: primary main into the ledger plan-owner branch\"; git show --cc shows the single conflict at reckon/run_store.py resolved additively, and git diff ff3bb24bcf916047144aadb4c3fc0315e9687219..8e3001a9 -- reckon/run_store.py shows main's side retained word for word with only the branch's _plan_owned_identities, PLAN_OWNER_FIELDS and _plan_owner_sql added.",
+    "done_when": "the measure names that file passing at head with SLURM_JOB_ID unset, the base arm with its failing ids, an importer arm recorded as inline JSON carrying full revisions, and a clean ruff receipt; logs/head-every-ledger-question.log:1-9 carries revision 8e3001a9, \"SLURM_JOB_ID unset\", 28 passed and EXIT=0, logs/base-every-ledger-question.log closes 2 failed, 26 passed, EXIT=1, logs/ruff-changed-paths.log reports both ruff invocations clean, while manifest.md:19 states the importer arms (68 failed/1503 passed at 42fe90d0b0a4, 21 failed/1550 passed at 8e3001a9) in prose rather than the inline JSON the measure names.",
+    "goal": "the source node's goal is that tests/test_every_ledger_question_reads_the_store.py passes in full on the primary branch, and this delta \u2014 the conflict resolution in merge 8e3001a9:reckon/run_store.py \u2014 keeps the branch's plan-owner narrowing (reckon/run_store.py:967,970) beside primary main's stored_run_exists and stored_run_signature (reckon/run_store.py:992,1027), and my independent re-run of that file at the merged head reports 28 passed, EXIT=0.",
+    "manifest": "read in full; it reads status complete, lists 8e3001a9c9264d3d89130f3efa57d254557a90d3 among its commits, its tests line names the gate command and test_logs names logs/head-every-ledger-question.log, and its baseline_suite/after_suite JSONs both read exit_status 0 with 58 passed at 42fe90d0b0a46060bafde2490dda7d4002cda478 and 8e3001a9c9264d3d89130f3efa57d254557a90d3 \u2014 but that command runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, not the node's own file.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment and docs/figures/queued-work-needs-no-workaround; the only hand-made change in 8e3001a9 is the reckon/run_store.py resolution shown by git show --cc, inside the declared reckon path, and the rest of the merge's paths are primary main's own tree arriving rather than the node writing outside its grant."
+  },
+  "justifications": {
+    "durability": "tests/test_every_ledger_question_reads_the_store.py:540 reddens if the resolution drops the branch's plan clause (logs/base-every-ledger-question.log names the two red ids) but the merge adds no assertion, so a later merge dropping stored_run_exists is caught only by that function's existing callers.",
+    "evidence": "logs/head-every-ledger-question.log closes 28 passed with EXIT=0 at 8e3001a9 and logs/reviewed-gate.log reproduces it independently, but manifest.md:19 records the importer arms in prose instead of the inline JSON the done_when names.",
+    "fit": "change_token sits beside store_stamp at reckon/run_store.py:407 and PLAN_OWNER_FIELDS beside its reader at :967, matching the module's ordering, and no added name breaks the repository's naming rule.",
+    "goal_fidelity": "reckon/run_store.py:967 keeps PLAN_OWNER_FIELDS and :992/:1027 keep stored_run_exists and stored_run_signature in the merged module, so the merge delivers both sides and the merged head passes the named file.",
+    "reuse": "reckon/ledger.py:1790 _history_token rebuilds the (store stamp, archive stamp) pair that reckon/run_store.py:407 change_token now owns instead of extending it, and the carried restatement of row_plan's precedence at reckon/run_store.py:970 stands as the earlier record's finding.",
+    "scope_discipline": "git show --cc 8e3001a9 shows the only hand-made change is the reckon/run_store.py resolution, inside the declared reckon path, with the merge's other 700-odd paths being primary main's tree."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_every_ledger_question_reads_the_store.py passes in full on the primary branch, and this delta \u2014 the conflict resolution in merge 8e3001a9:reckon/run_store.py \u2014 keeps the branch's plan-owner narrowing (reckon/run_store.py:967,970) beside primary main's stored_run_exists and stored_run_signature (reckon/run_store.py:992,1027), and my independent re-run of that file at the merged head reports 28 passed, EXIT=0.\nVERDICT done_when: the measure names that file passing at head with SLURM_JOB_ID unset, the base arm with its failing ids, an importer arm recorded as inline JSON carrying full revisions, and a clean ruff receipt; logs/head-every-ledger-question.log:1-9 carries revision 8e3001a9, \"SLURM_JOB_ID unset\", 28 passed and EXIT=0, logs/base-every-ledger-question.log closes 2 failed, 26 passed, EXIT=1, logs/ruff-changed-paths.log reports both ruff invocations clean, while manifest.md:19 states the importer arms (68 failed/1503 passed at 42fe90d0b0a4, 21 failed/1550 passed at 8e3001a9) in prose rather than the inline JSON the measure names.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment and docs/figures/queued-work-needs-no-workaround; the only hand-made change in 8e3001a9 is the reckon/run_store.py resolution shown by git show --cc, inside the declared reckon path, and the rest of the merge's paths are primary main's own tree arriving rather than the node writing outside its grant.\nVERDICT manifest: read in full; it reads status complete, lists 8e3001a9c9264d3d89130f3efa57d254557a90d3 among its commits, its tests line names the gate command and test_logs names logs/head-every-ledger-question.log, and its baseline_suite/after_suite JSONs both read exit_status 0 with 58 passed at 42fe90d0b0a46060bafde2490dda7d4002cda478 and 8e3001a9c9264d3d89130f3efa57d254557a90d3 \u2014 but that command runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, not the node's own file.\nVERDICT diff: read commit by commit over ff12c6836ae52c35c0ebbf409677aa2e4c2369cc..8e3001a9c9264d3d89130f3efa57d254557a90d3 \u2014 one commit, the merge \"merge: primary main into the ledger plan-owner branch\"; git show --cc shows the single conflict at reckon/run_store.py resolved additively, and git diff ff3bb24bcf916047144aadb4c3fc0315e9687219..8e3001a9 -- reckon/run_store.py shows main's side retained word for word with only the branch's _plan_owned_identities, PLAN_OWNER_FIELDS and _plan_owner_sql added.\nCALL_SITES: reckon/roadmap.py:1936, reckon/mcp_views.py:4911, reckon/mcp_views.py:4942, reckon/ledger.py:1878, reckon/ledger.py:4002, reckon/ledger.py:4555, reckon/budget.py:689, reckon/run_store.py:809\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:967 keeps PLAN_OWNER_FIELDS and :992/:1027 keep stored_run_exists and stored_run_signature in the merged module, so the merge delivers both sides and the merged head passes the named file.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-every-ledger-question.log closes 28 passed with EXIT=0 at 8e3001a9 and logs/reviewed-gate.log reproduces it independently, but manifest.md:19 records the importer arms in prose instead of the inline JSON the done_when names.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git show --cc 8e3001a9 shows the only hand-made change is the reckon/run_store.py resolution, inside the declared reckon path, with the merge's other 700-odd paths being primary main's tree.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_every_ledger_question_reads_the_store.py:540 reddens if the resolution drops the branch's plan clause (logs/base-every-ledger-question.log names the two red ids) but the merge adds no assertion, so a later merge dropping stored_run_exists is caught only by that function's existing callers.\nSCORE fit: 18\nJUSTIFICATION fit: change_token sits beside store_stamp at reckon/run_store.py:407 and PLAN_OWNER_FIELDS beside its reader at :967, matching the module's ordering, and no added name breaks the repository's naming rule.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/ledger.py:1790 _history_token rebuilds the (store stamp, archive stamp) pair that reckon/run_store.py:407 change_token now owns instead of extending it, and the carried restatement of row_plan's precedence at reckon/run_store.py:970 stands as the earlier record's finding.\nFINDING reckon/ledger.py:1790 non-blocking: _history_token rebuilds run_store.change_token's (store, archive) stamp pair by hand rather than extending it, so the set of store files a read answers from is stated twice in the same landed delta and a future third store file would be added to only one of the two.",
+  "review_run_id": "r-20261121T020548762094-review-of-qwnw-red-file-every-ledger-question-reads-the-store-8e3001a9c926",
+  "reviewed_base_sha": "ff12c6836ae52c35c0ebbf409677aa2e4c2369cc",
+  "reviewed_head_sha": "8e3001a9c9264d3d89130f3efa57d254557a90d3",
+  "reviewed_run_id": "r-20261118T062445238812-qwnw-red-file-every-ledger-question-reads-the-store",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:44:50.122172+00:00",
+  "total": 88
+}

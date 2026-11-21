@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1909 _derive_fleet_state opens live_pointer_snapshot(project), which no longer opens runs.published_pointers",
+    "reckon/crew/obligations.py:4822 the obligations view opens live_pointer_snapshot(project)",
+    "reckon/crew/station_subscriber.py:359 live_work_populations opens live_pointer_snapshot(pointers=snapshot)",
+    "reckon/crew/admission/launching.py:503 reads a run's pointer through runs.read_pointer",
+    "reckon/crew/admission/release.py:683 reads a pointer through runs_module.read_pointer",
+    "reckon/crew/claims.py:288 reads a pointer through read_pointer",
+    "reckon/crew/admission/holds.py:638 re-reads a run through runs.read_pointer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:25:01Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "the gate command the record hands promotion names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when measures, and node-file-at-repair-head.log:1 names a worktree rather than the all_debug job with SLURM_JOB_ID unset the done_when requires, so the node's own measure is recorded as a project rather than as the run the measure names"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the fragment states 'the count is the population's own: 300 decodes for 300 pointers' as a measured figure, but the only head assertion is tests/test_fleet_state_reads_the_live_pointers_once.py:238 (decodes.count <= POINTERS) and no log prints the head count, so the number is bounded by a passing run rather than read from one"
+    },
+    {
+      "file": "tests/test_fleet_state_reads_the_live_pointers_once.py",
+      "line": 308,
+      "severity": "non-blocking",
+      "text": "the recorded negative control reddens at the first mutation line with TypeError from the read-only region (repair-round-shallow-copy-negative-control.log, echoed at fragment line 83), so the two assertions that name the memo every later listing reads (:308 and :310) are never exercised by that arm; only a shallow copy outside a region would falsify them"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 6088bc441b5b..442cb3178bb6, one commit, which deletes _POINTER_POPULATION and published_pointers and read_pointer's serve branch in reckon/crew/runs.py, drops the region from reckon/crew/obligations.py:860, adds test_a_by_id_read_is_the_callers_own at tests/test_fleet_state_reads_the_live_pointers_once.py:285, and rewrites the fragment to the merged head",
+    "done_when": "the measure names the file green as an all_debug job with SLURM_JOB_ID unset plus a base arm, a per-cause verdict, an importer arm and a negative control; the base arm (base-arm-test-fleet-state.log, 900 decodes for 300 pointers), both suite arms at 58 passed EXIT=0 and the negative control are recorded, but node-file-at-repair-head.log:1 names a worktree run rather than a job, so the environment clause is unmeasured",
+    "goal": "the node's goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full with a derivation reaching each live pointer once; at 442cb3178bb6 node-file-at-repair-head.log records 3 passed EXIT=0 and runs.read_pointer decodes through runs._pointer_record (reckon/crew/runs.py:1705) rather than a second population",
+    "manifest": "read in full; it records five commits, node-file-at-repair-head.log at 3 passed EXIT=0, both suite arms at 58 passed EXIT=0, the shallow-copy negative control at 1 failed 2 passed EXIT=1, the base arm's 900-decodes failure, both importer arms and six rubric lines",
+    "write_paths": "the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment; the commit gained since the reviewed head 6088bc441b5be3e917dc08dc73f071e8cd785a4a is 442cb3178bb6 alone, touching reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_fleet_state_reads_the_live_pointers_once.py and the named fragment, all inside it"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full with a derivation reaching each live pointer once; at 442cb3178bb6 node-file-at-repair-head.log records 3 passed EXIT=0 and runs.read_pointer decodes through runs._pointer_record (reckon/crew/runs.py:1705) rather than a second population\nVERDICT done_when: the measure names the file green as an all_debug job with SLURM_JOB_ID unset plus a base arm, a per-cause verdict, an importer arm and a negative control; the base arm (base-arm-test-fleet-state.log, 900 decodes for 300 pointers), both suite arms at 58 passed EXIT=0 and the negative control are recorded, but node-file-at-repair-head.log:1 names a worktree run rather than a job, so the environment clause is unmeasured\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment; the commit gained since the reviewed head 6088bc441b5be3e917dc08dc73f071e8cd785a4a is 442cb3178bb6 alone, touching reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_fleet_state_reads_the_live_pointers_once.py and the named fragment, all inside it\nVERDICT manifest: read in full; it records five commits, node-file-at-repair-head.log at 3 passed EXIT=0, both suite arms at 58 passed EXIT=0, the shallow-copy negative control at 1 failed 2 passed EXIT=1, the base arm's 900-decodes failure, both importer arms and six rubric lines\nVERDICT diff: read commit by commit over 6088bc441b5b..442cb3178bb6, one commit, which deletes _POINTER_POPULATION and published_pointers and read_pointer's serve branch in reckon/crew/runs.py, drops the region from reckon/crew/obligations.py:860, adds test_a_by_id_read_is_the_callers_own at tests/test_fleet_state_reads_the_live_pointers_once.py:285, and rewrites the fragment to the merged head\nCALL_SITES: reckon/crew/obligation_snapshot.py:1909, reckon/crew/obligations.py:4822, reckon/crew/station_subscriber.py:359, reckon/crew/admission/launching.py:503, reckon/crew/admission/release.py:683, reckon/crew/claims.py:288, reckon/crew/admission/holds.py:638\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1705 routes the by-id read through _pointer_record, so the one memo both routes share answers a pointer an earlier listing already decoded, and tests/test_fleet_state_reads_the_live_pointers_once.py:238 holds at the head.\nSCORE evidence: 13\nJUSTIFICATION evidence: the node's file is measured by a worktree run (node-file-at-repair-head.log:1) and the manifest's tests line (manifest.md:18) names a different scoped pair, so the done_when's all_debug-job, SLURM_JOB_ID-unset clause is unrecorded although both arms of the declared suite are.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the commit gained since the reviewed head touches exactly the four paths the goal names, reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_fleet_state_reads_the_live_pointers_once.py and the fragment, and the deletion leaves published_pointers named nowhere but the fragment's own prose.\nSCORE durability: 17\nJUSTIFICATION durability: the added case reddens under the recorded revert of _pointer_as_read (1 failed, 2 passed, EXIT=1), but that red is a TypeError at the first mutation, leaving tests/test_fleet_state_reads_the_live_pointers_once.py:308 and :310 unexercised, and :306 compares the file to its own bytes, which no regression in this change can move.\nSCORE fit: 19\nJUSTIFICATION fit: the deletion leaves ContextVar, Iterable, Iterator and contextmanager in use at reckon/crew/runs.py:1779, :700 and :535, and the surviving docstring names the memo owner (reckon/file_memo.py:365) rather than code that is gone.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit deletes the population rather than extending it, because file_memo.memoized (reckon/file_memo.py:365) already owns parse-per-stat-identity and read_pointer now extends that owner.\nFINDING manifest.md:18 non-blocking: the gate command the record hands promotion names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when measures, and node-file-at-repair-head.log:1 shows a worktree run, not the all_debug job with SLURM_JOB_ID unset the done_when requires.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html:19 non-blocking: the fragment states '300 decodes for 300 pointers' at the fragment's stated head as a measured figure, while the only head assertion is decodes.count <= POINTERS and no log prints that count.\nFINDING tests/test_fleet_state_reads_the_live_pointers_once.py:308 non-blocking: the recorded negative control reddens at the first mutation with TypeError from the read-only region, so the two assertions naming the memo every later listing reads (:308 and :310) are not falsified by the arm that claims to guard them.",
+  "review_run_id": "r-20261119T172736059206-review-of-qwnw-red-file-fleet-state-reads-the-live-pointers-once-442cb3178bb6",
+  "reviewed_base_sha": "6088bc441b5be3e917dc08dc73f071e8cd785a4a",
+  "reviewed_head_sha": "442cb3178bb6cbfd4864d870d01eb00af23ed3a9",
+  "reviewed_run_id": "r-20261118T062954989225-qwnw-red-file-fleet-state-reads-the-live-pointers-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:52:46.938012+00:00",
+  "total": 104
+}

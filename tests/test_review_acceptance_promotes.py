@@ -12,9 +12,13 @@ and promotes with ``promoted_by: review-acceptance`` on the ledger row.
 Both halves are asserted, because an accepting branch on its own is
 indistinguishable from one that promotes everything: a run promotable with a
 clean stored review is promoted with no coordinator command; a review carrying
-a blocking finding is not; a run whose recorded gate was green but whose merged tree no
-longer satisfies the same command is not; and a run whose commit is not on the
-branch yet is not, because acceptance never merges.
+a blocking finding is not; a run whose recorded gate was green but whose merged
+tree no longer satisfies the same command is not; an implementation run whose
+commit is not on the branch yet is measured at its merge candidate and landed
+through the publication path a coordinator uses, which its own file asserts;
+and a run of any other role whose commit is not on the branch yet is not
+promoted, because acceptance merges only for an implementation and never
+otherwise, so it stands down naming the commits it found off the branch.
 
 The fixture asserts afterwards that the workstation's real crew pointer
 directory is untouched, because an isolated read does not prove an isolated
@@ -155,6 +159,7 @@ def _write_run(
     base: str,
     commit: str,
     worktree: Path | None = None,
+    role: str = "implement",
 ) -> None:
     manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -176,7 +181,7 @@ def _write_run(
             "worktree": str(worktree or repository),
             "base_sha": base,
             "launch": "in-harness",
-            "role": "implement",
+            "role": role,
             "backend": "native",
             "created_at": "2026-01-01T00:00:00Z",
             "manifest_path": str(manifest),
@@ -185,7 +190,7 @@ def _write_run(
                 "plan": PLAN,
                 "section": "s2",
                 "time_budget": "25m",
-                "role": "implement",
+                "role": role,
                 "write_paths": ["candidate.txt"],
             },
         },
@@ -218,6 +223,10 @@ def _land_unmerged_run(repository: Path, tmp_path: Path) -> tuple[str, str, Path
     stand down because that commit is not an ancestor of the branch the
     checkout carries, which is the state a run sits in right after its review
     and before a coordinator merges it.
+
+    The run's role is ``test`` rather than ``implement``: acceptance merges for
+    an implementation, which it measures at the merge candidate, and this case
+    is the half it does not merge for.
     """
     base = _git(repository, "rev-parse", "HEAD")
     worktree = tmp_path / "worker"
@@ -226,7 +235,9 @@ def _land_unmerged_run(repository: Path, tmp_path: Path) -> tuple[str, str, Path
     _git(worktree, "add", "candidate.txt")
     _git(worktree, "commit", "-q", "-m", "feat: unmerged run deliverable")
     commit = _git(worktree, "rev-parse", "HEAD")
-    _write_run(repository, tmp_path, base=base, commit=commit, worktree=worktree)
+    _write_run(
+        repository, tmp_path, base=base, commit=commit, worktree=worktree, role="test"
+    )
     _store_review(
         dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20), base=base, head=commit
     )

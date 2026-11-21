@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1139",
+    "reckon/hooks/coordinator_obligations.py:1234",
+    "reckon/crew/watch_unit.py:249",
+    "reckon/crew/runs.py:160"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:12:21Z",
+  "findings": [
+    {
+      "file": "tests/test_a_quiet_foreign_producer_reads_live.py",
+      "line": "165",
+      "severity": "non-blocking",
+      "text": "non-blocking: the exclusion names FOREIGN_HOST rather than the parametrized holder, so on the (OTHER_HOST, 0) arm at :146 a line reviving different-holder.invalid leaves it true and the guard covers one of the two arms it was added for."
+    },
+    {
+      "file": "tests/test_a_quiet_foreign_producer_reads_live.py",
+      "line": "147-157",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case gains the live pointer and the assertion but its own docstring never names the parametrize at :146 whose second arm the host exclusion misses, and the reviewed manifest's evidence_inputs never mention the new assertion, so a reader of the record cannot tell a half-covered guard from a whole one."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-quiet-foreign-producer-reads-live.html",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the block filed as the base capture reads '# measurement_module:' where its source log reads '# module:' at negative-control-base-run.log:4, so a capture is a transcription and a later reader cannot tell which header line was edited."
+    },
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: tests: names the two-file suite arm, so the command promotion fills its gate receipt from never runs the changed file and cannot go red on a regression of the reviewed measure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the 4 production call sites named on the CALL_SITES line: the hook the case subprocesses and the pointer writer its fixture now uses",
+    "diff": "read commit by commit from 2f00851c42f2 through 17904fb5b27c and 98225df5a6: the first adds a 24-line _live_work helper at tests/test_a_quiet_foreign_producer_reads_live.py:89, a docstring and one call at :147-157 and one assertion at :165, all additions with nothing removed or relaxed, and the second adds only the 70-line evidence fragment.",
+    "done_when": "the named-file clause is measured and recorded (5 passed EXIT=0 on all_debug with SLURM_JOB_ID unset), the base run's two failing ids are recorded at negative-control-base-run.log and reproduced in the fragment, no assertion is deleted or relaxed in the diff, and both suite arms read 58 passed EXIT=0 as inline JSON at 40-character revisions; the one clause that reads wrong is the re-runnable one, because manifest.md:11 gives the two-file suite that never loads the changed file.",
+    "goal": "dispatch-detail.json states the goal as making tests/test_a_quiet_foreign_producer_reads_live.py pass in full on the primary branch, and head-run-quiet-foreign-producer.log:1-6 records revision 98225df5a6, host 98dci4-clu-3143, the command carrying SLURM_JOB_ID=, and '5 passed in 3.93s' EXIT=0 for that file, with no product source anywhere in the diff.",
+    "manifest": "the reviewed manifest reads status complete and records the literal gate command, both suite arms as inline JSON at 58 passed EXIT=0 with full revisions, negative-control-base-run.log with EXIT=1 and two failing ids, and both commits; it does not mention the assertion the test commit adds at tests/test_a_quiet_foreign_producer_reads_live.py:165, and its tests: line at :11 names the arm rather than the head run.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's own fragment and figure directory; git diff --numstat 2f00851c42f2..98225df5a6 lists only tests/test_a_quiet_foreign_producer_reads_live.py (+32) and the fragment (+70), with no reckon/ or figure path touched."
+  },
+  "justifications": {
+    "durability": "negative-control-base-run.log:7-8 shows the same two ids reddening when the repair is put back, but the added assertion at tests/test_a_quiet_foreign_producer_reads_live.py:165 names FOREIGN_HOST rather than the parametrized holder at :146, so the (OTHER_HOST, 0) arm cannot redden on it.",
+    "evidence": "head-run-quiet-foreign-producer.log:3 carries SLURM_JOB_ID= and its last line is a bare EXIT=0, and negative-control-base-run.log ends in EXIT=1 with two failing ids, but manifest.md:11 makes promotion re-run a two-file arm that never loads the changed file.",
+    "fit": "tests/test_a_quiet_foreign_producer_reads_live.py:100-112 writes its pointer with the same inline json.dumps shape _seat uses at :57-72 in the same file and introduces no name the repository forbids.",
+    "goal_fidelity": "head-run-quiet-foreign-producer.log:6-8 records 5 passed EXIT=0 at 98225df5a6 for tests/test_a_quiet_foreign_producer_reads_live.py, the file-green deliverable dispatch-detail.json states.",
+    "reuse": "a capability search over tests/ for a live-pointer writer found only per-test inline calls of runs.pointer_path (tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:83) and no shared owner, so the local helper duplicates nothing.",
+    "scope_discipline": "git diff --numstat 2f00851c42f2..98225df5a6 lists only the changed test and one fragment inside the declared directory with no reckon/ path, while the 70-line fragment carries mutation receipts the done_when did not ask for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json states the goal as making tests/test_a_quiet_foreign_producer_reads_live.py pass in full on the primary branch, and head-run-quiet-foreign-producer.log:1-6 records revision 98225df5a6, host 98dci4-clu-3143, the command carrying SLURM_JOB_ID=, and '5 passed in 3.93s' EXIT=0 for that file, with no product source anywhere in the diff.\nVERDICT done_when: the named-file clause is measured and recorded (5 passed EXIT=0 on all_debug with SLURM_JOB_ID unset), the base run's two failing ids are recorded at negative-control-base-run.log and reproduced in the fragment, no assertion is deleted or relaxed in the diff, and both suite arms read 58 passed EXIT=0 as inline JSON at 40-character revisions; the one clause that reads wrong is the re-runnable one, because manifest.md:11 gives the two-file suite that never loads the changed file.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's own fragment and figure directory; git diff --numstat 2f00851c42f2..98225df5a6 lists only tests/test_a_quiet_foreign_producer_reads_live.py (+32) and the fragment (+70), with no reckon/ or figure path touched.\nVERDICT manifest: the reviewed manifest reads status complete and records the literal gate command, both suite arms as inline JSON at 58 passed EXIT=0 with full revisions, negative-control-base-run.log with EXIT=1 and two failing ids, and both commits; it does not mention the assertion the test commit adds at tests/test_a_quiet_foreign_producer_reads_live.py:165, and its tests: line at :11 names the arm rather than the head run.\nVERDICT diff: read commit by commit from 2f00851c42f2 through 17904fb5b27c and 98225df5a6: the first adds a 24-line _live_work helper at tests/test_a_quiet_foreign_producer_reads_live.py:89, a docstring and one call at :147-157 and one assertion at :165, all additions with nothing removed or relaxed, and the second adds only the 70-line evidence fragment.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1139, reckon/hooks/coordinator_obligations.py:1234, reckon/crew/watch_unit.py:249, reckon/crew/runs.py:160\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: head-run-quiet-foreign-producer.log:6-8 records 5 passed EXIT=0 at 98225df5a6 for tests/test_a_quiet_foreign_producer_reads_live.py, the file-green deliverable dispatch-detail.json states.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-run-quiet-foreign-producer.log:3 carries SLURM_JOB_ID= and its last line is a bare EXIT=0, and negative-control-base-run.log ends in EXIT=1 with two failing ids, but manifest.md:11 makes promotion re-run a two-file arm that never loads the changed file.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --numstat 2f00851c42f2..98225df5a6 lists only the changed test and one fragment inside the declared directory with no reckon/ path, while the 70-line fragment carries mutation receipts the done_when did not ask for.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control-base-run.log:7-8 shows the same two ids reddening when the repair is put back, but the added assertion at tests/test_a_quiet_foreign_producer_reads_live.py:165 names FOREIGN_HOST rather than the parametrized holder at :146, so the (OTHER_HOST, 0) arm cannot redden on it.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_quiet_foreign_producer_reads_live.py:100-112 writes its pointer with the same inline json.dumps shape _seat uses at :57-72 in the same file and introduces no name the repository forbids.\nSCORE reuse: 18\nJUSTIFICATION reuse: a capability search over tests/ for a live-pointer writer found only per-test inline calls of runs.pointer_path (tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:83) and no shared owner, so the local helper duplicates nothing.\nFINDING tests/test_a_quiet_foreign_producer_reads_live.py:165 non-blocking: the exclusion names FOREIGN_HOST rather than the parametrized holder, so on the (OTHER_HOST, 0) arm at :146 a line reviving different-holder.invalid leaves it true and the guard covers one of the two arms it was added for.\nFINDING tests/test_a_quiet_foreign_producer_reads_live.py:147-157 non-blocking: the case gains the live pointer and the assertion but its own docstring never names the parametrize at :146 whose second arm the host exclusion misses, and the reviewed manifest's evidence_inputs never mention the new assertion, so a reader of the record cannot tell a half-covered guard from a whole one.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-quiet-foreign-producer-reads-live.html:16 non-blocking: the block filed as the base capture reads '# measurement_module:' where its source log reads '# module:' at negative-control-base-run.log:4, so a capture is a transcription and a later reader cannot tell which header line was edited.\nFINDING manifest.md:11 non-blocking: tests: names the two-file suite arm, so the command promotion fills its gate receipt from never runs the changed file and cannot go red on a regression of the reviewed measure.",
+  "review_run_id": "r-20261118T112130179943-review-of-qwnw-red-file-a-quiet-foreign-producer-reads-live-98225df5a6a4",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "98225df5a6a41b679b2ad2ab3e9210d0c3e23d6a",
+  "reviewed_run_id": "r-20261118T062542237388-qwnw-red-file-a-quiet-foreign-producer-reads-live",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:24:10.757420+00:00",
+  "total": 109
+}

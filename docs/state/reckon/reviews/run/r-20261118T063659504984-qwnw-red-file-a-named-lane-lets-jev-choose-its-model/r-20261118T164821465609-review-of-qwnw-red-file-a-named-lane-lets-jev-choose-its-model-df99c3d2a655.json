@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795019929669765966.log at ab67be8bb1ec records 58 passed EXIT=0 with no FAILED line and after_suite-1795019973115840354.log at df99c3d2a655 records 58 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_emit",
+    "reckon/crew/dispatching/preparation.py:1579"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:21:48Z",
+  "findings": [
+    {
+      "file": "tests/test_a_named_lane_lets_jev_choose_its_model.py",
+      "line": "241",
+      "severity": "non-blocking",
+      "text": "non-blocking: the four payload reads at lines 241, 266, 290 and 310 duplicate tests/test_dispatch_names_its_backend.py:159, whose _payload already parses result.stdout and documents this exact created-run notice, so this module now carries a fourth independent copy that can drift while 18 sibling modules import the owner; the fix is one import of that owner rather than four inline parses."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-lets-jev-choose-its-model.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure section reports the head gate as an all_debug job and never states that SLURM_JOB_ID was unset, which the node's done_when names as a reader-visible condition of that gate; the log it cites opens with an srun line, and an srun step's environment carries SLURM_JOB_ID, so the isolation the measure asked for is neither shown nor excluded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against ab67be8bb1ec; dc60bfd02c rewrites four payload parses from result.output to result.stdout and adds a docstring paragraph, df99c3d2a6 adds the 71-line evidence fragment, and no assertion line in that module is added, deleted or weakened.",
+    "done_when": "the done_when asks for that file green as a job on all_debug with SLURM_JOB_ID unset, a base arm run first, a named cause per failure and no weakened assertion; scoped-gate-1795019481778458507.log records 11 passed EXIT=0 at dc60bfd02c and negative-control-base.log records 1 failed, 10 passed EXIT=1 at ab67be8bb1ec, but no log records SLURM_JOB_ID unset, so one clause of the stated measure is not shown by the gate.",
+    "goal": "the goal is that tests/test_a_named_lane_lets_jev_choose_its_model.py passes in full on the primary branch; that module at df99c3d2a655 reads its dispatch payload from result.stdout at lines 241, 266, 290 and 310, and its recorded head gate is 11 passed EXIT=0, so the file is green at the reviewed head.",
+    "manifest": "read; status complete, commits dc60bfd02c and df99c3d2a6, gate 11 passed EXIT=0, negative control 1 failed 10 passed EXIT=1 with its failing id, both suite arms 58 passed EXIT=0, and each figure matches the log the manifest names.",
+    "write_paths": "the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two file paths; the diff touches tests/test_a_named_lane_lets_jev_choose_its_model.py and one new file directly inside that fragment directory, so every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating result.output at tests/test_a_named_lane_lets_jev_choose_its_model.py:266 reddens test_the_named_lane_choice_is_recorded_on_the_run, as negative-control-base.log shows at ab67be8bb1ec with EXIT=1; the other three rewritten lines (241, 290, 310) are unguarded because their dry-run paths emit no advisory.",
+    "evidence": "scoped-gate-1795019481778458507.log carries revision dc60bfd02c, \"11 passed\" and a bare EXIT=0, which measures the file's pass; the done_when's SLURM_JOB_ID-unset clause is measured by no log, and that log's first line shows an srun step, whose environment carries that variable.",
+    "fit": "the change keeps the file's existing inline reader idiom and records the stream split in that module's docstring at tests/test_a_named_lane_lets_jev_choose_its_model.py:10, and the evidence fragment's full-document form with meta[name=docs-project] is the form 26 other fragments in that directory use.",
+    "goal_fidelity": "at df99c3d2a655 tests/test_a_named_lane_lets_jev_choose_its_model.py:266 reads result.stdout while the created-run advisory stays on stderr per reckon/crew/dispatching/preparation.py:1579, and its 11 tests pass, which is the state the goal names.",
+    "reuse": "tests/test_dispatch_names_its_backend.py:159 already owns this reader as _payload, docstring included, for the same stderr notice, and 18 test modules alias it, so the four rewritten inline reads at tests/test_a_named_lane_lets_jev_choose_its_model.py:241,266,290,310 duplicate an owned capability instead of extending it.",
+    "scope_discipline": "the diff's two paths, tests/test_a_named_lane_lets_jev_choose_its_model.py and the new docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-lets-jev-choose-its-model.html, are both inside the declared write paths, and no production file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_a_named_lane_lets_jev_choose_its_model.py passes in full on the primary branch; that module at df99c3d2a655 reads its dispatch payload from result.stdout at lines 241, 266, 290 and 310, and its recorded head gate is 11 passed EXIT=0, so the file is green at the reviewed head.\nVERDICT done_when: the done_when asks for that file green as a job on all_debug with SLURM_JOB_ID unset, a base arm run first, a named cause per failure and no weakened assertion; scoped-gate-1795019481778458507.log records 11 passed EXIT=0 at dc60bfd02c and negative-control-base.log records 1 failed, 10 passed EXIT=1 at ab67be8bb1ec, but no log records SLURM_JOB_ID unset, so one clause of the stated measure is not shown by the gate.\nVERDICT write_paths: the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two file paths; the diff touches tests/test_a_named_lane_lets_jev_choose_its_model.py and one new file directly inside that fragment directory, so every path is inside the fence.\nVERDICT manifest: read; status complete, commits dc60bfd02c and df99c3d2a6, gate 11 passed EXIT=0, negative control 1 failed 10 passed EXIT=1 with its failing id, both suite arms 58 passed EXIT=0, and each figure matches the log the manifest names.\nVERDICT diff: read both commits against ab67be8bb1ec; dc60bfd02c rewrites four payload parses from result.output to result.stdout and adds a docstring paragraph, df99c3d2a6 adds the 71-line evidence fragment, and no assertion line in that module is added, deleted or weakened.\nCALL_SITES: reckon/crew_dispatch_commands.py:_emit, reckon/crew/dispatching/preparation.py:1579\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: at df99c3d2a655 tests/test_a_named_lane_lets_jev_choose_its_model.py:266 reads result.stdout while the created-run advisory stays on stderr per reckon/crew/dispatching/preparation.py:1579, and its 11 tests pass, which is the state the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795019481778458507.log carries revision dc60bfd02c, \"11 passed\" and a bare EXIT=0, which measures the file's pass; the done_when's SLURM_JOB_ID-unset clause is measured by no log, and that log's first line shows an srun step, whose environment carries that variable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_a_named_lane_lets_jev_choose_its_model.py and the new docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-lets-jev-choose-its-model.html, are both inside the declared write paths, and no production file was touched.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating result.output at tests/test_a_named_lane_lets_jev_choose_its_model.py:266 reddens test_the_named_lane_choice_is_recorded_on_the_run, as negative-control-base.log shows at ab67be8bb1ec with EXIT=1; the other three rewritten lines (241, 290, 310) are unguarded because their dry-run paths emit no advisory.\nSCORE fit: 17\nJUSTIFICATION fit: the change keeps the file's existing inline reader idiom and records the stream split in that module's docstring at tests/test_a_named_lane_lets_jev_choose_its_model.py:10, and the evidence fragment's full-document form with meta[name=docs-project] is the form 26 other fragments in that directory use.\nSCORE reuse: 8\nJUSTIFICATION reuse: tests/test_dispatch_names_its_backend.py:159 already owns this reader as _payload, docstring included, for the same stderr notice, and 18 test modules alias it, so the four rewritten inline reads at tests/test_a_named_lane_lets_jev_choose_its_model.py:241,266,290,310 duplicate an owned capability instead of extending it.\nFINDING tests/test_a_named_lane_lets_jev_choose_its_model.py:241 non-blocking: the four payload reads at lines 241, 266, 290 and 310 duplicate tests/test_dispatch_names_its_backend.py:159, whose _payload already parses result.stdout and documents this exact created-run notice, so this module now carries a fourth independent copy that can drift while 18 sibling modules import the owner; the fix is one import of that owner rather than four inline parses.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-lets-jev-choose-its-model.html:47 non-blocking: the measure section reports the head gate as an all_debug job and never states that SLURM_JOB_ID was unset, which the node's done_when names as a reader-visible condition of that gate; the log it cites opens with an srun line, and an srun step's environment carries SLURM_JOB_ID, so the isolation the measure asked for is neither shown nor excluded.",
+  "review_node": "review-of-qwnw-red-file-a-named-lane-lets-jev-choose-its-model-df99c3d2a655",
+  "review_run_id": "r-20261118T164821465609-review-of-qwnw-red-file-a-named-lane-lets-jev-choose-its-model-df99c3d2a655",
+  "reviewed_base_sha": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "reviewed_head_sha": "df99c3d2a655e5bdc9f8f47b667591acc2df9101",
+  "reviewed_run_id": "r-20261118T063659504984-qwnw-red-file-a-named-lane-lets-jev-choose-its-model",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T164821465609-review-of-qwnw-red-file-a-named-lane-lets-jev-choose-its-model-df99c3d2a655"
+  },
+  "rubric_version": "review-1",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:47:36.963516+00:00",
+  "total": 96
+}

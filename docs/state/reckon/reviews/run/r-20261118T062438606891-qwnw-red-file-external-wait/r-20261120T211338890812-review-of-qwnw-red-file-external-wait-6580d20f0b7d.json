@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:_fragment_body_bytes",
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/resources.py:_is_evidence_fragment",
+    "reckon/metadata_index.py:152"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-external-wait-6580d20f0b7d",
+      "recorded_at": "2026-11-20T22:36:17.505921+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-20T21:59:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-external-wait-6580d20f0b7d",
+      "recorded_at": "2026-11-20T22:36:15.164852+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html",
+      "line": "9",
+      "severity": "blocking",
+      "text": "blocking: the fragment says the clone was built on main c422a8f588d6679090959a4927b1fc2a84e6fef3 and that the cited header names that main, but the log it cites, .../logs/merged-head.log (rewritten 2026-11-20 22:11:58, after commit 6580d20 at 22:05:32), headers \"# main: 46602c8fe42a7f922fd80ab68e599d843ed0cec6\" and \"# revision: 2d8d5a7e3adb87cea5ddb701e40a6610583e3e23\", so the record's revision pair is contradicted by the artefact it points at and cannot be rechecked."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"The same clone before the correction\" is not that clone; .../logs/merged-head-repro-fail.log records a separate tree (/tmp/qwnw-merged.LgZLLs against /tmp/qwnw-merged.1Et3ID), main df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6 and only the two pre-correction commits, so the red control comes from a second clone of an earlier main and the fragment should say so."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing line still cites \"main 39d5a645 plus this run's four commits (revision fe880c19)\" while manifest.md:23 and logs/merged-head.log record six commits at a later main, so promotion will land a landing record that disagrees with the run's own gate evidence."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head element carries only charset and title where the full-document siblings in this directory carry the viewport, docs-project, reckon-type=evidence and plan-slug metas, so a reader of the fragment standalone cannot tell which plan or project it belongs to."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all six commits 42fe90d0..6580d20 commit by commit; fee6bfa2 adds promotion figures to two literals, faeb4674 and de7662e6 remove them again leaving tests/test_external_wait.py identical to base, cc514e74, 1a3bd4e1 and 6580d20 add and then correct the one evidence fragment, which at head is 13 added lines and nothing else.",
+    "done_when": "read done_when in .../prompt.txt:354 naming an all_debug run of that file with SLURM_JOB_ID unset and its output on shared storage, a base arm, and no added failure; the manifest's inline baseline_suite/after_suite JSON cite baseline_suite-1795208758803856720.log and after_suite-1795208833480155750.log, both \"58 passed\" and EXIT=0, and logs/base.log records 2 failed, 14 passed, EXIT=1 at 42fe90d0 with exactly the three promotion keys the fragment names.",
+    "goal": "read the reviewed node's goal in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/prompt.txt:38, which asks for tests/test_external_wait.py passing in full at head; the landed commits leave that file byte-identical to base 42fe90d0 (git diff 42fe90d0..6580d20 -- tests/test_external_wait.py is empty) and record the pass at a merged head instead, 16 passed EXIT=0 in logs/merged-head.log after an all_debug srun.",
+    "manifest": "read .../r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md; it names six commits, the merged-head gate with its log, the base arm and both suite arms as inline JSON with 40-character revisions, but its landing line at :34 cites four commits at main 39d5a645 (revision fe880c19) while :23 and logs/merged-head.log record six commits at a later main.",
+    "write_paths": "read the node's declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node fragment and figure path) against the diff; the only delivered path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, inside them."
+  },
+  "justifications": {
+    "durability": "the delivered change is prose and adds no assertion, and I found no test that resolves the paths a fragment cites, so the false main at qwnw-red-file-external-wait.html:9 survived a green gate.",
+    "evidence": "the gate measured what done_when asks (logs/base.log 2 failed/14 passed/EXIT=1 at 42fe90d0, logs/merged-head.log 16 passed/EXIT=0, both suite arms 58 passed/EXIT=0), yet the fragment's own revision citation contradicts the log it cites.",
+    "fit": "the wrapper keeps the full-document shape reckon/evidence.py:1610 strips, but qwnw-red-file-external-wait.html:3 omits the viewport, docs-project and reckon-type metas its full-document siblings at qwnw-a-code-review-brief-carries-findings-under-its-paths.html:4-11 carry.",
+    "goal_fidelity": "the goal is met at the merged head recorded in logs/merged-head.log, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:9 names a clone base that no log in the run records.",
+    "reuse": "the diff adds no definition; it uses the existing fragment location and composition owner reckon/evidence.py:compose_landed_record, and a search over reckon/ for landed-report and evidence/fragments found no second mechanism to extend.",
+    "scope_discipline": "the net diff 42fe90d0..6580d20 touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, inside the declared paths, and the test file returns to its base bytes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the reviewed node's goal in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/prompt.txt:38, which asks for tests/test_external_wait.py passing in full at head; the landed commits leave that file byte-identical to base 42fe90d0 (git diff 42fe90d0..6580d20 -- tests/test_external_wait.py is empty) and record the pass at a merged head instead, 16 passed EXIT=0 in logs/merged-head.log after an all_debug srun.\nVERDICT done_when: read done_when in .../prompt.txt:354 naming an all_debug run of that file with SLURM_JOB_ID unset and its output on shared storage, a base arm, and no added failure; the manifest's inline baseline_suite/after_suite JSON cite baseline_suite-1795208758803856720.log and after_suite-1795208833480155750.log, both \"58 passed\" and EXIT=0, and logs/base.log records 2 failed, 14 passed, EXIT=1 at 42fe90d0 with exactly the three promotion keys the fragment names.\nVERDICT write_paths: read the node's declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node fragment and figure path) against the diff; the only delivered path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, inside them.\nVERDICT manifest: read .../r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md; it names six commits, the merged-head gate with its log, the base arm and both suite arms as inline JSON with 40-character revisions, but its landing line at :34 cites four commits at main 39d5a645 (revision fe880c19) while :23 and logs/merged-head.log record six commits at a later main.\nVERDICT diff: read all six commits 42fe90d0..6580d20 commit by commit; fee6bfa2 adds promotion figures to two literals, faeb4674 and de7662e6 remove them again leaving tests/test_external_wait.py identical to base, cc514e74, 1a3bd4e1 and 6580d20 add and then correct the one evidence fragment, which at head is 13 added lines and nothing else.\nCALL_SITES: reckon/evidence.py:_fragment_body_bytes, reckon/evidence.py:compose_landed_record, reckon/resources.py:_is_evidence_fragment, reckon/metadata_index.py:152\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the goal is met at the merged head recorded in logs/merged-head.log, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:9 names a clone base that no log in the run records.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate measured what done_when asks (logs/base.log 2 failed/14 passed/EXIT=1 at 42fe90d0, logs/merged-head.log 16 passed/EXIT=0, both suite arms 58 passed/EXIT=0), yet the fragment's own revision citation contradicts the log it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the net diff 42fe90d0..6580d20 touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, inside the declared paths, and the test file returns to its base bytes.\nSCORE durability: 6\nJUSTIFICATION durability: the delivered change is prose and adds no assertion, and I found no test that resolves the paths a fragment cites, so the false main at qwnw-red-file-external-wait.html:9 survived a green gate.\nSCORE fit: 14\nJUSTIFICATION fit: the wrapper keeps the full-document shape reckon/evidence.py:1610 strips, but qwnw-red-file-external-wait.html:3 omits the viewport, docs-project and reckon-type metas its full-document siblings at qwnw-a-code-review-brief-carries-findings-under-its-paths.html:4-11 carry.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it uses the existing fragment location and composition owner reckon/evidence.py:compose_landed_record, and a search over reckon/ for landed-report and evidence/fragments found no second mechanism to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:9 blocking: the fragment says the clone was built on main c422a8f588d6679090959a4927b1fc2a84e6fef3 and that the cited header names that main, but the log it cites, .../logs/merged-head.log (rewritten 2026-11-20 22:11:58, after commit 6580d20 at 22:05:32), headers \"# main: 46602c8fe42a7f922fd80ab68e599d843ed0cec6\" and \"# revision: 2d8d5a7e3adb87cea5ddb701e40a6610583e3e23\", so the record's revision pair is contradicted by the artefact it points at and cannot be rechecked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:9 non-blocking: \"The same clone before the correction\" is not that clone; .../logs/merged-head-repro-fail.log records a separate tree (/tmp/qwnw-merged.LgZLLs against /tmp/qwnw-merged.1Et3ID), main df8fba8b3d42b3b84037cd5aa7ba23b6f2c101b6 and only the two pre-correction commits, so the red control comes from a second clone of an earlier main and the fragment should say so.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md:34 non-blocking: the landing line still cites \"main 39d5a645 plus this run's four commits (revision fe880c19)\" while manifest.md:23 and logs/merged-head.log record six commits at a later main, so promotion will land a landing record that disagrees with the run's own gate evidence.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html:3 non-blocking: the head element carries only charset and title where the full-document siblings in this directory carry the viewport, docs-project, reckon-type=evidence and plan-slug metas, so a reader of the fragment standalone cannot tell which plan or project it belongs to.",
+  "review_run_id": "r-20261120T211338890812-review-of-qwnw-red-file-external-wait-6580d20f0b7d",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "6580d20f0b7d74a20768bf576264e92bca1ca6df",
+  "reviewed_run_id": "r-20261118T062438606891-qwnw-red-file-external-wait",
+  "reviewed_worker_commits": [
+    "fee6bfa2f4d0b96ec69b7e25106b0430e4c494de",
+    "cc514e74832d8eba130df7f2b0d4060c4ea310bc",
+    "faeb4674f3aea9b853e3e823b7ba19b40a9871fc",
+    "1a3bd4e1ae42f201d8242ca5b4fe49e8f30588af",
+    "de7662e64491be4aa64221a40b36541ca749d0c8",
+    "6580d20f0b7d74a20768bf576264e92bca1ca6df"
+  ],
+  "scores": {
+    "durability": 6,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/after_suite-1795208833480155750.log",
+      "revision": "6580d20f0b7d74a20768bf576264e92bca1ca6df"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/baseline_suite-1795208758803856720.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    },
+    "derivation": "added_failure_ids = after_suite.failure_ids minus baseline_suite.failure_ids, read from the two logs named above: both record 58 passed and EXIT=0 with no FAILED or ERROR id, so the derived count is 0"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:16:09.836674+00:00",
+  "total": 89
+}

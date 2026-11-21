@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795006700912705843.log at 00e5bd109e44209141475c852cd5490b8bef9be3 records 58 passed, EXIT=0, no FAILED line; after_suite-1795006775881183470.log at 476fa1041d10e7b239793d478cb5220d2f43f85b records 58 passed, EXIT=0, no FAILED line; the set difference is empty.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3601 (_supervisor_spec writes run_directory)",
+    "reckon/crew/dispatch_launch.py:4336-4337 (step_launch_environment reads spec[\"run_directory\"])",
+    "reckon/crew/dispatch_launch.py:5601 (supervisor reads it back)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T14:24:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spawn-retries-a-vanished-bind.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "the fragment says the second cause \"surfaced only once the first was repaired\", but the run's own logs/base-arm-vanished-bind.log at the same base 00e5bd109e44209141475c852cd5490b8bef9be3 already read 3 failed / 4 passed with both bind-refusal cases failing, so the base arm the manifest calls the negative control (1 failed / 6 passed) is the more favourable of two runs of one revision and the flakiness that motivates the fix is left unstated."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spawn-retries-a-vanished-bind.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "the sleep-5 reproduction \"failed in 12.65s\" offered as the deterministic evidence for cause 2 exists in no log under the run directory, so the one claim that could show the second cause failing on demand cannot be checked."
+    },
+    {
+      "file": "tests/test_spawn_retries_a_vanished_bind.py",
+      "line": "210",
+      "severity": "non-blocking",
+      "text": "the guard for cause 2 is timing-dependent: reinstating `sleep 30` stays green on an unloaded host and only reddens when the child outlives the 30s startup watch, so the regression this line prevents would survive a normal local run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062734530275-qwnw-red-file-spawn-retries-a-vanished-bind/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "baseline_suite.failure_ids is the integer 0 while after_suite.failure_ids is [], so a reader parsing the pair as lists gets one that is not, even though both read 58 passed EXIT=0 and the derived added-failure set is empty."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read all four commits 850fff46, 385f3685, 2e0731ad and 476fa104 against base 00e5bd109e44209141475c852cd5490b8bef9be3 \u2014 two files, +112/-1, the test hunk adds \"run_directory\": str(directory) to the supervisor spec at tests/test_spawn_retries_a_vanished_bind.py:347 and replaces `sleep 30` with `exec sleep 300` at :210, no assertion deleted or weakened.",
+    "done_when": "the done_when asks for an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict: the head log's own header reads `env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest ...` at 476fa104 ending EXIT=0 on 7 passed, the manifest records base in-tree 1 failed / 6 passed EXIT=1 and carries baseline_suite/after_suite as inline JSON at full 40-character revisions, so every clause is measured except the ruff clause, which the manifest never records although I verified it myself: ruff check is clean on tests/test_spawn_retries_a_vanished_bind.py and ruff format --check reports the same single pre-existing finding at base 00e5bd1 and at head, so nothing new.",
+    "goal": "the node goal is \"Make tests/test_spawn_retries_a_vanished_bind.py pass in full on the primary branch\", and at head 476fa104 that file runs 7 passed EXIT=0 (logs/head-arm-vanished-bind-476fa104.log) with reckon/crew/dispatch_launch.py untouched by the diff.",
+    "manifest": "read; it records status complete, both causes as test wrong with neither the retry nor the startup window touched, head 7 passed EXIT=0 at all_debug job 1326311, base 1 failed / 6 passed EXIT=1, and names four arms \u2014 all of which I opened, and each carries its revision header and a bare EXIT= line as claimed.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches only tests/test_spawn_retries_a_vanished_bind.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spawn-retries-a-vanished-bind.html, both inside, and nothing under reckon/ changed."
+  },
+  "justifications": {
+    "durability": "the run_directory line at tests/test_spawn_retries_a_vanished_bind.py:347 is guarded deterministically \u2014 logs/base-arm-in-tree-vanished-bind.log reddens with KeyError: 'run_directory' when it is removed \u2014 but the exec sleep 300 line at :210 reddens only when the child outlives the 30s startup watch, as the same revision reading 1 failed in one base arm and 3 failed in another shows.",
+    "evidence": "logs/head-arm-vanished-bind-476fa104.log and scoped-gate-1795006799002735768.log both end EXIT=0 on 7 passed at 476fa104, but the done_when's ruff clause is recorded nowhere in manifest.md, and the 12.65s reproduction the fragment rests cause 2 on has no log on disk.",
+    "fit": "the added comment on tests/test_spawn_retries_a_vanished_bind.py:205-209 explains why the stand-in must outlive the watch, and the run_directory key the case now carries matches the sibling seam spec at tests/test_a_concurrent_launch_is_refused.py:509.",
+    "goal_fidelity": "tests/test_spawn_retries_a_vanished_bind.py:210 and :347 fix the two fixture causes and the file reads 7 passed EXIT=0 at head, which is exactly the branch state the goal names.",
+    "reuse": "the diff adds no function, class or module \u2014 it changes one literal and adds one spec key through the existing _script helper at tests/test_spawn_retries_a_vanished_bind.py:172 \u2014 so there is no capability to duplicate.",
+    "scope_discipline": "the whole diff is tests/test_spawn_retries_a_vanished_bind.py plus the one evidence fragment, both inside the declared paths, with no product file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_spawn_retries_a_vanished_bind.py pass in full on the primary branch\", and at head 476fa104 that file runs 7 passed EXIT=0 (logs/head-arm-vanished-bind-476fa104.log) with reckon/crew/dispatch_launch.py untouched by the diff.\nVERDICT done_when: the done_when asks for an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict: the head log's own header reads `env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest ...` at 476fa104 ending EXIT=0 on 7 passed, the manifest records base in-tree 1 failed / 6 passed EXIT=1 and carries baseline_suite/after_suite as inline JSON at full 40-character revisions, so every clause is measured except the ruff clause, which the manifest never records although I verified it myself: ruff check is clean on tests/test_spawn_retries_a_vanished_bind.py and ruff format --check reports the same single pre-existing finding at base 00e5bd1 and at head, so nothing new.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches only tests/test_spawn_retries_a_vanished_bind.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spawn-retries-a-vanished-bind.html, both inside, and nothing under reckon/ changed.\nVERDICT manifest: read; it records status complete, both causes as test wrong with neither the retry nor the startup window touched, head 7 passed EXIT=0 at all_debug job 1326311, base 1 failed / 6 passed EXIT=1, and names four arms \u2014 all of which I opened, and each carries its revision header and a bare EXIT= line as claimed.\nVERDICT diff: read all four commits 850fff46, 385f3685, 2e0731ad and 476fa104 against base 00e5bd109e44209141475c852cd5490b8bef9be3 \u2014 two files, +112/-1, the test hunk adds \"run_directory\": str(directory) to the supervisor spec at tests/test_spawn_retries_a_vanished_bind.py:347 and replaces `sleep 30` with `exec sleep 300` at :210, no assertion deleted or weakened.\nCALL_SITES: reckon/crew/dispatch_launch.py:3601 (_supervisor_spec writes run_directory into every supervisor spec), reckon/crew/dispatch_launch.py:4336-4337 (step_launch_environment reads spec[\"run_directory\"], the KeyError the base arm shows), reckon/crew/dispatch_launch.py:5601 (the supervisor reads it back from the spec it is handed)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_spawn_retries_a_vanished_bind.py:210 and :347 fix the two fixture causes and the file reads 7 passed EXIT=0 at head, which is exactly the branch state the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-arm-vanished-bind-476fa104.log and scoped-gate-1795006799002735768.log both end EXIT=0 on 7 passed at 476fa104, but the done_when's ruff clause is recorded nowhere in manifest.md, and the 12.65s reproduction the fragment rests cause 2 on has no log on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is tests/test_spawn_retries_a_vanished_bind.py plus the one evidence fragment, both inside the declared paths, with no product file touched.\nSCORE durability: 12\nJUSTIFICATION durability: the run_directory line at tests/test_spawn_retries_a_vanished_bind.py:347 is guarded deterministically \u2014 logs/base-arm-in-tree-vanished-bind.log reddens with KeyError: 'run_directory' when it is removed \u2014 but the exec sleep 300 line at :210 reddens only when the child outlives the 30s startup watch, as the same revision reading 1 failed in one base arm and 3 failed in another shows.\nSCORE fit: 18\nJUSTIFICATION fit: the added comment on tests/test_spawn_retries_a_vanished_bind.py:205-209 explains why the stand-in must outlive the watch, and the run_directory key the case now carries matches the sibling seam spec at tests/test_a_concurrent_launch_is_refused.py:509.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module \u2014 it changes one literal and adds one spec key through the existing _script helper at tests/test_spawn_retries_a_vanished_bind.py:172 \u2014 so there is no capability to duplicate.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spawn-retries-a-vanished-bind.html:7 non-blocking: the fragment says the second cause \"surfaced only once the first was repaired\", but the run's own logs/base-arm-vanished-bind.log at the same base 00e5bd109e44209141475c852cd5490b8bef9be3 already read 3 failed / 4 passed with both bind-refusal cases failing, so the base arm the manifest calls the negative control (1 failed / 6 passed) is merely the more favourable of two runs of one revision and the flakiness that motivates the fix is left unstated.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spawn-retries-a-vanished-bind.html:39 non-blocking: the sleep-5 reproduction \"failed in 12.65s\" offered as the deterministic evidence for cause 2 exists in no log under the run directory, so the one claim that could show the second cause failing independently cannot be checked by a later reader.\nFINDING tests/test_spawn_retries_a_vanished_bind.py:210 non-blocking: the guard for cause 2 is timing-dependent \u2014 reinstating `sleep 30` stays green on an unloaded host and only reddens when the child outlives the 30s startup watch \u2014 so the regression this line prevents would survive a normal local run.\nFINDING manifest.md:17 non-blocking: baseline_suite.failure_ids is the integer 0 while after_suite.failure_ids is [], so a reader parsing the pair as lists gets one that is not, even though both read 58 passed EXIT=0 and the derived added-failure set is empty.",
+  "review_run_id": "r-20261118T130509952052-review-of-qwnw-red-file-spawn-retries-a-vanished-bind-476fa1041d10",
+  "reviewed_base_sha": "00e5bd109e44209141475c852cd5490b8bef9be3",
+  "reviewed_head_sha": "476fa1041d10e7b239793d478cb5220d2f43f85b",
+  "reviewed_run_id": "r-20261118T062734530275-qwnw-red-file-spawn-retries-a-vanished-bind",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:40:36.946057+00:00",
+  "total": 104
+}

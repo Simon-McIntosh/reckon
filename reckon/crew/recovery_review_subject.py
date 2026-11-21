@@ -445,7 +445,7 @@ def _review_reads_a_report(record: Mapping[str, Any]) -> bool:
     # A brief-carried node names no plan section; a plan node is reviewed as a
     # diff whatever it also carried, so its brief does not make it read-only.
     node = record.get("node") or {}
-    brief = str(node.get("brief_path") or node.get("brief") or "").strip()
+    brief = str(node.get("brief_path") or runs.node_field(record, "brief") or "").strip()
     if not brief or str(node.get("plan") or "").strip():
         return False
     return _run_made_no_commit(record)
@@ -822,6 +822,63 @@ def _reviewed_scope_block(record: Mapping[str, Any], head: str) -> str:
     return "\n".join(lines)
 
 
+def _suite_delta_waiver_reason(record: Mapping[str, Any]) -> str:
+    """The reason the reviewed run's suite delta stands waived, or "".
+
+    A review of a waived run is the one case where the reviewer may not derive
+    an added-failure count at all: the pair was accepted with a written reason
+    because its arms produced nothing comparable, so the count it owes is the
+    statement that none exists. The reader is the review module's own, so the
+    brief that tells a reviewer to file the waived form and the delivery check
+    that accepts it answer from one record rather than two.
+
+    A brief is composed by a reader that must not raise, so an unreadable
+    record leaves the brief as it was.
+    """
+    try:
+        return review_module.recorded_suite_delta_waiver(
+            record.get("run_id"), record.get("project")
+        )
+    except Exception:  # noqa: BLE001 - a printed brief must not raise
+        return ""
+
+
+#: The heading the waived-count instruction is carried under in a composed
+#: review brief. One heading for one block, so a reviewer handed two briefs
+#: can tell whether the run it reviews carries a recorded waiver.
+WAIVED_COUNT_HEADING = "Suite delta waived: how this review files its failure count"
+
+
+def _waived_count_block(reason: str) -> str:
+    """The paragraph a waived run's review brief carries about its count.
+
+    The contract every brief states asks for a count derived from the reviewed
+    run's two gate logs. A run whose delta was waived may have no summary in
+    either arm, so that instruction is unsatisfiable exactly where the waiver
+    applies, and a reviewer left to infer an answer writes a null — which the
+    delivery check refuses. The block names the waived form, the reason field
+    it must carry and the run's own recorded reason, and states that the
+    measured form is still the answer where the logs do carry a summary.
+    """
+    return "\n".join(
+        [
+            WAIVED_COUNT_HEADING + ":",
+            f"  The reviewed run's suite delta stands waived: {reason}",
+            (
+                "  Where its baseline_suite and after_suite logs carry no summary "
+                "to difference, file `added_failure_count` as the literal "
+                '"waived", `added_failure_ids` as [], and `added_failure_waiver` '
+                "stating why the run has no count to file. Never 0: a zero is a "
+                "measured clean pair, and a reader cannot tell the two apart."
+            ),
+            (
+                "  Where both logs do carry a pytest summary, derive the count "
+                "from them as the contract above says."
+            ),
+        ]
+    )
+
+
 def _review_brief_text(
     record: Mapping[str, Any],
     head: str,
@@ -865,7 +922,7 @@ def _review_brief_text(
         rubric_text = review_module.load_review_prompt()
     run_id = str(record.get("run_id") or "")
     node = record.get("node") or {}
-    brief_path = str(node.get("brief_path") or node.get("brief") or "").strip()
+    brief_path = str(node.get("brief_path") or runs.node_field(record, "brief") or "").strip()
     lines = [
         f"Reviewed run: {run_id}",
         f"Reviewed head: {head or '<unresolved>'}",
@@ -879,7 +936,8 @@ def _review_brief_text(
         required_fields = [
             "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
             "added_failure_count, added_failure_ids (a figure review runs no suite, so 0 and an empty list),",
-            "findings (each an object with file, line, severity and summary), status.",
+            "findings (each an object with file, line, severity and summary), status,",
+            "rubric_items (an object mapping each of the six figure rubric items to its verdict).",
             "Judge each figure only from the rendered PNGs named in this review: open, read, list,",
             "search, render or `git show` no SVG and no image other than the named PNGs; anchor a",
             "finding to the figure's repository path, or to a line of the script the run's diff shows",
@@ -903,6 +961,15 @@ def _review_brief_text(
             "incomplete when the review has not finished and no verdict can be acted on.",
         ]
     )
+    # A figure review runs no suite, so the waived form says nothing about it:
+    # only a review judging a run's arms is told how to file their absence.
+    waiver_reason = (
+        ""
+        if rubric_name == review_module.FIGURE_REVIEW_RUBRIC
+        else _suite_delta_waiver_reason(record)
+    )
+    if waiver_reason:
+        lines.extend(["", _waived_count_block(waiver_reason)])
     declared_block = _declared_check_block(
         str(record.get("project") or ""), node, project_path=project_path
     )
@@ -1451,6 +1518,21 @@ def _review_dispatch_fields(
                 budget = fence
         except CrewError:
             pass
+    # A run whose delta was waived may carry no summary to difference, so the
+    # condition a review is measured against names the waived form beside the
+    # measured one; an unwaived run's condition is exactly what it always was,
+    # because a reviewer of a measured run has no reason to read about waivers.
+    count_clause = (
+        "added_failure_count and added_failure_ids derived from the "
+        "reviewed run's own baseline_suite and after_suite gate logs"
+    )
+    if _suite_delta_waiver_reason(record):
+        count_clause = (
+            count_clause
+            + ", or, those logs carrying no pytest summary, added_failure_count "
+            'as the literal "waived" with added_failure_waiver stating why the '
+            "reviewed run has no count to file"
+        )
     return {
         "run_id": run_id,
         "project": project,
@@ -1502,8 +1584,8 @@ def _review_dispatch_fields(
                 f"{len(review_module.REVIEW_DIMENSIONS)} dimensions in the range "
                 f"0..{review_module.REVIEW_MAX_SCORE}, recording the revision it "
                 "read as reviewed_base_sha and reviewed_head_sha, and carrying "
-                "added_failure_count and added_failure_ids derived from the "
-                "reviewed run's own baseline_suite and after_suite gate logs; the "
+                + count_clause
+                + "; the "
                 "record is written at one of this run's declared write paths, "
                 f"under {review_module.RUN_REVIEW_RECORD_DIRNAME}/ inside the "
                 f"directory of run {run_id}, and never in the worktree; the "
@@ -1799,14 +1881,15 @@ def _figure_missing_measures(review: Mapping[str, Any]) -> list[str]:
     """The figure rubric items a record carries no verdict for.
 
     A verdict line that states nothing is not a verdict, so an item whose value
-    is blank is reported missing rather than taken as checked. A
-    ``rubric_items`` value that is not a mapping cannot name the items it
-    carries, so every item is reported missing rather than iterated over
-    something that does not answer.
+    is blank is reported missing rather than taken as checked. A record that
+    states its verdicts as ``RUBRIC <item>: <verdict>`` lines rather than as a
+    ``rubric_items`` map is read through the same fold every other rubric
+    reader uses, so a review answered in the form its brief asks for is not
+    refused naming the items it carries. A record carrying no verdict in either
+    shape names no items, so every item is reported missing rather than the
+    record iterated over something that does not answer.
     """
-    items = review.get("rubric_items")
-    if not isinstance(items, Mapping):
-        return list(review_module.FIGURE_REVIEW_ITEMS)
+    items, _shortfalls = review_module.figure_rubric_verdicts(review)
     return [
         item
         for item in review_module.FIGURE_REVIEW_ITEMS

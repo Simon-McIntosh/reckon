@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s105">
+  <meta name="plan-recorded-at" content="2026-11-20">
+  <meta name="plan-verdict" content="passed">
+  <title>An unchanged gate-log pair is counted once</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="an-unchanged-gate-log-pair-is-counted-once-landing" data-node="an-unchanged-gate-log-pair-is-counted-once" data-reckon="landed" data-when="2026-11-20">
+  <h2>One read per arm log, one count per pair of log identities</h2>
+
+  <p id="an-unchanged-gate-log-pair-is-counted-once-defect"><strong>The defect.</strong> Every read of a stored review annotates it with the failures the reviewed run added, and the annotation re-read both arm logs and rescanned them in full. The station reads the same review many times per tick through <code>read_review</code> → <code>annotate_review_of_run</code>, and a delivered run's logs never change, so 6.7% of the station's samples sat in recounting a number that had not moved. Five reads of one unchanged review read each arm log five times.</p>
+
+  <p id="an-unchanged-gate-log-pair-is-counted-once-landed"><strong>What landed.</strong> <code>reckon/crew/review.py</code> derives the pair once and holds only its result. <code>_added_failures_for_arm_logs</code> keys <code>file_memo.memoized_key(..., "review_gate_log_added_failures", ...)</code> on both logs' stat identities and on the two arm working directories, and the held value is an <code>_ArmLogPair</code>: the count, the added ids, whether the base log was present, and the two revisions each header names. <code>annotate_review_of_run</code> builds the record from that result, so a repeated read neither reads nor scans either log. <code>_read_gate_log_at</code> is the one place an arm log is read and is reached only on a miss.</p>
+
+  <p id="an-unchanged-gate-log-pair-is-counted-once-repair"><strong>Repair round: the result is held, never the bytes.</strong> The first cut also memoised each arm log's text. The station is a long-lived process with a history of out-of-memory kills, and a reviewed pair runs to megabytes; a 50,000-entry bound constrains how many entries there are, not how many bytes each one holds. The text memo is gone. A rewritten log now misses the pair's key and both arms are read again — the difference needs both, and with no bytes retained there is nothing to save the second read with. The entry bound that remains is a bounded map of its own over pair identities, and an entry's size follows the number of failing tests rather than the size of the logs.</p>
+
+  <p id="an-unchanged-gate-log-pair-is-counted-once-retry"><strong>Repair round: a failed read is retried.</strong> A read error left an arm log's text missing, so the pair derived as unmeasured and that result was kept under the pair's identities — on a long-lived station one transient error would have held the review unmeasured until the process restarted. The derivation now reports whether either read failed, and a result produced by a failed read is handed to the caller without being kept, so the next read of the same pair reads the log again. A pair whose logs are simply absent is still kept: the pair's key carries that absence, and a log that appears changes the key. The case shows it: a read that raises <code>OSError</code> once and then succeeds leaves the first review read unmeasured and the second read measured at one added failure; with the failed result kept, that second read stays unmeasured and the case fails.</p>
+
+  <p id="an-unchanged-gate-log-pair-is-counted-once-harness"><strong>The harness.</strong> <code>tests/test_an_unchanged_gate_log_pair_is_counted_once.py</code> stores one review over a synthesised run whose directory carries a green base log and a failing head log, names them from the manifest as arms do, and stands in for <code>Path.read_text</code>, counting only reads of the two log names. Five reads of the stored review must read each log once and report the added failure. Rewriting the head log with one more <code>FAILED</code> line must read both arms again and report one more added failure, and the read after that must come from the memo. A head log in neither recognised format must read as unmeasured, not as a measured zero.</p>
+
+  <p id="an-unchanged-gate-log-pair-is-counted-once-negative-control"><strong>Negative control.</strong> The head's test file against the base tree at <code>e6d692b1</code>: <strong>3 failed, EXIT=1</strong>, each arm log read <strong>5</strong> times over five review reads, which is the defect the section names. Removing the pair memo from the head tree instead — deriving the result per call — leaves the same three failures and the same <strong>5</strong> reads per log, so the file-read assertions guard the pair memo itself and not some other saving.</p>
+
+  <p id="an-unchanged-gate-log-pair-is-counted-once-gate"><strong>Gate and suite.</strong> The node's case plus the two files that share its module family, run on <code>all_debug</code>: base arm <strong>58 passed, EXIT=0</strong> at <code>e6d692b1</code> (the node's test file does not exist there, so its command drops it); after arm <strong>62 passed, EXIT=0</strong> at the head; added failure ids <strong>none</strong>. The scoped check at the head passes <strong>62</strong> tests with <code>EXIT=0</code>. <code>ruff check</code> and <code>ruff format --check</code> report no finding on the two staged paths.</p>
+</article>
+
+</body>
+</html>

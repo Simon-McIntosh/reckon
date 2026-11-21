@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T09:10:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-files-and-index-agree.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the reader-projection mutation read '18 failed, exit 1', while the log it cites, mutation-reader-projection.log line 2830, ends with EXIT=0, so a reader or gate that takes that log's captured exit line reads a failing run as passing."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "2530",
+      "severity": "non-blocking",
+      "text": "non-blocking: load assigns data['runs'] = [_reader_row(row) ...] onto the payload _indexed_data caches at reckon/ledger.py:2337, editing in place the shared index-region object that _selected_rows at reckon/ledger.py:2470 copies for exactly that reason, so every later reader in the region receives rows already stripped of store_write and a document-verbatim reader can no longer count on the cached object."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "2473",
+      "severity": "non-blocking",
+      "text": "non-blocking: _reader_row re-implements the 'drop store_write' projection owned by reckon/run_store.py:991 _durable_record, with the same rule copied a third time at tests/test_ledger_files_and_index_agree.py:138, so one promotion-only field now lives in three places and nothing fails when one is missed; the addition duplicates the owner rather than extending it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source node's goal, 'Make tests/test_ledger_files_and_index_agree.py pass in full on the primary branch', against the landed change; reckon/run_store.py:1720 and reckon/ledger.py:2530 carry product repairs and the named file reads 105 passed at head, so the deliverable is the goal's, not a narrowed file.\nVERDICT done_when: Read the source node's done_when and the manifest's gate line; scoped-gate-1794990792203749835.log records revision 9065b42afd4d and '105 passed' ending EXIT=0, base-negative-control.log records '55 failed, 50 passed' at f400f70a ending EXIT=1, but suite-arms.json's command names only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/ledger.py or reckon/run_store.py, so that arm cannot show what the done_when asks of an arm over the test files that import the desk's changed code.\nVERDICT write_paths: Read the pointer's declared write paths; git diff f400f70a..fbafe3194 changes reckon/ledger.py, reckon/run_store.py, tests/test_ledger_files_and_index_agree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-files-and-index-agree.html, every one inside the declared paths.\nVERDICT manifest: Read manifest.md; it names the four commits, the head gate at 9065b42afd4d reading 105 passed, the base control with its 55 failing ids, both arms as JSON carrying 40-character revisions, and the cause table in the evidence fragment.\nVERDICT diff: Read the four commits commit by commit against f400f70a; 693f3f4ccb8b9f9cca356a5caa4cd04b5a49c9ca changes the two product modules and the named test, while 0b519ea200306bd03e743ecffba6271e7b71b0e8, 9065b42afd4d8a973c25574dad517a74f3ab19e8 and fbafe3194078dcfd3eeaf40d5e1bceb972ae4f18 change only the evidence fragment, though 693f3f4c's body claims the stale set is 'now accumulated across every project' when f400f70a already carries stale |= indexed.\nCALL_SITES: reckon/run_store.py:1697 RunStore._refresh, reckon/run_store.py:1827 get_run, reckon/run_store.py:1860 get_detail, reckon/run_store.py:1884 durable_rows, reckon/crew/review_lifecycle.py:414, reckon/crew/recovery_watch.py:2456, reckon/crew/recovery_repair_dispatch.py:1149, reckon/serve.py:949, reckon/crew/routing.py:3487, reckon/capabilities.py:805\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1720 compares the cache's rows against ledger.run_ids(name, root, use_index=False) and reckon/ledger.py:2530 answers one row shape, so the 55 base failures in base-negative-control.log read 105 passed in scoped-gate-1794990792203749835.log with EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1794990792203749835.log records revision 9065b42afd4d, the imported module path and 105 passed, and the base control records its failing ids at f400f70a, but suite-arms.json's command names two tests that import neither changed module, so the arm cannot detect a regression in them.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in f400f70a..fbafe3194 is inside the declared write paths, and the three evidence-fragment commits after the code commit touch no Python and no test.\nSCORE durability: 18\nJUSTIFICATION durability: mutation-membership-selfread.log reddens 37 ids when reckon/run_store.py:1720 reads membership through the store and mutation-reader-projection.log reddens 18 ids when the projection at reckon/ledger.py:2530 is removed, though tests/test_ledger_files_and_index_agree.py:138 duplicates the product's projection rather than asserting an independent literal, so the guarantee rests on the recorded mutations alone.\nSCORE fit: 17\nJUSTIFICATION fit: the helper and the keyword switch follow the idiom of run_ids at reckon/ledger.py:1183, but reckon/run_store.py:1719 reaches across the module boundary into the private ledger._ledger_holds_content.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/ledger.py:2473 re-implements the store_write drop that reckon/run_store.py:991 _durable_record owns, and tests/test_ledger_files_and_index_agree.py:138 copies it a third time, so the capability is duplicated rather than extended.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-files-and-index-agree.html:37 non-blocking: the fragment says the reader-projection mutation read '18 failed, exit 1', while the log it cites, mutation-reader-projection.log line 2830, ends with EXIT=0, so the receipt contradicts the claim it supports.\nFINDING reckon/ledger.py:2530 non-blocking: load mutates the index-region payload cached at reckon/ledger.py:2337 in place, the very sharing _selected_rows at reckon/ledger.py:2470 copies to avoid.\nFINDING reckon/ledger.py:2473 non-blocking: a second copy of the store_write projection owned by reckon/run_store.py:991 _durable_record, with a third copy at tests/test_ledger_files_and_index_agree.py:138.\n",
+  "review_method": "Read-only source, commit and recorded-log review; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T085922901636-review-of-qwnw-red-file-ledger-files-and-index-agree-fbafe3194078",
+  "reviewed_base_sha": "f400f70a5262901ce41d9500c69d765daa072d2c",
+  "reviewed_head_sha": "fbafe3194078dcfd3eeaf40d5e1bceb972ae4f18",
+  "reviewed_run_id": "r-20261118T054010831171-qwnw-red-file-ledger-files-and-index-agree",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T09:42:57.242715+00:00",
+  "total": 105
+}

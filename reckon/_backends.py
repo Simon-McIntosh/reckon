@@ -70,6 +70,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from reckon import file_memo
 from reckon._observations import optional_number
 from reckon._timestamps import parse_iso, parse_utc
 from reckon._worker_fence import (  # noqa: F401
@@ -126,6 +127,7 @@ from reckon._worker_fence import (  # noqa: F401
     fence_writable_roots,
     harness_agent_store,
     harness_home,
+    harness_home_layout,
     observe_codex_login,
     protected_checkouts,
     protected_paths,
@@ -467,6 +469,10 @@ class LaunchPlan:
     # that may have moved since. An empty name means the node named no set.
     mcp_set: str = ""
     worker_mcp_servers: tuple[str, ...] = ()
+    # The treatment this launch gives the worker, stated once here so two
+    # backends of one lane can be compared fact by fact rather than by reading
+    # each harness's argv. See :mod:`reckon.crew.worker_behaviour`.
+    worker_behaviour: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -484,6 +490,7 @@ class LaunchPlan:
             "mcp_set": self.mcp_set,
             "resumed_session": self.resumed_session,
             "worker_mcp_servers": list(self.worker_mcp_servers),
+            "worker_behaviour": dict(self.worker_behaviour),
         }
 
 
@@ -1157,6 +1164,21 @@ class Dialect:
     """
 
     name = ""
+    # The run-home files this harness's interface reads for the treatment every
+    # worker of a lane shares: the settings group that carries the inbox hook
+    # and the MCP server list, and the JSON configuration that holds the server
+    # allowlist. They are properties of the interface — a claude-shaped wrapper
+    # reads the same files as the harness it wraps — which is why the seeding
+    # reads these rather than the dialect's name. A harness that reads neither
+    # declares neither, and reaches its inbox by reading the run directory.
+    settings_file: str | None = None
+    mcp_config_file: str | None = None
+    mcp_refusal_list: bool = False
+    # The dialect whose home layout this harness interface reads, for a wrapper
+    # that speaks another harness's interface rather than one of its own. A
+    # wrapper taking this value reads the wrapped harness's home, its seeded
+    # files and its delivery hook, and states nothing twice.
+    home_interface: str | None = None
     # Whether this dialect hands an attached image to its harness on a flag of
     # its own. A dialect that does not can still be handed one when its lane
     # declares image input: the paths go into the prompt the worker reads, and
@@ -2040,6 +2062,13 @@ class _OmpDialect(Dialect):
     """
 
     name = "omp"
+    # Its server allowlist lives in the agent store's MCP configuration, which
+    # is the file the run home mirrors; it declares no settings group, so a
+    # message reaches its run through the run directory rather than a hook.
+    mcp_config_file = "agent/mcp.json"
+    # Its configuration records refused servers in a list of its own beside the
+    # allowed ones, rather than by absence from the server table.
+    mcp_refusal_list = True
     # The brief rides on argv, so the process is handed an already-closed
     # stdin rather than prompt text — see the class docstring.
     stdin_prompt = False
@@ -2366,10 +2395,130 @@ def _refuse_foreign_stream(events: Iterable[Mapping[str, Any]]) -> None:
     )
 
 
+# ── The harness that wrote a stream ──────────────────────────────────────────
+# A pointer names the lane its run carries now. A run that changed harness
+# keeps the streams its earlier harnesses wrote, so a fold that trusts the
+# pointer reads one attempt's vocabulary with another's translation: omp
+# refuses the stream outright, and the other dialects fold a foreign-shaped
+# stream to a complete-looking run that spent nothing. Each stream is therefore
+# folded by the harness whose own event vocabulary it opens with, named from the
+# records the stream itself carries.
+
+# Every dialect's own event types, most specific vocabulary first. The event
+# types are what the harness writes; they are read only to name the writer and
+# never decide what a fold reports.
+_DIALECT_VOCABULARIES: tuple[tuple[str, frozenset[str]], ...] = (
+    ("omp", _OMP_EVENT_TYPES),
+    (
+        "codex",
+        frozenset(
+            {
+                "thread.started",
+                "turn.completed",
+                "turn.failed",
+                "item.completed",
+                "stream.error",
+            }
+        ),
+    ),
+    ("claude", frozenset({"system", "assistant", "result"})),
+)
+
+# How much of a stream's opening is read to name its writer: every harness
+# states its vocabulary in its first records, and the bound keeps an
+# unmeasurable or very large stream from being read whole for a name.
+_STREAM_WRITER_SAMPLE_BYTES = 64 * 1024
+
+# The writer named for each stream, keyed by path and the file identity it was
+# named from, so an unchanged attempt is named once however often it is folded.
+_STREAM_WRITERS: OrderedDict[str, tuple[tuple[int, int, int, int], str | None]] = (
+    OrderedDict()
+)
+_STREAM_WRITER_LIMIT = 2048
+_STREAM_WRITER_LOCK = threading.Lock()
+
+
+def _vocabulary_from_sample(chunk: bytes) -> str | None:
+    """Name the dialect whose event types a stream's opening records carry."""
+    kinds: set[str] = set()
+    for line in chunk.decode("utf-8", errors="replace").split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            record = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(record, Mapping):
+            kind = record.get("type")
+            if isinstance(kind, str) and kind:
+                kinds.add(kind)
+    for name, vocabulary in _DIALECT_VOCABULARIES:
+        if kinds & vocabulary:
+            return name
+    return None
+
+
+def stream_writer_dialect(log_path: str | Path) -> str | None:
+    """The dialect name of the harness that wrote this stream, or None.
+
+    None means the opening records name no known vocabulary, and the caller
+    keeps whatever dialect it already had — an unrecognised stream is read
+    exactly as it was before this question was asked.
+    """
+    path = Path(log_path)
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    key = str(path.resolve())
+    with _STREAM_WRITER_LOCK:
+        stored = _STREAM_WRITERS.get(key)
+        if stored is not None and stored[0] == identity:
+            return stored[1]
+    try:
+        with path.open("rb") as handle:
+            chunk = handle.read(_STREAM_WRITER_SAMPLE_BYTES)
+    except OSError:
+        return None
+    writer = _vocabulary_from_sample(chunk)
+    with _STREAM_WRITER_LOCK:
+        _STREAM_WRITERS[key] = (identity, writer)
+        _STREAM_WRITERS.move_to_end(key)
+        while len(_STREAM_WRITERS) > _STREAM_WRITER_LIMIT:
+            _STREAM_WRITERS.popitem(last=False)
+    return writer
+
+
+def _backend_for_stream(
+    backend: Mapping[str, Any], log_path: str | Path
+) -> Mapping[str, Any]:
+    """The settings a stream is folded with: those of the harness that wrote it.
+
+    The caller's dialect is kept whenever it is the stream's own, so a run that
+    never changed harness is read exactly as before. A stream written in another
+    harness's vocabulary is folded by that harness, which is the only
+    translation that can report the attempt's spend.
+    """
+    writer = stream_writer_dialect(log_path)
+    if writer is None:
+        return backend
+    try:
+        current = dialect_for(backend)
+    except BackendError:
+        current = None
+    if current is not None and current.name == writer:
+        return backend
+    return {**dict(backend), "command": writer, "dialect": writer}
+
+
 class _ClaudeDialect(Dialect):
     """Claude Code: `-p` stream-json, session ids, rate-limit headroom."""
 
     name = "claude"
+    settings_file = "settings.json"
+    mcp_config_file = ".claude.json"
     # A claude subscription lane reads the operator's stored login, so the
     # fence binds it writable into the run's harness home.
     subscription_login = True
@@ -2446,9 +2595,7 @@ class _ClaudeDialect(Dialect):
             if carried.get("budget") is not None
             else unknown_budget("no rate-limit event in the stream yet")
         )
-        throughput = carried.get("throughput") or unknown_throughput(
-            "no completed result to measure yet"
-        )
+        rate_inputs = carried.get("throughput_inputs")
         peak_input = int(carried.get("peak_input") or 0)
         rate_limit_retries = int(carried.get("rate_limit_retries") or 0)
         obs.events = int(carried.get("events") or 0)
@@ -2495,9 +2642,19 @@ class _ClaudeDialect(Dialect):
                     refused = refusal_budget(obs.detail)
                     if refused is not None:
                         budget = refused
-                throughput = self._throughput(
-                    event, peak_input, elapsed_seconds, usable_input_window
-                )
+                # The inputs, not the rate: a later read of the same stream
+                # rates them against its own span, which is why the wall clock
+                # a caller supplies is applied where the fold is read rather
+                # than baked in where the result was folded.
+                rate_inputs = {
+                    key: event.get(key)
+                    for key in (
+                        "duration_ms",
+                        "duration_api_ms",
+                        "modelUsage",
+                        "usage",
+                    )
+                }
             if obs.session_id is None:
                 # Every event of this stream carries the session id, including
                 # the hook events a host configuration may emit before init.
@@ -2510,7 +2667,7 @@ class _ClaudeDialect(Dialect):
             "detail": obs.detail,
             "message": message,
             "budget": budget,
-            "throughput": throughput,
+            "throughput_inputs": rate_inputs,
             "peak_input": peak_input,
             "rate_limit_retries": rate_limit_retries,
         }
@@ -2541,7 +2698,15 @@ class _ClaudeDialect(Dialect):
                 )
         obs.budget = budget
         obs.final_message = message
-        obs.throughput = throughput
+        if isinstance(rate_inputs, Mapping):
+            # Rated here, from the inputs a result folded earlier left behind,
+            # so a read that folds no records still answers with the span its
+            # caller supplied.
+            obs.throughput = self._throughput(
+                rate_inputs, peak_input, elapsed_seconds, usable_input_window
+            )
+        else:
+            obs.throughput = unknown_throughput("no completed result to measure yet")
         obs.phase = _phase(obs)
         return obs
 
@@ -2816,6 +2981,10 @@ class _CliveDialect(_ClaudeDialect):
     """
 
     subscription_login = False
+    # Its harness home, its seeded files and its delivery hook are claude's:
+    # the wrapper execs claude itself, so a clive worker gets the treatment a
+    # clive-shaped lane is entitled to without any of it being restated here.
+    home_interface = "claude"
 
 
 _DIALECTS: dict[str, Dialect] = {
@@ -3020,6 +3189,8 @@ def launch_plan(
     fence_waiver: str | None = None,
     masked_paths: Iterable[str | Path] = (),
     unmergeable_patterns: Iterable[str] = (),
+    behaviour_role: str = "implement",
+    flight_config: Mapping[str, Any] | None = None,
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -3168,15 +3339,19 @@ def launch_plan(
             worker_mcp_servers=(
                 resolved_mcp_servers if fence_config is not None else None
             ),
+            settings_file=dialect.settings_file,
+            mcp_config_file=dialect.mcp_config_file,
+            mcp_refusal_list=dialect.mcp_refusal_list,
         )
         # Only the claude arm's treatment is decided by the seeding step: it
         # does the work by editing the run home. A codex launch carries its
         # server on the argv, which this step neither writes nor removes, so
         # its recorded fact must not be replaced by the seeder's answer.
-        if dialect.name == "claude":
+        if dialect.settings_file is not None:
             anchored_edit = seeded_treatment
-        if adopts_harness_home:
-            environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        home_layout = harness_home_layout(dialect.name)
+        if adopts_harness_home and home_layout is not None:
+            environment[home_layout[0]] = str(harness)
         # A harness that keeps its agent store below its home needs the store
         # variable too: the seed mirrors the operator's files relative to the
         # home the run owns, and a harness resolving its store from the
@@ -3187,7 +3362,7 @@ def launch_plan(
         # commits would carry a name and address nobody configured. Naming the
         # global config explicitly restores it through one environment variable
         # the fence already mounts read-only, so no path is made writable.
-        if adopts_harness_home and _HARNESS_HOME[dialect.name][0] == "HOME":
+        if adopts_harness_home and home_layout is not None and home_layout[0] == "HOME":
             operator = Path(fence_home) if fence_home is not None else Path.home()
             operator_config = operator / ".gitconfig"
             if operator_config.is_file():
@@ -3328,6 +3503,20 @@ def launch_plan(
             masked_paths=masked_paths,
             unmergeable_paths=tuple(unmergeable.items()),
         )
+    from reckon.crew.worker_behaviour import compose_worker_behaviour
+
+    behaviour = compose_worker_behaviour(
+        backend_name=backend_name,
+        backend=backend,
+        run_directory=run_directory,
+        role=behaviour_role,
+        fence=fence,
+        write_roots=write_roots,
+        unmergeable_seals=unmergeable,
+        dialect_name=dialect.name,
+        settings_file=dialect.settings_file,
+        config=flight_config,
+    )
     return LaunchPlan(
         backend=backend_name,
         dialect=dialect.name,
@@ -3345,6 +3534,7 @@ def launch_plan(
         unmergeable_seals=unmergeable,
         mcp_set=resolved_mcp_set,
         worker_mcp_servers=tuple(resolved_mcp_servers or ()),
+        worker_behaviour=dict(behaviour.dimensions()),
     )
 
 
@@ -3649,9 +3839,22 @@ class _StreamCursor:
     mtime_ns: int
     offset: int
     head: Mapping[str, Any]
+    # The bytes immediately before ``offset``, so a read can tell whether the
+    # records it consumed are still the ones it consumed. A digest of the
+    # opening answers a different question — whether this is the same stream —
+    # and cannot see a rewrite that keeps the opening and moves what follows,
+    # which is exactly what invalidates an offset.
+    boundary: Mapping[str, Any] | None = None
 
     @classmethod
-    def of(cls, info: object, *, offset: int, head: Mapping[str, Any]) -> _StreamCursor:
+    def of(
+        cls,
+        info: object,
+        *,
+        offset: int,
+        head: Mapping[str, Any],
+        boundary: Mapping[str, Any] | None = None,
+    ) -> _StreamCursor:
         """The cursor a stat result and a reached offset describe."""
         return cls(
             dev=int(info.st_dev),
@@ -3660,6 +3863,7 @@ class _StreamCursor:
             mtime_ns=int(info.st_mtime_ns),
             offset=int(offset),
             head=head,
+            boundary=boundary,
         )
 
     @classmethod
@@ -3688,16 +3892,15 @@ class _StreamCursor:
 
     def grows_from(self, path: str | Path, info: object) -> bool:
         """Whether the file only gained bytes past this cursor's recorded end."""
-        return (
+        if not (
             self.inode == (int(info.st_dev), int(info.st_ino))
             and int(info.st_size) > self.size
             and 0 < self.offset <= int(info.st_size)
-            and _stream_head_intact(path, self.head)
-        )
-
-    def as_resume(self) -> dict[str, Any]:
-        """The caller-carried resume shape this cursor answers for."""
-        return {"offset": self.offset, "head": self.head}
+        ):
+            return False
+        if self.boundary is not None:
+            return _stream_boundary_intact(path, self.offset, self.boundary)
+        return _stream_head_intact(path, self.head)
 
 
 @dataclass
@@ -3794,6 +3997,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
             and (stored.whole or not whole)
         ):
             _PARSED_STREAMS.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return stored
         # The held entry carries the version the last read reached whether or
         # not it was asked for the whole stream, so a whole request extends it
@@ -3828,7 +4032,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
     else:
         with source.open("rb") as handle:
             data = handle.read()
-        _count_parsed_bytes(len(data))
+        _record_stream_read(file_memo.ANSWER_RECOMPUTED, len(data))
         added, malformed = parse_events(
             data.decode("utf-8", errors="replace").splitlines()
         )
@@ -3837,11 +4041,16 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
         prior_events = None
         joined = False
         prior_ends_newline = data.endswith(b"\n")
-    head = stream_head_fingerprint(source, offset=end)
+    head = (
+        dict(cursor.head)
+        if resume and cursor is not None
+        else stream_head_fingerprint(source, offset=end)
+    )
     with _PARSED_STREAM_LOCK:
         live = _PARSED_STREAMS.get(key)
         if live is not None and live.identity == identity and (live.whole or not whole):
             _PARSED_STREAMS.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return live
         pending = (
             [*((stored.pending_events or ()) if joined and stored else ()), *added]
@@ -3849,7 +4058,12 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
             else None
         )
         current = _ParsedStream(
-            cursor=_StreamCursor.of(info, offset=end, head=head),
+            cursor=_StreamCursor.of(
+                info,
+                offset=end,
+                head=head,
+                boundary=stream_boundary_fingerprint(source, offset=end),
+            ),
             events=events,
             malformed=malformed,
             ends_newline=prior_ends_newline if resume else data.endswith(b"\n"),
@@ -3904,6 +4118,11 @@ def cached_stream_events(
 # resume a read of an evicted stream starts from, which is why the events cache
 # keeps no second store of its own: this one is already per path and
 # count-bounded.
+# The memo kind this module's stream observation is counted under, so a pass
+# measuring what it recomputed reports the stream reader beside the file parses
+# rather than as an unnamed cost carried inside another kind.
+_STREAM_MEMO_KIND = "stream_observation"
+
 _STREAM_SUMMARY_LOCK = threading.RLock()
 _STREAM_SUMMARIES: OrderedDict[str, _StreamSummary] = OrderedDict()
 _STREAM_SUMMARY_LIMIT = 2048
@@ -3923,6 +4142,72 @@ class _StreamFold:
     receipt: object | None
     observation: Observation
 
+    def extended(
+        self,
+        events: Sequence[Mapping[str, Any]],
+        *,
+        malformed: int,
+        whole: bool,
+        offset: int,
+    ) -> _StreamFold:
+        """This fold over the records a read parsed, at the offset it reached.
+
+        The held state is the fold of every record before them, so a grown
+        stream is folded forward rather than from its first byte; a read that
+        brought the whole stream in starts from no state and answers without
+        the timestamps the parse did not carry.
+        """
+        observation = _observe_events(
+            backend_name=self.backend_name,
+            backend=self.backend,
+            events=events,
+            malformed=malformed,
+            elapsed_seconds=self.elapsed_seconds,
+            receipt=self.receipt,
+            state=None if whole else self.observation.stream_state,
+        )
+        observation.stream_state["offset"] = offset
+        return _StreamFold(
+            self.backend_name,
+            self.backend,
+            self.elapsed_seconds,
+            self.receipt,
+            observation,
+        )
+
+
+@dataclass
+class _StreamScan:
+    """One named fold over a stream's whole record sequence.
+
+    A reader whose answer is about the stream's end — the latest terminal
+    event, whether an admission refusal was written — folds each record it
+    reads into this state rather than keeping the records. The state covers the
+    stream from its first byte, so a summary that has read the whole stream
+    once answers every later version by folding only what grew, and a stream
+    the events cache dropped for size costs no whole read here.
+    """
+
+    name: str
+    step: Callable[[Any, Sequence[Mapping[str, Any]]], Any]
+    seed: Any
+    state: Any
+
+    def extended(
+        self, events: Sequence[Mapping[str, Any]], *, whole: bool
+    ) -> _StreamScan:
+        """This scan over the records a read parsed, from the state it holds.
+
+        A whole read starts from the seed: the records in hand are all of them,
+        and the state describes the stream a rewritten version replaced.
+        """
+        return _StreamScan(
+            self.name,
+            self.step,
+            self.seed,
+            self.step(self.seed if whole else self.state, events),
+        )
+
 
 @dataclass
 class _StreamSummary:
@@ -3931,6 +4216,7 @@ class _StreamSummary:
     cursor: _StreamCursor
     folds: dict[str, _StreamFold] = field(default_factory=dict)
     bounds: dict[Any, tuple] = field(default_factory=dict)
+    scans: dict[str, _StreamScan] = field(default_factory=dict)
 
     @property
     def identity(self) -> tuple[int, int, int, int]:
@@ -3950,14 +4236,19 @@ class _StreamSummary:
 
 
 def _observation_settings_key(
-    backend_name: str,
-    backend: Mapping[str, Any],
-    elapsed_seconds: float | None,
-    receipt: object | None,
+    backend_name: str, backend: Mapping[str, Any], receipt: object | None
 ) -> str:
-    """The identity of everything an observation is a function of besides bytes."""
+    """The identity of everything an observation's records are a function of.
+
+    ``elapsed_seconds`` is deliberately absent: it rates what the records say
+    against the caller's clock and changes nothing about which records the
+    stream holds. A tick that passes a new elapsed time would otherwise miss
+    every fold it held and read every stream whole, so the elapsed reading is
+    applied to the folded state when the fold is read rather than into the key
+    that identifies it.
+    """
     settings = json.dumps(backend, sort_keys=True, default=repr)
-    return repr((backend_name, settings, elapsed_seconds, receipt))
+    return repr((backend_name, settings, receipt))
 
 
 def _extend_stamp_bounds(
@@ -4060,6 +4351,7 @@ def _stream_summary(
         stored = _STREAM_SUMMARIES.get(key)
         if stored is not None and stored.identity == identity:
             _STREAM_SUMMARIES.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return stored, [], 0, False
     grows = stored is not None and stored.cursor.grows_from(path, info)
     if grows:
@@ -4067,6 +4359,10 @@ def _stream_summary(
         events, malformed = parse_events(lines)
         ends_newline = True
         whole = False
+        head = dict(stored.head)
+        # The offset this read reached is new, so its boundary digest is
+        # recorded here rather than derived from the version it replaced.
+        boundary = stream_boundary_fingerprint(path, offset=end)
     else:
         try:
             entry = _cached_stream_entry(path, whole=True)
@@ -4078,8 +4374,9 @@ def _stream_summary(
         end = entry.identity[2] if ends_newline else _last_line_boundary(path)
         identity = entry.identity
         whole = True
-    head = stream_head_fingerprint(path, offset=end)
-    cursor = _StreamCursor.of(info, offset=end, head=head)
+        head = stream_head_fingerprint(path, offset=end)
+        boundary = stream_boundary_fingerprint(path, offset=end)
+    cursor = _StreamCursor.of(info, offset=end, head=head, boundary=boundary)
     with _STREAM_SUMMARY_LOCK:
         live = _STREAM_SUMMARIES.get(key)
         if live is not None and live is not stored and live.identity == identity:
@@ -4088,24 +4385,14 @@ def _stream_summary(
             return live, [], 0, False
         folds: dict[str, _StreamFold] = dict(stored.folds) if stored else {}
         bounds = dict(stored.bounds) if stored else {}
-        for fold_key, fold in list(folds.items()):
-            observation = _observe_events(
-                backend_name=fold.backend_name,
-                backend=fold.backend,
-                events=events,
-                malformed=malformed,
-                elapsed_seconds=fold.elapsed_seconds,
-                receipt=fold.receipt,
-                state=None if whole else fold.observation.stream_state,
-            )
-            observation.stream_state["offset"] = end
-            folds[fold_key] = _StreamFold(
-                fold.backend_name,
-                fold.backend,
-                fold.elapsed_seconds,
-                fold.receipt,
-                observation,
-            )
+        scans: dict[str, _StreamScan] = dict(stored.scans) if stored else {}
+        scans = {
+            name: scan.extended(events, whole=whole) for name, scan in scans.items()
+        }
+        folds = {
+            name: fold.extended(events, malformed=malformed, whole=whole, offset=end)
+            for name, fold in folds.items()
+        }
         if whole:
             bounds = {
                 reader: _extend_stamp_bounds(None, None, events, reader)
@@ -4116,7 +4403,7 @@ def _stream_summary(
                 reader: _extend_stamp_bounds(first, last, events, reader)
                 for reader, (first, last) in bounds.items()
             }
-        summary = _StreamSummary(cursor=cursor, folds=folds, bounds=bounds)
+        summary = _StreamSummary(cursor=cursor, folds=folds, bounds=bounds, scans=scans)
         _STREAM_SUMMARIES[key] = summary
         _STREAM_SUMMARIES.move_to_end(key)
         while len(_STREAM_SUMMARIES) > _STREAM_SUMMARY_LIMIT:
@@ -4134,14 +4421,20 @@ def _summarised_observation(
     elapsed_seconds: float | None,
     receipt: object | None,
 ) -> Observation | None:
-    """The observation a stream's summary holds, reading only what grew."""
+    """The observation a stream's summary holds, reading only what grew.
+
+    The fold is keyed by the records it folded — backend settings and receipt —
+    and not by the caller's elapsed time. A new tick passing a new elapsed time
+    is answered from the held fold, with the clock applied to the state the
+    fold carries: the events are the same events, so only the rate over them
+    moves. That is what keeps a steady tick from reading every stream whole
+    once per distinct elapsed reading.
+    """
     path = Path(log_path)
     summary, events, malformed, whole = _stream_summary(path)
     if summary is None:
         return None
-    settings = _observation_settings_key(
-        backend_name, backend, elapsed_seconds, receipt
-    )
+    settings = _observation_settings_key(backend_name, backend, receipt)
     with _STREAM_SUMMARY_LOCK:
         fold = summary.folds.get(settings)
     if fold is None:
@@ -4160,7 +4453,7 @@ def _summarised_observation(
             backend=backend,
             events=events,
             malformed=malformed,
-            elapsed_seconds=elapsed_seconds,
+            elapsed_seconds=None,
             receipt=receipt,
             state=None,
         )
@@ -4168,7 +4461,7 @@ def _summarised_observation(
         fold = _StreamFold(
             backend_name,
             dict(backend),
-            elapsed_seconds,
+            None,
             receipt,
             observation,
         )
@@ -4176,8 +4469,67 @@ def _summarised_observation(
             live = _STREAM_SUMMARIES.get(str(path.resolve()))
             if live is not None:
                 live.folds[settings] = fold
-        return copy.deepcopy(fold.observation)
+    if elapsed_seconds != fold.elapsed_seconds:
+        # The same records rated against this caller's clock: the fold state is
+        # extended over no records, so nothing is read and every count the
+        # stream reported most recently is carried forward. This is the only
+        # path a freshly built fold takes as well, because the fold is built
+        # with no clock of its own.
+        observation = _observe_events(
+            backend_name=fold.backend_name,
+            backend=fold.backend,
+            events=[],
+            malformed=0,
+            elapsed_seconds=elapsed_seconds,
+            receipt=fold.receipt,
+            state=fold.observation.stream_state,
+        )
+        observation.stream_state["offset"] = fold.observation.stream_state.get("offset")
+        return observation
     return copy.deepcopy(fold.observation)
+
+
+def cached_stream_fold(
+    path: str | Path,
+    name: str,
+    step: Callable[[Any, Sequence[Mapping[str, Any]]], Any],
+    seed: Any,
+) -> Any:
+    """The named fold over a stream's whole record sequence, reading only growth.
+
+    A reader whose answer is a question about the stream — which terminal event
+    it reached, whether an admission refusal was written — expresses it as a
+    fold from ``seed`` over every record in order, and is answered from the
+    summary's held state on every later call. The summary reads the whole
+    stream once, then only the bytes a stream gained, which is what keeps the
+    reader from re-paying for a stream whose records the byte-bounded events
+    cache has dropped. A stream that cannot be stat'd is answered by one whole
+    read and stands no state, because there is no version to key it to.
+    """
+    source = Path(path)
+    summary, events, _malformed, whole = _stream_summary(source)
+    if summary is None:
+        entry = _cached_stream_entry(source, whole=True)
+        return step(seed, entry.events)
+    with _STREAM_SUMMARY_LOCK:
+        scan = summary.scans.get(name)
+        if scan is not None:
+            return scan.state
+    if not whole:
+        # This reader arrives after the summary read this version: the records
+        # it must fold from the stream's first byte are not the growth in hand.
+        entry = _cached_stream_entry(source, whole=True)
+        events = entry.events
+    state = step(seed, events)
+    with _STREAM_SUMMARY_LOCK:
+        live = _STREAM_SUMMARIES.get(str(source.resolve()))
+        if live is not None and live.identity == summary.identity:
+            # The summary is still at the version this state folds; one that
+            # moved while the bytes were read is not extended from an older
+            # state, because the records between the two versions would never
+            # be folded into it.
+            live.scans[name] = _StreamScan(name, step, seed, state)
+    return state
 
 
 def _events_timestamp_bounds(
@@ -4413,8 +4765,18 @@ _STREAM_BOUNDARY_CHUNK = 64 * 1024
 # in-place rewrites — is otherwise indistinguishable from an append by stat
 # alone. The digest covers a bounded opening rather than the whole consumed
 # prefix, so the check costs a fixed small read rather than re-reading the bytes
-# the cursor exists to skip.
+# the cursor exists to skip. It is paid by a caller that resumes from its own
+# saved cursor, not by the summary's growth read, which checks the boundary
+# below instead.
 _STREAM_HEAD_SAMPLE = 8 * 1024
+
+# How many bytes before a cursor's offset its boundary digest covers. This is
+# the guard the growth read pays, and it answers the question an offset depends
+# on: the bytes the cursor already consumed, where it stopped consuming them. A
+# rewrite that keeps the opening and moves everything after it is invisible to
+# the opening digest and visible here, and the sample is small because every
+# resumed stream in the population pays it once a tick.
+_STREAM_BOUNDARY_SAMPLE = 512
 
 
 def _stream_head_size(offset: int) -> int:
@@ -4469,6 +4831,60 @@ def _stream_head_intact(path: str | Path, recorded: object) -> bool:
     return hashlib.sha256(head).hexdigest() == digest
 
 
+def _stream_boundary_intact(path: str | Path, offset: int, recorded: object) -> bool:
+    """Whether the bytes a cursor consumed still end where it says they do.
+
+    An offset is an index into a sequence of records, so it stays valid only
+    while the bytes before it do. A rewrite that keeps a stream's opening and
+    moves what follows leaves an append indistinguishable by stat and by the
+    opening digest alike; the boundary it moved is what this reads. An absent
+    or empty fingerprint is unverifiable and refuses the resume rather than
+    resuming blind.
+    """
+    if not isinstance(recorded, Mapping):
+        return False
+    try:
+        count = int(recorded.get("bytes") or 0)
+        start = int(recorded.get("start") or 0)
+    except (TypeError, ValueError):
+        return False
+    digest = str(recorded.get("digest") or "")
+    if count <= 0 or not digest or start + count != int(offset):
+        return False
+    try:
+        with Path(path).open("rb") as handle:
+            handle.seek(start)
+            tail = handle.read(count)
+    except OSError:
+        return False
+    if len(tail) != count:
+        return False
+    return hashlib.sha256(tail).hexdigest() == digest
+
+
+def stream_boundary_fingerprint(path: str | Path, *, offset: int) -> dict[str, Any]:
+    """Digest the bytes immediately before ``offset``, for a later read to check.
+
+    Recorded with the offset it belongs to, so a read that resumes from that
+    offset can tell whether the records it consumed are still the ones it
+    consumed. The sample is bounded so the check costs a fixed small read
+    rather than the prefix the cursor exists to skip.
+    """
+    limit = max(0, min(int(offset), _STREAM_BOUNDARY_SAMPLE))
+    start = max(0, int(offset) - limit)
+    try:
+        with Path(path).open("rb") as handle:
+            handle.seek(start)
+            tail = handle.read(limit) if limit else b""
+    except OSError:
+        return {"start": start, "bytes": 0, "digest": ""}
+    return {
+        "start": start,
+        "bytes": len(tail),
+        "digest": hashlib.sha256(tail).hexdigest(),
+    }
+
+
 # Bytes of stream records the readers have consumed since the count was last
 # taken. A producer takes it once a poll to report how much of the fleet's
 # stream traffic that poll actually parsed; no other reader consults it, and a
@@ -4478,9 +4894,18 @@ def _stream_head_intact(path: str | Path, recorded: object) -> bool:
 _PARSED_STREAM_BYTES = [0]
 
 
-def _count_parsed_bytes(count: int) -> None:
-    if count > 0:
-        _PARSED_STREAM_BYTES[0] += count
+def _record_stream_read(outcome: str, count: int) -> None:
+    """Record one stream read against both tallies the read belongs to.
+
+    The producer reports how much of the fleet's stream traffic a poll parsed,
+    and a measuring scope reports what the pass that made the read recomputed.
+    Both totals describe the same bytes, so they are written here, once, rather
+    than beside each other at the readers where they could drift apart.
+    """
+    if count <= 0:
+        return
+    _PARSED_STREAM_BYTES[0] += count
+    file_memo.record_memo(_STREAM_MEMO_KIND, outcome, count)
 
 
 def take_parsed_stream_bytes() -> int:
@@ -4543,7 +4968,7 @@ def _stream_lines_from(
         return [], offset
     text = data[: cut + 1].decode("utf-8", errors="replace")
     if count:
-        _count_parsed_bytes(cut + 1)
+        _record_stream_read(file_memo.ANSWER_EXTENDED, cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 
@@ -4614,6 +5039,10 @@ def _observe_run_stream(
             detail=f"event log not written yet: {path}",
         )
         return obs
+    # Each attempt is folded by the harness that wrote it. A run that changed
+    # lane keeps its earlier attempts' streams, and the pointer now names a
+    # dialect those streams are not written in.
+    backend = _backend_for_stream(backend, path)
     # The derived reading of this stream is held per file identity, so an
     # unchanged stream costs no decode and a grown one is folded from the
     # offset the last read reached. A caller's ``resume`` is the fallback for a

@@ -231,6 +231,23 @@ def _promotion_lock(run_id: str) -> Iterator[None]:
         yield
 
 
+@contextmanager
+def _promotion_coordination(run_id: str, *, dry_run: bool) -> Iterator[None]:
+    """Hold the promotion's claims, or none of them when nothing is written.
+
+    A real promotion takes the run's pointer lock and its cross-host claim
+    before its first write, so two hosts cannot land one run and a second
+    promotion waits rather than racing. A dry run writes nothing, so it takes
+    neither: the claim is itself a write, and a dry run that waits on one
+    answers as a write that timed out instead of the read it is.
+    """
+    if dry_run:
+        yield
+        return
+    with _promotion_lock(run_id), _promotion_host_lease(run_id):
+        yield
+
+
 #: The pointer fields a promotion must find a pointer it can remove, in the
 #: order the refusal message names them. The phase is among them because a
 #: promoted attempt whose phase moved is not the attempt this promotion read.
@@ -408,13 +425,10 @@ def _retire_a_pointer_whose_attempt_ended(
     )
 
 
-def _keep_pointer_for_pending_landing(run_id: str) -> bool:
-    """Mark the live pointer a promotion could not remove, or report failure.
-
-    The mark is the only thing that distinguishes this pointer from one a newer
-    attempt owns: the landing pass leaves an unmarked live pointer alone, so
-    without it the reviewed head stays off the branch beside a passed row.
-    """
+def _keep_pointer_for_pending_landing(
+    run_id: str, record: Mapping[str, Any], *, reviewed_head: str = ""
+) -> bool:
+    """Keep handover ownership in the journal without rewriting the live attempt."""
     from reckon.crew import pending_landing
 
     with _pointer_lock(run_id):
@@ -422,10 +436,19 @@ def _keep_pointer_for_pending_landing(run_id: str) -> bool:
             current = read_pointer(run_id)
         except CrewError:
             return False
-        if current.get("pending_landing_repair"):
-            return True
+        _record_a_raced_landing(run_id, record, reviewed_head=reviewed_head)
+        path = pending_landing._record_path(run_id)
+        journal = pending_landing._read(path)
+        if journal is None:
+            return False
+        journal.setdefault("pointer", dict(record))
+        journal.setdefault(
+            "retained_attempt",
+            current.get("pending_landing_repair_attempt")
+            or pending_landing.marked_identity(current),
+        )
         try:
-            pending_landing.mark_pending_landing_repair(run_id, current)
+            _write_json(path, journal)
         except OSError:
             return False
         return True
@@ -551,32 +574,13 @@ def _remove_promoted_pointer_or_defer(
     finishing_another_writers_row: bool = False,
     reviewed_head: str = "",
 ) -> bool:
-    """Remove the promoted pointer, or keep it marked for the pass that can.
+    """Retire the promoted attempt or keep its landing ownership on the journal.
 
-    The ledger row and plan comment are committed before this runs, so a
-    pointer that moved under the promotion leaves a promoted run whose head was
-    never merged: a second recovery would duplicate what the pending-landing
-    pass already does, so the pointer is kept and marked instead. A review run
-    has no head to merge, and its worker writes the pointer itself while it
-    runs: retiring it under a live worker deletes a file the process still owns,
-    and retiring it after the pointer moved leaves nothing that says the run was
-    promoted, so the acceptance sweep files a promotion the ledger already
-    records. Both are kept and marked, and the sweep retires the mark once
-    nothing owns the pointer.
-
-    ``finishing_another_writers_row`` says the row was another writer's when
-    this promotion reached it, so the run is promoted either way. The pointer
-    this promotion read is then retired rather than read as a newer attempt's,
-    and the merge it owes — ``reviewed_head``, resolved before promotion wrote
-    anything — is recorded for the landing pass so a caller that does not land
-    still finishes it. A pointer another attempt owns is left exactly as it is:
-    marking it would send that attempt into the repair-only branch with no
-    record of its own to finish.
-
-    A pointer a later launch moved to its own attempt needs no landing repair
-    once the attempt it belongs to has ended: that launch recorded its own end,
-    so the promotion finishes cleanup by removing the pointer rather than
-    parking the run behind a mark nothing will come back for.
+    The ledger row precedes retirement, so a pointer that moved during promotion
+    can still owe a merge. Its retained attempt is captured on the pending
+    record without writing the live pointer. Later attempts keep their own
+    pointers while that journal finishes the reviewed head. Reviews have no
+    merge to finish and keep their separate process-aware retirement path.
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
@@ -605,12 +609,14 @@ def _remove_promoted_pointer_or_defer(
                 return True
             if retired == _RACED_POINTER_ANOTHER_ATTEMPT:
                 return False
-        if not _keep_pointer_for_pending_landing(run_id):
+        if not _keep_pointer_for_pending_landing(
+            run_id, record, reviewed_head=reviewed_head
+        ):
             raise CrewError(
                 f"run {run_id!r} changed while promotion ran"
                 f"{_newer_attempt_named(run_id, record)}"
                 f"{_launching_process_named(run_id, record)} and its pointer "
-                "could not be marked for the landing pass: its promotion is "
+                "could not be recorded for the landing pass: its promotion is "
                 "recorded, and the merge of its reviewed head is left to the "
                 "landing record this promotion wrote"
             ) from exc
@@ -620,7 +626,7 @@ def _remove_promoted_pointer_or_defer(
             f"run {run_id!r} changed while promotion ran"
             f"{_newer_attempt_named(run_id, record)}"
             f"{_launching_process_named(run_id, record)}; its promotion is "
-            "recorded and its pointer is kept, marked pending_landing_repair, so "
+            "recorded and its pointer is kept with its attempt on the landing record, so "
             "the next landing pass finishes the merge of its reviewed head"
         ) from exc
 
@@ -978,11 +984,17 @@ def complete(
     dry_run: bool = False,
     promoted_by: str = "",
     domain_waiver: str = "",
+    dry_run_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed.
 
     A run whose dispatch started an advisory pick asynchronously is waited for,
     up to the pick's own bound, so its answer reaches the committed row.
+
+    ``dry_run_state`` is where a dry run's own findings are written for the
+    report its caller assembles: the guards run in one order and a refusal
+    abandons the sweep, so a fact resolved before the refusal — the review the
+    run owes — would otherwise be lost with the local that held it.
     """
     verdict = str(gate).strip().lower()
     if verdict not in ledger.GATE_VERDICTS:
@@ -1013,8 +1025,12 @@ def complete(
         _await_in_flight_shadow_pick(run_id)
     # Checks and landing retain their own claim while pointer mutations remain
     # available to sweeps and resume. Pointer access holds only its own lock.
-    with _promotion_lock(run_id), _promotion_host_lease(run_id):
-        with _pointer_lock(run_id):
+    # A dry run takes neither: it writes nothing for a lock to protect, and a
+    # lock held by a promotion of the same run would make the read wait on it.
+    with _promotion_coordination(run_id, dry_run=dry_run):
+        with ExitStack() as _pointer_region:
+            if not dry_run:
+                _pointer_region.enter_context(_pointer_lock(run_id))
             record = _read_pointer_or_rebuild(run_id, root=root)
         record = {**record, **read_dispatch_detail(record)}
         # A measurement run is one its dispatch marked: it replays work that has
@@ -1163,6 +1179,20 @@ def complete(
                 # landing for a review that will never arrive. The tier is still
                 # resolved, because the row records what the run changed.
                 return {"reason": MEASUREMENT_REVIEW_WAIVER}
+            if dry_run_state is not None:
+                # The refusal below abandons the sweep, so the review this run
+                # owes is recorded before it is raised: the dry run's report
+                # states what is missing even when it also states why.
+                dry_run_state["reviews_owed"] = _reviews_the_dry_run_owes(
+                    run_id,
+                    record,
+                    verdict=verdict,
+                    classification=resolved["classification"],
+                    review=reviewed,
+                    review_tier=resolved["review_tier"],
+                    promoted_head=resolved["promoted_revision"],
+                    stale_head=stale_review_head,
+                )
             return _require_review_waiver(
                 run_id,
                 record,
@@ -1403,6 +1433,8 @@ def complete(
                     no_impl_change=no_impl_change,
                     would_file_reviews=delivered_reviews,
                     would_wait_for_pick=awaiting_pick,
+                    suite_delta=suite_delta,
+                    reviews_owed=(dry_run_state or {}).get("reviews_owed") or (),
                 )
             result = _complete_locked(
                 run_id,
@@ -1573,6 +1605,8 @@ def _dry_run_report(
     would_withdraw: bool = False,
     would_file_reviews: Sequence[str] = (),
     would_wait_for_pick: bool = False,
+    suite_delta: Mapping[str, Any] | None = None,
+    reviews_owed: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Report every refusal a promotion would raise, without writing any of it.
 
@@ -1588,6 +1622,13 @@ def _dry_run_report(
     into the store, and ``would_wait_for_pick`` for a deferred pick still to
     answer. A withdrawn run has nothing to invoke — its promotion writes no
     ledger row — so no command is offered for it.
+
+    ``suite_delta`` is the suite evaluation the promotion ran, and
+    ``would_measure`` names the one state it can be in where nothing was
+    measured: the landing would run the armed command over the base and head
+    trees itself. ``reviews_owed`` names the reviews a real promotion refuses
+    for want of, so an empty ``would_file_reviews`` — no record was delivered —
+    cannot be read as no review being needed.
     """
     messages = [str(refusal) for refusal in refusals]
     invocation = (
@@ -1613,6 +1654,12 @@ def _dry_run_report(
         "would_withdraw": would_withdraw,
         "would_file_reviews": [str(path) for path in would_file_reviews],
         "would_wait_for_pick": would_wait_for_pick,
+        "suite_delta": dict(suite_delta) if isinstance(suite_delta, Mapping) else None,
+        "would_measure": (
+            isinstance(suite_delta, Mapping)
+            and str(suite_delta.get("status") or "") == "would-measure"
+        ),
+        "reviews_owed": [dict(entry) for entry in reviews_owed],
     }
     if would_file_reviews:
         # The filing runs before the guards, so a review check that reads the
@@ -1624,6 +1671,18 @@ def _dry_run_report(
                 "listed in would_file_reviews would be filed into it"
             )
         ]
+    if report["would_measure"] and not messages:
+        # The promotion is not refused, but it is not yet evidenced either: the
+        # promotion is contingent on a measurement the landing takes and this
+        # call did not, and a reader who took would_promote as the whole answer
+        # would be surprised by the field list a failing measurement names.
+        report.setdefault("notes", []).append(
+            "the run recorded no complete baseline and after suite pair, so the "
+            "landing runs the armed command over the base and head trees "
+            "itself; this dry run measured nothing and starts nothing, and the "
+            "fields listed in suite_delta.missing_fields are the ones a "
+            "measurement that cannot read the pair refuses on"
+        )
     return report
 
 
@@ -1637,10 +1696,11 @@ def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
     """
     gate = str(kwargs.get("gate") or "")
     root = kwargs.get("root")
+    state: dict[str, Any] = {}
     try:
-        return complete(run_id, dry_run=True, **kwargs)
+        return complete(run_id, dry_run=True, dry_run_state=state, **kwargs)
     except _PromotionRefusalError as refusal:
-        refusals: Sequence[BaseException] = list(refusal.refusals)
+        refusals = list(refusal.refusals)
     except (CrewError, ledger.LedgerError) as refusal:
         refusals = [refusal]
     try:
@@ -1668,6 +1728,7 @@ def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
         no_impl_change=str(kwargs.get("no_impl_change") or ""),
         would_file_reviews=_delivered_review_records(record),
         would_wait_for_pick=_shadow_pick_in_flight(run_id),
+        reviews_owed=state.get("reviews_owed") or (),
     )
 
 
@@ -1896,6 +1957,8 @@ class _PlanWriteSnapshot:
     rollback_content: bytes | None = None
     rollback_removed: bool = False
     expected_content: bytes | None = None
+    comment_id: str | None = None
+    comment_anchor: str | None = None
 
     def index_entry(self) -> str:
         return _git(
@@ -2039,12 +2102,112 @@ class _PlanWriteSnapshot:
                 )
 
 
+def _declared_sections(state: Mapping[str, Any]) -> set[str]:
+    """The section ids a plan document declares, from its parsed state."""
+    identity = {
+        str(record.get("id") or "")
+        for record in (state.get("sections") or [])
+        if isinstance(record, Mapping)
+    }
+    identity.update(str(key) for key in (state.get("section_declarations") or {}))
+    identity.discard("")
+    return identity
+
+
+def _refuse_a_comment_the_plan_cannot_hold(
+    snapshot: _PlanWriteSnapshot | None, section: str
+) -> None:
+    """Stop a landing whose comment the current plan has nowhere to put.
+
+    A plan that declared the run's section when the snapshot was taken, and no
+    longer declares it now, has nowhere to put this landing's comment. The
+    landing stops here — before the comment write and before the ledger row —
+    rather than recording a promotion with no landing record. A plan that never
+    declared the section answers nothing about it, so the landing proceeds as
+    it always has.
+    """
+    if snapshot is None or not str(section or "").strip():
+        return
+    from reckon import _plan_html
+
+    try:
+        text = snapshot.path.read_bytes().decode("utf-8")
+    except OSError:
+        return
+    anchor = _plan_html.section_anchor(section)
+    held_before = _declared_sections(
+        _plan_html.read_state(snapshot.content.decode("utf-8"))
+    )
+    if anchor not in held_before:
+        return
+    held_now = _declared_sections(_plan_html.read_state(text))
+    if anchor not in held_now:
+        raise CrewError(
+            f"the plan no longer holds section {section!r}: the landing comment "
+            "cannot be placed, so the landing stopped before writing the ledger row"
+        )
+
+
+def _adopt_a_plan_edited_after_the_snapshot(
+    snapshot: _PlanWriteSnapshot, current: bytes
+) -> _PlanWriteSnapshot | None:
+    """The snapshot to commit when the plan was edited after ours was taken.
+
+    A landing comment is an append, so the document now on disk is the other
+    writer's committed plan plus this run's comment. That is recognised by
+    re-rendering the plan at HEAD with the state parsed from disk and requiring
+    the result to be byte-identical to the file: a writer that changed anything
+    else does not match, and the caller's refusal stands. When it does
+    match, the rollback target becomes HEAD's plan — the state a refusal must
+    leave behind — rather than the preimage this run snapshotted before the
+    other writer's edit existed.
+    """
+    from reckon import _plan_html
+
+    if not snapshot.comment_id:
+        return None
+    relative = snapshot.path.relative_to(snapshot.checkout).as_posix()
+    shown = _git(snapshot.checkout, "show", f"HEAD:{relative}", check=False)
+    if shown.returncode:
+        return None
+    head_text = shown.stdout
+    try:
+        actual = _plan_html.read_state(current.decode("utf-8"))
+    except (ValueError, TypeError):
+        return None
+    entries = (actual.get("comments") or {}).get(snapshot.comment_anchor or "", [])
+    if not any(str(item.get("id") or "") == snapshot.comment_id for item in entries):
+        return None
+    rendered = _plan_html.write_state(
+        head_text,
+        actual,
+        drop_authored_impl_meta=True,
+    )
+    if rendered.encode("utf-8") != current:
+        return None
+    head_bytes = head_text.encode("utf-8")
+    return replace(
+        snapshot,
+        content=head_bytes,
+        mode=snapshot.path.stat().st_mode,
+        index=snapshot.index_entry(),
+        head_entry=snapshot.committed_entry(),
+        head_content=head_bytes,
+        expected_content=current,
+        rollback_content=None,
+        commit_attempted=False,
+    )
+
+
 def _record_comment_with_snapshot(
     snapshot: _PlanWriteSnapshot | None, **kwargs: Any
 ) -> dict:
     if snapshot is not None:
         from reckon import _plan_html
 
+        _refuse_a_comment_the_plan_cannot_hold(
+            snapshot, str(kwargs.get("section") or "")
+        )
         narrative = str(kwargs.get("landing") or kwargs.get("narrative") or "").strip()
         if narrative:
             state = _store._state_from_text(
@@ -2060,6 +2223,8 @@ def _record_comment_with_snapshot(
                 author=kwargs["author"],
                 when=kwargs["when"],
             )
+            snapshot.comment_id = str(_comment["id"])
+            snapshot.comment_anchor = _anchor
             if payload.get("comments") != state.get("comments"):
                 payload = {
                     **payload,
@@ -2085,43 +2250,47 @@ def _commit_with_plan_snapshot(
     try:
         snapshot.require_owned_content(current)
     except CrewError:
-        from bs4 import BeautifulSoup
+        adopted = _adopt_a_plan_edited_after_the_snapshot(snapshot, current)
+        if adopted is not None:
+            checkpoint = adopted
+        else:
+            from bs4 import BeautifulSoup
 
-        from reckon import _plan_html
+            from reckon import _plan_html
 
-        if snapshot.expected_content is None:
-            raise
-        intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
-        actual = _plan_html.read_state(current.decode("utf-8"))
-        merged = _store._comment_append_onto_current(actual, intended)
-        held_comments = actual.get("comments") or {}
-        kept = all(
-            entry in held_comments.get(section, [])
-            for section, entries in (intended.get("comments") or {}).items()
-            for entry in entries
-        )
-        rendered = _plan_html.write_state(
-            snapshot.expected_content.decode("utf-8"),
-            actual,
-            drop_authored_impl_meta=True,
-        ).encode("utf-8")
-        same_document = BeautifulSoup(
-            rendered.decode("utf-8"), "html.parser"
-        ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
-        if merged is None or not kept or not same_document:
-            raise
-        # A commutative peer append may land with this run. Its full bytes
-        # and staging become the commit's rollback target, never the older
-        # snapshot that predates the peer's comment.
-        checkpoint = replace(
-            snapshot,
-            content=current,
-            mode=snapshot.path.stat().st_mode,
-            index=snapshot.index_entry(),
-            expected_content=current,
-            rollback_content=None,
-            commit_attempted=False,
-        )
+            if snapshot.expected_content is None:
+                raise
+            intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
+            actual = _plan_html.read_state(current.decode("utf-8"))
+            merged = _store._comment_append_onto_current(actual, intended)
+            held_comments = actual.get("comments") or {}
+            kept = all(
+                entry in held_comments.get(section, [])
+                for section, entries in (intended.get("comments") or {}).items()
+                for entry in entries
+            )
+            rendered = _plan_html.write_state(
+                snapshot.expected_content.decode("utf-8"),
+                actual,
+                drop_authored_impl_meta=True,
+            ).encode("utf-8")
+            same_document = BeautifulSoup(
+                rendered.decode("utf-8"), "html.parser"
+            ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
+            if merged is None or not kept or not same_document:
+                raise
+            # A commutative peer append may land with this run. Its full bytes
+            # and staging become the commit's rollback target, never the older
+            # snapshot that predates the peer's comment.
+            checkpoint = replace(
+                snapshot,
+                content=current,
+                mode=snapshot.path.stat().st_mode,
+                index=snapshot.index_entry(),
+                expected_content=current,
+                rollback_content=None,
+                commit_attempted=False,
+            )
     checkpoint.require_owned_index(current)
     checkpoint.commit_attempted = True
     try:
@@ -3289,14 +3458,18 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
     result is told which runs those are.
 
     The supplied live-run states narrow the removal, tested against the record
-    re-read under the lock, so a caller whose
-    own pre-check raced a test sees a launch as the refusal it is rather than
-    removing a run that has started.
+    re-read under the lock, so a caller whose own pre-check raced a test sees a
+    launch as the supplied states name it rather than removing a run that has
+    started.
 
-    A run whose attempt is still in flight is refused for the same reason: a
-    reservation names the launch the pointer has not recorded yet, and an
-    attempt that has ended — an exit receipt, or a supervisor this host
-    probes dead — holds nothing, so only a live one refuses.
+    A run whose live pointer names a live process is refused, as is one whose
+    attempt names a live supervisor: a worker that is running is what must not
+    be abandoned. A launch still composing has recorded only its own door, and
+    refusing the discard there left the operator unable to cancel a request
+    they can see moving while the pass restored the request the discard had
+    removed. Every launch path reads this record at its last step before it
+    starts a worker and refuses itself, so the discard lands and the launch
+    eventually stops.
     """
     with _promotion_lock(run_id), _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -3313,20 +3486,20 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             raise CrewError(
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )
-        # The pointer's pid is one account of what holds the run and it is not
-        # always the worker's: a resume's attempt is recorded on its
-        # reservation before the pointer learns the pid, and a supervisor that
-        # exited early takes the pointer's pid with it. The attempt's own
-        # reservation is the other account, and an attempt that has recorded
-        # either its end or a process this host probes gone holds nothing, so
-        # only a live attempt refuses here.
+        # A worker already exists beside a reservation that names its supervisor,
+        # so the run holds work still being done. The pointer's pid is the
+        # pointer's account of that; a launch composing in another process has
+        # recorded only its own pid, which is the door, not a worker. Such a
+        # launch started nothing and every launch path re-reads the discard
+        # record at its last step before a worker exists and refuses itself, so
+        # only a reservation naming a supervisor refuses here.
         from reckon.crew.dispatch_launch import (
             _reservation_refusal,
             held_launch_reservation,
         )
 
         held = held_launch_reservation(run_dir(run_id))
-        if held is not None:
+        if held is not None and held.get("supervisor_pid") is not None:
             raise _reservation_refusal(run_id, held)
         path = pointer_path(run_id)
         # Before the pointer goes: a reader that sees the absence must find the
@@ -3741,6 +3914,7 @@ from reckon.crew.promotion_checks import (
     _resolve_promotion_outcome,
     _review_changed_scope,
     _review_outcome_summary,
+    _reviews_the_dry_run_owes,
     _run_capability_risk,
     _run_review_tier,
     _staging_review_record_by_run,

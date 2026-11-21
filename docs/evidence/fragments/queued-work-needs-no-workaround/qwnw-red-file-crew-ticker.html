@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-crew-ticker-causes">
+<h3>Crew ticker: the red test file passes in full</h3>
+<p>Three assertions in <code>tests/test_crew_ticker.py</code> failed at the assigned base revision <code>6fa2b177c511a297d3440956aa64eaa759d4554a</code>; the file passes 27 of 27 at head. Only that test file changed. Each cause was a test pinned to a layout and a vocabulary the code had already moved past, and each was updated to the rule the code keeps, never deleted and never weakened.</p>
+
+<h4 id="qwnw-red-file-crew-ticker-causes-table">Causes and verdicts</h4>
+<table>
+<tr><th>#</th><th>Cause</th><th>Verdict and rule the code keeps</th></tr>
+<tr><td>1</td><td>The counter block was pinned to five cells: the regex read <code>w r h d q s</code> and stopped there.</td><td><strong>Test wrong.</strong> The row renders one cell per bucket, and the promotion queue's cell carries the oldest request's position after its own <code>@</code> marker. Both counter tests now read all seven counters, the position token included, and one case carries a queued promotion so the cell is measured for its own count and position rather than only for the space between the waiting and stuck cells. No assertion was deleted; the block-width check at both ends of the row now covers all seven cells.</td></tr>
+<tr><td>2</td><td>The departure of a promoted run expected the word <code>promoted</code>.</td><td><strong>Test wrong.</strong> A departure's word comes from the ledger row its promotion wrote: a delivered head that is not an ancestor of the primary branch reads <code>complete</code>, and only a merged head reads <code>promoted</code>. The fixture records <code>commits: ["HEAD"]</code>, a head no branch carries, so the departure reads <code>complete</code>.</td></tr>
+<tr><td>3</td><td>The unpromoted figure expected 1 at the promotion transition.</td><td><strong>Test wrong.</strong> The figure counts the state each row is drawn in: a completed run whose independent review is still owed sits as <code>completed_unpromoted</code> and is delivered work waiting on a gate, so it counts there, and the departure one tick later leaves the fleet's cells. Nothing is counted twice: <code>working</code>, <code>blocked</code> and <code>unpromoted</code> are one bucket per row. The expectation now states what the code reports.</td></tr>
+</table>
+
+<h4 id="qwnw-red-file-crew-ticker-base-run">Base run</h4>
+<pre>
+# revision: 6fa2b177c511a297d3440956aa64eaa759d4554a
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py
+FAILED tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion
+FAILED tests/test_crew_ticker.py::test_counter_cells_stay_apart_at_every_digit_width
+FAILED tests/test_crew_ticker.py::test_a_count_above_the_fixed_width_widens_its_own_row
+3 failed, 24 passed in 1.43s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-crew-ticker-head-run">Head run</h4>
+<pre>
+# revision: 2af559a33cadcc87b4c1a5cf5b483128795b6412
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py
+...........................                                              [100%]
+27 passed in 3.47s
+EXIT=0
+</pre>
+<p>The commit that updates this line touches no file outside this fragment, so the measured file is the one this fragment ships beside.</p>
+
+<h4 id="qwnw-red-file-crew-ticker-merged-head-run">Merged-head run</h4>
+<p>The lander's gate runs on the tree it merges, so the file was measured there too: a scratch clone of the primary branch with this worktree's commits cherry-picked on top, built under the job's own <code>/tmp</code> and removed on exit, in an <code>all_debug</code> step with the job id unset. The first attempt failed one case — the unpromoted figure, at the delivery transition — because the primary branch had since changed what that figure counts; the table's third row and the commit beside this one state the rule it now keeps.</p>
+<pre>
+# revision: a1f3a571a7ec8fe5a2057007a7b762e7ea708d77
+# main: 39d5a6453d5dd797477d1fd3aeff86c5e8de6d88
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py
+27 passed in 1.17s
+EXIT=0
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+58 passed in 35.95s
+EXIT=0
+</pre>
+</section>

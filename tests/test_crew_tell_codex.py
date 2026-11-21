@@ -81,6 +81,7 @@ def _seeded_claude_home(tmp_path: Path) -> Path:
         dialect_name="claude",
         operator_home=operator,
         declaration=[{"path": "settings.json", "keys": ["hooks"]}],
+        settings_file="settings.json",
     )
     return run_home
 
@@ -271,10 +272,11 @@ def test_crew_tell_refuses_a_codex_run_that_recorded_no_worker(
 # ── other dialects are refused, naming why ───────────────────────────────────
 
 
-@pytest.mark.parametrize("dialect", ["", "omp", "clive"])
+@pytest.mark.parametrize("dialect", ["", "omp"])
 def test_crew_tell_refuses_a_dialect_it_cannot_reach(
     tmp_path: Path, monkeypatch, dialect
 ):
+    """A harness declaring no hook route is refused, naming the unread inbox."""
     run, manifest = _run_dir(tmp_path)
     record = _record(tmp_path, dialect=dialect, manifest_path=str(manifest))
     monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
@@ -282,7 +284,7 @@ def test_crew_tell_refuses_a_dialect_it_cannot_reach(
     result = _tell()
     assert result.exit_code != 0, result.output
     assert f"{dialect or 'unknown'}-dialect run" in result.output
-    assert "reaches only Claude-dialect runs" in result.output
+    assert str(run / "inbox") in result.output
     assert worker_inbox.pending_messages(run) == []
 
 

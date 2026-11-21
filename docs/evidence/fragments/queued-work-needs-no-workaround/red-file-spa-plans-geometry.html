@@ -1,0 +1,41 @@
+<section id="qwnw-red-file-spa-plans-geometry-record">
+  <h3>Base arm with its failing ids, and the head arm beside it</h3>
+  <p>Both arms ran the same literal command. Both needed a browser binary the
+  compute node does not carry on <code>PATH</code>, so the run names the
+  Playwright headless shell this host has installed:</p>
+  <pre id="qwnw-red-file-spa-plans-geometry-record-command">RECKON_BROWSER=/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_plans_geometry.py</pre>
+  <table id="qwnw-red-file-spa-plans-geometry-record-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Tree</th><th>Summary</th><th>EXIT</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>f29efdc635a1b578bb4461ff90785d3be848646b</code></td>
+        <td>a <code>git archive</code> extraction of that revision</td>
+        <td><code>4 failed, 7 passed in 173.64s</code></td>
+        <td><code>1</code></td>
+        <td><code>logs/base-full.log</code></td>
+      </tr>
+      <tr>
+        <td>head gate</td>
+        <td><code>8a820e480318d0ef20d182e815e42c5dfb9cf14c</code></td>
+        <td>a scratch tree of that revision on <code>all_debug</code>,
+        <code>/tmp/mcintos-landing-363ab8da9050-o61KmR/tree</code></td>
+        <td><code>11 passed in 286.63s</code></td>
+        <td><code>0</code></td>
+        <td><code>scoped-gate-1794993734982693221.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm's four failing ids, quoted from its summary block:</p>
+  <pre id="qwnw-red-file-spa-plans-geometry-record-failing_ids">FAILED tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1280]
+FAILED tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1440]
+FAILED tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1920]
+FAILED tests/test_spa_plans_geometry.py::test_rendered_status_chips_reduce_the_plan_feed
+4 failed, 7 passed in 173.64s (0:02:53)
+EXIT=1</pre>
+  <p>The head arm fails none of them, and fails nothing else. Without
+  <code>RECKON_BROWSER</code> the same file reads <code>4 passed, 7
+  skipped</code> at both revisions, which is why the red file read green on a
+  compute node: every rendered case skips through
+  <code>installed_browser_or_skip</code> at module scope.</p>
+</section>

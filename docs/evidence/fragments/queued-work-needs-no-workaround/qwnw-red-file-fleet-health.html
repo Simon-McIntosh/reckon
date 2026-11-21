@@ -1,0 +1,28 @@
+<section id="qwnw-red-file-fleet-health-record">
+<h3>tests/test_fleet_health.py: green at the base, delivered as such</h3>
+<p>The named file passes in full at the base revision <code>b99d5f2c031a0af7252e0b8abbb4185822998851</code>, as an <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset:
+<strong>15 passed</strong>, <code>EXIT=0</code>, job 1325280 on <code>98dci4-clu-3141.iter.org</code>. No cause is triaged because there is no failure: neither the product nor the test is wrong in this file at this revision, so nothing was repaired and no assertion was touched. The base run's failing ids are an empty set, which is the negative control the plan asks for — a base run without failures cannot be paired with a red one.</p>
+<h4 id="qwnw-red-file-fleet-health-head-run">The passing run</h4>
+<pre># revision: b99d5f2c031a0af7252e0b8abbb4185822998851
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-fleet-health
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-fleet-health
+# job: 1325280 node: 98dci4-clu-3141.iter.org
+# command: env -u SLURM_JOB_ID PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py
+# module: .../qwnw-red-file-fleet-health/reckon/__init__.py
+# python: /home/ITER/mcintos/Code/reckon/.venv/bin/python
+...............                                                          [100%]
+15 passed in 27.85s
+EXIT=0</pre>
+<p>The log is committed beside this fragment as
+<code>docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log</code>.</p>
+<h4 id="qwnw-red-file-fleet-health-falsified">The green run is not vacuous</h4>
+<p>The file drives <code>bin/fleet-health --once</code> against a fixture <code>/proc</code>, cgroup, state directory and stub <code>ps</code>/<code>scontrol</code> on PATH, so a green run could in principle mean the assertions never reach the sampler. Deleting the one D-state trigger condition from a copy of the script
+(<code>[ "${dstate:-0}" -gt "$DSTATE_ALERT" ] &amp;&amp; reason=…</code>, line 145) and running the same file against it reads
+<strong>5 failed, 10 passed</strong>, with all five failing ids named in the committed log beside this fragment
+(<code>…-mutation-dstate.log</code>): <code>test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns</code>,
+<code>test_dstate_threshold_is_overridable</code>, <code>test_two_crossing_passes_within_the_bound_write_one_snapshot</code>,
+<code>test_a_pass_after_the_bound_writes_a_second_snapshot</code> and
+<code>test_memory_kills_bypass_the_pressure_snapshot_interval</code>; those five pass in the head run. The file therefore fails when the behaviour is removed and passes when it is present.</p>
+<h4 id="qwnw-red-file-fleet-health-scope">Change scope</h4>
+<p>No product or test file is modified: the deliverable for a file that is already green is the passing run, and <code>tests/test_fleet_health.py</code> is byte-identical to the base. The suite pairs the run resolves for its write scope are <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>; both arms run green (0 failures) at <code>b99d5f2c</code> and at the node head <code>0fc4124926</code>, so the change adds no failure and removes none.</p>
+</section>

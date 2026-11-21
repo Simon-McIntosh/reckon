@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "derived from the reviewed run's own arm logs: the after arm gate-head.log at eec644f89f records '90 passed', EXIT=0 and gate-node-head.log records '4 passed', EXIT=0, with no FAILED line in either; the baseline arm gate-base.log at ff3bb24bcf records '2 failed, 84 passed', EXIT=1, both failures being tests/test_staged_write_inventory.py which has no repository in the extracted base tree, so the set difference after-minus-base is empty.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "armed": false,
+  "base_log_revision": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/landing.py:52 (the admission lander service calls land_once)",
+    "reckon/crew/queue_landing.py:1994 (land_once calls _land_deliveries, where _primary_carries_the_delivery is consulted)",
+    "reckon/crew/promotion_gate.py:1188 (replay_domain_invariant_checks calls the replay with a log path)",
+    "reckon/crew/promotion_gate.py:1315 (rerun_gate_for_run calls the replay with a run-dir log path)",
+    "reckon/crew/recovery_review_acceptance.py:748 (review acceptance calls the replay with no replay_log_path)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:58:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "748",
+      "severity": "non-blocking",
+      "text": "this production caller passes no replay_log_path, so the new branch in reckon/crew/promotion_gate.py:1105 turns every non-zero replay here into integrated_verdict 'not-run' with a reason saying the output 'cannot be read as a verdict on the run'; the acceptance still refuses so no behaviour is lost, but a genuine failing gate is now described as an unreadable measurement when the caller merely never asked for a log."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "83",
+      "severity": "non-blocking",
+      "text": "Path(str(pointer.get('repo') or '')) resolves an absent repo field to the current directory and passes the is_dir() guard at :84, so the guard promised as 'unverified when the repository could not be read' would instead read the pass's own checkout; reachable only from a pointer that carries no repo, which the docstring's own promise covers."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "2486",
+      "severity": "non-blocking",
+      "text": "the pre-existing comment about a red or unreadable suite now immediately precedes the carried-settlement block, so it documents code that does not read suites; the red_suite guard it describes sits at :2563, and a reader following the comment arrives at the wrong branch."
+    }
+  ],
+  "head_log_revision": "eec644f89f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites: the admission lander service, land_once, the two promotion_gate replay callers that pass a log path, and the review-acceptance replay that passes none.",
+    "diff": "read commit by commit from ff3bb24bcf to cf36afbea4; 294e725a57 adds the settlement and the replay-failure branch, dbdec8899c narrows the predicate to a head that is strictly behind the tip and delivered a change, eec644f89f adds the boundary tests, and b1f4b88e76/cf36afbea4 add the fragment and then remove the figure they had added, leaving four net paths.",
+    "done_when": "the done_when names tests/test_a_landed_head_is_not_landed_again.py with three cases; that file's four tests cover the first case over three passes at lines 100-112, the dropped-path case at 119-135, and the no-log replay at 152-169, and gate-node-head.log records 4 passed EXIT=0.",
+    "goal": "the node goal is that a run whose reviewed head the primary branch already carries is settled as landed with no gate replay and no promotion request, and that a replay exiting without a log records its own failure; reckon/crew/queue_landing.py:2497 settles the carried head through the existing integrated release and reckon/crew/promotion_gate.py:1105 records integrated_verdict not-run beside replay_failure, so both halves are met.",
+    "manifest": "read; it reports status complete, a head arm of 90 passed EXIT=0 (gate-head.log) and 4 passed for the node's own file (gate-node-head.log), a base arm of 84 passed 2 failed EXIT=1 (gate-base.log) and a declared control of 4 failed EXIT=1 (gate-base-node.log), plus a pre-narrow control of 3 passed 1 failed EXIT=1; I opened each log and each quoted count matches its summary line.",
+    "write_paths": "the declared paths are the evidence fragment, the figures directory, reckon/crew/promotion_gate.py, reckon/crew/queue_landing.py and three test modules; the net diff touches reckon/crew/promotion_gate.py, reckon/crew/queue_landing.py, tests/test_a_landed_head_is_not_landed_again.py and the fragment, every one inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landed_head_is_not_landed_again.py:104-108 count the monkeypatched promotion and measurement calls, which fail at base exactly as gate-base-node.log shows, but line 157 asserts report['base_verdict'] == 'passed' against the function's own default, so that one assertion cannot fail on a regression.",
+    "evidence": "gate-head.log records 90 passed EXIT=0 at eec644f89f and gate-base-node.log records the declared control failing exactly the first case at 'assert counters.promotion_requests == 0' -> 1, so the gate asserts the done_when's measure.",
+    "fit": "the helper composes the module's existing private-import idiom (reckon/crew/queue_landing.py:61 imports _head_on_primary_branch, merge readers, _release_integrated_pointer) and names nothing forbidden, though the red-suite comment at 2486 now documents the block that follows it rather than the red_suite guard three lines below.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:2500 settles a carried head by retiring the pointer and recording a landing stage, and reckon/crew/promotion_gate.py:1105 stops a logless non-zero replay from publishing 'failed'.",
+    "reuse": "reckon/crew/queue_landing.py:61-122 builds its answer from recovery_classification._head_on_primary_branch, merge.change_markers, merge.surviving_change_refusals and pending_landing._release_integrated_pointer, so it extends the existing owners rather than forking an ancestry or survival check.",
+    "scope_discipline": "the four net paths in the diff are all named in the node's declared write paths and no file outside them was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a run whose reviewed head the primary branch already carries is settled as landed with no gate replay and no promotion request, and that a replay exiting without a log records its own failure; reckon/crew/queue_landing.py:2497 settles the carried head through the existing integrated release and reckon/crew/promotion_gate.py:1105 records integrated_verdict not-run beside replay_failure, so both halves are met.\nVERDICT done_when: the done_when names tests/test_a_landed_head_is_not_landed_again.py with three cases; that file's four tests cover the first case over three passes at lines 100-112, the dropped-path case at 119-135, and the no-log replay at 152-169, and gate-node-head.log records 4 passed EXIT=0.\nVERDICT write_paths: the declared paths are the evidence fragment, the figures directory, reckon/crew/promotion_gate.py, reckon/crew/queue_landing.py and three test modules; the net diff touches reckon/crew/promotion_gate.py, reckon/crew/queue_landing.py, tests/test_a_landed_head_is_not_landed_again.py and the fragment, every one inside the fence.\nVERDICT manifest: read; it reports status complete, a head arm of 90 passed EXIT=0 (gate-head.log) and 4 passed for the node's own file (gate-node-head.log), a base arm of 84 passed 2 failed EXIT=1 (gate-base.log) and a declared control of 4 failed EXIT=1 (gate-base-node.log), plus a pre-narrow control of 3 passed 1 failed EXIT=1; I opened each log and each quoted count matches its summary line.\nVERDICT diff: read commit by commit from ff3bb24bcf to cf36afbea4; 294e725a57 adds the settlement and the replay-failure branch, dbdec8899c narrows the predicate to a head that is strictly behind the tip and delivered a change, eec644f89f adds the boundary tests, and b1f4b88e76/cf36afbea4 add the fragment and then remove the figure they had added, leaving four net paths.\nCALL_SITES: reckon/crew/admission/landing.py:52 (the admission lander service calls land_once), reckon/crew/queue_landing.py:1994 (land_once calls _land_deliveries, where _primary_carries_the_delivery is consulted), reckon/crew/promotion_gate.py:1188 (replay_domain_invariant_checks calls the replay with a log path), reckon/crew/promotion_gate.py:1315 (rerun_gate_for_run calls the replay with a run-dir log path), reckon/crew/recovery_review_acceptance.py:748 (review acceptance calls the replay with no replay_log_path)\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 16\nSCORE reuse: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:2500 settles a carried head by retiring the pointer and recording a landing stage, and reckon/crew/promotion_gate.py:1105 stops a logless non-zero replay from publishing 'failed'.\nJUSTIFICATION evidence: gate-head.log records 90 passed EXIT=0 at eec644f89f and gate-base-node.log records the declared control failing exactly the first case at 'assert counters.promotion_requests == 0' -> 1, so the gate asserts the done_when's measure.\nJUSTIFICATION scope_discipline: the four net paths in the diff are all named in the node's declared write paths and no file outside them was touched.\nJUSTIFICATION durability: tests/test_a_landed_head_is_not_landed_again.py:104-108 count the monkeypatched promotion and measurement calls, which fail at base exactly as gate-base-node.log shows, but line 157 asserts report['base_verdict'] == 'passed' against the function's own default, so that one assertion cannot fail on a regression.\nJUSTIFICATION fit: the helper composes the module's existing private-import idiom (reckon/crew/queue_landing.py:61 imports _head_on_primary_branch, merge readers, _release_integrated_pointer) and names nothing forbidden, though the red-suite comment at 2486 now documents the block that follows it rather than the red_suite guard three lines below.\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:61-122 builds its answer from recovery_classification._head_on_primary_branch, merge.change_markers, merge.surviving_change_refusals and pending_landing._release_integrated_pointer, so it extends the existing owners rather than forking an ancestry or survival check.\nFINDING reckon/crew/recovery_review_acceptance.py:748 non-blocking: this production caller passes no replay_log_path, so the new branch in reckon/crew/promotion_gate.py:1105 turns every non-zero replay here into integrated_verdict 'not-run' with a reason saying the output 'cannot be read as a verdict on the run'; the acceptance still refuses so no behaviour is lost, but a genuine failing gate is now described as an unreadable measurement when the caller merely never asked for a log.\nFINDING reckon/crew/queue_landing.py:83 non-blocking: Path(str(pointer.get('repo') or '')) resolves an absent repo field to the current directory and passes the is_dir() guard at :84, so the guard promised as 'unverified when the repository could not be read' would instead read the pass's own checkout; reachable only from a pointer that carries no repo, which the docstring's own promise covers.\nFINDING reckon/crew/queue_landing.py:2486 non-blocking: the pre-existing comment about a red or unreadable suite now immediately precedes the carried-settlement block, so it documents code that does not read suites; the red_suite guard it describes sits at :2563, and a reader following the comment arrives at the wrong branch.\n",
+  "review_run_id": "r-20261121T025809124135-review-of-wlsr-a-landed-head-is-not-landed-again-cf36afbea470",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "cf36afbea4708d4ec87cb55df2babee7a1428c35",
+  "reviewed_run_id": "r-20261121T010311434223-wlsr-a-landed-head-is-not-landed-again",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T025809124135-review-of-wlsr-a-landed-head-is-not-landed-again-cf36afbea470"
+  },
+  "reviewer_run_id": "r-20261121T025809124135-review-of-wlsr-a-landed-head-is-not-landed-again-cf36afbea470",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:11:09.745320+00:00",
+  "total": 108
+}

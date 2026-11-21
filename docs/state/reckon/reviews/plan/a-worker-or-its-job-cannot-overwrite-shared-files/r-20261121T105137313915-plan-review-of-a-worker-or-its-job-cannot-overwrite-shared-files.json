@@ -1,0 +1,120 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "digests": {
+        "s17": "8d4d488eac6cd0267af02e5856dfd1baed1f10f79b74ea2ab267b7ae36e00f85"
+      },
+      "reason": "the edits since the review are the two its findings asked for",
+      "units": [
+        "s17"
+      ],
+      "when": "2026-11-21T11:10:59.720828+00:00"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T10:52:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-or-its-job-cannot-overwrite-shared-files/r-20261121T105137313915-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files/plan.html:152",
+      "id": "done_when-1",
+      "reason": "a node can write the bound case as an assertion that holds either way and still satisfy the section, so the second guard's firing is never shown and a broken bound check would close the node.",
+      "text": "s17 declares one negative control, the unreadable-parent case, while its done-when adds a second, independently triggered refusal for a search that exhausts the 32-process bound; at the base revision that case also passes the job through (ancestry_fence returns `{}` after the loop), so it is a real second guard whose red arm is never required",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-or-its-job-cannot-overwrite-shared-files/r-20261121T105137313915-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files/plan.html:150",
+      "id": "reasoning-1",
+      "reason": "the deliverable stands either way and a node reading the code finds the walks and extends one; the phrasing overstates a uniqueness the repository does not have but does not send the node at the wrong mechanism.",
+      "text": "s17 says the search \"uses the one enumeration of a process's ancestors the repository already has\", but the repository carries more than one ancestor walk (`reckon/hooks/coordinator_obligations.py:390 _ancestor_pids`, `reckon/crew/census.py:72 _ancestry`, and the loop inside `ancestry_fence` itself), and none of them reports why it stopped \u2014 the very fact s17 requires the refusal to name",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c573d8f8b411f2335e31b2a70b3e3d4471bac71a",
+  "plan_fingerprint": "00d2480b2bc1574420b10664859b37c8e03c6d7bef7d5ceccbdefde6789b510e",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 40,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c573d8f8b411f2335e31b2a70b3e3d4471bac71a",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the negative control now requires both the unreadable-parent case and the beyond-the-bound case to fail at the base revision",
+      "reason": "",
+      "when": "2026-11-21T11:10:25.635852+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c573d8f8b411f2335e31b2a70b3e3d4471bac71a",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the deliverable no longer claims a single existing walk; it requires that no further walk is added, and the worker settles which existing one reports why it stopped",
+      "reason": "",
+      "when": "2026-11-21T11:10:40.128837+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c573d8f8b411f2335e31b2a70b3e3d4471bac71a",
+      "commit_basis": "edit",
+      "note": "the negative control now requires both the unreadable-parent case and the beyond-the-bound case to fail at the base revision",
+      "reason": "",
+      "when": "2026-11-21T11:10:25.635852+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c573d8f8b411f2335e31b2a70b3e3d4471bac71a",
+      "commit_basis": "edit",
+      "note": "the deliverable no longer claims a single existing walk; it requires that no further walk is added, and the worker settles which existing one reports why it stopped",
+      "reason": "",
+      "when": "2026-11-21T11:10:40.128837+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-worker-or-its-job-cannot-overwrite-shared-files/r-20261121T105137313915-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files.json",
+  "review_run_id": "r-20261121T105137313915-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "fec8c1239675ac9c66565edaf47aa79f6fd11581",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py`, commit `d609bafbca`, \u00a716 and the bound of 32 all resolve in the repository at HEAD.",
+    "done_when": "a finding \u2014 s17 introduces two independent early-stop refusals (unreadable parent, bound exhausted) but its negative control names only the unreadable-parent case, so nothing requires the bound guard to be shown firing.",
+    "evidence_paths": "pass \u2014 the done-when names a repository test file and a named partition (`all_debug`) for the arms that launch a fence; no path is a session scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag enters source; the one revision cited in s17's prose is an evidence anchor that resolves.",
+    "reasoning": "pass \u2014 the two \"does not know\" cases s17 names are exactly the two `return {}` paths present in `ancestry_fence` (parent record unreadable, and the 32-step bound exhausted), and the endpoint it asks for is reachable and falsifiable from those same paths.",
+    "single_goal": "pass \u2014 s17 carries one deliverable: a pass-through happens only when the search reaches the tree's top and finds no fence, and every other stop refuses naming its reason.",
+    "wiring": "pass \u2014 s17 consumes only \u00a716, which is declared `done` and landed at `d609bafbca`, so no unlanded upstream is missing from `plan-section-depends-on`, and no declared relationship points at the wrong node (the earlier s16 map finding was declined on exactly this ground)."
+  },
+  "section_digests": {
+    "_document": "4a38e5a7480be151b4041891780372b2b5ed4826b4e86e7d5c0626d3e4bad404",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "2921806863fa66f192dc45d31056b040e9e07cc5f67e20df721264aafdecb087",
+    "s11": "a23ab44da2be981ee6a354e5c6393269b7bec3c26c755667911cf7cc88de1a44",
+    "s12": "53044d21d6e76db24a2a0c0bd2e8fc0cef89b2ce90b3bf713bd1770d356942cd",
+    "s13": "d72ebf8dbff5d3fe58b4a0aa65cd38ceeb0c6b9e2fa2d40ce7faf8b3db016cf5",
+    "s14": "8f9362c607ea0d2310ac1bd4c85d058093aa9bddb81aa1ac8e23baebaa0dc994",
+    "s15": "8caa9d0422f06ecb37e972ab98f63530b33b00a69ceea98aae8d065b01ac3668",
+    "s16": "01590fd8bbf4f08acb64071e439e25aab9ba4a23c2f420b26b3021d7856f48e7",
+    "s17": "3f9f03da3ae645e331697544ac2b570f472a7abcd13c4ebe18ca57cec133e99b",
+    "s2": "672162d0e96a24a032f95b7ade817c96cf03b6d88f8f4c83f57f8e7b253409ce",
+    "s3": "9b6d5901be84127eaa75a84242d4374832a661d904144efdfaa597367a03eaac",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "4d339ca4c2860c39db4a36518f8045c9b620085666f9beffdd963261346af665",
+    "s7": "2099f1fb292d04b4514f50a5dac17e2c0480f9b2d27c3a83ba62c45c0c7e1afb",
+    "s8": "1b886461a44e82b5dcefddc891828d3bd8e080296db484cac33bf8e4d032637f",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T11:04:22.986066+00:00",
+  "total": null
+}

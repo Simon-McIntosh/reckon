@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T050147974349-review-of-a-resume-hold-ends-when-it-is-judged-8bec03f1ceb6/assertion-audit.md",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1935 land_once -> finish_pending_landings",
+    "reckon/crew/pending_landing.py:1022 finish_pending_landings -> release_judged_resume_holds",
+    "reckon/crew/resumption.py:1957 release_judged_resume_holds -> resume.release_hold",
+    "reckon/crew/pending_landing.py:1161 finish_pending_landings -> _released_pending_delivery"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T05:02:47Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged/after_suite.log",
+      "revision": "8bec03f1ceb6ce8ff7b7cc8366e5f84087f8f4d5",
+      "sha256": "3fa1accd558ca72c63ad250659189c5de29ec0627c8096a1149d4eb842005110",
+      "summary": "78 passed in 48.31s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged/baseline_suite.log",
+      "revision": "a29130802a7465dcbbe829e7bf514870af92c9d6",
+      "sha256": "0901f3d2dbadaf81f4da2881cc3433d430208123fbd7db95f66208d2f6cae3b7",
+      "summary": "58 passed in 38.96s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read 9c23a32b0e472768ccf2c9dad3e8686bb9e9bf05, dc7a9e1deeaf9b97a2d7e0a010626bebdf2d98b6 and 8bec03f1ceb6ce8ff7b7cc8366e5f84087f8f4d5 individually against a29130802a7465dcbbe829e7bf514870af92c9d6; the four-file change adds judgment reconciliation, a locked expected-pointer check, pending retry and focused assertions.",
+    "done_when": "The live node done_when names the section cases, a failing base control and zero added importer failures on all_debug; scoped_gate.log records 27 passed, negative_control.log records six failures, resumed-reproduction.log records two marked-retirement failures before repair, and the importer logs add zero failure IDs.",
+    "goal": "The source goal in crew/live/r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged.json requires judged resume holds to release and integrated promotions to retire; reckon/crew/resumption.py:1900 and reckon/crew/pending_landing.py:899 implement those behaviors.",
+    "manifest": "The source manifest.md names three resolving commits and recorded gate logs; baseline_suite.log and after_suite.log independently confirm completed 58-pass and 78-pass arms at the cited revisions, while inherited importer failures remain explicitly attributed.",
+    "write_paths": "All four diff paths match the current source node write_paths in crew/live/r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged.json, including reckon/crew/resume.py, which was absent from this review brief's earlier scope snapshot."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_hold_ends_when_it_is_judged.py:77, :92, :104, :227 and :352 assert observable landing, release and retirement outcomes that fail when the corresponding reconciliation, pending-retry or legacy-mark repair is restored to its base behavior.",
+    "evidence": "tests/test_a_resume_hold_ends_when_it_is_judged.py:231 exercises a mixed temporary cohort, scoped_gate.log records 27 passed, negative_control.log records six base failures, resumed-reproduction.log records two marked-retirement failures, and all_debug importer logs show 41 baseline versus 40 head failures with no added IDs.",
+    "fit": "reckon/crew/resumption.py:1908 uses the existing lazy-import and pointer conventions, reckon/crew/resume.py:212 uses the existing mutation lock, and the added source and test definitions name their behavior without forbidden stage or version labels.",
+    "goal_fidelity": "reckon/crew/resumption.py:1920 preserves explicit holds and live attempts while releasing current judgments, and reckon/crew/pending_landing.py:899 permits integrated legacy-mark retirement without removing newer-attempt comparisons.",
+    "reuse": "Capability searches for hold release, manifest freshness, worker liveness and workspace retirement found their owners in reckon/crew/resume.py:191, promotion_checks.py:461, recovery_repair_dispatch.py:358 and pending_landing.py:873, and the new orchestration calls those owners rather than duplicating them.",
+    "scope_discipline": "The four changed paths are in the current source node write_paths, and reckon/crew/resume.py:212 extends the existing release writer to protect the automatic release from a concurrent pointer change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in crew/live/r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged.json requires judged resume holds to release and integrated promotions to retire; reckon/crew/resumption.py:1900 and reckon/crew/pending_landing.py:899 implement those behaviors.\nVERDICT done_when: The live node done_when names the section cases, a failing base control and zero added importer failures on all_debug; scoped_gate.log records 27 passed, negative_control.log records six failures, resumed-reproduction.log records two marked-retirement failures before repair, and the importer logs add zero failure IDs.\nVERDICT write_paths: All four diff paths match the current source node write_paths in crew/live/r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged.json, including reckon/crew/resume.py, which was absent from this review brief's earlier scope snapshot.\nVERDICT manifest: The source manifest.md names three resolving commits and recorded gate logs; baseline_suite.log and after_suite.log independently confirm completed 58-pass and 78-pass arms at the cited revisions, while inherited importer failures remain explicitly attributed.\nVERDICT diff: Read 9c23a32b0e472768ccf2c9dad3e8686bb9e9bf05, dc7a9e1deeaf9b97a2d7e0a010626bebdf2d98b6 and 8bec03f1ceb6ce8ff7b7cc8366e5f84087f8f4d5 individually against a29130802a7465dcbbe829e7bf514870af92c9d6; the four-file change adds judgment reconciliation, a locked expected-pointer check, pending retry and focused assertions.\nCALL_SITES: reckon/crew/queue_landing.py:1935 land_once -> finish_pending_landings, reckon/crew/pending_landing.py:1022 finish_pending_landings -> release_judged_resume_holds, reckon/crew/resumption.py:1957 release_judged_resume_holds -> resume.release_hold, reckon/crew/pending_landing.py:1161 finish_pending_landings -> _released_pending_delivery\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1920 preserves explicit holds and live attempts while releasing current judgments, and reckon/crew/pending_landing.py:899 permits integrated legacy-mark retirement without removing newer-attempt comparisons.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_resume_hold_ends_when_it_is_judged.py:231 exercises a mixed temporary cohort, scoped_gate.log records 27 passed, negative_control.log records six base failures, resumed-reproduction.log records two marked-retirement failures, and all_debug importer logs show 41 baseline versus 40 head failures with no added IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four changed paths are in the current source node write_paths, and reckon/crew/resume.py:212 extends the existing release writer to protect the automatic release from a concurrent pointer change.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_resume_hold_ends_when_it_is_judged.py:77, :92, :104, :227 and :352 assert observable landing, release and retirement outcomes that fail when the corresponding reconciliation, pending-retry or legacy-mark repair is restored to its base behavior.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/resumption.py:1908 uses the existing lazy-import and pointer conventions, reckon/crew/resume.py:212 uses the existing mutation lock, and the added source and test definitions name their behavior without forbidden stage or version labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for hold release, manifest freshness, worker liveness and workspace retirement found their owners in reckon/crew/resume.py:191, promotion_checks.py:461, recovery_repair_dispatch.py:358 and pending_landing.py:873, and the new orchestration calls those owners rather than duplicating them.\n",
+  "review_run_id": "r-20261118T050147974349-review-of-a-resume-hold-ends-when-it-is-judged-8bec03f1ceb6",
+  "reviewed_base_sha": "a29130802a7465dcbbe829e7bf514870af92c9d6",
+  "reviewed_head_sha": "8bec03f1ceb6ce8ff7b7cc8366e5f84087f8f4d5",
+  "reviewed_run_id": "r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged",
+  "rubric": "landed",
+  "scope_evidence": {
+    "note": "Live write_paths includes resume.py; review brief scope snapshot predates its addition.",
+    "source": "/home/ITER/mcintos/.config/reckon/crew/live/r-20261118T034323725309-a-resume-hold-ends-when-it-is-judged.json"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T05:06:21.561008+00:00",
+  "total": 120
+}

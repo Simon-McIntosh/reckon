@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-receipt-names-the-rolled-back-row-landing">
+  <h2>A red-file receipt already implemented the rollback wording</h2>
+
+  <p><strong>What was red.</strong> Nothing at the base revision
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>. The named file
+  <code>tests/test_receipt_names_the_rolled_back_row.py</code> ran
+  <code>3 passed</code> with <code>EXIT=0</code> before any merge, pull or edit in the
+  assigned worktree (<code>git status --porcelain</code> empty); the same file also passed
+  as its own <code>all_debug</code> job
+  (Slurm <code>1329533</code>, <code>COMPLETED 0:0</code>) with
+  <code>SLURM_JOB_ID</code> unset. The implementation predates this node:
+  <code>73cb04f97e</code> added the receipt branch and <code>d9999edebf</code>
+  follows the per-run run file, so the file's three cases are the rules the code
+  keeps. No assertion was deleted or weakened, because none needed changing.</p>
+
+  <p><strong>Why the green run is not vacuous — a mutation makes the guard
+  fail.</strong> A copy of the base tree under the run's scratch directory had
+  <code>_ledger_row_was_rolled_back</code> changed to return <code>False</code>.
+  The first case then failed with
+  <code>assert 'was written and has been rolled back' in "... is already
+  written; do not re-promote")</code> — <code>1 failed, 2 passed</code>,
+  <code>EXIT=1</code>, at
+  <code>test_rolled_back_row_receipt_names_re_promotion_as_the_recovery</code>.</p>
+
+  <h3 id="qwnw-red-file-receipt-names-the-rolled-back-row-measured">Measured</h3>
+
+  <ul>
+    <li>Base run of the named file at
+      <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, scratch tree:
+      <code>3 passed in 1.44s</code>, <code>EXIT=0</code>, log
+      <code>base-run.log</code>.</li>
+    <li>Head run of the named file: <code>3 passed</code>, <code>EXIT=0</code>,
+      log <code>head-run.log</code>.</li>
+    <li>Declared-suite arms over
+      <code>tests/test_staged_write_inventory.py</code> and
+      <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>: 58 passed at
+      both revisions, <code>EXIT=0</code>.</li>
+    <li>Negative control, <code>negative-control.log</code>:
+      <code>1 failed, 2 passed</code>, <code>EXIT=1</code>, failure
+      <code>test_rolled_back_row_receipt_names_re_promotion_as_the_recovery</code>.</li>
+  </ul>
+
+  <p>By the brief's first instruction, a base run that already passes is the
+  deliverable passing run, so this node changes no product source and no test
+  and writes only this fragment.</p>
+</section>

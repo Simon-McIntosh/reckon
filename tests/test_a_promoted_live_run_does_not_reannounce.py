@@ -25,6 +25,7 @@ import pytest
 
 from reckon import crew, ledger
 from reckon.crew import recovery
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 
@@ -38,6 +39,23 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return config_home
 
 
+def _landed_repository(repo: Path) -> str:
+    """A checkout whose delivered head is on its own primary branch.
+
+    A promoted run reads ``promoted`` only once the branch carries its head; a
+    row whose head no branch carries is a landing still owed and reads
+    ``complete`` until the merge. So the fixture seeds the checkout the pointer
+    names with one commit and reports that commit, which is the landed shape.
+    """
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "config", "user.email", "worker@example.invalid")
+    _git(repo, "config", "user.name", "Worker")
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _git(repo, "add", "seed.txt")
+    _git(repo, "commit", "-q", "-m", "chore: seed the checkout")
+    return _git(repo, "rev-parse", "HEAD")
+
+
 def _write_recorded_run(
     tmp_path: Path, run_id: str, repo: Path, *, commits: list[str] | None = None
 ) -> None:
@@ -49,12 +67,12 @@ def _write_recorded_run(
     repository it was read from and the row is written where that repository
     resolves.
     """
-    commits = ["HEAD"] if commits is None else commits
+    commits = [_landed_repository(repo)] if commits is None else commits
     manifest = tmp_path / "manifests" / f"{tmp_path.name}-{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
         "node: node-a\nstatus: complete\n"
-        f"commits: {'HEAD' if commits else 'none'}\nblockers: none\n",
+        f"commits: {commits[0] if commits else 'none'}\nblockers: none\n",
         encoding="utf-8",
     )
     crew._write_json(

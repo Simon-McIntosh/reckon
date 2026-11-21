@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/cli.py:435 crew_complete exported into the CLI command table",
+    "reckon/crew/queue_landing.py:1823 _land invokes crew complete",
+    "reckon/crew/queue_landing.py:1996 second queue-landing invocation",
+    "reckon/crew/promotion_requests.py:518 _execute_command drain replay",
+    "reckon/mcp_crew_actions.py:294 complete and land verb callback",
+    "reckon/crew_run_commands.py:3405 _complete_many per-run reply path",
+    "reckon/crew_run_commands.py:4410 _refuse_a_landing_without_its_pointer the guard function"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:15:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3915",
+      "severity": "non-blocking",
+      "text": "non-blocking: the hoisted guard loops over every named run and raises before _complete_many at :3405 begins its per-run loop, so crew complete --run A --run B --land where only B lacks a live pointer aborts the whole batch and A is neither completed nor given a receipt, whereas _complete_many:3440 caught one run's ClickException and went on to the next; the docstring promises each run retains its own gate and review checks, and no test covers a multi-run landing holding one pointerless run."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment prints the head arm as 'head, revision 4a373aaa29040cb354506cf5f0e5bddfca0c8f21: 4 passed, EXIT=0' while named-head-arm.log:1, the log the manifest cites as that arm, records '# revision: a120c5e59798b71039180c991bcd03c2dbab6ae9', so the evidence record names a revision the cited log did not run at."
+    }
+  ],
+  "head_log_revision": "a120c5e59798b71039180c991bcd03c2dbab6ae9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites reach crew_complete: the CLI export at reckon/cli.py:435, the queued-landing invocations at reckon/crew/queue_landing.py:1823 and :1996, the drain replay at reckon/crew/promotion_requests.py:518-524 and the MCP verb callback at reckon/mcp_crew_actions.py:294, plus the per-run reply path at reckon/crew_run_commands.py:3405.",
+    "diff": "read both commits against base 2f00851c42f2: 4a373aaa29 adds the nine lines at reckon/crew_run_commands.py:3915-3922 and a120c5e597 only adds the 46-line evidence fragment; no test file, assertion or definition is added. Nothing is removed either.",
+    "done_when": "the done_when asks for the named file passing at head as its own all_debug job with SLURM_JOB_ID unset and output on shared storage, a base run first, a no-added-failure arm and the red base log beside the head; named-head-arm.log records 4 passed EXIT=0 at a120c5e5 under env -u SLURM_JOB_ID in run-arm.sh:57 job 1326027, named-base-arm.log records 2 failed, 2 passed EXIT=1 at 2f00851c42f2, and the manifest's baseline_suite and after_suite both record 0 failures.",
+    "goal": "the node's goal is to make tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py pass in full on the primary branch; reckon/crew_run_commands.py:3915 hoists the live-pointer guard ahead of the per-run receipt path and the gate file passes 4/4 at the delivered head.",
+    "manifest": "read; status complete, commits 4a373aaa29040cb354506cf5f0e5bddfca0c8f21 and a120c5e59798b71039180c991bcd03c2dbab6ae9, tests the literal pytest invocation of the committed gate command, test_logs naming both arm logs and the suite logs, baseline_suite and after_suite both at 0 failures with full 40-character revisions, and outside_scope naming seven failures in three other files.",
+    "write_paths": "the node declared reckon, tests and the evidence-fragment directory; git diff 2f00851c42f2..a120c5e5 touches reckon/crew_run_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record.html and nothing else."
+  },
+  "justifications": {
+    "durability": "named-base-arm.log shows both parametrisations of tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py:45 red at 2f00851c42f2 and named-head-arm.log shows them green at a120c5e5, and the assertions read pending_landing.pending_dir() and the pre-invocation crew_home() listing rather than a value the test handed in.",
+    "evidence": "the gate file's run is recorded in named-head-arm.log:1 at a120c5e5 with a bare EXIT=0 last line against 2 failed, 2 passed EXIT=1 at the base, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record.html:36 prints the head arm's revision as 4a373aaa, which the cited log did not run at.",
+    "fit": "the comment at reckon/crew_run_commands.py:3916-3920 states the mechanism in the file's explanatory-comment idiom with no plan, sprint or ticket identifier, though 'for each in named' at :3922 departs from the file's usual loop-variable spelling.",
+    "goal_fidelity": "the node's goal is that tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py passes in full at head; the guard at reckon/crew_run_commands.py:3915 refuses before the per-run receipt path and named-head-arm.log records 4 passed EXIT=0.",
+    "reuse": "the nine added lines add no definition and call the existing owner reckon/crew_run_commands.py:4410 _refuse_a_landing_without_its_pointer in the pre-loop shape _complete_many already uses for _accept_a_matching_project at :3428.",
+    "scope_discipline": "git diff --stat 2f00851c42f2..a120c5e5 lists only reckon/crew_run_commands.py (+9) and the declared evidence fragment (+46), yet the nine lines also change how a multi-run invocation is answered, which the goal's single-run measure does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T112428255955-review-of-qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record-a120c5e59798",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "a120c5e59798b71039180c991bcd03c2dbab6ae9",
+  "reviewed_run_id": "r-20261118T062556320234-qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T112428255955-review-of-qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record-a120c5e59798"
+  },
+  "reviewer_run_id": "r-20261118T112428255955-review-of-qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record-a120c5e59798",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:42:14.376158+00:00",
+  "total": 111
+}

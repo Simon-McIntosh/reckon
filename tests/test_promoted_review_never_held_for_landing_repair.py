@@ -185,13 +185,21 @@ def test_a_stuck_review_pointer_is_retired_by_the_next_sweep(
     row_before = _row_path(repository).read_bytes()
     current = read_pointer(RUN_ID) if pointer_path(RUN_ID).exists() else None
     assert current is None
-    pending_landing.mark_pending_landing_repair(
-        RUN_ID,
+    # Reproduce a legacy stuck pointer without asking recovery to recreate it.
+    _write_json(
+        pointer_path(RUN_ID),
         {
             "run_id": RUN_ID,
             "project": PROJECT,
             "repo": str(repository),
             "role": "review",
+            "pending_landing_repair": True,
+            "pending_landing_repair_attempt": {
+                "attempt": 1,
+                "phase": "promotion-requested",
+                "pid": 0,
+                "pid_start_time": 0,
+            },
             "attempt": 1,
             "phase": "promotion-requested",
             "pid": 0,

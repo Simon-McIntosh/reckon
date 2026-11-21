@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-or-its-job-cannot-overwrite-shared-files">
+  <meta name="plan-evidence-for" content="a-worker-or-its-job-cannot-overwrite-shared-files">
+  <title>An absolute scheduler path runs fenced | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>An absolute scheduler path runs fenced</h1>
+      <p class="lead">A fenced worker's fence now puts the <code>sbatch</code>/<code>srun</code>/<code>salloc</code> shim in front of every copy of those tools its search path resolves, so a call by absolute path and a call by name reach the same guard &mdash; and the task the scheduler is handed re-enters the submitting worker's fence either way.</p>
+    </header>
+
+    <section id="an-absolute-scheduler-call-runs-fenced-why">
+      <h2>Why the guard had a door</h2>
+      <p>The shims guard a launch only while the tool resolves through <code>PATH</code>. A worker that ran <code>type -a sbatch</code> and then submitted every later job as <code>/usr/bin/sbatch</code> never consulted the shim, so the wrapper that re-enters the fence was never built: jobs 1332134, 1332191 and 1332272 completed unfenced on a node. Only interpreter file permissions stood between a scheduler and an unfenced task, and they are the fence's last resort rather than its rule.</p>
+    </section>
+
+    <section id="an-absolute-scheduler-call-runs-fenced-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/_worker_fence.py</code>: <code>scheduler_shields()</code> resolves every copy of each scheduler tool on the composing node's search path and in every directory the flight layer declares for finding a backend's command &mdash; the directories <code>launch_search_path</code> appends to the worker's own path &mdash; skipping shims by their marker, and <code>fence_argv</code> overlays each with that tool's shim read-only. The copy the shim itself would forward to is bound read-only at <code>&lt;run&gt;/.scheduler-bin/&lt;tool&gt;</code>, a mount point resolved and made at composition because bubblewrap cannot create one below a symlink; on a job node that holds no such binary the relay is a <code>--ro-bind-try</code> and the shim searches its own path instead. The masks and the relay travel in the recipe's argv, so a submitted job masks its own copies too. The recipe's recorded <code>limit</code> now states what remains unguarded rather than claiming the route is open.</li>
+        <li><code>reckon/nested_launch.py</code>: <code>relocated_binary()</code> reads the relay from <code>RECKON_SHIM_REAL_DIRECTORY</code> before searching, because every copy a masked search path holds is now the shim; <code>real_binary()</code> takes the caller's environment, and <code>main()</code> hands it the unmodified one. <code>RECKON_SHIM_HOME</code> names the shim's own directory for a shim bound at a masked path.</li>
+        <li><code>reckon/host_shims/{sbatch,srun,salloc}</code>: <code>self_dir</code> reads <code>RECKON_SHIM_HOME</code> when the fence names one. Only the file differs at a masked path, never <code>$0</code>'s basename, so the tool name still comes from the path the caller used.</li>
+        <li><code>reckon/crew/reports.py</code>: the launch notice no longer says absolute paths bypass the guard, and log recognition keeps the retired wording, so a log written before this change still reads its own first line.</li>
+        <li><code>tests/test_an_absolute_scheduler_call_runs_fenced.py</code>: three cases enter a composed fence and read the argv a stand-in scheduler records &mdash; the absolute path, the bare name, and a copy that exists only in a directory the flight layer declares.</li>
+      </ul>
+    </section>
+
+    <section id="an-absolute-scheduler-call-runs-fenced-measured">
+      <h2>Measured</h2>
+      <ul>
+        <li><strong>The guarded thing happens.</strong> A stand-in <code>sbatch</code> sits one directory after the shim on <code>PATH</code> and records a NUL-separated argv. <span id="an-absolute-scheduler-call-runs-fenced-head">Head arm:</span> calling it by its absolute path from inside the fence hands it <code>--partition=all_debug</code> and a <code>--wrap=</code> whose decoded spec carries the worker's own recipe &mdash; the same bytes the by-name arm hands it. 2 passed.</li>
+        <li><strong>The declared directory is shielded too.</strong> A composition run where the composing process's path holds no scheduler at all, and the only copy sits in a directory the flight layer declares, still hands the caller a wrapped task; a mutation that reads only the process's own path fails that case with <code>the declared directory's scheduler was reached with a bare task: ['--partition=all_debug', '--wrap=echo fenced-task']</code>.</li>
+        <li><strong>Negative control.</strong> At base revision <code>e6d692b1</code> in a scratch tree the same file reports <code>AssertionError: the absolute path reached the real scheduler with a bare task</code> with the recorded argv <code>['--partition=all_debug', '--wrap=echo fenced-task']</code>, while the by-name arm is wrapped: the exact sequence the nova run used. 2 failed, <code>EXIT=1</code>.</li>
+        <li><strong>Gate and arms.</strong> Scoped gate at <code>135bb40a</code> on <code>all_debug</code>: <code>60 passed</code>, EXIT=0. Suite arms: base <code>e6d692b1</code> <code>58 passed</code>, EXIT=0; after <code>135bb40a</code> <code>60 passed</code>, EXIT=0. <code>ruff check</code> and <code>ruff format --check</code> clean on the staged paths.</li>
+      </ul>
+    </section>
+
+    <section id="an-absolute-scheduler-call-runs-fenced-limit">
+      <h2>What this does not cover</h2>
+      <p>Every copy of a scheduler tool this node resolves &mdash; on its own path or in a directory the flight layer declares &mdash; is masked at the shim. Two cases are not: a binary only the node a job lands on holds, and one a worker's path gains after the fence is composed. Neither is forwarded unfenced from a masked path: a masked call whose shim finds no tool refuses with status 127 and never starts the task.</p>
+    </section>
+  </main>
+</body>
+</html>

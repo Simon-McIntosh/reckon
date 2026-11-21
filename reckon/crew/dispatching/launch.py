@@ -57,7 +57,6 @@ from ._imports import (
     _watch_arming_line,
     _watch_attach_line,
     _wire_peer_channels,
-    _with_anchored_edit_instruction,
     _worker_host_line,
     _worker_runtime_environment,
     _write_boundary_tree_snapshot,
@@ -149,6 +148,14 @@ def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) ->
         _refuse_superseded_launch(run_directory, reservation, run_id)
     except CrewError as superseded:
         raise _SupersededLaunchError(str(superseded)) from superseded
+
+
+def _dispatch_priority(dispatch_options: Mapping[str, Any]) -> int:
+    """The priority a launch was dispatched with, or zero when none was given."""
+    value = (dispatch_options or {}).get("priority")
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return int(value)
+    return 0
 
 
 def _launch_dispatch(
@@ -374,11 +381,6 @@ def _launch_dispatch(
             host_line=_worker_host_line(dispatch_host, directory),
             brief=_brief_text(node, project=project),
         )
-        # The anchored arm's other half is its instruction: the argv makes the
-        # tool callable and this is what makes the worker reach for it. Keyed
-        # on the resolved backend, so a lane that did not receive the server
-        # never reads an instruction naming a tool it does not have.
-        prompt = _with_anchored_edit_instruction(prompt, backend)
         if shadow_lineage:
             prompt += (
                 "\n\nSHADOW RUN — produce the named evidence without committing. "
@@ -448,6 +450,11 @@ def _launch_dispatch(
             "wave": wave_id,
             "coordinator": coordinator,
             "node": node_definition,
+            # The priority the request was given at submission. A launched run
+            # keeps it so its review and its promotion can inherit it, and its
+            # session's budget keeps nothing, because the points return the
+            # moment the request leaves the waiting phases.
+            "priority": _dispatch_priority(dispatch_options),
             "due": due,
             "urgency": urgency,
             "brief": brief,
@@ -750,6 +757,13 @@ def _launch_dispatch(
                         fence_config=config,
                         worker_mcp_set=node.mcp_set,
                         fence_waiver=fence_waiver or None,
+                        # The role the node was dispatched for decides whether
+                        # delivery owes a review and how its work is landed, so
+                        # it is carried into the launch's recorded treatment
+                        # here. Read from the node, never defaulted: a review
+                        # launch left at the default would land as an implement
+                        # run and owe a review of its own.
+                        behaviour_role=node.role,
                         # A node with no declared write paths is free of its
                         # whole worktree, so the paths git cannot merge are
                         # what its fence must seal; a declared node seals none

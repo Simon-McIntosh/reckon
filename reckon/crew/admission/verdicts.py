@@ -9,6 +9,7 @@ from . import wait_refs as _wait_refs
 from .shared import (
     ADMISSION_VERDICT_LOG,
     ADMISSION_VERDICT_LOG_MAX_BYTES,
+    HELD_PHASE,
     HOLD_VERDICTS,
     NOT_ADMISSIBLE_PHASES,
     READINESS_REF_PREFIX,
@@ -89,6 +90,34 @@ def failure_hold(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
         "remedy": str(refusal.get("next_command") or ""),
         "recorded_at": str(refusal.get("recorded_at") or ""),
     }
+
+
+def queued_hold(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """The hold a waiting request is under, composed once for every reader.
+
+    A request whose last attempt failed on a refusal that names its remedy is
+    held by that refusal, whatever hold the last pass wrote: the pass asks the
+    lane before it reads the request's back-off, and a lane with no slot answers
+    first. The composition lives here, beside the two records it joins, so the
+    obligations view, this document's queue and a verdict row cannot disagree
+    about what holds one request.
+    """
+    coordinator = pointer.get("queue_hold")
+    if isinstance(coordinator, Mapping) and str(coordinator.get("reason") or ""):
+        held: dict[str, Any] = {
+            "verdict": HELD_PHASE,
+            "reason": str(coordinator["reason"]),
+            "recorded_at": str(coordinator.get("started_at") or ""),
+        }
+        if not coordinator.get("automatic"):
+            held["remedy"] = (
+                f"reckon crew queue release --run {pointer.get('run_id') or ''!s}"
+            )
+        return held
+    named = failure_hold(pointer)
+    if named is not None:
+        return dict(named)
+    return _holds.recorded_pass_hold(pointer)
 
 
 def hold_reason(hold: Mapping[str, Any]) -> str:
@@ -477,6 +506,7 @@ def _pass_verdict_record(
     landing = result.get("landing") or {}
     if (
         not verdicts
+        and not result.get("retired")
         and not landing.get("landed")
         and not landing.get("skipped")
         and not landing.get("obligations")
@@ -501,6 +531,8 @@ def _pass_verdict_record(
         "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
         "retired": list(result.get("retired") or ()),
+        "retired_lost_session": list(result.get("retired_lost_session") or ()),
+        "retirement_refused": list(result.get("retirement_refused") or ()),
         "obligations": list(result.get("obligations") or ()),
         "landing": landing,
     }

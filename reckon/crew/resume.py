@@ -36,7 +36,7 @@ from typing import Any
 import click
 
 from reckon.crew import runs
-from reckon.crew.node import CrewError
+from reckon.crew.node import SCOPE_RELEASE_FIELD, CrewError
 
 #: The pointer field carrying a coordinator's hold over a delivered run.
 HOLD_FIELD = "delivery_hold"
@@ -189,7 +189,11 @@ def hold_delivery(
 
 
 def release_hold(
-    run_id: str, reason: str, *, by: str = DEFAULT_HOLDER
+    run_id: str,
+    reason: str,
+    *,
+    by: str = DEFAULT_HOLDER,
+    expected: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Release a hold, recording why the deferral ended.
 
@@ -205,6 +209,8 @@ def release_hold(
         )
 
     def mutation(record: dict[str, Any]) -> dict[str, Any]:
+        if expected is not None and record != dict(expected):
+            raise CrewError(f"run {run_id!r} changed before its hold could be released")
         hold = delivery_hold(record)
         if hold is None:
             raise CrewError(f"run {run_id!r} carries no hold to release")
@@ -341,6 +347,142 @@ def prepare_resume(
     return {"run_id": run_id, "held": True, **held, "already_held": False}
 
 
+SCOPE_RELEASE_RECORD_NAME = "scope-release.json"
+
+
+def _released_head(record: Mapping[str, Any]) -> tuple[str, str, list[str]]:
+    """The revision a released run keeps, its worktree, and its commits past base.
+
+    The head is the worktree's own HEAD rather than anything the manifest
+    claims, because the release exists so a fresh node can merge exactly what
+    the stopped worker left. A worktree that cannot be read names no head: the
+    release still frees the paths, but its record says the head was not
+    measured rather than naming one nobody read.
+    """
+    from reckon.crew.node import _git_answer
+
+    worktree = str(record.get("worktree") or "").strip()
+    if not worktree or not Path(worktree).expanduser().is_dir():
+        return "", worktree, []
+    tree = Path(worktree).expanduser()
+    head = _git_answer(tree, "rev-parse", "HEAD") or ""
+    commits: list[str] = []
+    base = str(record.get("base_sha") or "").strip()
+    if head and base:
+        answer = _git_answer(tree, "rev-list", "--reverse", f"{base}..HEAD")
+        commits = [line.strip() for line in (answer or "").splitlines() if line.strip()]
+    return head, worktree, commits
+
+
+def record_scope_release_in_run_dir(run_id: str, release: Mapping[str, Any]) -> None:
+    """Write the scope release into the run's directory as a durable record.
+
+    The live pointer is what every claim read consults, and the run directory
+    outlives it, so the release is copied there: a reader asking what a run was
+    given up at finds the kept head after nothing live remains.
+    """
+    directory = Path(runs.run_dir(run_id))
+    directory.mkdir(parents=True, exist_ok=True)
+    runs._write_json(
+        directory / SCOPE_RELEASE_RECORD_NAME,
+        {"run_id": run_id, "scope_release": dict(release)},
+    )
+
+
+def release_scope(
+    run_id: str, reason: str, *, by: str = DEFAULT_HOLDER
+) -> dict[str, Any]:
+    """Release a stopped run's claim on its paths, keeping its worktree.
+
+    A stopped run whose worktree holds commits keeps its paths claimed until it
+    is promoted or recovered, and a run that can be neither blocks its own
+    section: a fresh node for it is refused on the scope conflict, so the
+    section waits behind work nobody can move. Releasing the claim lets a fresh
+    node write those paths while the stopped run's worktree and every commit in
+    it stay where they are, and the record names the head to merge.
+
+    Two runs are refused, because releasing either would move work a live
+    process or a working promotion route still owns:
+
+    * a run whose worker still runs;
+    * a run whose promotion dry run would pass — promotion is the route for it,
+      and the refusal names the invocation rather than leaving the caller to
+      find it.
+    """
+    reason = str(reason or "").strip()
+    if not reason:
+        raise CrewError(
+            f"releasing the scope of run {run_id!r} needs the reason it was "
+            "given up: a release whose reason nobody recorded cannot be told "
+            "from a crashed run's paths"
+        )
+    from reckon.crew.node import _claim_process_alive
+
+    if promotion_in_flight(run_id):
+        raise CrewError(
+            f"run {run_id!r} is being promoted right now: its promotion holds "
+            "the lease and is about to remove the pointer, so releasing the "
+            "claim would race work that is already moving. Read its ledger row "
+            "for the promotion's outcome."
+        )
+    record = runs.read_pointer(run_id)
+    alive = _claim_process_alive(record)
+    pid = record.get("pid")
+    if alive is None:
+        raise CrewError(
+            f"run {run_id!r} records no worker process yet, so it has not "
+            "stopped: a release is for a run whose worker has ended and whose "
+            "claim still fences its paths."
+        )
+    if alive:
+        raise CrewError(
+            f"run {run_id!r} is still running as pid {pid}, so its worktree is "
+            "in use: stop it before releasing its scope, or let it deliver."
+        )
+
+    from reckon.crew import promotion
+
+    report = promotion.complete_dry_run(
+        run_id, gate=str(record.get("gate") or "not-run")
+    )
+    if report.get("would_promote"):
+        invocation = str(report.get("invocation") or "").strip()
+        route = f" ({invocation})" if invocation else ""
+        raise CrewError(
+            f"run {run_id!r} can still be promoted{route}, so promotion is the "
+            "route for its work: releasing its scope would leave a promotable "
+            "run's commits for a fresh node to merge when the lander can take "
+            "them now. Promote it instead of releasing."
+        )
+
+    head, worktree, commits = _released_head(record)
+
+    def mutation(current: dict[str, Any]) -> dict[str, Any]:
+        current[SCOPE_RELEASE_FIELD] = {
+            "reason": reason,
+            "by": str(by or DEFAULT_HOLDER),
+            "at": _now(),
+            "attempt": int(record.get("attempt") or 1),
+            "kept_head": head,
+            "worktree": worktree,
+            "commits": commits,
+        }
+        return current
+
+    updated = runs._mutate_pointer(run_id, mutation)
+    release = dict(updated.get(SCOPE_RELEASE_FIELD) or {})
+    record_scope_release_in_run_dir(run_id, release)
+    return {
+        "run_id": run_id,
+        "scope_released": True,
+        "kept_head": head,
+        "worktree": worktree,
+        "commits": commits,
+        "promotion_refusals": list(report.get("refusals") or ()),
+        SCOPE_RELEASE_FIELD: release,
+    }
+
+
 def guard_resume_command(command: click.Command) -> click.Command:
     """Make the single-run resume hold first, and refuse a promoted run.
 
@@ -425,21 +567,38 @@ def register_hold_commands(group: click.Group) -> None:
         "--project", default=None, help="Project owning the run; cross-checks the run."
     )
     @click.option("--reason", required=True, help="Why the deferral ended; recorded.")
+    @click.option(
+        "--scope",
+        is_flag=True,
+        help="Release a stopped run's claim on its paths, keeping its worktree.",
+    )
     @click.option("--by", default=DEFAULT_HOLDER, help="Who released the hold.")
     @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
     def crew_release(
-        run_id: str, project: str | None, reason: str, by: str, pretty: bool
+        run_id: str,
+        project: str | None,
+        reason: str,
+        scope: bool,
+        by: str,
+        pretty: bool,
     ) -> None:
-        """Release a hold so the run is the lander's again.
+        """Release a hold, or a stopped run's scope claim.
 
-        The release is recorded beside the hold, with its own reason, so the
-        run's record explains the delay it carried.
+        A hold release returns the run to the lander. A scope release is for a
+        run that can be neither resumed nor promoted: it frees the paths its
+        worktree still claims, so a fresh node can be dispatched, while the
+        worktree and every commit in it stay where they are and the record
+        names the head to merge.
         """
         from reckon.crew_dispatch_commands import _accept_a_matching_project
 
         _accept_a_matching_project(run_id, project)
         try:
-            result = release_hold(run_id, reason, by=by)
+            result = (
+                release_scope(run_id, reason, by=by)
+                if scope
+                else release_hold(run_id, reason, by=by)
+            )
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit(result, pretty)

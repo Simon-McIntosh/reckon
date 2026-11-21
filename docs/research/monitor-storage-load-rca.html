@@ -504,9 +504,16 @@
     enough for a whole-stream read to be distinguishable from a cursor read and that the comparison
     covered every run, and they hold equally on a tree with no cursor at all.</p>
     <p>The figure is the shared sample size, not a smaller one of this node's choosing: the rewrite check
-    reads the same 8&nbsp;KiB opening <code>_backends.stream_head_fingerprint</code> records for the
+    reads the same opening <code>_backends.stream_head_fingerprint</code> records for the
     parsed-stream cache, so one sample governs both and a stream whose opening moved is caught by the
-    same bytes in either reader.</p>
+    same bytes in either reader. That sample was 8&nbsp;KiB here, and it is 8&nbsp;KiB again: the
+    population measurement below put a cost on reading it once per stream per tick, and the answer was
+    to stop reading it on the growth path rather than to shrink it. A cursor now also records a
+    512&nbsp;byte sample of the bytes immediately before its offset
+    (<code>_backends._STREAM_BOUNDARY_SAMPLE</code>), which is what a growth read verifies — an offset
+    is an index into a sequence and stays valid only while the bytes before it do. The sample the
+    opening digest covers is therefore no longer paid per tick, so its size is free to stay at the
+    base revision's.</p>
     <h3 id="station-read-live-window-after-the-cursor">The live window: the bound is still not met</h3>
     <p>Two windows, each of one station alone at <code>--interval 1</code> over the same 147 live pointers,
     measured with §2's instruments — <code>/proc/&lt;pid&gt;/io</code> <code>rchar</code> deltas over the
@@ -601,6 +608,58 @@
     and 5&nbsp;% of one core only once the station runs on the reloaded fleet node, which this worker
     could not do. That window and those two figures are the coordinator's, and no after-window result is
     claimed here.</p>
+    <h3 id="station-read-no-steady-reader-reads-whole">No steady reader reads a whole stream</h3>
+    <p>Three production readers still asked the events cache for the whole stream, and each paid a whole
+    read for every stream the 32&nbsp;MB byte bound had evicted: <code>_latest_attempt_capacity_refusal</code>
+    in <code>reckon/crew/dispatch_sessions.py</code>, which needs only the latest terminal event;
+    <code>_admission_refusal</code> in <code>reckon/crew/recovery_stream.py</code>, which folds three
+    flags across the stream; and <code>observe_log</code>'s fallback in <code>reckon/_backends.py</code>.
+    Each now states its question as a fold from a seed over the records in order, held in the per-stream
+    summary beside the observation folds. Over a stream whose contents the byte bound dropped, the
+    summary reads the whole stream once and every later tick folds only the bytes gained.</p>
+    <table>
+      <thead><tr><th>Reader and population</th><th>base <code>5b784ef</code></th><th>with the folds</th></tr></thead>
+      <tbody>
+        <tr><th colspan="3" scope="colgroup">Forty two-megabyte streams (83,957,120&nbsp;B) in one tick,
+          through <code>_latest_attempt_capacity_refusal</code>, <code>_admission_refusal</code> and
+          <code>observe_log</code>, on the pass after every stream gained 500&nbsp;bytes and with each
+          reader's elapsed reading one tick later</th></tr>
+        <tr><td>Bytes read from the streams on the second pass</td>
+          <td>85,307,840&nbsp;B</td><td>60,960&nbsp;B</td></tr>
+        <tr><td>Bytes read per stream on the second pass</td><td>2,132,696</td><td>1,524</td></tr>
+        <tr><td>Every reader's answer equals a fresh whole parse of the same stream</td>
+          <td>yes</td><td>yes</td></tr>
+      </tbody>
+    </table>
+    <p>The 1,524&nbsp;B per stream is the 500&nbsp;byte append plus the two 512&nbsp;byte boundary
+    samples: one read before the resumed read to confirm the bytes the cursor consumed still end where
+    it recorded them, and one taken from the bytes just read to record the new offset. The 8&nbsp;KiB
+    opening sample is not re-read here — it is carried from the version it was taken at, which the
+    boundary has just certified — so what the population pays per stream per tick is the bytes it
+    gained plus a fixed 1&nbsp;KiB, not its opening.
+    The instrument is a stand-in over <code>Path.open</code> that counts every byte the reader hands
+    back, keyed by the resolved stream path; it is shown seeing the first pass's whole reads
+    (83,957,120&nbsp;B and more) and, on the second pass, at least the 20,000 appended bytes, so a zero
+    or a small figure cannot be an instrument that stopped counting.</p>
+    <p>The fixture is <code>tests/test_no_steady_reader_reads_a_whole_stream.py</code>. Its parity arm
+    is independent of the path it checks: each tick's answer is compared to a whole
+    <code>_backends.observe_stream</code> read of the same records at the same elapsed time, and one of
+    the appended records reports tokens with no duration, so the rate it forces is the caller's clock's.
+    A fold that carries a rate rather than the inputs a rate is computed from answers <code>None</code>
+    there, which is how the repair's blocking defect was found: the reviewed head fails this arm with
+    <code>wall_tokens_per_second</code> <code>None</code> against the whole read's 0.0. Its negative
+    control runs the same file against an extracted tree at <code>5b784ef</code>, where the second pass
+    reads 85,307,840&nbsp;B and the test fails; a second control runs it against the reviewed head,
+    where both the parity arm and the in-place-rewrite arm fail. Its sibling control runs
+    <code>tests/test_watch_stream_parse_is_cached.py</code> against a growth read that drops the first
+    appended record; the test fails on both the watcher's single-append check and the concurrent
+    reader's owed-record check. Both logs are in the run directory of
+    <code>r-20261117T233254668441-no-steady-reader-reads-a-whole-stream</code>.</p>
+    <p>The live bound — under 20&nbsp;MB/min and under 5&nbsp;% of one core over 60&nbsp;s with at least
+    30 live runs, with the census instrument s13 recorded — is not measured here: the station must
+    reload onto this node's code before a window would describe it, and that window is the
+    coordinator's. Both figures are therefore recorded as unmeasured at this revision rather than as
+    met.</p>
   </main>
 </body>
 </html>

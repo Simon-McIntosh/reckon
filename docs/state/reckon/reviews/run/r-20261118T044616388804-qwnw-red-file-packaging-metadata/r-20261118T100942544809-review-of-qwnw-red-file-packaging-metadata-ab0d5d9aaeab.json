@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/evidence.py:_fragment_href"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:02:58Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html",
+      "id": "fa22b5509e2",
+      "line": 37,
+      "severity": "non-blocking",
+      "text": "The table's head row names fe93a7abd57960d70e868422a98a93c8a895dd5c, an amended commit reachable from no ref once ab0d5d9a superseded it, so a reader comparing the record against the promoted commit cannot resolve the revision the green run was measured at; the run at the delivered revision (logs/head-final-1325736.out, ab0d5d9a) appears only in the manifest."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html",
+      "id": "f4edc744e11",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "The negative control is described by job id only: the section's done_when asks for the control's log beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/, and this fragment names neither that log's path nor its failing id, leaving the raw evidence in the run directory where the plan's cumulative record cannot show it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Read the fragment consumers: reckon/evidence.py:compose_landed_record appends the fragment body to the plan's evidence record and reckon/evidence.py:_fragment_href links it from the closing overview.",
+    "diff": "Read commit ab0d5d9a against base 97dec20b; one file added, 105 lines, the evidence fragment only, with no product, test, plan or state change.",
+    "done_when": "Read the evidence fence's measure, the named file passing at head as an all_debug job with SLURM_JOB_ID unset; the manifest records that run and logs/head-final-1325736.out shows 3 passed / EXIT=0 at ab0d5d9a.",
+    "goal": "Read the dispatch brief's GOAL, 'Make tests/test_packaging_metadata.py pass in full on the primary branch'; the landed change delivers that file's passing run at head rather than a repair, which the section's passing-at-start clause permits.",
+    "manifest": "Read the delivered manifest; it records status complete, states the base and head runs, the two suite arms at 58 passed each, the mutation control at 1 failed / EXIT=1, and carries baseline_suite and after_suite with completed true and failure_count 0.",
+    "write_paths": "Read the node's declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node file, docs/figures/...); the one changed path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html, is among them."
+  },
+  "justifications": {
+    "durability": "The run adds no assertion of its own; the guard is the precommit tests/test_packaging_metadata.py, which logs/negative-control-1325727.out shows failing at assert 0 >= 4 when the pyproject metadata is removed.",
+    "evidence": "The manifest's tests line names the scoped gate and its base and head runs, but the negative control the section asks to be logged beside the head run under docs/evidence/fragments/ is stored only in the run directory and described in prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html:57.",
+    "fit": "The fragment sits at the path reckon/evidence.py:_fragment_href resolves and carries the node-prefixed anchor id=qwnw-red-file-packaging-metadata-landing, matching the plan's fragment naming convention.",
+    "goal_fidelity": "The goal is that tests/test_packaging_metadata.py passes in full, and logs/head-final-1325736.out reads 3 passed / EXIT=0 at the delivered head ab0d5d9a, which is the deliverable the section's passing-at-start clause allows.",
+    "reuse": "No definition is added; the fragment is consumed by the existing composer reckon/evidence.py:compose_landed_record, and a search over reckon for evidence-fragment readers found no second composition path.",
+    "scope_discipline": "The single commit ab0d5d9a adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html, which is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the dispatch brief's GOAL, 'Make tests/test_packaging_metadata.py pass in full on the primary branch'; the landed change delivers that file's passing run at head rather than a repair, which the section's passing-at-start clause permits.\nVERDICT done_when: Read the evidence fence's measure, the named file passing at head as an all_debug job with SLURM_JOB_ID unset; the manifest records that run and logs/head-final-1325736.out shows 3 passed / EXIT=0 at ab0d5d9a.\nVERDICT write_paths: Read the node's declared write paths; the single changed path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html is inside them.\nVERDICT manifest: Read the delivered manifest; it records status complete with base and head runs, both suite arms at 58 passed, a mutation control at 1 failed / EXIT=1, and both suite arms completed with failure_count 0.\nVERDICT diff: Read commit ab0d5d9a against base 97dec20b; one file, 105 lines, the evidence fragment only.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/evidence.py:_fragment_href\nSCORE goal_fidelity: 18\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: The goal is that tests/test_packaging_metadata.py passes in full, and logs/head-final-1325736.out reads 3 passed / EXIT=0 at the delivered head ab0d5d9a, which is the deliverable the section's passing-at-start clause allows.\nJUSTIFICATION evidence: The manifest's tests line names the scoped gate and its base and head runs, but the negative control the section asks to be logged beside the head run under docs/evidence/fragments/ is stored only in the run directory and described in prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html:57.\nJUSTIFICATION scope_discipline: The single commit ab0d5d9a adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html, which is inside the node's declared write paths.\nJUSTIFICATION durability: The run adds no assertion of its own; the guard is the precommit tests/test_packaging_metadata.py, which logs/negative-control-1325727.out shows failing at assert 0 >= 4 when the pyproject metadata is removed.\nJUSTIFICATION fit: The fragment sits at the path reckon/evidence.py:_fragment_href resolves and carries the node-prefixed anchor id=qwnw-red-file-packaging-metadata-landing, matching the plan's fragment naming convention.\nJUSTIFICATION reuse: No definition is added; the fragment is consumed by the existing composer reckon/evidence.py:compose_landed_record, and a search over reckon for evidence-fragment readers found no second composition path.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html:37 non-blocking: The table's head row names fe93a7abd57960d70e868422a98a93c8a895dd5c, an amended commit reachable from no ref once ab0d5d9a superseded it, so a reader comparing the record against the promoted commit cannot resolve the revision the green run was measured at; the run at the delivered revision (logs/head-final-1325736.out, ab0d5d9a) appears only in the manifest.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-packaging-metadata.html:57 non-blocking: The negative control is described by job id only: the section's done_when asks for the control's log beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/, and this fragment names neither that log's path nor its failing id, leaving the raw evidence in the run directory where the plan's cumulative record cannot show it.\n",
+  "review_run_id": "r-20261118T100942544809-review-of-qwnw-red-file-packaging-metadata-ab0d5d9aaeab",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "ab0d5d9aaeabfea9e08a3f6357dcb4428d538668",
+  "reviewed_run_id": "r-20261118T044616388804-qwnw-red-file-packaging-metadata",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:20:02.833636+00:00",
+  "total": 107
+}

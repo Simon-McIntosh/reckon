@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:14:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d",
+      "recorded_at": "2026-11-18T10:54:00.350642+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 8,
+      "severity": "blocking",
+      "text": "The reviewed run's delivered manifest is truncated mid-token at 1119 bytes: its last line ends 'reckon/crew/promotion_placeholder' with no newline, and the file carries no tests:, test_logs:, negative_control_log:, baseline_suite:, after_suite:, landing:, artifacts: or rubric.* lines. The node's write paths include tests/ and its negative_control is not 'none', so negative_control_log and the gate evidence are required of this record; a promotion reading /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and/manifest.md would find neither the repair round's scoped gate (scoped-gate-1794993336927296990.log, 7 passed EXIT=0 at 1441625a6e) nor any suite arm, while the complete pre-repair record survives only as manifest.md.attempt-1.asdelivered."
+    },
+    {
+      "file": "docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "The repair paragraph attributes a refusal to 'the typed MCP surface' and says CrewArgs's Literal 'refused' the queue view, but no production module reads CrewArgs: reckon/mcp.py:2709 declares the crew tool's view as 'str' and reckon/mcp.py:3837 builds the published argument model from tool.fn_metadata.arg_model, so the crew tool always accepted view=\"queue\" and CrewArgs is a test-only mirror. The paragraph overstates the runtime effect of the omission it repaired; the guard that fired is real, but a reader should be told the mirror and the skill were what disagreed with the dispatcher, not the published schema."
+    },
+    {
+      "file": "tests/test_crew_view_serves_every_view.py",
+      "line": 347,
+      "severity": "non-blocking",
+      "text": "The repair adds the queue entry to _TOP_LEVEL_COMPOSITION_STAMPS (line 335) and the new _VIEW_COMPOSITION_AGES map (line 347) so the queue comparison tolerates the queue read's composition stamp and read-instant ages, but no assertion drives either entry: test_only_the_budget_views_own_stamp_is_dropped (line 441) exercises only the budget and reviews shapes, so deleting the queue entries or widening them to every view leaves the gate green. Widening _VIEW_COMPOSITION_AGES to every view would also hide a genuine queue-field disagreement between the two surfaces, because the filter drops keys from both sides before comparison."
+    }
+  ],
+  "findings_note": null,
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the queue reads as a queue from the CLI, MCP and Python; the two commits gained since the prior review (a0bf002e72 -> 1441625a6e) are ae3237b0e5 and 1441625a6e, and ae3237b0e5 adds 'queue' and 'decisions' to CrewArgs.view (reckon/_mcp_tools.py:92,113) plus the three omitted views to skills/reckon-build/SKILL.md:64-68, while the queue read itself (reckon/crew/queue_view.py:257, reckon/mcp_views.py:4018) was already served at the base -- so the repair makes the typed mirror and the skill agree with the dispatcher, it does not change what a caller can read.\nVERDICT done_when: the done_when names tests/test_the_queue_reads_as_a_queue.py, one admission pass reading the request the view places first, and a logged all_debug run written to s4.html; the repair's gate in scoped-gate-1794993336927296990.log is '7 passed in 2.54s' EXIT=0 at 1441625a6e over tests/test_crew_view_serves_every_view.py and test_ship_crew_views_match_the_typed_mcp_surface, and the section's own test last has a retained log at a0bf002e72 (scoped-gate-1794983462299208144.log, 2 passed EXIT=0); I re-ran tests/test_the_queue_reads_as_a_queue.py at 1441625a6e in a scratch tree under $TMPDIR and it answers '2 passed in 2.98s' EXIT=0.\nVERDICT write_paths: the source node declares reckon, tests, skills and docs/evidence/fragments/a-session-spends-a-priority-budget; all four paths the gained diff touches -- reckon/_mcp_tools.py, skills/reckon-build/SKILL.md, tests/test_crew_view_serves_every_view.py and docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html -- are inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and/manifest.md; it is 1119 bytes and truncates mid-path at line 8 ('reckon/crew/promotion_placeholder', no newline) with no tests, test_logs, negative_control_log, suite arms, landing or rubric lines, while the complete pre-repair record survives beside it as manifest.md.attempt-1.asdelivered.\nVERDICT diff: read both commits against a0bf002e72: ae3237b0e5 touches four files (the two Literal entries, three skill view mentions, and the parity comparison's per-view drops _TOP_LEVEL_COMPOSITION_STAMPS['queue'] and _VIEW_COMPOSITION_AGES['queue']), and 1441625a6e adds the repair paragraph to the evidence fragment; no production module reads CrewArgs (reckon/mcp.py:3837 builds the tool schema from _crew's own signature, view: str at reckon/mcp.py:2709).\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_mcp_tools.py:92 now carries 'queue' so the mirror matches CREW_VIEWS at reckon/mcp_views.py:4018 and the skill at skills/reckon-build/SKILL.md:64-68 names every typed view, which is what the goal's typed-surface half needs.\nSCORE evidence: 13\nJUSTIFICATION evidence: the repair round's gate and negative control exist as scoped-gate-1794993336927296990.log (7 passed EXIT=0 at 1441625a6e) and ff5e4c2123a-negative-control.log (2 failed EXIT=1 when ae3237b0e5 is reverted), but the delivered manifest.md:8 records none of them and no retained log at head runs the section's own test.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the gained diff touches only reckon/_mcp_tools.py, skills/reckon-build/SKILL.md, tests/test_crew_view_serves_every_view.py and the declared evidence fragment; adding 'decisions' and 'review-need' exceeds the queue read alone but is forced by the single whole-set guard at tests/test_skill_contracts.py:1365-1373.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_view_serves_every_view.py:278 reddens with ['decisions', 'queue'] and tests/test_skill_contracts.py:1365 reddens when the answering commit is reverted (ff5e4c2123a-negative-control.log), but the queue entries added at tests/test_crew_view_serves_every_view.py:335-349 are asserted by no test.\nSCORE fit: 18\nJUSTIFICATION fit: the new drops follow the budget view's existing _TOP_LEVEL_COMPOSITION_STAMPS shape in tests/test_crew_view_serves_every_view.py:335-349, and the Literal and skill edits match the surrounding entries.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained diff adds no function, class or module -- it extends the existing CrewArgs.view Literal (reckon/_mcp_tools.py:92) and the existing composition-instant filter (tests/test_crew_view_serves_every_view.py:366-377), so no capability is forked.\nFINDING manifest.md:8 blocking: the delivered manifest.md in the reviewed run directory is truncated mid-token at 1119 bytes and carries no tests:, test_logs:, negative_control_log:, baseline_suite:, after_suite: or landing: line, so the node's gate evidence is absent from the record promotion reads.\nFINDING docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html:8 non-blocking: the repair paragraph calls CrewArgs 'the typed MCP surface' and says its Literal 'refused' the queue view, but the published crew tool schema is built from _crew's own signature (reckon/mcp.py:3837,2709) where view is str and CrewArgs is read only by tests, so no runtime caller was ever refused.\nFINDING tests/test_crew_view_serves_every_view.py:347 non-blocking: _VIEW_COMPOSITION_AGES['queue'] and _TOP_LEVEL_COMPOSITION_STAMPS['queue'] are added with no test driving them, so their removal or widening is invisible to the suite while widening would mask a genuine cross-surface queue-field disagreement.",
+  "review_run_id": "r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d",
+  "reviewed_base_sha": "a0bf002e72bcb5d4275feb5335cd7515002fda50",
+  "reviewed_head_sha": "1441625a6e1d4cff9bc2deb4dc03f1580ffcd143",
+  "reviewed_run_id": "r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:04:00+00:00",
+  "total": 103
+}

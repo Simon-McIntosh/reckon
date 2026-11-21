@@ -1,0 +1,74 @@
+<section id="qwnw-red-file-negative-control-waivers-at-current-main-landing">
+  <h2>The negative-control waiver file is already green at the base</h2>
+
+  <p><strong>Finding.</strong> This node's named file,
+  <code>tests/test_negative_control_waiver.py</code>, passes in full at the
+  base revision the brief names —
+  <code>05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b</code> — so no repair was
+  made and the product tree is unchanged. The deliverable is that passing run,
+  measured at head as a job on <code>all_debug</code>.</p>
+
+  <p><strong>What would have broken it since the earlier repair.</strong> The
+  earlier repair of this file landed as <code>9c5b1c40c2</code> and is an
+  ancestor of the base; the file itself carries no commit after it
+  (<code>git log -- tests/test_negative_control_waiver.py</code> ends at that
+  commit). The named file was run at four revisions that span every candidate:
+  the base, the run's worktree head
+  (<code>05b3eea9c3</code>), the shared checkout's local primary head
+  (<code>9eda4342c0</code>), and the further primary heads
+  <code>f5eb80f14e</code> and <code>fd1935d2d2</code> extracted from the
+  repository's own object store. Seventeen cases passed at every one, and the
+  same file run together with
+  <code>tests/test_crew_promotion_requires_review.py</code> in both orders
+  read 23 passed. No regression attributable to a later landing reproduces;
+  the reported redness is not observable at any revision this run can read.</p>
+
+  <h3 id="qwnw-red-file-negative-control-waiver-at-current-main-causes">Cause verdicts</h3>
+
+  <p>The three causes the earlier repair recorded still hold, and each is
+  still the test's, not the product's — asserted here as the rule the code
+  keeps today, and observed at every revision above:</p>
+
+  <table id="qwnw-red-file-negative-control-waiver-at-current-main-cause-table">
+    <thead><tr><th>Cause</th><th>Verdict</th><th>Rule the file now asserts</th></tr></thead>
+    <tbody>
+      <tr><td>A bare <code>crew complete</code> returns a promotion-requested receipt</td><td>test wrong</td><td>the case passes <code>--wait</code>, which carries the promotion out</td></tr>
+      <tr><td>A cited gate log is read for its terminal <code>EXIT=</code> line</td><td>test wrong</td><td>the fixture writes <code>1 passed\nEXIT=0</code></td></tr>
+      <tr><td>A reasoned waiver displaces the control-log judgement</td><td>test wrong</td><td>admission is decided on the run's recorded facts, not on the declaration's wording</td></tr>
+    </tbody>
+  </table>
+
+  <p>No assertion was deleted or weakened: this node changes no test file.</p>
+
+  <h3 id="qwnw-red-file-negative-control-waiver-at-current-main-arms">The arms</h3>
+
+  <table id="qwnw-red-file-negative-control-waiver-at-current-main-arm-table">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Named file, baseline</td><td><code>05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b</code></td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_negative_control_waiver.py</code></td><td>17 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>Named file, head</td><td><code>05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b</code></td><td>same</td><td>17 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>Suite, baseline</td><td><code>05b3eea9c3</code></td><td><code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td><td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>Suite, after</td><td><code>05b3eea9c3</code></td><td>same</td><td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Every arm ran as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset in the test environment, and its log is on
+  shared storage under the run directory.</p>
+
+  <h3 id="qwnw-red-file-negative-control-waiver-at-current-main-control">Negative control</h3>
+
+  <p>A green base run supplies no failing ids of its own, so the control is a
+  mutation of the rule this file guards: the empty-reason guard in
+  <code>reckon/crew/promotion_checks.py</code> (<code>_negative_control_check</code>)
+  is deleted in a scratch copy of the base tree, and the file is run there.</p>
+
+  <pre id="qwnw-red-file-negative-control-waiver-at-current-main-control-log"># mutation: the empty-reason guard in reckon/crew/promotion_checks.py is deleted
+4 failed, 13 passed
+EXIT=1</pre>
+
+  <p>The run reads <code>4 failed, 13 passed</code> and <code>EXIT=1</code>:
+  the four empty-reason cases, which the head arm passes, are the ids the
+  mutation adds. The log is
+  <code>logs/negative-control-mutation.log</code> in the run directory.</p>
+</section>

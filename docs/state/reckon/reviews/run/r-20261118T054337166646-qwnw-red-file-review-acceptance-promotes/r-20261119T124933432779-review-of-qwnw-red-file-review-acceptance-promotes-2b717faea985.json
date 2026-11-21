@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:599 (accept_clean_review, the sweep entry the test drives)",
+    "reckon/crew/recovery_review_acceptance.py:736 (the missing-and-not-implementation condition the changed role selects)",
+    "reckon/crew/recovery_review_acceptance.py:742 (the primary-branch refusal whose reason the test asserts)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:08:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-acceptance-promotes.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the fragment says \"its harness asserts the role on the pointer the way it already asserted the node\", but the head test file contains no such assertion (grep of wantonly 'assert' beside 'role' finds none in tests/test_review_acceptance_promotes.py), and _write_run only writes the role into the pointer and its node, so the evidence overstates a guard the change does not add."
+    },
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the recorded gate command carries no env -u SLURM_JOB_ID and the log header at scoped-gate-1795092264844874747.log:4 does not name the all_debug partition, so the done_when's job condition is claimed by the receipt rather than evidenced by the command a shell was handed."
+    },
+    {
+      "file": "manifest.md",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "the after_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed test file, so its 0-of-58 failure delta is uninformative about this change and the recorded added_failure_count of 0 rests on the base-arm/head-gate pair instead."
+    }
+  ],
+  "head_log_revision": "2b717faea985021ad9465af9adf2af31bc211d9a",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit 10cc142b (parameterises _write_run at tests/test_review_acceptance_promotes.py:162 with role and builds the unmerged case as role test at :239, keeping every assertion) and commit 2b717fa (adds the 120-line evidence fragment embedding both arm logs).",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset plus each cause with a product-or-test verdict and both arms; the head pass is at scoped-gate-1795092264844874747.log:6, the base arm is red at base-arm.log:71-74 (\"1 failed, 5 passed, 1 error\" at revision 42fe90d0), and the fragment documents the cause, but the logged gate command at scoped-gate-1795092264844874747.log:4 carries no env -u SLURM_JOB_ID and manifest.md:13 names no literal test-wrong verdict.",
+    "goal": "the node goal in brief-for-worker.md:41 is that tests/test_review_acceptance_promotes.py passes in full on the primary branch; scoped-gate-1795092264844874747.log:5-6 records \"6 passed in 3.27s\" at revision 2b717faea9 with EXIT=0 and the only later change is the evidence fragment.",
+    "manifest": "read manifest.md:1-23; the repair run's record is complete with tests, test_logs, negative_control_log, baseline_suite and after_suite, answering the prior review's blocking manifest finding, though the after-arm names a file pair that does not import the changed test.",
+    "write_paths": "the fence declares reckon, tests, the queued-work-needs-no-workaround fragment directory, and the general manifest path; every path in git diff 42fe90d0..2b717fae is inside it."
+  },
+  "justifications": {
+    "durability": "reinstating the default role at tests/test_review_acceptance_promotes.py:239 makes test_an_unmerged_run_is_not_promoted redden exactly as base-arm.log:71 records; no new assertion was added, so the guard rests on the pre-existing assertion at tests/test_review_acceptance_promotes.py:313.",
+    "evidence": "scoped-gate-1795092264844874747.log:1-6 and base-arm.log:71-74 close the head pass and the named base failure, but nothing in the gate header evidences the done_when's SLURM_JOB_ID unset condition.",
+    "fit": "the keyword-only parameter role: str = \"implement\" at tests/test_review_acceptance_promotes.py:162 follows the fixture's existing keyword style and adds no forbidden name.",
+    "goal_fidelity": "tests/test_review_acceptance_promotes.py:239 builds the unmerged run as role test and scoped-gate-1795092264844874747.log:6 records \"6 passed in 3.27s\" at head 2b717fae, so the named file passes in full at the primary branch.",
+    "reuse": "no capability is duplicated: the change extends the existing _write_run fixture at tests/test_review_acceptance_promotes.py:154-196 rather than adding a second run builder, and a search of tests/helpers and reckon/crew for a role-parameterised run record found only this helper.",
+    "scope_discipline": "git diff 42fe90d0..2b717fae changes only tests/test_review_acceptance_promotes.py and the declared evidence fragment, with no product code touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal in brief-for-worker.md:41 is that tests/test_review_acceptance_promotes.py passes in full on the primary branch; scoped-gate-1795092264844874747.log:5-6 records \"6 passed in 3.27s\" at revision 2b717faea9 with EXIT=0 and the only later change is the evidence fragment.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset plus each cause with a product-or-test verdict and both arms; the head pass is at scoped-gate-1795092264844874747.log:6, the base arm is red at base-arm.log:71-74 (\"1 failed, 5 passed, 1 error\" at revision 42fe90d0), and the fragment documents the cause, but the logged gate command at scoped-gate-1795092264844874747.log:4 carries no env -u SLURM_JOB_ID and manifest.md:13 names no literal test-wrong verdict.\nVERDICT write_paths: the fence declares reckon, tests, the queued-work-needs-no-workaround fragment directory, and the general manifest path; every path in git diff 42fe90d0..2b717fae is inside it.\nVERDICT manifest: read manifest.md:1-23; the repair run's record is complete with tests, test_logs, negative_control_log, baseline_suite and after_suite, answering the prior review's blocking manifest finding, though the after-arm names a file pair that does not import the changed test.\nVERDICT diff: read commit 10cc142b (parameterises _write_run at tests/test_review_acceptance_promotes.py:162 with role and builds the unmerged case as role test at :239, keeping every assertion) and commit 2b717fa (adds the 120-line evidence fragment embedding both arm logs).\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:599 (accept_clean_review, the sweep entry the test drives), reckon/crew/recovery_review_acceptance.py:736 (the missing-and-not-implementation condition the changed role selects), reckon/crew/recovery_review_acceptance.py:742 (the primary-branch refusal whose reason the test asserts)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_review_acceptance_promotes.py:239 builds the unmerged run as role test and scoped-gate-1795092264844874747.log:6 records \"6 passed in 3.27s\" at head 2b717fae, so the named file passes in full at the primary branch.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795092264844874747.log:1-6 and base-arm.log:71-74 close the head pass and the named base failure, but nothing in the gate header evidences the done_when's SLURM_JOB_ID unset condition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 42fe90d0..2b717fae changes only tests/test_review_acceptance_promotes.py and the declared evidence fragment, with no product code touched.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the default role at tests/test_review_acceptance_promotes.py:239 makes test_an_unmerged_run_is_not_promoted redden exactly as base-arm.log:71 records; no new assertion was added, so the guard rests on the pre-existing assertion at tests/test_review_acceptance_promotes.py:313.\nSCORE fit: 18\nJUSTIFICATION fit: the keyword-only parameter role: str = \"implement\" at tests/test_review_acceptance_promotes.py:162 follows the fixture's existing keyword style and adds no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: no capability is duplicated: the change extends the existing _write_run fixture at tests/test_review_acceptance_promotes.py:154-196 rather than adding a second run builder, and a search of tests/helpers and reckon/crew for a role-parameterised run record found only this helper.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-acceptance-promotes.html:13 non-blocking: the fragment says \"its harness asserts the role on the pointer the way it already asserted the node\", but the head test file contains no such assertion (grep of wantonly 'assert' beside 'role' finds none in tests/test_review_acceptance_promotes.py), and _write_run only writes the role into the pointer and its node, so the evidence overstates a guard the change does not add.\nFINDING manifest.md:13 non-blocking: the recorded gate command carries no env -u SLURM_JOB_ID and the log header at scoped-gate-1795092264844874747.log:4 does not name the all_debug partition, so the done_when's job condition is claimed by the receipt rather than evidenced by the command a shell was handed.\nFINDING manifest.md:23 non-blocking: the after_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed test file, so its 0-of-58 failure delta is uninformative about this change and the recorded added_failure_count of 0 rests on the base-arm/head-gate pair instead.\n",
+  "review_run_id": "r-20261119T124933432779-review-of-qwnw-red-file-review-acceptance-promotes-2b717faea985",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "2b717faea985021ad9465af9adf2af31bc211d9a",
+  "reviewed_run_id": "r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T124933432779-review-of-qwnw-red-file-review-acceptance-promotes-2b717faea985"
+  },
+  "reviewer_run_id": "r-20261119T124933432779-review-of-qwnw-red-file-review-acceptance-promotes-2b717faea985",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:28:53.007782+00:00",
+  "total": 109
+}
