@@ -110,7 +110,9 @@ def test_a_figure_its_log_never_recorded_is_reported(tmp_path: Path) -> None:
 
     failures = reconcile(fragment, manifest)
 
-    assert any(BASE_SUMMARY in failure for failure in failures)
+    assert any(
+        "quotes no" in failure and BASE_SUMMARY in failure for failure in failures
+    )
 
 
 def test_a_figure_far_from_its_revision_is_reported(tmp_path: Path) -> None:

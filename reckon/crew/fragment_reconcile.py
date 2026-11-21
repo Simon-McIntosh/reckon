@@ -7,9 +7,9 @@ from a superseded arm, an attribution no log line carried. The comparison
 therefore runs inside ``crew check --manifest``, which reads the node's own
 fragment and the manifest beside it while the worker still holds the turn.
 
-Both facts it compares are read through the recognisers this repository
-already owns, so the module holds no second pattern that could drift from the
-audit that later reads the same log:
+Every fact it compares is read through the reader this repository already
+owns, so the module holds no second pattern that could drift from the audit
+that later reads the same log:
 
 * the result line is :func:`reckon.crew.review.pytest_summary_line`, which
   the gate's own receipt counts failures from;
