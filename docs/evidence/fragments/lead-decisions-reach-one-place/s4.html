@@ -155,4 +155,24 @@ environment is refused by the run-scoped write guard:
 run_scoped_write</code> while <code>RECKON_RUN_ID</code> is set. The rehearsal
 clears that variable for the child process; the presenting session the skill
 describes is a lead's session, which carries no run id.</p>
+<h3 id="ldop-one-session-presents-the-decisions-as-choices-repair">The review's five findings, each reverted in turn</h3>
+<p>The review of the presenting path found one naming rule copied twice, a
+record filed away from the path the plan links, an unasserted question and
+context, a CLI test that passed on an erroring exit, and an unlocked claim. Each
+repair was reverted in its own copy of the tree and the check that names it run
+against the copy: five controls, five failures. The claim-lock control was run
+twelve times because a race is not proven by one run; it failed every time. The
+whole test file is green with the lock in place.</p>
+<pre># measure/controls/controls.json
+naming        test_one_rule_names_every_file_the_presenting_path_writes        EXIT=1
+              assert not True — lead_presentation carries its own hashlib again
+record-path   test_the_rehearsal_record_is_at_the_path_the_done_when_names     EXIT=1
+              s4.html is_file() is False
+context       test_ready_choices_precede_plan_block_ones_with_absent_fields    EXIT=1
+              KeyError: 'context'
+present-exit  test_the_present_verb_prints_the_choice_set                      EXIT=1
+              the presentation raises instead of returning its set
+claim-lock    tests/test_one_session_presents_the_decisions_as_choices.py      EXIT=1 x 12
+              the unlocked read-then-write leaves two presenters: 1 failed, 6 passed
+</pre>
 </section>
