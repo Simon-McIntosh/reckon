@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:_launch_dispatch",
+    "reckon/crew/admission/launching.py:_launch_queued",
+    "reckon/crew/dispatch_sessions.py:resume_plan",
+    "reckon/crew/dispatch_sessions.py:change_lane",
+    "reckon/_backends.py:launch_plan",
+    "reckon/crew/worker_behaviour.py:compose_worker_behaviour"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:12:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 1633,
+      "severity": "non-blocking",
+      "text": "_recorded_role re-implements the role-from-record read that reckon/crew/recovery_watch.py:1003 (_pointer_role, re-exported as reckon.crew.recovery._pointer_role) already owns and that dispatch_sessions.py:1612 states in the same module; it duplicates rather than extends the owner and could be _pointer_role(record) or IMPLEMENT_ROLE."
+    },
+    {
+      "file": "tests/test_a_launch_records_its_nodes_role.py",
+      "line": 244,
+      "severity": "non-blocking",
+      "text": "The three implement-role cases assert a value equal to launch_plan's own default, so they stay green under the recorded mutation (3 failed, 3 passed) and cannot catch a call site that stops threading the role for implement nodes; only the three review cases discriminate the regression."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the direct dispatch, the queued admission launch, the resume and the lane change reach the change through launch_plan.",
+    "diff": "commit 64460aa966 adds the role dimension and the three call-site arguments, and commit 476ffa0bcee adds the evidence fragment; no unrelated change is present.",
+    "done_when": "the done_when names tests/test_a_launch_records_its_nodes_role.py with six cases (review and implement on direct, queued and resume routes); the file carries exactly those six and the manifest records its run.",
+    "goal": "the goal is that a launch records the role its node was dispatched for; reckon/crew/worker_behaviour.py:64 adds the role to the recorded treatment and all three launch routes pass it.",
+    "manifest": "the manifest reads complete and records the gate command, the base and after arms, the negative control and 0 added failures.",
+    "write_paths": "the manifest declares the change in dispatch_sessions.py, dispatching/launch.py, worker_behaviour.py, the new test file and the evidence fragment, all inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "the recorded negative control turns the three review cases red with the call-site role removed, which is the regression the change guards; the implement cases stay green under that mutation.",
+    "evidence": "tests/test_a_launch_records_its_nodes_role.py drives the direct, queued-admission and resume routes and the manifest records its 6 passed at head plus the scoped gate's 64 passed.",
+    "fit": "the change follows the module's existing idiom of one small record-reading helper beside _recorded_task_node and a recorded dimension beside the others at worker_behaviour.py:59.",
+    "goal_fidelity": "reckon/crew/worker_behaviour.py:64 records the role and reckon/crew/dispatching/launch.py:766 plus dispatch_sessions.py:1502,1640 pass it on all three launch routes, which is what the goal asks.",
+    "reuse": "reckon/crew/recovery_watch.py:1003 already owns reading a run's dispatch role and dispatch_sessions.py:1612 states the same expression, so _recorded_role forks a mechanism the repository owns.",
+    "scope_discipline": "the five changed paths all lie inside the declared write paths, and the diff carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a launch records the role its node was dispatched for; reckon/crew/worker_behaviour.py:64 adds the role to the recorded treatment and reckon/crew/dispatching/launch.py:766 passes node.role on the direct and queued route.\nVERDICT done_when: the done_when names tests/test_a_launch_records_its_nodes_role.py; the file carries six cases covering review and implement on direct, queued and resume routes and the manifest records 6 passed.\nVERDICT write_paths: the manifest declares dispatch_sessions.py, dispatching/launch.py, worker_behaviour.py, the test file and the evidence fragment, and every diff path is inside those declared paths.\nVERDICT manifest: read; it records the scoped gate, the base and after arms, the negative control and zero added failures.\nVERDICT diff: read commit by commit from 65c0479b148e to 476ffa0bcee; five files, 447 insertions, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatching/launch.py:_launch_dispatch, reckon/crew/admission/launching.py:_launch_queued, reckon/crew/dispatch_sessions.py:resume_plan, reckon/crew/dispatch_sessions.py:change_lane, reckon/_backends.py:launch_plan, reckon/crew/worker_behaviour.py:compose_worker_behaviour",
+  "review_run_id": "r-20261121T071155037355-review-of-wlsr-a-launch-records-its-nodes-role-476ffa0bce14",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "476ffa0bce14a1dc34496631785d197f06215911",
+  "reviewed_run_id": "r-20261121T064816707136-wlsr-a-launch-records-its-nodes-role",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T07:22:31.259810+00:00",
+  "total": 100
+}
