@@ -60,6 +60,7 @@ from reckon.crew.node import (
     _claim_commit_answer,
     _git_answer,
     _integration_ref_revision,
+    claim_repository,
     parse_duration,
 )
 from reckon.crew.open_run_index import operational_read
@@ -2953,6 +2954,28 @@ def _review_duty_item(
     return item
 
 
+def _refused_head_is_landed(
+    pointer: Mapping[str, Any], head: str, *, now: datetime
+) -> bool:
+    """Whether a run's tree is carrying the head its landing was refused at.
+
+    The answer is the departure reader's own ancestry probe: a head the primary
+    branch reaches is a landing that has finished, whatever a refusal recorded
+    against it still says. A checkout that cannot be resolved, a head the branch
+    cannot be asked about, or an unreadable branch reads as unlanded, because a
+    refusal withdrawn on a broken probe would hide work a coordinator still owes.
+    """
+    if not head:
+        return False
+    checkout = claim_repository(pointer)
+    if checkout is None:
+        return False
+    return (
+        recovery_classification._head_on_primary_branch(checkout, head, now.timestamp())
+        is True
+    )
+
+
 def _review_duty_detail(
     project: str,
     row: Mapping[str, Any],
@@ -3086,6 +3109,11 @@ def _review_duty_detail(
         and recovery.same_revision(str(landing.get("head") or ""), resumed_head)
         and str(landing.get("guard") or "").strip()
     ):
+        if _refused_head_is_landed(pointer, resumed_head, now=now):
+            # The refusal describes a merge the primary branch has since taken.
+            # A duty left standing would spend a coordinator's repair on
+            # evidence for a revision nothing is waiting for.
+            return None
         item = _live_item(row, kind="landing-refused", now=now)
         item["head"] = resumed_head
         item["reason"] = f"automatic landing refused: {landing['guard']}"
