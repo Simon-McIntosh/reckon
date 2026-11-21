@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -286,6 +286,9 @@
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261121T032853535816-review-of-wlsr-a-live-reading-with-no-process-is-settled-3caa472dfd14" data-who="reckon-build" data-when="2026-11-21T03:36:55.578Z">
     <div class="r-comment-body"><p>Review of r-20261121T010307921886-wlsr-a-live-reading-with-no-process-is-settled over the commits it gained since the earlier review (5d918444bb..3caa472dfd) — the step query now names the run's step (`--name=&lt;run id&gt;`) so the shared scheduler reader's one-line answer is about this run alone; all six dimensions scored in 12..20, no blocking finding, two non-blocking findings (a step-enumeration duplication carried forward from the earlier review, and a revision-less head-gate sentence in the evidence fragment).</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261121T010307921886-wlsr-a-live-reading-with-no-process-is-settled" data-who="reckon-build" data-when="2026-11-21T03:28:00Z">
+    <div class="r-comment-body"><p>A pointer in phase `starting` or `working` whose launch step the scheduler no longer lists, and whose stream has not grown for longer than the new `settle.quiet_after_hours` flight setting (6 h default), is classified `interrupted` — the phase that already exists for a worker that ended without delivering — with the measured evidence carried as `settled` on the row (step state, quiet seconds, bound, stream path), so its owner is asked to act once; any positive liveness reading, a step the scheduler still lists, an unreadable scheduler, or a run younger than the bound leaves the pointer untouched. The step is asked of the scheduler by a query naming the run (`squeue --steps --jobs &lt;job&gt; --name=&lt;run id&gt;`), because the shared scheduler reader answers only the last line of its output and an unfiltered listing of a shared reservation would lose this run&#x27;s step whenever another run&#x27;s step printed after it; the fixture now models the scheduler at the probe, answers the whole listing and honours `--name`, so the truncation is exercised rather than hidden.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261121T025809124135-review-of-wlsr-a-landed-head-is-not-landed-again-cf36afbea470" data-who="reckon-build" data-when="2026-11-21T03:10:15.259Z">
     <div class="r-comment-body"><p>Review of r-20261121T010311434223-wlsr-a-landed-head-is-not-landed-again at cf36afbea4</p></div>
 </div>
@@ -299,7 +302,7 @@
     <div class="r-comment-body"><p>Review of r-20261121T010317352713-wlsr-a-refused-lane-change-leaves-the-pointer at head b1bbf77f from base ff3bb24bcf: status parsed, scores goal_fidelity 18 evidence 19 scope_discipline 19 durability 17 fit 15 reuse 17, added_failure_count 0, two non-blocking findings (a dead quoting constant at test file line 43 carried over from the prior review, and a receipt-count attribution weakness at dispatch_sessions.py:1841); the prior blocking finding is closed.</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261121T010317352713-wlsr-a-refused-lane-change-leaves-the-pointer" data-who="reckon-build" data-when="2026-11-21T03:21:02Z">
-    <div class="r-comment-body"><p>A lane change whose spawn returns a pid but starts no worker leaves the run&#x27;s backend, attempt, agent, dialect and lane-change history exactly as the source attempt left them, and returns ok=false with a reason; the no-worker fact is read from the spawn itself (process gone, stream never begun) as well as from the launch-failure receipt, so a second attempt on a run already in the launch-failed phase is refused too. Gate 4 passed; the pre-repair head fails the second-attempt case with the backend moved to &#x27;codex&#x27;.</p></div>
+    <div class="r-comment-body"><p>A lane change whose spawn returns a pid but starts no worker leaves the run's backend, attempt, agent, dialect and lane-change history exactly as the source attempt left them, and returns ok=false with a reason; the no-worker fact is read from the spawn itself (process gone, stream never begun) as well as from the launch-failure receipt, so a second attempt on a run already in the launch-failed phase is refused too. Gate 4 passed; the pre-repair head fails the second-attempt case with the backend moved to 'codex'.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819" data-who="reckon-build" data-when="2026-11-21T02:32:46.987Z">
     <div class="r-comment-body"><p>review verdict for r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole stored parsed at review-records/r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole.at-26582d83f81960a3b5b62a288aefbde07f928905.json; total 108, no blocking findings, two non-blocking findings recorded.</p></div>
