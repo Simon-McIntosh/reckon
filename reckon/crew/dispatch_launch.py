@@ -1179,6 +1179,17 @@ def _attribute_omp_requests(
     return True
 
 
+def coordinator_session(record: Mapping[str, Any]) -> str:
+    """The coordinator session a run's record names, or ``""`` when it names none.
+
+    The one read of that key: the launch takes the session from the pointer it
+    read, and every caller that reaches it — a first launch, a resume, a lane
+    change — goes through here, so a change to where the record keeps it lands
+    once rather than in each composed environment.
+    """
+    return str(record.get("session") or "")
+
+
 def _worker_runtime_environment(
     environment: Mapping[str, str] | None,
     *,
@@ -4375,7 +4386,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         run_id=str(spec["run_id"]),
         manifest_path=_recorded_manifest_path(record, str(spec["run_id"])),
         attempt_started_at=_utc_now(),
-        coordinator_session=str(record.get("session") or ""),
+        coordinator_session=coordinator_session(record),
         claude_headers=str(plan.get("dialect") or "") == "claude",
         placed_step=step_placed,
         omp_headers=str(plan.get("dialect") or "") == "omp",

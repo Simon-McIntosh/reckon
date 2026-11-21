@@ -1522,7 +1522,7 @@ def resume_plan(
         run_id=run_id,
         manifest_path=manifest_path,
         attempt_started_at=attempt_started_at,
-        coordinator_session=str(record.get("session") or ""),
+        coordinator_session=coordinator_session(record),
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
@@ -2095,7 +2095,7 @@ def change_lane(
         run_id=run_id,
         manifest_path=manifest_path,
         attempt_started_at=lane_change["changed_at"],
-        coordinator_session=str(record.get("session") or ""),
+        coordinator_session=coordinator_session(record),
         claude_headers=False,
     )
     target_plan: _backends.LaunchPlan | None = None
@@ -2135,7 +2135,7 @@ def change_lane(
             run_id=run_id,
             manifest_path=manifest_path,
             attempt_started_at=lane_change["changed_at"],
-            coordinator_session=str(record.get("session") or ""),
+            coordinator_session=coordinator_session(record),
         )
     preview: dict[str, Any] = {
         "run_id": run_id,
@@ -2912,6 +2912,7 @@ from .dispatch_launch import (  # noqa: E402
     _stream_began,
     _worker_runtime_environment,
     _worker_runtime_plan,
+    coordinator_session,
     preflight_launch_command,
     resolve_backend_placement,
     resolve_launch_executable,
