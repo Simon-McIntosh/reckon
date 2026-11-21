@@ -103,21 +103,31 @@ def _one_lane(config: dict) -> bool:
     return len(identities) == 1
 
 
-def _gated_identically(config: dict, lane: str) -> bool:
+def _gated_identically(config: dict, drained: str) -> bool:
+    """Whether every queued backend is admitted by a drainer started for one."""
     verdicts = {
-        name: gate_admits_request(name, lane, config) for name in LOCAL_BACKENDS
+        name: gate_admits_request(name, drained, config) for name in LOCAL_BACKENDS
     }
-    return len(set(verdicts.values())) == 1 and all(verdicts.values())
+    return all(verdicts.values())
 
 
 @pytest.mark.parametrize("configured", ["clive", "omp-local"])
 def test_the_gate_admits_either_backend_of_one_lane_identically(
     configured: str,
 ) -> None:
-    """A queue holding one request per backend is gated the same either way."""
+    """A drainer started under one name serves a queue holding either name.
+
+    The drainer was started for whichever backend was current when it was
+    declared; the configuration's local backend then moved. The queue holds a
+    request under each name, and both are admitted and gated the same before
+    and after the move.
+    """
+    drained = next(name for name in LOCAL_BACKENDS if name != configured)
     config = {"local_backend": configured, "backends": dict(LOCAL_BACKENDS)}
+    moved = {"local_backend": drained, "backends": dict(LOCAL_BACKENDS)}
     assert _one_lane(config)
-    assert _gated_identically(config, configured)
+    assert _gated_identically(config, drained)
+    assert _gated_identically(moved, drained) == _gated_identically(config, drained)
 
 
 def test_substituting_a_backend_name_for_the_lane_splits_it() -> None:
@@ -129,6 +139,8 @@ def test_substituting_a_backend_name_for_the_lane_splits_it() -> None:
     }
     config = {"local_backend": "clive", "backends": name_only}
     assert not _one_lane(config)
+    drained = "omp-local"
+    assert not _gated_identically(config, drained)
 
 
 def test_a_shared_lane_document_is_one_lane_identity(tmp_path: Path) -> None:

@@ -7,7 +7,6 @@ from collections import deque
 
 from .. import lost_sessions as _lost_sessions
 from .. import queue_order
-from ..worker_behaviour import lane_identity
 from reckon.crew.open_run_index import operational_read
 
 from . import holds as _holds
@@ -740,9 +739,8 @@ def gate_admits_request(backend: str, lane: str, config: Mapping[str, Any]) -> b
     """
     if backend == lane:
         return True
-    if lane_identity(backend, None, config) == lane_identity(lane, None, config):
-        return True
-    # The installed local drainer also admits every metered route.
+    # The drainer that serves the local lane reads the lane document, so two
+    # backends publishing one document are one lane whatever they are called.
     return drainer_serves_the_local_lane(lane, config)
 
 
