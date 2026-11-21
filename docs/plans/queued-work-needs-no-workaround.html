@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1139">
+<meta name="plan-version" content="1140">
 <meta name="plan-modified" content="2026-11-21">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3421,6 +3421,9 @@
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded" data-who="reckon-build" data-when="2026-11-19T06:47:27Z">
     <div class="r-comment-body"><p>Made the promotion citation guard accept the pointer's `recorded_merge` as the run's landing commit (written only after `crew record-merge` verified the merge carries the reviewed head and sits on the local primary branch), so a hand-merged run is recorded instead of refused; tests/test_a_hand_merged_run_is_recorded.py passes 2/2 with EXIT=0 at merged head a1d5d940, where the base arm failed test_a_hand_merged_run_is_recorded_on_the_branch.</p></div>
 </div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T054330385921-qwnw-red-file-skill-contracts" data-who="reckon-build" data-when="2026-11-19T01:33:46Z">
+    <div class="r-comment-body"><p>tests/test_skill_contracts.py passes 73 of 73 on main 792a8970 plus the node&#x27;s four commits (merged f4c8a51b, gate EXIT=0), against 1 failed and 72 passed at base 42fe90d0: the ship skill now names the crew verbs it never named (decision record, decision answer, declare-gate, hold, release, promotions, record-merge) and the test&#x27;s parity map carries the matching entries, with crew reload exempted because it is a service-control request no orchestrator calls.</p></div>
+</div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
 </div>
@@ -3461,7 +3464,7 @@
     <div class="r-comment-body"><p>Stored a parsed independent review of r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox over c3119c4a5c6f1a29f160a59c57ce98e3efd381bb..d69a83d45cc7d0a8a381840e4203d1559e518f0b at both declared review-records paths: scores goal_fidelity 16, evidence 15, scope_discipline 20, durability 17, fit 18, reuse 14, added_failure_count 0 derived from the reviewed run's own baseline_suite (58 passed, failure_count 0) and after_suite (61 passed, failure_count 0) logs, and three non-blocking findings on the evidence fragment's quoted refusal text, its negative-control bullet misnaming the failing test, and the new absent-source scan's duplicated and divergent bind-option table.</p></div>
 </div>
 <div class="r-comment" data-section="s33" data-id="c-run-r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox" data-who="reckon-build" data-when="2026-11-19T20:10:51Z">
-    <div class="r-comment-body"><p>A submitted job&#x27;s carried fence now names the bind over the node&#x27;s temp root as temp_overlay, logs which temp directory stood in for it, and refuses any writable bind source the composing host did not hand as a directory, naming the absent path and the node under status 126; a one-test pytest gate submitted from this fenced worker to all_debug ran on node 98dci4-clu-3141.iter.org with EXIT=0, at an earlier branch head whose content d69a83d45c carries, and the base form of the source check fails the same sandboxed command with bubblewrap&#x27;s own bind error, 1 failed of 2.</p></div>
+    <div class="r-comment-body"><p>A submitted job's carried fence now names the bind over the node's temp root as temp_overlay, logs which temp directory stood in for it, and refuses any writable bind source the composing host did not hand as a directory, naming the absent path and the node under status 126; a one-test pytest gate submitted from this fenced worker to all_debug ran on node 98dci4-clu-3141.iter.org with EXIT=0, at an earlier branch head whose content d69a83d45c carries, and the base form of the source check fails the same sandboxed command with bubblewrap's own bind error, 1 failed of 2.</p></div>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261119T204435795097-review-of-qwnw-a-promoted-run-settles-as-promoted-c82bf60013d1" data-who="reckon-build" data-when="2026-11-19T21:07:11.609Z">
     <div class="r-comment-body"><p>Independent review of r-20261119T184800234721-qwnw-a-promoted-run-settles-as-promoted at 28fbf2bc..c82bf600 scored goal_fidelity 18, evidence 14, scope_discipline 19, durability 14, fit 16, reuse 5, added_failure_count 0, with four non-blocking findings (missing-file and vanished-pointer arms unexercised; raising-site helper duplicates reckon/crew/admission/attempts.py:36; _mark_pointer widened to every CrewError; _outcome_already_recorded can itself raise inside the except handler).</p></div>
