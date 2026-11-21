@@ -1522,11 +1522,19 @@ def labelled_suite_pairs(
     one arm is still a pair to judge and the absent side is what the
     completeness check names. The unlabelled ``baseline_suite``/``after_suite``
     fields carry no label and are read by the ordinary path.
+
+    A suffixed key is a label only where its value is a suite record. Manifests
+    also carry plain annotations beside their arms under the same prefix — a
+    result sentence, a log path, a note — and read as labels each of those is
+    a pair with nothing on either side, which refused the landing of a run
+    whose unlabelled arms were complete.
     """
     if not isinstance(manifest, Mapping):
         return []
     labels: set[str] = set()
-    for key in manifest:
+    for key, value in manifest.items():
+        if not isinstance(value, Mapping):
+            continue
         for prefix in _LABELLED_SUITE_PREFIXES:
             if key.startswith(prefix) and key != prefix:
                 labels.add(key[len(prefix) :])
