@@ -362,3 +362,52 @@ def test_a_figure_record_with_an_item_map_reads_as_before() -> None:
     missing = review_module.FIGURE_REVIEW_ITEMS[-1]
     incomplete = _figure_round(missing_item=missing)
     assert _review_missing_measures(incomplete) == [missing]
+
+
+def test_the_figure_lines_are_read_by_the_one_rubric_grammar() -> None:
+    """The figure lines read the module's single compiled RUBRIC pattern."""
+    assert not hasattr(review_module, "FIGURE_LINE_RE")
+    body = {"rubric_lines": ["RUBRIC   Legibility  :  pass - spacing tolerated"]}
+
+    assert review_module.figure_line_verdicts(body) == {
+        "legibility": "pass - spacing tolerated"
+    }
+
+
+def test_a_verdict_line_does_not_overwrite_a_recorded_item_verdict() -> None:
+    """A line adds no verdict to an item the record already answers."""
+    body = _figure_round()
+    body["rubric_lines"] = ["RUBRIC legibility: defect - a contradictory line"]
+
+    answers, _shortfalls = review_module.figure_rubric_verdicts(body)
+
+    assert answers["legibility"] == "the rendered figure passes this measure"
+    assert _review_missing_measures(body) == []
+
+
+def test_a_verdict_line_answers_an_item_the_map_leaves_blank() -> None:
+    """A blank map entry is not an answer, so the line's verdict is read."""
+    body = _figure_round()
+    body["rubric_items"]["contrast"] = "   "
+    body["rubric_lines"] = ["RUBRIC Contrast: pass - read as near-black on white"]
+
+    assert _review_missing_measures(body) == []
+
+
+def test_a_per_figure_record_answered_in_lines_is_complete() -> None:
+    """A line answers its item for every figure the record names."""
+    missing = review_module.FIGURE_REVIEW_ITEMS[-1]
+    per_figure = dict.fromkeys(
+        review_module.FIGURE_REVIEW_ITEMS, "the rendered figure passes this measure"
+    )
+    per_figure.pop(missing)
+    body = _figure_round()
+    body.pop("rubric_items")
+    body["figures"] = {"a.png": dict(per_figure), "b.png": dict(per_figure)}
+    body["rubric_lines"] = [_verdict_line(missing)]
+
+    answers, shortfalls = review_module.figure_rubric_verdicts(body)
+
+    assert answers.get(missing) == _verdict_line(missing).split(": ", 1)[1]
+    assert shortfalls == []
+    assert _review_missing_measures(body) == []
