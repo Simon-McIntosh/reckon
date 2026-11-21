@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "The reviewed run's baseline_suite (revision 43f48118fa, 58 passed, EXIT=0) and after_suite (revision 7c1d52e4a4, 64 passed, EXIT=0) both record failure_count 0 and failure_ids [], so no failure was added; the two arms differ by exactly the new test file, which does not exist at base.",
+  "call_sites": [
+    "reckon/ledger.py:1805",
+    "reckon/ledger.py:2846",
+    "reckon/ledger.py:2871",
+    "reckon/ledger.py:4584",
+    "reckon/mcp_views.py:1934",
+    "reckon/mcp_views.py:1938",
+    "reckon/velocity.py:823",
+    "reckon/crew/dispatching/preparation.py:143",
+    "reckon/crew/picker/lane_context.py:814",
+    "reckon/crew/review.py:1286",
+    "reckon/crew/promotion_release.py:715",
+    "reckon/crew/recovery_watch.py:3192",
+    "reckon/crew/pending_landing.py:626",
+    "reckon/crew/open_run_index.py:345"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T06:48:18Z",
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": 967,
+      "severity": "non-blocking",
+      "text": "non-blocking: _decode_run_row's docstring calls itself \"the single point a stored row becomes Python, so a caller measuring what a read cost counts rows here\", but run_store.py:486, :1198 and :1953 still merge the durable and detail halves inline, and the node's own test counts rows on run_store.json.loads rather than here; the claim is false and would send a future instrument to a place the module does not route every decode through."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 43f48118fa: 52001750db adds the token-keyed answer with the 158-line test, 251c036af9 adds the 91-line evidence fragment, 7c1d52e4a4 moves the answer cache onto file_memo.bounded_map and adds the cleared-memo test, 49c8d703ca refreshes the fragment with the repair's control.",
+    "done_when": "The done_when names tests/test_an_unchanged_run_store_is_decoded_once.py; the file builds the declared 2,000-row, three-project store (:34-:43), counts decodes through a json.loads stand-in (:63-:74), and asserts the 800-once total (:96), every differently-argued call against a cold-copy read (:122-:126), the re-decode after an update (:141), and mutation isolation (:157), with the cleared-memo case at :171.",
+    "goal": "The goal is to answer a repeated run-store query without decoding rows while the store stands still; reckon/run_store.py:1011 consults a token-keyed answer before opening a connection and :1037-1038 keeps an answer only when the token read after the rows matches the one read before, so four identical project-alpha reads decode 800 rows once in total.",
+    "manifest": "Read; it records status complete, changed_paths of the three files, a scoped gate at 7c1d52e4a4, baseline_suite 58 passed and after_suite 64 passed (both EXIT=0, completed true, failure ids []), and names logs/negative-control-repair-251c036af9.log as the negative control; it records no ruff receipt.",
+    "write_paths": "The declared paths are reckon/run_store.py, the named test file, the evidence fragment and a figures directory; git diff --stat over 43f48118fa..49c8d703ca names exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_run_store_is_decoded_once.py:96 reddens at base with 'assert 3200 == 800', :122-:126 redden if project, run_ids, plan, node or fields leaves the answer key, :157 reddens if a returned record is handed out uncopied, and :171 is shown red at 251c036af9 ('assert 800 == (2 * 800)'); the before/after token re-check at run_store.py:1037 and the 50,000-row skip at :960 have no test.",
+    "evidence": "baseline_suite-1795243385859754312.log (43f48118fa) records '58 passed in 35.94s' and after_suite-1795243462242066573.log (7c1d52e4a4) '64 passed in 36.46s', both ending EXIT=0 and run on a compute node, and logs/negative-control-base.log:17 reads 'assert 3200 == 800' with EXIT=1; the done_when's ruff clause has no receipt in the manifest, though ruff check and ruff format --check are clean on both staged paths at the reviewed head.",
+    "fit": "The module keeps the surrounding style (module-level private helpers beside the reader) and introduces no plan label or ticket reference, but the _decode_run_row docstring at reckon/run_store.py:967 asserts a single decode point the file does not have.",
+    "goal_fidelity": "reckon/run_store.py:1011 returns the held answer before _open_readonly, and :1037 re-reads change_token so a moved store forces a fresh decode.",
+    "reuse": "reckon/run_store.py:923-925 holds the answers in file_memo.bounded_map('stored-row-answers', limit=32), the container reckon/ledger.py:1764-1766 already uses for its decoded histories, so the repair removed the private OrderedDict, lock and eviction loop the earlier review objected to and extends the owner instead of forking it.",
+    "scope_discipline": "git diff --stat 43f48118fa..49c8d703ca lists only reckon/run_store.py (+104 -27), the 171-line test file and the 101-line fragment, all inside the declared write paths, and the figures directory the node declared was left unused rather than filled."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to answer a repeated run-store query without decoding rows while the store stands still; reckon/run_store.py:1011 consults a token-keyed answer before opening a connection and :1037-1038 re-reads the token after the rows, so four identical project-alpha reads decode 800 rows once in total.\nVERDICT done_when: the done_when names tests/test_an_unchanged_run_store_is_decoded_once.py, which builds the declared 2,000-row three-project store and asserts the 800-once total (:96), each differently-argued call against a cold-copy read (:122-:126), the re-decode after a row update (:141) and mutation isolation (:157).\nVERDICT write_paths: declared reckon/run_store.py, the named test file, the evidence fragment and a figures directory; git diff --stat over 43f48118fa..49c8d703ca names exactly the first three.\nVERDICT manifest: read; status complete, changed_paths the three files, scoped gate at 7c1d52e4a4, baseline_suite 58 passed and after_suite 64 passed both EXIT=0 with failure ids [], negative-control log named; no ruff receipt is recorded.\nVERDICT diff: read commit by commit against 43f48118fa; 52001750db adds the answer cache and test, 251c036af9 the fragment, 7c1d52e4a4 moves the cache onto file_memo.bounded_map with its cleared-memo control, 49c8d703ca refreshes the fragment.\nCALL_SITES: reckon/ledger.py:1805, reckon/ledger.py:2846, reckon/ledger.py:2871, reckon/ledger.py:4584, reckon/mcp_views.py:1934, reckon/mcp_views.py:1938, reckon/velocity.py:823, reckon/crew/dispatching/preparation.py:143, reckon/crew/picker/lane_context.py:814, reckon/crew/review.py:1286, reckon/crew/promotion_release.py:715, reckon/crew/recovery_watch.py:3192, reckon/crew/pending_landing.py:626, reckon/crew/open_run_index.py:345\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1011 returns the held answer before _open_readonly and :1037 re-reads change_token so a moved store forces a fresh decode.\nSCORE evidence: 18\nJUSTIFICATION evidence: the matched arms record 58 passed at 43f48118fa and 64 passed at 7c1d52e4a4 with EXIT=0, logs/negative-control-base.log:17 reads 'assert 3200 == 800' with EXIT=1, and the done_when's ruff clause has no receipt though both staged paths are ruff-clean at the reviewed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 43f48118fa..49c8d703ca names only reckon/run_store.py, the test file and the fragment, all inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_unchanged_run_store_is_decoded_once.py:96 reddens at base with 'assert 3200 == 800', :122-:126 redden if any argument leaves the answer key, :157 if an answer is handed out uncopied, and :171 is shown red at 251c036af9, while the token re-check at run_store.py:1037 has no test.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers follow the module's idiom at reckon/run_store.py:923, but the _decode_run_row docstring at :967 claims a single decode point the file does not have.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/run_store.py:923-925 uses file_memo.bounded_map, the container reckon/ledger.py:1764-1766 already holds decoded histories in, so the repair extends the owner rather than forking it.\nFINDING reckon/run_store.py:967 non-blocking: _decode_run_row's docstring calls itself the single point a stored row becomes Python, but run_store.py:486, :1198 and :1953 still merge the durable and detail halves inline and the test counts on json.loads rather than here, so the claim misdirects a future instrument.",
+  "review_run_id": "r-20261121T064644930406-review-of-an-unchanged-run-store-is-decoded-once-49c8d703cac1",
+  "reviewed_base_sha": "43f48118fa076fccb9208cb0f577158e32457e90",
+  "reviewed_head_sha": "49c8d703cac1e6b0845e6bb26afec2382f095782",
+  "reviewed_run_id": "r-20261121T055105546646-an-unchanged-run-store-is-decoded-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:05:00+00:00",
+  "total": 109
+}

@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="557">
+<meta name="plan-version" content="558">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -2008,6 +2008,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s108" data-id="c-run-r-20261121T063100562095-review-of-an-unchanged-run-store-is-decoded-once-251c036af9a9" data-who="reckon-build" data-when="2026-11-21T06:37:47.561Z">
     <div class="r-comment-body"><p>Reviewed r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at 251c036af9 (base 43f48118fa): the answer cache honours the store token and copies every answer out, the five-case test fails at base (assert 3200 == 800) and passes at head, and the one defect is reuse — reckon/run_store.py:922 re-implements reckon/file_memo.py:562 memoized_key rather than extending it.</p></div>
+</div>
+<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T064644930406-review-of-an-unchanged-run-store-is-decoded-once-49c8d703cac1" data-who="reckon-build" data-when="2026-11-21T06:59:30.754Z">
+    <div class="r-comment-body"><p>Review of r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at head 49c8d703ca stores a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 16 and reuse 19, with one non-blocking finding that run_store.py:967 claims a single decode point that :486, :1198 and :1953 contradict, and added_failure_count 0 derived from the run&#x27;s own baseline_suite and after_suite.</p></div>
 </div>
 </section>
 </main>
