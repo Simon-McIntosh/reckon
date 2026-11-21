@@ -426,7 +426,18 @@ def harness_home_files(
         declared = backend.get(HARNESS_HOME_FILES)
         if isinstance(declared, Iterable) and not isinstance(declared, (str, bytes)):
             return [dict(entry) for entry in declared if isinstance(entry, Mapping)]
-    return [dict(entry) for entry in shipped_harness_home_files().get(dialect_name, [])]
+    shipped = shipped_harness_home_files()
+    entries = shipped.get(dialect_name)
+    if entries is None:
+        # A wrapper speaking another harness's interface reads the same files:
+        # resolve the interface it declares rather than leaving it unseeded and
+        # silently losing the hooks and instruction files the harness needs.
+        from reckon._backends import _DIALECTS
+
+        dialect = _DIALECTS.get(dialect_name)
+        interface = getattr(dialect, "home_interface", None)
+        entries = shipped.get(interface) if interface else []
+    return [dict(entry) for entry in entries]
 
 
 def shipped_harness_home_adjacent_files() -> dict[str, list[dict[str, Any]]]:
@@ -457,10 +468,15 @@ def harness_home_adjacent_files(dialect_name: str) -> list[dict[str, Any]]:
     per-backend: the file it names is harness state the harness itself writes,
     so a backend has nothing to override.
     """
-    return [
-        dict(entry)
-        for entry in shipped_harness_home_adjacent_files().get(dialect_name, [])
-    ]
+    shipped = shipped_harness_home_adjacent_files()
+    entries = shipped.get(dialect_name)
+    if entries is None:
+        from reckon._backends import _DIALECTS
+
+        dialect = _DIALECTS.get(dialect_name)
+        interface = getattr(dialect, "home_interface", None)
+        entries = shipped.get(interface) if interface else []
+    return [dict(entry) for entry in entries]
 
 
 def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
