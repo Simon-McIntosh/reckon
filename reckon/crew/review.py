@@ -2582,6 +2582,30 @@ RESULT_COUNT_RE = re.compile(
 _SUMMARY_FAILURE_FIGURE_RE = re.compile(r"\b(\d+)\s+(?:failed|error|errors)\b")
 
 
+def pytest_summary_line(log_text: str) -> str | None:
+    """The text's last pytest result-count line, stripped, or ``None``.
+
+    A pytest run prints one result-count line at its end, and a log holding two
+    runs prints one per run, so the last is the one whose exit status a capture
+    also records at the tail. A failure line is skipped even when its reason
+    quotes a count, because a ``FAILED`` line names a test rather than
+    summarising a run; the ``====`` decoration a full pytest run wraps the line
+    in is stripped so a reader compares the figure rather than the banner.
+
+    ``None`` means the text carries no result-count line at all — a ctest log,
+    or a pytest run that stopped before its summary.
+    """
+    measured: str | None = None
+    for raw in log_text.splitlines():
+        line = raw.strip().strip("=").strip()
+        if _GATE_FAILURE_RE.match(line) or "::" in line:
+            continue
+        if RESULT_COUNT_RE.search(line) is None:
+            continue
+        measured = line
+    return measured
+
+
 def pytest_summary_failure_count(log_text: str) -> int | None:
     """The failed-plus-errored figure of the text's last pytest summary line.
 
@@ -2596,17 +2620,10 @@ def pytest_summary_failure_count(log_text: str) -> int | None:
     rather than zero. A run that reported nothing to run reads zero, because
     ``no tests ran`` is a summary stating exactly that.
     """
-    measured: int | None = None
-    for raw in log_text.splitlines():
-        line = raw.strip()
-        if _GATE_FAILURE_RE.match(line) or "::" in line:
-            continue
-        if RESULT_COUNT_RE.search(line) is None:
-            continue
-        measured = sum(
-            int(figure) for figure in _SUMMARY_FAILURE_FIGURE_RE.findall(line)
-        )
-    return measured
+    line = pytest_summary_line(log_text)
+    if line is None:
+        return None
+    return sum(int(figure) for figure in _SUMMARY_FAILURE_FIGURE_RE.findall(line))
 
 
 class FailureIdMatch(NamedTuple):

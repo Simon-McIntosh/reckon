@@ -11,12 +11,14 @@ Both facts it compares are read through the recognisers this repository
 already owns, so the module holds no second pattern that could drift from the
 audit that later reads the same log:
 
-* the revision is :func:`reckon.crew.review.recorded_log_revision`, which reads
-  the label the fleet's capture scripts write, in any case and at any length a
-  manifest can be compared against;
-* the result line is the last line matching
-  :data:`reckon.crew.review.RESULT_COUNT_RE`, the same recogniser the gate's
-  own receipt reads.
+* the result line is :func:`reckon.crew.review.pytest_summary_line`, which
+  the gate's own receipt counts failures from;
+* the revision is the gate log audit's readers,
+  :func:`reckon.crew.reports._first_recorded_line` and
+  :data:`reckon.crew.reports._GATE_LOG_REVISION`, which skip the fence's launch
+  notice and read the label the fleet's capture scripts write as written;
+* the arms are the typed objects :func:`reckon.crew.reports.parse_manifest`
+  already returns, so a manifest written as JSON is read like any other.
 
 The check has three parts, and each names the record it could not reconcile:
 
@@ -29,17 +31,18 @@ The check has three parts, and each names the record it could not reconcile:
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import dataclass
 from pathlib import Path
 
 from reckon.crew.reports import (
     _GATE_LOG_REVISION,
     _RECORDED_REVISION,
+    ManifestParseError,
     _first_recorded_line,
     _names_the_same_revision,
+    parse_manifest,
 )
-from reckon.crew.review import RESULT_COUNT_RE
+from reckon.crew.review import pytest_summary_line
 
 #: How far a quoted result may sit from the revision it belongs to.
 NEARBY_CHARACTERS = 2000
@@ -58,24 +61,6 @@ class LogRecord:
     summary: str
 
 
-def result_line(text: str) -> str | None:
-    """The last runner result line in a log, or ``None`` when it states none.
-
-    A pytest run prints one result line at its end, so the last is the one the
-    capture's exit status belongs to. A line naming a test (``FAILED …::…``) is
-    skipped even when its reason quotes a count, which is the rule the gate's
-    own receipt reads by.
-    """
-    found = None
-    for raw in text.splitlines():
-        line = raw.strip().strip("=").strip()
-        if not line or "::" in line or line.startswith(("FAILED", "ERROR")):
-            continue
-        if RESULT_COUNT_RE.search(line):
-            found = line
-    return found
-
-
 def log_record(path: Path) -> LogRecord:
     """Read one log's revision and result, or say which fact it lacks.
 
@@ -87,7 +72,7 @@ def log_record(path: Path) -> LogRecord:
     named = _GATE_LOG_REVISION.search(_first_recorded_line(text))
     if named is None:
         raise ValueError(f"{path} names no revision on its first line")
-    summary = result_line(text)
+    summary = pytest_summary_line(text)
     if summary is None:
         raise ValueError(f"{path} names no runner result line")
     return LogRecord(path=path, revision=named.group(1), summary=summary)
@@ -101,43 +86,44 @@ def _stated_revision(flat: str, revision: str) -> str | None:
     return None
 
 
-def manifest_field(manifest: str, key: str) -> str | None:
-    """The value of one manifest line, or None when the line is absent."""
-    for line in manifest.splitlines():
-        if line.startswith(f"{key}:"):
-            return line.split(":", 1)[1].strip()
-    return None
-
-
-def arm_fields(manifest: str, key: str) -> dict:
-    """One suite arm's record, refused rather than guessed when malformed."""
-    value = manifest_field(manifest, key)
-    if value is None:
-        raise ManifestUnreadableError(f"the manifest carries no {key} line")
+def _parsed(manifest: str) -> dict:
+    """The manifest's typed fields, refused rather than guessed when unreadable."""
     try:
-        arm = json.loads(value)
-    except json.JSONDecodeError as error:
+        return parse_manifest(manifest)
+    except ManifestParseError as error:
         raise ManifestUnreadableError(
-            f"the manifest's {key} is not one JSON object: {error.msg} "
-            f"(character {error.pos})"
+            f"the manifest could not be read: {error}"
         ) from error
-    if not isinstance(arm, dict) or not isinstance(arm.get("log_path"), str):
-        raise ManifestUnreadableError(f"the manifest's {key} names no log_path")
-    return arm
+
+
+def arms(manifest: str) -> list[dict]:
+    """Every suite arm the manifest records, each refused if it is not an object."""
+    fields = _parsed(manifest)
+    found: list[dict] = []
+    for key in ("baseline_suite", "after_suite"):
+        value = fields.get(key)
+        if value in (None, "", {}):
+            continue
+        if not isinstance(value, dict):
+            raise ManifestUnreadableError(
+                f"the manifest's {key} is not one JSON object"
+            )
+        found.append(value)
+    return found
 
 
 def cited_log_paths(manifest: str) -> list[Path]:
     """Every log the manifest's arms and test log list name, in order."""
     paths: list[Path] = [
-        Path(arm_fields(manifest, key)["log_path"])
-        for key in ("baseline_suite", "after_suite")
-        if manifest_field(manifest, key) is not None
+        Path(arm["log_path"]) for arm in arms(manifest) if arm.get("log_path")
     ]
-    listing = (manifest_field(manifest, "test_logs") or "").split(",")
+    listing = _parsed(manifest).get("test_logs") or []
+    if isinstance(listing, str):
+        listing = listing.split(",")
     paths.extend(
         Path(entry.strip())
         for entry in listing
-        if entry.strip() and Path(entry.strip()).suffix in {".log", ".txt"}
+        if str(entry).strip() and Path(str(entry).strip()).suffix in {".log", ".txt"}
     )
     seen: list[Path] = []
     for path in paths:
