@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s18">
+  <meta name="plan-recorded-at" content="2026-11-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-node" content="anchored-backends-s18">
+  <title>The backend and capability layers ignore the retired edit flag | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="anchored-backends-s18-landing" data-node="anchored-backends-s18" data-reckon="landed" data-when="2026-11-21">
+  <h2>No launch resolves the retired edit-tool flag any more</h2>
+  <p>Launch composition in <code>reckon/_backends.py</code> no longer reads the
+  per-backend flag that used to request the line-anchored MCP server. A codex
+  launch therefore declares no such server on its <code>-c</code> argv, a
+  Claude-shaped launch no longer passes <code>--disallowedTools Edit
+  MultiEdit</code>, and <code>LaunchPlan</code> carries no anchored treatment
+  fields, so nothing records a decision the launch no longer makes. The
+  composition also stops calling the prompt composer for the tool's
+  instruction: the dispatch layer still composes and strips that block from the
+  backend declaration, and with no launch seeding the server it has nothing to
+  add. The codex observation keeps counting the harness's own
+  <code>file_change</code> items and drops its per-tool breakdown for a server
+  no launch declares.</p>
+  <p>In <code>reckon/capabilities.py</code> the reader that treated a completed
+  MCP edit call as the worker's first write target is gone with it, since every
+  write a worker makes now arrives as the harness reports it and no MCP write
+  tool is offered.</p>
+  <p><strong>Measure. Substituted suite, both arms on <code>all_debug</code>,
+  one arm at a time:</strong> <code>PYTHONPATH=. .venv/bin/python -m pytest -p
+  no:cacheprovider -q tests/test_picker_local_backend.py
+  tests/test_queue_edit_keeps_the_named_backend.py
+  tests/test_worker_mcp_allowlist.py tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code> read 103
+  passed at base <code>1666d19f77</code> and 103 passed at head
+  <code>78fa4487cc</code>, zero added failures. The scoped gate over the same
+  files at head read the same 103 passed, <code>EXIT=0</code>.</p>
+  <p><strong>The key is gone from the changed paths.</strong>
+  <code>grep -rn 'anchored_edit\|anchored-edit'</code> over the five changed
+  paths returns no line at head (<code>grep-exit=1</code>), while the same pattern at
+  base matches 46 times: 38 in <code>_backends.py</code>, 4 in
+  <code>capabilities.py</code>, and one or two in each of the three test files.
+  The absence is therefore an observed zero rather than a pattern that never
+  means anything.</p>
+  <p><strong>Falsified.</strong> The mutation restores
+  <code>reckon/_backends.py</code> at the base revision and runs a launch whose
+  backend still declares the retired key. Both parametrised cases fail
+  (<code>claude</code> and <code>codex</code>, 2 failed, <code>EXIT=1</code>):
+  the codex argv carries an <code>mcp_servers.anchored</code> override and the
+  Claude argv carries <code>--disallowedTools</code>. The same check passes
+  twice against this node's head, so it is sensitive to the removal and not to
+  the fixture.</p>
+  <p><strong>Outside this node.</strong> <code>reckon/crew/dispatch_launch.py</code>
+  still reads the launch-plan treatment fields this change removes, so that
+  module's launch-record write breaks until the node that owns its record field
+  lands. That removal is a separate part of the same plan section, and the
+  merged result is verified by a separately dispatched test node.</p>
+</article>
+</body>
+</html>
