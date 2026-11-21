@@ -1331,6 +1331,12 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "the fleet service that launches queued dispatches when the lane opens "
         "a slot; the supervisor runs it, an orchestrator never calls it"
     ),
+    ("crew", "reload"): (
+        "requests or inspects one named follower service's image swap; the "
+        "service replaces its own image at a stream-record boundary on its "
+        "published schedule, and service supervision is the operator's and the "
+        "supervisor's, never an orchestration step"
+    ),
     ("crew", "retention-sweep"): (
         "an operator-run maintenance surface, for a hand-run sweep or for "
         "installing the hourly timer; the installed timer runs the module "
@@ -1411,6 +1417,13 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         },
         ("crew", "check"): {"--manifest", "--review", "--run", "--record"},
         ("crew", "census"): {"--apply"},
+        ("crew", "decision"): set(),
+        ("crew", "declare-gate"): {
+            "--run",
+            "--project",
+            "--command",
+            "--partition",
+        },
         ("crew", "directory"): {"--project", "--run", "--node"},
         ("crew", "dispatch"): {
             "--project",
@@ -1436,6 +1449,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "follow"): {"--project"},
         ("crew", "gc"): set(),
         ("crew", "gate"): {"--pause", "--open", "--pretty"},
+        ("crew", "hold"): {"--run", "--reason"},
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},
         ("crew", "merge"): {
@@ -1459,8 +1473,11 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--checkout-path",
         },
         ("crew", "placement"): {"--ensure", "--session", "--project"},
+        ("crew", "promotions"): {"--window", "--pretty"},
         ("crew", "queue"): set(),
+        ("crew", "record-merge"): {"--run", "--merge", "--reason"},
         ("crew", "recover"): set(),
+        ("crew", "release"): {"--run", "--reason"},
         ("crew", "repair"): {
             "--run",
             "--status",
