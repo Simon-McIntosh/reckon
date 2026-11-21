@@ -113,38 +113,6 @@ def live_process_sessions(
     return found
 
 
-def process_started_at(pid: int, *, process_root: Path = Path("/proc")) -> float | None:
-    """The instant a process started, or ``None`` when it cannot be read.
-
-    This is the evidence a derivation keyed on process age would read, and it is
-    why that derivation is wrong for a session: a session id outlives the
-    process carrying it, so a start time dates the process and says nothing
-    about when the session was last heard. Nothing in the session derivation
-    calls this; it is here so the negative control can read the same evidence a
-    process-age-keyed derivation would, rather than asserting about arithmetic
-    of its own.
-
-    ``/proc/<pid>/stat`` carries the start time in field 22 as clock ticks since
-    boot, so the boot instant from ``/proc/stat`` converts it to wall clock. The
-    command name sits in parentheses and may contain spaces, so the fields are
-    split after the closing parenthesis.
-    """
-
-    try:
-        fields = (process_root / str(pid) / "stat").read_text().split()
-        boot = None
-        for line in (process_root / "stat").read_text().splitlines():
-            if line.startswith("btime "):
-                boot = float(line.split()[1])
-                break
-        ticks = float(fields[21])
-    except (OSError, IndexError, ValueError):
-        return None
-    if boot is None:
-        return None
-    return boot + ticks / os.sysconf("SC_CLK_TCK")
-
-
 def live_census_pairs() -> set[tuple[str, str]]:
     """Project-and-session pairs a live session host names.
 

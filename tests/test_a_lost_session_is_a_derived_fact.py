@@ -31,9 +31,8 @@ from typing import Any
 import pytest
 
 from reckon.crew import directory as directory_view
-from reckon.crew import lost_sessions, runs
+from reckon.crew import gc, lost_sessions, process_liveness, runs
 from reckon.crew.admission import selection as _selection
-from reckon.crew.admission import service as _service
 from reckon.crew.follower_registration import renew_follower_lease
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 
@@ -208,9 +207,12 @@ def test_a_running_coordinator_process_reads_live_whatever_its_lease(
 def ten_day_process(home):
     """A real process carrying the long-lived session id, lease a minute old.
 
-    A process in a test cannot actually be ten days old, so the start instant a
-    process-age derivation would read is substituted where it is read: see
-    ``test_a_ten_day_process_with_a_fresh_lease_reads_live``.
+    A process started by a test cannot be ten days old, so the case that names a
+    ten-day process is reddened by an applied mutation rather than by a live
+    fixture: replacing the derivation's clock with the process's start instant
+    makes the derivation keyed on process age, and the log beside this file
+    records that run failing. What the file can do is forbid the derivation from
+    reading a start time at all, which is the guard below.
     """
 
     process = subprocess.Popen(
@@ -229,56 +231,30 @@ def ten_day_process(home):
     process.wait(timeout=10)
 
 
-def _keyed_on_process_age(
-    pid: int, *, now: datetime, horizon_hours: float = 72.0
-) -> bool:
-    """The declared negative control, executed: lost iff the process is old.
-
-    This is the derivation the plan names as the mutation.
-
-    A derivation keyed on process age reads the start instant of the process
-    carrying the session id and compares that to the horizon. It is run here
-    rather than described, so the control exercises the same evidence the real
-    derivation would have to read to be wrong in the way the case forbids.
-    """
-
-    started = lost_sessions.process_started_at(pid)
-    if started is None:
-        return False
-    return (now.timestamp() - started) > horizon_hours * HOUR
-
-
 def test_a_ten_day_process_with_a_fresh_lease_reads_live(
     ten_day_process, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The process's age is never read; only the instant the session was heard.
 
-    The lease says a minute ago and the process carrying the id started ten days
-    ago -- never restarted. The session is live because it was heard, and the
-    control beside it shows why that assertion discriminates: the same evidence,
-    read as a process's age, reads lost. The control is executed, not asserted
-    about its own arithmetic, and the second half forbids the real derivation
-    from reading a process start time at all.
+    The lease says a minute ago and the process carrying the id is ten days old
+    -- never restarted. The session reads live because it was heard. The two
+    start-time readers the repository owns are then made to raise, so any read
+    of a process's age fails this case: neither the gc sweep's reader nor the
+    liveness reader may be reached by this derivation.
     """
 
-    started = NOW.timestamp() - 10 * 24 * HOUR
-    monkeypatch.setattr(
-        lost_sessions,
-        "process_started_at",
-        lambda pid, **_kwargs: started if pid == ten_day_process.pid else None,
-    )
+    # The repository's own reader, over the real process: the evidence a
+    # process-age-keyed derivation would consume, shown to be readable.
+    started = gc._process_start_epoch(ten_day_process.pid)
+    assert started is not None
+    assert abs(time.time() - started) < 60.0
 
-    assert _keyed_on_process_age(ten_day_process.pid, now=NOW) is True, (
-        "the negative control must read the ten-day process as lost, or this "
-        "case could not fail on the regression it names"
-    )
-
-    # The derivation under test must still read the session live, and must do so
-    # without touching the start time: any read of it is a failure here.
     def never_read(*_arguments: Any, **_keywords: Any) -> float | None:
         raise AssertionError("the derivation read a process start time")
 
-    monkeypatch.setattr(lost_sessions, "process_started_at", never_read)
+    monkeypatch.setattr(gc, "_process_start_epoch", never_read)
+    monkeypatch.setattr(process_liveness, "_process_start_time", never_read)
+
     answer = lost_sessions.session_lost(PROJECT, LONG_LIVED_SESSION, now=NOW)
 
     assert answer["lost"] is False, answer
