@@ -490,3 +490,54 @@ def test_l_a_search_that_reaches_the_top_is_passed_through_unchanged():
         {"PATH": "/coordinator/bin"}, ancestry=lambda: walked
     )
     assert filled == {"PATH": "/coordinator/bin"}
+
+
+@pytest.fixture(autouse=True)
+def stubbed_pids_belong_to_this_user(request, monkeypatch):
+    """The made-up pids the cases walk are never read against the host.
+
+    A case names pids like 11 or 4242 for a tree it invents; whether the host
+    happens to run a process of another user under that number must not decide
+    the case. The one case that walks the real tree opts out by name.
+    """
+    if request.node.name != "test_n_this_process_reaches_the_top_of_its_real_tree":
+        monkeypatch.setattr(nested_launch, "_owned_by_another_user", lambda pid: False)
+
+
+def test_m_an_unreadable_process_of_another_user_is_the_top_of_the_tree():
+    """A process another user owns ends the search as the top, not as a gap.
+
+    On a host the submitter's chain ends at an init owned by root, whose
+    environment the submitter may not read. A fence is started by the
+    submitting user, so that process cannot carry one: the search answers no
+    fence. The same unreadable record on a process the user owns is still an
+    incomplete search.
+    """
+    parents = {10: 11, 11: 1, 1: 0}
+    environments = {11: {}}
+    assert (
+        nested_launch.ancestry_fence(
+            pid=10,
+            environment_of=environments.get,
+            parent_of=parents.get,
+            owned_by_another_user=lambda pid: pid == 1,
+        )
+        == {}
+    )
+    with pytest.raises(nested_launch.AncestryIncompleteError):
+        nested_launch.ancestry_fence(
+            pid=10,
+            environment_of=environments.get,
+            parent_of=parents.get,
+            owned_by_another_user=lambda pid: False,
+        )
+
+
+def test_n_this_process_reaches_the_top_of_its_real_tree():
+    """The search over this test's own process tree ends without a refusal.
+
+    No stub: the real readers walk from this process to the host's init. The
+    result is a fence when the suite itself runs fenced and empty otherwise;
+    either way the search completes.
+    """
+    assert isinstance(nested_launch.ancestry_fence(), dict)
