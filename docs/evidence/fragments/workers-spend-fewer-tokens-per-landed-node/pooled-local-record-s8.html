@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="pooled-local-record-s8">
+  <meta name="plan-title" content="The pooled local record covers every replayed section">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s8">
+  <meta name="plan-recorded-at" content="2026-11-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,measurement,paired-replay,worker-tokens">
+  <title>Pooled local record &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1 id="pooled-local-record-s8-title">The local record pools both assignments, over all 18 replayed sections</h1>
+
+    <section id="pooled-local-record-s8-record">
+      <h2 id="pooled-local-record-s8-record-what">What landed</h2>
+      <p id="pooled-local-record-s8-record-path">The cumulative landed record at
+      <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html"><code>workers-spend-fewer-tokens-per-landed-node-landed.html</code></a>
+      carries a pooled local per-arm section over <strong>all 18</strong> replayed sections and the
+      lead's decision. It was spliced in as a seventh section: no earlier section changed, and
+      <code>git diff HEAD</code> over the record shows zero removed lines.</p>
+      <p id="pooled-local-record-s8-record-producer">The section is generated, not transcribed, by the
+      committed producer
+      <a href="paired_replay_report.py"><code>paired_replay_report.py</code></a>, extended here to read
+      both <code>paired-replay-assignment.json</code> and <code>paired-replay-assignment-2.json</code>
+      and to name every plan the two draws come from. It ran on the <code>all_debug</code> partition;
+      its log sits in the run directory, opens with the revision and the literal command and closes
+      in <code>EXIT=0</code>.</p>
+    </section>
+
+    <section id="pooled-local-record-s8-coverage">
+      <h2 id="pooled-local-record-s8-coverage-what">Coverage, and the section that had been dropped</h2>
+      <p id="pooled-local-record-s8-coverage-count">The two assignments drew 10 + 10 sections, of which
+      18 were dispatched and replayed: <strong>72 local runs</strong> over four local arms, every one
+      reaching a passed gate. The earlier record read the first assignment alone, and the plan list it
+      hardcoded did not name <code>a-landing-never-waits-on-a-shared-index</code>, so land
+      <code>s10</code> was dropped without a word. The producer now derives its plan set from the two
+      assignments, so land s10 is pooled like every other section.</p>
+      <p id="pooled-local-record-s8-coverage-exclusions">Two sections remain excluded, listed in the
+      record with their reasons rather than omitted: <code>workers-spend-fewer-tokens-per-landed-node#s4</code>
+      and <code>lane-and-model-routing#s53</code>, each refused by the local lane's context-fit
+      preflight before any of its replays ran, so no local pair exists. The codex arms are reported
+      as partial and <strong>stopped</strong> (28 runs over 16 sections), draw no verdict and enter no
+      pooled figure.</p>
+    </section>
+
+    <section id="pooled-local-record-s8-result">
+      <h2 id="pooled-local-record-s8-result-weread">What the pooled table says</h2>
+      <p id="pooled-local-record-s8-result-verdicts">Every number is in the record's own tables, which
+      this fragment does not restate. Read there: the per-arm pooled table
+      (<a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s8-pooled-local-record-table">the pooled local per-arm table</a>),
+      the same-arm control
+      (<a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s8-pooled-local-record-same-arm">the replicate's spread</a>),
+      and the lead's decision
+      (<a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s8-pooled-local-record-decision">the decision</a>).
+      Under the verdict rule, both treatment intervals overlap the same-arm interval, so neither is
+      adopted: the local lane stays on native clive, the anchored edit tool is removed, and the omp
+      pilot is not adopted.</p>
+    </section>
+
+    <section id="pooled-local-record-s8-negative">
+      <h2 id="pooled-local-record-s8-negative-what">Negative control: an unlisted plan is excluded, not dropped</h2>
+      <p id="pooled-local-record-s8-negative-result">Given a fixture replay row whose plan the
+      producer does not name, the unmutated producer lists that section as excluded with its reason &mdash;
+      the fixture run appears in the exclusion table, and the archive itself carries the result. With
+      the old silent drop restored in a scratch copy, the fixture run is absent from the same fixture's
+      output. The archive's internal control row, injected on every run, is present exactly once.</p>
+    </section>
+
+    <section id="pooled-local-record-s8-check">
+      <h2 id="pooled-local-record-s8-check-what">The audit of evidence records is green at the landed head</h2>
+      <p id="pooled-local-record-s8-check-run">The evidence-record checks ran at revision
+      <code>4f017332c5ddcb8d40aea474ad72f084ac830e83</code> on <code>all_debug</code> and reported
+      <code>38 passed in 5.95s</code>. They cover the fragment-revision claim, the manifest evidence
+      check, the per-node fragment rule, the evidence-only declared check, fragment id checking,
+      fragment tables and evidence-fragment discovery, so the record delivered here is read by the
+      same paths a later audit reads it by.</p>
+    </section>
+  </main>
+</body>
+</html>
