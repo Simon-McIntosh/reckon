@@ -7,8 +7,9 @@
   compared the pointer's stored content against the fixture's in-memory record
   and read <code>argv</code> and <code>launcher_host</code> as missing. One
   cause, and the test was wrong; no product line changed; no assertion was
-  deleted or weakened. The file now reads <code>9 passed</code> at head
-  <code>57506aa3d9df</code>.</p>
+  deleted or weakened; the preview case also compares the pointer file's
+  bytes beside that reading. The file reads <code>9 passed</code> at head
+  <code>fd75799ba796</code>.</p>
 
   <h3 id="qwnw-red-file-direct-resume-needs-an-observed-death-cause">Cause and verdict</h3>
 
@@ -24,9 +25,16 @@
   split, and compared it with <code>runs.read_pointer</code>'s reading of the
   file — a different shape of the same run. The rule the case states, that a
   <code>--print-only</code> lane change records no move, was never broken: the
-  preview returns before the mutation block, and the stored pointer is
-  byte-identical across the call. The case now takes both sides through the same
-  accessor, so it still fails if the preview writes.</p>
+  preview returns before the mutation block. The case now takes both sides
+  through the same accessor, and compares the pointer file's bytes beside that
+  reading, because a write that reshapes the pointer — re-indents it,
+  re-splits its dispatch detail, or drops a field the reading normalises —
+  leaves the hydrated reading equal while the file on disk has been rewritten.
+  The guard was falsified rather than assumed: with a preview write injected
+  into a scratch copy of <code>dispatch_sessions.py</code> that rewrites the
+  pointer at <code>indent=4</code>, the reading assertion passes and the byte
+  assertion fails — <code>assert b'{\n    "att...-pid-tree"\n}' ==
+  b'{\n  "attem...id-tree"\n}\n'</code>, <code>1 failed, 8 passed</code>.</p>
 
   <p><strong>Reproduction, quoted from the base, before any edit, at
   <code>05b3eea9c31c</code>:</strong></p>
@@ -49,13 +57,18 @@ EXIT=1
   <h3 id="qwnw-red-file-direct-resume-needs-an-observed-death-arms">Arms</h3>
 
   <p>The base arm was extracted from the base revision into the run's scratch
-  root and run there; the head arm ran as the node's worker gate on the
-  <code>all_debug</code> partition, in a scratch tree the harness created from
-  the committed revision, with <code>env -u SLURM_JOB_ID -u SLURM_JOBID</code>
-  in the command itself, because a batch job sets <code>SLURM_JOB_ID</code> for
-  the command it wraps (measured with a probe job, <code>JOBID=1331652</code>).
-  Each log's first lines name the revision, the tree and the command, and its
-  last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+  root and run there; the head arm ran as a batch job on the
+  <code>all_debug</code> partition (job <code>1335609</code> on
+  <code>98dci4-clu-3141</code>, per <code>sacct</code>) over the worktree at the
+  committed head, with <code>env -u SLURM_JOB_ID -u SLURM_JOBID</code> in the command itself, because a
+  batch job sets <code>SLURM_JOB_ID</code> for the command it wraps (measured
+  with a probe job, <code>JOBID=1331652</code>). The <code>srun</code> form of
+  that step was tried first and refused with <code>CPU binding outside of job
+  step allocation</code>, and an <code>srun</code> from inside this allocation
+  is a step of the held fleet allocation whatever partition it names, so the
+  arm was submitted with <code>sbatch --wait</code>. Each log's first lines
+  name the revision, the tree, the command and the partition, and its last line
+  reads <code>EXIT=&lt;code&gt;</code>.</p>
 
   <table id="qwnw-red-file-direct-resume-needs-an-observed-death-arm-table">
     <caption>The base arm is the negative control and carries the head arm's
@@ -69,7 +82,7 @@ EXIT=1
       </tr>
       <tr>
         <td>head (node gate, <code>all_debug</code>)</td>
-        <td><code>57506aa3d9dfc2747182287baa5740e642b07eb4</code></td>
+        <td><code>fd75799ba796a3b8480a95fdeada58a6cba2020f</code></td>
         <td><code>9 passed</code>, <code>EXIT=0</code></td>
       </tr>
     </tbody>
@@ -82,5 +95,5 @@ EXIT=1
   <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> on
   <code>all_debug</code>: <code>0 failed</code> at
   <code>05b3eea9c31c</code> and <code>0 failed</code> at
-  <code>57506aa3d9df</code>.</p>
+  <code>fd75799ba796</code>.</p>
 </section>
