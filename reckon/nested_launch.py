@@ -37,8 +37,13 @@ the shim never execs itself or the shim of another checkout on the same
 ``PATH``. A fence puts this shim in front of the tool's own absolute paths too
 (:func:`reckon._worker_fence.scheduler_shields`) and names where it kept the
 real binary under :data:`SHIM_REAL_DIRECTORY_ENV`, so a name and an absolute
-path reach the same guard rather than one of them skipping it. The
-nested-launch decision never changes the resource request.
+path reach the same guard rather than one of them skipping it. The fence's
+recipe is read from the submitting process, and from the process tree that
+started it when the submitter has cleared its environment. A shell can drop
+every name it was handed, but not what the kernel recorded for its ancestors at
+the exec that started them, so a submission made from inside a fence is wrapped
+or refused rather than silently run unfenced. The nested-launch decision never
+changes the resource request.
 """
 
 from __future__ import annotations
@@ -49,7 +54,7 @@ import os
 import shlex
 import sys
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -114,6 +119,24 @@ WORKER_FENCE_ENV = "RECKON_WORKER_FENCE"
 # with the recipe, and both are only ever read by a shim.
 SHIM_HOME_ENV = "RECKON_SHIM_HOME"
 SHIM_REAL_DIRECTORY_ENV = "RECKON_SHIM_REAL_DIRECTORY"
+
+# What a fence adds to the environment of the process it starts, and so what a
+# submission made from inside it must still hold when the submitting process
+# has been emptied of it. The recipe and the run identity are the fence's own;
+# the relocation and the search path are what let a shim emptied of everything
+# still resolve, and still wrap, the real scheduler.
+FENCE_ENVIRONMENT_NAMES = (
+    WORKER_FENCE_ENV,
+    RUN_ID_ENV,
+    *SESSION_ID_ENVS,
+    SHIM_REAL_DIRECTORY_ENV,
+    "PATH",
+)
+
+# How far up the process tree the fence is looked for. A worker's own chain is
+# a handful of levels deep; the bound keeps a pathological tree from costing
+# more than a fixed number of reads.
+ANCESTRY_BOUND = 32
 
 # The checkout a process running from a published reload image was started
 # from. The supervisor sets it on a copy it starts from an image, and
@@ -605,6 +628,126 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
     return fence_roots([str(word) for word in argv])
 
 
+class FenceUnestablished(ValueError):
+    """A fence is named for this submission, and its recipe cannot be read.
+
+    Raised rather than read as "no fence": a submission made inside a fence
+    that cannot be established must not run unfenced, and the refusal names the
+    run so the submission can be traced back to it.
+    """
+
+    def __init__(self, run_id: str, detail: str) -> None:
+        super().__init__(detail)
+        self.run_id = str(run_id or "")
+        self.detail = str(detail)
+
+    def refusal(self, tool: str) -> str:
+        """The line a shim prints, naming the run and what is missing."""
+        run = f"run {self.run_id}" if self.run_id else "an unnamed run"
+        return (
+            f"{tool} shim: the fence could not be established for {run}, so the "
+            f"submission was not made: {self.detail}"
+        )
+
+
+def _process_environment(pid: int) -> dict[str, str] | None:
+    """One process's environment as the kernel recorded it at that exec.
+
+    ``/proc/<pid>/environ`` is the image the kernel was handed at the exec that
+    started the process. A shell that unsets a name, or exports a new value,
+    edits its own table and the environment it hands its children; neither
+    reaches this record, which is why a fence survives a shell that clears
+    itself. None is "could not read" — the process may have exited, or belong
+    to another user — never "carries nothing".
+    """
+    try:
+        raw = (Path("/proc") / str(pid) / "environ").read_bytes()
+    except OSError:
+        return None
+    environment: dict[str, str] = {}
+    for entry in raw.split(b"\0"):
+        if b"=" not in entry:
+            continue
+        key, _, value = entry.partition(b"=")
+        environment[key.decode("utf-8", "replace")] = value.decode("utf-8", "replace")
+    return environment
+
+
+def _parent_process(pid: int) -> int | None:
+    """The parent pid the kernel reports for ``pid``, or None."""
+    try:
+        status = (Path("/proc") / str(pid) / "status").read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return None
+    for line in status.splitlines():
+        if line.startswith("PPid:"):
+            try:
+                return int(line.split()[1])
+            except (IndexError, ValueError):
+                return None
+    return None
+
+
+def ancestry_fence(
+    *,
+    pid: int | None = None,
+    environment_of: Callable[[int], dict[str, str] | None] = _process_environment,
+    parent_of: Callable[[int], int | None] = _parent_process,
+) -> dict[str, str]:
+    """The fence the submitting process tree carries, read from the kernel.
+
+    A submitter can unset, export over or discard its own environment, and a
+    child inherits only what it is handed. What the kernel recorded for each
+    process at the exec that started it is untouched by any of that, so the
+    fence that started the tree is still readable from an ancestor however its
+    descendants have edited themselves. The walk goes up the parent chain until
+    an environment names the fence, and stops at the tree's root. Empty means
+    no ancestor carries a fence, which is the coordinator case.
+    """
+    current = os.getpid() if pid is None else pid
+    seen = {current}
+    for _ in range(ANCESTRY_BOUND):
+        parent = parent_of(current)
+        # The fence's own payload is a child of the namespace's init, so the
+        # last process worth reading is that init itself.
+        if parent is None or parent <= 0 or parent in seen:
+            return {}
+        seen.add(parent)
+        environment = environment_of(parent)
+        if environment and environment.get(WORKER_FENCE_ENV):
+            return {
+                name: environment[name]
+                for name in FENCE_ENVIRONMENT_NAMES
+                if environment.get(name)
+            }
+        current = parent
+    return {}
+
+
+def fence_environment(
+    environ: Mapping[str, str],
+    *,
+    ancestry: Callable[..., dict[str, str]] = ancestry_fence,
+) -> dict[str, str]:
+    """The fence ``environ`` is missing, taken from the process tree.
+
+    A name the submitting process itself carries is used as it stands: a caller
+    that hands a shim a recipe means that recipe. Only what is missing is
+    filled from the tree, so an unchanged submission reads exactly as it did
+    and an emptied one reads the same as an unchanged one.
+    """
+    own = {
+        name: str(environ[name])
+        for name in FENCE_ENVIRONMENT_NAMES
+        if environ.get(name)
+    }
+    if own.get(WORKER_FENCE_ENV) and own.get(RUN_ID_ENV):
+        return own
+    return {**ancestry(), **own}
+
+
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
@@ -1021,7 +1164,17 @@ def fenced_scheduler_task(
     encoded = environ.get(WORKER_FENCE_ENV)
     if not encoded or tool not in {"sbatch", "srun"}:
         return list(argv)
-    recipe = json.loads(base64.urlsafe_b64decode(encoded))
+    run_id = str(environ.get(RUN_ID_ENV) or "").strip()
+    try:
+        recipe = json.loads(base64.urlsafe_b64decode(encoded))
+    except (TypeError, ValueError) as exc:
+        raise FenceUnestablished(
+            run_id, f"{WORKER_FENCE_ENV} carries no readable fence recipe ({exc})"
+        ) from exc
+    if not isinstance(recipe, dict) or not isinstance(recipe.get("argv"), list):
+        raise FenceUnestablished(
+            run_id, f"{WORKER_FENCE_ENV}'s recipe names no fence argv"
+        )
     parsed, operands = _scheduler_options(tool, argv)
     if ":" in operands:
         raise ValueError(
@@ -1095,6 +1248,12 @@ def main(
     """
     source = os.environ if environ is None else environ
     env = caller_environment(source)
+    # A submitter that cleared its own environment takes the fence's names with
+    # it, and with them the run and the recipe its task has to be wrapped in.
+    # The process tree still holds them, so only the names this process is
+    # missing are filled; a value the caller carries is never overridden.
+    for name, value in fence_environment(source).items():
+        env.setdefault(name, value)
     refusal = depth_refusal(tool, env)
     if refusal is not None:
         print(refusal, file=sys.stderr)
@@ -1104,7 +1263,7 @@ def main(
         print(refusal_message(tool, facts), file=sys.stderr)
         return REFUSAL_STATUS
     found = real_binary(
-        tool, shim_directory(), env.get("PATH", os.defpath), environ=source
+        tool, shim_directory(), env.get("PATH", os.defpath), environ=env
     )
     if found is None:
         print(
@@ -1117,6 +1276,9 @@ def main(
     # the exit status unchanged. The nesting count goes one higher with it.
     try:
         task_argv = fenced_scheduler_task(tool, argv, env)
+    except FenceUnestablished as exc:
+        print(exc.refusal(tool), file=sys.stderr)
+        return REFUSAL_STATUS
     except (ValueError, OSError) as exc:
         print(f"{tool}: refusing an unfenced scheduler task: {exc}", file=sys.stderr)
         return REFUSAL_STATUS
