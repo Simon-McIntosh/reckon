@@ -2015,6 +2015,31 @@ WAITING_REQUEST_PHASES = frozenset(
     {"queued", "awaiting-upstream", "blocked-upstream", "held"}
 )
 
+#: The pointer field carrying a coordinator's release of a stopped run's scope.
+SCOPE_RELEASE_FIELD = "scope_release"
+
+
+def scope_release(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The scope release this claim carries, or ``None`` when it was not released.
+
+    A scope release says a stopped run has been given up by a coordinator: its
+    claim on its paths stops binding while its worktree and commits stay where
+    they are, so a fresh node may write those paths and merges the kept head by
+    the revision the release names.
+
+    The release is pinned to the attempt it was taken against. A resume or a
+    fresh dispatch of the same run is a new attempt, and one that stops again
+    has not been given up by anybody, so a release recorded against an earlier
+    attempt never covers it — reading it as covering would walk past work
+    nobody had released.
+    """
+    release = pointer.get(SCOPE_RELEASE_FIELD)
+    if not isinstance(release, Mapping):
+        return None
+    if int(release.get("attempt") or 1) != int(pointer.get("attempt") or 1):
+        return None
+    return dict(release)
+
 
 def claim_disposition(
     pointer: Mapping[str, Any],
@@ -2074,6 +2099,17 @@ def claim_disposition(
         return ClaimDisposition(
             binding=True, reason=f"run {run_id!r} is still running as pid {pid}"
         )
+    release = scope_release(pointer)
+    if release is not None:
+        kept = str(release.get("kept_head") or "").strip()
+        reason = (
+            f"run {run_id!r} has stopped and its scope was released by "
+            f"{release.get('by') or 'a coordinator'}"
+            f"{f' at {kept}' if kept else ''}: {str(release.get('reason') or '').strip()}"
+        )
+        if kept:
+            reason += f" — the worktree is kept, and a fresh node merges {kept}"
+        return ClaimDisposition(binding=False, reason=reason + ", so its claim is released")
     unintegrated = unintegrated_claim_work(pointer, integration_ref=integration_ref)
     if unintegrated:
         return ClaimDisposition(
