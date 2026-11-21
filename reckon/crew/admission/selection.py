@@ -5,9 +5,10 @@ from __future__ import annotations
 import os
 from collections import deque
 
-from .. import queue_order
 from reckon.crew.open_run_index import operational_read
 
+from .. import lost_sessions as _lost_sessions
+from .. import queue_order
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
@@ -30,7 +31,6 @@ from .shared import (
     _dispatch_fleet_gate,
     datetime,
     nullcontext,
-    parse_utc,
     runs,
     time,
 )
@@ -135,8 +135,8 @@ def admit_once(
                 )
                 from ..lead_decisions import release_withdrawn_holds
 
-                result["released_plan_review"] = (
-                    _reviews._release_plan_review_holds(live, config_for=config_for)
+                result["released_plan_review"] = _reviews._release_plan_review_holds(
+                    live, config_for=config_for
                 )
                 try:
                     result["released_withdrawn"] = release_withdrawn_holds(live)
@@ -152,6 +152,18 @@ def admit_once(
             queued = [
                 pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
             ]
+        # Whether each session this pass lists is lost, read once per session,
+        # from the pointers the pass already holds. A session's answer is what
+        # retires its reviews and raises its implement work; deriving it here,
+        # once, keeps that from becoming one derivation per pointer.
+        lost_reads = _lost_sessions.LostSessionReads(pointers=live, now=moment)
+        result["lost_sessions"] = lost_reads.answers(
+            [
+                (str(pointer.get("project") or ""), str(pointer.get("session") or ""))
+                for pointer in live
+                if str(pointer.get("session") or "")
+            ]
+        )
         if lane:
 
             def included(pointer: Mapping[str, Any]) -> bool:
@@ -178,13 +190,20 @@ def admit_once(
                 identifier = str(pointer.get("run_id") or "")
                 result["held"].append(identifier)
                 _holds._record_pass_hold(
-                    pointer, {"verdict": "held-by-gate", "reason": reason},
-                    live=live, moment=moment,
+                    pointer,
+                    {"verdict": "held-by-gate", "reason": reason},
+                    live=live,
+                    moment=moment,
                 )
-                result["verdicts"].append(_verdicts._verdict_row(
-                    pointer, allowance=0, allowance_source="node disk reserve",
-                    verdict="held-by-gate", detail=reason,
-                ))
+                result["verdicts"].append(
+                    _verdicts._verdict_row(
+                        pointer,
+                        allowance=0,
+                        allowance_source="node disk reserve",
+                        verdict="held-by-gate",
+                        detail=reason,
+                    )
+                )
             result["action"] = "gated"
             return result
         if local_gated and run_id and queued:

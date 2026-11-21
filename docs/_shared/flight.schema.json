@@ -1208,6 +1208,17 @@
                         "null"
                     ]
                 },
+                "lost_session": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/LostSessionConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "When a coordinator session that nothing has heard from reads as lost. The block is declared here so a host or project layer retunes the threshold without a code change; the derivation reads it from the resolved config."
+                },
                 "model_catalogue": {
                     "anyOf": [
                         {
@@ -2364,6 +2375,22 @@
             "title": "LiftConfig",
             "type": "object"
         },
+        "LostSessionConfig": {
+            "additionalProperties": false,
+            "description": "How long a coordinator session may go unheard before it is read as lost. Its reviews are retired and its implement work is raised once it is, so the threshold is a layer's decision rather than a constant of the code.",
+            "properties": {
+                "after_hours": {
+                    "description": "Hours a coordinator session may go unheard before it reads as lost. The derivation dates a session from the last instant the session was heard -- a follower lease, a session-host record, or a coordinator process carrying its id -- and never from the age of any one process. Defaults to 72.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "title": "LostSessionConfig",
+            "type": "object"
+        },
         "ModelAlias": {
             "additionalProperties": false,
             "description": "One old backend name and the lane-and-model pair it resolves to. The name is the map key; the pair is what a read-side resolver returns for a stored row, a review or a table, so an old vocabulary normalises to the same lane and model key a new declaration supplies.",
@@ -3475,6 +3502,17 @@
                 "string",
                 "null"
             ]
+        },
+        "lost_session": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/LostSessionConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "When a coordinator session that nothing has heard from reads as lost. The block is declared here so a host or project layer retunes the threshold without a code change; the derivation reads it from the resolved config."
         },
         "model_catalogue": {
             "anyOf": [
