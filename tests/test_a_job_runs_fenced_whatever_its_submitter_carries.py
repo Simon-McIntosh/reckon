@@ -30,7 +30,6 @@ import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
 
@@ -101,9 +100,7 @@ def sandbox(tmp_path, monkeypatch):
     (home / ".config/reckon/mounts.json").write_text("{}", encoding="utf-8")
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("RECKON_HOME", str(home / ".config/reckon"))
-    monkeypatch.setenv(
-        "RECKON_MOUNTS_PATH", str(home / ".config/reckon/mounts.json")
-    )
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(home / ".config/reckon/mounts.json"))
     monkeypatch.setenv("RECKON_RUN_STORE", str(tmp_path / "store"))
     node_tmp = tmp_path / "node-tmp"
     node_tmp.mkdir()
@@ -167,7 +164,9 @@ def _run_worker(case, *, mode):
     recipe = json.loads(base64.urlsafe_b64decode(argv[index + 1]))
     case["record"].unlink(missing_ok=True)
     environment = {
-        name: value for name, value in os.environ.items() if not name.startswith("RECKON_")
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("RECKON_")
     }
     environment.update(
         PATH=_path(case),
@@ -254,7 +253,9 @@ def test_d_a_submission_from_outside_any_fence_is_passed_through(sandbox):
     # ancestors are that namespace's, and none of them holds a recipe.
     sandbox["record"].unlink(missing_ok=True)
     environment = {
-        name: value for name, value in os.environ.items() if not name.startswith("RECKON_")
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("RECKON_")
     }
     environment.update(PATH=_path(sandbox), TMPDIR=str(sandbox["scratch"]))
     command = [
@@ -270,7 +271,12 @@ def test_d_a_submission_from_outside_any_fence_is_passed_through(sandbox):
         *SUBMISSION,
     ]
     done = subprocess.run(
-        command, capture_output=True, text=True, check=False, timeout=240, env=environment
+        command,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=240,
+        env=environment,
     )
     assert done.returncode == 0, (done.returncode, done.stderr)
     recorded = [
@@ -287,7 +293,9 @@ def test_e_a_fence_that_cannot_be_established_refuses_and_names_the_run(sandbox)
     shim = nested_launch.shim_directory() / "sbatch"
     sandbox["record"].unlink(missing_ok=True)
     environment = {
-        name: value for name, value in os.environ.items() if not name.startswith("RECKON_")
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("RECKON_")
     }
     environment.update(
         PATH=_path(sandbox),
@@ -303,7 +311,10 @@ def test_e_a_fence_that_cannot_be_established_refuses_and_names_the_run(sandbox)
         timeout=120,
         env=environment,
     )
-    assert done.returncode == nested_launch.REFUSAL_STATUS, (done.returncode, done.stderr)
+    assert done.returncode == nested_launch.REFUSAL_STATUS, (
+        done.returncode,
+        done.stderr,
+    )
     assert RUN_ID in done.stderr, done.stderr
     assert "could not be established" in done.stderr, done.stderr
     assert not sandbox["record"].exists(), (
@@ -328,4 +339,55 @@ def test_f_the_process_tree_fills_only_what_a_submitter_is_missing():
     )
     assert own[nested_launch.WORKER_FENCE_ENV] == "own"
     assert own[nested_launch.RUN_ID_ENV] == RUN_ID
-    assert nested_launch.fence_environment({}, ancestry=lambda: {}) == {}
+    assert nested_launch.fence_environment({}, ancestry=dict) == {}
+
+
+def test_g_the_process_tree_is_read_by_the_repositorys_own_readers(monkeypatch):
+    """The walk resolves to the existing owners rather than to a second parse."""
+    from reckon.crew import process_signal
+    from reckon.hooks import coordinator_obligations
+
+    monkeypatch.setattr(
+        process_signal, "_process_environment", lambda pid: {"probe": str(pid)}
+    )
+    monkeypatch.setattr(coordinator_obligations, "_parent_of", lambda pid: 4242)
+    assert nested_launch._process_environment(7) == {"probe": "7"}
+    assert nested_launch._parent_process(7) == 4242
+
+
+def _walk(*, parents, environments, pid=10):
+    """Run the ancestor walk over named parents and environments."""
+    return nested_launch.ancestry_fence(
+        pid=pid,
+        parent_of=parents.get,
+        environment_of=environments.get,
+    )
+
+
+def test_h_the_ancestor_walk_stops_at_the_nearest_fence():
+    nearest = {nested_launch.WORKER_FENCE_ENV: "nearest"}
+    farther = {nested_launch.WORKER_FENCE_ENV: "farther"}
+    found = _walk(
+        parents={10: 11, 11: 12, 12: 13},
+        environments={11: nearest, 12: farther},
+    )
+    assert found[nested_launch.WORKER_FENCE_ENV] == "nearest"
+
+
+def test_i_the_ancestor_walk_ends_on_a_root_a_cycle_or_the_bound():
+    # A tree whose root reports pid 0: the walk ends there rather than reading
+    # the kernel's pid 0 entry.
+    assert (
+        _walk(parents={10: 0}, environments={0: {nested_launch.WORKER_FENCE_ENV: "x"}})
+        == {}
+    )
+    # A parent chain that loops back on itself terminates.
+    assert _walk(parents={10: 11, 11: 10}, environments={11: {}}) == {}
+    # An unreadable parent ends the walk.
+    assert _walk(parents={}, environments={}) == {}
+    # A fence beyond the bound is not reached: the walk is finite whatever the
+    # chain looks like.
+    depth = nested_launch.ANCESTRY_BOUND + 5
+    parents = {pid: pid + 1 for pid in range(10, 10 + depth)}
+    environments = {10 + depth: {nested_launch.WORKER_FENCE_ENV: "too far"}}
+    assert _walk(parents=parents, environments=environments) == {}

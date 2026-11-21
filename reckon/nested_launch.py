@@ -628,7 +628,7 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
     return fence_roots([str(word) for word in argv])
 
 
-class FenceUnestablished(ValueError):
+class FenceUnestablishedError(ValueError):
     """A fence is named for this submission, and its recipe cannot be read.
 
     Raised rather than read as "no fence": a submission made inside a fence
@@ -659,35 +659,30 @@ def _process_environment(pid: int) -> dict[str, str] | None:
     reaches this record, which is why a fence survives a shell that clears
     itself. None is "could not read" — the process may have exited, or belong
     to another user — never "carries nothing".
+
+    The repository reads this record already, for the run a process tree
+    carries, so the name resolves to that reader rather than to a second copy
+    of the same parse. It is imported here because only a submission that lost
+    its own environment consults the record at all, and the crew package is
+    heavier than this module's own decision.
     """
-    try:
-        raw = (Path("/proc") / str(pid) / "environ").read_bytes()
-    except OSError:
-        return None
-    environment: dict[str, str] = {}
-    for entry in raw.split(b"\0"):
-        if b"=" not in entry:
-            continue
-        key, _, value = entry.partition(b"=")
-        environment[key.decode("utf-8", "replace")] = value.decode("utf-8", "replace")
-    return environment
+    from reckon.crew.process_signal import (
+        _process_environment as read_environment,
+    )
+
+    return read_environment(pid)
 
 
 def _parent_process(pid: int) -> int | None:
-    """The parent pid the kernel reports for ``pid``, or None."""
-    try:
-        status = (Path("/proc") / str(pid) / "status").read_text(
-            encoding="utf-8", errors="replace"
-        )
-    except OSError:
-        return None
-    for line in status.splitlines():
-        if line.startswith("PPid:"):
-            try:
-                return int(line.split()[1])
-            except (IndexError, ValueError):
-                return None
-    return None
+    """The parent pid the kernel reports for ``pid``, or None.
+
+    The ancestor walk this feeds is the repository's own capability, for the
+    processes that own a session's obligations, so the link is read by that
+    owner's reader rather than by a second parse of the same record.
+    """
+    from reckon.hooks.coordinator_obligations import _parent_of as read_parent
+
+    return read_parent(pid)
 
 
 def ancestry_fence(
@@ -1168,11 +1163,11 @@ def fenced_scheduler_task(
     try:
         recipe = json.loads(base64.urlsafe_b64decode(encoded))
     except (TypeError, ValueError) as exc:
-        raise FenceUnestablished(
+        raise FenceUnestablishedError(
             run_id, f"{WORKER_FENCE_ENV} carries no readable fence recipe ({exc})"
         ) from exc
     if not isinstance(recipe, dict) or not isinstance(recipe.get("argv"), list):
-        raise FenceUnestablished(
+        raise FenceUnestablishedError(
             run_id, f"{WORKER_FENCE_ENV}'s recipe names no fence argv"
         )
     parsed, operands = _scheduler_options(tool, argv)
@@ -1276,7 +1271,7 @@ def main(
     # the exit status unchanged. The nesting count goes one higher with it.
     try:
         task_argv = fenced_scheduler_task(tool, argv, env)
-    except FenceUnestablished as exc:
+    except FenceUnestablishedError as exc:
         print(exc.refusal(tool), file=sys.stderr)
         return REFUSAL_STATUS
     except (ValueError, OSError) as exc:
