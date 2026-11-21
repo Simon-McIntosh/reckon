@@ -171,7 +171,7 @@ def test_shipped_grace_and_generated_schema_declare_two_hours():
         SessionScratchConfig(orphan_grace_seconds=0)
 
 
-def test_disk_sampler_runs_sweep_and_pressure_separates_live_and_unowned(
+def test_disk_pass_runs_sweep_and_pressure_separates_live_and_unowned(
     scratch, monkeypatch, capsys
 ):
     orphan = entry(scratch, "landing-orphan")
@@ -181,13 +181,24 @@ def test_disk_sampler_runs_sweep_and_pressure_separates_live_and_unowned(
     os.utime(young, (scratch.now - 60, scratch.now - 60))
     monkeypatch.setenv(supervisor.NODE_DISK_ROOT_ENV, str(scratch.root))
     monkeypatch.setattr(supervisor, "node_disk_reserve_bytes", lambda: 10**18)
+    # The pass publishes first and sweeps after, so the census is read from the
+    # record only once the sweep step has run.
     assert supervisor.sample_node_disk() == 0
+    assert orphan.exists(), "the reading is published before the sweep removes anything"
+    assert supervisor.reclaim_node_scratch() == 0
     assert not orphan.exists()
     sample = json.loads((scratch.state / supervisor.NODE_DISK_RECORD).read_text())
     reason = supervisor.node_disk_pressure(sample)["reason"]
     assert f"live crew scratch: {live}" in reason
     assert f"unowned crew scratch: {young}" in reason
-    assert str(orphan) not in reason
+    # The reading is taken before the sweep runs, so the mount's own largest
+    # entry census can still name the directory the sweep has by now removed.
+    # The crew scratch census is what says whether an entry was removed, and
+    # the orphan is absent from it.
+    assert not any(
+        member["path"] == str(orphan) and not member.get("removed")
+        for member in sample["crew_scratch"]["entries"]
+    )
     assert len(capsys.readouterr().out.split()) == 4
 
 
@@ -289,6 +300,7 @@ def test_disk_pressure_names_stale_entries_retained_for_a_live_runs_owner(
         monkeypatch.setenv(supervisor.NODE_DISK_ROOT_ENV, str(scratch.root))
         monkeypatch.setattr(supervisor, "node_disk_reserve_bytes", lambda: 10**18)
         assert supervisor.sample_node_disk() == 0
+        assert supervisor.reclaim_node_scratch() == 0
         sample = json.loads((scratch.state / supervisor.NODE_DISK_RECORD).read_text())
         retained = sample["crew_scratch"]["stale_live_entries"]
         assert len(retained) == 1

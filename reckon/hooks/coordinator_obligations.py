@@ -246,7 +246,12 @@ def derive_within_budget(
 # rather than to any run's work, a repair round is a worker the reflex resumed
 # and will re-fire when the round ends, and a route the picker defaulted is a
 # notice about a run that is working rather than a debt, so blocking would ask a
-# coordinator to act on a condition no run of this session created.
+# coordinator to act on a condition no run of this session created. A disk
+# reading the sampler has not published is the same shape of duty: it names no
+# run, no session owns the sampler, and the row names the process and the
+# reading's age so a coordinator can say what is wrong without being able to
+# clear it. Only a published reading that is low on space is a duty here, and
+# that row still holds the turn.
 # Mirrors the derivation's own vocabulary, which cannot be imported here on the
 # paths that read a fresh snapshot.
 _NON_BLOCKING_KINDS = frozenset(
@@ -260,6 +265,9 @@ _NON_BLOCKING_KINDS = frozenset(
         "repair-round",
         "scope-held",
         "route-defaulted",
+        "node-disk-stale",
+        "node-disk-missing",
+        "node-disk-unreadable",
     }
 )
 
