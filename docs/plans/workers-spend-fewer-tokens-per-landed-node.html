@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="110">
+<meta name="plan-version" content="111">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -247,7 +247,10 @@
     <div class="r-comment-body"><p>Review-only node: stored a parsed record for r-20261121T201903595274-anchored-backends-s18 over 1666d19f7744d3cbbb272f620e38427ad9738472..201447f399770adcb67027a006e31a0c6b935974 scoring 19/16/20/13/19/20 with added_failure_count 0 and 3 non-blocking findings; no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261121T212903858120-review-of-anchored-fence-prompt-s18-2bd648a88f61" data-who="reckon-build" data-when="2026-11-21T21:59:27.097Z">
-    <div class="r-comment-body"><p>independent review of r-20261121T201936403732-anchored-fence-prompt-s18 over 1666d19f7744d3cbbb272f620e38427ad9738472..2bd648a88f61303ae760c775b95395dafdc44160 stores a parsed six-dimension record scoring goal_fidelity 20, evidence 16, scope_discipline 20, durability 9, fit 16, reuse 20 (total 101) with added_failure_count 0 derived from the reviewed run&#x27;s own baseline_suite and after_suite logs (both EXIT=0, 58 passed, zero failure ids) and three non-blocking findings — the removal has no committed guard, the codex anchored arm is left half-wired on argv without its prompt half. No blocking finding.</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261121T201936403732-anchored-fence-prompt-s18 over 1666d19f7744d3cbbb272f620e38427ad9738472..2bd648a88f61303ae760c775b95395dafdc44160 stores a parsed six-dimension record scoring goal_fidelity 20, evidence 16, scope_discipline 20, durability 9, fit 16, reuse 20 (total 101) with added_failure_count 0 derived from the reviewed run's own baseline_suite and after_suite logs (both EXIT=0, 58 passed, zero failure ids) and three non-blocking findings — the removal has no committed guard, the codex anchored arm is left half-wired on argv without its prompt half. No blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T201936403732-anchored-fence-prompt-s18" data-who="reckon-build" data-when="2026-11-21T21:22:39.871Z">
+    <div class="r-comment-body"><p>reckon/_worker_fence.py no longer registers the anchored edit MCP server in a run home or allows its two tools in the seeded settings.json, and reckon/crew/prompts.py composes no anchored edit instruction for any backend (helper and constants deleted, importing call sites removed); grep for anchored_edit and anchored-edit over the node&#x27;s write paths returns nothing, and the scoped gate and both declared suite arms measure 58 passed / 0 failed at head against an identical 58 passed / 0 failed at base</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261110T203544773136-review-of-anchored-edit-tool-27ed13983a3d" data-who="reckon-build" data-when="2026-11-10T20:58:16.138Z">
     <div class="r-comment-body"><p>Reviewed run r-20261110T192355232896-anchored-edit-tool at head 27ed13983a3d19b3a69b18e35b56b33e9f52b354 from base cb5dcf17a3be6c8a022f5c9391ec843c67adb509; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 19; total 110), zero added failures against the reviewed arms, and three non-blocking findings recorded — a self-referential assertion at tests/test_anchored_edit.py:54, a negative-control log whose header revision predates the module checksum it measured, and a ruff claim in the evidence fragment with no recorded log which re-ran clean.</p></div>
