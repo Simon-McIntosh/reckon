@@ -15,11 +15,17 @@ The cases:
   wrapped in the same fence, byte for byte;
 * the same submission with an empty environment is wrapped or refused;
 * a submission from outside any fence is passed through unchanged;
-* a fence that cannot be established refuses, and the refusal names the run.
+* a fence that cannot be established refuses, and the refusal names the run;
+* a submission below an unreadable parent is refused naming that parent;
+* a submission deeper than the search's bound below a fenced worker is refused
+  naming the bound;
+* a submission from a coordinator whose search reaches the top is passed
+  through unchanged.
 
 Declared negative control: at the base revision the cleared case reaches the
 stand-in scheduler with the bare task, because the shim has no recipe to wrap
-with.
+with; the unreadable-parent and beyond-the-bound cases reach it too, because a
+search that stopped early was read as "no fence".
 """
 
 from __future__ import annotations
@@ -374,20 +380,113 @@ def test_h_the_ancestor_walk_stops_at_the_nearest_fence():
     assert found[nested_launch.WORKER_FENCE_ENV] == "nearest"
 
 
-def test_i_the_ancestor_walk_ends_on_a_root_a_cycle_or_the_bound():
+def test_i_the_ancestor_walk_ends_on_a_root_and_refuses_a_cycle_or_a_bound():
     # A tree whose root reports pid 0: the walk ends there rather than reading
-    # the kernel's pid 0 entry.
+    # the kernel's pid 0 entry. This is the one empty answer that means "no
+    # fence".
     assert (
         _walk(parents={10: 0}, environments={0: {nested_launch.WORKER_FENCE_ENV: "x"}})
         == {}
     )
-    # A parent chain that loops back on itself terminates.
-    assert _walk(parents={10: 11, 11: 10}, environments={11: {}}) == {}
-    # An unreadable parent ends the walk.
-    assert _walk(parents={}, environments={}) == {}
-    # A fence beyond the bound is not reached: the walk is finite whatever the
-    # chain looks like.
+    # A parent chain that loops back on itself never reaches the top, so it is
+    # a search that stopped early rather than a fence-free tree.
+    with pytest.raises(nested_launch.AncestryIncompleteError):
+        _walk(parents={10: 11, 11: 10}, environments={11: {}})
+    # An unreadable parent record ends the walk as an incomplete search, naming
+    # the process whose record could not be read.
+    with pytest.raises(nested_launch.AncestryIncompleteError) as unreadable:
+        _walk(parents={10: 11}, environments={})
+    assert "parent process 11" in str(unreadable.value)
+    # A fence beyond the bound is never reached: the search stops at its bound
+    # and refuses rather than reporting the fence-free answer.
     depth = nested_launch.ANCESTRY_BOUND + 5
     parents = {pid: pid + 1 for pid in range(10, 10 + depth)}
-    environments = {10 + depth: {nested_launch.WORKER_FENCE_ENV: "too far"}}
-    assert _walk(parents=parents, environments=environments) == {}
+    # Every record on the way up is readable and holds no fence, so the only
+    # reason this search stops is its bound.
+    environments = {pid: {} for pid in parents.values()}
+    environments[10 + depth] = {nested_launch.WORKER_FENCE_ENV: "too far"}
+    with pytest.raises(nested_launch.AncestryIncompleteError) as bound:
+        _walk(parents=parents, environments=environments)
+    assert str(nested_launch.ANCESTRY_BOUND) in str(bound.value)
+
+
+def _fabricated_tree(monkeypatch, *, parents, environments):
+    """Point the ancestor walk's own readers at a made-up process tree.
+
+    The walk resolves both links through the modules that already own them, so
+    patching those owners is what a real unreadable record and a real deep
+    chain look like to it.
+    """
+    from reckon.crew import process_signal
+    from reckon.hooks import coordinator_obligations
+
+    monkeypatch.setattr(process_signal, "_process_environment", environments.get)
+    monkeypatch.setattr(coordinator_obligations, "_parent_of", parents.get)
+
+
+def _submitted_without_reaching_a_scheduler(monkeypatch):
+    """Stop ``main`` before it can exec a real scheduler, and report reaching it.
+
+    The refusal under test happens before the binary is resolved, so a resolver
+    that records and returns None keeps the base arm from launching anything
+    while still letting the search fall through to a forwarded launch there.
+    """
+    reached: list[tuple] = []
+
+    def record(*args, **kwargs):
+        reached.append(args)
+
+    monkeypatch.setattr(nested_launch, "real_binary", record)
+    return reached
+
+
+def test_j_a_submission_below_an_unreadable_parent_is_refused_naming_it(
+    monkeypatch, capsys
+):
+    me = os.getpid()
+    unreadable = 4_242
+    _fabricated_tree(
+        monkeypatch,
+        parents={me: 4_241, 4_241: unreadable, unreadable: 1},
+        # 4241 is readable and holds no fence; 4242 is absent, so its record
+        # cannot be read and the search never learns whether it carried one.
+        environments={4_241: {}},
+    )
+    reached = _submitted_without_reaching_a_scheduler(monkeypatch)
+    status = nested_launch.main("sbatch", SUBMISSION, environ={})
+    assert status == nested_launch.REFUSAL_STATUS
+    assert reached == [], "the refusal must come before any real binary is resolved"
+    err = capsys.readouterr().err
+    assert str(unreadable) in err, err
+    assert "could not be read" in err, err
+    assert "could not be established" in err, err
+
+
+def test_k_a_submission_beyond_the_bound_is_refused_naming_the_bound(
+    monkeypatch, capsys
+):
+    me = os.getpid()
+    bound = nested_launch.ANCESTRY_BOUND
+    parents = {me: 1000}
+    for index in range(bound + 5):
+        parents[1000 + index] = 1000 + index + 1
+    environments = {pid: {} for pid in parents.values()}
+    _fabricated_tree(monkeypatch, parents=parents, environments=environments)
+    reached = _submitted_without_reaching_a_scheduler(monkeypatch)
+    status = nested_launch.main("sbatch", SUBMISSION, environ={})
+    assert status == nested_launch.REFUSAL_STATUS
+    assert reached == [], "the refusal must come before any real binary is resolved"
+    err = capsys.readouterr().err
+    assert str(bound) in err, err
+    assert "bound" in err, err
+
+
+def test_l_a_search_that_reaches_the_top_is_passed_through_unchanged():
+    # The coordinator case: every ancestor is read, the walk arrives at the
+    # kernel's pid 0, and the empty answer is therefore the established one.
+    walked = _walk(parents={10: 1, 1: 0}, environments={1: {"PATH": "/init/bin"}})
+    assert walked == {}
+    filled = nested_launch.fence_environment(
+        {"PATH": "/coordinator/bin"}, ancestry=lambda: walked
+    )
+    assert filled == {"PATH": "/coordinator/bin"}

@@ -685,6 +685,21 @@ def _parent_process(pid: int) -> int | None:
     return read_parent(pid)
 
 
+class AncestryIncompleteError(Exception):
+    """The ancestor search stopped before the top of the process tree.
+
+    Empty is only a valid answer for a search that reached the top and found
+    no fence there. One that stopped early — at the bound, or on a record it
+    could not read — has not seen every ancestor, so treating its silence as
+    "no fence" would pass the submission through unfenced on the strength of
+    an absence it never established. The detail names what stopped it.
+    """
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail)
+        self.detail = str(detail)
+
+
 def ancestry_fence(
     *,
     pid: int | None = None,
@@ -698,27 +713,47 @@ def ancestry_fence(
     process at the exec that started it is untouched by any of that, so the
     fence that started the tree is still readable from an ancestor however its
     descendants have edited themselves. The walk goes up the parent chain until
-    an environment names the fence, and stops at the tree's root. Empty means
-    no ancestor carries a fence, which is the coordinator case.
+    an environment names the fence, and stops at the tree's root.
+
+    Empty means the walk reached the top and no ancestor carried a fence, which
+    is the coordinator case. A walk that stopped before the top raises
+    :class:`AncestryIncompleteError` rather than returning empty: it cannot answer
+    "no fence", and a coordinator is reached only by actually arriving there.
     """
     current = os.getpid() if pid is None else pid
     seen = {current}
     for _ in range(ANCESTRY_BOUND):
         parent = parent_of(current)
-        # The fence's own payload is a child of the namespace's init, so the
-        # last process worth reading is that init itself.
-        if parent is None or parent <= 0 or parent in seen:
+        if parent is None:
+            raise AncestryIncompleteError(
+                f"the parent of process {current} could not be read"
+            )
+        # pid 0 is the kernel's own entry: the walk has reached the top. The
+        # fence's own payload is a child of the namespace's init, so the last
+        # process worth reading is that init itself.
+        if parent <= 0:
             return {}
+        if parent in seen:
+            raise AncestryIncompleteError(
+                f"the parent chain repeated process {parent} without reaching the top"
+            )
         seen.add(parent)
         environment = environment_of(parent)
-        if environment and environment.get(WORKER_FENCE_ENV):
+        if environment is None:
+            raise AncestryIncompleteError(
+                f"the environment of parent process {parent} could not be read"
+            )
+        if environment.get(WORKER_FENCE_ENV):
             return {
                 name: environment[name]
                 for name in FENCE_ENVIRONMENT_NAMES
                 if environment.get(name)
             }
         current = parent
-    return {}
+    raise AncestryIncompleteError(
+        f"the fence search stopped at its bound of {ANCESTRY_BOUND} processes "
+        "without reaching the top"
+    )
 
 
 def fence_environment(
@@ -731,7 +766,9 @@ def fence_environment(
     A name the submitting process itself carries is used as it stands: a caller
     that hands a shim a recipe means that recipe. Only what is missing is
     filled from the tree, so an unchanged submission reads exactly as it did
-    and an emptied one reads the same as an unchanged one.
+    and an emptied one reads the same as an unchanged one. The search reaches
+    the top of the tree or raises :class:`AncestryIncompleteError`; a caller must not
+    read an empty result as "no fence" when the search never got there.
     """
     own = {
         name: str(environ[name])
@@ -1246,8 +1283,20 @@ def main(
     # A submitter that cleared its own environment takes the fence's names with
     # it, and with them the run and the recipe its task has to be wrapped in.
     # The process tree still holds them, so only the names this process is
-    # missing are filled; a value the caller carries is never overridden.
-    for name, value in fence_environment(source).items():
+    # missing are filled; a value the caller carries is never overridden. A
+    # search that stopped before the top cannot report "no fence": it has not
+    # seen every ancestor, so the submission is refused rather than passed
+    # through unfenced.
+    try:
+        filled = fence_environment(source)
+    except AncestryIncompleteError as exc:
+        run_id = str(source.get(RUN_ID_ENV) or "").strip()
+        print(
+            FenceUnestablishedError(run_id, exc.detail).refusal(tool),
+            file=sys.stderr,
+        )
+        return REFUSAL_STATUS
+    for name, value in filled.items():
         env.setdefault(name, value)
     refusal = depth_refusal(tool, env)
     if refusal is not None:
