@@ -23,6 +23,7 @@ from reckon import (
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
+    role_may_write_repository_paths,
 )
 from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
@@ -1366,13 +1367,20 @@ def _require_worktree_at_its_base(run_id: str, record: Mapping[str, Any]) -> Non
     A review run is exempt because its worktree is the reviewed node's tree,
     checked out at the reviewed head rather than at the base the review was
     dispatched against: the head is the reviewed work, not a commit the review
-    made, and the pointer carries it by design. The review's deliverable is the
-    stored record, so measuring its tree against the review's base would refuse
-    every review promoted with a passing gate.
+    made, and the pointer carries it by design. Its deliverable is the stored
+    record rather than a commit, so measuring its tree against the review's
+    base would refuse every review promoted with a passing gate. A role that
+    may not write repository paths is exempt for the same reason: it only reads
+    the tree it grades, so a head above the run's base is the work under
+    verification rather than work of its own. A role that may write the
+    repository keeps the guard.
     """
+    from reckon.crew.recovery import _pointer_role
     from reckon.crew.recovery_review_delivery import _is_review_run
 
     if _is_review_run(record):
+        return
+    if not role_may_write_repository_paths(_pointer_role(record)):
         return
     base = str(record.get("base_sha") or "").strip()
     worktree = _record_worktree(record)

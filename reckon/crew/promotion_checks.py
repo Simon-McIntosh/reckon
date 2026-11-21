@@ -1335,9 +1335,17 @@ def _with_the_runs_whole_change(
     tier none, and was offered for promotion without a review. Adding the base
     to head commits can only widen the measured change, so the tier never reads
     lighter than the run's whole change. A record naming no readable tree or
-    base keeps the cited commits alone, as before.
+    base keeps the tier to the cited commits alone, as before, and so does a
+    role that may not write repository paths: a verifier's tree is the tier's
+    own graded tree, so its history is the work being graded rather than the
+    verifier's change, and reading it as the run's work would charge a review
+    of code the run is measuring rather than writing.
     """
     cited = [str(commit) for commit in commit_list if str(commit).strip()]
+    from reckon.crew.recovery import _pointer_role
+
+    if not role_may_write_repository_paths(_pointer_role(record)):
+        return cited
     tree = _record_tree(record)
     base = str(record.get("base_sha") or "").strip()
     if tree is None or not base:
