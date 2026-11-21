@@ -1807,17 +1807,34 @@ def _restate_time_fence(
 
 
 def _lane_change_launch_failure(
-    before: Mapping[str, Any], current: Mapping[str, Any]
+    before: Mapping[str, Any],
+    current: Mapping[str, Any],
+    *,
+    pid: int | None,
+    log_path: Path | str | None,
 ) -> Mapping[str, Any] | None:
-    """The launch-failure receipt this lane change's spawn added, if any.
+    """Whether this lane change's spawn started no worker, and why if it said so.
 
     A spawn that returns a pid is an accepted launch, not a started worker: the
     launch path records a failure on the run when the spawned process ended
-    without reaching a model, and it returns the pid regardless. So the receipt
-    the spawn added is the fact that no worker is running. Reading the run's
-    launch failures before and after the spawn isolates the one this move
-    caused from any an earlier attempt left; the phase is read too because the
-    same writer sets it.
+    without reaching a model, and it returns the pid regardless. The receipt
+    that writer adds is read first, because it names the cause; reading the
+    run's launch failures before and after the spawn isolates the one this move
+    caused from any an earlier attempt left.
+
+    That receipt cannot be the only witness. The writer leaves the pointer
+    untouched when it finds it already in the launch-failed phase, and that is
+    exactly the state a lane change that failed once leaves behind, so a second
+    attempt records nothing while still starting nothing. The launch path's own
+    no-worker fact is therefore read as well: a spawn whose process is gone
+    with its stream never begun reached no model. A launch that did reach one
+    leaves either a live process or a stream with a byte in it, so this asks
+    the same question the launch path asks rather than a second notion of a
+    started worker.
+
+    A run sitting in the launch-failed phase is a legitimate source for a move
+    that does start a worker, so the phase alone is never the answer: only a
+    spawn that left nothing running refuses the move.
     """
     recorded_before = before.get("launch_failures") or ()
     recorded_after = current.get("launch_failures") or ()
@@ -1828,6 +1845,10 @@ def _lane_change_launch_failure(
         before.get("phase") or ""
     ) != LAUNCH_FAILED_PHASE:
         return {}
+    if pid is not None and process_alive(pid) is False:
+        stream = Path(str(log_path)) if log_path else None
+        if not _stream_began(stream):
+            return {}
     return None
 
 
@@ -2191,7 +2212,12 @@ def change_lane(
         # returns the pid regardless. The pointer move is committed only when
         # the spawn left no such receipt, so a lane change that ran nowhere
         # leaves the run on the backend and attempt it is actually executing.
-        failure = _lane_change_launch_failure(record, read_pointer(run_id))
+        failure = _lane_change_launch_failure(
+            record,
+            read_pointer(run_id),
+            pid=spawned_pid,
+            log_path=log_path,
+        )
         if failure is not None:
             return _refused_lane_change_result(
                 record, resolution.backend, failure=failure
@@ -2830,6 +2856,7 @@ from .dispatch_launch import (  # noqa: E402
     _launched_prior_session,
     _plan_composed_the_fence,
     _spawn,
+    _stream_began,
     _worker_runtime_environment,
     _worker_runtime_plan,
     preflight_launch_command,

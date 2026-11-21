@@ -315,6 +315,45 @@ def test_an_accepted_launch_that_starts_no_worker_leaves_the_pointer(
     assert result["attempt"] == before["attempt"]
 
 
+def test_a_second_lane_change_that_starts_no_worker_leaves_the_pointer(
+    run: tuple[dict, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run already in the launch-failed phase gets no second receipt.
+
+    The launch path leaves the pointer untouched when it finds the run already
+    marked launch-failed, so the failure of a second attempt is recorded
+    nowhere. The move must still be refused, or the pointer ends on a backend
+    the run never executed on exactly as it did on 20 November.
+    """
+    config, _directory = run
+    monkeypatch.setattr(dispatch_sessions_module, "process_alive", lambda pid: False)
+    record = crew.read_pointer(RUN)
+    record["phase"] = "launch-failed"
+    record["launch_failures"] = [
+        {
+            "kind": "launch-failed",
+            "detail": "the worker exited before its first event",
+        }
+    ]
+    crew._write_json(crew.pointer_path(RUN), record)
+    before = crew.read_pointer(RUN)
+
+    result = _lane_change_that_starts_no_worker(config, monkeypatch)
+
+    after = crew.read_pointer(RUN)
+    assert after["backend"] == "clive"
+    assert after["attempt"] == before["attempt"]
+    assert after["agent"] == before["agent"]
+    assert after["dialect"] == before["dialect"]
+    assert not after.get("lane_changes")
+    # The pointer was already in this phase, and nothing added a second
+    # receipt; the refusal therefore rests on the spawn leaving no worker.
+    assert len(after["launch_failures"]) == len(before["launch_failures"])
+    assert result["ok"] is False
+    assert "no worker" in result["reason"]
+    assert result["backend"] == "clive"
+
+
 def test_a_lane_change_whose_worker_starts_moves_the_pointer(
     run: tuple[dict, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
