@@ -2367,6 +2367,124 @@ def _refuse_foreign_stream(events: Iterable[Mapping[str, Any]]) -> None:
     )
 
 
+# ── The harness that wrote a stream ──────────────────────────────────────────
+# A pointer names the lane its run carries now. A run that changed harness
+# keeps the streams its earlier harnesses wrote, so a fold that trusts the
+# pointer reads one attempt's vocabulary with another's translation: omp
+# refuses the stream outright, and the other dialects fold a foreign-shaped
+# stream to a complete-looking run that spent nothing. Each stream is therefore
+# folded by the harness whose own event vocabulary it opens with, named from the
+# records the stream itself carries.
+
+# Every dialect's own event types, most specific vocabulary first. The event
+# types are what the harness writes; they are read only to name the writer and
+# never decide what a fold reports.
+_DIALECT_VOCABULARIES: tuple[tuple[str, frozenset[str]], ...] = (
+    ("omp", _OMP_EVENT_TYPES),
+    (
+        "codex",
+        frozenset(
+            {
+                "thread.started",
+                "turn.completed",
+                "turn.failed",
+                "item.completed",
+                "stream.error",
+            }
+        ),
+    ),
+    ("claude", frozenset({"system", "assistant", "result"})),
+)
+
+# How much of a stream's opening is read to name its writer: every harness
+# states its vocabulary in its first records, and the bound keeps an
+# unmeasurable or very large stream from being read whole for a name.
+_STREAM_WRITER_SAMPLE_BYTES = 64 * 1024
+
+# The writer named for each stream, keyed by path and the file identity it was
+# named from, so an unchanged attempt is named once however often it is folded.
+_STREAM_WRITERS: OrderedDict[str, tuple[tuple[int, int, int, int], str | None]] = (
+    OrderedDict()
+)
+_STREAM_WRITER_LIMIT = 2048
+_STREAM_WRITER_LOCK = threading.Lock()
+
+
+def _vocabulary_from_sample(chunk: bytes) -> str | None:
+    """Name the dialect whose event types a stream's opening records carry."""
+    kinds: set[str] = set()
+    for line in chunk.decode("utf-8", errors="replace").split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            record = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(record, Mapping):
+            kind = record.get("type")
+            if isinstance(kind, str) and kind:
+                kinds.add(kind)
+    for name, vocabulary in _DIALECT_VOCABULARIES:
+        if kinds & vocabulary:
+            return name
+    return None
+
+
+def stream_writer_dialect(log_path: str | Path) -> str | None:
+    """The dialect name of the harness that wrote this stream, or None.
+
+    None means the opening records name no known vocabulary, and the caller
+    keeps whatever dialect it already had — an unrecognised stream is read
+    exactly as it was before this question was asked.
+    """
+    path = Path(log_path)
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    key = str(path.resolve())
+    with _STREAM_WRITER_LOCK:
+        stored = _STREAM_WRITERS.get(key)
+        if stored is not None and stored[0] == identity:
+            return stored[1]
+    try:
+        with path.open("rb") as handle:
+            chunk = handle.read(_STREAM_WRITER_SAMPLE_BYTES)
+    except OSError:
+        return None
+    writer = _vocabulary_from_sample(chunk)
+    with _STREAM_WRITER_LOCK:
+        _STREAM_WRITERS[key] = (identity, writer)
+        _STREAM_WRITERS.move_to_end(key)
+        while len(_STREAM_WRITERS) > _STREAM_WRITER_LIMIT:
+            _STREAM_WRITERS.popitem(last=False)
+    return writer
+
+
+def _backend_for_stream(
+    backend: Mapping[str, Any], log_path: str | Path
+) -> Mapping[str, Any]:
+    """The settings a stream is folded with: those of the harness that wrote it.
+
+    The caller's dialect is kept whenever it is the stream's own, so a run that
+    never changed harness is read exactly as before. A stream written in another
+    harness's vocabulary is folded by that harness, which is the only
+    translation that can report the attempt's spend.
+    """
+    writer = stream_writer_dialect(log_path)
+    if writer is None:
+        return backend
+    try:
+        current = dialect_for(backend)
+    except BackendError:
+        current = None
+    if current is not None and current.name == writer:
+        return backend
+    return {**dict(backend), "command": writer, "dialect": writer}
+
+
 class _ClaudeDialect(Dialect):
     """Claude Code: `-p` stream-json, session ids, rate-limit headroom."""
 
@@ -4866,6 +4984,10 @@ def _observe_run_stream(
             detail=f"event log not written yet: {path}",
         )
         return obs
+    # Each attempt is folded by the harness that wrote it. A run that changed
+    # lane keeps its earlier attempts' streams, and the pointer now names a
+    # dialect those streams are not written in.
+    backend = _backend_for_stream(backend, path)
     # The derived reading of this stream is held per file identity, so an
     # unchanged stream costs no decode and a grown one is folded from the
     # offset the last read reached. A caller's ``resume`` is the fallback for a
