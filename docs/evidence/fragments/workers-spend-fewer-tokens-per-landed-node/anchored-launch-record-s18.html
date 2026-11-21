@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s18">
+  <meta name="plan-recorded-at" content="2026-11-21">
+  <meta name="plan-verdict" content="passed">
+  <title>The launch record carries no anchored edit field | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="anchored-launch-record-s18-landing" data-node="anchored-launch-record-s18" data-reckon="landed" data-when="2026-11-21">
+  <h2>The launch record carries no anchored edit field</h2>
+  <p><code>reckon/crew/dispatch_launch.py</code> no longer writes an
+    <code>anchored_edit</code> or <code>anchored_edit_reason</code> field at any
+    of its three record sites: the supervisor spec, the worker record, and the
+    live pointer's phase rewrite. Nothing outside the module read either field,
+    so the records now name only what a launch still uses — the backend, its
+    argv and its dialect. A grep for <code>anchored_edit</code> and
+    <code>anchored-edit</code> over the changed path finds nothing.</p>
+  <p><strong>Measure.</strong> Base arm <code>1666d19f7744</code> and head arm
+    <code>c531183617a5</code> both ran the armed suite
+    (<code>tests/test_staged_write_inventory.py
+    tests/test_every_shared_home_lock_holds_across_nodes.py</code>) on the
+    <code>all_debug</code> partition, each green (0 failures, 0 collected-error
+    exit) one arm at a time. The scoped gate passed at the head with the same
+    command and <code>EXIT=0</code>. A corroborating run of the four suites that
+    import the changed module — the pointer phase advance, the refused lane
+    change, the attempt exit and the review-record check — read 34 passed.
+    <code>ruff check</code> reports the same two findings in both arms and
+    <code>ruff format --check</code> the same two hunks, so the change adds
+    none.</p>
+  <p><strong>Falsified.</strong> The declared negative control is a spec whose
+    backend still carries <code>anchored_edit: true</code>. The same probe run
+    against the base tree prints the worker record's keys with
+    <code>anchored_edit</code> and <code>anchored_edit_reason</code> present,
+    and against the head tree prints them absent (<code>EXIT=0</code> both, with
+    the base run as the positive control that the probe sees the field when it
+    exists). A record that still carried the field would be caught by this
+    probe. The module <code>reckon/anchored_edit.py</code>, the flight key and
+    the backend dialect are removed by later nodes of this section; the argv a
+    backend composes still carries its own flag until then, which is outside
+    this node's write scope.</p>
+</article>
+</body>
+</html>
