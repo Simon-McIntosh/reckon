@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="A gate log replaced the shared Python binary and ended the fleet; seal the install tree, carry the fence into jobs, and keep sessions alive without Python.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="18.5">
+  <meta name="plan-effort-hours" content="20.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-version" content="36">
-<meta name="plan-modified" content="2026-11-20">
+<meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
   <main class="plan-doc">
@@ -139,9 +139,9 @@
 
     <h2 id="s16">§16 — A job runs fenced whatever environment its submitter carries</h2>
 <section data-reckon="section" data-id="s16" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>On 21 November 2026 a nova worker submitted three jobs to a GPU node from a shell in which it had cleared the variables the scheduler shim reads, and the jobs ran with no fence. §14 and §15 already make a job on a node with no fence program run from a carried copy or not at all, and catch a submission by the scheduler's absolute path. What they leave open is a submitter that changes its own environment: the shim then sees no run and treats the submission as one from outside any worker.</p>
+    <p>On 21 November 2026 the worker of nova run <code>r-20261121T013213071208-pinned-point-program</code> submitted jobs 1334342, 1334343 and 1334344 to a GPU node from a shell in which it had cleared the variables the scheduler shim reads, and the jobs ran with no fence. §14 and §15 already make a job on a node with no fence program run from a carried copy or not at all, and catch a submission by the scheduler's absolute path. What they leave open is a submitter that changes its own environment: the shim then sees no run and treats the submission as one from outside any worker.</p>
     <p><strong>Deliverable.</strong> A job submitted from inside a worker's fence runs fenced, or is refused, whatever environment the submitting process carries. The refusal names the run and says the fence could not be established.</p>
-    <p><strong>Done when.</strong> <code>tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py</code> passes, covering: a submission from a fenced worker whose shell has every variable beginning <code>RECKON_</code> unset is wrapped in the fence as an unchanged one is; the same submission made with an empty environment is wrapped or refused; a submission from a coordinator outside any fence is passed through unchanged; and the refusal text names the run.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py</code> passes, covering: a submission from a fenced worker whose shell has every variable beginning <code>RECKON_</code> unset is wrapped in the fence as an unchanged one is; the same submission made with an empty environment is wrapped or refused; a submission from a coordinator outside any fence is passed through unchanged; and the refusal text names the run. The cases that launch a fence run on <code>all_debug</code>, and the tests importing the scheduler shim add no failure against the base there.</p>
     <p><strong>Negative control.</strong> At the base revision the first case must fail with the job submitted unwrapped.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
