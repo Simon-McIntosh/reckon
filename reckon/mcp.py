@@ -2786,6 +2786,8 @@ def _crew(
     backend: str | None = None,
     model: str | None = None,
     priority: int | None = None,
+    awaiting: str | None = None,
+    decision: str | None = None,
     finding: str | None = None,
     acted: bool = False,
     note: str | None = None,
@@ -2817,7 +2819,9 @@ def _crew(
     ``backend``, ``model``), ``queue-reprioritise`` (``run_id``,
     ``priority``, ``reason``) and ``queue-drop`` (``run_id``, ``reason``),
     plus ``queue-hold`` and ``queue-release`` (one of ``run_id``, ``plan`` or
-    ``session``, with optional ``reason``),
+    ``session``, with optional ``reason``; a ``queue-hold`` whose ``awaiting``
+    names the lead also carries ``decision``, the id of the recorded question
+    that releases it, and is refused without one),
     each refusing a request that has left the waiting phases. A
     refused ``complete`` or ``land`` carries every failing guard in ``guards``.
     ``decisions`` reads all open questions waiting on the lead across mounted
@@ -2966,6 +2970,8 @@ def _crew(
             backend=backend,
             model=model,
             priority=priority,
+            awaiting=awaiting,
+            decision=decision,
             until=until,
             plan=plan,
             session=session,

@@ -168,6 +168,8 @@ _PARAM_MAP: dict[str, dict[str, str]] = {
         "session": "session",
         "reason": "reason",
         "project": "project",
+        "awaiting": "awaiting",
+        "decision": "decision_id",
     },
     "queue-release": {
         "run_id": "run_id",
@@ -252,6 +254,8 @@ _PARAM_DEFAULTS: dict[str, dict[str, Any]] = {
         "session": None,
         "reason": "",
         "project": None,
+        "awaiting": None,
+        "decision": "",
     },
     "queue-release": {
         "run_id": None,
