@@ -930,7 +930,7 @@ def pair_table(pairs: list[dict]) -> str:
 
 
 def render_pooled(data: dict, result: dict, check: dict) -> str:
-    """The pooled §8 section: both assignments, every plan they draw from."""
+    """The pooled local section: both assignments, every plan they draw from."""
     ids = POOLED_SECTION
     arms = result["arms"]
     same_arm = result["same_arm"]
