@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from reckon._plan_html import read_state_file, write_state
-from reckon.crew import decision_answers, run_paths, runs
+from reckon.crew import decision_answers, queue_admission, run_paths, runs
 from reckon.crew.lead_decisions import record_decision
 from reckon.crew.obligations import obligations
 from reckon.mcp_views import serve_crew_view
@@ -290,3 +290,17 @@ def test_the_answer_store_refuses_an_option_the_question_never_offered(crew_home
     assert path.read_text(encoding="utf-8") == before
     assert _monitor_rows(PROJECT) == []
     assert runs.read_pointer("run-a")["phase"] == "held"
+
+
+def test_the_admission_pass_releases_the_answer_it_reads(crew_home):
+    home, _ = crew_home
+    decision = _question(held=("run-a",))
+    _held_pointer(home, "run-a", decision["id"])
+    _answer(decision["id"], choice="route")
+
+    result = queue_admission.admit_once()
+
+    # The pass is where the release belongs: the answer is read by the same
+    # walk that judges what it held, and the receipt names what it freed.
+    assert result["released_answered"] == ["run-a"]
+    assert runs.read_pointer("run-a")["phase"] == "queued"

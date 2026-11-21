@@ -506,6 +506,7 @@ def _pass_verdict_record(
     landing = result.get("landing") or {}
     if (
         not verdicts
+        and not result.get("retired")
         and not landing.get("landed")
         and not landing.get("skipped")
         and not landing.get("obligations")
@@ -530,6 +531,8 @@ def _pass_verdict_record(
         "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
         "retired": list(result.get("retired") or ()),
+        "retired_lost_session": list(result.get("retired_lost_session") or ()),
+        "retirement_refused": list(result.get("retirement_refused") or ()),
         "obligations": list(result.get("obligations") or ()),
         "landing": landing,
     }
