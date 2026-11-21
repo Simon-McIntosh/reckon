@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1108">
+<meta name="plan-version" content="1109">
 <meta name="plan-modified" content="2026-11-21">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3464,7 +3464,10 @@
     <div class="r-comment-body"><p>review scored 111, 3 finding(s)</p></div>
 </div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261121T083503343663-review-of-qwnw-a-relative-brief-launches-from-any-directory-ebf71a3d514c" data-who="reckon-build" data-when="2026-11-21T09:04:08.325Z">
-    <div class="r-comment-body"><p>Reviewed r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory over 97674dad7c12a717205f955148f6a0c4cc0ce0df..ebf71a3d514c83e27cbf5943870ffe63be8049ea (a merge of primary that changes none of the node&#x27;s own behaviour): parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 18, durability 18, fit 19, reuse 19, one non-blocking finding on the undeclared settle namespace, and added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs (0 failures at both 3ab436fe383 and ebf71a3d514c).</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory over 97674dad7c12a717205f955148f6a0c4cc0ce0df..ebf71a3d514c83e27cbf5943870ffe63be8049ea (a merge of primary that changes none of the node's own behaviour): parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 18, durability 18, fit 19, reuse 19, one non-blocking finding on the undeclared settle namespace, and added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs (0 failures at both 3ab436fe383 and ebf71a3d514c).</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261120T204920841876-qwnw-a-relative-brief-launches-from-any-directory" data-who="reckon-build" data-when="2026-11-21T08:33:21Z">
+    <div class="r-comment-body"><p>A brief named by a relative path is resolved once at dispatch against the request&#x27;s repository, so the admit service reads the same file from any working directory; and a request whose launch keeps failing stops being re-queued after queue.launch_failure_limit (default 3) failed launches in a row, staying launch-failed with the last failure recorded. Measure: this node&#x27;s test is 3 failed / 2 passed at base 3ab436fe and 5 passed at head; both suite arms carry 0 failures.</p></div>
 </div>
 <div class="r-comment" data-section="s40" data-id="c-run-r-20261121T074536665083-review-of-qwnw-the-figure-twin-check-reads-the-head-tree-85825a4b7e01" data-who="reckon-build" data-when="2026-11-21T08:27:09.257Z">
     <div class="r-comment-body"><p>Review of r-20261120T204947437230-qwnw-the-figure-twin-check-reads-the-head-tree stored parsed at both declared paths; scores goal_fidelity 18, evidence 18, scope_discipline 20, durability 19, fit 16, reuse 5; three non-blocking findings (promotion_checks.py:714 re-implements reports.py:1926's base-vs-head twin rule; duplicate _is_ancestor helper; docstring removed from _commit_holds_path) and no blocking defect.</p></div>
