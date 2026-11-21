@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-reviewed-plan-is-queued-at-full-width">
+  <meta name="plan-title" content="A Reviewed Plan Is Queued At Full Width">
+  <meta name="plan-summary" content="Dispatching a plan queues every implementable section, unqueued reviewed plans are obligations, and waits nothing can release are removed.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S28">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="queued-work-needs-no-workaround">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-21">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the queue is a tenth of the work the plans declare</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="done"></section>
+    <p>On 21 November 2026 the lead saw the local lane drain to no running work while the monitor showed 14 requests waiting, the oldest five days old, and asked whether sessions dispatch at full plan width and whether a batch over a plan is the default.</p>
+    <p>A count over every mounted project at 20:40Z that day, reading each live plan's section declarations against the live requests:</p>
+    <table>
+      <thead><tr><th>Project</th><th>Live plans with open sections</th><th>Sections declared implementable</th><th>With a live request</th></tr></thead>
+      <tbody>
+        <tr><td>reckon</td><td>52</td><td>109</td><td>6</td></tr>
+        <tr><td>imas-codex</td><td>16</td><td>67</td><td>0</td></tr>
+        <tr><td>nova</td><td>18</td><td>52</td><td>15</td></tr>
+        <tr><td>imas-ambix</td><td>13</td><td>45</td><td>1</td></tr>
+        <tr><td>imas-efit</td><td>4</td><td>19</td><td>6</td></tr>
+        <tr><td>RabbitPy</td><td>1</td><td>3</td><td>0</td></tr>
+        <tr><td>imas-standard-names</td><td>2</td><td>2</td><td>0</td></tr>
+        <tr><td>power_convertor</td><td>1</td><td>1</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>That is 298 declared sections and 28 requests. Some of the 298 are held for good reason: an unreviewed plan, an open decision, a plan no live session owns. The count does not separate those, and nothing in reckon does either, which is the first gap. The second is that <code>crew dispatch</code> queues one section unless a coordinator writes a batch file, so full width depends on each session remembering a rule. The third is that no dispatch records whether it came as a whole plan, so the question the lead asked cannot be answered from the records.</p>
+    <p>Of the 18 requests waiting at the same time, 7 waited on sections nobody was building, 3 to 25 days old. Two of those were in the phase that says their upstream can no longer land. The lost-session plan reports an idle wait once and removes a wait it classes as stranded; these two were classed idle, so they were reported and left.</p>
+
+    <h2 id="s2">§2 — Dispatching a plan with no section queues every implementable section</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="implementable"></section>
+    <p><strong>Deliverable.</strong> A dispatch that names a plan and no section queues one request for every section of that plan declared implementable that has no live request, in one call. Each request takes its goal, write paths, waits and negative control from its section. A section that cannot be queued is refused by name with its reason and does not stop the rest. A dispatch that names a section behaves as it does today.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_plan_dispatch_queues_every_implementable_section.py</code> passes, covering: a plan with four implementable sections, one of which already has a live request, queues exactly the other three; a section whose declared wait has not landed is stored awaiting its upstream and not launched; a section with no done-when is refused naming that section while the others are queued; a second identical call queues nothing and returns the existing requests; and a call naming one section queues that section alone. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests importing the dispatch command module add no failure against the base on <code>all_debug</code>.</p>
+    <p><strong>Negative control.</strong> On main after <code>130892970e</code> the first case must fail with the call refused for want of a section.</p>
+
+    <h2 id="s3">§3 — A request records the width it was dispatched at</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="implementable"></section>
+    <p><strong>Deliverable.</strong> Every stored request records whether it was queued by a call that named its whole plan, a batch file or a single section, and the crew view of live work can be read by that field. The figure the lead asked for, how many requests of each kind each session made in a period, is one read.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_request_records_its_dispatch_width.py</code> passes, covering: a request from a whole-plan call, one from a batch file and one from a single-section call each carry their own value on the pointer and on the ledger row written at promotion; and the live view filtered by that field returns exactly the matching requests. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
+    <p><strong>Negative control.</strong> On main after <code>130892970e</code> the first case must fail with the field absent.</p>
+
+    <h2 id="s4">§4 — A reviewed plan with unqueued sections is an obligation on its owner</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="implementable"></section>
+    <p><strong>Deliverable.</strong> A session that owns a plan whose review round is answered, with at least one section declared implementable and no live request for it, carries one obligation per such plan. The obligation names the plan, the count of unqueued sections and the single command that queues them. A plan with an unanswered review, an open decision holding its sections, or no owning live session raises nothing on that session and is listed, with its reason, in the project's read of unqueued work.</p>
+    <p><strong>Done when.</strong> <code>tests/test_an_unqueued_reviewed_plan_is_an_obligation.py</code> passes, covering: an owned, reviewed plan with three unqueued implementable sections raises one obligation naming three and the command, and the command run in the test's own crew home clears it; a plan whose newest review has an unanswered finding raises none and is listed as awaiting its review; a plan with an open decision is listed as held by that decision; a plan owned by no live session is listed as unowned; and a plan every one of whose implementable sections has a request raises none. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The read over a fixture of 300 plans completes in under two seconds.</p>
+    <p><strong>Negative control.</strong> On main after <code>130892970e</code> the first case must fail with no obligation raised.</p>
+
+    <h2 id="s5">§5 — A request whose upstream can no longer land is retired</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="implementable"></section>
+    <p>At 20:40Z on 21 November 2026 requests <code>r-20261115T224010678540-iter-facility-protected-backup</code> and <code>r-20261115T224009612484-plant-signal-search-and-read</code> had sat for 5.9 days in the phase that says their upstream can no longer land, each with the detail "nobody is building" their upstream section. The lead decided on 20 November that a wait which cannot resolve is removed. These were classed idle, so the pass reported them once and left them.</p>
+    <p><strong>Deliverable.</strong> A stored request in the phase that says its upstream can no longer land is retired by the admit pass, with a discard record naming the upstream and why it cannot land, unless a coordinator holds the request. A request waiting on a section nobody is building, whose upstream could still land, keeps the idle report it has today.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_blocked_wait_is_retired.py</code> passes, covering: a request shaped as the two above is retired on the next pass and its discard record names its upstream; the same request under a coordinator's queue hold is kept; and a request whose upstream is declared implementable with no request is kept and reported idle once. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
+    <p><strong>Negative control.</strong> On main after <code>130892970e</code> the first case must fail with the request still stored after the pass.</p>
+
+    <h2 id="s6">§6 — The waiting figure separates waits that are advancing from waits nothing is building toward</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-links="" data-status="implementable"></section>
+    <p><strong>Deliverable.</strong> Wherever the monitor and the crew views give a count of waiting requests, they give two: those whose upstream has a run on its way, and those nothing is building toward, with the age of the oldest in each. A lane with no running work and a non-zero second count draws that count as a fault, naming the plans to dispatch.</p>
+    <p><strong>Done when.</strong> <code>tests/test_the_waiting_figure_is_split.py</code> passes, covering: a queue of three advancing waits and two that nothing builds toward renders both counts with their oldest ages in the pane row and in the live view; a lane with no running work and two such waits renders the fault and names the two upstream plans; and a queue with only advancing waits renders no fault. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The rendered row is read through the pane's own renderer, not from its inputs.</p>
+    <p><strong>Negative control.</strong> On main after <code>130892970e</code> the first case must fail with a single waiting count rendered.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rpfw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-21" data-recommends-skill="reckon-build">
+    <h4 class="r-fu-title">Build full-width dispatch and the stranded-wait rules</h4>
+    <div class="r-fu-body"><p>Plan authored from the lead's question of 21 November. Answer its content review, then queue every implementable section in one batch; §4 waits on §2 and the others are independent.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-reviewed-plan-is-queued-at-full-width</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+</section>
+  </main>
+</body>
+</html>
