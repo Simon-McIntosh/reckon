@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="a-not-yours-row-against-a-runs-own-owner">
+  <meta name="plan-title" content="Where the not-yours obligation row comes from">
+  <meta name="plan-summary" content="The phrase 'Not this session's run: owner session …' is operator prose stored in a run's deferral, emitted verbatim from one line; the repetition around it is a sweep list that appends without dedupe">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-source" content="crew live pointer, obligations view output and reckon source on this workstation">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-11-21">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="crew,obligations,acknowledgements,research">
+  <title>Where the not-yours obligation row comes from | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input</p>
+      <h1>Where the not-yours obligation row comes from</h1>
+      <p class="lead">
+        A coordinator saw its own held run named in its obligations with the
+        reason &ldquo;Not this session's run: owner session 0f4fa699&rdquo;,
+        which is its own session id. No code compares a session to derive that
+        sentence: it is operator prose stored in the run's deferral and copied
+        onto the row verbatim. The run appears repeatedly beside it for a
+        different reason &mdash; a sweep list that appends one entry per pass
+        and never collapses by run id.
+      </p>
+    </header>
+
+    <section id="finding">
+      <h2>The finding in one paragraph</h2>
+      <p>
+        The phrase is not emitted by an owner comparison. It is the free-text
+        <code>reason</code> of a stored <em>deferral</em> (an acknowledgement)
+        recorded on the run's live pointer, and
+        <code>reckon/crew/obligations.py:1899</code> copies that stored string
+        onto the row. What is behind it is a factual claim that is no longer
+        true: the pointer's own <code>session</code> is
+        <code>0f4fa699-2444-4d93-b978-9931302ff6f8</code>, the same id the
+        reason names as &ldquo;not this session&rdquo;. The repeated listing is
+        a separate mechanism, described under <a href="#repetition">the
+        repetition</a>, and that one does belong in this repository.
+      </p>
+    </section>
+
+    <section id="stored">
+      <h2>Where the text is stored</h2>
+      <p>
+        The deferral lives on the run's live pointer, under its
+        <code>acknowledgement</code> key:
+        <code>~/.config/reckon/crew/live/r-20261118T185447788898-cached-point-program.json</code>.
+        The record opens with these lines:
+      </p>
+      <pre><code>{
+  "acknowledgement": {
+    "reason": "Not this session's run: owner session 0f4fa699-2444-4d93-b978-9931302ff6f8",
+    "recorded_at": "2026-11-19T04:30:39Z",
+    "run_state": {
+      "attempt": 6,
+      "phase": "blocked"
+    },
+    "until": "2026-11-21T12:00:00+00:00",
+    <em>…</em>
+  },</code></pre>
+      <p>
+        The same pointer names the session that is reading the row, at its own
+        top level:
+      </p>
+      <pre><code>  "session": "0f4fa699-2444-4d93-b978-9931302ff6f8",</code></pre>
+      <p>
+        So the reason's claim &mdash; that the run belongs to somebody else
+        &mdash; contradicts the record it is stored beside. Nothing in the
+        pointer derives the reason from that field; the two were written
+        separately, one by hand and one by the launcher.
+      </p>
+      <p>
+        A second, promoted run carries the same wording in the same shape, in
+        its own file under the crew home
+        (<code>~/.config/reckon/crew/acknowledgements/r-20261117T225500180499-fit-inside-the-iteration.json</code>),
+        which shows the phrase is prose an operator has reached for more than
+        once rather than a string any function builds:
+      </p>
+      <pre><code>{
+  "project": "nova",
+  "reason": "Not this session's run: owner session d2b31d35-d43f-471c-8494-93ef30b1d4b5; stored sweep failures re-raise here until reckon qwnw s31 lands",</code></pre>
+    </section>
+
+    <section id="emitted">
+      <h2>The one line that puts it on the row</h2>
+      <p>
+        A search of <code>reckon/</code>, <code>tests/</code> and
+        <code>docs/ui/</code> for the phrase finds no emitter, because the
+        string never names itself in code. The emitter copies whatever the
+        stored reason says:
+      </p>
+      <pre><code>reckon/crew/obligations.py:1877  def _partition_acknowledged(
+reckon/crew/obligations.py:1893      deferred.append(
+reckon/crew/obligations.py:1898              "deferred_duty": item,
+reckon/crew/obligations.py:1899              "reason": str(record.get("reason") or ""),
+reckon/crew/obligations.py:1900              "until": str(record.get("until") or ""),</code></pre>
+      <p>
+        Every duty belonging to a run with a deferral is copied into the
+        <code>acknowledged</code> list with that run's stored reason. The
+        station's sweep-failure renderer appends its rows to
+        <code>obligations</code> after this partition
+        (<code>reckon/crew/station_obligations.py</code> builds them separately),
+        which is why the capture below shows the six sweep rows as owed and only
+        the <code>blocked</code> duty under <code>acknowledged</code>. The
+        writer beside it is <code>reckon/crew/runs.py:3045</code>,
+        <code>record_run_acknowledgement</code>, which takes the text from the
+        caller's <code>--reason</code> and checks only that it is non-empty:
+      </p>
+      <pre><code>reckon/crew/runs.py:3065      text = str(reason).strip()
+reckon/crew/runs.py:3066      if not text:
+reckon/crew/runs.py:3067          raise CrewError("an acknowledgement requires a non-empty --reason")</code></pre>
+      <p>
+        It can refuse a mismatched owner, but only when the caller names a
+        session (<code>--session</code>); <code>reckon crew ack</code> exercises
+        that guard on the project alone. No path derives the reason's wording.
+      </p>
+    </section>
+
+    <section id="reproduction">
+      <h2>Reproducing the repeated row</h2>
+      <p>
+        The run is held on the lead's instruction as evidence. This section
+        reads its records and changes none of them; the station rewrites its
+        own published snapshot on its next pass, so the capture below is quoted
+        from the read taken at 2026-11-21T01:19Z.
+      </p>
+      <pre><code>$ reckon crew view obligations --project nova \
+      --session 0f4fa699-2444-4d93-b978-9931302ff6f8 --pretty</code></pre>
+      <p>
+        The run <code>r-20261118T185447788898-cached-point-program</code>
+        appears in <strong>seven</strong> rows of that output &mdash; six
+        <code>sweep-failed</code> duties and the one deferred
+        <code>blocked</code> row carrying the phrase:
+      </p>
+      <pre><code>"acknowledged": [
+  {
+    "kind": "blocked",
+    "run_id": "r-20261118T185447788898-cached-point-program",
+    "reason": "Not this session's run: owner session 0f4fa699-2444-4d93-b978-9931302ff6f8",
+    "until": "2026-11-21T12:00:00+00:00"
+  }
+],
+"obligations": [
+  { "detail": "station sweep failed: the review pass requested no review for this delivered run within 600 s: the run's obligations are deferred; no review is composed",
+    "kind": "sweep-failed",
+    "next_command": "reckon crew observe --run r-20261118T185447788898-cached-point-program",
+    "run_id": "r-20261118T185447788898-cached-point-program" },
+  <em>… five further identical sweep-failed rows for the same run …</em>
+],
+"summary": { "count": 7, … "unreconciled_runs": 4 }</code></pre>
+      <p>
+        The row count was taken by reading the output rather than the summary
+        alone: the summary's <code>count</code> is 7 because all seven duty
+        rows are in the one list, and the rows naming this run number seven.
+        The captured output is kept with the run's records
+        (<code>obligations-own-session.json</code> under the run directory).
+        The plan's &ldquo;five to seven times&rdquo; is the same shape: the
+        number tracks how many sweep passes had appended to the stored list by
+        the moment it was read.
+      </p>
+    </section>
+
+    <section id="control">
+      <h2>Negative control: a second session, one held run, one row</h2>
+      <p>
+        The same command for a different session that owns one held run lists
+        that run once:
+      </p>
+      <pre><code>$ reckon crew view obligations --project nova \
+      --session c042a637-16e6-44bd-9cd2-b340a6f891dc</code></pre>
+      <p>
+        In that output the held run
+        <code>r-20261115T225256900468-dina-flattop-rerun</code> appears in
+        exactly <strong>one</strong> row, a <code>blocked</code> duty &mdash;
+        beside the repeated case above, which lists one run in seven. So the
+        command does not duplicate by itself: the repetition is carried by the
+        stored sweep record, not manufactured by the view. The capture is
+        <code>oblig-c042a637-16e6-44bd-9cd2-b340a6f891dc.json</code> beside
+        the case capture.
+      </p>
+    </section>
+
+    <section id="repetition">
+      <h2>The repetition: a sweep list that appends without dedupe</h2>
+      <p>
+        The six identical <code>sweep-failed</code> rows are raised one per
+        entry in a stored list. The list is built in
+        <code>reckon/crew/resumption.py:3153</code>:
+      </p>
+      <pre><code>block["failed"] = [*(block.get("failed") or ()), *owed]</code></pre>
+      <p>
+        <code>owed</code> carries one entry per owed review request on this
+        pass, keyed by run id; nothing compares an entry's run id against the
+        entries already stored. Each subsequent pass appends its own entry for
+        the same run again, and
+        <code>reckon/crew/station_obligations.py:272</code>
+        (<code>reckon/crew/station_obligations.py:277</code>) turns every entry
+        into a duty row. The row text is built from the same
+        census, at <code>reckon/crew/resumption.py:3146</code>, which is where
+        &ldquo;the review pass requested no review for this delivered run within
+        600 s&rdquo; comes from.
+      </p>
+      <p>
+        The same shape was observed independently on 2026-11-21 for session
+        <code>5b10be66-c69b-456f-9a85-3840909f1723</code>, whose single run
+        <code>r-20261114T144505738776-icm-iron-field-source</code> was listed
+        six times in one obligations read. That rules out anything specific to
+        the held run: any run whose review request is owed across several
+        passes accumulates one row per pass.
+      </p>
+    </section>
+
+    <section id="repair">
+      <h2>Does a repair belong in this repository?</h2>
+      <p>
+        <strong>The phrase:</strong> no. No code emits it, so there is nothing
+        in <code>reckon/</code> to repair. It is prose an operator recorded,
+        and it is now stale: the pointer's own <code>session</code> is the id
+        the reason calls somebody else's. The remedy is to release the
+        deferral, not to change code &mdash; which the plan's instruction
+        forbids for this run, so this record leaves the record in place.
+      </p>
+      <p>
+        <strong>The repetition:</strong> yes, it belongs in this repository.
+        One run should owe one row: a coordinator reading seven identical
+        duties for one run owes a turn to a single fact, and the count grows
+        for as long as nobody acts on it. The repair is at
+        <code>reckon/crew/resumption.py:3153</code>, where the owed entries for
+        one pass are appended to the stored list without collapsing entries by
+        run id.
+      </p>
+      <p>
+        Endpoint for a new section of
+        <code>work-of-a-lost-session-is-raised-not-left</code>:
+      </p>
+      <p>
+        <strong>&sect;25 &mdash; A run's owed review is raised once, however
+        many sweeps have seen it.</strong> Deliverable: the sweep's owed list
+        carries at most one entry per run id, so the obligations view names a
+        deferred run once, however many passes have found its review
+        outstanding; the last-seen detail and age for that run survive, and a
+        completed sweep replaces rather than grows the list. Done when a test
+        covering a run owed a review across two passes lists it once, and two
+        runs owed on one pass yield two rows. Negative control: at the base
+        revision the same two-pass case lists the run twice.
+      </p>
+    </section>
+
+    <section id="records">
+      <h2>Records and paths</h2>
+      <table>
+        <thead>
+          <tr><th>What</th><th>Path</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Live pointer carrying the phrase</td><td><code>~/.config/reckon/crew/live/r-20261118T185447788898-cached-point-program.json</code></td></tr>
+          <tr><td>Promoted deferral carrying the same wording</td><td><code>~/.config/reckon/crew/acknowledgements/r-20261117T225500180499-fit-inside-the-iteration.json</code></td></tr>
+          <tr><td>Reason copied onto the row</td><td><code>reckon/crew/obligations.py:1899</code></td></tr>
+          <tr><td>Reason accepted</td><td><code>reckon/crew/runs.py:3065</code></td></tr>
+          <tr><td>Owed list appended without dedupe</td><td><code>reckon/crew/resumption.py:3153</code></td></tr>
+          <tr><td>One row raised per stored entry</td><td><code>reckon/crew/station_obligations.py:272</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
