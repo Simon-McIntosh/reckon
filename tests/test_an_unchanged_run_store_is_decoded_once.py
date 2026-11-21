@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from reckon import run_store
+from reckon import file_memo, run_store
 
 PROJECTS = ("alpha", "beta", "gamma")
 ALPHA_ROWS = 800
@@ -156,3 +156,16 @@ def test_mutating_a_returned_record_leaves_the_next_answer_alone(
 
     assert decodes.rows == ALPHA_ROWS
     assert second[0]["outcome"] == pristine
+
+
+def test_clearing_the_memo_makes_the_next_read_decode_again(
+    store: Path, decodes
+) -> None:
+    """The repository's cold-read instrument reaches this answer too."""
+    _read("alpha", store)
+    assert decodes.rows == ALPHA_ROWS
+
+    file_memo.clear()
+
+    _read("alpha", store)
+    assert decodes.rows == 2 * ALPHA_ROWS

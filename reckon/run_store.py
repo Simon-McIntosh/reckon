@@ -19,15 +19,13 @@ import os
 import random
 import sqlite3
 import subprocess
-import threading
 import time
-from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
 
-from reckon import _store, run_record
+from reckon import _store, file_memo, run_record
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -907,20 +905,24 @@ def stored_run_payloads(
     return token, read()
 
 
-#: Distinct answers held beside the token they were built from, and the rows
-#: those answers may hold between them. One reader asks a handful of questions
-#: per store revision, so the working set sits well under both bounds while a
-#: long-lived process stays bounded however often the token moves underneath it.
+#: Distinct answers held beside the token they were built from, and the rows one
+#: answer may hold. One reader asks a handful of questions per store revision,
+#: so the working set sits well under both bounds while a long-lived process
+#: stays bounded however often the token moves underneath it. An answer above
+#: the row bound is not kept at all.
 _ROW_ANSWER_LIMIT = 32
 _ROW_ANSWER_ROWS = 50_000
 
 #: Decoded answers keyed by the question and the token it was answered under.
 #: The token is part of the key, so a moved token makes an entry unreachable
 #: rather than wrong: an entry never answers from a store revision it was not
-#: built from. Every answer is handed out as a copy, so a caller that mutates a
-#: record it was given cannot change the next caller's answer.
-_row_answers: OrderedDict[tuple[Any, ...], list[dict[str, Any]]] = OrderedDict()
-_row_answers_lock = threading.Lock()
+#: built from. The container is :func:`reckon.file_memo.bounded_map`'s: the
+#: repository's own bounded map, which holds the memo's lock over a read or a
+#: replacement and is emptied by ``file_memo.clear()`` like every other memo in
+#: the process, so this module keeps no lock and no eviction loop of its own.
+_HELD_ANSWERS: file_memo.BoundedMap[list[dict[str, Any]]] = file_memo.bounded_map(
+    "stored-row-answers", limit=_ROW_ANSWER_LIMIT
+)
 
 
 def _answer_key(
@@ -946,29 +948,18 @@ def _answer_key(
 
 
 def _cached_answer(key: tuple[Any, ...]) -> list[dict[str, Any]] | None:
-    with _row_answers_lock:
-        records = _row_answers.get(key)
-        if records is None:
-            return None
-        _row_answers.move_to_end(key)
-        return copy.deepcopy(records)
+    """The answer held for ``key``, as a copy the caller may change freely."""
+    held = _HELD_ANSWERS.get(key)
+    if held is None:
+        return None
+    return copy.deepcopy(held)
 
 
 def _remember_answer(key: tuple[Any, ...], records: list[Any]) -> None:
-    """Keep one answer, evicting the oldest until both bounds hold again.
-
-    An answer larger than the whole row bound is not kept at all: caching it
-    would evict every other answer and then exceed the bound itself.
-    """
+    """Keep one answer, unless it is larger than the map may hold at all."""
     if len(records) > _ROW_ANSWER_ROWS:
         return
-    with _row_answers_lock:
-        _row_answers[key] = copy.deepcopy(records)
-        _row_answers.move_to_end(key)
-        held = sum(len(answer) for answer in _row_answers.values())
-        while len(_row_answers) > _ROW_ANSWER_LIMIT or held > _ROW_ANSWER_ROWS:
-            _, evicted = _row_answers.popitem(last=False)
-            held -= len(evicted)
+    _HELD_ANSWERS.put(key, copy.deepcopy(records))
 
 
 def _decode_run_row(payload: str, detail: str | None) -> dict[str, Any]:
