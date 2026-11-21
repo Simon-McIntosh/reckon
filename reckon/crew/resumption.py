@@ -1428,6 +1428,34 @@ def _attempt_detail(
     return ". " + "; ".join(parts) + "."
 
 
+def surviving_step_refusal(record: Mapping[str, Any]) -> CrewError | None:
+    """The refusal a resume owes a run whose stop left its scheduler step up.
+
+    A placed worker runs as a step on the node holding the allocation, and a
+    stop that could not settle the step records it on the run with the command
+    that ends it. The local process may be gone while the step still works, so
+    the generic live-process refusal would name no step and offer no remedy;
+    the step's own reason is read first and repeated exactly.
+    """
+    step = record.get("step_stop")
+    if not isinstance(step, Mapping):
+        return None
+    if step.get("surviving") is False:
+        return None
+    step_id = str(step.get("step") or "")
+    if not step_id:
+        return None
+    run_id = str(record.get("run_id") or "")
+    command = str(step.get("command") or f"scancel {step_id}")
+    reason = str(record.get("stop_reason") or "").strip()
+    detail = f" ({reason})" if reason else ""
+    return CrewError(
+        f"run {run_id!r} is refused: its stop left scheduler step {step_id!r} "
+        f"running, so ending its local worker did not end its work; "
+        f"end the step with `{command}` before resuming{detail}"
+    )
+
+
 def live_process_refusal(record: Mapping[str, Any], *, reading: str) -> CrewError:
     """The one message that refuses a second worker over a run that still has one.
 
@@ -1500,6 +1528,12 @@ def _launcher_refusal(
     run_id = str(record.get("run_id") or "")
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
+    # The step a stop could not settle is read before the process table, and
+    # through the one helper the real resume uses, so a preview cannot offer a
+    # resume the launcher refuses.
+    step_refusal = surviving_step_refusal(record)
+    if step_refusal is not None:
+        return step_refusal
     if record_process_alive(record, process_alive) is True and not _parked_on_a_wait(
         record
     ):
@@ -1655,6 +1689,12 @@ def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
     act on a reading the reader was never shown, and the reason names the
     reading it is holding.
     """
+    step_refusal = surviving_step_refusal(record)
+    if step_refusal is not None:
+        # A step still running under the allocation is work this host cannot
+        # see, so no reading of the local process table can license a lift over
+        # it.
+        return step_refusal
     if _parked_on_a_wait(record):
         # A parked worker has ended its turn and declared what ends its park,
         # so the end of the *work that matters* is observed on the declaration
