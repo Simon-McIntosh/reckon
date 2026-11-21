@@ -279,9 +279,8 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
             record["throughput"] = data["throughput"]
-            # What the worker called, by shape: an anchored-edit arm is only
-            # comparable to its baseline if the run store records how much of
-            # the editing went through the tool rather than the harness's own
+            # What the worker called, by shape: the run store records how much
+            # of the editing went through a tool rather than the harness's own
             # file-change items.
             if data["tools"]:
                 record["tools"] = data["tools"]
