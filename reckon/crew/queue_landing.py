@@ -58,7 +58,56 @@ def _promoted_row_head(pointer: Mapping[str, Any], run_id: str) -> str:
     return str(row.get("promoted_revision") or "").strip()
 
 
-def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
+def _primary_carries_the_delivery(
+    pointer: Mapping[str, Any], head: str, primary: str
+) -> tuple[str, str]:
+    """Whether the primary branch already carries what this run delivered.
+
+    ``("carried", "")`` answers a run whose reviewed head is an ancestor of the
+    primary branch and every path its delivery changed is present there in the
+    shape the change left it. ``("removed", reason)`` answers a head the branch
+    carries while one of its changed paths was since removed or altered, which
+    is a delivery the primary no longer carries. Every other answer — a head
+    that is not an ancestor, an unreadable repository, branch or comparison —
+    is ``("not-carried", reason)`` or ``("unverified", reason)``, and neither
+    settles anything: a run is only settled on a positive reading.
+
+    The ancestry is the pointer classification's own reading, so the lander and
+    every other surface answer one question one way. The changed paths are
+    judged by the merge reader that already decides whether a change survived a
+    tree, so a deletion and a binary change are read as the addition beside
+    them is.
+    """
+    from reckon.crew import landing_measure, merge, recovery_classification
+
+    repo = Path(str(pointer.get("repo") or ""))
+    if not repo.is_dir() or not head or not primary:
+        return "unverified", "the repository, the head or the primary could not be read"
+    try:
+        on_branch = recovery_classification._head_on_primary_branch(
+            repo, head, time.time()
+        )
+    except (OSError, ValueError) as exc:
+        return "unverified", f"the head's ancestry could not be read: {exc}"
+    if on_branch is None:
+        return "unverified", "the head's ancestry could not be read"
+    if on_branch is not True:
+        return "not-carried", ""
+    if head == primary:
+        # The head is the branch's own tip, which is its own candidate rather
+        # than a delivery merged into history; nothing here settles it.
+        return "not-carried", ""
+    base_sha = str(pointer.get("base_sha") or "").strip()
+    if not base_sha:
+        return "unverified", "the run records no base revision"
+    try:
+        markers = merge.change_markers(repo, base_sha, head)
+        refusals = merge.surviving_change_refusals(repo, primary, markers)
+    except (OSError, merge.MergeError, landing_measure.BaseCheckoutError) as exc:
+        return "unverified", f"the run's changed paths could not be read: {exc}"
+    if refusals:
+        return "removed", "; ".join(refusals)
+    return "carried", ""
     """Read current ownership, not the live-set snapshot used for selection."""
     try:
         runs.read_pointer(run_id)
@@ -2431,6 +2480,78 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         # run itself did not come back clean on is a coordinator's decision, not
         # the admission service's. Refusing here also keeps the expensive
         # measurement off a run that cannot be promoted.
+        # A reviewed head the primary branch already carries needs no landing:
+        # settling it here is finished by the same release path a promoted run
+        # whose merge completed goes through, and it costs no promotion request
+        # and no gate replay. A head the branch carries while one of its changed
+        # paths is gone is a different fact — a delivery the primary no longer
+        # holds — and is reported rather than settled or promoted.
+        carried, carried_detail = _primary_carries_the_delivery(
+            pointer, head, _primary_revision(pointer)
+        )
+        if carried == "carried":
+            from reckon.crew import pending_landing
+
+            try:
+                row = _ledger_row(pointer, run_id)
+            except CrewError:
+                row = None
+            retired, _release, release_refusal = (
+                pending_landing._release_integrated_pointer(
+                    pointer,
+                    Path(str(pointer.get("repo") or "")),
+                    _primary_revision(pointer),
+                    row,
+                )
+            )
+            if retired == pending_landing.POINTER_RETIRED:
+                from reckon.crew.stage_receipts import record_stage
+
+                record_stage(run_id, "landing")
+                skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+            else:
+                skipped.append(
+                    {
+                        "run_id": run_id,
+                        "status": "landed-elsewhere-held",
+                        "reason": release_refusal
+                        or "the settled run's workspace could not be released",
+                    }
+                )
+            continue
+        if carried == "removed":
+            guard = (
+                "the primary branch carries this run's head but not its change: "
+                + carried_detail
+            )
+            previous = pointer.get("admission_landing")
+            holds = (
+                isinstance(previous, Mapping)
+                and previous.get("status") == "refused"
+                and previous.get("guard") == guard
+                and recovery.same_revision(str(previous.get("head") or ""), head)
+            )
+            if not holds:
+                _record_attempt(
+                    run_id,
+                    head=head,
+                    guard=guard,
+                    status="refused",
+                    code_stamp=_landing_code_stamp(),
+                    previous=previous,
+                    remedy=(
+                        "the delivered change is no longer on the primary branch; "
+                        "dispatch a fresh node for it"
+                    ),
+                )
+                obligations.append(
+                    {
+                        "run_id": run_id,
+                        "session": str(pointer.get("session") or ""),
+                        "guard": guard,
+                    }
+                )
+            continue
         red_suite = _red_suite_guard(suite_arms, review)
         if red_suite:
             _record_attempt(
