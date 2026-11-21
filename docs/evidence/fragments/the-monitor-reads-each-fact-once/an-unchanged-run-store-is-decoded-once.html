@@ -44,9 +44,13 @@
   The answers live in <code>file_memo.bounded_map</code>, the repository's own
   bounded map, so they share its lock and its least-recently-used eviction and
   <code>file_memo.clear()</code> empties them with every other memo in the
-  process &mdash; the cold read a test asks for reaches the run store. Two
-  bounds hold: 32 answers, and 50,000 rows for one answer, above which an answer
-  is not kept at all.</p>
+  process &mdash; the cold read a test asks for reaches the run store. An answer
+  is held for the reading context that asked for it, the per-task scoping
+  <code>file_memo.read_only_region</code> already uses: a repeat read in one
+  reader's context decodes nothing, while another thread or task decodes for
+  itself rather than being handed rows it did not build. Two bounds hold: 32
+  answers, and 50,000 rows for one answer, above which an answer is not kept at
+  all.</p>
 
   <h3 id="an-unchanged-run-store-is-decoded-once-measure">Four identical calls, 2,000 rows</h3>
 
