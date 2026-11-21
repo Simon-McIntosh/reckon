@@ -357,6 +357,44 @@ def raise_lost_session_work(
     }
 
 
+#: The three forms an answer arrives in, named in a refusal.
+ANSWER_FORMS = (
+    "an inline JSON object, a readable file holding one, or - for standard input"
+)
+
+
+def read_answers(source: str, *, stream: Any = None) -> Any:
+    """Read an answer set from an inline object, a readable file or stdin.
+
+    ``-`` reads ``stream``, which the caller points at the standard input
+    stream. A value that parses as a JSON object is taken inline; otherwise it
+    must name a readable file. A value that is neither is refused with the
+    accepted forms named, because a mistyped answer otherwise surfaces as a
+    missing file and hides the form that was meant.
+    """
+    text = str(source or "").strip()
+    if text == "-":
+        if stream is None:
+            raise ValueError(
+                f"a decision answer is {ANSWER_FORMS}; no input stream was given"
+            )
+        return json.load(stream)
+    try:
+        inline = json.loads(text)
+    except ValueError:
+        inline = None
+    if isinstance(inline, dict):
+        return inline
+    path = Path(text).expanduser()
+    try:
+        body = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(
+            f"a decision answer is {ANSWER_FORMS}; {text!r} is none of those"
+        ) from exc
+    return json.loads(body)
+
+
 def _answer_entries(answers: Any) -> dict[str, dict[str, Any]]:
     if not isinstance(answers, Mapping):
         raise TypeError("answers must be an object keyed by run id")
