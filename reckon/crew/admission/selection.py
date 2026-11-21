@@ -213,6 +213,31 @@ def admit_once(
                     for pointer in queued
                     if str(pointer.get("run_id") or "") not in refused
                 ]
+        # A lost session's implement work is raised here as one decision for the
+        # lead, and its requests launch nothing until that decision is answered.
+        # The raise reads no second source: it works from the pointers and the
+        # lost-session answers this pass already holds. An already-promoted
+        # pointer is retired by the raise, so the live list is re-read and the
+        # queue rebuilt only when that happened.
+        with _service._read_tally() as lost_work_tally:
+            from .. import lost_session_work as _lost_work
+
+            raised = _lost_work.raise_lost_session_work(
+                live,
+                answers=result.get("lost_sessions") or [],
+                moment=moment,
+            )
+            result["lost_session_decision"] = raised
+            if raised.get("retired"):
+                live = runs.list_live()
+                queued = [
+                    pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
+                ]
+            queued, suppressed = _lost_work.suppress_lost_session_requests(
+                queued, sessions=raised.get("sessions") or ()
+            )
+            result["held_by_lost_session_decision"] = suppressed
+        _service._record_stage_reads(result, "lost-session work", lost_work_tally)
         if lane:
 
             def included(pointer: Mapping[str, Any]) -> bool:

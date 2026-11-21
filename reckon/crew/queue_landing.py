@@ -2236,6 +2236,12 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
     measured_this_pass = False
     eligible = []
     live = sorted(runs.list_live(), key=_delivery_order)
+    from reckon.crew.lost_session_work import (
+        sessions_with_open_decision,
+        skip_lost_session_landings,
+    )
+
+    lost_session_decision = sessions_with_open_decision()
     active_measurements = landing_measure.active_measurement_jobs(live)
     # One history read per project for the whole pass, not one per run: the
     # run directory holds thousands of entries on shared storage, and the pass
@@ -2267,6 +2273,21 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
                     "run_id": str(pointer.get("run_id") or ""),
                     "status": "measurement-run",
                     "reason": skipped_measurement,
+                }
+            )
+            continue
+        # A landing group containing a lost session's member is skipped with one
+        # reason, rather than refused on every pass: nothing lands under a
+        # session nobody can answer for, and the decision already names the work.
+        lost_reason = skip_lost_session_landings(
+            pointer, sessions=lost_session_decision
+        )
+        if lost_reason:
+            skipped.append(
+                {
+                    "run_id": str(pointer.get("run_id") or ""),
+                    "status": "lost-session",
+                    "reason": lost_reason,
                 }
             )
             continue
