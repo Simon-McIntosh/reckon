@@ -284,6 +284,7 @@ reckon crew check --manifest --run <id>    reckon crew check --review (--run <id
 reckon crew census [--apply]    # Lists reckon processes whose recorded owner is dead; with --apply, stops exactly those, printing each.
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew decision record --record <file>    # records one question for the lead with its owning session, recommendation and the work it holds; read them back through `crew(view="decisions")`
+reckon crew decision answer --id <decision> --answers <json-or-file> [--by <who>]    # answers one raised decision per run record — adopt the work into a named live session or retire it — so the work it held is released rather than left orphaned
 reckon crew declare-gate --run <id> [--project <project>] [--command "<suite command>"] [--partition <partition>]    # names the suite command and partition a run's own gate arms ran with, when they differ from the project's armed command
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --regenerate-path <path> --input <path> --compares-with <measurement> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
