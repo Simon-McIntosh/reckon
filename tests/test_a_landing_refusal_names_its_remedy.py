@@ -104,10 +104,14 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path 
     _git(repo, "add", "marker.txt", "docs", "skills")
     _git(repo, "commit", "-q", "-m", "chore: seed fixture")
     base = _git(repo, "rev-parse", "HEAD")
-    (repo / "marker.txt").write_text("delivered\n", encoding="utf-8")
-    _git(repo, "add", "marker.txt")
-    _git(repo, "commit", "-q", "-m", "feat: deliver marker")
-    head = _git(repo, "rev-parse", "HEAD")
+    # The delivery is a commit on the run's own worktree branch, so the primary
+    # branch does not reach it and the refusal is still owed.
+    worktree = tmp_path / "run-worktree"
+    _git(repo, "worktree", "add", "-q", "-b", "delivery", str(worktree))
+    (worktree / "marker.txt").write_text("delivered\n", encoding="utf-8")
+    _git(worktree, "add", "marker.txt")
+    _git(worktree, "commit", "-q", "-m", "feat: deliver marker")
+    head = _git(worktree, "rev-parse", "HEAD")
     manifest = runs.run_dir(RUN) / runs.DEFAULT_MANIFEST_NAME
     manifest.parent.mkdir(parents=True)
     gate_log = manifest.parent / "gate-repair.log"
@@ -132,7 +136,7 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path 
             "project": PROJECT,
             "session": SESSION,
             "repo": str(repo),
-            "worktree": str(repo),
+            "worktree": str(worktree),
             "base_sha": base,
             "suite_command": "true",
             "process_alive": False,
