@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s26">
+  <meta name="plan-verdict" content="pass">
+  <title>A session job names its session | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wlsr-a-session-job-names-its-session-landing" data-node="wlsr-a-session-job-names-its-session" data-reckon="landed" data-when="2026-11-21">
+  <h2>A session job names its session</h2>
+  <p id="wlsr-a-session-job-names-its-session-dispatch">The owner comment the scheduler shim adds to a submitted job was keyed on <code>RECKON_RUN_ID</code> alone, so a job a coordinator submits for itself, with no worker's run, reached <code>squeue</code> with no comment naming anyone. <code>owner_comment</code> in <code>reckon/nested_launch.py</code> now names the session when the run is absent, names both when both exist, and still returns nothing when neither is set. The dispatch side is proven rather than assumed: the test composes a launch through <code>_backends.launch_plan</code> and <code>dispatch_launch._worker_runtime_plan</code>, taking the session from a run record as the launch does, asserts <code>RECKON_SESSION_ID</code> reaches the worker's environment, and feeds that environment through the shim into a stand-in scheduler whose recorded argv carries the session.</p>
+  <p id="wlsr-a-session-job-names-its-session-script">A script submitted as <code>sbatch nightly.sh</code> that declares its own <code>#SBATCH --comment=</code> directive lost that text once the shim added a command-line comment, because a scheduler gives the command line precedence over the script's directives. <code>_script_comment</code> lifts the script's comment out of the kept directives and <code>_with_comment_text</code> merges it into the command line, so the caller's words and the owner are both handed to the scheduler. A script whose directive carries no comment is left as it was.</p>
+  <p id="wlsr-a-session-job-names-its-session-fleet">The fleet allocation readers in <code>reckon/crew/fleet_node.py</code> compared a scheduler comment exactly, so an allocation whose comment gained the owner suffix stopped being found and its fleet name read as the whole trailing text. <code>_fleet_token</code> reads the fleet identity as the first word of the comment, which the catch-all, earlier-fleet and named-fleet readers all use. An unrelated comment still reads as no fleet's.</p>
+  <p id="wlsr-a-session-job-names-its-session-measure">Measure: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_scheduler_job_names_its_owner.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code> reports 0 failures, exit 0, at head <code>b3872f30</code> (<code>scoped-gate-1795244630841609934.log</code>; the same command reads 0 failures at base <code>65c0479b</code> in <code>baseline_suite-1795244710030872804.log</code>). The node's file carries 19 cases, one or more for each of the four deliverables.</p>
+  <p id="wlsr-a-session-job-names-its-session-control">The declared control holds. With <code>owner_comment</code> keyed on the run id alone again, the session-with-no-run cases read 4 failed, exit 1 (<code>negative-control-session-comment.log</code>): the comment arrives empty, which is exactly the gap this node closes. The plan's other declared control was measured too: with the <code>RECKON_SESSION_ID</code> export removed from the dispatch launch environment, <code>test_a_composed_dispatch_launch_hands_its_worker_the_session</code> reads 1 failed, exit 1 (<code>negative-control-dispatch-export.log</code>), where the environment reports no session.</p>
+</article>
+</body>
+</html>
