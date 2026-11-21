@@ -22,9 +22,9 @@
   <table class="r-table">
     <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
     <tbody>
-      <tr><td>node check</td><td><code>984b79dd1e</code></td><td>42 passed, exit 0</td><td><code>scoped-gate-1795244848855394650.log</code></td></tr>
-      <tr><td>base suite</td><td><code>65c0479b14</code></td><td>38 passed, exit 0</td><td><code>baseline_suite-1795244934082842765.log</code></td></tr>
-      <tr><td>after suite</td><td><code>984b79dd1e</code></td><td>42 passed, exit 0</td><td><code>after_suite-1795245008872324197.log</code></td></tr>
+      <tr><td>node check</td><td><code>984b79dd1e</code></td><td>62 passed, exit 0</td><td><code>scoped-gate-1795244848855394650.log</code></td></tr>
+      <tr><td>base suite</td><td><code>65c0479b14</code></td><td>8 failed, 91 passed, exit 1</td><td><code>baseline_suite-1795246205174936208.log</code></td></tr>
+      <tr><td>after suite</td><td><code>378528d485</code></td><td>102 passed, exit 0</td><td><code>after_suite-1795246280589568719.log</code></td></tr>
       <tr><td>base revision, node case</td><td>tree at <code>65c0479b14</code></td><td>1 failed, 3 deselected, exit 1</td><td><code>negative-control-base.log</code></td></tr>
     </tbody>
   </table>
@@ -36,7 +36,7 @@ and codex runs, through the hook and trust overrides on their launch argv; there
 is no hook to deliver a message here, so write nothing and steer the run another way</code></pre>
   <p>At the head the same case queues: the message lands in the run directory's <code>inbox</code> and the command reports <code>queued_for_next_tool_call</code> with the inbox and receipt paths.</p>
   <h3>What the sweep found beside it</h3>
-  <p>Two existing inbox test helpers seeded a run home without the settings file the launch passes, so they exercised a home whose hook was never written, and six cases in <code>tests/test_worker_inbox.py</code> plus two in <code>tests/test_crew_tell_codex.py</code> were red at the base revision for that reason. They pass the settings file now, which is what production seeding passes, and the case that asserted the codex refusal's old wording matches the refusal it now produces. The whole inbox family reads 59 passed, 2 skipped.</p>
+  <p>Two existing inbox test helpers seeded a run home without the settings file the launch passes, so they exercised a home whose hook was never written, and six cases in <code>tests/test_worker_inbox.py</code> plus two in <code>tests/test_crew_tell_codex.py</code> were red at the base revision for that reason: they are the eight failures the base arm above records, and they pass at the head. They pass the settings file now, which is what production seeding passes, and the case that asserted the codex refusal's old wording matches the refusal it now produces. The whole inbox family reads 59 passed, 2 skipped.</p>
 </article>
 </body>
 </html>
