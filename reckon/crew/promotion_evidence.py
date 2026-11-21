@@ -609,6 +609,26 @@ def _commit_canonical_id(root: Path, revision: str) -> str | None:
     return _resolve_commit(root, revision) or None
 
 
+def _entry_commit_ids(root: Path, entry: str) -> list[str]:
+    """The commits one citation entry names, read by the entry reader.
+
+    A presented entry is a manifest entry, so a citation is the ids it carries:
+    a bare id, an id followed by the subject it was committed under, several
+    ids separated by spaces or commas, and a ``commit: <id>`` list item all
+    name what their ids name. The grammar has one home in ``promotion_scope``,
+    which reads it beside the manifest field, and asking it here keeps a
+    promotion's presentation from refusing a form the ledger accepts.
+    """
+    from reckon.crew.promotion_scope import _entry_commits
+
+    return _entry_commits(root, entry)
+
+
+def _entry_names_a_commit(root: Path, entry: str) -> bool:
+    """Whether one citation entry names at least one commit in the store."""
+    return bool(_entry_commit_ids(root, entry))
+
+
 def _commit_resolves_in(root: Path, revision: str) -> bool:
     """Report whether one revision names a commit object in one repository."""
     return _commit_canonical_id(root, revision) is not None
@@ -1072,6 +1092,14 @@ def require_resolvable_presentation(
     "promotion-requested"}`` and queued the value the boundary check cannot
     resolve.
 
+    Every entry is read the way the ledger's commits field is: a citation is
+    the ids it carries, so a worker's ``<id> <subject>`` log line, an entry
+    holding several ids, and a ``commit: <id>`` list item all resolve. The two
+    readers disagreeing refused a form the manifest field accepts: at the base
+    revision a list entry reading ``e980cfa test: record candidate`` answered
+    "presents ... as a commit, but that identifier does not resolve" while the
+    manifest's own reader resolved the same entry.
+
     The refusal stays silent when the run's tree cannot be read, so a citation
     is never refused for a store nobody was able to ask about.
     """
@@ -1079,7 +1107,7 @@ def require_resolvable_presentation(
     tree = _run_commit_directory(record) if cited else None
     if tree is None:
         return
-    unresolved = [entry for entry in cited if _commit_canonical_id(tree, entry) is None]
+    unresolved = [entry for entry in cited if not _entry_names_a_commit(tree, entry)]
     if unresolved:
         raise _unresolved_presentation_refusal(run_id, tree, unresolved)
 
@@ -1209,9 +1237,7 @@ def _require_gate_evidence(
             # report is not written.
             return None
         unresolved_presented = [
-            candidate
-            for candidate in presented
-            if _commit_canonical_id(tree, candidate) is None
+            entry for entry in presented if not _entry_names_a_commit(tree, entry)
         ]
         # A commitless declaration the declaration parser recognises means the
         # run presents no commits rather than a value that names nothing: a
@@ -1225,12 +1251,12 @@ def _require_gate_evidence(
         resolving_declared = {
             canonical
             for candidate in declared
-            if (canonical := _commit_canonical_id(tree, candidate)) is not None
+            for canonical in _entry_commit_ids(tree, candidate)
         }
         resolving_presented = {
             canonical
             for candidate in presented
-            if (canonical := _commit_canonical_id(tree, candidate)) is not None
+            for canonical in _entry_commit_ids(tree, candidate)
         }
         # A manifest commit is short only when nothing the presentation names
         # covers it. Each presented commit covers itself and every commit in
