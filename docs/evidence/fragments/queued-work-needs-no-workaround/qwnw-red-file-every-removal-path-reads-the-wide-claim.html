@@ -66,6 +66,28 @@ set of removal paths.</li>
 <p>In the worktree itself the gate reads <strong>5 passed</strong>,
 <code>EXIT=0</code> at <code>00577405</code>.</p>
 </section>
+<section id="qwnw-red-file-every-removal-path-reads-the-wide-claim-evidence">
+<h2>Evidence repairs: the arm that stopped, and the gate that never said how it ran</h2>
+<p>Two review findings were about the evidence, not the code. Both arms are
+re-produced here with the capture fixed.</p>
+<h3 id="qwnw-red-file-every-removal-path-reads-the-repair-arm">The after arm that stopped after one dot</h3>
+<p>The recorded after arm held three header lines, a single <code>.</code> and
+no summary or <code>EXIT=</code> line, while the manifest claimed a completed
+pass — a claim with no measurement under it. The arm is re-run whole at the
+delivered head; its log now carries the summary and the exit line, and the
+baseline is re-run with the same command so the two are comparable. The
+truncated capture is kept beside it as the control that shows what the
+truncation looked like.</p>
+<h3 id="qwnw-red-file-every-removal-path-reads-the-repair-gate">The gate that never said how it ran</h3>
+<p><code>gate-head.sh</code> invoked pytest in the worktree without recording
+that the run was a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+unset, so the clause it exists to prove was unwritten. The script now records
+the literal launch line, the job, partition and node the step occupies, and the
+job id the measured process actually sees — and it clears
+<code>SLURM_JOB_ID</code> and <code>SLURM_JOBID</code> for the pytest process
+itself, so the recorded environment is the executed one. The old log is kept as
+the control that names none of it.</p>
+</section>
 </article>
 </body>
 </html>
