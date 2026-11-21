@@ -109,6 +109,11 @@ reckon/crew/obligations.py:1900              "until": str(record.get("until") or
       <p>
         Every duty belonging to a run with a deferral is copied into the
         <code>acknowledged</code> list with that run's stored reason. The
+        station's sweep-failure renderer appends its rows to
+        <code>obligations</code> after this partition
+        (<code>reckon/crew/station_obligations.py</code> builds them separately),
+        which is why the capture below shows the six sweep rows as owed and only
+        the <code>blocked</code> duty under <code>acknowledged</code>. The
         writer beside it is <code>reckon/crew/runs.py:3045</code>,
         <code>record_run_acknowledgement</code>, which takes the text from the
         caller's <code>--reason</code> and checks only that it is non-empty:
