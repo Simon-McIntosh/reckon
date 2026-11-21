@@ -411,3 +411,29 @@ def test_a_per_figure_record_answered_in_lines_is_complete() -> None:
     assert answers.get(missing) == _verdict_line(missing).split(": ", 1)[1]
     assert shortfalls == []
     assert _review_missing_measures(body) == []
+
+
+def test_a_figure_record_filed_under_the_reviewers_own_key_is_complete() -> None:
+    """A flat map filed as ``rubric_verdicts`` answers the rubric.
+
+    Two reviewers on two projects, told only to include the rubric verdicts,
+    filed the six items under that name with no ``rubric_items`` and no verdict
+    lines, and each record was refused as lacking all six.
+    """
+    body = {
+        "status": "parsed",
+        "rubric": review_module.FIGURE_REVIEW_RUBRIC,
+        "rubric_verdicts": dict.fromkeys(review_module.FIGURE_REVIEW_ITEMS, "pass"),
+    }
+    assert _review_missing_measures(body) == []
+    missing = review_module.FIGURE_REVIEW_ITEMS[0]
+    del body["rubric_verdicts"][missing]
+    assert _review_missing_measures(body) == [missing]
+
+
+def test_the_figure_brief_names_the_key_the_gate_reads() -> None:
+    """The reviewer is told the key by name rather than left to choose one."""
+    brief = (
+        Path(review_module.__file__).parent / "prompts" / "figure_review.md"
+    ).read_text(encoding="utf-8")
+    assert '"rubric_items"' in brief

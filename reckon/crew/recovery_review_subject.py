@@ -936,7 +936,8 @@ def _review_brief_text(
         required_fields = [
             "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
             "added_failure_count, added_failure_ids (a figure review runs no suite, so 0 and an empty list),",
-            "findings (each an object with file, line, severity and summary), status.",
+            "findings (each an object with file, line, severity and summary), status,",
+            "rubric_items (an object mapping each of the six figure rubric items to its verdict).",
             "Judge each figure only from the rendered PNGs named in this review: open, read, list,",
             "search, render or `git show` no SVG and no image other than the named PNGs; anchor a",
             "finding to the figure's repository path, or to a line of the script the run's diff shows",
