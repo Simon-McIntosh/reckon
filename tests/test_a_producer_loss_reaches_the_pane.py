@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+from reckon import crew
 from reckon import crew_follow_commands as follow
 from reckon.crew import obligation_snapshot, runs, station_subscriber
 
@@ -39,6 +40,18 @@ def isolated(tmp_path, monkeypatch):
         "follower_owner",
         lambda: (os.getpid(), runs._process_start_time(os.getpid())),
     )
+    crew._write_json(
+        crew.pointer_path("r-followed"),
+        {
+            "run_id": "r-followed",
+            "project": PROJECT,
+            "session": SESSION,
+            "node": {"id": "r-followed", "plan": "plan-a", "time_budget": "20m"},
+            "phase": "working",
+            "created_at": "2026-11-01T00:00:00Z",
+            "process_alive": None,
+        },
+    )
     clock = Clock()
     monkeypatch.setattr(
         obligation_snapshot, "_utc_now", lambda: INSTANT + timedelta(seconds=clock())
@@ -61,6 +74,9 @@ def _stub_subscriber():
     # Use the subscriber's real wait loop; the store alone is replaced.
     rows = iter([[{"event": "fixture-row", "project": PROJECT}], [], [], [], []])
     stub = SimpleNamespace(history=[], path=SimpleNamespace(reported={}))
+    # The pane follows a project its session holds work in, so the producer's
+    # health is its news; the station's own answer stands in for the reading.
+    stub.live_work = lambda name=None: True
     stub.poll = lambda: next(rows, [])
     stub.flush = list
     stub.drain = list
