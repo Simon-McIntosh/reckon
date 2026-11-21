@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -391,7 +391,10 @@ head.</p></div>
     <div class="r-comment-body"><p>reviewed the gained commit 901f7b54fb3b (delta 097c7c3b..901f7b54) against run r-20261121T010302201319: the content-needle guard is replaced by a `-&lt;node&gt;.json` filename match and the ambient home now comes from tests/conftest.py real_store_home. The prior blocking false-positive is repaired in both directions (guard-rule-comparison.log spares a quoting peer; negative-control.log reddens on a minted pointer). Stored a parsed record scoring goal_fidelity 18, evidence 14, scope_discipline 20, durability 16, fit 16, reuse 5, with three non-blocking findings (reuse duplication of _fixture_writes_under; gate-real-live.log mislabelled as the head arm; a dead length assertion).</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261121T040903022631-review-of-wlsr-no-test-leaves-a-pointer-in-the-live-directory-4da0fb449572" data-who="reckon-build" data-when="2026-11-21T04:15:37.657Z">
-    <div class="r-comment-body"><p>Review of r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory over e689315bb7..4da0fb44 scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 18, fit 17, reuse 20, adds no test failures (base 8 errors, after 0), and records one non-blocking finding: the guard&#x27;s setup assertion requires zero pre-existing live runs for the node where the done_when asks only for equality before and after.</p></div>
+    <div class="r-comment-body"><p>Review of r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory over e689315bb7..4da0fb44 scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 18, fit 17, reuse 20, adds no test failures (base 8 errors, after 0), and records one non-blocking finding: the guard's setup assertion requires zero pre-existing live runs for the node where the done_when asks only for equality before and after.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261121T010302201319-wlsr-no-test-leaves-a-pointer-in-the-live-directory" data-who="reckon-build" data-when="2026-11-21T04:08:25Z">
+    <div class="r-comment-body"><p>tests/test_concurrent_dispatch_of_one_node.py runs an autouse guard that asks the crew run module for the real home&#x27;s live runs before and after every case and requires none of them to be one this case minted. The home is reached by pointing RECKON_HOME at what real_store_home resolves for the duration of the read, so the module that owns pointer listing and decoding answers the question and the test owns only the comparison; the hand-rolled filename scan it replaced was a second copy of that listing, and the length comparison that followed was dead because the before reading is asserted empty. A run is attributed by its id, which ends in the node it dispatches, not by the text of its record: a peer&#x27;s pointer quotes plan wording and node descriptions, so a content search fires on a dispatch that has nothing to do with this case, while the id is minted here. The comparison log plants a peer record quoting both identifiers and shows it listed and not counted. Measured over the three-file suite: base e689315bb7 is 58 passed with 8 errors, head 4da0fb44 is 66 passed with 0 errors. The focused gate on the real live directory is 8 passed at this head. With both RECKON_HOME overrides removed from a copy of the case and its conftest, the guard fails at setup naming the run the case wrote, 8 errors, EXIT=1.</p></div>
 </div>
 </section>
 </main>
