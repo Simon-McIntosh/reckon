@@ -189,20 +189,20 @@ def _release_pass_memory() -> int:
     A pass decodes pointer records, run documents and plan text, then frees
     them; the allocator keeps the emptied arenas, so without this the resident
     set tracks the largest pass ever run rather than the memory the service
-    still holds. A reading still above the stated bound also drops the
-    process-wide parse memo, so the working set is rebuilt at the size the next
-    pass needs rather than kept at the size the largest one produced.
+    still holds. The process-wide parse memo is dropped here too: it holds a
+    copy of everything the pass parsed, so leaving it in place lets a growing
+    fleet's earlier records cost a later pass memory it no longer reads. The
+    next pass re-reads the pointers as they then stand.
     """
     from reckon import file_memo
     from reckon.crew.station import release_freed_memory
 
+    import gc
+
+    file_memo.clear()
+    gc.collect()
     release_freed_memory()
-    resident = resident_bytes()
-    if resident > ADMIT_MEMORY_BOUND_BYTES:
-        file_memo.clear()
-        release_freed_memory()
-        resident = resident_bytes()
-    return resident
+    return resident_bytes()
 
 
 def node_disk_admission_hold() -> dict[str, Any] | None:

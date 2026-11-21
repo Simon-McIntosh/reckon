@@ -37,9 +37,12 @@ def resident_bytes() -> int:
 def _write_pointers(count: int, *, generation: int) -> None:
     """Write ``count`` live pointers whose records move with the generation.
 
-    A fleet's pointers are rewritten as its workers report, and each pass reads
-    the records as they stand, so the fixture rewrites them between passes. The
-    brief gives each record the size a real one carries.
+    A fleet's pointers are rewritten as its workers report, so the fixture
+    rewrites them between passes and its population grows to 2,000 runs. A
+    growing fleet is what makes a later pass strictly bigger than an earlier
+    one, which is the condition a service that keeps every pass's emptied
+    arenas cannot survive. The brief gives each record the size a real one
+    carries.
     """
     live = runs.live_dir()
     live.mkdir(parents=True, exist_ok=True)
@@ -87,7 +90,7 @@ def test_resident_memory_is_flat_across_fifty_passes(crew_home: Path) -> None:
     after_five = 0
     after_fifty = 0
     for index in range(1, 51):
-        _write_pointers(2000, generation=index)
+        _write_pointers(200 + index * 36, generation=index)
         _run_pass()
         if index == 5:
             after_five = resident_bytes()
