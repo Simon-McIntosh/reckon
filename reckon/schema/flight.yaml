@@ -1131,6 +1131,23 @@ slots:
     range: float
     minimum_value: 0
 
+  stranded_wait:
+    description: >-
+      How long a request waiting on an upstream that nobody is building may
+      stand before its owner is told once. The block is declared here so a host
+      or project layer retunes the threshold without a code change; the
+      admission pass reads it from the resolved config.
+    range: StrandedWaitConfig
+
+  report_after_hours:
+    description: >-
+      Hours a request waiting on an upstream that no run or request is building
+      may stand before it appears once in its owner's obligations. A wait whose
+      upstream can never land is retired whatever this figure is, and a wait is
+      never removed for its age alone. Defaults to 72.
+    range: float
+    minimum_value: 0
+
   max_bytes:
     description: Allocated file bytes above which a session owes scratch cleanup.
     range: integer
@@ -1314,6 +1331,7 @@ classes:
       - worktree
       - session_scratch
       - lost_session
+      - stranded_wait
       - summary
       - ticker
       - domain
@@ -1697,6 +1715,15 @@ classes:
       the threshold is a layer's decision rather than a constant of the code.
     slots:
       - after_hours
+
+  StrandedWaitConfig:
+    description: >-
+      How long an idle wait may stand before its owner is told. A wait whose
+      upstream nobody is building is the owner's to know about, and telling
+      them once is a layer's decision about work rather than a constant of the
+      code.
+    slots:
+      - report_after_hours
 
   SummaryConfig:
     description: When and how workers report.

@@ -225,6 +225,7 @@ class FlightConfig(ConfiguredBaseModel):
     worktree: WorktreeConfig | None = Field(default=None)
     session_scratch: SessionScratchConfig | None = Field(default=None, description="""Per-session scratch bound and aggregate share of the local disk.""")
     lost_session: LostSessionConfig | None = Field(default=None, description="""When a coordinator session that nothing has heard from reads as lost. The block is declared here so a host or project layer retunes the threshold without a code change; the derivation reads it from the resolved config.""")
+    stranded_wait: StrandedWaitConfig | None = Field(default=None, description="""How long a request waiting on an upstream that nobody is building may stand before its owner is told once. The block is declared here so a host or project layer retunes the threshold without a code change; the admission pass reads it from the resolved config.""")
     summary: SummaryConfig | None = Field(default=None)
     ticker: TickerConfig | None = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
     domain: DomainConfig | None = Field(default=None, description="""The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour.""")
@@ -763,6 +764,13 @@ class LostSessionConfig(ConfiguredBaseModel):
     after_hours: float | None = Field(default=None, description="""Hours a coordinator session may go unheard before it reads as lost. The derivation dates a session from the last instant the session was heard -- a follower lease, a session-host record, or a coordinator process carrying its id -- and never from the age of any one process. Defaults to 72.""", ge=0)
 
 
+class StrandedWaitConfig(ConfiguredBaseModel):
+    """
+    How long an idle wait may stand before its owner is told. A wait whose upstream nobody is building is the owner's to know about, and telling them once is a layer's decision about work rather than a constant of the code.
+    """
+    report_after_hours: float | None = Field(default=None, description="""Hours a request waiting on an upstream that no run or request is building may stand before it appears once in its owner's obligations. A wait whose upstream can never land is retired whatever this figure is, and a wait is never removed for its age alone. Defaults to 72.""", ge=0)
+
+
 class SummaryConfig(ConfiguredBaseModel):
     """
     When and how workers report.
@@ -856,6 +864,7 @@ FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
 SessionScratchConfig.model_rebuild()
 LostSessionConfig.model_rebuild()
+StrandedWaitConfig.model_rebuild()
 SummaryConfig.model_rebuild()
 TickerConfig.model_rebuild()
 DomainConfig.model_rebuild()

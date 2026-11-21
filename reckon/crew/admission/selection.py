@@ -148,6 +148,7 @@ def admit_once(
             _service._record_stage_reads(result, "wait", wait_reads)
             result["promoted_upstream"] = upstream["promoted"]
             result["blocked_upstream"] = upstream["blocked"]
+            result["retired"] = list(upstream.get("retired") or ())
             result["upstream_obligations"] = upstream["obligations"]
             queued = [
                 pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE

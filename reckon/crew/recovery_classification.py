@@ -2279,6 +2279,12 @@ def classify_pointer(
             working = [str(run) for run in record.get("upstream_live") or () if run]
             if working:
                 detail += f" ({', '.join(working)} live on it)"
+            # The admission pass classes the wait by what could release it, so
+            # the account a reader shows is derived from that class rather than
+            # parsed back out of the refs.
+            wait_detail = str(record.get("wait_detail") or "")
+            if wait_detail:
+                detail = wait_detail
             action = f"wait for {waiting_on} to land"
     elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
@@ -3597,6 +3603,10 @@ def classify_pointer(
         # view or the hook text are told the same thing about the same request.
         "stuck": stuck is not None,
         "stuck_reason": str(stuck.get("reason") or "") if stuck else None,
+        # What could release a request held upstream, as the admission pass
+        # resolved it. The pass is the one place the wait is judged; this row
+        # carries its answer rather than deriving a second one.
+        "wait_class": record.get("wait_class") or None,
         # Set only for a blocked run: "?" when the escape-hatch question is
         # complete enough that `reckon crew resume --advice` can answer it,
         # "!" when the reader has to read the manifest itself. The fact behind
