@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-title" content="Where behaviour follows a backend's name">
+  <meta name="plan-summary" content="A ten-pattern search over reckon/ at one revision returns 97 distinct candidate lines, two of which are excluded. Every remaining candidate, together with sixteen sites found by reading, is listed with its path, line, what it decides, and whether it falls under one of the four permitted harness differences or under none: 4 launch argv, 22 harness home, 12 stream format, 73 none, and none under the model identifier.">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s12">
+  <meta name="plan-recorded-at" content="2026-11-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="reckon-tooling,lane-identity,harness-dialect,inventory">
+  <title>Where behaviour follows a backend's name — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="wlsr-where-behaviour-follows-a-backends-name" data-reckon="landed" data-when="2026-11-21">
+  <h2>Where behaviour follows a backend's name</h2>
+  <p>The research record at <code>docs/research/where-behaviour-follows-a-backends-name.html</code> lists every place under <code>reckon/</code> that decides behaviour from a backend's name or from a harness dialect. No product source changed.</p>
+  <p>The search is stated in the record so a reader can run it again: ten <code>grep -rnE</code> patterns over <code>reckon/ --include=*.py</code> at revision <code>e689315bb74ca1efdd63eee69d7a55ed9b235a0e</code>. They return <strong>98 matching lines, 97 distinct</strong>, the single duplicate being <code>reckon/ledger.py:127</code>, returned by both the frozenset pattern and the unmetered-backend pattern. Per-pattern counts are 19, 1, 7, 12, 1, 1, 14, 14, 27 and 2. Two candidates are excluded as false positives and named in the record. Sixteen further rows came from reading. Nothing was dropped silently: the builder refused to emit the table unless every returned line had a decision against it.</p>
+  <p>The table holds <strong>111 rows</strong>: 4 under the launch argv, 22 under the layout of the harness home, 12 under the stream format, 73 under none, and none under the model identifier. Every row's path and line was resolved against the named revision before the table was written, so each is a line that existed there.</p>
+  <p>The negative control is the fleet-gate hold in <code>reckon/crew/admission/selection.py</code> — 159 (<code>if backend == lane:</code>) and 732 (<code>if lane == local:</code>) — a site known before the search began. D10 returns both, and both are rows in the table under <em>none</em>.</p>
+  <p>Gate: <code>python -m reckon.doccheck docs/research/where-behaviour-follows-a-backends-name.html</code> reports <code>OK</code>, <code>EXIT=0</code>. The record also passes a line-by-line resolution of the 111 rows against the named revision (a row whose line is out of range or blank aborts the build).</p>
+</article>
+</body>
+</html>

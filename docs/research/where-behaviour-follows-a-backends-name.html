@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="where-behaviour-follows-a-backends-name">
+  <meta name="plan-title" content="Where behaviour follows a backend's name">
+  <meta name="plan-summary" content="Every place under reckon/ that decides behaviour from a backend's name or a harness dialect: its path and line at one named revision, what it decides, and whether it falls under one of the four permitted harness differences or under none">
+  <meta name="plan-source" content="a ten-pattern grep set over reckon/**.py at revision e689315bb7, with every returned candidate classified or excluded">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-11-21">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Where behaviour follows a backend's name | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-11-21">
+<meta name="plan-version" content="1">
+<meta name="plan-status" content="done">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What happened, and what this record is</h2>
+    <p>
+      At 07:32Z on 20 November the configured local backend moved from one name to
+      another in front of the same model server. The admission service was declared
+      under the old backend's name, and it stopped admitting every request not queued
+      under that name. The lane sat idle for twelve hours with work queued. The
+      comparison was corrected the same evening.
+    </p>
+    <p>
+      The ruling that followed is wider than that one comparison: a worker's reflexes,
+      hooks, shims, fences and the services that act on its run must be the same
+      whichever harness a lane is set up with. This record answers the first half of
+      that ruling only: it <em>finds</em> the places where behaviour still follows a
+      backend's name or a harness dialect, and does not change them.
+    </p>
+    <p>
+      The deliverable is a list, not a fix. Each row gives a path and line at one named
+      revision, what is decided there, and which of the four permitted harness
+      differences it falls under, or that it falls under none.
+    </p>
+
+    <h2 id="s2">§2 — The search, so a reader can run it again and count the same sites</h2>
+    <p>
+      Every row in this record was returned by one of the greps below, run from the
+      repository root at revision <code>e689315bb74ca1efdd63eee69d7a55ed9b235a0e</code>.
+      A reader who runs the same commands at the same revision gets the same
+      candidates. The counts are the number of matching lines, not files.
+    </p>
+    <pre>
+D1  grep -rnE 'dialect(\.name)? *(==|!=) *"|"(claude|codex|omp|clive)" *(==|!=) *dialect'   19
+D2  grep -rnE 'dialect(\.name)? (not )?in \('                                                  1
+D3  grep -rnE '\b(harness|agent|family|policy_family|lane)[_a-z]* *(==|!=) *"'                 7
+D4  grep -rnE '^[[:space:]]*"(claude|codex|omp|clive|nova)"[[:space:]]*:'                     12
+D5  grep -rnE 'frozenset\(\{[^}]*"(claude|codex|omp|clive)"'                                   1
+D6  grep -rnE '"(claude|codex|omp|clive|nova)" (not )?in '                                     1
+D7  grep -rnE 'UNMETERED_BACKENDS|is_unmetered_backend'                                       14
+D8  grep -rnE '(==|!=)[^=]*local_backend|local_backend[^=]*(==|!=)[^=]'                       14
+D9  grep -rnE 'Path\.home\(\) / "\.(claude|codex|omp)|Path\("~/\.(claude|codex|omp)|/ "\.(claude|codex|omp)"'  27
+D10 grep -rnE 'if +backend == |if +lane == '                                                   2
+
+each line prefixed with:  grep -rnE '<pattern>' reckon/ --include=*.py
+</pre>
+    <p>
+      The ten greps return <strong>98 matching lines, 97 of them distinct</strong>.
+      The single duplicate is <code>reckon/ledger.py:127</code>, returned by both D5
+      and D7. Two candidates were then excluded as false positives and are named in
+      §7, leaving 95 search-found sites. Each remaining candidate was read and given
+      a decision against every one of the four permitted differences and against
+      <em>none</em>, and no candidate may be dropped silently: the generator refuses
+      to emit a table unless every returned line has a decision against it.
+    </p>
+    <p>
+      Sixteen further rows were established by reading, not by a name comparison
+      alone, and are marked in the table only by their own path and line: the
+      <code>_HARNESS_HOME</code> and credential-path sites, the MCP-exclusion
+      writes, the inbox delivery routes and the transcript-root defaults are
+      harness-interface plumbing that no name-comparison grep reaches. They answer
+      the same population of question, so they are listed rather than omitted. The
+      table therefore holds <em>111 rows</em>: 95 from the search and 16 from
+      reading.
+    </p>
+
+    <h2 id="s3">§3 — The four differences that are permitted, and how a row is classified</h2>
+    <p>
+      Four differences between harnesses are permitted because the harness's own
+      interface forces them, and no others: <strong>the launch argv</strong>, <strong>the
+      layout of the harness home</strong>, <strong>the stream format a run writes</strong>,
+      and <strong>the model identifier</strong>. A row is classified into one of those
+      four, or into <strong>none</strong>.
+    </p>
+    <p>
+      The distinction that matters is between <em>speaking a harness's interface</em>
+      <code>_backends.py</code> and the fence tables do, and <em>deciding a worker's
+      treatment</em> from the name of the harness serving it. A flag, a home path or a
+      stream grammar is the first. A hook that is only seeded on one harness, an
+      instruction file a worker is given, or a gate that holds by name at all, is the
+      second.
+    </p>
+
+    <h2 id="s4">§4 — The rows</h2>
+    <table>
+      <thead>
+        <tr><th>Site</th><th>What is decided</th><th>Permitted difference</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>reckon/_backends.py:3141</code></td>
+        <td>anchored edit enabled through argv overrides</td>
+        <td>launch argv</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3246</code></td>
+        <td>worker MCP flags composed onto the launch argv</td>
+        <td>launch argv</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3277</code></td>
+        <td>the composed anchored-edit flag is handed to the launch</td>
+        <td>launch argv</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3290</code></td>
+        <td>anchored-edit roots composed onto the launch argv</td>
+        <td>launch argv</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:2917</code></td>
+        <td>which stored login is bound into the run home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3137</code></td>
+        <td>whether an unfenced run adopts its own harness home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3162</code></td>
+        <td>whether the run home is seeded when no fence is composed</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3173</code></td>
+        <td>anchored edit seeded into the run home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3192</code></td>
+        <td>the seeded treatment replaces the recorded anchored-edit fact</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3251</code></td>
+        <td>the codex config home falls back to the operator&#x27;s home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3262</code></td>
+        <td>worker MCP config composed into a run file</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3332</code></td>
+        <td>the stored login size is recorded before the fence opens</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:784</code></td>
+        <td>the stored credential path is a claude home path</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:794</code></td>
+        <td>the stored-credential constant names one harness&#x27;s home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:1012</code></td>
+        <td>the codex auth file is resolved under a home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:1025</code></td>
+        <td>the claude credential is resolved under a home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:1229</code></td>
+        <td>the claude credential source under a home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:1231</code></td>
+        <td>the codex credential source under a home</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:39</code></td>
+        <td>the harness-home variable and directory a claude run is given</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:40</code></td>
+        <td>the harness-home variable and directory a codex run is given</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:422</code></td>
+        <td>the worker MCP settings file is seeded</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:47</code></td>
+        <td>the harness-home variable and directory an omp run is given</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:59</code></td>
+        <td>the agent-store variable an omp run is given</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:602</code></td>
+        <td>which file carries the MCP exclusion list</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:605</code></td>
+        <td>how the exclusion list is merged</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:616</code></td>
+        <td>the exclusion list is written under the agent store</td>
+        <td>harness home</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_accounting.py:156</code></td>
+        <td>the coordinator transcript is read from the claude project path</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_accounting.py:160</code></td>
+        <td>the coordinator transcript is read from the claude projects path</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_accounting.py:165</code></td>
+        <td>the coordinator transcript search root is the claude projects path</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_accounting.py:172</code></td>
+        <td>the fallback transcript search root is the codex sessions path</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_accounting.py:183</code></td>
+        <td>the authoring turn is measured from a claude transcript</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_accounting.py:185</code></td>
+        <td>the authoring turn is measured from a codex rollout</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_sessions.py:1937</code></td>
+        <td>a lane change continues the session only when the target harness equals the source harness</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_sessions.py:944</code></td>
+        <td>a recorded session is reused only when its owner equals the resolved dialect name</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/recovery_stream.py:665</code></td>
+        <td>the dialect recorded on a run chooses the fold used for its stream</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/station_store.py:944</code></td>
+        <td>a pointer recording no dialect is read as a claude stream</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/station_store.py:947</code></td>
+        <td>a pointer with no dialect is observed under the backend name claude</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/serve.py:658</code></td>
+        <td>the dialect recorded on a pointer chooses the fold used to read its stream</td>
+        <td>stream format</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:1125</code></td>
+        <td>retry exhaustion read as backpressure or a spent budget from the backend&#x27;s name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:2844</code></td>
+        <td>the dialect a backend runs is selected by the stem of its configured command</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_backends.py:3148</code></td>
+        <td>anchored edit refused as unsupported for every dialect but claude and codex</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:417</code></td>
+        <td>the inbox hook is seeded into a run home</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/_worker_fence.py:600</code></td>
+        <td>the MCP exclusion file is written for claude and omp only; every other dialect is fenced with no exclusion list</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/agent_context.py:20</code></td>
+        <td>the instruction layout a codex worker is given</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/agent_context.py:28</code></td>
+        <td>the instruction layout a claude worker is given</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/agent_context.py:37</code></td>
+        <td>the instruction layout an omp worker is given</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/agent_context.py:378</code></td>
+        <td>only a codex agent&#x27;s config.toml is read</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/capabilities.py:255</code></td>
+        <td>a run&#x27;s billing class is unmetered from its backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/cli_entry.py:165</code></td>
+        <td>the skills directory is the claude one</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/admission/holds.py:186</code></td>
+        <td>a held pointer is rebound onto the local backend unless it is already there, by name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/admission/selection.py:159</code></td>
+        <td>queued pointers are admitted when the list&#x27;s backend name equals the draining lane</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/admission/selection.py:732</code></td>
+        <td>the drainer serves the local lane by name, or when both declare the same lane document</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/directory.py:33</code></td>
+        <td>the transcript root is the claude projects directory</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_admission.py:486</code></td>
+        <td>the unmetered alternatives list is built from the backend-name set</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_admission.py:510</code></td>
+        <td>the lane-declaration evidence marks a backend metered from its name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_launch.py:1253</code></td>
+        <td>claude runs are given claude request headers in their environment</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_launch.py:1255</code></td>
+        <td>omp runs are given omp request headers in their environment</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_launch.py:1266</code></td>
+        <td>the custom-headers variable is removed from every non-claude run</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_picker.py:1062</code></td>
+        <td>the lane family is local when the name equals the configured local backend</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_picker.py:1082</code></td>
+        <td>a claude-dialect backend keeps the claude reservation family even on the local lane</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_plan.py:259</code></td>
+        <td>the offered local backend is the candidate whose name equals the configured local backend</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_plan.py:724</code></td>
+        <td>a crew member whose declared harness differs from the local backend name is refused for --local</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_plan.py:791</code></td>
+        <td>a dispatch is recorded local only when its backend name equals the local backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_plan.py:981</code></td>
+        <td>the lane advisory is told whether the backend is metered, from its name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_watch.py:1085</code></td>
+        <td>the session-host record root defaults to the claude sessions directory</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatch_watch.py:716</code></td>
+        <td>the session-host owner is looked up only under the claude-code harness</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatching/fences.py:238</code></td>
+        <td>the launch is recorded local from the chosen backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatching/preparation.py:1049</code></td>
+        <td>a dispatch is local when the backend name equals the local backend</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatching/preparation.py:1235</code></td>
+        <td>a queued request is recorded local from the backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatching/preparation.py:913</code></td>
+        <td>the request is recorded local from the backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatching/preparation.py:986</code></td>
+        <td>a fallback&#x27;s backend name equals the local backend name is recorded local</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/dispatching/requests.py:297</code></td>
+        <td>a request carries local from the flag or from the lane equalling the local backend</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/fleet_migrate.py:242</code></td>
+        <td>the migration&#x27;s claude session root is a claude home path</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/fleet_migrate.py:243</code></td>
+        <td>the migration&#x27;s transcript root is a claude home path</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/fleet_migrate.py:567</code></td>
+        <td>the migration&#x27;s claude session root is a claude home path</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/fleet_migrate.py:583</code></td>
+        <td>a migrated pane is kept only when its command line names claude</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/picker/lane_context.py:1189</code></td>
+        <td>a lane-context row is local when its backend equals the configured local backend</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/picker/outcomes.py:202</code></td>
+        <td>a run is a codex outcome when its lane resolves to codex</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/picker/snapshot.py:1677</code></td>
+        <td>a derived-from backend is offered only when it is the configured local backend</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/picker/snapshot.py:1687</code></td>
+        <td>a candidate is marked local from its name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/picker/snapshot.py:1715</code></td>
+        <td>a non-subscription claude dialect is treated as a local wrapper for offer exclusion</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/picker/snapshot.py:1807</code></td>
+        <td>the reservation gate is enforced only for the claude policy family</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/promotion_release.py:987</code></td>
+        <td>quota windows are reported unmeasured for an unmetered backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/prompts.py:775</code></td>
+        <td>the anchored-edit instruction body a claude worker is told</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/prompts.py:776</code></td>
+        <td>the anchored-edit instruction body a codex worker is told</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/prompts.py:817</code></td>
+        <td>the claude anchored-edit instruction body is added only at launch</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/recovery_cut_off.py:27</code></td>
+        <td>the working-exit cut-off rule applies to omp runs only</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/rollout.py:40</code></td>
+        <td>the client session directory is the codex sessions directory</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew_run_commands.py:2989</code></td>
+        <td>how a codex run&#x27;s inbox reachability is judged</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew_run_commands.py:3003</code></td>
+        <td>how a claude run&#x27;s inbox reachability is judged</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew_run_commands.py:5354</code></td>
+        <td>the coordinator transcript root defaults to the claude sessions directory</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/hooks/install.py:311</code></td>
+        <td>the user-scope harness settings path defaults to the claude one</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/ledger.py:127</code></td>
+        <td>which backends are billed as unmetered, decided by name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/ledger.py:5309</code></td>
+        <td>the unmetered-name test is re-exported to every cost reader</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/mcp_views.py:859</code></td>
+        <td>the account probe is skipped for an unmetered backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/mcp_views.py:916</code></td>
+        <td>the lane&#x27;s receipt state is unmetered from its backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/project_maintenance_commands.py:1183</code></td>
+        <td>a diagnostic reads the claude desktop configuration file</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/project_maintenance_commands.py:1184</code></td>
+        <td>a diagnostic reads the claude settings file</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/project_maintenance_commands.py:1187</code></td>
+        <td>a diagnostic reads the codex config.toml</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/project_maintenance_commands.py:1689</code></td>
+        <td>the skills listing reads the claude skills directory</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/project_maintenance_commands.py:1690</code></td>
+        <td>the skills listing reads the codex skills directory</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/project_maintenance_commands.py:500</code></td>
+        <td>the hook-settings target defaults to the claude settings file</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/project_maintenance_commands.py:980</code></td>
+        <td>the launch listing reads the claude configuration file</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/run_record.py:210</code></td>
+        <td>the unmetered test takes a backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/run_record.py:212</code></td>
+        <td>a run&#x27;s cost is labelled unmetered from its backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/run_record.py:352</code></td>
+        <td>a notional cost is suppressed for an unmetered backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/run_record.py:752</code></td>
+        <td>the unmetered name set is re-exported through the ledger</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/serve.py:205</code></td>
+        <td>the assets directory falls back to the claude skills tree</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/velocity.py:101</code></td>
+        <td>the report&#x27;s lane buckets are named after harness families</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/velocity.py:200</code></td>
+        <td>a run&#x27;s report lane is decided by the prefix of its backend name</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>reckon/velocity.py:82</code></td>
+        <td>the transcript root read for lane attribution is the claude one</td>
+        <td>none</td>
+      </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">§5 — What the rows say</h2>
+    <p>
+      The generator reports the table it wrote: <strong>111 rows</strong>, of which
+      <strong>4</strong> fall under the launch argv, <strong>22</strong> under the layout
+      of the harness home, <strong>12</strong> under the stream format, <strong>73</strong>
+      under none, and none under the model identifier. Each line is listed once, under
+      the difference that line itself decides.
+    </p>
+    <p>The rows that fall under none group into four mechanisms, and they are the ones worth reading next to §1's ruling:</p>
+    <ul>
+      <li>
+        <strong>Inbox delivery is not one mechanism.</strong> The hook is seeded into a
+        run home for the claude dialect only
+        (<code>reckon/_worker_fence.py:417</code>), a codex run instead carries hook and
+        trust overrides on its argv
+        (<code>reckon/_backends.py:1471</code> for the composition,
+        <code>reckon/crew_run_commands.py:2989</code> for the reachability test), and
+        every other dialect is refused outright
+        (<code>reckon/crew_run_commands.py:3026</code>). So a message reaches a worker
+        by three different routes, chosen by the harness.
+      </li>
+      <li>
+        <strong>Fence protections differ.</strong> The MCP exclusion file is written for
+        claude and omp and for no other dialect
+        (<code>reckon/_worker_fence.py:600</code>), so a worker on any other harness is
+        fenced with no exclusion list at all. The same file's MCP settings seeding is
+        claude-only (<code>reckon/_worker_fence.py:422</code>).
+      </li>
+      <li>
+        <strong>A worker is given a different instruction set.</strong>
+        <code>reckon/agent_context.py:20</code>, <code>:28</code> and <code>:37</code> give
+        three harnesses three instruction layouts, and
+        <code>reckon/agent_context.py:378</code> reads a configuration file only for one.
+      </li>
+      <li>
+        <strong>A lane's identity, billing, reservation and admission are all read from a
+        backend's name.</strong> The report's lane (<code>reckon/velocity.py:200</code>),
+        the unmetered set (<code>reckon/ledger.py:127</code>), the reservation family
+        (<code>reckon/crew/dispatch_picker.py:1082</code>), the picker's offer exclusion
+        (<code>reckon/crew/picker/snapshot.py:1715</code>) and the gate itself. None of
+        these is a launch argv, a home layout, a stream grammar or a model
+        identifier, so none of them is one of the four permitted differences: they
+        are the case the plan calls <em>none</em>, and the one that caused the
+        twelve-hour stall is among them.
+      </li>
+    </ul>
+
+    <h2 id="s6">§6 — The negative control</h2>
+    <p>
+      One site was known before the search began, so it tests whether the search
+      is the search this record claims. The admission service's lane gate holds a
+      queued pointer by comparing its backend name with the lane it is draining.
+      D10 returns it:
+    </p>
+    <pre>
+reckon/crew/admission/selection.py:159     if backend == lane:
+reckon/crew/admission/selection.py:732     if lane == local:
+</pre>
+    <p>
+      Line 159 is the hold that stopped admitting on 20 November. Line 732 is the
+      correction made the same evening: the drainer serves the local lane when its
+      name is the configured <code>local_backend</code>, <em>or</em> when the two
+      declare the same lane document. The name comparison survives at 732 as one
+      of two admissions and no longer as the only one. Both lines are in the table.
+    </p>
+
+    <h2 id="s7">§7 — Candidates examined and excluded, and modules that do not branch on a name</h2>
+    <p>
+      Two candidates were examined and are not behaviours:
+    </p>
+    <ul>
+      <li><code>reckon/velocity.py:97</code> — <code>"nova": "main"</code> is a project name in the report's project table, not a backend.</li>
+      <li><code>reckon/crew/fleet_migrate.py:232</code> — <code>"claude": records</code> is a dictionary key holding the collected records, not a branch on a name.</li>
+    </ul>
+    <p>
+      The search's opposite half matters as much: the worker's own shims and guards
+      <strong>do not</strong> branch on a harness name. <code>reckon/worker_shims/git</code>,
+      <code>reckon/worker_git_shim.py</code>, <code>reckon/host_shims/{salloc,sbatch,srun}</code>,
+      <code>reckon/nested_launch.py</code>, and the hooks under <code>reckon/hooks/</code>
+      (inbox, stop, walk guard, message guard, git guard, native-agent guard) contain no
+      dialect or backend-name comparison at all. Whatever the harness, they behave the
+      same. That is the shape the rest of the worker's treatment should take, and it is
+      the reason the list above is short: the difference is in the launch, the home and
+      the stream, and in the few decisions those surfaces were allowed to leak into.
+    </p>
+
+    <h2 id="s8">§8 — Reading this record again</h2>
+    <p>
+      The ten greps in §2 reproduce the candidate set; run them at the revision named
+      there and the same 97 distinct lines come back. What each of those lines
+      decides is the middle column, and the classification question applied to every
+      row is whether the line <em>translates</em> a harness interface or
+      <em>decides a worker's treatment</em>. Each row's path and line was resolved
+      against revision <code>e689315bb74ca1efdd63eee69d7a55ed9b235a0e</code> before
+      this table was written, so every row is a line that existed at that revision.
+    </p>
+    <p>
+      When a later change removes a branch, the row that named it no longer resolves.
+      That is a useful signal rather than a stale record. The record states the revision
+      it was measured at so a reader can tell a moved line from a changed decision.
+    </p>
+  </main>
+</body>
+</html>
