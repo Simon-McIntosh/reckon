@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_reading": {
+    "negative control": "SCHEDULER_LISTS_THE_STEP flipped to true makes the two settled cases and the obligations case fail (3 failed, 3 passed, EXIT=1), so the settle is shown to depend on the scheduler's answer rather than age alone.",
+    "tests/test_a_live_reading_with_no_process_is_settled.py:170 test_a_starting_pointer_with_no_step_and_no_stream_past_the_setting_settles": "independent for the scheduler answer: it requires classification 'interrupted' and settled['step_state'] == 'gone'; removing the _launch_step_state guard reddens it because the settled evidence decides nothing without it. The quiet_seconds assertion echoes the fixture's 7.0 h input, so it checks the measurement is derived from the stream mtime rather than a constant.",
+    "tests/test_a_live_reading_with_no_process_is_settled.py:197 test_a_working_pointer_whose_step_is_listed_is_untouched": "independent: it stubs the scheduler to report the run's own step and requires settled is None and classification 'running'; it reddens if the guard stops consulting the step answer, but its single-line stub never exercises the multi-line truncation at recovery_classification.py:809.",
+    "tests/test_a_live_reading_with_no_process_is_settled.py:217 test_a_starting_pointer_younger_than_the_setting_is_untouched": "independent: a run younger than the bound must stay 'running', so it reddens if the bound is removed or the attempt clock ignored.",
+    "tests/test_a_live_reading_with_no_process_is_settled.py:227 test_a_settled_run_appears_once_in_its_owners_obligations": "independent: requires exactly one obligation of kind 'turn-ended-early' with a next_command, so it reddens if the settled phase stops mapping to that duty or the run appears twice."
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligations.py:1712",
+    "reckon/crew/runs.py:3754",
+    "reckon/crew/recovery_watch.py:758",
+    "reckon/crew/promotion.py:1146",
+    "reckon/serve.py:904"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:57:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "809",
+      "severity": "blocking",
+      "text": "blocking: _ask_scheduler returns only the last line of the scheduler's output (reckon/crew/process_liveness.py:113-114), so a squeue --steps listing with more than one step is truncated to whichever step printed last; a run whose step is still listed but is not that last line reads LAUNCH_STEP_GONE and is settled after the quiet bound, defeating the 'a step the scheduler still lists leaves it alone' guard in exactly the shared-reservation case the docstring claims to protect."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "786",
+      "severity": "non-blocking",
+      "text": "non-blocking: the squeue --steps query and the .batch/.extern filter duplicate reckon/crew/fleet_migrate.py:632 _worker_steps, which already owns that enumeration; the filter now lives in two places."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "fail \u2014 the settle arm is correct for one listed step but the step listing is truncated to its last line at recovery_classification.py:809.",
+    "done_when": "pass \u2014 the four required cases and two more are in tests/test_a_live_reading_with_no_process_is_settled.py and gate.log records 6 passed EXIT=0.",
+    "goal": "pass \u2014 plan \u00a714 asks a starting/working pointer whose launch step is gone and whose stream is quiet past a flight setting be moved to a phase that already exists for a worker that ended without delivering, with evidence, and no phase added; reckon/crew/recovery_classification.py:3146 does this.",
+    "manifest": "pass \u2014 read; complete, gate EXIT=0, negative control EXIT=1, pre-existing neighbour failure reproduced at base.",
+    "write_paths": "pass \u2014 ff3bb24..5d918 touches six of the seven declared paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_reading_with_no_process_is_settled.py:160 fails if the settle arm is removed, but the step-present case stubs _ask_scheduler with a single line so it cannot catch the truncation at recovery_classification.py:809.",
+    "evidence": "gate.log records the six focused cases EXIT=0 and negative-control.log EXIT=1, but no case hands a multi-line step listing to recovery_classification.py:809.",
+    "fit": "reckon/crew/recovery_classification.py:752-833 follows the surrounding lazy-import and constant idiom, but _ask_scheduler's one-answer contract does not fit a multi-line query.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:3146 settles a quiet pre-delivery pointer as interrupted with evidence on the row.",
+    "reuse": "reckon/crew/recovery_classification.py:786 re-implements reckon/crew/fleet_migrate.py:632's step query and filter; _step_argv and _run_stream_quiet_seconds are reused.",
+    "scope_discipline": "every path in ff3bb24..5d918 is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 read the reviewed node's goal and plan section \u00a714 (docs/plans/work-of-a-lost-session-is-raised-not-left.html:148); the landed change settles a starting or working pointer whose launch step is gone and stream quiet past the setting at reckon/crew/recovery_classification.py:3146.\nVERDICT done_when: pass \u2014 the six-case gate at tests/test_a_live_reading_with_no_process_is_settled.py covers the four required cases plus the step-listed-untouched and obligations cases, and gate.log records 6 passed with EXIT=0.\nVERDICT write_paths: pass \u2014 every path in ff3bb24..5d918 lies inside the seven declared write paths; the declared figure directory is unused and nothing fell outside.\nVERDICT manifest: pass \u2014 read; status complete, gate EXIT=0, negative control EXIT=1, the pre-existing obligations-test failure reproduced at base and left untriaged.\nVERDICT diff: fail \u2014 read commit by commit; the settle lands, but reckon/crew/recovery_classification.py:809 reads only the last line of the step listing, so the step-present guard is absent for a multi-step reservation.\nCALL_SITES: reckon/crew/obligations.py:1712, reckon/crew/runs.py:3754, reckon/crew/recovery_watch.py:758, reckon/crew/promotion.py:1146, reckon/serve.py:904\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:3146 settles a quiet pre-delivery pointer as interrupted with its evidence on the row.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate.log records the six focused cases at EXIT=0 and the negative control at EXIT=1, but no case hands a multi-line step listing to reckon/crew/recovery_classification.py:809.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in ff3bb24..5d918 is inside the declared write paths listed in the manifest.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_live_reading_with_no_process_is_settled.py:160 fails if the settle arm is removed, but the step-present case stubs _ask_scheduler with one line, so it cannot redden on the truncation at recovery_classification.py:809.\nSCORE fit: 15\nJUSTIFICATION fit: names and lazy imports follow reckon/crew/recovery_classification.py:752-833, but _ask_scheduler's one-answer contract does not fit a multi-line query.\nSCORE reuse: 12\nJUSTIFICATION reuse: the step listing re-implements reckon/crew/fleet_migrate.py:632's squeue query and .batch/.extern filter while _step_argv and _run_stream_quiet_seconds are reused.\nFINDING reckon/crew/recovery_classification.py:809 blocking: _ask_scheduler returns only the last line of the scheduler's output (reckon/crew/process_liveness.py:113-114), so a squeue --steps listing with more than one step is truncated to whichever step printed last; a run whose step is still listed but is not that last line reads LAUNCH_STEP_GONE and is settled after the quiet bound, defeating the \"a step the scheduler still lists leaves it alone\" guard in exactly the shared-reservation case the docstring claims to protect.\nFINDING reckon/crew/recovery_classification.py:786 non-blocking: the squeue --steps query and the .batch/.extern filter duplicate reckon/crew/fleet_migrate.py:632 _worker_steps, which already owns that enumeration; the filter now lives in two places.\n",
+  "review_run_id": "r-20261121T025621243198-review-of-wlsr-a-live-reading-with-no-process-is-settled-5d918444bb57",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "5d918444bb57bdb92298a2055077da0d3191797a",
+  "reviewed_run_id": "r-20261121T010307921886-wlsr-a-live-reading-with-no-process-is-settled",
+  "reviewer_run_id": "r-20261121T025621243198-review-of-wlsr-a-live-reading-with-no-process-is-settled-5d918444bb57",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_basis": "the reviewed run records no baseline_suite and no after_suite: its gate is one focused test module (tests/test_a_live_reading_with_no_process_is_settled.py), recorded in gate.log headed 'revision: e088a441a887c69ac9fbeae7664ac325ff650dc0' and closing EXIT=0 with 6 passed. A neighbour arm met one failure, tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching, which the manifest records reproducing identically at a git-archive extraction of the base sha ff3bb24bcf; that is pre-existing, not added. With no baseline/after pair there is no delta to count, so added_failure_count is 0 with no ids.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:11:58.449099+00:00",
+  "total": 90
+}
