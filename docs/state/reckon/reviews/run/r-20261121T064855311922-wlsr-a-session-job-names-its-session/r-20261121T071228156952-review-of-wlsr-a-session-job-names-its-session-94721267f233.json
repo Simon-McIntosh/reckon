@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/host_shims/sbatch:69",
+    "reckon/host_shims/srun:69",
+    "reckon/host_shims/salloc:69",
+    "reckon/crew/fleet_node.py:766",
+    "reckon/project_setup_commands.py:237"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:12:53Z",
+  "findings": [
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "984",
+      "severity": "non-blocking",
+      "text": "non-blocking: _with_comment_text duplicates with_owner_comment at reckon/nested_launch.py:908 almost line for line \u2014 the same option scan, the same three branches and the same prepend fallback differ from it only by a parameter name and two .strip() calls \u2014 and should have extended that owner rather than forking it; it does not hold the node."
+    },
+    {
+      "file": "tests/test_a_scheduler_job_names_its_owner.py",
+      "line": "240",
+      "severity": "non-blocking",
+      "text": "non-blocking: the composed-launch case builds its own record = {\"session\": SESSION} and reproduces str(record.get(\"session\") or \"\") in the test body, so the run-record read at reckon/crew/dispatch_launch.py:4378 is never exercised and a regression in which key that line reads would leave the case green."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "968",
+      "severity": "non-blocking",
+      "text": "non-blocking: _script_comment takes every word after --comment= on a directive line as comment text, so a script declaring \"#SBATCH --comment=a --partition=b\" loses --partition=b from the wrapper as well as from the command line, which silently changes the submission's partition; no script in the tree uses that form today."
+    },
+    {
+      "file": "tests/test_a_fleet_per_project.py",
+      "line": "114",
+      "severity": "non-blocking",
+      "text": "non-blocking: the existing case covering find_allocations and fleet_of_allocation was left out of the gate command although the diff changes both at reckon/crew/fleet_node.py:652, so the suite that ran could not have caught a regression in the exact functions the node modified."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit against 65c0479b148; b3872f30fc changes the three source and test paths and 94721267f2 adds only the evidence fragment, and the whole diff is 218 added and 25 removed lines.",
+    "done_when": "The done_when asks for tests/test_a_scheduler_job_names_its_owner.py to add one case per deliverable and for the dispatch-side case to fail when the session export is removed; the head file carries all four cases at tests/test_a_scheduler_job_names_its_owner.py:172,193,211,227 and the manifest records the declared control as 4 failed / 1 failed with EXIT=1.",
+    "goal": "The goal is \"name the coordinator session on every job reckon submits for it\"; the landed change at reckon/nested_launch.py:884-903 gives owner_comment a session-only branch, reckon/nested_launch.py:950-1000 carries a submitted script's own #SBATCH --comment beside the owner, and reckon/crew/fleet_node.py:652 keeps a fleet allocation findable once its comment gains that owner.",
+    "manifest": "Read; it records status complete, both commits, 19 cases in the node file, the scoped gate at 77 passed EXIT=0 and both negative-control logs, and every rubric line is answered.",
+    "write_paths": "Read the eight declared paths against the four changed paths; reckon/nested_launch.py, reckon/crew/fleet_node.py, tests/test_a_scheduler_job_names_its_owner.py and the node's evidence fragment are all inside the declared scope, and the three declared-but-untouched files carry no diff."
+  },
+  "justifications": {
+    "durability": "tests/test_a_scheduler_job_names_its_owner.py:172 reddens on the owner_comment regression as measured, but tests/test_a_scheduler_job_names_its_owner.py:240 restates the record extraction the launch performs at reckon/crew/dispatch_launch.py:4378 and never exercises it.",
+    "evidence": "the gate recorded in scoped-gate-1795244630841609934.log reads 77 passed EXIT=0 and both controls read red, but tests/test_a_fleet_per_project.py:114 exercises the changed reveal in reckon/crew/fleet_node.py:652 and was not run.",
+    "fit": "reckon/nested_launch.py:952 follows the surrounding one-line summaries and mechanism-only comments, and no symbol carries a plan or section label.",
+    "goal_fidelity": "reckon/nested_launch.py:894 names the session alone when no run exists and returns nothing only when neither is set, which is the deliverable the goal states.",
+    "reuse": "reckon/nested_launch.py:984 re-implements the comment-merge scan that reckon/nested_launch.py:908 already owns in the same module.",
+    "scope_discipline": "every changed path in the diff is a declared write path, with reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch.py declared and untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is \"name the coordinator session on every job reckon submits for it\"; the landed change at reckon/nested_launch.py:884-903 gives owner_comment a session-only branch, reckon/nested_launch.py:950-1000 carries a submitted script's own #SBATCH --comment beside the owner, and reckon/crew/fleet_node.py:652 keeps a fleet allocation findable once its comment gains that owner.\nVERDICT done_when: The done_when asks for tests/test_a_scheduler_job_names_its_owner.py to add one case per deliverable and for the dispatch-side case to fail when the session export is removed; the head file carries all four cases at tests/test_a_scheduler_job_names_its_owner.py:172,193,211,227 and the manifest records the declared control as 4 failed / 1 failed with EXIT=1.\nVERDICT write_paths: Read the eight declared paths against the four changed paths; reckon/nested_launch.py, reckon/crew/fleet_node.py, tests/test_a_scheduler_job_names_its_owner.py and the node's evidence fragment are all inside the declared scope, and the three declared-but-untouched files carry no diff.\nVERDICT manifest: Read; it records status complete, both commits, 19 cases in the node file, the scoped gate at 77 passed EXIT=0 and both negative-control logs, and every rubric line is answered.\nVERDICT diff: Read commit by commit against 65c0479b148; b3872f30fc changes the three source and test paths and 94721267f2 adds only the evidence fragment, and the whole diff is 218 added and 25 removed lines.\nCALL_SITES: reckon/host_shims/sbatch:69, reckon/host_shims/srun:69, reckon/host_shims/salloc:69, reckon/crew/fleet_node.py:766, reckon/project_setup_commands.py:237\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:894 names the session alone when no run exists and returns nothing only when neither is set, which is the deliverable the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate recorded in scoped-gate-1795244630841609934.log reads 77 passed EXIT=0 and both controls read red, but tests/test_a_fleet_per_project.py:114 exercises the changed reveal in reckon/crew/fleet_node.py:652 and was not run.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path in the diff is a declared write path, with reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch.py declared and untouched.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_scheduler_job_names_its_owner.py:172 reddens on the owner_comment regression as measured, but tests/test_a_scheduler_job_names_its_owner.py:240 restates the record extraction the launch performs at reckon/crew/dispatch_launch.py:4378 and never exercises it.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/nested_launch.py:952 follows the surrounding one-line summaries and mechanism-only comments, and no symbol carries a plan or section label.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/nested_launch.py:984 re-implements the comment-merge scan that reckon/nested_launch.py:908 already owns in the same module.\nFINDING reckon/nested_launch.py:984 non-blocking: _with_comment_text duplicates with_owner_comment at reckon/nested_launch.py:908 almost line for line \u2014 the same option scan, the same three branches and the same prepend fallback differ from it only by a parameter name and two .strip() calls \u2014 and should have extended that owner rather than forking it; it does not hold the node.\nFINDING tests/test_a_scheduler_job_names_its_owner.py:240 non-blocking: the composed-launch case builds its own record = {\"session\": SESSION} and reproduces str(record.get(\"session\") or \"\") in the test body, so the run-record read at reckon/crew/dispatch_launch.py:4378 is never exercised and a regression in which key that line reads would leave the case green.\nFINDING reckon/nested_launch.py:968 non-blocking: _script_comment takes every word after --comment= on a directive line as comment text, so a script declaring \"#SBATCH --comment=a --partition=b\" loses --partition=b from the wrapper as well as from the command line, which silently changes the submission's partition; no script in the tree uses that form today.\nFINDING tests/test_a_fleet_per_project.py:114 non-blocking: the existing case covering find_allocations and fleet_of_allocation was left out of the gate command although the diff changes both at reckon/crew/fleet_node.py:652, so the suite that ran could not have caught a regression in the exact functions the node modified.",
+  "review_run_id": "r-20261121T071228156952-review-of-wlsr-a-session-job-names-its-session-94721267f233",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "94721267f233f2d1b884f49080a059ccd92a8d34",
+  "reviewed_run_id": "r-20261121T064855311922-wlsr-a-session-job-names-its-session",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T07:23:54.738572+00:00",
+  "total": 86
+}
