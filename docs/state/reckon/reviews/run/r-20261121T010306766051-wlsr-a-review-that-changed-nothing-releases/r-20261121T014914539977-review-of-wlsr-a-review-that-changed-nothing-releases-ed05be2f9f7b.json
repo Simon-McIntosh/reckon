@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:_release_integrated_pointer",
+    "reckon/crew/recovery_classification.py:_classify_settled_workspace"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T01:49:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-review-that-changed-nothing-releases.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states \"Adjacent release and promotion gates: 33 passed\" but the manifest test_logs record only gate-head.log and gate-base.log, so that number is not backed by a log a reader can open."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit ed05be2f9f7baf5ec60c3e7bce8e4d1042ede917 against base e689315bb74ca1efdd63eee69d7a55ed9b235a0e; three files changed, all inside declared scope.",
+    "done_when": "the done_when names tests/test_a_review_that_changed_nothing_releases.py, which exercises all three observed spellings, a dirty-worktree refusal and an implement-run unresolvable commit; the gate ran 5 passed EXIT=0 at head and 3 failed/2 passed EXIT=1 at base.",
+    "goal": "the goal is to release a review run whose manifest declares no commit; reckon/crew/pending_landing.py:1151 now judges the commits field through _presented_commits_without_a_declaration so a commitless declaration no longer resolves as a revision.",
+    "manifest": "read; it reports tests/test_a_review_that_changed_nothing_releases.py with logs/gate-head.log and logs/gate-base.log and states the head and negative-control arms.",
+    "write_paths": "the declared paths are the evidence fragment, the figures directory, reckon/crew/pending_landing.py and the test file; every path in the diff is one of them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_that_changed_nothing_releases.py:145 asserts the release refusal equals an independent empty literal, which reddens if the prose is resolved as a revision as the base arm shows, and the dirty and implement guards assert on independent substrings.",
+    "evidence": "tests/test_a_review_that_changed_nothing_releases.py asserts the release reader returns empty for each spelling and the classifier returns recorded, matching the done_when, and logs/gate-head.log records 5 passed EXIT=0.",
+    "fit": "reckon/crew/pending_landing.py:1144-1156 follows the function's local-import and per-entry loop idiom, though its six-line comment is heavier than the file's usual one-liners and names no plan or ticket.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:1151 replaces the per-entry revision resolution for a commitless role with the promotion reader, so each of the three prose spellings yields no citations and releases.",
+    "reuse": "the change adds no definition; it imports and uses the existing owner reckon/crew/promotion_evidence.py:_presented_commits_without_a_declaration, already called from reckon/crew/promotion.py:1154.",
+    "scope_discipline": "the three paths in git diff e689315..ed05be2f are the evidence fragment, reckon/crew/pending_landing.py and the test file, all declared; the declared figures directory is simply unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to release a review run whose manifest declares no commit; reckon/crew/pending_landing.py:1151 now judges the commits field through _presented_commits_without_a_declaration so a commitless declaration no longer resolves as a revision.\nVERDICT done_when: the done_when names tests/test_a_review_that_changed_nothing_releases.py, which exercises all three observed spellings, a dirty-worktree refusal and an implement-run unresolvable commit; the gate ran 5 passed EXIT=0 at head and 3 failed/2 passed EXIT=1 at base.\nVERDICT write_paths: the declared paths are the evidence fragment, the figures directory, reckon/crew/pending_landing.py and the test file; every path in the diff is one of them.\nVERDICT manifest: read; it reports tests/test_a_review_that_changed_nothing_releases.py with logs/gate-head.log and logs/gate-base.log and states the head and negative-control arms.\nVERDICT diff: read commit ed05be2f9f7baf5ec60c3e7bce8e4d1042ede917 against base e689315bb74ca1efdd63eee69d7a55ed9b235a0e; three files changed, all inside declared scope.\nCALL_SITES: reckon/crew/pending_landing.py:_release_integrated_pointer, reckon/crew/recovery_classification.py:_classify_settled_workspace\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:1151 replaces the per-entry revision resolution for a commitless role with the promotion reader, so each of the three prose spellings yields no citations and releases.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_review_that_changed_nothing_releases.py asserts the release reader returns empty for each spelling and the classifier returns recorded, matching the done_when, and logs/gate-head.log records 5 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths in git diff e689315..ed05be2f are the evidence fragment, reckon/crew/pending_landing.py and the test file, all declared; the declared figures directory is simply unused.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_review_that_changed_nothing_releases.py:145 asserts the release refusal equals an independent empty literal, which reddens if the prose is resolved as a revision as the base arm shows, and the dirty and implement guards assert on independent substrings.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/pending_landing.py:1144-1156 follows the function's local-import and per-entry loop idiom, though its six-line comment is heavier than the file's usual one-liners and names no plan or ticket.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it imports and uses the existing owner reckon/crew/promotion_evidence.py:_presented_commits_without_a_declaration, already called from reckon/crew/promotion.py:1154.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-review-that-changed-nothing-releases.html:50 non-blocking: the fragment states \"Adjacent release and promotion gates: 33 passed\" but the manifest test_logs record only gate-head.log and gate-base.log, so that number is not backed by a log a reader can open.\n",
+  "review_run_id": "r-20261121T014914539977-review-of-wlsr-a-review-that-changed-nothing-releases-ed05be2f9f7b",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "ed05be2f9f7baf5ec60c3e7bce8e4d1042ede917",
+  "reviewed_run_id": "r-20261121T010306766051-wlsr-a-review-that-changed-nothing-releases",
+  "rubric": "landed_node",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:09:45.389008+00:00",
+  "total": 112
+}
