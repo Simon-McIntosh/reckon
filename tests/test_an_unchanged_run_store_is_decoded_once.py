@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -156,6 +157,26 @@ def test_mutating_a_returned_record_leaves_the_next_answer_alone(
 
     assert decodes.rows == ALPHA_ROWS
     assert second[0]["outcome"] == pristine
+
+
+def test_another_reader_decodes_for_itself(store: Path, decodes) -> None:
+    """An answer belongs to the reader that asked; another thread reads its own."""
+    first = _read("alpha", store)
+    assert decodes.rows == ALPHA_ROWS
+
+    read: dict = {}
+
+    def read_here() -> None:
+        before = decodes.rows
+        read["answer"] = _read("alpha", store)
+        read["decoded"] = decodes.rows - before
+
+    thread = threading.Thread(target=read_here)
+    thread.start()
+    thread.join(timeout=30)
+
+    assert read["decoded"] == ALPHA_ROWS
+    assert read["answer"] == first
 
 
 def test_clearing_the_memo_makes_the_next_read_decode_again(

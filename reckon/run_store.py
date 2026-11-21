@@ -21,6 +21,7 @@ import sqlite3
 import subprocess
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
@@ -924,8 +925,29 @@ _HELD_ANSWERS: file_memo.BoundedMap[list[dict[str, Any]]] = file_memo.bounded_ma
     "stored-row-answers", limit=_ROW_ANSWER_LIMIT
 )
 
+#: The reader whose answers these are. An answer is a decoded object graph held
+#: for the reader that asked for it, so a second thread or task decodes for
+#: itself rather than being handed an answer it did not build. This is the same
+#: per-task scoping :func:`reckon.file_memo.read_only_region` uses, and it keeps
+#: a reader's own seam honest: a decoder paused to observe a read, or a
+#: selection a concurrent writer has since changed, is never answered from
+#: another reader's rows.
+_READ_CONTEXT: ContextVar[object | None] = ContextVar(
+    "run_store_read_context", default=None
+)
+
+
+def _read_context() -> object:
+    """This reader's own context, created the first time it reads."""
+    context = _READ_CONTEXT.get()
+    if context is None:
+        context = object()
+        _READ_CONTEXT.set(context)
+    return context
+
 
 def _answer_key(
+    context: object,
     target: Path,
     token: tuple[Any, ...],
     project: str,
@@ -936,6 +958,7 @@ def _answer_key(
     activity_since: float | None,
 ) -> tuple[Any, ...]:
     return (
+        context,
         str(target),
         token,
         project,
@@ -998,7 +1021,9 @@ def stored_run_rows(
     change token stands still; q.v. :func:`store_stamp`. The token is read
     before and after the rows, and an answer is kept only when the two agree, so
     a write that lands during the read cannot be cached under the token it
-    moved past. ``None`` is never kept: an absent store has no answer to hold.
+    moved past. An answer is held for the reader context that asked for it, so
+    another thread or task decodes for itself. ``None`` is never kept: an absent
+    store has no answer to hold.
     """
     target = store_path() if path is None else Path(path)
     if not target.exists():
@@ -1006,7 +1031,15 @@ def stored_run_rows(
     identities = None if run_ids is None else tuple(str(value) for value in run_ids)
     token = change_token(target)
     key = _answer_key(
-        target, token, project, identities, plan, node, fields, activity_since
+        _read_context(),
+        target,
+        token,
+        project,
+        identities,
+        plan,
+        node,
+        fields,
+        activity_since,
     )
     cached = _cached_answer(key)
     if cached is not None:
