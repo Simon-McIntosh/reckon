@@ -25,7 +25,7 @@
   <title>A Worker Or Its Job Cannot Overwrite Shared Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -211,6 +211,15 @@
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261120T050201463906-an-absolute-scheduler-call-runs-fenced" data-who="reckon-build" data-when="2026-11-20T05:06:44Z">
     <div class="r-comment-body"><p>A fenced worker's fence overlays every copy of sbatch/srun/salloc it resolves — this process's own search path first, then the search directories every backend in the flight config declares, the ones the launch appends after the inherited path — with that tool's reckon shim, and keeps in &lt;run&gt;/.scheduler-bin the real binary the shim forwards to, named through RECKON_SHIM_HOME/RECKON_SHIM_REAL_DIRECTORY. That mount point is resolved and made at composition, because bubblewrap cannot create one below a symlink and the whole launch died with "Can't mkdir parents" at 2af04489 until it was. An absolute-path submission therefore re-enters the worker's fence exactly as a by-name one does; the stand-in scheduler receives the worker's own recipe both ways, including when the composing path holds no scheduler at all and only a declared directory does (tests/test_an_absolute_scheduler_call_runs_fenced.py, 3 passed at 2d6ab746 against 2 failed at base e6d692b1 on the two cases that existed there).</p></div>
 </div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261121T095250455151-review-of-wjso-a-job-runs-fenced-whatever-its-submitter-carries-6ea77848a029" data-who="reckon-build" data-when="2026-11-21T10:06:27.334Z">
+    <div class="r-comment-body"><p>Reviewed r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries at base bfc8d4ac7294e28f77335cd10994217cf9fa32cb and head 6ea77848a0290bab9ed3bbe85ded61aca6a89502; scores goal_fidelity 17, evidence 11, scope_discipline 20, durability 16, fit 18, reuse 4; added_failure_count 0; four non-blocking findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261121T102043458833-review-of-wjso-a-job-runs-fenced-whatever-its-submitter-carries-d609bafbca75" data-who="reckon-build" data-when="2026-11-21T10:43:29.700Z">
+    <div class="r-comment-body"><p>Reviewed r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries at base bfc8d4ac7294e28f77335cd10994217cf9fa32cb and head d609bafbca7506d2e9edc43591c008599191731b; scores goal_fidelity 17, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 10; added_failure_count 0; three non-blocking findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries" data-who="reckon-build" data-when="2026-11-21T10:19:56Z">
+    <div class="r-comment-body"><p>A job submitted from inside a worker&#x27;s fence is now wrapped in that fence even when the submitting shell has cleared every RECKON_ variable, because the shim fills what its environment is missing from the process tree&#x27;s kernel-recorded environments through the readers the repository already owns, and a fence named but unreadable refuses with a message naming the run; the nine cases in tests/test_a_job_runs_fenced_whatever_its_submitter_carries.py pass at d609bafbca, and at the base revision the cleared case submits the bare task.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T04:19:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>5372106fac</code>), on the lead's instruction. One shared resolver and permission check keep every interpreter a registered checkout resolves to free of write permission, at worktree provisioning and on each fleet health sample, which now reports the count still writable. Redirects onto both decoys were denied with size, time and digest unchanged, and 495 importer cases add no failure. The final head was reviewed after an earlier landing attempt was refused for want of that review. Merged candidate gate: 28 passed in 10.98s.</p></div>
 </div>
@@ -306,12 +315,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111312643097-a-job-inherits-its-workers-fence" data-who="reckon-build" data-when="2026-11-17T12:46:09Z">
     <div class="r-comment-body"><p>A submitted job's fence is readable as data instead of inferred, and a waived worker's job is attested on the record the dispatch path wrote. The recipe channel is named once (WORKER_FENCE_ENV) and handed to the task bootstrap through the spec rather than restated as a second literal; job_fence() reads a job's sealed, writable and masked roots out of the recipe its worker inherited and refuses to report "unfenced" for a recipe that is present but unreadable. The gate's test launches a fenced and a waived worker stand-in that each submit one job: the fenced job's roots equal its worker's mount for mount (including a grant beyond the defaults), the waived job reports none, and the ledger row promotion wrote for the run the job names carries the reason dispatch recorded — so the row assertion fails when promotion stops copying it (waiver-row-mutation.log: 1 failed). Under the declared mutation, a shim rebuilding the job's fence from defaults, the fenced arm fails on the roots (1 failed, 3 passed). Base arm 58 passed and head arm 62 passed, both on all_debug.</p></div>
-</div>
-<div class="r-comment" data-section="s16" data-id="c-run-r-20261121T095250455151-review-of-wjso-a-job-runs-fenced-whatever-its-submitter-carries-6ea77848a029" data-who="reckon-build" data-when="2026-11-21T10:06:27.334Z">
-    <div class="r-comment-body"><p>Reviewed r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries at base bfc8d4ac7294e28f77335cd10994217cf9fa32cb and head 6ea77848a0290bab9ed3bbe85ded61aca6a89502; scores goal_fidelity 17, evidence 11, scope_discipline 20, durability 16, fit 18, reuse 4; added_failure_count 0; four non-blocking findings and no blocking finding.</p></div>
-</div>
-<div class="r-comment" data-section="s16" data-id="c-run-r-20261121T102043458833-review-of-wjso-a-job-runs-fenced-whatever-its-submitter-carries-d609bafbca75" data-who="reckon-build" data-when="2026-11-21T10:43:29.700Z">
-    <div class="r-comment-body"><p>Reviewed r-20261121T090142936333-wjso-a-job-runs-fenced-whatever-its-submitter-carries at base bfc8d4ac7294e28f77335cd10994217cf9fa32cb and head d609bafbca7506d2e9edc43591c008599191731b; scores goal_fidelity 17, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 10; added_failure_count 0; three non-blocking findings and no blocking finding.</p></div>
 </div>
 </section>
   </main>
