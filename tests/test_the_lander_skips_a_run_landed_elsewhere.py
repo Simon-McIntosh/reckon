@@ -120,8 +120,11 @@ def test_skipped_only_landing_writes_a_pass_verdict(
     }
     verdict_log = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
 
-    assert queue_admission._record_pass_verdicts(empty, lane="", code_stamp="") is None
-    assert not verdict_log.exists()
+    idle = queue_admission._record_pass_verdicts(empty, lane="", code_stamp="")
+    assert idle is not None
+    assert idle["pointers"] == []
+    assert idle["landing"] == {}
+    assert idle["resident_bytes"] is not None
     assert (
         queue_admission._pass_verdict_record(
             {"verdicts": [], "landing": {"landed": [RUN]}}, lane="", code_stamp=""
@@ -134,8 +137,8 @@ def test_skipped_only_landing_writes_a_pass_verdict(
     written = queue_admission._record_pass_verdicts(skipped, lane="", code_stamp="")
     assert written is not None
     stored = [json.loads(line) for line in verdict_log.read_text().splitlines()]
-    assert len(stored) == 1
-    assert stored[0]["landing"] == {
+    assert len(stored) == 2
+    assert stored[1]["landing"] == {
         "skipped": [
             {"run_id": "r-delivered-implementation", "status": "landed-elsewhere"}
         ]

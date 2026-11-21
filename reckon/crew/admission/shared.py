@@ -52,6 +52,7 @@ __all__ = [
     "ADMISSION_VERDICT_LOG",
     "ADMISSION_VERDICT_LOG_MAX_BYTES",
     "ADMIT_LOCK_NAME",
+    "ADMIT_MEMORY_BOUND_BYTES",
     "AWAITING_UPSTREAM_PHASE",
     "BLOCKED_UPSTREAM_PHASE",
     "DEAD_RUN_PHASES",
@@ -212,6 +213,16 @@ ADMISSION_RETRY_BACKOFF_CAP_SECONDS = 600.0
 ADMISSION_VERDICT_LOG = "admission-verdicts.jsonl"
 
 ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576
+
+#: The resident memory the admission service may hold however many passes it
+#: has made. A pass decodes pointer records, run documents and plan text, and
+#: the C library keeps the arenas it freed rather than returning them to the
+#: kernel, so a service that runs for days otherwise tracks the largest set any
+#: pass ever held. The service hands freed pages back after every pass, and a
+#: reading above this bound also drops the process-wide parse memo, so the
+#: working set it rebuilds is the one a fresh pass holds rather than one the
+#: largest pass left behind.
+ADMIT_MEMORY_BOUND_BYTES = 2 * 1024**3
 
 #: The verdict a pass records for a request that has stayed admissible, on a
 #: lane with room, for longer than :data:`STALL_AFTER_SECONDS`. It is recorded

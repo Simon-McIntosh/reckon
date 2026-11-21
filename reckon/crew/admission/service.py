@@ -11,6 +11,7 @@ from . import verdicts as _verdicts
 from .shared import (
     _TRUSTED_CODE_STAMPS,
     ADMIT_LOCK_NAME,
+    ADMIT_MEMORY_BOUND_BYTES,
     DEFAULT_ADMIT_INTERVAL_SECONDS,
     UTC,
     Any,
@@ -168,6 +169,40 @@ def _reexec_into_current_code() -> None:
 def _pause(seconds: float) -> None:
     """Wait out the interval between two admission passes."""
     time.sleep(seconds)
+
+
+def resident_bytes() -> int:
+    """This process's resident set size, read from its own ``/proc`` record."""
+    try:
+        with open("/proc/self/status", encoding="utf-8") as handle:
+            for line in handle:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) * 1024
+    except OSError:
+        return 0
+    return 0
+
+
+def _release_pass_memory() -> int:
+    """Hand back what a pass freed and report the resident figure that follows.
+
+    A pass decodes pointer records, run documents and plan text, then frees
+    them; the allocator keeps the emptied arenas, so without this the resident
+    set tracks the largest pass ever run rather than the memory the service
+    still holds. A reading still above the stated bound also drops the
+    process-wide parse memo, so the working set is rebuilt at the size the next
+    pass needs rather than kept at the size the largest one produced.
+    """
+    from reckon import file_memo
+    from reckon.crew.station import release_freed_memory
+
+    release_freed_memory()
+    resident = resident_bytes()
+    if resident > ADMIT_MEMORY_BOUND_BYTES:
+        file_memo.clear()
+        release_freed_memory()
+        resident = resident_bytes()
+    return resident
 
 
 def node_disk_admission_hold() -> dict[str, Any] | None:
@@ -408,10 +443,13 @@ def admit_until_stopped(
     it did. That pass submits scheduler measurements without waiting for their
     jobs; their persisted identities are adopted by a later pass.
 
-    Every pass whose lane had a queued pointer leaves one JSON line in the
-    verdict log under the crew home, so a request that waited without launching
-    can be read afterwards rather than inferred from a pointer that may since
-    have been discarded. A pass that examined no queued pointer writes nothing.
+    Every pass leaves one JSON line in the verdict log under the crew home,
+    including a pass over a lane with nothing queued, so a request that waited
+    without launching can be read afterwards rather than inferred from a
+    pointer that may since have been discarded, and an idle service is visible
+    as a run of readings rather than as silence. Each reading carries the
+    memory the service holds, read after the pass has handed its freed pages
+    back, so a service that runs for days is measured by its own record.
 
     The loop also prints that same line to stdout as it is recorded, so a
     coordinator watching the bare verb sees what each pass decided while it is
@@ -482,6 +520,7 @@ def admit_until_stopped(
             ended=ended,
             landing=landing,
         )
+        result["resident_bytes"] = _release_pass_memory()
         _verdicts._record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
     passes = 0
@@ -548,6 +587,7 @@ def admit_until_stopped(
                     ended=ended,
                     landing=landing,
                 )
+                admitted["resident_bytes"] = _release_pass_memory()
                 _verdicts._publish_pass_verdicts(
                     _verdicts._record_pass_verdicts(
                         admitted, lane=lane, code_stamp=code_stamp
