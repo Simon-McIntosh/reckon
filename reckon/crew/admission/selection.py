@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections import deque
 
 from .. import lost_sessions as _lost_sessions
@@ -825,8 +824,11 @@ def drainer_serves_the_local_lane(lane: str, config: Mapping[str, Any]) -> bool:
     backend, and nothing would report the queue as undrained.
 
     So the drainer serves the local lane when its name is the configured local
-    backend, or when its backend and the configured one declare the same lane
-    document.
+    backend, or when its backend and the configured one resolve to the same
+    lane. The resolution is the worker treatment's own
+    (:func:`reckon.crew.worker_behaviour.lane_identity`) rather than a second
+    reading of ``lane_document`` here: the drainer's decision and the lane a
+    launch records must agree, so they are one answer computed once.
     """
     local = str(config.get("local_backend") or "")
     if not lane or not local:
@@ -836,16 +838,18 @@ def drainer_serves_the_local_lane(lane: str, config: Mapping[str, Any]) -> bool:
     backends = config.get("backends")
     if not isinstance(backends, Mapping):
         return False
+    from reckon.crew.worker_behaviour import lane_identity
 
     def document(name: str) -> str:
         settings = backends.get(name)
-        if not isinstance(settings, Mapping):
-            return ""
-        declared = str(settings.get("lane_document") or "").strip()
-        return os.path.realpath(os.path.expanduser(declared)) if declared else ""
+        return lane_identity(
+            name, settings if isinstance(settings, Mapping) else None, config
+        )
 
     served = document(lane)
-    return bool(served) and served == document(local)
+    # A backend declaring no lane document resolves to its own name, which is
+    # not a shared lane: only a declared document makes two names one lane.
+    return served != lane and served == document(local)
 
 
 # How long one pass waits for a lane that granted no worker slot to publish room
