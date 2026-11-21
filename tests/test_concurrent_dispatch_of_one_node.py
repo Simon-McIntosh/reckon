@@ -34,9 +34,8 @@ from typing import Any
 import pytest
 
 from reckon import crew
-from reckon._store import _config_home
 from reckon.crew.runs import list_live
-from tests.real_home_traces import traces_naming
+from tests.conftest import real_store_home
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -118,27 +117,32 @@ def real_live_directory_is_not_a_fixture_target() -> None:
     """No case may write this fixture's pointer into the real crew home.
 
     The ``RECKON_HOME`` override in ``home`` is what keeps the case inside its
-    own tree, and this guard proves it held. The directory searched is resolved
-    by the same precedence the code uses, with ``RECKON_HOME`` removed from the
-    environment it reads: that is the home a case would write into if its
-    override were absent, which is the leak being guarded against. Naming the
-    XDG path directly would miss it — the legacy fallback is the one that
-    applies whenever ``~/.config/reckon`` is absent.
+    own tree, and this guard proves it held. The home searched is the one
+    ``real_store_home`` resolves with ``RECKON_HOME`` removed: that
+    is where a case would write if its override were absent, including a legacy
+    ``~/docs-server`` install, so the guard watches the directory a leak would
+    actually reach rather than a path literal that only matches one layout.
 
-    The search reports only entries carrying this fixture's own identifiers,
-    not the directory's contents, because peer sessions dispatch continuously:
-    a peer's entry names the peer, so a guard over the whole directory fails on
-    someone else's write rather than on this case's. The project name is not a
-    needle either — a peer's pointer may quote plan wording naming the fixture
-    project — while the node and session identifiers are minted only here.
+    An entry is matched by its live pointer's filename, not by its contents:
+    every run id ends in the node it dispatches, so a pointer this case minted
+    is named ``r-<stamp>-<node>.json``. Reading contents cannot make that
+    claim — a peer's pointer quotes plan wording and node descriptions, so a
+    substring search fires on a dispatch that has nothing to do with this case.
+    Matching the filename is the rule the crew-home isolation guard beside this
+    one already applies, for the same reason.
     """
 
+    live = real_store_home() / "crew" / "live"
+    pointer_suffix = f"-{NODE_ID}.json"
+
     def fixture_pointers() -> list[str]:
-        ambient = {
-            name: value for name, value in os.environ.items() if name != "RECKON_HOME"
-        }
-        crew_home = _config_home(ambient) / "crew"
-        return traces_naming(crew_home, ("live",), (NODE_ID, SESSION))
+        if not live.is_dir():
+            return []
+        return sorted(
+            str(entry)
+            for entry in live.iterdir()
+            if entry.name.endswith(pointer_suffix)
+        )
 
     before = fixture_pointers()
     assert before == []
