@@ -554,7 +554,7 @@ def figure_rubric_verdicts(
     made. A record stating its verdicts flat — one figure's record, the shape
     written before several figures shared a review — is returned as it stands,
     with no shortfall, so its reading does not move. An item the flat map does
-    not name is taken from the record's ``RUBRIC <item>: <verdict>`` lines, so
+    not answer is taken from the record's ``RUBRIC <item>: <verdict>`` lines, so
     a record that answered its rubric in the form the brief asks for and never
     folded it to an item map is read by the same verdict its reviewer wrote.
     """
@@ -565,7 +565,8 @@ def figure_rubric_verdicts(
         else {}
     )
     for item, verdict in figure_line_verdicts(record).items():
-        stated.setdefault(item, verdict)
+        if not str(stated.get(item) or "").strip():
+            stated[item] = verdict
     figures = record.get(FIGURE_VERDICTS_KEY)
     if not isinstance(figures, Mapping):
         return stated, []
