@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-title" content="A live reading with no process is settled">
+  <meta name="plan-summary" content="A pointer in a pre-delivery phase whose launch step has left the scheduler and whose stream has not grown past a flight setting is settled as a run that ended without delivering, with the evidence carried on the row, so its owner is told once and a resume or a fresh review can proceed.">
+  <meta name="plan-evidence-for" content="reckon:work-of-a-lost-session-is-raised-not-left">
+  <meta name="plan-verifies" content="reckon:work-of-a-lost-session-is-raised-not-left#s14">
+  <meta name="plan-recorded-at" content="2026-11-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,recovery,classification,liveness,scheduler">
+  <title>A live reading with no process is settled — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="wlsr-a-live-reading-with-no-process-is-settled" data-reckon="landed" data-when="2026-11-21">
+  <h2>A live reading with no process is settled</h2>
+  <p>A pointer in phase <code>starting</code> or <code>working</code> that no worker is behind kept reading live for as long as the record survived: its launch writer set the phase, nothing advanced it, and the run counted as live in the lane's figures while its reviewed head could not be reviewed again. The classifier is the one place a run's phase, classification and process liveness are judged, and the reading is added there, composing into the same result rather than a second opinion.</p>
+  <p>Two measurements decide it. The launch step is asked of the scheduler by its own listing (<code>squeue --steps --jobs &lt;job&gt;</code>, with the job taken from the run directory's recorded launch argv), and the step is paired by the run's id, which the launch composes as the step's name — so a shared reservation's other steps are never read as this run's. The stream's silence is measured by the existing attempt-capped reader, which keeps a run resumed minutes ago young however old its predecessor's stream is. When the step is gone and the silence passes the new flight setting <code>settle.quiet_after_hours</code> (default 6.0), the run is classified <code>interrupted</code> — the phase that already exists for a worker that ended without delivering — with <code>settled</code> carrying the step state, the measured silence, the bound and the stream path.</p>
+  <p>The reading cannot over-fire. Any positive liveness reading leaves the pointer alone, a step the scheduler still lists leaves it alone, a scheduler that cannot answer leaves it alone, a run younger than the bound leaves it alone, and a launch that composes no step falls through to the liveness readings that can describe it. No phase is added; one flight setting is.</p>
+  <p>Six cases pass in a temporary <code>RECKON_HOME</code> against a stubbed scheduler, with the pointer, the run directory and the stream's mtime synthesised: a starting pointer with no step past the setting settles, a working pointer whose step is gone and whose stream is stale settles the same way, a working pointer whose step is still listed is untouched, a starting pointer younger than the setting is untouched, a worker alive and quiet is untouched, and a settled run appears exactly once in its owner's obligations as <code>turn-ended-early</code>. Head gate: <code>pytest -q tests/test_a_live_reading_with_no_process_is_settled.py</code> at <code>e088a441a8</code>, 6 passed, <code>EXIT=0</code>.</p>
+  <p>The declared mutation — the fixture's <code>SCHEDULER_LISTS_THE_STEP</code> flipped to true so the scheduler answers that the step is still listed — fails the two settled cases and the obligations case (<code>EXIT=1</code>, 3 failed, 3 passed), which is the negative control: the settle depends on the scheduler's own answer and not on age alone. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+  <p>One pre-existing failure was met while running the classifier's related tests and is not from this change: <code>tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code> fails identically at the node's base revision <code>ff3bb24bcf</code>, because the view writes an obligation-fixture lock file that the test's mtime comparison forbids. It is recorded here, untriaged.</p>
+</article>
+</body>
+</html>
