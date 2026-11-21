@@ -65,6 +65,16 @@ from reckon.shim_lookup import (
 # scheduler tools so a caller can tell a refusal from a launch failure.
 REFUSAL_STATUS = 97
 
+# The variables a launch's environment names its run and the coordinator
+# session that dispatched it in. Dispatch exports them into every worker it
+# starts, so a job a worker submits can be traced back to both.
+RUN_ID_ENV = "RECKON_RUN_ID"
+SESSION_ID_ENVS = ("RECKON_SESSION_ID", "RECKON_CREW_SESSION")
+
+# The prefix every comment this module adds carries, so a reader of `squeue`
+# or `scontrol show job` can tell a run's identity from any other.
+OWNER_COMMENT_PREFIX = "reckon"
+
 # The line a fenced launch writes to stderr before the task's own first output,
 # so a job log it captures opens with this notice rather than with the header
 # the measure writes. Named here because the manifest audit has to recognise it
@@ -862,6 +872,57 @@ def _scheduler_options(
     return options, []
 
 
+def owner_comment(environ: Mapping[str, str]) -> str:
+    """The comment naming the run and session that submits a job, or ``""``.
+
+    A submission outside any run carries nothing: without ``RECKON_RUN_ID``
+    there is no owner to name, whatever a session variable says. The session
+    is the run's coordinator, so it is added when the launch states it and the
+    run id alone is still named when it is absent.
+    """
+    run_id = str(environ.get(RUN_ID_ENV) or "").strip()
+    if not run_id:
+        return ""
+    session = ""
+    for name in SESSION_ID_ENVS:
+        session = str(environ.get(name) or "").strip()
+        if session:
+            break
+    if session:
+        return f"{OWNER_COMMENT_PREFIX} session={session} run={run_id}"
+    return f"{OWNER_COMMENT_PREFIX} run={run_id}"
+
+
+def with_owner_comment(argv: Sequence[str], environ: Mapping[str, str]) -> list[str]:
+    """The argv with the submitting run's owner added to its comment field.
+
+    A comment the caller supplied is kept and the owner is appended to it, so
+    a site that names its own reason for the job does not lose it. The scan
+    stops at the first operand, because from there the words belong to the
+    launched command rather than to the scheduler.
+    """
+    owner = owner_comment(environ)
+    arguments = list(argv)
+    if not owner:
+        return arguments
+    for index, argument in enumerate(arguments):
+        if argument == "--":
+            break
+        if argument.startswith("--comment="):
+            arguments[index] = f"{argument} {owner}"
+            return arguments
+        if argument == "--comment":
+            following = index + 1
+            if following < len(arguments) and not arguments[following].startswith("-"):
+                arguments[following] = f"{arguments[following]} {owner}"
+            else:
+                arguments[index] = f"--comment={owner}"
+            return arguments
+        if not argument.startswith("-"):
+            break
+    return [f"--comment={owner}", *arguments]
+
+
 def _batch_directives(script: bytes) -> list[str]:
     """Keep Slurm directives only where sbatch itself reads them."""
     directives = []
@@ -985,5 +1046,6 @@ def main(
     except (ValueError, OSError) as exc:
         print(f"{tool}: refusing an unfenced scheduler task: {exc}", file=sys.stderr)
         return REFUSAL_STATUS
+    task_argv = with_owner_comment(task_argv, env)
     os.execve(found, [tool, *task_argv], deeper(env))  # noqa: S606
     raise AssertionError("os.execve returned; a forwarded launch cannot continue.")

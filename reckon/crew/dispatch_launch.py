@@ -830,6 +830,7 @@ def _persisted_worker_environment(
     persisted = dict(environment or {})
     for key in (
         "RECKON_RUN_ID",
+        "RECKON_SESSION_ID",
         "RECKON_MANIFEST",
         "RECKON_ATTEMPT_STARTED_AT",
     ):
@@ -1206,6 +1207,8 @@ def _worker_runtime_environment(
             "RECKON_ATTEMPT_STARTED_AT": attempt_started_at,
         }
     )
+    if coordinator_session:
+        runtime["RECKON_SESSION_ID"] = coordinator_session
     if run_id:
         runtime["TMPDIR"] = (
             str(worker_scratch_dir(run_id))
