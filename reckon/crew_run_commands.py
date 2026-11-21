@@ -924,6 +924,43 @@ def _no_named_review_record_refusal(
     )
 
 
+def _unpromoted_named_review_refusal(
+    reviewed_run_id: str,
+    review_run_id: str,
+    record_path: Path,
+) -> str:
+    """Why a named review run's record is not in the store yet, and how to land it.
+
+    A run review writes its record into the directory of the run it reviews,
+    and a promotion files that copy into the project's review store, which is
+    the store a disposition reads. Between those two moments the record exists
+    and no store reader can see it, so a refusal that says only that no record
+    was found sends the reader looking for a lookup defect in a store that is
+    behaving correctly. Naming the review run as not yet promoted, the copy
+    that holds the record, and the command that promotes it is the one answer
+    that ends the search.
+    """
+    from reckon.crew import recovery_classification as recovery_classification_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    try:
+        pointer = runs_module.read_pointer(review_run_id)
+    except CrewError:
+        pointer = {}
+    command = recovery_classification_module._promotion_command(
+        review_run_id,
+        pointer,
+        list(pointer.get("manifest_commits") or ()),
+    )
+    return (
+        f"run {reviewed_run_id!r} carries a record from review run "
+        f"{review_run_id!r} that is not yet promoted: it is filed at "
+        f"{record_path}, and the project's review store holds no copy because "
+        f"no promotion has landed it. Promote that review run first: {command}"
+    )
+
+
 def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     """The revision a run with no live pointer was reviewed at, from its records.
 
@@ -1171,6 +1208,19 @@ def crew_dispose(
             project, reviewed_run_id, named_review, rubric=rubric
         )
         if named_record is None:
+            # The store holds nothing, but a review writes its record into the
+            # reviewed run's own directory before a promotion files it. A
+            # record waiting there is a different answer from one that was
+            # never written, and it names the command that files it.
+            filed = review_records_module.filed_unpromoted_review_record(
+                reviewed_run_id, named_review
+            )
+            if filed is not None:
+                raise click.ClickException(
+                    _unpromoted_named_review_refusal(
+                        reviewed_run_id, named_review, filed[0]
+                    )
+                )
             raise click.ClickException(
                 _no_named_review_record_refusal(
                     project, reviewed_run_id, named_review, rubric
