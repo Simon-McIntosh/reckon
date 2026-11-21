@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main-result">
+<h2>The reported defect does not reproduce at the current primary</h2>
+<p>This node was dispatched as a red test file at the current primary branch.
+Three independent measurements of the named file at
+<code>e9dffe5259e14aac4f921e6ee6e63ce03e43ad86</code> (the base this worktree was
+composed at, and the primary branch's head) read <code>5 passed</code> with
+<code>EXIT=0</code>: in place in the worktree, as an <code>all_debug</code> job
+with <code>SLURM_JOB_ID</code> unset, and through the project's own scratch-tree
+gate arm. Two further in-place readings — the module alongside
+<code>tests/test_held_worktree_fallback_resolves_each_row_once.py</code>, and
+under <code>-n 2</code> with xdist — also read <code>5 passed</code>. No product
+or test change was made, no assertion was removed or weakened, and the file has
+not been touched since the earlier repair at
+<code>980a8e8a8a29c7429da507e9fefbf58d9c72d8c8</code>; 137 commits since it
+touch the exercised read in <code>reckon/crew/obligations.py</code>,
+<code>reckon/crew/routing.py</code>, <code>reckon/ledger.py</code> and
+<code>reckon/run_store.py</code>, and none of them reddens the file.</p>
+<h3 id="qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main-base-run">Base run, all_debug, SLURM_JOB_ID unset</h3>
+<pre># revision: e9dffe5259e14aac4f921e6ee6e63ce03e43ad86
+# host: 98dci4-clu-3143 job 1328386
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py
+.....                                                                    [100%]
+5 passed in 15.07s
+EXIT=0</pre>
+<h3 id="qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main-gate-run">Gate arm (this node's declared check), all_debug, scratch tree</h3>
+<pre># revision: e9dffe5259e14aac4f921e6ee6e63ce03e43ad86
+# host: 98dci4-clu-3141
+# tree: /tmp/mcintos-landing-fbcc11b7a903-0TicpQ/tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py
+.....                                                                    [100%]
+5 passed in 15.77s
+EXIT=0</pre>
+<h3 id="qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main-control">Control: the file still detects the defect it guards</h3>
+<p>The pass is not vacuous. Removing only the fixture's unmerged-commit grant —
+the repair the earlier node made — in a scratch extraction of this same
+revision reddens the file on exactly the two cases that compare the derivation
+against the whole-ledger expectation, so the fixture still exercises the
+naming index rather than the unmerged-work filter.</p>
+<pre># revision: e9dffe5259e14aac4f921e6ee6e63ce03e43ad86 (fixture mutation, scratch tree)
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py
+.F.F.                                                                    [100%]
+FAILED tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree
+FAILED tests/test_held_worktree_records_match_each_record_once.py::test_the_held_trees_equal_the_whole_ledger_derivation
+2 failed, 3 passed in 18.38s
+EXIT=1</pre>
+</section>
