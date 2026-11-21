@@ -34,6 +34,7 @@ from typing import Any
 import pytest
 
 from reckon import crew
+from reckon._store import _config_home
 from reckon.crew.runs import list_live
 from tests.real_home_traces import traces_naming
 
@@ -42,7 +43,6 @@ dispatch_module = importlib.import_module("reckon.crew.dispatch")
 PROJECT = "concurrent-dispatch-fixture"
 NODE_ID = "node-one-worktree"
 SESSION = "session-concurrent-dispatch"
-REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
 CONFIG: dict[str, Any] = {
     "default_backend": "alpha",
@@ -118,18 +118,27 @@ def real_live_directory_is_not_a_fixture_target() -> None:
     """No case may write this fixture's pointer into the real crew home.
 
     The ``RECKON_HOME`` override in ``home`` is what keeps the case inside its
-    own tree, and this guard proves it held. The count is taken over the
-    entries carrying this fixture's identifiers, not over the directory as a
-    whole: peer sessions dispatch continuously, so a whole-directory count
-    moves without anything being wrong and a guard built on it fails on a
-    peer's write rather than on this case's. The project name is not a needle
-    either — a peer's pointer may quote plan wording that names the fixture
-    project — while the node and session identifiers are minted only here, so
-    an entry carrying either was written by this case.
+    own tree, and this guard proves it held. The directory searched is resolved
+    by the same precedence the code uses, with ``RECKON_HOME`` removed from the
+    environment it reads: that is the home a case would write into if its
+    override were absent, which is the leak being guarded against. Naming the
+    XDG path directly would miss it — the legacy fallback is the one that
+    applies whenever ``~/.config/reckon`` is absent.
+
+    The search reports only entries carrying this fixture's own identifiers,
+    not the directory's contents, because peer sessions dispatch continuously:
+    a peer's entry names the peer, so a guard over the whole directory fails on
+    someone else's write rather than on this case's. The project name is not a
+    needle either — a peer's pointer may quote plan wording naming the fixture
+    project — while the node and session identifiers are minted only here.
     """
 
     def fixture_pointers() -> list[str]:
-        return traces_naming(REAL_LIVE.parent, ("live",), (NODE_ID, SESSION))
+        ambient = {
+            name: value for name, value in os.environ.items() if name != "RECKON_HOME"
+        }
+        crew_home = _config_home(ambient) / "crew"
+        return traces_naming(crew_home, ("live",), (NODE_ID, SESSION))
 
     before = fixture_pointers()
     assert before == []
