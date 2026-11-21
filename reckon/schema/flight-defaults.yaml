@@ -252,3 +252,9 @@ session_scratch:
 # has work nobody can release. Read by the lost-session derivation.
 lost_session:
   after_hours: 72
+
+# How long a request may wait on an upstream that no run or request is building
+# before its owner is told once. Three days, the same span as a lost session: a
+# wait nobody has taken that long is nobody's work. Read by the admission pass.
+stranded_wait:
+  report_after_hours: 72

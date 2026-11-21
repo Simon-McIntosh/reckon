@@ -1340,6 +1340,17 @@
                     ],
                     "description": "Per-session scratch bound and aggregate share of the local disk."
                 },
+                "stranded_wait": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/StrandedWaitConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "How long a request waiting on an upstream that nobody is building may stand before its owner is told once. The block is declared here so a host or project layer retunes the threshold without a code change; the admission pass reads it from the resolved config."
+                },
                 "summary": {
                     "anyOf": [
                         {
@@ -3254,6 +3265,22 @@
             "title": "SpecificationRouting",
             "type": "object"
         },
+        "StrandedWaitConfig": {
+            "additionalProperties": false,
+            "description": "How long an idle wait may stand before its owner is told. A wait whose upstream nobody is building is the owner's to know about, and telling them once is a layer's decision about work rather than a constant of the code.",
+            "properties": {
+                "report_after_hours": {
+                    "description": "Hours a request waiting on an upstream that no run or request is building may stand before it appears once in its owner's obligations. A wait whose upstream can never land is retired whatever this figure is, and a wait is never removed for its age alone. Defaults to 72.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "title": "StrandedWaitConfig",
+            "type": "object"
+        },
         "SummaryConfig": {
             "additionalProperties": false,
             "description": "When and how workers report.",
@@ -3634,6 +3661,17 @@
                 }
             ],
             "description": "Per-session scratch bound and aggregate share of the local disk."
+        },
+        "stranded_wait": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/StrandedWaitConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "How long a request waiting on an upstream that nobody is building may stand before its owner is told once. The block is declared here so a host or project layer retunes the threshold without a code change; the admission pass reads it from the resolved config."
         },
         "summary": {
             "anyOf": [
