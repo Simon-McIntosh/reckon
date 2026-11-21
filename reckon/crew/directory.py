@@ -850,6 +850,21 @@ def directory(
     transcripts = _session_transcripts(
         str(row.get("session") or "") for row in coordinators
     )
+    # Whether each listed session is lost, from the last instant it was heard.
+    # One reader answers for every row: it holds one answer per session and one
+    # process walk for the whole view, so a directory of thirty sessions costs
+    # thirty lease reads and not thirty walks.
+    from reckon.crew import lost_sessions as _lost_sessions
+
+    lost_reads = _lost_sessions.LostSessionReads(pointers=records)
+    for coordinator in coordinators:
+        answer = lost_reads.answer(
+            str(coordinator.get("session") or ""),
+            str(coordinator.get("project") or ""),
+        )
+        coordinator["last_heard_at"] = answer["last_heard_at"]
+        coordinator["lost"] = answer["lost"]
+        coordinator["lost_since"] = answer["lost_since"]
     windows = _context_windows(project)
     for coordinator in coordinators:
         session = str(coordinator.get("session") or "")

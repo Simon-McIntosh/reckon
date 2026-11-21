@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from collections import deque
 
+from .. import lost_sessions as _lost_sessions
 from .. import queue_order
 from reckon.crew.open_run_index import operational_read
 
@@ -30,7 +31,6 @@ from .shared import (
     _dispatch_fleet_gate,
     datetime,
     nullcontext,
-    parse_utc,
     runs,
     time,
 )
@@ -152,6 +152,25 @@ def admit_once(
             queued = [
                 pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
             ]
+        # Whether each session this pass lists is lost, read once per session,
+        # from the pointers the pass already holds. A session's answer is what
+        # retires its reviews and raises its implement work; deriving it here,
+        # once, keeps that from becoming one derivation per pointer. The tally
+        # makes the pass's receipt carry the bound rather than leave it to a
+        # caller to measure from outside.
+        with _service._read_tally() as lost_tally:
+            lost_reads = _lost_sessions.LostSessionReads(pointers=live, now=moment)
+            result["lost_sessions"] = lost_reads.answers(
+                [
+                    (
+                        str(pointer.get("project") or ""),
+                        str(pointer.get("session") or ""),
+                    )
+                    for pointer in live
+                    if str(pointer.get("session") or "")
+                ]
+            )
+        _service._record_stage_reads(result, "lost sessions", lost_tally)
         if lane:
 
             def included(pointer: Mapping[str, Any]) -> bool:
