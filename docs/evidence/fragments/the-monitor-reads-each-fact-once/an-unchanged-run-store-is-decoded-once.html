@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s108">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-21">
-  <meta name="evidence-commit" content="7c1d52e4a4">
+  <meta name="evidence-commit" content="976ad99598">
   <title>An unchanged run store is decoded once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -99,6 +99,23 @@
   file is absent from the base tree, so the two commands differ by exactly that
   path. Both arms and the scoped gate ran as <code>all_debug</code> jobs
   submitted from this allocation.</p>
+
+  <h3 id="an-unchanged-run-store-is-decoded-once-importers">Every importer, both revisions</h3>
+
+  <p>Beyond the node's own files, every test file that imports
+  <code>run_store</code> (73 files under <code>tests/</code>) was run at
+  <code>-n 8</code> on <code>all_debug</code> at base <code>43f48118fa</code>
+  and at head <code>976ad99598</code>. Both arms report
+  <strong>16 failed</strong>, and a diff of the failure ids yields an empty
+  added-failure set; the passing count rises from 868 to
+  <strong>875</strong>. The seven extra passes are the node's new tests and
+  the guard parametrisations a first version of the answer cache had defeated.
+  Those guards are the reason an answer is held per reader context: four of
+  them pause a decoder in a thread and require that the read reach it, which a
+  cross-thread cache hit prevented. Logs
+  <code>arm-43f48118fa…log</code> and <code>arm-976ad99598…log</code> under the
+  run directory, each carrying its revision, host and command header, both
+  <code>EXIT=1</code> on the same 16 pre-existing failures.</p>
 </section>
 </main>
 </body>
