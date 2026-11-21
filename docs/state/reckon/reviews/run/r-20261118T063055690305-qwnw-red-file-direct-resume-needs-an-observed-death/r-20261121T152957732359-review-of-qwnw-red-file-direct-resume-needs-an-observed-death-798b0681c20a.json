@@ -4,6 +4,13 @@
   "added_failures_derivation": "after_suite.failure_ids minus baseline_suite.failure_ids: [] - [] = [], so added_failure_count 0; both arms report 58 passed at full 40-character revisions in the reviewed run's manifest.",
   "completed_at": "",
   "dispatched_at": "2026-11-21T15:32:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "qwnw-red-file-direct-resume-needs-an-observed-death",
+      "recorded_at": "2026-11-21T20:12:03.668769+00:00"
+    }
+  },
   "findings": [
     "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-direct-resume-needs-an-observed-death.html:53 non-blocking: the fragment states the head arm ran on the all_debug partition, but no artefact records the partition for that arm - scoped-gate-1795106852302550199.log's header carries revision, host, tree and command only, and suite-arms.json names all_debug for the two declared-suite arms alone, so that clause of the done_when is claimed rather than evidenced.",
     "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-direct-resume-needs-an-observed-death.html:27 non-blocking: the fragment says the stored pointer is byte-identical across the preview, but the only guard is tests/test_direct_resume_needs_an_observed_death.py:497, which compares runs.read_pointer's hydrated reading on both sides, so a preview write that re-splits dispatch detail or changes a field the projection normalises leaves the assertion green while the stronger claim stays unverified."
