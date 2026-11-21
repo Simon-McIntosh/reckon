@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:2709",
+    "reckon/crew/obligations.py:4205",
+    "reckon/crew/obligations.py:4236",
+    "reckon/crew/obligations.py:4291",
+    "reckon/crew/obligation_snapshot.py:1226",
+    "reckon/crew/obligation_snapshot.py:2182"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:59:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "626",
+      "severity": "non-blocking",
+      "text": "non-blocking: the replay drops a skip whose path is gone, and no case in tests/test_an_unreadable_review_duty_names_its_fault.py deletes a record, so removing `not Path(path).is_file()` from that condition leaves all five cases green and the behaviour 175c772e added is unguarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all four commits against 60ecc274; e276fccb routes four obligation memos through review_records.memoised_read and gives the shared unreadable-row builder the run_ids the view's projection adds, 91af928b writes the fragment, 175c772e drops a replayed skip whose file has gone and returns the stored-review memo to a plain holding, e392d805 corrects the fragment's arms, and none of the five files reaches beyond the goal.",
+    "done_when": "the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, the base arm's failing ids logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unreadable-review-duty-names-its-fault.html, an importer arm per revision as inline JSON, ruff on the changed paths and the commit list; the manifest records each, arm.sh:34 runs the gate under `env -u SLURM_JOB_ID`, and the fragment names the base failing id tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot.",
+    "goal": "the goal is to make tests/test_an_unreadable_review_duty_names_its_fault.py pass in full on the primary branch; the head arm at e392d805 reads 5 passed EXIT=0 in gate-final.log against 1 failed 4 passed EXIT=1 at 60ecc274 in gate-base-60ecc274.log, so the named file is green.",
+    "manifest": "read manifest.md against the logs it names; it records the file's 5 passed at head against 1 failed at base, the standing pair 58 passed EXIT=0 on both arms, 226-file importer arms adding no failing id, and ruff clean on the four changed modules apart from a PLW0603 at reckon/crew/recovery_memo.py:48 that is present at 60ecc274 too; `crew check --manifest --run` on it returns ok true with no findings.",
+    "write_paths": "the declared scope is reckon, tests and the plan's evidence fragment; each of the five paths in 60ecc274..e392d805 lies inside it, and no path outside it appears in the diff."
+  },
+  "justifications": {
+    "durability": "the regression is guarded \u2014 the base arm reddens tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot and neutering only review_records.report_read_failures reddens the same id in negative-control-final.log \u2014 but the `not Path(path).is_file()` guard at reckon/crew/review_records.py:626 has no test, so removing it leaves the five cases green.",
+    "evidence": "each arm the done_when asks for is in the manifest and has its log (gate-base-60ecc274.log, gate-final.log, negative-control-final.log, suite-base.log, suite-final.log), with the only looseness that measurement_module and measurement_cwd are carried in the logs' header lines rather than as manifest keys, which the manifest audit accepts.",
+    "fit": "report_read_failures and memoised_read follow the module's public-helper and docstring idiom around reckon/crew/review_records.py:567 and reuse the existing _READ_FAILURES region rather than introducing a second collection channel.",
+    "goal_fidelity": "the delivered head passes the file the goal names in full (gate-final.log, 5 passed EXIT=0) and no other test file was changed to reach it.",
+    "reuse": "memoised_read wraps the repository's memoisation owner file_memo.memoized_key instead of implementing a cache, _remember_failure at reckon/crew/review_records.py:582 is an extraction of the body that already stood in _note_skipped_record:583, and a search over reckon/ for a region-skip replay found only stream replay in reckon/crew/picker/replay.py, a different capability.",
+    "scope_discipline": "every path in the diff \u2014 reckon/crew/review_records.py, reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew/recovery_memo.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/ \u2014 is inside a declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_an_unreadable_review_duty_names_its_fault.py pass in full on the primary branch; the head arm at e392d805 reads 5 passed EXIT=0 in gate-final.log against 1 failed 4 passed EXIT=1 at 60ecc274 in gate-base-60ecc274.log, so the named file is green.\nVERDICT done_when: the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, the base arm's failing ids logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unreadable-review-duty-names-its-fault.html, an importer arm per revision as inline JSON, ruff on the changed paths and the commit list; the manifest records each, arm.sh:34 runs the gate under `env -u SLURM_JOB_ID`, and the fragment names the base failing id tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot.\nVERDICT write_paths: the declared scope is reckon, tests and the plan's evidence fragment; each of the five paths in 60ecc274..e392d805 lies inside it, and no path outside it appears in the diff.\nVERDICT manifest: read manifest.md against the logs it names; it records the file's 5 passed at head against 1 failed at base, the standing pair 58 passed EXIT=0 on both arms, 226-file importer arms adding no failing id, and ruff clean on the four changed modules apart from a PLW0603 at reckon/crew/recovery_memo.py:48 that is present at 60ecc274 too; `crew check --manifest --run` on it returns ok true with no findings.\nVERDICT diff: read all four commits against 60ecc274; e276fccb routes four obligation memos through review_records.memoised_read and gives the shared unreadable-row builder the run_ids the view's projection adds, 91af928b writes the fragment, 175c772e drops a replayed skip whose file has gone and returns the stored-review memo to a plain holding, e392d805 corrects the fragment's arms, and none of the five files reaches beyond the goal.\nCALL_SITES: reckon/crew/obligations.py:2709, reckon/crew/obligations.py:4205, reckon/crew/obligations.py:4236, reckon/crew/obligations.py:4291, reckon/crew/obligation_snapshot.py:1226, reckon/crew/obligation_snapshot.py:2182\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the delivered head passes the file the goal names in full (gate-final.log, 5 passed EXIT=0) and no other test file was changed to reach it.\nSCORE evidence: 19\nJUSTIFICATION evidence: each arm the done_when asks for is in the manifest and has its log (gate-base-60ecc274.log, gate-final.log, negative-control-final.log, suite-base.log, suite-final.log), with the only looseness that measurement_module and measurement_cwd are carried in the logs' header lines rather than as manifest keys, which the manifest audit accepts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/review_records.py, reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew/recovery_memo.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/ \u2014 is inside a declared write path.\nSCORE durability: 15\nJUSTIFICATION durability: the regression is guarded \u2014 the base arm reddens tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot and neutering only review_records.report_read_failures reddens the same id in negative-control-final.log \u2014 but the `not Path(path).is_file()` guard at reckon/crew/review_records.py:626 has no test, so removing it leaves the five cases green.\nSCORE fit: 19\nJUSTIFICATION fit: report_read_failures and memoised_read follow the module's public-helper and docstring idiom around reckon/crew/review_records.py:567 and reuse the existing _READ_FAILURES region rather than introducing a second collection channel.\nSCORE reuse: 19\nJUSTIFICATION reuse: memoised_read wraps the repository's memoisation owner file_memo.memoized_key instead of implementing a cache, _remember_failure at reckon/crew/review_records.py:582 is an extraction of the body that already stood in _note_skipped_record:583, and a search over reckon/ for a region-skip replay found only stream replay in reckon/crew/picker/replay.py, a different capability.\nFINDING reckon/crew/review_records.py:626 non-blocking: the replay drops a skip whose path is gone, and no case in tests/test_an_unreadable_review_duty_names_its_fault.py deletes a record, so removing `not Path(path).is_file()` from that condition leaves all five cases green and the behaviour 175c772e added is unguarded.",
+  "review_run_id": "r-20261118T170032343768-review-of-qwnw-red-file-an-unreadable-review-duty-names-its-fault-e392d805a410",
+  "reviewed_base_sha": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "reviewed_head_sha": "e392d805a410e40662bd950f6134c9248a974ff1",
+  "reviewed_run_id": "r-20261118T063314245189-qwnw-red-file-an-unreadable-review-duty-names-its-fault",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:20:02.752669+00:00",
+  "total": 112
+}

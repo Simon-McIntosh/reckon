@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:1365",
+    "reckon/crew/promotion_evidence.py:1953",
+    "reckon/crew/promotion_records.py:1460",
+    "reckon/crew/promotion_checks.py:2448",
+    "reckon/crew/pending_landing.py:956",
+    "reckon/crew/pending_landing.py:1044"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:25:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/s39.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records the after arm at 59e524393d while after_suite-1795209691825286990.log:2 names 793e6e60ad, and the same claim repeats in qwnw-a-per-file-gate-log-counts-every-failure.html:4."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "1975",
+      "severity": "non-blocking",
+      "text": "non-blocking: the refusal message still says the last run reached no pytest summary although the condition now spans every marked file."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "2737",
+      "severity": "non-blocking",
+      "text": "non-blocking: PER_FILE_MARKER_RE matches any line beginning '# file:' anywhere in a log, including a test's own captured output, so an ordinary two-attempt log carrying such a line is summed as if its attempts were separate files."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read both commits against 3ab436fe38: 59e524393d adds pytest_summary_failure_total, per_file_gate_runs, _per_file_failure_ids and PER_FILE_MARKER_RE in review.py and switches promotion_evidence.py's count and receipt-text readers onto them; 793e6e60ad adds the two evidence fragments and nothing else.",
+    "done_when": "the done_when names tests/test_a_per_file_gate_log_counts_every_failure.py with three cases plus a negative control; the file at 793e6e60ad carries all three plus both receipt-agreement cases, and the manifest records the scoped gate (63 passed, EXIT=0) and the negative-control log (4 failed, EXIT=1, the sum case reading assert 0 == 2).",
+    "goal": "the source node's record carries no goal key, so the deliverable is read from docs/plans/queued-work-needs-no-workaround.html:373, whose endpoint is that the failure count read from a gate log equals the failures the gate reported; reckon/crew/review.py:2613 sums the marked per-file runs and reckon/crew/promotion_evidence.py:1691 hands the receipt agreement the whole log, and at 793e6e60ad the new test file reports 5 passed.",
+    "manifest": "read .../manifest.md; it names both commits (59e524393d, 793e6e60ad), the gate command as literal text, three log paths, both suite arms as inline JSON with 0 failures each, and the negative-control log.",
+    "write_paths": "git diff --stat 3ab436fe38..793e6e60ad lists five paths \u2014 reckon/crew/review.py, reckon/crew/promotion_evidence.py, tests/test_a_per_file_gate_log_counts_every_failure.py, s39.html and the landing fragment \u2014 and every one is inside the declared fence."
+  },
+  "justifications": {
+    "durability": "the negative control at negative-control-last-run-only.log reddens the sum case (assert 0 == 2) and the killed-file case (assert 0 is None); the per-file id union at reckon/crew/review.py:2829 is guarded by reading rather than by that arm, which mutated only the count reader.",
+    "evidence": "the base arm (baseline_suite-1795209649013229603.log, 58 passed, EXIT=0) and the after arm (after_suite-1795209691825286990.log, 63 passed, EXIT=0) are on disk, but docs/evidence/fragments/queued-work-needs-no-workaround/s39.html:9 records the after arm at 59e524393d where the log's header line 2 names 793e6e60ad.",
+    "fit": "the new readers sit beside last_run_text at reckon/crew/review.py:2764 and reuse _gate_log_format, ruff check and ruff format --check are clean on all three changed files at 793e6e60ad, and no name carries a plan, ticket or stage label.",
+    "goal_fidelity": "reckon/crew/review.py:2613 sums the per-file summaries and unions their ids, so the reported 0-versus-2 defect is closed; a per-file log whose runner appends an aggregate summary after the final file is still read by the last-wins scan as that file's result.",
+    "reuse": "a search over reckon/ for an existing per-file log splitter (# file:, per-file, per_file) found only the new definitions, and the addition composes pytest_summary_failure_count at reckon/crew/review.py:2586, last_run_text at :2764 and gate_log_failure_ids at :2805 rather than forking them.",
+    "scope_discipline": "every path in git diff --stat 3ab436fe38..793e6e60ad is inside the declared write paths, and no behaviour the section does not name was changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's record carries no goal key, so the deliverable is read from docs/plans/queued-work-needs-no-workaround.html:373, whose endpoint is that the failure count read from a gate log equals the failures the gate reported; reckon/crew/review.py:2613 sums the marked per-file runs and reckon/crew/promotion_evidence.py:1691 hands the receipt agreement the whole log, and at 793e6e60ad the new test file reports 5 passed.\nVERDICT done_when: the done_when names tests/test_a_per_file_gate_log_counts_every_failure.py with three cases plus a negative control; the file at 793e6e60ad carries all three plus both receipt-agreement cases, and the manifest records the scoped gate (63 passed, EXIT=0) and the negative-control log (4 failed, EXIT=1, the sum case reading assert 0 == 2).\nVERDICT write_paths: git diff --stat 3ab436fe38..793e6e60ad lists five paths \u2014 reckon/crew/review.py, reckon/crew/promotion_evidence.py, tests/test_a_per_file_gate_log_counts_every_failure.py, s39.html and the landing fragment \u2014 and every one is inside the declared fence.\nVERDICT manifest: read .../manifest.md; it names both commits (59e524393d, 793e6e60ad), the gate command as literal text, three log paths, both suite arms as inline JSON with 0 failures each, and the negative-control log.\nVERDICT diff: read both commits against 3ab436fe38: 59e524393d adds pytest_summary_failure_total, per_file_gate_runs, _per_file_failure_ids and PER_FILE_MARKER_RE in review.py and switches promotion_evidence.py's count and receipt-text readers onto them; 793e6e60ad adds the two evidence fragments and nothing else.\nCALL_SITES: reckon/crew/promotion.py:1365, reckon/crew/promotion_evidence.py:1953, reckon/crew/promotion_records.py:1460, reckon/crew/promotion_checks.py:2448, reckon/crew/pending_landing.py:956, reckon/crew/pending_landing.py:1044\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2613 sums the per-file summaries and unions their ids, so the reported 0-versus-2 defect is closed; a per-file log whose runner appends an aggregate summary after the final file is still read by the last-wins scan as that file's result.\nJUSTIFICATION evidence: the base arm (baseline_suite-1795209649013229603.log, 58 passed, EXIT=0) and the after arm (after_suite-1795209691825286990.log, 63 passed, EXIT=0) are on disk, but docs/evidence/fragments/queued-work-needs-no-workaround/s39.html:9 records the after arm at 59e524393d where the log's header line 2 names 793e6e60ad.\nJUSTIFICATION scope_discipline: every path in git diff --stat 3ab436fe38..793e6e60ad is inside the declared write paths, and no behaviour the section does not name was changed.\nJUSTIFICATION durability: the negative control at negative-control-last-run-only.log reddens the sum case (assert 0 == 2) and the killed-file case (assert 0 is None); the per-file id union at reckon/crew/review.py:2829 is guarded by reading rather than by that arm, which mutated only the count reader.\nJUSTIFICATION fit: the new readers sit beside last_run_text at reckon/crew/review.py:2764 and reuse _gate_log_format, ruff check and ruff format --check are clean on all three changed files at 793e6e60ad, and no name carries a plan, ticket or stage label.\nJUSTIFICATION reuse: a search over reckon/ for an existing per-file log splitter (# file:, per-file, per_file) found only the new definitions, and the addition composes pytest_summary_failure_count at reckon/crew/review.py:2586, last_run_text at :2764 and gate_log_failure_ids at :2805 rather than forking them.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/s39.html:9 non-blocking: the fragment records the after arm at 59e524393d while after_suite-1795209691825286990.log:2 names 793e6e60ad, and the same claim repeats in qwnw-a-per-file-gate-log-counts-every-failure.html:4.\nFINDING reckon/crew/promotion_evidence.py:1975 non-blocking: the refusal message still says the last run reached no pytest summary although the condition now spans every marked file.\nFINDING reckon/crew/review.py:2737 non-blocking: PER_FILE_MARKER_RE matches any line beginning '# file:' anywhere in a log, including a test's own captured output, so an ordinary two-attempt log carrying such a line is summed as if its attempts were separate files.\n",
+  "review_run_id": "r-20261120T212506484432-review-of-qwnw-a-per-file-gate-log-counts-every-failure-793e6e60ad6d",
+  "reviewed_base_sha": "3ab436fe38858d361bdd38ee97ab437d867b2043",
+  "reviewed_head_sha": "793e6e60ad6dd72e36145ff52e38c936c49ede49",
+  "reviewed_run_id": "r-20261120T204937395980-qwnw-a-per-file-gate-log-counts-every-failure",
+  "reviewer": {
+    "backend": "local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T212506484432-review-of-qwnw-a-per-file-gate-log-counts-every-failure-793e6e60ad6d"
+  },
+  "reviewer_run_id": "r-20261120T212506484432-review-of-qwnw-a-per-file-gate-log-counts-every-failure-793e6e60ad6d",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T21:49:53.924246+00:00",
+  "total": 112
+}

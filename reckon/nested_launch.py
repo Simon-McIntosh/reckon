@@ -34,7 +34,11 @@ process environment; sbatch and srun wrap the task with that recipe before
 forwarding, because the scheduler starts outside the submitting namespace. The
 real binary is the first one on ``PATH`` that is not a reckon shim (:mod:`reckon.shim_lookup`), so
 the shim never execs itself or the shim of another checkout on the same
-``PATH``. The nested-launch decision never changes the resource request.
+``PATH``. A fence puts this shim in front of the tool's own absolute paths too
+(:func:`reckon._worker_fence.scheduler_shields`) and names where it kept the
+real binary under :data:`SHIM_REAL_DIRECTORY_ENV`, so a name and an absolute
+path reach the same guard rather than one of them skipping it. The
+nested-launch decision never changes the resource request.
 """
 
 from __future__ import annotations
@@ -66,8 +70,8 @@ REFUSAL_STATUS = 97
 # the measure writes. Named here because the manifest audit has to recognise it
 # as the launch's prologue and not as the log's first recorded line.
 SCHEDULER_FENCE_NOTICE = (
-    "{tool}: task re-enters the worker fence; absolute scheduler paths bypass "
-    "this guard."
+    "{tool}: task re-enters the worker fence; this is the shim, reached by name "
+    "or by absolute path."
 )
 
 # The status returned when no real binary can be found outside the shim.
@@ -91,6 +95,20 @@ OVERRIDE_ENV = "RECKON_ALLOW_NESTED_LAUNCH"
 # fence hands no fence down. One name, read by the shim, the task bootstrap and
 # :func:`job_fence`, so the three cannot disagree about where the fence lives.
 WORKER_FENCE_ENV = "RECKON_WORKER_FENCE"
+
+# The two names a fence sets when it re-points an absolute path to a scheduler
+# binary at the shim. Only the file differs there, never the name or the argv,
+# so the shim script cannot read its own location from ``$0``: it is told where
+# its home is, and :func:`real_binary` is told where the real tool was kept.
+# Both are set on the argv the fence composes, so they reach a submitted job
+# with the recipe, and both are only ever read by a shim.
+SHIM_HOME_ENV = "RECKON_SHIM_HOME"
+SHIM_REAL_DIRECTORY_ENV = "RECKON_SHIM_REAL_DIRECTORY"
+
+# The checkout a process running from a published reload image was started
+# from. The supervisor sets it on a copy it starts from an image, and
+# :func:`shim_directory` reads it to name shims on storage every node shares.
+SOURCE_ROOT_ENV = "RECKON_FOLLOWER_SOURCE_ROOT"
 
 # The other route, and the partitions that show what a separate partition job
 # looks like here. The verb is part of the route: a separate partition job is
@@ -382,20 +400,89 @@ def refusal_message(tool: str, facts: HostFacts) -> str:
     return "\n".join(lines)
 
 
-def real_binary(tool: str, shim_dir: Path, path: str) -> str | None:
-    """The real ``tool`` on ``path``: never this shim, and never another one.
+def relocated_binary(tool: str, environ: Mapping[str, str] | None) -> str | None:
+    """The real ``tool`` a fence kept for this shim, or None.
+
+    A fence that put this shim in front of the tool's absolute path holds the
+    real binary under the directory it names in
+    :data:`SHIM_REAL_DIRECTORY_ENV`, and the shim reads that first: every copy
+    the search path would find is now the shim itself, so searching would
+    refuse a launch that the fence made possible. A location that holds
+    nothing runnable returns None, so the search still runs on a node the
+    relocation never reached.
+    """
+    from reckon.shim_lookup import is_shim
+
+    directory = str((environ or {}).get(SHIM_REAL_DIRECTORY_ENV) or "")
+    if not directory:
+        return None
+    candidate = os.path.join(directory, tool)
+    if (
+        os.path.isfile(candidate)
+        and os.access(candidate, os.X_OK)
+        and not is_shim(candidate)
+    ):
+        return candidate
+    return None
+
+
+def real_binary(
+    tool: str,
+    shim_dir: Path,
+    path: str,
+    environ: Mapping[str, str] | None = None,
+) -> str | None:
+    """The real ``tool``: never this shim, and never another one.
 
     The shim's own directory is dropped by resolved path, and any other
     candidate that is a reckon shim is skipped wherever it sits. Dropping only
     the own directory lets two checkouts' shims on one ``PATH`` exec each other
     in a loop that never reaches the scheduler.
+
+    A relocation a fence recorded is read first, because a fence that masked
+    this tool's absolute paths has left nothing on the search path but shims;
+    see :func:`relocated_binary`.
     """
+    relocated = relocated_binary(tool, environ)
+    if relocated is not None:
+        return relocated
     return real_executable(tool, path, skipped=[shim_dir])
 
 
 def shim_directory() -> Path:
-    """The directory the shims live in, derived from this module's location."""
-    return Path(__file__).resolve().parent / "host_shims"
+    """The shim directory a launched worker can read, wherever it runs.
+
+    The directory is derived from this module's location, with one exception.
+    A service that reloads itself imports the package from a published reload
+    image, and an image lives on the launching node's local disk and never
+    travels between nodes. A worker placed on another node is handed this
+    directory twice — on its search path, and as the source of the mounts that
+    put a shim in front of each scheduler binary — and a mount whose source the
+    worker's node does not hold refuses the launch outright. The shim also
+    looks for its interpreter in the environment beside its own checkout, which
+    an image does not carry.
+
+    So a process running from an image names the shims of the checkout the
+    image was published from: the root its launcher carried, or else the
+    checkout that owns the running interpreter's environment. Either is on the
+    storage every node shares. An image whose checkout cannot be found keeps
+    its own directory, which is still right for a worker on the same node.
+    """
+    own = Path(__file__).resolve().parent / "host_shims"
+    from reckon.checkout_trust import published_reload_image
+
+    if not published_reload_image(own.parent.parent):
+        return own
+    for root in (
+        os.environ.get(SOURCE_ROOT_ENV, ""),
+        str(Path(sys.prefix).parent),
+    ):
+        if not root:
+            continue
+        candidate = (Path(root) / "reckon" / "host_shims").resolve()
+        if candidate != own and candidate.is_dir():
+            return candidate
+    return own
 
 
 # The bubblewrap options a composed fence is built from, grouped by what they
@@ -502,7 +589,7 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
-_TASK_REENTRY_TEMPLATE = """import base64, json, os, pathlib, socket, subprocess, sys, tempfile
+_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile
 spec = json.loads(base64.urlsafe_b64decode(sys.argv[-1]))
 recipe = spec["fence"]
 # The recipe's own list, not a copy: a seal this node repairs to the ``-try``
@@ -516,8 +603,30 @@ prefix = recipe["argv"]
 # recipe that names none, or names one this node cannot run, refuses before the
 # task starts and never falls back to running the task unfenced.
 program = str(recipe.get("program") or "")
+carried = recipe.get("carried_program")
+if not isinstance(carried, dict):
+    carried = {}
+name = os.path.basename(prefix[0]) if prefix else "the fence program"
+
+def _not_started(detail):
+    sys.stderr.write(
+        "fence program %s cannot run on %s: %s; the job's task was "
+        "not started and the fence was not dropped\\n"
+        % (name, socket.gethostname(), detail))
+    raise SystemExit(_FENCE_PROGRAM_STATUS)
+
+def _checksum(value):
+    text = str(value or "").strip().lower()
+    return text[7:] if text.startswith("sha256:") else text
+
+def _digest(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for block in iter(lambda: stream.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
 if not (os.path.isabs(program) and os.access(program, os.X_OK)):
-    name = os.path.basename(prefix[0]) if prefix else "the fence program"
     if program and os.path.isabs(program):
         where = "%s (%s)" % (program, "absent" if not os.path.exists(program)
                              else "not executable")
@@ -525,11 +634,29 @@ if not (os.path.isabs(program) and os.access(program, os.X_OK)):
         where = "%s (not an absolute path)" % program
     else:
         where = "no carried location; PATH=%s was not searched" % os.environ.get("PATH", "")
-    sys.stderr.write(
-        "fence program %s cannot run on %s: looked at %s; the job's task was "
-        "not started and the fence was not dropped\\n"
-        % (name, socket.gethostname(), where))
-    raise SystemExit(_FENCE_PROGRAM_STATUS)
+    carried_path = str(carried.get("path") or "")
+    if not carried_path:
+        _not_started("looked at %s" % where)
+    # A carried program on shared storage is used only when this node cannot
+    # run the one its dispatcher resolved, and only after its bytes match the
+    # checksum the flight settings recorded. An absent file or a different
+    # digest refuses before the task starts; neither ever falls back to a
+    # search of this node's path.
+    if not os.path.isfile(carried_path):
+        _not_started("looked at %s and the carried location %s (absent)"
+                     % (where, carried_path))
+    held = _checksum(carried.get("checksum"))
+    if not held:
+        _not_started("the carried location %s records no checksum to verify"
+                     % carried_path)
+    found = _digest(carried_path)
+    if found != held:
+        _not_started("the carried location %s does not match its recorded "
+                     "checksum: recorded %s, found %s"
+                     % (carried_path, held, found))
+    program = carried_path
+if not (os.path.isabs(program) and os.access(program, os.X_OK)):
+    _not_started("looked at %s (not executable)" % program)
 # Every later step runs the carried location: the prepare step and the task's
 # own fence both read prefix[0], so one substitution here is what stops either
 # from searching the job node's path.
@@ -572,6 +699,14 @@ if not spec.get("sources_prepared"):
             for child in sorted(parent.iterdir()):
                 if child.is_symlink():
                     prepare += ["--symlink", os.readlink(child), str(child)]
+                elif child.is_dir() and not os.access(child, os.R_OK | os.X_OK):
+                    # A directory this user cannot enter cannot be bound by
+                    # name either: a job node's tmp holds other accounts'
+                    # private directories and stale mounts of deleted ones,
+                    # and one such child refused the whole fence before the
+                    # task started. The task could never have read it, so it
+                    # is left out of the private copy of its parent.
+                    continue
                 else:
                     prepare += ["--dev-bind", str(child), str(child)]
         for path in missing:
@@ -744,8 +879,9 @@ def fenced_scheduler_task(
 ) -> list[str]:
     """Re-enter the submitting fence at the task boundary, before user code.
 
-    A direct absolute scheduler call bypasses this PATH shim. Interpreter file
-    permissions remain the independent guard on that route.
+    A caller arrives here by name through the shim or by an absolute path the
+    fence has re-pointed at the shim; the wrap is the same either way, so the
+    task cannot be submitted unfenced by choosing a path.
     """
     encoded = environ.get(WORKER_FENCE_ENV)
     if not encoded or tool not in {"sbatch", "srun"}:
@@ -822,7 +958,8 @@ def main(
     replaces this process with the real binary. The return is for the refusal
     and the missing-binary cases only; a forwarded launch does not come back.
     """
-    env = caller_environment(os.environ if environ is None else environ)
+    source = os.environ if environ is None else environ
+    env = caller_environment(source)
     refusal = depth_refusal(tool, env)
     if refusal is not None:
         print(refusal, file=sys.stderr)
@@ -831,7 +968,9 @@ def main(
     if refuses_implicit_launch(tool, argv, facts, env):
         print(refusal_message(tool, facts), file=sys.stderr)
         return REFUSAL_STATUS
-    found = real_binary(tool, shim_directory(), env.get("PATH", os.defpath))
+    found = real_binary(
+        tool, shim_directory(), env.get("PATH", os.defpath), environ=source
+    )
     if found is None:
         print(
             f"{tool} shim: no real {tool} on PATH outside {shim_directory()}",

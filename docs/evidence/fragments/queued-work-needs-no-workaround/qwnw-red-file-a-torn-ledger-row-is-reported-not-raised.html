@@ -1,0 +1,29 @@
+<section id="qwnw-red-file-a-torn-ledger-row-is-reported-not-raised-record">
+<h3>A torn ledger row is reported, not raised</h3>
+<p>The file failed two of six cases at the base revision, both on the same assertion: <code>ledger.damaged_run_records()</code> returned <code>()</code> where the torn document was expected. One cause, one verdict — <strong>product wrong</strong>. Commit <code>0d8ea23ad9</code> (15 November) moved history reads onto the run store and made the stored branch answer <code>_report_damaged_run_records(project, ())</code>: a read that decodes no document asserted that no document was damaged. The base run below reads <strong>2 failed, 4 passed</strong>; the same file at the repaired head reads <strong>6 passed</strong>.</p>
+<p>The repair keeps the store's coverage rule. A run document the store holds is served by the store and is never opened; a document the store does not hold is the only copy of its own row, so it is decoded and reported when it will not parse — the same rule the document merge already states, where a damaged document is skipped and reported while healthy rows stay visible. The listing is one <code>os.scandir</code>, so a store that carries the project's history costs a directory walk and no decodes, and <code>tests/test_a_ledger_read_does_not_walk_every_run.py</code> still holds the warm read to its constant stat count. No assertion in the named file was touched.</p>
+<section id="qwnw-red-file-a-torn-ledger-row-is-reported-not-raised-base-arm">
+<h4>Negative control — base revision 2437205f9a762420c943f3c0b0312ded03f7395f</h4>
+<pre># revision: 2437205f9a762420c943f3c0b0312ded03f7395f (base, tree exported from that commit)
+# tree: /tmp/reckon-crew-scratch/r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised/base_tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_torn_ledger_row_is_reported_not_raised.py
+# module: /tmp/reckon-crew-scratch/r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised/base_tree/reckon/ledger.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised/base_tree
+FAILED tests/test_a_torn_ledger_row_is_reported_not_raised.py::test_review_pass_keeps_promoting_with_a_truncated_row - AssertionError: assert () == (PosixPath('/...maged.json'),)
+FAILED tests/test_a_torn_ledger_row_is_reported_not_raised.py::test_read_during_exclusive_append_reports_damage_then_recovers[True] - AssertionError: assert () == (PosixPath('/...nding.json'),)
+2 failed, 4 passed in 3.16s
+EXIT=1</pre>
+<p>Log: <code>~/.config/reckon/crew/runs/r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised/logs/torn-ledger-base-red.log</code>.</p>
+</section>
+<section id="qwnw-red-file-a-torn-ledger-row-is-reported-not-raised-head-arm">
+<h4>Head — revision 70c0ce43867b29585ae82013218a1981feb2055d, an <code>all_debug</code> job</h4>
+<pre># revision: 70c0ce43867b29585ae82013218a1981feb2055d
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-975c9574d111-9iytdH/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_torn_ledger_row_is_reported_not_raised.py'
+......                                                                   [100%]
+6 passed in 1.42s
+EXIT=0</pre>
+<p>Log: <code>~/.config/reckon/crew/runs/r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised/scoped-gate-1795111909996238494.log</code>.</p>
+</section>
+</section>

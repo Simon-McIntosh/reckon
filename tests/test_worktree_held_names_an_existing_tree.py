@@ -3,9 +3,15 @@
 Git keeps a path in its worktree registry until the registry is pruned, so a
 tree whose directory was deleted out from under the registration is still
 listed by ``git worktree list``. The held-tree reader reads that listing, so
-without an existence check it raises ``worktree-held`` for a registration with
-nothing behind it — and the duty's remedy is a project-wide ``crew gc --apply``
-that would sweep peers' trees to clear the tree entry alone.
+``worktree-held`` names a tree only while it is still on disk — and the duty's
+remedy is a project-wide ``crew gc --apply`` that would sweep peers' trees to
+clear the tree entry alone.
+
+The reader also holds a tree only while deleting it would lose something: an
+uncommitted change or a commit the primary branch does not reach. Every tree
+here therefore carries such work, so neither rule is decided by a fixture that
+happens to be clean — existence decides the deleted case, the release record
+decides the released one, and the kept case is the arm where both hold.
 
 Every record here is built by the ledger's own constructor and published
 through the ledger's own writer, so no case asserts against keys this test
@@ -65,6 +71,11 @@ def _worktree(root: Path, node: str) -> Path:
     return path
 
 
+def _left_work(tree: Path, name: str) -> None:
+    """Leave an uncommitted change, so deleting the tree would lose it."""
+    (tree / f"{name}.txt").write_text(name, encoding="utf-8")
+
+
 def _registered(root: Path) -> list[str]:
     """Every path Git's registry lists, whether or not it exists on disk."""
     return [
@@ -98,8 +109,9 @@ def _held(root: Path) -> list[dict[str, Any]]:
 
 
 def test_a_promoted_run_whose_tree_was_deleted_is_not_held(fleet: Path) -> None:
-    """A registration with no directory behind it holds nothing."""
+    """A registration with no directory behind it holds nothing to lose."""
     tree = _worktree(fleet, "alpha-deleted")
+    _left_work(tree, "work-the-tree-carried")
     ledger.append_run(
         PROJECT,
         _produced(
@@ -119,8 +131,9 @@ def test_a_promoted_run_whose_tree_was_deleted_is_not_held(fleet: Path) -> None:
 
 
 def test_a_promoted_run_whose_tree_remains_is_held(fleet: Path) -> None:
-    """A tree still on disk is a held tree, and the duty names its run."""
+    """A present tree still carrying work is held, and the duty names its run."""
     tree = _worktree(fleet, "beta-kept")
+    _left_work(tree, "work-no-landing-took")
     ledger.append_run(
         PROJECT,
         _produced("r-20261002T080100000000-beta-kept", "beta-kept", worktree=tree),
@@ -137,11 +150,15 @@ def test_a_promoted_run_whose_tree_remains_is_held(fleet: Path) -> None:
 def test_a_record_showing_the_tree_released_is_not_held(fleet: Path) -> None:
     """A promotion record that shows the tree released names no held tree."""
     tree = _worktree(fleet, "gamma-released")
+    _left_work(tree, "work-the-promotion-freed")
     record = _produced(
         "r-20261002T080200000000-gamma-released", "gamma-released", worktree=tree
     )
     record["release"] = {"worktree_released": True}
     ledger.append_run(PROJECT, record, root=fleet, allow_create=True)
 
+    # The tree survives and carries work a reader would otherwise hold, so the
+    # release record, and not an empty tree, is what removes the duty.
     assert tree.is_dir()
+    assert _git(tree, "status", "--porcelain")
     assert _held(fleet) == []

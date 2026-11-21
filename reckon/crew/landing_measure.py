@@ -1575,23 +1575,32 @@ def _git(repo: Path, *arguments: str, timeout: float):
 def base_checkout(
     repo: Path, base_sha: str, timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS
 ) -> Iterator[Path]:
-    """A detached scratch tree at ``base_sha``, removed when the block ends.
+    """A detached scratch tree at ``base_sha``, released when the block ends.
 
     The tree is built under ``worker_scratch_root()`` — the node-local root the
     fleet already owns, so a shared-storage ``TMPDIR`` cannot move the checkout
-    onto GPFS — and it is removed on every exit path, including a checkout that
+    onto GPFS — and it is released on every exit path, including a checkout that
     times out or fails before it is yielded. Every git call is bounded by the
     same ``timeout`` as the measurements.
 
-    A removal that fails or times out leaves the repository's registration
-    behind, so the registration is pruned before the block returns; a stale
-    entry would otherwise make a later ``worktree add`` of the same path fail.
+    The release is the whole one every removal site makes: the tree is moved
+    aside before git is told to forget it, so no deadline can leave a registered
+    tree holding a fraction of its files. The scratch directory the tree was
+    built in is the trash the move lands in, because it is on the tree's own
+    filesystem — a node-local scratch tree cannot be renamed onto shared
+    storage — and it is deleted whole afterwards.
+
+    A release that fails leaves the repository's registration behind, so the
+    registration is pruned before the block returns; a stale entry would
+    otherwise make a later ``worktree add`` of the same path fail.
 
     A scratch root that cannot be created — full, or unwritable — raises
     ``BaseCheckoutError`` like any other checkout that cannot be built, so the
     caller refuses one run's landing rather than letting the error escape the
     admission pass.
     """
+    from reckon.crew.routing import _release_worktree_whole
+
     try:
         root = worker_scratch_root()
         root.mkdir(parents=True, exist_ok=True)
@@ -1639,14 +1648,15 @@ def base_checkout(
         try:
             yield target
         finally:
-            removed = False
-            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
-                finished = _git(
-                    repo, "worktree", "remove", "--force", str(target), timeout=timeout
+            released = False
+            with contextlib.suppress(Exception):
+                released = bool(
+                    _release_worktree_whole(
+                        repo, target, run_id="landing-base", trash_root=scratch
+                    ).get("released")
                 )
-                removed = finished.returncode == 0
             shutil_rmtree(scratch)
-            if not removed:
+            if not released:
                 # The tree is gone from disk but the repository still registers it.
                 # Prune drops that stale entry, and ``--expire now`` is what makes
                 # it act immediately rather than after the default grace period.

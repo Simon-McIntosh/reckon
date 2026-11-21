@@ -418,6 +418,7 @@ def dispatch(
     dispatch_options: Mapping[str, Any] | None = None,
     admission_launch: bool = False,
     admitted_from: str = "",
+    seats_in_flight: int = 0,
     readiness_cache: dict[str, Any] | None = None,
     run_id: str | None = None,
     partner_masks: Iterable[str] | None = None,
@@ -1527,6 +1528,7 @@ def dispatch(
                 project,
                 exclude_run_ids=(run_id,),
                 reserve=_local_lane_reserve(is_local, config=config),
+                seats_in_flight=seats_in_flight,
             )
         except RosterFull as roster:
             reason = (
@@ -1570,13 +1572,6 @@ def dispatch(
                 watch_override=watch_override,
             )
             raise held from roster
-
-        # Keep the identity visible if the caller exits during launch. Stdout
-        # remains the command's final JSON document, so notices use stderr, and
-        # the notice goes out once the bound reads above have let this dispatch
-        # launch: a request held, queued or refused above prints none, so its
-        # first line stays the document a caller reads.
-        print(f"reckon: created run {run_id}", file=sys.stderr, flush=True)
 
         explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
         peers = (
@@ -1673,6 +1668,13 @@ def dispatch(
                 explicitly_named=explicitly_named_peers,
                 exclude_run_ids=(run_id,),
             )
+        # Keep the identity visible if the caller exits during launch. Stdout
+        # remains the command's final JSON document, so notices use stderr; and
+        # the notice goes out only once every read above has let this dispatch
+        # launch — a request held, queued or refused, by a live claim on a
+        # declared path among them, prints none, so a refusal's first line stays
+        # the document a caller reads.
+        print(f"reckon: created run {run_id}", file=sys.stderr, flush=True)
         # Only shadow lineage and session reuse read runs beyond this node's
         # own, so every other dispatch reads just the node's rows from the run
         # index instead of decoding the whole ledger on each launch.

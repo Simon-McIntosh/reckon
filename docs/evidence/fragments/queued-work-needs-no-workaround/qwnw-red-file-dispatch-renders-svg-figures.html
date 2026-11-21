@@ -1,0 +1,22 @@
+<section id="qwnw-red-file-dispatch-renders-svg-figures-landing">
+  <h3>The SVG dispatch file passes in full at head, and the product was never wrong</h3>
+  <p>Two of the file's three cases failed on the primary branch at
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>:
+  <code>test_svg_cli_dispatch_records_a_run_local_png_and_resume_reuses_it</code> and
+  <code>test_png_cli_dispatch_keeps_the_input_path</code>, both
+  <code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</code>. The
+  dispatch CLI writes its progress notice
+  (<code>reckon: created run &lt;id&gt;</code>) to stderr and keeps stdout as the command's one
+  JSON document — a contract stated in the comment beside the notice. Click's
+  <code>Result.output</code> interleaves stderr into stdout, so the test decoded the notice
+  with the document. The test encoded an obsolete rule about what <code>output</code> holds;
+  the fix reads <code>result.stdout</code> through one helper, <code>_record(result)</code>,
+  which both call sites use. No assertion was deleted or weakened.</p>
+  <p>The measure: <code>tests/test_dispatch_renders_svg_figures.py</code> at head
+  <code>0174d9a255374ca3e286acfa1572b9120337aae4</code> reads
+  <code>3 passed in 3.00s</code> with <code>EXIT=0</code>; the base arm at
+  <code>42fe90d0b0a4</code> reads <code>2 failed, 1 passed in 5.96s</code> with
+  <code>EXIT=1</code>, and its log names both ids above. Both arms ran on <code>all_debug</code> per-run scratch trees under this run's
+  directory. <code>ruff check</code> and <code>ruff format --check</code> report nothing on the
+  changed path.</p>
+</section>

@@ -1,0 +1,88 @@
+<section id="qwnw-red-file-a-finished-pending-landing-retires-its-run-landing">
+  <h2>A finished pending landing retires its run</h2>
+
+  <p><strong>What was wrong.</strong> At the base revision
+  <code>35fb9f3ae769586b2f364485bf2d6fc31caf87f5</code> the file reported
+  <code>3 failed, 3 passed</code>, all three failures the same
+  <code>CrewError: no live run 'r-delivery-repair'</code>. The file predated the
+  promoted-pointer refusal: a promoted run's live pointer is never written back,
+  so <code>dispatch_merge_repair</code> returns on its refusal, and the three
+  cases that expected a pointer could not survive. Verdicts: <strong>product
+  wrong</strong> for one rule and <strong>test wrong</strong> for the
+  expectation.</p>
+
+  <p><em>Product — the refusal journalled nothing.</em> The refusal branch
+  returned before the pending record learned of the conflict, so every landing
+  pass re-attempted a merge nothing can finish and named no obligation.
+  <code>dispatch_merge_repair</code> now journals the receipt as the record's
+  <code>merge_conflict</code>, the same write the dispatched path already made,
+  and the pass reports <code>status: record-obligation</code> naming that record
+  with no pointer created.</p>
+
+  <p><em>Test — the pointer expectation.</em> The three cases asserted a live
+  pointer for a promoted run. They are replaced by cases asserting what the
+  refusal does: it names the record, nothing lands, the worktree survives, a
+  fresh gate around the experiment does not licence a write-back, no pointer is
+  created, and a pointer left by a later attempt is read but never rewritten. No
+  assertion was deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-a-finished-pending-landing-retires-its-run-repair">Repair round</h3>
+
+  <p>Five findings were answered in one commit each. A refused push now has its
+  own case over the interrupted-promotion fixture, where the pointer is already
+  gone and the pending record is the whole recovery state; the refusal is
+  written onto the record as the same fixture's attempt error and nothing is
+  retired. The later-attempt case no longer compares a value derived from its own
+  fixture: it reads the attempt the record's pointer carries, writes the next
+  one, and asserts the stored pointer still holds it after the pass.</p>
+
+  <h3 id="qwnw-red-file-a-finished-pending-landing-retires-its-run-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-finished-pending-landing-retires-its-run-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=</code> followed by the
+    runner's own status.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base tree</td>
+        <td><code>35fb9f3ae769586b2f364485bf2d6fc31caf87f5</code></td>
+        <td>3 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head</td>
+        <td><code>cff110d53fe80ba313f7740d7fb7ae548cc593e5</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, head of the repair round</td>
+        <td><code>474d1584d75061525912a6178d37472ef758bb69</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, scoped gate on <code>all_debug</code></td>
+        <td><code>cff110d53fe80ba313f7740d7fb7ae548cc593e5</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The three base failures are
+  <code>test_a_finished_pending_landing_retires_its_run</code>,
+  <code>test_a_refused_push_keeps_the_run_and_its_recovery_state</code> and
+  <code>test_a_newer_attempt_keeps_its_pointer_and_worktree</code>, and every
+  one of them failed on the missing live pointer the refusal removes. The
+  importer arm over the files that import the changed modules reads
+  <code>14 failed, 439 passed</code> at the base tree and
+  <code>11 failed, 442 passed</code>: the difference is this file, and no
+  failure id is new at the head.</p>
+
+  <h3 id="qwnw-red-file-a-finished-pending-landing-retires-its-run-control">Negative control</h3>
+
+  <p>The base run above is the red arm, recorded beside the head run. Each repair
+  was then exercised against a mutation of the head tree:</p>
+
+  <ul>
+    <li>a pass that clears the pending record when the push is refused fails
+      <code>test_a_refused_push_keeps_the_run_and_its_recovery_state</code> on
+      the missing record, while the pre-repair file passes all six of its cases
+      under the same mutation — the property was unguarded;</li>
+    <li>a pass that rewrites a later attempt's pointer fails the repaired
+      later-attempt case, and the assertion the finding named holds even after
+      the rewrite: <code>pointer_attempt(newer) != captured.get("attempt")</code>
+      holds for a rewritten pointer because the record's pointer carries no
+      attempt at all, while the new assertion on the stored attempt does not.</li>
+  </ul>
+</section>

@@ -382,14 +382,20 @@ def test_an_inprogress_manifest_update_stays_silent(tmp_path: Path) -> None:
 def test_the_rewrite_marker_does_not_leak_into_a_later_departure(
     tmp_path: Path, ledger_home: Path
 ) -> None:
-    """The rewrite is one transition; the run's later promotion stays a promotion.
+    """The rewrite is one transition; the run's later promotion is not another.
 
     The marker that distinguishes the rewrite is carried only on the emitted
     record, never on the run's remembered snapshot, so a departure after the
-    rewrite still reads as promoted and not as a second rewrite. A promotion
-    writes a ledger row for the run it lands, so the fixture records that row
-    before the departure: the ledger is the whole of what separates a landed
-    run from a pointer that simply vanished.
+    rewrite reads the row's own delivery word and not a second rewrite. A
+    promotion writes a ledger row for the run it lands, so the fixture records
+    that row before the departure: the ledger is the whole of what separates a
+    landed run from a committed pointer that simply vanished.
+
+    The word is the delivered one rather than ``promoted``: the fixture's
+    project has no registered mount, so the row's head cannot be verified on a
+    primary branch and the departure fails closed to delivered — the word the
+    ancestry rule gives an unverified landing. What the case binds is that the
+    departure is a recorded one, not that a branch carries the head.
     """
     directory = _run_directory(tmp_path, "r-then-promoted")
     manifest = _write(directory, status="failed", commits=[], blockers=["placeholder"])
@@ -419,7 +425,10 @@ def test_the_rewrite_marker_does_not_leak_into_a_later_departure(
     assert len(departed) == 1
     (snapshot, previous, state, counts) = departed[0]
     emitted = _emitted(snapshot, previous, state, counts)
-    assert (previous, state) == ("failed", "promoted")
+    # The row's head is on no branch this fixture can reach, so it is delivered
+    # rather than landed: the departure is worded by the row, not re-read as a
+    # second rewrite of the report it replaced.
+    assert (previous, state) == ("failed", "complete")
     assert emitted["event"] == "transition"
     assert "manifest_rewritten" not in snapshot
 

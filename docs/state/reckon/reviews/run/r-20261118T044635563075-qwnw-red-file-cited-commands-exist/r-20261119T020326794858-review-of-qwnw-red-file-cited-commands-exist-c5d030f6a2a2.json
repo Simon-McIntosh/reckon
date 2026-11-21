@@ -1,0 +1,114 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own gate logs rather than from its manifest text: baseline-suite-arm.log ends '58 passed in 36.47s' EXIT=0 at 73b9ac21a5 and after-suite-arm.log ends '58 passed in 35.72s' EXIT=0 at c5d030f6a2, so both failure-id sets are empty and their difference is empty. The importing population's arms were read the same way: import-arm-base.log ends '4 failed, 64 passed' EXIT=1 at 73b9ac21a5 and import-head.log ends '3 failed, 67 passed' EXIT=1 at c5d030f6a2, and the head's three ids are three of the base's four, the missing one being the named file's own case, so that arm adds no failure either.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "tests/test_cited_commands_exist.py:408 [c.chain for c in found] == [[\"crew\", \"census\"]]",
+      "fails_if": "reverting the change so a fenced line is yielded whole reddens it: the comment's prose then yields a second citation ('processes'), which is exactly the base-revision failure negative-control.log records."
+    },
+    {
+      "assertion": "tests/test_cited_commands_exist.py:409 found[0].flags == [\"--apply\"]",
+      "fails_if": "a truncation that cut at the bracket or at the first space would drop --apply; it holds only while the cut happens at the comment."
+    },
+    {
+      "assertion": "tests/test_cited_commands_exist.py:410 _citation_problems(found) == []",
+      "fails_if": "an unknown verb or flag survived the truncation and reached the resolver."
+    },
+    {
+      "assertion": "tests/test_cited_commands_exist.py:429 problems == [\"skills/example/SKILL.md:2: unknown command processes whose owner is dead ('processes')\"]",
+      "fails_if": "a fix that kept only the first command on a fenced line would empty problems, and one that dropped the line's second command altogether would too."
+    }
+  ],
+  "assertion_independence": "Every added assertion compares against a literal or a literal-derived expected string rather than against a value the test handed in: the fixtures are document text, and every assertion reads what citations()/_citation_problems() return for it. No added assertion compares a value against the same variable passed to the code under test.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:38:30Z",
+  "evidence_limits": [
+    "No test re-run: the recorded logs were read instead, each carrying its revision, tree and command on its header lines and an EXIT line; the reading bound allows at most the one named gate and the recorded result was not doubted.",
+    "The done_when's 'as a job on all_debug with SLURM_JOB_ID unset' is not verifiable from the logs themselves: their headers name compute nodes (98dci4-clu-3141, 98dci4-clu-3144) and the command unsets SLURM_JOB_ID, but no log records the partition, so the job identity rests on the run's own account.",
+    "The fragment's job numbers (1328805-1328865) name runs whose logs are not all delivered under those names: the delivered head-gate.log and after-suite-arm.log run at c5d030f6a2 rather than the 179439e4c8 the table states."
+  ],
+  "finding_dispositions": [],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-cited-commands-exist.html",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm table names revision 179439e4c8 for the head arms, while the two logs delivered as the head gate carry c5d030f6a2a21714f030bcd35618b859df7bd2bc (head-gate.log, after-suite-arm.log) and baseline-suite-arm.log carries 73b9ac21a50d4566b8bc7ec2cf2c49160af28656, so a reader reconciling a table row to the log it cites by revision cannot."
+    },
+    {
+      "file": "tests/test_cited_commands_exist.py",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "non-blocking: _uncommented documents at :89-91 that a '#' inside a quoted argument or inside a word is kept, and neither added case exercises that branch \u2014 stripping at the first '#' unconditionally leaves both new tests green, so the quoted-argument path the docstring claims carries no guard."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 73b9ac21a5: 179439e4c8 adds _uncommented and two cases (+76 -5, replacing only the whole-line read and its docstring sentence, no assertion removed) and c5d030f6a2 adds the 87-line evidence fragment.",
+    "done_when": "the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a cause with a product-wrong/test-wrong verdict, no assertion deleted or weakened, and an importer arm adding no failure with both arms in inline JSON at full revisions; the manifest carries each, and head-gate.log, negative-control.log and import-arm-base.log/import-head.log show them (4 failed at base, 3 failed at head, the delta being the named file's own case).",
+    "goal": "the node's goal is that tests/test_cited_commands_exist.py passes in full on the primary branch; tests/test_cited_commands_exist.py:121 reads a fenced line only up to its shell comment, and head-gate.log records 6 passed EXIT=0 at c5d030f6a2 against 1 failed, 3 passed at 73b9ac21a5 in negative-control.log.",
+    "manifest": "read at runs/r-20261118T044635563075-qwnw-red-file-cited-commands-exist/manifest.md; status complete, two commits, six log paths, both suite arms as 40-character revisions with 0 failures, and the single cause recorded with the verdict 'test wrong'.",
+    "write_paths": "the declared paths are reckon, tests, the fragment directory and the named fragment file; the delivered diff touches only tests/test_cited_commands_exist.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-cited-commands-exist.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_cited_commands_exist.py:408 reddens if the truncation is removed, because the fenced line then yields the second citation 'processes'; the quoted and in-word '#' branches at :89-91 are pinned by no assertion, so an unconditional strip still passes both added cases.",
+    "evidence": "the manifest's baseline_suite and after_suite inline JSON carry full 40-character revisions and 0 failures each beside baseline-suite-arm.log and after-suite-arm.log, but the fragment's arm table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-cited-commands-exist.html:46 names 179439e4c8 for arms whose delivered logs carry c5d030f6a2 and 73b9ac21a5, so table and log cannot be reconciled by revision.",
+    "fit": "the helper at tests/test_cited_commands_exist.py:75 follows the module's private-helper-with-docstring idiom and carries no plan or ticket identifier, though the module docstring at :1-21 still describes fenced lines as read whole.",
+    "goal_fidelity": "tests/test_cited_commands_exist.py:91 truncates a fenced line at a word-initial '#', and head-gate.log records 6 passed EXIT=0 at c5d030f6a2 where negative-control.log records 1 failed, 3 passed at 73b9ac21a5.",
+    "reuse": "no owner of shell-comment stripping exists \u2014 reckon/ holds only shlex quoting and splitting (reckon/hooks/install.py:287) and reckon/crew/reports.py:1768 strips Python comments \u2014 so _uncommented is the first of its capability and no production module was forked.",
+    "scope_discipline": "the two paths in git diff 73b9ac21a5..c5d030f6a2 are tests/test_cited_commands_exist.py and the evidence fragment, and both lie inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_cited_commands_exist.py passes in full on the primary branch; tests/test_cited_commands_exist.py:121 reads a fenced line only up to its shell comment, and head-gate.log records 6 passed EXIT=0 at c5d030f6a2 against 1 failed, 3 passed at 73b9ac21a5 in negative-control.log.\nVERDICT done_when: the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a cause with a product-wrong/test-wrong verdict, no assertion deleted or weakened, and an importer arm adding no failure with both arms in inline JSON at full revisions; the manifest carries each, and head-gate.log, negative-control.log and import-arm-base.log/import-head.log show them (4 failed at base, 3 failed at head, the delta being the named file's own case).\nVERDICT write_paths: the declared paths are reckon, tests, the fragment directory and the named fragment file; the delivered diff touches only tests/test_cited_commands_exist.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-cited-commands-exist.html, both inside them.\nVERDICT manifest: read at runs/r-20261118T044635563075-qwnw-red-file-cited-commands-exist/manifest.md; status complete, two commits, six log paths, both suite arms as 40-character revisions with 0 failures, and the single cause recorded with the verdict 'test wrong'.\nVERDICT diff: read commit by commit against 73b9ac21a5: 179439e4c8 adds _uncommented and two cases (+76 -5, replacing only the whole-line read and its docstring sentence, no assertion removed) and c5d030f6a2 adds the 87-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_cited_commands_exist.py:91 truncates a fenced line at a word-initial '#', and head-gate.log records 6 passed EXIT=0 at c5d030f6a2 where negative-control.log records 1 failed, 3 passed at 73b9ac21a5.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite inline JSON carry full 40-character revisions and 0 failures each beside baseline-suite-arm.log and after-suite-arm.log, but the fragment's arm table at qwnw-red-file-cited-commands-exist.html:46 names 179439e4c8 for arms whose delivered logs carry c5d030f6a2 and 73b9ac21a5.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two paths in git diff 73b9ac21a5..c5d030f6a2 are the test file and the fragment, and both lie inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_cited_commands_exist.py:408 reddens if the truncation is removed, because the fenced line then yields the second citation 'processes'; the quoted and in-word '#' branches at :89-91 are pinned by no assertion, so an unconditional strip still passes both added cases.\nSCORE fit: 17\nJUSTIFICATION fit: the helper at tests/test_cited_commands_exist.py:75 follows the module's private-helper-with-docstring idiom and carries no plan or ticket identifier, though the module docstring at :1-21 still describes fenced lines as read whole.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of shell-comment stripping exists \u2014 reckon/hooks/install.py:287 only shlex-quotes, and reckon/crew/reports.py:1768 strips Python comments \u2014 so _uncommented is the first of its capability and no production module was forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-cited-commands-exist.html:46 non-blocking: the arm table names revision 179439e4c8 for the head arms, while the two logs delivered as the head gate carry c5d030f6a2a21714f030bcd35618b859df7bd2bc and baseline-suite-arm.log carries 73b9ac21a50d4566b8bc7ec2cf2c49160af28656, so a reader reconciling a table row to the log it cites by revision cannot.\nFINDING tests/test_cited_commands_exist.py:75 non-blocking: _uncommented documents at :89-91 that a '#' inside a quoted argument or inside a word is kept, and neither added case exercises that branch \u2014 stripping at the first '#' unconditionally leaves both new tests green, so the quoted-argument path the docstring claims carries no guard.",
+  "reuse_search": {
+    "capabilities": [
+      "strip a shell comment off a command line while respecting quotes",
+      "parse fenced code blocks out of a markdown document into command lines"
+    ],
+    "judgement": "No production or test helper in this repository owns either capability. reckon/hooks/install.py:287 and reckon/crew_run_commands.py tokenise with shlex, which is tokenising rather than comment stripping; reckon/crew/reports.py:1768 finds Python comments in source, a different grammar. The helper is test-local and private, so it forks nothing."
+  },
+  "review_run_id": "r-20261119T020326794858-review-of-qwnw-red-file-cited-commands-exist-c5d030f6a2a2",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "c5d030f6a2a21714f030bcd35618b859df7bd2bc",
+  "reviewed_run_id": "r-20261118T044635563075-qwnw-red-file-cited-commands-exist",
+  "reviewed_worker_commits": [
+    "179439e4c8893df82fb58123e05d2cbb56726bba",
+    "c5d030f6a2a21714f030bcd35618b859df7bd2bc"
+  ],
+  "reviewer_run_id": "r-20261119T020326794858-review-of-qwnw-red-file-cited-commands-exist-c5d030f6a2a2",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044635563075-qwnw-red-file-cited-commands-exist/after-suite-arm.log",
+      "revision": "c5d030f6a2a21714f030bcd35618b859df7bd2bc"
+    },
+    "baseline_suite": {
+      "command": "env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044635563075-qwnw-red-file-cited-commands-exist/baseline-suite-arm.log",
+      "revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:11:57.162017+00:00",
+  "total": 106
+}

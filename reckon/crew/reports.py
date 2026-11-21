@@ -1507,8 +1507,18 @@ def _names_the_same_revision(left: str, right: str) -> bool:
 _FENCE_NOTICE_TOOLS = frozenset({"salloc", "sbatch", "srun"})
 
 
-def _fence_notice_text() -> str:
-    """The fence notice with its tool prefix removed.
+# The notices a fence has written as its launch prologue. A log written before
+# the notice was reworded is still a log whose first line is the launch's, so
+# the retired wording is kept here rather than dropped: recognition is what
+# keeps a measure's own header reading as the first recorded line in every log
+# a review may still open.
+_RETIRED_FENCE_NOTICE_TEXTS = (
+    "task re-enters the worker fence; absolute scheduler paths bypass this guard.",
+)
+
+
+def _fence_notice_texts() -> tuple[str, ...]:
+    """The fence notice, current wording first, with its tool prefix removed.
 
     Read at call time: the launcher imports ``reckon.nested_launch`` first, and
     that module reaches this one while it is still initialising, so a
@@ -1516,13 +1526,14 @@ def _fence_notice_text() -> str:
     """
     from reckon.nested_launch import SCHEDULER_FENCE_NOTICE
 
-    return SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
+    current = SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
+    return (current, *_RETIRED_FENCE_NOTICE_TEXTS)
 
 
 def _is_fence_prologue(line: str) -> bool:
     """Whether a log line is the launch fence's notice rather than a record."""
     tool, _, rest = line.partition(":")
-    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() == _fence_notice_text()
+    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() in _fence_notice_texts()
 
 
 def _first_recorded_line(text: str) -> str:
@@ -1895,13 +1906,9 @@ def _revision_is_committed(store: Path, revision: str) -> bool:
     a store that simply cannot answer. Asking first keeps that refusal to a
     readable store.
     """
-    probe = subprocess.run(
-        ["git", "-C", str(store), "cat-file", "-e", f"{revision}^{{commit}}"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return probe.returncode == 0
+    from reckon.crew.recovery import _resolve_commit
+
+    return bool(_resolve_commit(store, revision))
 
 
 def _committed_head_paths(store: Path) -> set[str]:
@@ -1948,6 +1955,10 @@ def _png_twin_findings_for_base(
     for png in sorted(path for path in added if path.endswith(".png")):
         svg = png[:-4] + ".svg"
         if svg not in head:
+            continue
+        if png not in head:
+            # Added and then removed by the run itself: the committed head
+            # holds no copy, so there is nothing left to remove.
             continue
         findings.append(
             f"{png} adds a PNG twin of the SVG figure {svg} in the same "

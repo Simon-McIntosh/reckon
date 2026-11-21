@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: after_suite.log at 8729adbf records 58 passed, EXIT=0 and no FAILED line, baseline_suite.log at 42fe90d0 records 2 failed 56 passed, EXIT=1 with FAILED ids test_every_staged_write_reaches_the_owner and test_claim_move_aside_is_not_a_staged_write, so the set difference is empty (0).",
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:27:06Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_obligations.py",
+      "line": "79",
+      "severity": "non-blocking",
+      "text": "non-blocking: _READ_WRITTEN_CACHES spells three config-home cache directory names as literals while two of them are owned elsewhere \u2014 'metadata-index' by PERSISTED_MEMO_KINDS at reckon/crew/gc.py:331 and 'open-run-index' by reckon/crew/open_run_index.py:191 \u2014 so a rename of either directory stops the exemption matching and reddens this test for a longer reason than the write it means to flag; the same predicate at tests/test_crew_obligations.py:97 exempts any path part with one of those names, so a future evidence directory given one of them would be skipped by the untouched-files assertion while the fragment at line 63 claims nothing was weakened."
+    },
+    {
+      "file": "tests/test_crew_obligations.py",
+      "line": "278",
+      "severity": "non-blocking",
+      "text": "non-blocking: the five summary keys added to the expected dict start at 'delivered': 0, 'promotion_queued': 0, 'landed_pointers': 0 and two None fields, values a summary that never populated delivery accounting also produces over a fixture with no delivery rows, so they pin key presence rather than the delivery rule."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-obligations.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states both readings are jobs on all_debug with SLURM_JOB_ID unset, but neither head-gate.log nor base-gate.log records the partition or the unset variable in its header \u2014 the claim rests on submit.sh:10's -p all_debug and gate-job.sh:3's unset \u2014 so the done_when's execution context is prose rather than a recorded marker."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none \u2014 the landed change is a test file and an evidence fragment; no production module is added or altered, so no runtime path reaches it.",
+    "diff": "read all three commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478: two paths, 99 insertions and 13 deletions; d1c5907 repairs four stale fixtures and expectations in tests/test_crew_obligations.py, a4f994 and 8729adbf add and then adjust the evidence fragment, and no product module is touched.",
+    "done_when": "the done_when names tests/test_crew_obligations.py passing in full at head as an all_debug job with SLURM_JOB_ID unset; head-gate.log records revision 8729adbf, the command, module and cwd, \"9 passed in 1.92s\" and EXIT=0, and base-gate.log the same command at 42fe90d0 recording \"2 failed, 7 passed\" and EXIT=1, so the pass is measured; the partition and the unset variable are named by submit.sh:10 and gate-job.sh:3 rather than recorded in the log.",
+    "goal": "the node goal is \"Make tests/test_crew_obligations.py pass in full on the primary branch\"; at head 8729adbf the file runs 9 passed with EXIT=0 in head-gate.log, and the repairs are fixture and expectation corrections at tests/test_crew_obligations.py:190-259 with no product change.",
+    "manifest": "read; it reports status complete, commits 8729adbfab83, a4f994099e, d1c5907 and the two changed paths, and its stated readings \u2014 9 passed at head, 2 failed 7 passed at base, 2 failed 56 passed on the baseline arm and 58 passed on the after arm \u2014 match the four logs it names, which I opened.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and its qwnw-red-file-crew-obligations.html) and a figures directory the diff never touches; the diff's two paths, tests/test_crew_obligations.py and the fragment, are both inside them."
+  },
+  "justifications": {
+    "durability": "the base arm reddens on both repaired fixtures \u2014 base-gate.log shows test_every_session_duty_has_identity_age_and_its_exact_next_command and test_obligations_reads_scoring_without_observing_or_dispatching failing at 42fe90d0 and passing at head \u2014 though the five summary keys added at tests/test_crew_obligations.py:278-282 assert zeros that a code path never populating delivery accounting also satisfies.",
+    "evidence": "head-gate.log:1-8 names revision 8729adbf and records \"9 passed in 1.92s\" and EXIT=0, but records neither the all_debug partition nor SLURM_JOB_ID unset, which done_when requires and only submit.sh:10 and gate-job.sh:3 assert.",
+    "fit": "the module-level frozenset and its docstring at tests/test_crew_obligations.py:75-97 follow the file's own helper idiom, and ruff check and ruff format --check both pass on the head version of the file.",
+    "goal_fidelity": "tests/test_crew_obligations.py runs 9 passed at 8729adbf in head-gate.log, meeting the goal at the node head; that it also passes once merged belongs to the separately dispatched test node.",
+    "reuse": "the only definition added is the frozenset at tests/test_crew_obligations.py:79, no owner exists for \"config-home directories a read writes on purpose\" \u2014 reckon/crew/gc.py:331 owns PERSISTED_MEMO_KINDS for the sweep's kinds only and knows nothing of open-run-index (reckon/crew/open_run_index.py:191) or git-object-answers (reckon/crew/recovery_watch.py:147) \u2014 and the mtime helper's shape repeats tests/test_sprint_liveness.py:236, the per-file norm here.",
+    "scope_discipline": "the diff touches only tests/test_crew_obligations.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-obligations.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_crew_obligations.py pass in full on the primary branch\"; at head 8729adbf the file runs 9 passed with EXIT=0 in head-gate.log, and the repairs are fixture and expectation corrections at tests/test_crew_obligations.py:190-259 with no product change.\nVERDICT done_when: the done_when names tests/test_crew_obligations.py passing in full at head as an all_debug job with SLURM_JOB_ID unset; head-gate.log records revision 8729adbf, the command, module and cwd, \"9 passed in 1.92s\" and EXIT=0, and base-gate.log the same command at 42fe90d0 recording \"2 failed, 7 passed\" and EXIT=1, so the pass is measured; the partition and the unset variable are named by submit.sh:10 and gate-job.sh:3 rather than recorded in the log.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and its qwnw-red-file-crew-obligations.html) and a figures directory the diff never touches; the diff's two paths, tests/test_crew_obligations.py and the fragment, are both inside them.\nVERDICT manifest: read; it reports status complete, commits 8729adbfab83, a4f994099e, d1c5907 and the two changed paths, and its stated readings \u2014 9 passed at head, 2 failed 7 passed at base, 2 failed 56 passed on the baseline arm and 58 passed on the after arm \u2014 match the four logs it names, which I opened.\nVERDICT diff: read all three commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478: two paths, 99 insertions and 13 deletions; d1c5907 repairs four stale fixtures and expectations in tests/test_crew_obligations.py, a4f994 and 8729adbf add and then adjust the evidence fragment, and no product module is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_obligations.py runs 9 passed at 8729adbf in head-gate.log, meeting the goal at the node head; that it also passes once merged belongs to the separately dispatched test node.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-gate.log:1-8 names revision 8729adbf and records \"9 passed in 1.92s\" and EXIT=0, but records neither the all_debug partition nor SLURM_JOB_ID unset, which done_when requires and only submit.sh:10 and gate-job.sh:3 assert.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_crew_obligations.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-obligations.html, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm reddens on both repaired fixtures \u2014 base-gate.log shows test_every_session_duty_has_identity_age_and_its_exact_next_command and test_obligations_reads_scoring_without_observing_or_dispatching failing at 42fe90d0 and passing at head \u2014 though the five summary keys added at tests/test_crew_obligations.py:278-282 assert zeros that a code path never populating delivery accounting also satisfies.\nSCORE fit: 18\nJUSTIFICATION fit: the module-level frozenset and its docstring at tests/test_crew_obligations.py:75-97 follow the file's own helper idiom, and ruff check and ruff format --check both pass on the head version of the file.\nSCORE reuse: 18\nJUSTIFICATION reuse: the only definition added is the frozenset at tests/test_crew_obligations.py:79, no owner exists for \"config-home directories a read writes on purpose\" \u2014 reckon/crew/gc.py:331 owns PERSISTED_MEMO_KINDS for the sweep's kinds only and knows nothing of open-run-index (reckon/crew/open_run_index.py:191) or git-object-answers (reckon/crew/recovery_watch.py:147) \u2014 and the mtime helper's shape repeats tests/test_sprint_liveness.py:236, the per-file norm here.\nFINDING tests/test_crew_obligations.py:79 non-blocking: _READ_WRITTEN_CACHES spells three config-home cache directory names as literals while two of them are owned elsewhere \u2014 'metadata-index' by PERSISTED_MEMO_KINDS at reckon/crew/gc.py:331 and 'open-run-index' by reckon/crew/open_run_index.py:191 \u2014 so a rename of either directory stops the exemption matching and reddens this test for a longer reason than the write it means to flag; the same predicate at tests/test_crew_obligations.py:97 exempts any path part with one of those names, so a future evidence directory given one of them would be skipped by the untouched-files assertion while the fragment at line 63 claims nothing was weakened.\nFINDING tests/test_crew_obligations.py:278 non-blocking: the five summary keys added to the expected dict start at 'delivered': 0, 'promotion_queued': 0, 'landed_pointers': 0 and two None fields, values a summary that never populated delivery accounting also produces over a fixture with no delivery rows, so they pin key presence rather than the delivery rule.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-obligations.html:5 non-blocking: the fragment states both readings are jobs on all_debug with SLURM_JOB_ID unset, but neither head-gate.log nor base-gate.log records the partition or the unset variable in its header \u2014 the claim rests on submit.sh:10's -p all_debug and gate-job.sh:3's unset \u2014 so the done_when's execution context is prose rather than a recorded marker.\n",
+  "review_node": "review-of-qwnw-red-file-crew-obligations-8729adbfab83",
+  "review_run_id": "r-20261119T044237183372-review-of-qwnw-red-file-crew-obligations-8729adbfab83",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "8729adbfab83c007c50a58510b4b300eb26b8426",
+  "reviewed_run_id": "r-20261118T062457158578-qwnw-red-file-crew-obligations",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T044237183372-review-of-qwnw-red-file-crew-obligations-8729adbfab83"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:06:14.007218+00:00",
+  "total": 109
+}

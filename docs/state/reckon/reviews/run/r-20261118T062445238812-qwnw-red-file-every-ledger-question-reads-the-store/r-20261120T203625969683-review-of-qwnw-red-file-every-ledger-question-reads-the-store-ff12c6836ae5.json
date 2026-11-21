@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/ledger.py:2634 read_records with a plan filter; reckon/mcp_views.py:1934 _section_attempt_count_uncached; reckon/roadmap.py:1937 read_records with plan and run_ids"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:25:03Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted base block carries \"# SLURM_JOB_ID unset in the measured environment\", which the log it cites does not contain \u2014 logs/base-every-ledger-question.log:1-5 carries revision, tree, command, module and cwd \u2014 so the base arm's environment is asserted by the fragment rather than shown by the log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "non-blocking: it claims a recorded-column narrowing \"fails two of its eight cases\" while the guard it describes holds nine OWNER_CASES rows and five parametrizations at tests/test_a_plan_read_asks_the_row_owner.py:96-106,160, and the mutation it names would miss four parametrizations, so a reader checking the claim against the test finds it false."
+    },
+    {
+      "file": "manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm is recorded as prose with log paths rather than the inline JSON carrying full 40-character revisions that the done_when asks for, so the arm's figures cannot be read without opening both logs."
+    },
+    {
+      "file": "tests/test_a_plan_read_asks_the_row_owner.py",
+      "line": "154",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module-level helper named tmp_path_name builds the crew home instead of naming a path, so a reader looking for path handling in this test finds a fixture builder."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": "963",
+      "severity": "non-blocking",
+      "text": "non-blocking: _plan_owner_sql is a second statement of the precedence reckon/ledger.py:1801 row_plan owns, coupled to it only by tests/test_a_plan_read_asks_the_row_owner.py:160, so a future edit to either side depends on that one test to notice the drift."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit over 42fe90d0b0a46060bafde2490dda7d4002cda478..ff12c6836ae52c35c0ebbf409677aa2e4c2369cc: ffaf0cdda1 and 0393852b3e added then edited reckon/ledger.py and reckon/run_store.py, three evidence commits (7f8d5388fe, ee0783d4c0, bc1beffc1f) built the fragment, 12e0bf633b landed the final shape by reverting both ledger.py edits to base and adding the owner narrowing plus the 172-line parity test, and ff12c6836a rewrote the fragment, for a net 3 paths and +304/-7.",
+    "done_when": "the measure asks for a base-first run of the red file, a full head run with SLURM_JOB_ID unset, a per-cause product-or-test verdict, an importer arm that adds no failure recorded as inline JSON, a fragment-hosted negative control and a clean ruff receipt; logs/base-every-ledger-question.log closes 2 failed, 26 passed EXIT=1, logs/head-every-ledger-question.log:5-8 carry the unset job id and close 28 passed EXIT=0, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html:14 states the product-not-test verdict, logs/ruff-changed-paths.log reads \"All checks passed!\" and \"3 files already formatted\" at 12e0bf633b, and I rebuilt the arm comparison from the two logs (68 base ids, 64 head ids, zero head-only ids), but the arms live as prose at manifest.md:19 rather than as the inline JSON the measure names.",
+    "goal": "the reviewed node's goal is that tests/test_every_ledger_question_reads_the_store.py passes in full at head; logs/head-every-ledger-question.log records 28 passed / EXIT=0 at 12e0bf633b, whose code tree the reviewed head ff12c6836a differs from only in the evidence fragment, and reckon/run_store.py:446 _plan_owned_identities with the plan clause at reckon/run_store.py:606 is the product fix that turns logs/base-every-ledger-question.log's two failures green.",
+    "manifest": "read in full; it names seven full commit ids, both gate logs with their revisions and exit lines, the product-not-test landing at manifest.md:17, and the importer arm pair at manifest.md:19 with revisions 42fe90d0b0 and 12e0bf633b, but its baseline_suite and after_suite JSON (manifest.md:28-29) run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py \u2014 a command unrelated to this change \u2014 so the inline-JSON arm record the done_when asks for is absent.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; git diff --stat 42fe90d0b0..ff12c6836a changes exactly reckon/run_store.py, tests/test_a_plan_read_asks_the_row_owner.py and that fragment, and reckon/ledger.py holds no net change at the head because 12e0bf633b reverted the two intermediate edits, so every delivered path sits inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_read_asks_the_row_owner.py:69 reddens when reckon/run_store.py:606 reverts to r.plan = ?, because the fixture blanks the column at tests/test_a_plan_read_asks_the_row_owner.py:65, and :160-172 ties the SQL narrowing to row_plan over nine field combinations so a precedence swap in reckon/run_store.py:963 drops a row the table names.",
+    "evidence": "manifest.md:28-29 record the promotion suite as a two-test command unrelated to the change instead of the done_when's inline-JSON arm pair, whose substance is otherwise reproducible from logs/arm-base-importers.log and logs/arm-head-importers.log.",
+    "fit": "the additions follow reckon/run_store.py:446's module-function idiom with keyword-only filters and a lazy ledger import, but PLAN_OWNER_FIELDS sits at reckon/run_store.py:960 beside its reader instead of the field declarations at reckon/run_store.py:35, and tests/test_a_plan_read_asks_the_row_owner.py:154 names a crew-home builder tmp_path_name.",
+    "goal_fidelity": "reckon/run_store.py:446 _plan_owned_identities asks ledger.row_plan about every candidate, and the two base failures at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html:19-20 pass at head per logs/head-every-ledger-question.log:7.",
+    "reuse": "reckon/run_store.py:963 _plan_owner_sql restates in SQL the plan precedence owned by reckon/ledger.py:1801 row_plan, so the rule is written twice, but it only narrows \u2014 reckon/run_store.py:479 still lets row_plan decide the answer \u2014 and tests/test_a_plan_read_asks_the_row_owner.py:160 now keeps the two statements in step.",
+    "scope_discipline": "every path in 42fe90d0b0a46060bafde2490dda7d4002cda478..ff12c6836ae52c35c0ebbf409677aa2e4c2369cc lies inside the declared write paths, and reckon/run_store.py:446 is the only module the change reaches into the product."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that tests/test_every_ledger_question_reads_the_store.py passes in full at head; logs/head-every-ledger-question.log records 28 passed / EXIT=0 at 12e0bf633b, whose code tree the reviewed head ff12c6836a differs from only in the evidence fragment, and reckon/run_store.py:446 _plan_owned_identities with the plan clause at reckon/run_store.py:606 is the product fix that turns logs/base-every-ledger-question.log's two failures green.\nVERDICT done_when: the measure asks for a base-first run of the red file, a full head run with SLURM_JOB_ID unset, a per-cause product-or-test verdict, an importer arm that adds no failure recorded as inline JSON, a fragment-hosted negative control and a clean ruff receipt; logs/base-every-ledger-question.log closes 2 failed, 26 passed EXIT=1, logs/head-every-ledger-question.log:5-8 carry the unset job id and close 28 passed EXIT=0, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html:14 states the product-not-test verdict, logs/ruff-changed-paths.log reads \"All checks passed!\" and \"3 files already formatted\" at 12e0bf633b, and I rebuilt the arm comparison from the two logs (68 base ids, 64 head ids, zero head-only ids), but the arms live as prose at manifest.md:19 rather than as the inline JSON the measure names.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; git diff --stat 42fe90d0b0..ff12c6836a changes exactly reckon/run_store.py, tests/test_a_plan_read_asks_the_row_owner.py and that fragment, and reckon/ledger.py holds no net change at the head because 12e0bf633b reverted the two intermediate edits, so every delivered path sits inside the grant.\nVERDICT manifest: read in full; it names seven full commit ids, both gate logs with their revisions and exit lines, the product-not-test landing at manifest.md:17, and the importer arm pair at manifest.md:19 with revisions 42fe90d0b0 and 12e0bf633b, but its baseline_suite and after_suite JSON (manifest.md:28-29) run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py \u2014 a command unrelated to this change \u2014 so the inline-JSON arm record the done_when asks for is absent.\nVERDICT diff: read commit by commit over 42fe90d0b0a46060bafde2490dda7d4002cda478..ff12c6836ae52c35c0ebbf409677aa2e4c2369cc: ffaf0cdda1 and 0393852b3e added then edited reckon/ledger.py and reckon/run_store.py, three evidence commits (7f8d5388fe, ee0783d4c0, bc1beffc1f) built the fragment, 12e0bf633b landed the final shape by reverting both ledger.py edits to base and adding the owner narrowing plus the 172-line parity test, and ff12c6836a rewrote the fragment, for a net 3 paths and +304/-7.\nCALL_SITES: reckon/ledger.py:2634 read_records with a plan filter; reckon/mcp_views.py:1934 _section_attempt_count_uncached; reckon/roadmap.py:1937 read_records with plan and run_ids\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:446 _plan_owned_identities asks ledger.row_plan about every candidate, and the two base failures at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html:19-20 pass at head per logs/head-every-ledger-question.log:7.\nSCORE evidence: 14\nJUSTIFICATION evidence: manifest.md:28-29 record the promotion suite as a two-test command unrelated to the change instead of the done_when's inline-JSON arm pair, whose substance is otherwise reproducible from logs/arm-base-importers.log and logs/arm-head-importers.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 42fe90d0b0a46060bafde2490dda7d4002cda478..ff12c6836ae52c35c0ebbf409677aa2e4c2369cc lies inside the declared write paths, and reckon/run_store.py:446 is the only module the change reaches into the product.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_plan_read_asks_the_row_owner.py:69 reddens when reckon/run_store.py:606 reverts to r.plan = ?, because the fixture blanks the column at tests/test_a_plan_read_asks_the_row_owner.py:65, and :160-172 ties the SQL narrowing to row_plan over nine field combinations so a precedence swap in reckon/run_store.py:963 drops a row the table names.\nSCORE fit: 16\nJUSTIFICATION fit: the additions follow reckon/run_store.py:446's module-function idiom with keyword-only filters and a lazy ledger import, but PLAN_OWNER_FIELDS sits at reckon/run_store.py:960 beside its reader instead of the field declarations at reckon/run_store.py:35, and tests/test_a_plan_read_asks_the_row_owner.py:154 names a crew-home builder tmp_path_name.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/run_store.py:963 _plan_owner_sql restates in SQL the plan precedence owned by reckon/ledger.py:1801 row_plan, so the rule is written twice, but it only narrows \u2014 reckon/run_store.py:479 still lets row_plan decide the answer \u2014 and tests/test_a_plan_read_asks_the_row_owner.py:160 now keeps the two statements in step.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html:18 non-blocking: the quoted base block carries \"# SLURM_JOB_ID unset in the measured environment\", which the log it cites does not contain \u2014 logs/base-every-ledger-question.log:1-5 carries revision, tree, command, module and cwd \u2014 so the base arm's environment is asserted by the fragment rather than shown by the log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-ledger-question-reads-the-store.html:40 non-blocking: it claims a recorded-column narrowing \"fails two of its eight cases\" while the guard it describes holds nine OWNER_CASES rows and five parametrizations at tests/test_a_plan_read_asks_the_row_owner.py:96-106,160, and the mutation it names would miss four parametrizations, so a reader checking the claim against the test finds it false.\nFINDING manifest.md:19 non-blocking: the importer arm is recorded as prose with log paths rather than the inline JSON carrying full 40-character revisions that the done_when asks for, so the arm's figures cannot be read without opening both logs.\nFINDING tests/test_a_plan_read_asks_the_row_owner.py:154 non-blocking: the module-level helper named tmp_path_name builds the crew home instead of naming a path, so a reader looking for path handling in this test finds a fixture builder.\nFINDING reckon/run_store.py:963 non-blocking: _plan_owner_sql is a second statement of the precedence reckon/ledger.py:1801 row_plan owns, coupled to it only by tests/test_a_plan_read_asks_the_row_owner.py:160, so a future edit to either side depends on that one test to notice the drift.",
+  "review_run_id": "r-20261120T203625969683-review-of-qwnw-red-file-every-ledger-question-reads-the-store-ff12c6836ae5",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "ff12c6836ae52c35c0ebbf409677aa2e4c2369cc",
+  "reviewed_run_id": "r-20261118T062445238812-qwnw-red-file-every-ledger-question-reads-the-store",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T21:46:36.929219+00:00",
+  "total": 96
+}

@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_count": 0,
+  "after_failure_ids": [],
+  "baseline_failure_count": 0,
+  "baseline_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1364",
+    "reckon/crew/promotion.py:3849",
+    "reckon/crew_run_commands.py:4431",
+    "reckon/crew/promotion_records.py:1537"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:46:24Z",
+  "findings": [
+    {
+      "file": "tests/test_a_hand_merged_run_is_recorded.py",
+      "line": "169",
+      "severity": "non-blocking",
+      "text": "non-blocking: `payload[\"recorded_merge\"] == merge_sha` and the row echo at :175 compare the CLI's output against the value the test itself passed in, so they hold whatever the guard does and cannot fail on the regression the node fixed; only the exit_code assertion at :166 and the pointer retirement at :176 do."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "460",
+      "severity": "non-blocking",
+      "text": "non-blocking: the acceptance is per citation, but no permanent test cites a foreign commit beside a recorded_merge, so changing the `continue` at :464 to an early return would widen the bypass with no test reddening; the evidence for that boundary is a throwaway probe recorded only in the fragment."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against b24fe95a; bfed9c71 adds the 16-line citation acceptance to promotion_evidence.py, ce4bfc04, 8253ee43 and 9723a72d rewrite only the evidence fragment, and no test file or other product file changes.",
+    "done_when": "the done_when names the file at head with a red base arm, per-cause verdicts, importer arms at full shas and a negative control; the manifest and logs record head 2 passed EXIT=0 at 9723a72d, base 1 failed 1 passed EXIT=1 naming test_a_hand_merged_run_is_recorded_on_the_branch, importer arms 1 failure at both b24fe95a and bfed9c71, and both declared suites 58 passed EXIT=0, but no artefact shows SLURM_JOB_ID unset.",
+    "goal": "the goal is that tests/test_a_hand_merged_run_is_recorded.py passes in full; reckon/crew/promotion_evidence.py:435-463 now skips a citation canonically equal to the pointer's recorded_merge, which is the refusal the file's first case hit, and the file reads 2 passed at 9723a72d.",
+    "manifest": "read; status complete, commits bfed9c71 through 9723a72d, changed_paths the two landed files, tests the single-file pytest command, test_logs naming the head gate, the base control, both importer arms and both declared suites, negative_control_log the base run at EXIT=1.",
+    "write_paths": "the declared paths were reckon, tests and the fragment and figure directories; git diff b24fe95a..9723a72d touches exactly reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-hand-merged-run-is-recorded.html, both inside the fence."
+  },
+  "justifications": {
+    "durability": "restoring the pre-change promotion_evidence.py:460-464 reddens test_a_hand_merged_run_is_recorded_on_the_branch as the base arm shows, but the per-citation claim that :464 continues rather than returning is asserted only by a throwaway probe.",
+    "evidence": "the head gate at 9723a72d reads \"2 passed\" EXIT=0 and negative-control-base-1795072072653323129.log reads \"1 failed, 1 passed\" EXIT=1, but that log's command is `env PYTHONPATH=. sh -c ...` and no receipt in the run directory shows SLURM_JOB_ID unset as the done_when requires.",
+    "fit": "the comment at promotion_evidence.py:428-434 states the mechanism in the register of the function's own docstring at promotion_evidence.py:390-422 and names no plan, ticket or attribution.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:460 accepts the recorded merge as a citation and tests/test_a_hand_merged_run_is_recorded.py reads 2 passed at 9723a72d in the node's head gate log.",
+    "reuse": "the change extends the existing owner of citation judgement at promotion_evidence.py:390 and reuses _commit_canonical_id, while the recorded_merge not-run rule already lives at promotion_records.py:1537 and is not restated.",
+    "scope_discipline": "git diff --stat b24fe95a..9723a72d lists only reckon/crew/promotion_evidence.py and the evidence fragment, so nothing lands outside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_a_hand_merged_run_is_recorded.py passes in full; reckon/crew/promotion_evidence.py:435-463 now skips a citation canonically equal to the pointer's recorded_merge, which is the refusal the file's first case hit, and the file reads 2 passed at 9723a72d.\nVERDICT done_when: the done_when names the file at head with a red base arm, per-cause verdicts, importer arms at full shas and a negative control; the manifest and logs record head 2 passed EXIT=0 at 9723a72d, base 1 failed 1 passed EXIT=1 naming test_a_hand_merged_run_is_recorded_on_the_branch, importer arms 1 failure at both b24fe95a and bfed9c71, and both declared suites 58 passed EXIT=0, but no artefact shows SLURM_JOB_ID unset.\nVERDICT write_paths: the declared paths were reckon, tests and the fragment and figure directories; git diff b24fe95a..9723a72d touches exactly reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-hand-merged-run-is-recorded.html, both inside the fence.\nVERDICT manifest: read; status complete, commits bfed9c71 through 9723a72d, changed_paths the two landed files, tests the single-file pytest command, test_logs naming the head gate, the base control, both importer arms and both declared suites, negative_control_log the base run at EXIT=1.\nVERDICT diff: read commit by commit against b24fe95a; bfed9c71 adds the 16-line citation acceptance to promotion_evidence.py, ce4bfc04, 8253ee43 and 9723a72d rewrite only the evidence fragment, and no test file or other product file changes.\nCALL_SITES: reckon/crew/promotion.py:1364, reckon/crew/promotion.py:3849, reckon/crew_run_commands.py:4431, reckon/crew/promotion_records.py:1537\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:460 accepts the recorded merge as a citation and tests/test_a_hand_merged_run_is_recorded.py reads 2 passed at 9723a72d in the node's head gate log.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head gate at 9723a72d reads \"2 passed\" EXIT=0 and negative-control-base-1795072072653323129.log reads \"1 failed, 1 passed\" EXIT=1, but that log's command is `env PYTHONPATH=. sh -c ...` and no receipt in the run directory shows SLURM_JOB_ID unset as the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b24fe95a..9723a72d lists only reckon/crew/promotion_evidence.py and the evidence fragment, so nothing lands outside the declared paths.\nSCORE durability: 16\nJUSTIFICATION durability: restoring the pre-change promotion_evidence.py:460-464 reddens test_a_hand_merged_run_is_recorded_on_the_branch as the base arm shows, but the per-citation claim that :464 continues rather than returning is asserted only by a throwaway probe.\nSCORE fit: 19\nJUSTIFICATION fit: the comment at promotion_evidence.py:428-434 states the mechanism in the register of the function's own docstring at promotion_evidence.py:390-422 and names no plan, ticket or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner of citation judgement at promotion_evidence.py:390 and reuses _commit_canonical_id, while the recorded_merge not-run rule already lives at promotion_records.py:1537 and is not restated.\nFINDING tests/test_a_hand_merged_run_is_recorded.py:169 non-blocking: `payload[\"recorded_merge\"] == merge_sha` and the row echo at :175 compare the CLI's output against the value the test itself passed in, so they hold whatever the guard does and cannot fail on the regression the node fixed; only the exit_code assertion at :166 and the pointer retirement at :176 do.\nFINDING reckon/crew/promotion_evidence.py:460 non-blocking: the acceptance is per citation, but no permanent test cites a foreign commit beside a recorded_merge, so changing the `continue` at :464 to an early return would widen the bypass with no test reddening; the evidence for that boundary is a throwaway probe recorded only in the fragment.",
+  "review_run_id": "r-20261119T073156984247-review-of-qwnw-red-file-a-hand-merged-run-is-recorded-9723a72d4c78",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "9723a72d4c78810627ef1ba687c8888dfa1b9bfb",
+  "reviewed_logs": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded/after_suite-1795072650657700628.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded/baseline_suite-1795071890111616949.log"
+  },
+  "reviewed_run_id": "r-20261118T063830914525-qwnw-red-file-a-hand-merged-run-is-recorded",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T073156984247-review-of-qwnw-red-file-a-hand-merged-run-is-recorded-9723a72d4c78"
+  },
+  "reviewer_run_id": "r-20261119T073156984247-review-of-qwnw-red-file-a-hand-merged-run-is-recorded-9723a72d4c78",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:02:46.361407+00:00",
+  "total": 110
+}

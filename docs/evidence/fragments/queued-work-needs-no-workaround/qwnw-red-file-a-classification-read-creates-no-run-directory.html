@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-a-classification-read-creates-no-run-directory-landing">
+  <h2>A classification read creates no run directory</h2>
+
+  <p><strong>What changed.</strong> Classifying a pointer that names a foreign
+  launching host read the node's job answer and then wrote that answer into the
+  run's own directory as <code>launcher-host-observation.json</code>. The shared
+  writer creates a missing parent directory, so a pointer whose run had never had
+  a home gained one; where the directory existed but held nothing, the
+  observation filled it, which then defeated the memo writer. The memo's own
+  guard refuses an absent or empty directory, but it checks the directory it is
+  about to write into, so an observation written first made the directory a home
+  and the memo followed it.</p>
+
+  <p>Two causes, both product wrong. First, the observation wrote without asking
+  whether the directory was the run's home. Second,
+  <code>runs._write_json</code> had no way to refuse to materialise its parent,
+  so the same write created the home it was meant to describe.</p>
+
+  <p>Three changes. <code>_run_home_holds_records</code> in
+  <code>reckon/crew/recovery_liveness.py</code> is now the one statement of the
+  rule — an absent directory and an empty one are both outside a run's home —
+  and both writers that a classification may reach call it. The launcher
+  observation is written only when the home already holds something, and its
+  writer now passes <code>create_parents=False</code>, so a directory a discard
+  removed between the check and the write stays removed.
+  <code>recovery_memo._write_classification_memo</code> lost its private copy of
+  the guard and calls the shared predicate.</p>
+
+  <p>The run's own home is the store a discard leaves its marker in, so a read
+  that created one made a pointer that merely vanished read as a deliberate
+  discard, and resurrected a run whose home had been removed.</p>
+
+  <h3 id="qwnw-red-file-a-classification-read-creates-no-run-directory-arms">Measured</h3>
+
+  <p>The node's three cases pass in full at head, as a job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset: two cases that
+  require the read to leave no directory and to leave an empty home empty, and
+  the positive control that a home already holding the run's records still
+  receives the memo. At the base revision the same file reads two failed and one
+  passed.</p>
+
+  <table id="qwnw-red-file-a-classification-read-creates-no-run-directory-table">
+    <caption>Each arm is a log whose header names the revision, tree, module and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td><td><code>42fe90d0b0</code></td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code>:
+        <code>test_a_classification_read_creates_no_run_directory</code> and
+        <code>test_a_classification_read_leaves_no_memo_in_an_empty_home</code></td></tr>
+      <tr><td>the node's file, head</td><td>the delivered head</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The guard fires.</strong> The negative control is the base arm
+  above: at <code>42fe90d0b0</code> the read leaves
+  <code>crew/runs/&lt;run&gt;/launcher-host-observation.json</code> and
+  <code>classification.json</code> behind, and the second case reports
+  <code>assert [launcher-host-observation.json, classification.json] == []</code>.
+  With the repair, the head arm leaves the path absent and the empty directory
+  empty.</p>
+
+  <p><strong>One fixture repaired.</strong>
+  <code>tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py</code>
+  built the run's directory empty and then read the run. A reading may not be the
+  write that brings a run's home into being, so the fixture now writes the stream
+  the launch would have opened there before reading. No assertion changed; the
+  file reads 16 passed at head.</p>
+</section>

@@ -1,0 +1,98 @@
+<section id="qwnw-red-file-a-clean-landing-releases-its-worktree-record">
+  <h2>One red test file on the primary branch: a clean landing releases its worktree</h2>
+
+  <p><strong>What changed.</strong> One assertion in
+  <code>tests/test_a_clean_landing_releases_its_worktree.py</code> failed at the
+  assigned base revision <code>bc7b7bec5c55</code>: a landing whose worktree was
+  already removed refused with <code>cites &lt;sha&gt;, which is not a commit
+  this run made beyond its base</code>. One product rule is the cause, and the
+  product was wrong. The repair is 21 added and 7 deleted lines in
+  <code>reckon/crew/promotion_evidence.py</code>; no test was edited.</p>
+
+  <h3 id="qwnw-red-file-a-clean-landing-releases-its-worktree-cause">Cause and verdict</h3>
+
+  <p><strong>Verdict: product wrong.</strong>
+  <code>_require_commits_beyond_base</code> asks whether a cited commit is
+  reachable from <code>HEAD</code> as read in the record's tree. A landing
+  removes the run's worktree, and <code>_record_tree</code> then reads the
+  record through the repository that shares its object store — whose
+  <code>HEAD</code> follows the integration branch, not the run's line. The
+  run's own reviewed commit therefore reads as an unmerged branch, so the
+  landing that had just removed its tree could not promote, and the release's
+  <code>worktree_absent</code> branch — which answers the same state as
+  released — was never reached.</p>
+
+  <p>The guard's own docstring already says a record that names no readable
+  directory is not measured against whatever repository the promotion happens to
+  run in; the head read did exactly that. The reachability arm arrived in
+  <code>0a27d4b750</code> (<em>attribute merged runs to their own history</em>,
+  2026-11-15), and that commit is the one that broke the file: the same file
+  reports <code>3 passed</code> at <code>956c261790</code>, the commit that
+  landed it, and fails at <code>0a27d4b750</code>. The repair reads the head
+  only from a worktree the record names and that still exists; with no worktree
+  to read, a citation is the run's work when it descends from the base the run
+  was dispatched against, which is the rule this guard applied before that
+  commit.</p>
+
+  <p><strong>Reproduction, quoted from the base, before any edit, at
+  <code>bc7b7bec5c55</code>:</strong></p>
+
+  <pre id="qwnw-red-file-a-clean-landing-releases-its-worktree-repro">
+FAILED tests/test_a_clean_landing_releases_its_worktree.py::test_a_landing_whose_worktree_is_already_gone_reports_it_released
+E  AssertionError: {"detail": "run 'r-20261114T212249058819-a-clean-landing-releases-its-worktree' cites 46105a8cdaeab8811b911140d442b7a85f68ee99, which is not a commit this run made beyond its base 21b540de616ee129818ce04b5bf17a8830c26874: the run's work is what it committed on its own history, so this citation belongs to an unmerged branch or predates the run. Cite the run's own commit, or pass --no-commit '&lt;why&gt;' when it produced none", "ok": false, ...}
+E  assert 1 == 0
+1 failed, 2 passed in 3.87s
+</pre>
+
+  <h3 id="qwnw-red-file-a-clean-landing-releases-its-worktree-arms">Arms</h3>
+
+  <p>The node's own file ran as the worker gate on the <code>all_debug</code>
+  partition at head, in a scratch tree the harness created from the committed
+  revision, so <code>SLURM_JOB_ID</code> was unset for the run's own command.
+  Each arm below is a log whose first lines name the revision, the tree and the
+  command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-a-clean-landing-releases-its-worktree-arm-table">
+    <caption>The negative control is the base arm; it is the same command the
+    head arm runs.</caption>
+    <thead><tr><th>arm</th>revision</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>negative control: <code>tests/test_a_clean_landing_releases_its_worktree.py</code></td>
+        <td><code>bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68</code></td>
+        <td>extraction</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>the measure: the same file, worker gate on <code>all_debug</code></td>
+        <td><code>126b691bb9943e139fb2d56858620ac36759780e</code></td>
+        <td>harness scratch tree</td>
+        <td>3 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>importers of the changed module, base arm</td>
+        <td><code>bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68</code></td>
+        <td>extraction</td>
+        <td>2 failed, 52 passed, <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>importers of the changed module, head arm</td>
+        <td><code>126b691bb9943e139fb2d56858620ac36759780e</code></td>
+        <td>working tree</td>
+        <td>1 failed, 53 passed, <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>importers, delta</td>
+        <td>head against base</td>
+        <td>—</td>1 failure fixed, 0 added</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The failing test in both importer arms is the same one,
+  <code>test_promotion_checks_read_only_what_moved.py::test_a_full_promotion_reads_no_unbounded_working_tree</code>,
+  so it is red on the primary branch independently of this node and is not
+  charged here; the full commit diff stops at the citation guard, which issues
+  no git call this test records. It is reported to the coordinator as outside
+  this node's scope rather than repaired.</p>
+</section>

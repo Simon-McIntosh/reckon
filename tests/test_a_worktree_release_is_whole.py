@@ -30,6 +30,7 @@ routing_module = importlib.import_module("reckon.crew.routing")
 gc_module = importlib.import_module("reckon.crew.gc")
 promotion_release_module = importlib.import_module("reckon.crew.promotion_release")
 velocity_module = importlib.import_module("reckon.velocity")
+landing_measure_module = importlib.import_module("reckon.crew.landing_measure")
 
 PROJECT = "worktree-release-fixture"
 SESSION = "worktree-release-session"
@@ -47,6 +48,7 @@ EXPECTED_HELPER_CALLERS = {
     },
     "reckon/crew/gc.py": {"garbage_collect"},
     "reckon/crew/promotion_release.py": {"_release_run_workspace"},
+    "reckon/crew/landing_measure.py": {"base_checkout"},
 }
 
 
@@ -425,6 +427,35 @@ def test_gc_reports_a_withheld_release_and_leaves_it_out_of_removed(
     assert str(tree) not in report["removed_worktrees"]
     assert tree.is_dir(), "a withheld release left the tree removed anyway"
     assert str(tree) in _registered(repository)
+
+
+def test_a_base_checkout_releases_its_tree_through_the_same_move(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The measurement's own scratch tree is released whole, not deleted by git.
+
+    Its tree sits on node-local storage, so the move lands in the scratch
+    directory the tree was built in rather than in a trash root beside the
+    checkout; the copy offered to deletion is therefore already deregistered and
+    already out of its registered path.
+    """
+    head = _git(repository, "rev-parse", "HEAD").strip()
+    offered: list[Path] = []
+    delete_copy = routing_module._delete_worktree_copy
+
+    def record(trash: Path) -> None:
+        offered.append(trash)
+        delete_copy(trash)
+
+    monkeypatch.setattr(routing_module, "_delete_worktree_copy", record)
+    with landing_measure_module.base_checkout(repository, head) as tree:
+        scratch = tree.parent
+        assert tree.is_dir(), "the instrument must see a tree before an absence"
+        assert str(tree.resolve()) in _registered(repository)
+    assert len(offered) == 1, offered
+    assert offered[0].parent == scratch
+    assert not scratch.exists()
+    assert str(tree.resolve()) not in _registered(repository)
 
 
 def _literal_argv(call: ast.Call) -> list[str]:

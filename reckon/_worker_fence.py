@@ -75,6 +75,85 @@ CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 # and the capability a refusal names are the same string.
 FENCE_BINARY = "bwrap"
 
+# The scheduler tools a task is submitted with. Their shims under
+# ``reckon/host_shims`` are what re-enter a worker's fence at the task
+# boundary, and each is guarded through PATH alone until the fence puts it in
+# front of the tool's own absolute paths; see :func:`scheduler_shields`.
+SCHEDULER_TOOLS = ("sbatch", "srun", "salloc")
+
+# The directory beneath the run directory holding the real scheduler binaries a
+# masked path forwards to. It lives in the run directory because that directory
+# is the one place a launch always has writable and a submitted job on another
+# node can read: the relay a job's own masked paths forward to is the same file,
+# reached by the same shared path.
+SCHEDULER_RELAY_DIRECTORY = ".scheduler-bin"
+
+
+# The flight key naming a fence program carried on shared storage. A job node
+# whose own path holds no fence program runs the carried copy instead, so the
+# key carries what a reader needs to trust it: the location, the checksum the
+# file must have, and the source and version it was built from. Named at the
+# top level beside ``protected_paths`` because it is the fence's own setting,
+# not one of the worker's self-imposed budget limits under ``fences``.
+FENCE_PROGRAM_KEY = "fence_program"
+
+
+def _checksum_text(value: object) -> str:
+    """Return one checksum as the bare lower-case hex the comparison uses.
+
+    A layer may write the value with the algorithm prefix a tool such as
+    ``sha256sum`` prints, so both spellings name the same digest. The prefix is
+    dropped here and the job's bootstrap does the same, which is what lets the
+    recorded value reach a comparison rather than a string test.
+    """
+    return str(value or "").strip().lower().removeprefix("sha256:")
+
+
+def carried_fence_program(
+    config: Mapping[str, Any] | None, home: str | Path | None = None
+) -> dict[str, str] | None:
+    """Return the flight-named fence program a job may run, or None.
+
+    The location is resolved against the same home every other flight path is,
+    and the checksum is required: a carried program whose bytes are not the
+    bytes a layer recorded is exactly what the job's task must refuse, so a
+    setting that omits the checksum is a composition error rather than a fence
+    nobody verified. ``source`` and ``version`` are recorded beside the
+    checksum so the file can be explained, and are carried as written: they
+    are provenance, not inputs to the decision.
+    """
+    if not isinstance(config, Mapping):
+        return None
+    declared = config.get(FENCE_PROGRAM_KEY)
+    if declared is None:
+        return None
+    if not isinstance(declared, Mapping):
+        raise BackendError(
+            f"flight key {FENCE_PROGRAM_KEY} must be a mapping of path, "
+            "checksum, source and version"
+        )
+    path = _resolve_declared_path(declared.get("path"), home)
+    checksum = _checksum_text(declared.get("checksum"))
+    if path is None:
+        raise BackendError(
+            f"flight key {FENCE_PROGRAM_KEY}.path names no location for the "
+            "carried fence program"
+        )
+    if not checksum:
+        raise BackendError(
+            f"flight key {FENCE_PROGRAM_KEY}.checksum records no checksum, so "
+            "the carried fence program cannot be verified before it is run"
+        )
+    return {
+        "path": str(path),
+        "checksum": checksum,
+        **{
+            key: str(declared[key])
+            for key in ("source", "version")
+            if declared.get(key) not in (None, "")
+        },
+    }
+
 
 def fence_program() -> str:
     """The fence program's absolute location on the node composing the fence.
@@ -1827,6 +1906,125 @@ def unmergeable_seals(
     return tuple(seals.values())
 
 
+def scheduler_shields(
+    relay_root: str | Path | None,
+    declared_directories: Iterable[str | Path] = (),
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]], str]:
+    """The mounts that put a scheduler shim in front of every copy of its tool.
+
+    The shims guard a launch only while the tool resolves through ``PATH``: an
+    absolute path reaches the real binary and the shim is never consulted,
+    which is the route a worker took on 19 November. The fence is the one place
+    that can change what an absolute path resolves to, so every copy of the
+    tool the launching node's search path holds is overlaid read-only with that
+    tool's shim, and the first copy — the one the shim itself would forward to
+    — is bound read-only under ``relay_root`` as its forwarding target. A
+    submitted job replays this argv on another node and masks its own copies
+    the same way, so the guard travels with the fence rather than with the
+    submitting process.
+
+    ``declared_directories`` are the ones the flight layer declares for finding
+    a backend's command. The launch appends them to the worker's path after
+    everything it inherits, so a scheduler installed only there is reachable
+    from the worker while this process's own path holds no copy of it; they are
+    masked with the rest rather than left as a route the fence cannot see.
+
+    The shim reads its own home and that target from the two names in
+    :mod:`reckon.nested_launch`: masked, only the file differs, and its
+    directory can no longer be read from ``$0``.
+
+    Returns the ``(source, destination)`` masks, the relays, and the shim
+    directory to name — in that order, and all three empty or zero when the
+    launch keeps no run directory to relay into, no shim directory, or no real
+    copy of any tool. Masking without a relay would refuse the launch's own
+    submissions, so nothing is masked in that case.
+    """
+    from reckon.nested_launch import shim_directory
+    from reckon.shim_lookup import is_shim
+
+    if relay_root is None:
+        return [], [], ""
+    shims = shim_directory().resolve()
+    masks: list[tuple[str, str]] = []
+    relays: list[tuple[str, str]] = []
+    for tool in SCHEDULER_TOOLS:
+        shim = shims / tool
+        if not (shim.is_file() and os.access(shim, os.X_OK)):
+            continue
+        copies: list[str] = []
+        for directory in _scheduler_search_directories(declared_directories):
+            candidate = directory / tool
+            if not (candidate.is_file() and os.access(candidate, os.X_OK)):
+                continue
+            try:
+                resolved = str(candidate.resolve())
+            except OSError:
+                continue
+            if resolved == str(shim) or is_shim(resolved) or resolved in copies:
+                continue
+            copies.append(resolved)
+        if not copies:
+            continue
+        relays.append((copies[0], str(Path(relay_root) / tool)))
+        masks.extend((str(shim), copy) for copy in copies)
+    if not relays:
+        return [], [], ""
+    return masks, relays, str(shims)
+
+
+def _scheduler_search_directories(
+    declared: Iterable[str | Path] = (),
+) -> list[Path]:
+    """The directories a scheduler tool is looked up in, in search order.
+
+    This process's own path comes first, because it is what the composer can
+    resolve the tool on and what the launch inherits; the flight layer's
+    declared directories follow it, in the order the launch appends them to the
+    worker's path. Empty entries are the shell's working directory and name
+    nothing here.
+    """
+    text = os.environ.get("PATH", os.defpath)
+    directories: list[Path] = []
+    for entry in (*str(text).split(os.pathsep), *(str(path) for path in declared)):
+        if not entry:
+            continue
+        directory = Path(entry)
+        if directory not in directories:
+            directories.append(directory)
+    return directories
+
+
+def scheduler_declared_directories(
+    config: Mapping[str, Any] | None, home: str | Path | None = None
+) -> list[Path]:
+    """The directories the flight layer declares for finding a backend command.
+
+    ``launch_search_path`` appends these to the worker's path after everything
+    it inherits, so a scheduler installed only in one of them is reachable from
+    the worker even though the composing process's own path holds no copy. They
+    are read from every backend the flight declares, because which backend a
+    plan runs is not a fact a fence composition holds, and masking a directory
+    no launch uses costs one read-only bind. A layer that declares none
+    contributes nothing.
+    """
+    from reckon._backends import backend_search_directories
+
+    if not isinstance(config, Mapping):
+        return []
+    backends = config.get("backends")
+    if not isinstance(backends, Mapping):
+        return []
+    directories: list[Path] = []
+    for entry in backends.values():
+        if not isinstance(entry, Mapping):
+            continue
+        for raw in backend_search_directories(entry):
+            resolved = _resolve_declared_path(raw, home)
+            if resolved is not None and resolved not in directories:
+                directories.append(resolved)
+    return directories
+
+
 def fence_argv(
     argv: Sequence[str],
     *,
@@ -2108,6 +2306,64 @@ def fence_argv(
         fenced += ["--bind", str(source), str(destination)]
         if Path(source).is_dir():
             directory_sources.append(str(source))
+    # A fence program carried on shared storage runs a job's task where the
+    # node holds none of its own. Its directory is sealed last, after every
+    # grant, so a fenced worker and the job it submits can read and execute the
+    # program but cannot replace it: a grant over a shared parent must never be
+    # the last word on the directory the program lives in.
+    carried_program = carried_fence_program(config, home)
+    if carried_program is not None:
+        carried_directory = Path(carried_program["path"]).parent
+        if carried_directory.exists():
+            target = str(resolved_destination(carried_directory))
+            fenced += ["--ro-bind", target, target]
+    # A scheduler tool is guarded only while it resolves through PATH, so an
+    # absolute path to it runs the real binary with the shim never consulted;
+    # see :func:`scheduler_shields`. Emitted after every grant — a grant over a
+    # directory holding one of those binaries would otherwise be the last word
+    # on it — and before the recipe, because a submitted job replays this argv
+    # on another node and has to mask its own copies as well.
+    relay_root = None
+    if manifest_path is not None:
+        # Resolved, because bubblewrap cannot create a mount point below a
+        # symlink: a run directory reached through one is bound at the path the
+        # kernel composes the mount at, the same rule the protected overlays
+        # follow.
+        candidate = resolved_destination(
+            Path(manifest_path).parent / SCHEDULER_RELAY_DIRECTORY
+        )
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            candidate = None
+        relay_root = candidate
+    scheduler_masks, scheduler_relays, shim_home = scheduler_shields(
+        relay_root, scheduler_declared_directories(config, home)
+    )
+    for source, destination in scheduler_masks:
+        fenced += ["--ro-bind", source, destination]
+    for source, destination in scheduler_relays:
+        # The relay names a binary on *this* node; a job node that holds none
+        # there composes no relay and its shim searches its own path instead. A
+        # mask that could not be made would refuse its own launch, so this one
+        # is allowed to be absent.
+        target = Path(destination)
+        if not target.exists():
+            # The mount point is made here rather than left to bubblewrap,
+            # which would have to create it inside the sandbox; that fails
+            # wherever the run directory is reached through a link or sealed by
+            # a later mount, and a launch that cannot make its relay would lose
+            # its own scheduler with it.
+            try:
+                target.touch()
+            except OSError:
+                continue
+        fenced += ["--ro-bind-try", source, str(target)]
+    if shim_home:
+        from reckon.nested_launch import SHIM_HOME_ENV, SHIM_REAL_DIRECTORY_ENV
+
+        fenced += ["--setenv", SHIM_HOME_ENV, shim_home]
+        fenced += ["--setenv", SHIM_REAL_DIRECTORY_ENV, str(relay_root)]
     # The scheduler starts tasks outside this mount namespace. Carry the
     # composed mounts rather than rediscovering protection from job-local env,
     # including masks, credentials and the worktree's exclusive seals.
@@ -2131,10 +2387,26 @@ def fence_argv(
         # resolve it composes an empty field, and the task then refuses by name
         # before it starts rather than running unfenced.
         "program": fence_program(),
+        # The flight-named copy on shared storage, with its checksum and the
+        # source and version it was built from. A job node whose own path holds
+        # no fence program runs this one after verifying the checksum, and
+        # refuses before its task starts when the file is absent or differs.
+        "carried_program": carried_program,
         "directories": [str(path) for path in directories],
         "directory_sources": sorted(set(directory_sources)),
         "scratch": str(scratch),
-        "limit": "Absolute scheduler paths bypass task re-entry; interpreter permissions guard that route.",
+        # What this fence cannot guard, stated rather than implied. Every copy
+        # of a scheduler tool on this node's path or in a directory the flight
+        # layer declares is masked at the shim; what remains is a copy only
+        # the node a job lands on holds, or one added to a worker's path after
+        # this composition. Neither is forwarded unfenced: the masked path's
+        # shim refuses when it can find no tool.
+        "limit": (
+            "A scheduler binary only the job node's path holds, or one a "
+            "worker's path gains after this composition, is not masked there; "
+            "every copy this node resolves is, and a masked call whose shim "
+            "finds no tool refuses rather than starting unfenced."
+        ),
     }
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
     fenced += ["--setenv", "RECKON_WORKER_FENCE", encoded]

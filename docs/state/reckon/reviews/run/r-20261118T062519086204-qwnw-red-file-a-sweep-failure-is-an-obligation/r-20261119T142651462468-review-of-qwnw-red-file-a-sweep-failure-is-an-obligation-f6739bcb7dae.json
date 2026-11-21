@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_derivation": "the reviewed run's baseline_suite log at be17b574 and after_suite log at 7d70e13 both end EXIT=0 with failure_count 0 and an empty failure_ids list, so after_ids - baseline_ids is empty and the added count is 0",
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station_obligations.py:publish",
+    "reckon/crew/obligation_snapshot.py:read_station_answer",
+    "reckon/crew/obligation_snapshot.py:live_payload",
+    "reckon/crew/station.py:SweepBeat.request",
+    "reckon/crew/station_store.py:StationStore.heartbeat"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:29:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_sweep_failure_is_an_obligation.py",
+      "line": "126",
+      "severity": "non-blocking",
+      "text": "non-blocking: the ages-removed comparison strips only age_seconds while the reader also recomposes next_command from the age for any row carrying overdue_remedy (reckon/crew/obligations.py:1348), so a duty of that shape added to this fixture would redden the comparison for the same wrong reason the node repaired."
+    },
+    {
+      "file": "tests/test_a_sweep_failure_is_an_obligation.py",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_without_ages` duplicates the age-stripping rule the repository already owns in reckon/crew/station_obligations.py:257 payload_identity (it strips age_seconds and age_since) instead of extending it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-failure-is-an-obligation.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment calls the suite arms \"composed `crew suite run` arms\" while the cited baseline_suite and after_suite logs record a direct `pytest -q tests/...` command, so the prose names a mechanism the logs do not show."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the three commits be17b574..f6739bcb one by one; 8fe981bb changes the assertion, 7d70e13 adds the fragment, f6739bcb rewrites three lines of the fragment into the head's wording, and no product module changed.",
+    "done_when": "the measure names the file green at head as a job on all_debug with SLURM_JOB_ID unset, a base run first, each cause with a verdict, and arms recorded as inline JSON with full revisions; the reviewed manifest records scoped-gate EXIT=0 at 7d70e13 with `env -u SLURM_JOB_ID` on host 98dci4-clu-3142 (partition all_debug), the base arm EXIT=1 at be17b574 with both failing ids, and both suite arms EXIT=0 at be17b574 and 7d70e13 with 0 failing ids.",
+    "goal": "the source node's goal is that tests/test_a_sweep_failure_is_an_obligation.py passes in full; tests/test_a_sweep_failure_is_an_obligation.py:126 replaces the whole-row equality that failed on a derived age with an ages-removed equality and tests/test_a_sweep_failure_is_an_obligation.py:127 asserts the retained age, and the gate log records 2 passed.",
+    "manifest": "read the reviewed run's manifest.md; it names status complete, one cause with the verdict \"test wrong\", the gate command, four log paths, and two suite arms whose inline JSON carries 40-character revisions and zero failures.",
+    "write_paths": "the declared paths are reckon, tests, and the node's evidence fragment; the diff touches only tests/test_a_sweep_failure_is_an_obligation.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-failure-is-an-obligation.html."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sweep_failure_is_an_obligation.py:126 reddens if a failed whole pass drops or rewrites the retained duty, and :127 reddens if the read stops deriving age from the stored raise instant, both of which the be17b574 base run keeps live.",
+    "evidence": "the base negative-control log names both parametrisations as FAILED at be17b574 with EXIT=1 and the manifest records the gate at 7d70e13 on all_debug with 0 suite-arm failures either side.",
+    "fit": "the four-line helper at tests/test_a_sweep_failure_is_an_obligation.py:29 follows the file's unannotated-local style and both `ruff check` and `ruff format --check` pass with the project configuration.",
+    "goal_fidelity": "tests/test_a_sweep_failure_is_an_obligation.py:126-127 makes the named file green (scoped-gate log reads 2 passed, EXIT=0), and the head commit f6739bcb changes only the fragment so the measured test content is the head's.",
+    "reuse": "`_without_ages` at tests/test_a_sweep_failure_is_an_obligation.py:29 re-derives the age-stripping rule encoded in reckon/crew/station_obligations.py:257 payload_identity rather than extending it, though that function returns a digest and no owner exposes age-free rows.",
+    "scope_discipline": "the diff's two paths are tests/test_a_sweep_failure_is_an_obligation.py and the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_a_sweep_failure_is_an_obligation.py passes in full; tests/test_a_sweep_failure_is_an_obligation.py:126 replaces the whole-row equality that failed on a derived age with an ages-removed equality and tests/test_a_sweep_failure_is_an_obligation.py:127 asserts the retained age, and the gate log records 2 passed.\nVERDICT done_when: the measure names the file green at head as a job on all_debug with SLURM_JOB_ID unset, a base run first, each cause with a verdict, and arms recorded as inline JSON with full revisions; the reviewed manifest records scoped-gate EXIT=0 at 7d70e13 with `env -u SLURM_JOB_ID` on host 98dci4-clu-3142 (partition all_debug), the base arm EXIT=1 at be17b574 with both failing ids, and both suite arms EXIT=0 at be17b574 and 7d70e13 with 0 failing ids.\nVERDICT write_paths: the declared paths are reckon, tests, and the node's evidence fragment; the diff touches only tests/test_a_sweep_failure_is_an_obligation.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-failure-is-an-obligation.html.\nVERDICT manifest: read the reviewed run's manifest.md; it names status complete, one cause with the verdict \"test wrong\", the gate command, four log paths, and two suite arms whose inline JSON carries 40-character revisions and zero failures.\nVERDICT diff: read the three commits be17b574..f6739bcb one by one; 8fe981bb changes the assertion, 7d70e13 adds the fragment, f6739bcb rewrites three lines of the fragment into the head's wording, and no product module changed.\nCALL_SITES: reckon/crew/station_obligations.py:publish, reckon/crew/obligation_snapshot.py:read_station_answer, reckon/crew/obligation_snapshot.py:live_payload, reckon/crew/station.py:SweepBeat.request, reckon/crew/station_store.py:StationStore.heartbeat\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_sweep_failure_is_an_obligation.py:126-127 makes the named file green (scoped-gate log reads 2 passed, EXIT=0), and the head commit f6739bcb changes only the fragment so the measured test content is the head's.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base negative-control log names both parametrisations as FAILED at be17b574 with EXIT=1 and the manifest records the gate at 7d70e13 on all_debug with 0 suite-arm failures either side.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths are tests/test_a_sweep_failure_is_an_obligation.py and the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_sweep_failure_is_an_obligation.py:126 reddens if a failed whole pass drops or rewrites the retained duty, and :127 reddens if the read stops deriving age from the stored raise instant, both of which the be17b574 base run keeps live.\nSCORE fit: 19\nJUSTIFICATION fit: the four-line helper at tests/test_a_sweep_failure_is_an_obligation.py:29 follows the file's unannotated-local style and both `ruff check` and `ruff format --check` pass with the project configuration.\nSCORE reuse: 15\nJUSTIFICATION reuse: `_without_ages` at tests/test_a_sweep_failure_is_an_obligation.py:29 re-derives the age-stripping rule encoded in reckon/crew/station_obligations.py:257 payload_identity rather than extending it, though that function returns a digest and no owner exposes age-free rows.\nFINDING tests/test_a_sweep_failure_is_an_obligation.py:126 non-blocking: the ages-removed comparison strips only age_seconds while the reader also recomposes next_command from the age for any row carrying overdue_remedy (reckon/crew/obligations.py:1348), so a duty of that shape added to this fixture would redden the comparison for the same wrong reason the node repaired.\nFINDING tests/test_a_sweep_failure_is_an_obligation.py:29 non-blocking: `_without_ages` duplicates the age-stripping rule the repository already owns in reckon/crew/station_obligations.py:257 payload_identity (it strips age_seconds and age_since) instead of extending it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-failure-is-an-obligation.html:41 non-blocking: the fragment calls the suite arms \"composed `crew suite run` arms\" while the cited baseline_suite and after_suite logs record a direct `pytest -q tests/...` command, so the prose names a mechanism the logs do not show.\n",
+  "review_run_id": "r-20261119T142651462468-review-of-qwnw-red-file-a-sweep-failure-is-an-obligation-f6739bcb7dae",
+  "reviewed_base_sha": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "reviewed_head_sha": "f6739bcb7dae87e4f492d44de66ebb52be6d7d43",
+  "reviewed_run_id": "r-20261118T062519086204-qwnw-red-file-a-sweep-failure-is-an-obligation",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:40:43.836263+00:00",
+  "total": 109
+}

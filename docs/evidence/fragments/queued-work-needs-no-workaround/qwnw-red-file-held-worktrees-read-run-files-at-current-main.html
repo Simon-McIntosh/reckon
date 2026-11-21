@@ -1,0 +1,89 @@
+<section id="qwnw-red-file-held-worktrees-read-run-files-at-current-main-record">
+<h3>A held-tree fixture case is repaired to the history the store answers</h3>
+<p><code>tests/test_held_worktrees_read_run_files.py</code> was red at the base revision in one of nine cases, <code>test_a_mixed_state_goes_to_the_run[file-and-aggregate-row]</code>. The file's own parity assertion passed: the per-run derivation and the whole-ledger read both attributed the tree to <code>r-20261001T090000000000-alpha-holds</code>, the run whose own file the split wrote, and only the case's hardcoded expectation, <code>r-20261001T100000000000-alpha-holds</code>, disagreed. The verdict is test wrong: the module's stated authority is the whole-ledger read, and that read no longer lists a row the aggregate gains after the store was completed.</p>
+<p>What broke it since the file landed green on 16 November at <code>0e7f9b6b9e7ce4ae8ff987ad87a82638976a5fd1</code>: commit <code>7616b65a037816880292391793259eb79205b274</code> (2026-11-16, <code>bounded-store-read-s22</code>) replaced the union-of-both-sources history read with the run store as the authoritative history read, so a pending aggregate row reaches no reader once the store holds a row for the project. Bisecting the first-parent chain from <code>0e7f9b6b9e</code> to <code>2b0f433419</code> puts the first red mainline commit there; the last green mainline revision <code>0f6fb393</code> lists both rows in <code>ledger.runs</code>, and the revision after it lists only the run file's row.</p>
+<h4 id="qwnw-red-file-held-worktrees-read-run-files-at-current-main-negative-control">Negative control: the base arm, with its failing ids</h4>
+<pre># revision: 05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktrees_read_run_files.py
+# tree: /tmp/reckon-crew-scratch/held-tree-measure-ev0POb/base-arm-held-worktrees-read-run-files
+# cwd: /tmp/reckon-crew-scratch/held-tree-measure-ev0POb/base-arm-held-worktrees-read-run-files
+# module: /tmp/reckon-crew-scratch/held-tree-measure-ev0POb/base-arm-held-worktrees-read-run-files/reckon/__init__.py
+# label: base-arm-held-worktrees-read-run-files
+# host: 98dci4-clu-3141.iter.org
+# slurm_job_id: 1331704
+...F.....                                                                [100%]
+=================================== FAILURES ===================================
+__________ test_a_mixed_state_goes_to_the_run[file-and-aggregate-row] __________
+
+fleet = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-0/test_a_mixed_state_goes_to_the0/repo&#x27;)
+case = &#x27;file-and-aggregate-row&#x27;
+
+    @pytest.mark.parametrize(&quot;case&quot;, MIXED_STATES)
+    def test_a_mixed_state_goes_to_the_run(fleet: Path, case: str) -&gt; None:
+        &quot;&quot;&quot;Every mixed state names the same run as the whole-ledger scan.&quot;&quot;&quot;
+        expected = _build_case(fleet, case)
+    
+        held = _held(fleet)
+    
+        assert set(held) == _whole_ledger_held(fleet, SESSION), case
+&gt;       assert set(held) == {expected}, case
+E       AssertionError: file-and-aggregate-row
+E       assert {&#x27;r-20261001T...-alpha-holds&#x27;} == {&#x27;r-20261001T...-alpha-holds&#x27;}
+E         
+E         Extra items in the left set:
+E         &#x27;r-20261001T090000000000-alpha-holds&#x27;
+E         Extra items in the right set:
+E         &#x27;r-20261001T100000000000-alpha-holds&#x27;
+E         
+E         Full diff:
+E           {
+E         -     &#x27;r-20261001T100000000000-alpha-holds&#x27;,
+E         ?                 -
+E         +     &#x27;r-20261001T090000000000-alpha-holds&#x27;,
+E         ?                  +
+E           }
+
+tests/test_held_worktrees_read_run_files.py:323: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[file-and-aggregate-row] - AssertionError: file-and-aggregate-row
+assert {&#x27;r-20261001T...-alpha-holds&#x27;} == {&#x27;r-20261001T...-alpha-holds&#x27;}
+  
+  Extra items in the left set:
+  &#x27;r-20261001T090000000000-alpha-holds&#x27;
+  Extra items in the right set:
+  &#x27;r-20261001T100000000000-alpha-holds&#x27;
+  
+  Full diff:
+    {
+  -     &#x27;r-20261001T100000000000-alpha-holds&#x27;,
+  ?                 -
+  +     &#x27;r-20261001T090000000000-alpha-holds&#x27;,
+  ?                  +
+    }
+1 failed, 8 passed in 1.50s
+EXIT=1
+</pre>
+<h4 id="qwnw-red-file-held-worktrees-read-run-files-at-current-main-head-run">Head arm</h4>
+<pre># revision: 369a75d622766d9eb71fc09ddd8340c253cbb376
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktrees_read_run_files.py
+# tree: /tmp/reckon-crew-scratch/held-tree-measure-ev0POb/head-arm-held-worktrees-read-run-files
+# cwd: /tmp/reckon-crew-scratch/held-tree-measure-ev0POb/head-arm-held-worktrees-read-run-files
+# module: /tmp/reckon-crew-scratch/held-tree-measure-ev0POb/head-arm-held-worktrees-read-run-files/reckon/__init__.py
+# label: head-arm-held-worktrees-read-run-files
+# host: 98dci4-clu-3141.iter.org
+# slurm_job_id: 1331704
+.........                                                                [100%]
+9 passed in 1.44s
+EXIT=0
+</pre>
+<h4 id="qwnw-red-file-held-worktrees-read-run-files-at-current-main-mutations">Mutations that show the two edited cases fire</h4>
+<p>Both edits were falsified by mutating their input in a scratch copy of the file and observing the failure, because a green run alone does not show a guard fires.</p>
+<pre>swap the completion stamps in completion-reverses-dispatch
+  ((late, 60), (early, 10)) -&gt; ((late, 10), (early, 60))
+  FAILED tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[completion-reverses-dispatch]
+  assert set(held) == {expected}: left holds r-...090000000000-alpha-holds, right expects r-...100000000000-alpha-holds
+
+drop the aggregate publication in file-and-aggregate-row
+  AssertionError at tests/test_held_worktrees_read_run_files.py:273
+  assert set() == {'r-20261001T100000000000-alpha-holds'}</pre>
+</section>

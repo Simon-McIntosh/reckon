@@ -1,0 +1,128 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own arms: baseline_suite-1795046040836942666.log at 5b0a1f5 reads 58 passed with EXIT=0 and no FAILED line, after_suite-1795046115591612570.log at bb5974ccacb9 reads 58 passed with EXIT=0 and no FAILED line, so both failure-id sets are empty and their difference is empty. The instrument is shown able to see a failure: the same runner's negative-control-base-run.log records 5 FAILED ids and EXIT=1 on the node's own file at the base revision.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "receipt[\"record_path\"] then json.loads(Path(...).read_text())",
+      "fails_if": "Restoring the pre-ba811581 inline reply makes the receipt carry no record_path and the helper raises KeyError; dropping the retained record file raises FileNotFoundError. Both are the regression this change repairs, and the base arm shows them red at 5b0a1f5.",
+      "file": "tests/test_the_consequence_gate_runs_the_nodes_tests.py",
+      "independent": true,
+      "line": 209
+    },
+    {
+      "assertion": "suite_delta[\"suite_command\"] == resolved",
+      "fails_if": "The right-hand side is computed from the flight declaration, not from the code under test; a resolver that leaves the placeholder in place, or resolves a different file list, reddens the line.",
+      "file": "tests/test_the_consequence_gate_runs_the_nodes_tests.py",
+      "independent": true,
+      "line": 301
+    },
+    {
+      "assertion": "\"baseline_suite.command_matches_suite_command\" in payload[\"missing_fields\"]",
+      "fails_if": "A refusal that stops naming the mismatched arm in missing_fields reddens the line; the expectation is a literal field name.",
+      "file": "tests/test_the_consequence_gate_runs_the_nodes_tests.py",
+      "independent": true,
+      "line": 447
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:57:21Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm labelled `head` names revision bb5974ccacb9, one commit before the reviewed head aaff82a3d5, so a reader comparing the row against reviewed_head_sha finds a mismatch and must infer for themselves that the intervening commit touches only this fragment."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 5b0a1f5; bb5974ccacb9 adds _full_outcome and repoints five payload reads, f3578dedeff2 writes the 63-line evidence fragment, and aaff82a3d5 corrects one arm-table row to name the partition.",
+    "done_when": "It asks for the file green as an all_debug job with SLURM_JOB_ID unset, a base run first, a verdict per cause, no deleted or weakened assertion, both suite arms as inline JSON with 40-character revisions, and a negative control; the manifest records the scoped-gate log at bb5974ccacb9 (14 passed, EXIT=0) from `reckon crew verify-gate --partition all_debug`, the base log at 5b0a1f5 (5 failed, EXIT=1), both arms completed at 58 passed, and the diff removes no assertion.",
+    "goal": "The goal is that tests/test_the_consequence_gate_runs_the_nodes_tests.py passes in full; at aaff82a3d5 its five record-reading cases open the record the compact completion receipt links (tests/test_the_consequence_gate_runs_the_nodes_tests.py:201-209) and the recorded gate log reads 14 passed.",
+    "manifest": "It reads status complete with commits bb5974ccacb9, f3578dedeff2 and aaff82a3d5e5, the single-file gate command, baseline_suite at 5b0a1f5 and after_suite at bb5974 each completed with 0 failures, and negative_control_log negative-control-base-run.log reading 5 failed at its tail.",
+    "write_paths": "Declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three commits touch only tests/test_the_consequence_gate_runs_the_nodes_tests.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_consequence_gate_runs_the_nodes_tests.py:209 raises KeyError on a reverted inline reply and FileNotFoundError on a missing record, and negative-control-base-run.log shows the five cases red at base.",
+    "evidence": "The gate log header names bb5974ccacb9 and `reckon crew verify-gate --partition all_debug` reported exit 0 with 14 passed, but that is one docs-only commit before aaff82a3d5 and the armed files import none of the changed code.",
+    "fit": "The helper at tests/test_the_consequence_gate_runs_the_nodes_tests.py:201 follows the file's private-helper idiom beside _stored_review and _complete.",
+    "goal_fidelity": "tests/test_the_consequence_gate_runs_the_nodes_tests.py:209 reads record_path from the compact receipt and the five repointed sites read the same suite delta and refusal payloads, so 14 cases pass where 5 failed at base.",
+    "reuse": "No shared owner exists for the test-side read of a completion receipt's record; the sweep found only the producer at reckon/crew/crew_run_commands.py:3483 and inline reads in five test files.",
+    "scope_discipline": "The three commits touch only tests/test_the_consequence_gate_runs_the_nodes_tests.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_the_consequence_gate_runs_the_nodes_tests.py passes in full; at aaff82a3d5 its five record-reading cases open the record the compact completion receipt links (tests/test_the_consequence_gate_runs_the_nodes_tests.py:201-209) and the recorded gate log reads 14 passed.\nVERDICT done_when: it asks for the file green as an all_debug job with SLURM_JOB_ID unset, a base run first, a verdict per cause, no deleted or weakened assertion, both suite arms as inline JSON with 40-character revisions, and a negative control; the manifest records the scoped-gate log at bb5974ccacb9 (14 passed, EXIT=0) measured by `reckon crew verify-gate --partition all_debug`, negative-control-base-run.log at 5b0a1f5 (5 failed, EXIT=1), both arms completed at 58 passed, and the diff removes no assertion.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three commits touch only tests/test_the_consequence_gate_runs_the_nodes_tests.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main.html, both inside them.\nVERDICT manifest: it reads status complete with commits bb5974ccacb9, f3578dedeff2 and aaff82a3d5e5, the single-file gate command, baseline_suite at 5b0a1f5 and after_suite at bb5974 each completed with 0 failures, and negative_control_log negative-control-base-run.log whose tail reads 5 failed and EXIT=1.\nVERDICT diff: read commit by commit against 5b0a1f5; bb5974ccacb9 adds _full_outcome and repoints five payload reads, f3578dedeff2 writes the 63-line evidence fragment, and aaff82a3d5 corrects one arm-table row to name the partition.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_the_consequence_gate_runs_the_nodes_tests.py:209 reads `record_path` from the compact receipt and :301/:414/:445/:474/:492 read the same suite delta and refusal payloads from the stored record, so the file's 14 cases pass where 5 failed at base.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate log's header names revision bb5974ccacb9 and `reckon crew verify-gate --partition all_debug` reported exit 0 with 14 passed, but that is one docs-only commit before the reviewed head aaff82a3d5 and the two armed suite files import none of the changed code.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three commits touch only tests/test_the_consequence_gate_runs_the_nodes_tests.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main.html, both inside the declared write paths, and nothing under reckon/ changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_consequence_gate_runs_the_nodes_tests.py:209 raises KeyError 'record_path' if the compact reply regresses to an inline record and FileNotFoundError if the record stops being written, and negative-control-base-run.log shows those five cases red at base.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at tests/test_the_consequence_gate_runs_the_nodes_tests.py:201 sits beside _stored_review and _complete in the file's existing private-helper idiom and its name states the fact it returns.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ and tests/ for the `record_path` read found only the producer at reckon/crew/crew_run_commands.py:3483 and inline reads in five test files, so no shared owner exists and _full_outcome is the first named one.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main.html:39 non-blocking: the arm labelled `head` names revision bb5974ccacb9, one commit before the reviewed head aaff82a3d5, so a reader comparing the row against reviewed_head_sha finds a mismatch and must infer for themselves that the intervening commit touches only this fragment.",
+  "reuse_search": {
+    "capabilities": [
+      "read the full outcome a completion receipt links"
+    ],
+    "judgement": "No test-side owner exists. The producer side is reckon/crew/crew_run_commands.py:3483 (report[\"record_path\"]), and the read side is inlined in five test files (tests/test_a_clean_landing_releases_its_worktree.py:126, tests/test_a_conflicting_landing_is_repaired.py:140), so the new helper duplicates an idiom but not an owned mechanism, and it is the first named one in the file.",
+    "owners_opened": [
+      "reckon/crew/crew_run_commands.py:3483 (writes the receipt's record_path)",
+      "tests/conftest.py (no receipt-reading helper)"
+    ]
+  },
+  "review_run_id": "r-20261119T000257792240-review-of-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main-aaff82a3d5e5",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "aaff82a3d5e558d3274fc01ff8d850f4c2bc5d7e",
+  "reviewed_run_id": "r-20261118T064011548725-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main",
+  "reviewed_worker_commits": [
+    "bb5974ccacb98952ae0bb2505ecd9360bd90ac49",
+    "f3578dedeff269e56bb5f34c8be8787d9bdfe425",
+    "aaff82a3d5e558d3274fc01ff8d850f4c2bc5d7e"
+  ],
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064011548725-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main/after_suite-1795046115591612570.log",
+      "revision": "bb5974ccacb98952ae0bb2505ecd9360bd90ac49",
+      "summary": "58 passed in 34.85s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064011548725-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main/baseline_suite-1795046040836942666.log",
+      "revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+      "summary": "58 passed in 36.14s"
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "failing_ids_absent_at_head": [
+        "test_the_declared_command_measures_the_nodes_fenced_test_files",
+        "test_a_scoped_pair_over_the_nodes_test_files_promotes",
+        "test_a_scoped_pair_over_the_whole_suite_is_refused",
+        "test_a_scoped_pair_over_another_nodes_files_is_refused",
+        "test_a_project_with_no_declaration_records_no_suite_observation"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064011548725-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main/negative-control-base-run.log",
+      "revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+      "summary": "5 failed, 9 passed in 15.19s"
+    },
+    "scoped_gate": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_consequence_gate_runs_the_nodes_tests.py'",
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064011548725-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main/scoped-gate-1795045999666285069.log",
+      "partition": "all_debug",
+      "revision": "bb5974ccacb98952ae0bb2505ecd9360bd90ac49",
+      "summary": "14 passed in 3.62s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:17:47.636101+00:00",
+  "total": 113
+}

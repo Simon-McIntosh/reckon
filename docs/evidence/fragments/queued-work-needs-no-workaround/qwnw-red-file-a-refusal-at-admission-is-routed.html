@@ -1,0 +1,56 @@
+<section id="qwnw-red-file-a-refusal-at-admission-is-routed-measured">
+  <h2>A refusal at admission is routed: the queue-edit claim case</h2>
+
+  <p><strong>What changed.</strong> One case of
+  <code>tests/test_a_refusal_at_admission_is_routed.py</code> was red at the base
+  revision: <code>test_an_edit_onto_a_path_a_live_claim_holds_is_refused_naming_the_holder</code>
+  failed with <code>DID NOT RAISE ScopeConflict</code>. The case gave the live
+  holder a claim on <code>shared/file.txt</code>, a mergeable source path, and
+  expected <code>crew queue edit</code> to refuse an edit onto it. Since the
+  concurrent-edit rule landed, a claim is compared through
+  <code>runs._claim_paths_share</code>: a mergeable path under a shared root is
+  shared with a peer rather than fenced, so the edit is accepted and the case's
+  premise no longer holds. The cause is the test, not the product: the holder
+  now claims <code>docs/state/routed-fixture/index.json</code>, a class
+  <code>runs.DEFAULT_EXCLUSIVE_PATHS</code> keeps unmergeable, and the guard
+  fires naming the holder as the case asserts. No assertion was deleted,
+  weakened or added; the two-key request comparison and the unchanged-pointer
+  check are untouched.</p>
+
+  <p>Checked before the repair, not after: the base extraction reproduces the
+  failure at the same line, and the repaired case raises the refusal with
+  <code>write scope 'docs/state/routed-fixture/index.json' conflicts with live
+  claim 'docs/state/routed-fixture/index.json' held by run 'r-live' (node
+  'live-node') ... exclusive pattern
+  'docs/state/'</code>.</p>
+
+  <table id="qwnw-red-file-a-refusal-at-admission-is-routed-arms">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>. Both ran as
+    <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> unset.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>this file, head</td>
+        <td><code>27596714752c</code></td>
+        <td>compute-node extraction</td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>this file, base (negative control)</td>
+        <td><code>7c481b65f22d</code></td>
+        <td>extraction under the node tmp</td>
+        <td>1 failed, 5 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-refusal-at-admission-is-routed-control">Negative control</h3>
+
+  <p>At <code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code> the file fails with
+  the single id the node names, and the failure is the one repaired here. The red
+  log is
+  <code>~/.config/reckon/crew/runs/r-20261118T063625288574-qwnw-red-file-a-refusal-at-admission-is-routed/negative-control-7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061.log</code>;
+  the head log is
+  <code>scoped-gate-1795099637793322036.log</code> in the same directory.</p>
+
+  <pre id="qwnw-red-file-a-refusal-at-admission-is-routed-red">FAILED tests/test_a_refusal_at_admission_is_routed.py::test_an_edit_onto_a_path_a_live_claim_holds_is_refused_naming_the_holder - Failed: DID NOT RAISE ScopeConflict
+1 failed, 5 passed in 1.01s
+EXIT=1</pre>
+</section>

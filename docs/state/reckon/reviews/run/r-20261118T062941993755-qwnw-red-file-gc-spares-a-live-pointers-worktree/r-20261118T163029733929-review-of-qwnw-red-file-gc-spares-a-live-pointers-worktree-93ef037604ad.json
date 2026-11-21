@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:58:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html",
+      "line": "85",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment names after-suite-arm.log at revision 9f8adfd603 while that log's own first header line reads '# revision: 93ef037604adb5ae333479676de156135918e527', so the one file a reader opens to confirm the claim contradicts the document"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm's extraction sits at the bare path /tmp/gc-spares-arms-UkNxG6BA rather than under $TMPDIR, against the rule that a temporary tree dies with the run's scratch, so a second job on this node could collide on a fixed by-name path"
+    }
+  ],
+  "head_log_revision": "93ef037604adb5ae333479676de156135918e527",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none - the change touches only a test module and a docs fragment, so no production path reaches it",
+    "diff": "read all three commits against 23b901694: 890fd711 adds _unlanded_commit and the single call at tests/test_gc_spares_a_live_pointers_worktree.py:225 with no assertion added or removed, 9f8adfd603 and 93ef037604 add and revise the 92-line evidence fragment; every hunk lies inside the declared write paths",
+    "done_when": "the done_when asks for the file in full at head with SLURM_JOB_ID unset, a named cause with a product-wrong or test-wrong verdict, both suite arms as inline JSON carrying 40-character revisions, and no assertion deleted or weakened; the manifest carries all four and head-arm-final.log's command line is 'env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gc_spares_a_live_pointers_worktree.py' ending in EXIT=0",
+    "goal": "the node's goal is that tests/test_gc_spares_a_live_pointers_worktree.py passes in full; the diff gives the retained tree its run's own unlanded commit at tests/test_gc_spares_a_live_pointers_worktree.py:132-146, the head arm at 93ef03760 reads 3 passed EXIT=0 (head-arm-final.log), and no product source moved",
+    "manifest": "the reviewed manifest names two changed paths, three commits, 3 passed at 890fd711e1 and 93ef037604 against 1 failed / 2 passed at 23b901694, and both suite arms at 58 passed EXIT=0; each figure matches head-arm-gc-spares.log, head-arm-final.log, base-arm-gc-spares.log, baseline-suite-arm.log and after-suite-arm.log, except its checkpoint's claim of a 9f8adfd603 head arm, which no log at that revision backs",
+    "write_paths": "the declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, and the fragment file itself) contain both changed paths in the diff 23b901694..93ef03760, tests/test_gc_spares_a_live_pointers_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html"
+  },
+  "justifications": {
+    "durability": "the base arm at tests/test_gc_spares_a_live_pointers_worktree.py:215 reads the assertion red as assert [] == ['r-20261003T...51-held-node'] EXIT=1, so removing the new _unlanded_commit call reddens the same line",
+    "evidence": "head-arm-final.log records revision, tree, command, imported module, cwd and EXIT=0, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html:85 cites after-suite-arm.log at 9f8adfd603 while that log's header reads 93ef037604 and the manifest repeats the unlogged claim of a 9f8adfd603 head arm",
+    "fit": "_unlanded_commit at tests/test_gc_spares_a_live_pointers_worktree.py:132 follows the file's own _git helper and identity-flag idiom from the fleet fixture at :44-52, and ruff check and ruff format --check report the file clean",
+    "goal_fidelity": "tests/test_gc_spares_a_live_pointers_worktree.py:132-146 changes only the fixture, so the file's own assertions at :215-231 stand and the head arm reads 3 passed EXIT=0",
+    "reuse": "no shared owner for a fixture commit exists - searches over tests/helpers/git.py, tests/helpers/landing_repository.py and the file-local _commit in tests/test_a_duty_clears_when_its_run_ends.py:318-333 found only file-local helpers, which is this suite's idiom",
+    "scope_discipline": "the only two paths in the diff, tests/test_gc_spares_a_live_pointers_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html, both lie inside the declared write paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_gc_spares_a_live_pointers_worktree.py passes in full; the diff gives the retained tree its run's own unlanded commit at tests/test_gc_spares_a_live_pointers_worktree.py:132-146, the head arm at 93ef03760 reads 3 passed EXIT=0 (head-arm-final.log), and no product source moved\nVERDICT done_when: the done_when asks for the file in full at head with SLURM_JOB_ID unset, a named cause with a product-wrong or test-wrong verdict, both suite arms as inline JSON carrying 40-character revisions, and no assertion deleted or weakened; the manifest carries all four and head-arm-final.log's command line is 'env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gc_spares_a_live_pointers_worktree.py' ending in EXIT=0\nVERDICT write_paths: the declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, and the fragment file itself) contain both changed paths in the diff 23b901694..93ef03760, tests/test_gc_spares_a_live_pointers_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html\nVERDICT manifest: the reviewed manifest names two changed paths, three commits, 3 passed at 890fd711e1 and 93ef037604 against 1 failed / 2 passed at 23b901694, and both suite arms at 58 passed EXIT=0; each figure matches head-arm-gc-spares.log, head-arm-final.log, base-arm-gc-spares.log, baseline-suite-arm.log and after-suite-arm.log, except its checkpoint's claim of a 9f8adfd603 head arm, which no log at that revision backs\nVERDICT diff: read all three commits against 23b901694: 890fd711 adds _unlanded_commit and the single call at tests/test_gc_spares_a_live_pointers_worktree.py:225 with no assertion added or removed, 9f8adfd603 and 93ef037604 add and revise the 92-line evidence fragment; every hunk lies inside the declared write paths\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_gc_spares_a_live_pointers_worktree.py:132-146 changes only the fixture, so the file's own assertions at :215-231 stand and the head arm reads 3 passed EXIT=0\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm-final.log records revision, tree, command, imported module, cwd and EXIT=0, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html:85 cites after-suite-arm.log at 9f8adfd603 while that log's header reads 93ef037604 and the manifest repeats the unlogged claim of a 9f8adfd603 head arm\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths in the diff, tests/test_gc_spares_a_live_pointers_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html, both lie inside the declared write paths\nSCORE durability: 19\nJUSTIFICATION durability: the base arm at tests/test_gc_spares_a_live_pointers_worktree.py:215 reads the assertion red as assert [] == ['r-20261003T...51-held-node'] EXIT=1, so removing the new _unlanded_commit call reddens the same line\nSCORE fit: 20\nJUSTIFICATION fit: _unlanded_commit at tests/test_gc_spares_a_live_pointers_worktree.py:132 follows the file's own _git helper and identity-flag idiom from the fleet fixture at :44-52, and ruff check and ruff format --check report the file clean\nSCORE reuse: 20\nJUSTIFICATION reuse: no shared owner for a fixture commit exists - searches over tests/helpers/git.py, tests/helpers/landing_repository.py and the file-local _commit in tests/test_a_duty_clears_when_its_run_ends.py:318-333 found only file-local helpers, which is this suite's idiom\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html:85 non-blocking: the fragment names after-suite-arm.log at revision 9f8adfd603 while that log's own first header line reads '# revision: 93ef037604adb5ae333479676de156135918e527', so the one file a reader opens to confirm the claim contradicts the document\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-spares-a-live-pointers-worktree.html:56 non-blocking: the base arm's extraction sits at the bare path /tmp/gc-spares-arms-UkNxG6BA rather than under $TMPDIR, against the rule that a temporary tree dies with the run's scratch, so a second job on this node could collide on a fixed by-name path\n",
+  "review_run_id": "r-20261118T163029733929-review-of-qwnw-red-file-gc-spares-a-live-pointers-worktree-93ef037604ad",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "93ef037604adb5ae333479676de156135918e527",
+  "reviewed_run_id": "r-20261118T062941993755-qwnw-red-file-gc-spares-a-live-pointers-worktree",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-gc-spares-a-live-pointers-worktree",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T163029733929-review-of-qwnw-red-file-gc-spares-a-live-pointers-worktree-93ef037604ad"
+  },
+  "reviewer_run_id": "r-20261118T163029733929-review-of-qwnw-red-file-gc-spares-a-live-pointers-worktree-93ef037604ad",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062941993755-qwnw-red-file-gc-spares-a-live-pointers-worktree/manifest.md",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:12:33.040855+00:00",
+  "total": 114
+}

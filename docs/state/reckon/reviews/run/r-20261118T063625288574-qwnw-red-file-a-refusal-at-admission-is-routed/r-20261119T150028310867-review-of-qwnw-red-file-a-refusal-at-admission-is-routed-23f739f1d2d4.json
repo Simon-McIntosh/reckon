@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_edit.py:_live_claim_conflict",
+    "reckon/crew/runs.py:_claim_paths_share",
+    "reckon/crew/runs.py:DEFAULT_EXCLUSIVE_PATHS",
+    "reckon/evidence.py:_fragment_body_bytes"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:23:05Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063625288574-qwnw-red-file-a-refusal-at-admission-is-routed/manifest.md",
+      "id": "f1ac8400be2",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires \"ruff check and ruff format --check report nothing new on the changed paths\" and the manifest records no such result nor any log for it, so the clause rests on unrecorded session work; I verified both commands clean on the reviewed head blob, so no finding understates the code."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063625288574-qwnw-red-file-a-refusal-at-admission-is-routed/manifest.md",
+      "id": "f855e614db1",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: both arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed module or exercises the edited case, so the arm the done_when names \u2014 the test files that import what changed \u2014 is not measured; the file's own gate carries the change and the arm can hide nothing, but it evidences the neighbouring suite rather than the change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061; 27596714752c replaces the mergeable claimed path with an unmergeable default-exclusive one in one case and adds a three-line comment, 23f739f1d2 adds the 56-line evidence fragment, and no product source and no assertion changed.",
+    "done_when": "the measure names the file green at head as an all_debug job with SLURM_JOB_ID unset, the base red, a two-arm suite pair with 40-character revisions, a fragment carrying both arms and an unchanged assertion set, and ruff clean on the changed paths; scoped-gate-1795099920148851381.log reads \"6 passed in 0.92s\" then EXIT=0 at 23f739f1d2 on host 98dci4-clu-3143, negative-control-7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061.log reads \"1 failed, 5 passed\" then EXIT=1 at the base, both suite arms carry full revisions and EXIT=0, and the fragment records the pair; the manifest records no ruff result, though ruff check and ruff format --check on the reviewed head's blob both report clean.",
+    "goal": "the node goal is that tests/test_a_refusal_at_admission_is_routed.py passes in full on the primary branch, and its one red case at tests/test_a_refusal_at_admission_is_routed.py:333 now claims docs/state/routed-fixture/index.json, which queue_edit._live_claim_conflict refuses at reckon/crew/queue_edit.py:359 with ScopeConflict naming r-live, so all six cases pass.",
+    "manifest": "the reviewed run's manifest.md states 6/6 at head 23f739f1d2, 1 failed and 5 passed at base 7c481b65, names the three gate logs and both arms as inline JSON with full revisions, and lists the two commits; its artifacts line has no ruff entry.",
+    "write_paths": "the source node declares reckon, tests, the plan's evidence fragments directory and the node's fragment file, and the delivered diff 7c481b65f22d..23f739f1d2d4 touches only tests/test_a_refusal_at_admission_is_routed.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refusal-at-admission-is-routed.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "reinstating the previous claimed path shared/file.txt reddens tests/test_a_refusal_at_admission_is_routed.py:333 with DID NOT RAISE ScopeConflict, which negative-control-7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061.log shows at the base, so the guard is independent of the value the case supplies.",
+    "evidence": "scoped-gate-1795099920148851381.log and negative-control-7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061.log carry the revision, tree, command and EXIT receipt for the red and green arms, but manifest.md:21 records no ruff result for the changed paths that its done_when requires.",
+    "fit": "the new claim path quotes the default exclusive class documented at reckon/crew/runs.py:2276 and follows the fixture's existing docs/state literal idiom, with a comment at tests/test_a_refusal_at_admission_is_routed.py:335 naming why the path has to be unmergeable.",
+    "goal_fidelity": "the case at tests/test_a_refusal_at_admission_is_routed.py:333 now trips reckon/crew/queue_edit.py:359, and scoped-gate-1795099920148851381.log records 6 passed then EXIT=0 at the reviewed head.",
+    "reuse": "the change adds no definition \u2014 it reads the class reckon/crew/runs.py:2276 already owns through _claim_paths_share at reckon/crew/runs.py:2440 \u2014 and the added evidence fragment is the shape reckon/evidence.py:1610 already composes.",
+    "scope_discipline": "the diff changes only tests/test_a_refusal_at_admission_is_routed.py and the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared write paths, with no product change and no plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_a_refusal_at_admission_is_routed.py passes in full on the primary branch, and its one red case at tests/test_a_refusal_at_admission_is_routed.py:333 now claims docs/state/routed-fixture/index.json, which queue_edit._live_claim_conflict refuses at reckon/crew/queue_edit.py:359 with ScopeConflict naming r-live, so all six cases pass.\nVERDICT done_when: the measure names the file green at head as an all_debug job with SLURM_JOB_ID unset, the base red, a two-arm suite pair with 40-character revisions, a fragment carrying both arms and an unchanged assertion set, and ruff clean on the changed paths; scoped-gate-1795099920148851381.log reads \"6 passed in 0.92s\" then EXIT=0 at 23f739f1d2 on host 98dci4-clu-3143, negative-control-7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061.log reads \"1 failed, 5 passed\" then EXIT=1 at the base, both suite arms carry full revisions and EXIT=0, and the fragment records the pair; the manifest records no ruff result, though ruff check and ruff format --check on the reviewed head's blob both report clean.\nVERDICT write_paths: the source node declares reckon, tests, the plan's evidence fragments directory and the node's fragment file, and the delivered diff 7c481b65f22d..23f739f1d2d4 touches only tests/test_a_refusal_at_admission_is_routed.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refusal-at-admission-is-routed.html, both inside that scope.\nVERDICT manifest: the reviewed run's manifest.md states 6/6 at head 23f739f1d2, 1 failed and 5 passed at base 7c481b65, names the three gate logs and both arms as inline JSON with full revisions, and lists the two commits; its artifacts line has no ruff entry.\nVERDICT diff: read both commits against base 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061; 27596714752c replaces the mergeable claimed path with an unmergeable default-exclusive one in one case and adds a three-line comment, 23f739f1d2 adds the 56-line evidence fragment, and no product source and no assertion changed.\nCALL_SITES: reckon/crew/queue_edit.py:_live_claim_conflict, reckon/crew/runs.py:_claim_paths_share, reckon/crew/runs.py:DEFAULT_EXCLUSIVE_PATHS, reckon/evidence.py:_fragment_body_bytes\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the case at tests/test_a_refusal_at_admission_is_routed.py:333 now trips reckon/crew/queue_edit.py:359, and scoped-gate-1795099920148851381.log records 6 passed then EXIT=0 at the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795099920148851381.log and negative-control-7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061.log carry the revision, tree, command and EXIT receipt for the red and green arms, but manifest.md:21 records no ruff result for the changed paths that its done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only tests/test_a_refusal_at_admission_is_routed.py and the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared write paths, with no product change and no plan edit.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the previous claimed path shared/file.txt reddens tests/test_a_refusal_at_admission_is_routed.py:333 with DID NOT RAISE ScopeConflict, which negative-control-7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061.log shows at the base, so the guard is independent of the value the case supplies.\nSCORE fit: 19\nJUSTIFICATION fit: the new claim path quotes the default exclusive class documented at reckon/crew/runs.py:2276 and follows the fixture's existing docs/state literal idiom, with a comment at tests/test_a_refusal_at_admission_is_routed.py:335 naming why the path has to be unmergeable.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition \u2014 it reads the class reckon/crew/runs.py:2276 already owns through _claim_paths_share at reckon/crew/runs.py:2440 \u2014 and the added evidence fragment is the shape reckon/evidence.py:1610 already composes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063625288574-qwnw-red-file-a-refusal-at-admission-is-routed/manifest.md:21 non-blocking: the done_when requires \"ruff check and ruff format --check report nothing new on the changed paths\" and the manifest records no such result nor any log for it, so the clause rests on unrecorded session work; I verified both commands clean on the reviewed head blob, so no finding understates the code.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063625288574-qwnw-red-file-a-refusal-at-admission-is-routed/manifest.md:19 non-blocking: both arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed module or exercises the edited case, so the arm the done_when names \u2014 the test files that import what changed \u2014 is not measured; the file's own gate carries the change and the arm can hide nothing, but it evidences the neighbouring suite rather than the change.\n",
+  "review_method": "Read-only review of the landed diff, the reviewed run's manifest and its recorded gate logs; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T150028310867-review-of-qwnw-red-file-a-refusal-at-admission-is-routed-23f739f1d2d4",
+  "reviewed_base_sha": "7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061",
+  "reviewed_head_sha": "23f739f1d2d433f5b912aa46879aae26eb2a023a",
+  "reviewed_run_id": "r-20261118T063625288574-qwnw-red-file-a-refusal-at-admission-is-routed",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:53:05.474992+00:00",
+  "total": 114
+}

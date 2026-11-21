@@ -301,6 +301,11 @@ def test_a_session_over_the_window_is_refused_naming_the_count_and_the_window(
     own classification and manifest are exactly as the dispatch left them.
     """
     before = _pointer(tmp_path, repo, OVER_RUN, inputs=[INSIDE, OVER])
+    # Read the file the refusal must leave alone rather than the mapping that
+    # wrote it: storing a live pointer legitimately moves its dispatch-time
+    # detail into the run's own file, so the pointer on disk is never the
+    # in-memory record verbatim.
+    before_pointer = pointer_path(OVER_RUN).read_text(encoding="utf-8")
     before_manifest = Path(before["manifest_path"]).read_text(encoding="utf-8")
 
     with pytest.raises(CrewError) as raised:
@@ -312,7 +317,7 @@ def test_a_session_over_the_window_is_refused_naming_the_count_and_the_window(
     assert "alpha" in refusal, refusal
     assert "repair node" in refusal, refusal
     assert _attempt_files(OVER_RUN) == []
-    assert runs.read_pointer(OVER_RUN) == before
+    assert pointer_path(OVER_RUN).read_text(encoding="utf-8") == before_pointer
     assert Path(before["manifest_path"]).read_text(encoding="utf-8") == before_manifest
 
 
@@ -327,7 +332,8 @@ def test_the_reflex_refuses_the_session_before_it_opens_an_attempt(
     the run gains no attempt log — which is the difference between a refusal
     and a try that died at the endpoint.
     """
-    before = _pointer(tmp_path, repo, OVER_RUN, inputs=[INSIDE, OVER])
+    _pointer(tmp_path, repo, OVER_RUN, inputs=[INSIDE, OVER])
+    before_pointer = pointer_path(OVER_RUN).read_text(encoding="utf-8")
     launcher = _Launcher()
 
     with pytest.raises(CrewError) as raised:
@@ -344,7 +350,7 @@ def test_the_reflex_refuses_the_session_before_it_opens_an_attempt(
     assert str(WINDOW) in refusal, refusal
     assert launcher.calls == []
     assert _attempt_files(OVER_RUN) == []
-    assert runs.read_pointer(OVER_RUN) == before
+    assert pointer_path(OVER_RUN).read_text(encoding="utf-8") == before_pointer
 
 
 def test_the_reflex_resumes_a_session_inside_the_window(

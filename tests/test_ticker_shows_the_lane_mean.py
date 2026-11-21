@@ -272,7 +272,10 @@ def test_a_backend_without_a_lane_document_leaves_the_cell_blank(lane, row, grid
     line = plain(grid.render(row(backend=BACKEND_WITHOUT_DOCUMENT)))
     assert _rate_cell(line).strip() == "", line
     assert ticker_module.RATE_UNIT not in line, line
-    assert ticker_module.DIM_MARKER not in line, line
+    # The absence marker is the cell's own vocabulary, and the row carries it in
+    # other cells for unrelated facts — an unpriced promotion position among
+    # them — so the blankness this test claims is the cell's, not the row's.
+    assert ticker_module.DIM_MARKER not in _rate_cell(line), line
 
 
 def test_a_declared_document_with_no_figure_shows_the_absence_marker(lane, row, grid):

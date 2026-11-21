@@ -61,6 +61,7 @@ from reckon.crew.routing import (
     resolve_scope_repository,
 )
 from reckon.crew.runs import (
+    NODE_BODY_NAME,
     _claim_paths_share,
     _exclusive_write_pattern,
     _expanded_scope_paths,
@@ -1291,9 +1292,33 @@ def _withdraw_launch_claim(run_id: str) -> None:
     ``readable_brief_source`` falls back to the source the request names when the
     copy is gone, as it already did for a request whose earlier attempt was
     refused.
+
+    The request's own definition is the exception. The pointer's node names its
+    body file (brief, done-when, peer scopes and admission findings) inside this
+    directory, and the wired peer list sits beside it; nothing else holds
+    either, so both are carried across the removal. Without them the waiting
+    request names a file that no longer exists, and every later admission pass
+    refuses it as having no done-when or no brief.
     """
-    (run_dir(run_id) / "claim.json").unlink(missing_ok=True)
-    shutil.rmtree(run_dir(run_id), ignore_errors=True)
+    directory = run_dir(run_id)
+    kept: dict[str, bytes] = {}
+    for name in _REQUEST_OWNED_FILES:
+        try:
+            kept[name] = (directory / name).read_bytes()
+        except OSError:
+            continue
+    (directory / "claim.json").unlink(missing_ok=True)
+    shutil.rmtree(directory, ignore_errors=True)
+    for name, data in kept.items():
+        target = directory / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        target.chmod(0o600)
+
+
+#: Files in a run directory that belong to the queued request rather than to a
+#: launch attempt: the node body its pointer names and the wired peer list.
+_REQUEST_OWNED_FILES = (NODE_BODY_NAME, "peer-channel/peers.json")
 
 
 @contextlib.contextmanager

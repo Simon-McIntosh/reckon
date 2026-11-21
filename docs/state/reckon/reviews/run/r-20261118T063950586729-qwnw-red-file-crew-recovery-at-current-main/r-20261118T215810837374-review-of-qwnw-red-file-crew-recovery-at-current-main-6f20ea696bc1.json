@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/holds.py:527",
+    "reckon/crew/recovery_watch.py:2884",
+    "reckon/crew/recovery_watch.py:2897",
+    "reckon/crew/recovery_watch.py:3510",
+    "reckon/crew/runs.py:4972"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:26:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2319",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivery-status disjunct has no fixture behind it; the three counters cases supply a row whose delivery is present but not delivered, so deleting this half of the disjunction leaves all 86 cases green and a regression that drops a delivered fold row would go unmeasured."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2318",
+      "severity": "non-blocking",
+      "text": "non-blocking: which states are drawn delivered is stated twice in one function, since buckets was already built from ticker._bucket_of:972 a few lines above this test of FLEET_UNPROMOTED_STATES, so a change to the pane's delivered partition would leave the counter disagreeing with the word it repairs."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-recovery-at-current-main.html",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the plan's done_when asks for the base revision's run, with its failing ids, logged beside the head run under the evidence fragment directory; the fragment transcribes the four ids but the base log stayed in the run directory, so a reader of the repository cannot open the run the ids come from."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063950586729-qwnw-red-file-crew-recovery-at-current-main/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: measurement_module names reckon/crew/recovery_watch.py while the gate log it cites records a different module on line 4, and the field is defined as the value the run printed, so the record and its receipt name different modules under test."
+    }
+  ],
+  "head_log_revision": "67d2d6890df3e0ed6d937a4a3739b3493c012f02",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the five production callers of _fleet_counts across hold rendering, the session fold, the transition renderer and the runs listing were opened.",
+    "diff": "read 67d2d6890d, 055d173a21 and 6f20ea696b against 65ae7f6f1b; recovery_watch.py:2317 adds the delivered-row count and drops the fold's overriding assignment, the test file renames one case and pins the queue figures through one helper, and the two docs commits add the fragment.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job, each cause with a verdict, an affected arm adding no failure at full 40-character revisions, and the base run's failing ids logged under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records 86 passed EXIT=0 at 67d2d6890d, three test-wrong causes and one product-wrong cause, 36 base ids against 28 head ids with 0 added, but the base log itself remained in the run directory and only its four ids were transcribed into the fragment.",
+    "goal": "the node's goal is that tests/test_crew_recovery.py passes in full on the primary branch; head-crew-recovery-sbatch-1328193.log records 86 passed EXIT=0 at 67d2d6890d and my own re-run of that file at 6f20ea696b read 86 passed, so the goal holds.",
+    "manifest": "read manifest.md; status complete, commits 67d2d6890d, 055d173a21, 6f20ea696b, changed_paths the three landed files, tests naming tests/test_crew_recovery.py, negative_control_log naming base-crew-recovery.log inline JSON, but measurement_module names a different module than the gate log it cites.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 65ae7f6f1b..6f20ea696b lists reckon/crew/recovery_watch.py, tests/test_crew_recovery.py and the fragment html, all inside them."
+  },
+  "justifications": {
+    "durability": "the base arm log shows test_fleet_counts_still_partition_the_runs_in_flight reddening on the very regression repaired, reading unpromoted 0 where the fixture holds three runs, but the delivery-status disjunct added at reckon/crew/recovery_watch.py:2319 has no fixture behind it.",
+    "evidence": "the gate log names the command, revision and tree and ends EXIT=0, base-crew-recovery.log ends 4 failed, 82 passed, EXIT=1 with exactly the four repaired ids, and both affected-arm arms carry full 40-character revisions, but the manifest's measurement_module names recovery_watch.py while the gate log's module line names recovery.py on line 4.",
+    "fit": "reckon/crew/recovery_watch.py:2311-2321 states the mechanism in the module's own comment idiom and introduces no forbidden name, and ruff check on the two changed files reports the same 3 pre-existing findings with both files format-clean.",
+    "goal_fidelity": "tests/test_crew_recovery.py reads 86 passed EXIT=0 at 67d2d6890d in head-crew-recovery-sbatch-1328193.log and I re-ran the same file at the delivered head 6f20ea696b for 86 passed, with the product half of the repair at reckon/crew/recovery_watch.py:2317.",
+    "reuse": "the change keeps calling the owner of the promotion fold, delivery_summary at reckon/crew/recovery_classification.py:3554, rather than forking it, but reckon/crew/recovery_watch.py:2318 restates which states are drawn delivered instead of reading the buckets list already computed from ticker ownership.",
+    "scope_discipline": "git diff 65ae7f6f1b..6f20ea696b touches only reckon/crew/recovery_watch.py, tests/test_crew_recovery.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-recovery-at-current-main.html, every one inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_crew_recovery.py passes in full on the primary branch; head-crew-recovery-sbatch-1328193.log records 86 passed EXIT=0 at 67d2d6890d and my re-run of the same file at 6f20ea696b read 86 passed, with the product half at reckon/crew/recovery_watch.py:2317.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job, each cause with a verdict, an affected arm adding no failure at full 40-character revisions and the base run's failing ids logged under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records 86 passed EXIT=0, three test-wrong causes and one product-wrong cause, 36 base ids against 28 head ids with 0 added, but the base log itself stayed in the run directory.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 65ae7f6f1b..6f20ea696b lists reckon/crew/recovery_watch.py, tests/test_crew_recovery.py and the fragment html, all inside them.\nVERDICT manifest: read manifest.md; status complete, three commits, tests/test_crew_recovery.py at 86/86 with its logs named, baseline_suite and after_suite at 0 failures, but measurement_module names a module the cited gate log does not.\nVERDICT diff: read 67d2d6890d, 055d173a21 and 6f20ea696b against 65ae7f6f1b; recovery_watch.py:2317 adds the delivered-row count and drops the fold's overriding assignment, the test file renames one case and pins the queue figures through one helper, and the two docs commits add the fragment.\nCALL_SITES: reckon/crew/admission/holds.py:527, reckon/crew/recovery_watch.py:2884, reckon/crew/recovery_watch.py:2897, reckon/crew/recovery_watch.py:3510, reckon/crew/runs.py:4972\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_recovery.py reads 86 passed EXIT=0 at 67d2d6890d and again in my re-run at 6f20ea696b, and reckon/crew/recovery_watch.py:2317 is the product half of that.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-crew-recovery-sbatch-1328193.log records the command, revision and EXIT=0 and base-crew-recovery.log records the four failing ids, but the manifest's measurement_module disagrees with the log's module line and the base log is not under the evidence directory the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 65ae7f6f1b..6f20ea696b sits inside the declared write paths and no other file was touched.\nSCORE durability: 16\nJUSTIFICATION durability: base-crew-recovery.log shows test_fleet_counts_still_partition_the_runs_in_flight reddening on the repaired regression, but no fixture supplies a row with delivery status delivered, so reckon/crew/recovery_watch.py:2319's second disjunct can be deleted with the suite still green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:2311-2321 keeps the module's comment idiom with no plan or ticket identifier, and ruff check reports the same 3 pre-existing findings with both changed files format-clean.\nSCORE reuse: 16\nJUSTIFICATION reuse: the fold's owner delivery_summary at reckon/crew/recovery_classification.py:3554 is still the single reader of the promotion queue, but reckon/crew/recovery_watch.py:2318 restates the delivered partition that buckets already holds from ticker._bucket_of:972.\nFINDING reckon/crew/recovery_watch.py:2319 non-blocking: the delivery-status disjunct is untested, so a regression deleting it leaves all 86 cases green.\nFINDING reckon/crew/recovery_watch.py:2318 non-blocking: the delivered partition is stated twice in one function instead of read from the already-computed buckets list.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-recovery-at-current-main.html:90 non-blocking: the base run's log was not committed beside the ids the done_when places under the evidence directory.\nFINDING manifest.md:13 non-blocking: measurement_module names recovery_watch.py while the cited gate log records recovery.py, so the record and its receipt name different modules under test.",
+  "review_run_id": "r-20261118T215810837374-review-of-qwnw-red-file-crew-recovery-at-current-main-6f20ea696bc1",
+  "reviewed_base_sha": "65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd",
+  "reviewed_head_sha": "6f20ea696bc1dbb6d43be02cf5ef58d8196633f0",
+  "reviewed_run_id": "r-20261118T063950586729-qwnw-red-file-crew-recovery-at-current-main",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T215810837374-review-of-qwnw-red-file-crew-recovery-at-current-main-6f20ea696bc1"
+  },
+  "reviewer_run_id": "r-20261118T215810837374-review-of-qwnw-red-file-crew-recovery-at-current-main-6f20ea696bc1",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:57:50.789471+00:00",
+  "total": 106
+}

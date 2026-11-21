@@ -1,0 +1,93 @@
+<section id="qwnw-red-file-worktree-held-names-an-existing-tree-landing">
+  <h2>Held-tree cases are decided by the rule the reader keeps</h2>
+
+  <p><strong>The cause.</strong> The held-tree derivation
+  (<code>reckon/crew/obligations.py</code>, <code>_tree_holds_unmerged_work</code>)
+  raises <em>worktree-held</em> for a retained tree only while deleting it would
+  lose something: an uncommitted change, or a commit the primary branch does not
+  reach. The rule arrived after this file was written, which had been written
+  around the earlier rule — a tree is held when its directory exists and no
+  promotion record shows it released. Its second case therefore built a clean
+  detached worktree at <code>HEAD</code>, registered it, and asserted the duty
+  was raised; under the current rule that tree holds nothing, so the file failed
+  on the primary branch with <code>[]</code> against the one expected run id.</p>
+
+  <p><strong>Verdict: the test encoded a rule the code no longer keeps.</strong>
+  The product is not repaired. The new rule is deliberate and is already pinned
+  by its own cases in <code>tests/test_a_duty_cleared_when_its_run_ends.py</code>
+  (landed, uncommitted, unmerged-commit and gone arms), so nothing was
+  reimplemented here and no assertion of this file was removed or weakened.</p>
+
+  <p><strong>What changed in the file.</strong> Each retained tree now carries
+  work a reader would otherwise hold, so the case under test is the deciding
+  fact rather than a fixture that happens to be clean. The deleted case leaves an
+  uncommitted change before removing the directory, so presence is what removes
+  the duty. The released case leaves one too, and additionally shows
+  <code>git status --porcelain</code> reporting it, so its release record is what
+  removes the duty. The kept case is the arm where both hold, and its assertion
+  is unchanged.</p>
+
+  <h3 id="qwnw-red-file-worktree-held-names-an-existing-tree-arms">Measured</h3>
+
+  <table id="qwnw-red-file-worktree-held-names-an-existing-tree-arm-table">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>where</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control, the node's file at base</td>
+        <td><code>be17b57484c74a3432a3d7372aa84da6702ad965</code></td>
+        <td>worker worktree</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file at head, as an <code>all_debug</code> job</td>
+        <td><code>96831ae676821d98629ac287051b74768bea5539</code></td>
+        <td><code>98dci4-clu-3141</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, before</td>
+        <td><code>be17b57484c74a3432a3d7372aa84da6702ad965</code></td>
+        <td><code>all_debug</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, after</td>
+        <td><code>96831ae676821d98629ac287051b74768bea5539</code></td>
+        <td><code>all_debug</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>surrounding reader suites, before</td>
+        <td><code>be17b57484c74a3432a3d7372aa84da6702ad965</code></td>
+        <td>extraction</td>
+        <td>2 failed, 23 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>surrounding reader suites, after</td>
+        <td><code>96831ae676821d98629ac287051b74768bea5539</code></td>
+        <td>worker worktree</td>
+        <td>2 failed, 23 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-worktree-held-names-an-existing-tree-control">Negative control</h3>
+
+  <p>The base run of
+  <code>tests/test_worktree_held_names_an_existing_tree.py</code> reads
+  <code>1 failed, 2 passed</code> and names
+  <code>tests/test_worktree_held_names_an_existing_tree.py::test_a_promoted_run_whose_tree_remains_is_held</code>
+  as its failing id, with the assertion reading
+  <code>assert [] == ['r-20261002T080100000000-beta-kept']</code>. The other two
+  cases pass at base, which is why the cause is the kept case's clean fixture and
+  not the reader itself.</p>
+
+  <p>The repaired cases were also probed so that a passing run is not the only
+  evidence that their guards fire, by blinding each rule in turn against the same
+  fixture: with <code>_held_present_worktrees</code> and
+  <code>_tree_holds_unmerged_work</code> blinded, the deleted case's tree yields
+  a duty; with the release mapping dropped, the released case's tree yields one
+  too; and a clean present tree in the kept case's shape yields none, which is
+  the base failure reproduced on the fixture the file now builds.</p>
+
+  <h3 id="qwnw-red-file-worktree-held-names-an-existing-tree-outside">Outside this node's file</h3>
+
+  <p>Two sibling cases fail identically at base and at head, so this change
+  neither added nor fixed them:
+  <code>tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[file-and-aggregate-row]</code>
+  and
+  <code>tests/test_gc_spares_a_live_pointers_worktree.py::test_the_held_tree_remedy_names_a_run_scoped_sweep</code>.
+  The second fails with the same empty-held-list shape this node repaired, so it
+  is the same superseded fixture rule in another file and belongs to that file's
+  own node.</p>
+</section>

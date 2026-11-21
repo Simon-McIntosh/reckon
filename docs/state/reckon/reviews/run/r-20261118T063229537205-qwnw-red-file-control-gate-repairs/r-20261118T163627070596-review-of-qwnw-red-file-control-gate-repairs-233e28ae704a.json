@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:4001 crew_complete -> _refuse_a_presentation_that_names_nothing",
+    "reckon/crew_run_commands.py:3555 _refuse_a_presentation_that_names_nothing -> promotion_evidence.require_resolvable_presentation",
+    "reckon/crew/promotion_evidence.py:1188 _require_gate_evidence -> _unresolved_presentation_refusal"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T22:42:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-control-gate-repairs.html",
+      "id": "fd5ed60f7ba",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "the quoted base-log receipt reads \"phase\": \"promotion-rulequested\" (and a completion id and a 1.44s duration the cited log does not carry), while logs/negative-control-base.log:66 reads \"phase\": \"promotion-requested\" and 1.03s, so a fragment presented as the log's own text cites text that exists nowhere and a reader comparing quote to log cannot verify the base arm from the document that records it."
+    }
+  ],
+  "head_log_revision": "b45e1306bc6525bab45d3d19379122fe8b51a3bb",
+  "item_verdicts": {
+    "call_sites": "verified two production call sites: crew_complete at reckon/crew_run_commands.py and the drain's _require_gate_evidence.",
+    "diff": "read commit by commit against base 0d0e1c9: b45e1306bc extracts the unresolvable-presentation message in reckon/crew/promotion_evidence.py:977 into a shared helper, adds require_resolvable_presentation at :993, and adds _refuse_a_presentation_that_names_nothing at reckon/crew_run_commands.py:3530 called from crew_complete at :4001; 233e28ae adds only the evidence fragment.",
+    "done_when": "the done_when names the file at head as a job with its output on shared storage plus a base run and a negative control; the manifest records the head run at b45e1306bc (5 passed, EXIT=0), the base run at 0d0e1c9 (1 failed, 4 passed, EXIT=1) naming the failing id, and both suite arms as inline JSON with full revisions; the gate log for the head arm exists at the cited path with a matching revision header and a bare EXIT=0 last line, so the gate asserts the measure.",
+    "goal": "the node's goal is that tests/test_control_gate_repairs.py passes in full on the primary branch; the landed change makes the queued completion path refuse a presented commit that resolves to no object at reckon/crew_run_commands.py:4001, which is exactly the red case in that file.",
+    "manifest": "read in full; status complete, commits b45e1306bc and 233e28ae, changed_paths the three landed files, tests naming the node test file, test_logs naming the scoped gate, the base negative control and both suite logs, baseline_suite and after_suite both completed with exit_status 0 and full 40-character revisions, and outside_scope naming two pre-existing failures in adjacent files.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and two granted paths; the three files in the diff are two modules under reckon/ and the evidence fragment under the declared fragment directory, so every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "the guard is tests/test_control_gate_repairs.py:290, which the base arm shows red at 0d0e1c9 (logs/negative-control-base.log:73, EXIT=1), so deleting the call at reckon/crew_run_commands.py:4001 reddens it on exit_code and on the named value; the diff itself adds no assertion.",
+    "evidence": "logs/scoped-gate-1795016802799577277.log names revision b45e1306bc and reads \"5 passed\" EXIT=0, logs/negative-control-base.log names rev=0d0e1c9 and reads \"1 failed, 4 passed\" EXIT=1 with the CLI test id, and both suite arms (baseline_suite-1795016826136835638.log, after_suite-1795016901195440573.log) read \"58 passed\" EXIT=0.",
+    "fit": "the new helpers follow the surrounding module's idiom: a local import of CrewError and neighbours, a docstring stating the measured cause, and a private verb-named wrapper at reckon/crew_run_commands.py:3530 beside _refuse_an_unfileable_review_record, with no plan or ticket identifier in any name.",
+    "goal_fidelity": "reckon/crew_run_commands.py:4001 judges the presentation on the command that queues it, so the fifth case in tests/test_control_gate_repairs.py is refused on the caller's turn instead of being queued and answered ok, which is the goal the file states.",
+    "reuse": "the refusal text was extracted into _unresolved_presentation_refusal at reckon/crew/promotion_evidence.py:977 and both the drain (_require_gate_evidence:1188) and the request boundary call it, while require_resolvable_presentation reuses _run_commit_directory and _commit_canonical_id rather than forking a resolver; a search over reckon/crew for another owner of commit-resolvability found only promotion_evidence.py and promotion_scope.py, which imports the same function.",
+    "scope_discipline": "git diff 0d0e1c9..233e28ae touches only reckon/crew/promotion_evidence.py, reckon/crew_run_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-control-gate-repairs.html, all inside the declared fence, and no test file was edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_control_gate_repairs.py passes in full on the primary branch; the landed change makes the queued completion path refuse a presented commit that resolves to no object at reckon/crew_run_commands.py:4001, which is exactly the red case in that file.\nVERDICT done_when: the done_when names the file at head as a job with its output on shared storage plus a base run and a negative control; the manifest records the head run at b45e1306bc (5 passed, EXIT=0), the base run at 0d0e1c9 (1 failed, 4 passed, EXIT=1) naming the failing id, and both suite arms as inline JSON with full revisions; the gate log for the head arm exists at the cited path with a matching revision header and a bare EXIT=0 last line, so the gate asserts the measure.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and two granted paths; the three files in the diff are two modules under reckon/ and the evidence fragment under the declared fragment directory, so every path is inside the fence.\nVERDICT manifest: read in full; status complete, commits b45e1306bc and 233e28ae, changed_paths the three landed files, tests naming the node test file, test_logs naming the scoped gate, the base negative control and both suite logs, baseline_suite and after_suite both completed with exit_status 0 and full 40-character revisions, and outside_scope naming two pre-existing failures in adjacent files.\nVERDICT diff: read commit by commit against base 0d0e1c9: b45e1306bc extracts the unresolvable-presentation message in reckon/crew/promotion_evidence.py:977 into a shared helper, adds require_resolvable_presentation at :993, and adds _refuse_a_presentation_that_names_nothing at reckon/crew_run_commands.py:3530 called from crew_complete at :4001; 233e28ae adds only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:4001 crew_complete -> _refuse_a_presentation_that_names_nothing, reckon/crew_run_commands.py:3555 _refuse_a_presentation_that_names_nothing -> promotion_evidence.require_resolvable_presentation, reckon/crew/promotion_evidence.py:1188 _require_gate_evidence -> _unresolved_presentation_refusal\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:4001 judges the presentation on the command that queues it, so the fifth case in tests/test_control_gate_repairs.py is refused on the caller's turn instead of being queued and answered ok, which is the goal the file states.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/scoped-gate-1795016802799577277.log names revision b45e1306bc and reads \"5 passed\" EXIT=0, logs/negative-control-base.log names rev=0d0e1c9 and reads \"1 failed, 4 passed\" EXIT=1 with the CLI test id, and both suite arms (baseline_suite-1795016826136835638.log, after_suite-1795016901195440573.log) read \"58 passed\" EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0d0e1c9..233e28ae touches only reckon/crew/promotion_evidence.py, reckon/crew_run_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-control-gate-repairs.html, all inside the declared fence, and no test file was edited.\nSCORE durability: 18\nJUSTIFICATION durability: the guard is tests/test_control_gate_repairs.py:290, which the base arm shows red at 0d0e1c9 (logs/negative-control-base.log:73, EXIT=1), so deleting the call at reckon/crew_run_commands.py:4001 reddens it on exit_code and on the named value; the diff itself adds no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers follow the surrounding module's idiom: a local import of CrewError and neighbours, a docstring stating the measured cause, and a private verb-named wrapper at reckon/crew_run_commands.py:3530 beside _refuse_an_unfileable_review_record, with no plan or ticket identifier in any name.\nSCORE reuse: 18\nJUSTIFICATION reuse: the refusal text was extracted into _unresolved_presentation_refusal at reckon/crew/promotion_evidence.py:977 and both the drain (_require_gate_evidence:1188) and the request boundary call it, while require_resolvable_presentation reuses _run_commit_directory and _commit_canonical_id rather than forking a resolver; a search over reckon/crew for another owner of commit-resolvability found only promotion_evidence.py and promotion_scope.py, which imports the same function.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-control-gate-repairs.html:28 non-blocking: the quoted base-log receipt reads \"phase\": \"promotion-rulequested\" (and a completion id and a 1.44s duration the cited log does not carry), while logs/negative-control-base.log:66 reads \"phase\": \"promotion-requested\" and 1.03s, so a fragment presented as the log's own text cites text that exists nowhere and a reader comparing quote to log cannot verify the base arm from the document that records it.\n",
+  "review_run_id": "r-20261118T163627070596-review-of-qwnw-red-file-control-gate-repairs-233e28ae704a",
+  "reviewed_base_sha": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385",
+  "reviewed_head_sha": "233e28ae704af406206cd25b40797a3dec0d4b08",
+  "reviewed_run_id": "r-20261118T063229537205-qwnw-red-file-control-gate-repairs",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T163627070596-review-of-qwnw-red-file-control-gate-repairs-233e28ae704a"
+  },
+  "reviewer_run_id": "r-20261118T163627070596-review-of-qwnw-red-file-control-gate-repairs-233e28ae704a",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:02:43.758609+00:00",
+  "total": 111
+}

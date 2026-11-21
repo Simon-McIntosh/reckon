@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert world.heads == [], f\"superseded head dispatched: {world.heads}\"",
+      "fails_if": "A review is composed inside the resume window; reinstating the regression means deleting the registry early return at reckon/crew/resumption.py:338-340, and node-base.log shows exactly that arm failing with fda570d1 appended to the composed-head list. The list is appended by the monkeypatched compose from what _run_head_for_review returned, not from a value the test hands in, so it is not a self-comparison.",
+      "file": "tests/test_review_reflex_skips_a_superseded_head.py",
+      "limit": "The test registers the run by driving the real _resume path in-process; it cannot show the cross-process case launch_in_flight already answers.",
+      "line": 113,
+      "test": "test_a_sweep_snapshot_from_before_resume_dispatches_no_superseded_review"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/resumption.py:1932 sweep review pass gating on launch_mark_holds",
+    "reckon/crew/recovery_review_dispatch.py:4002 _settled_delivery_refusal reason 'the run has a resume launching'"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T03:44:15Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062803388372-qwnw-red-file-review-reflex-skips-a-superseded-head/manifest.md",
+      "id": "f53e74cc1e9",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's arm 'over the test files that import what you changed' is answered by tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which mention reckon/crew/resumption.py only in scanned text and import nothing from it, so both arms read the same 2 failed, 56 passed for reasons independent of this change and the arm cannot detect a regression this change introduces."
+    },
+    {
+      "file": "/home/ITER/mcintos/Code/.config/reckon/crew/runs/r-20261118T062803388372-qwnw-red-file-review-reflex-skips-a-superseded-head/node-head.log",
+      "id": "f1bd76a6af9",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: this is a scratch-tree run at trees/head whose header names revision, tree and command but not the absolute path of the module under test as imported nor the resolved working directory, and the manifest carries no measurement_module or measurement_cwd, so a later reader cannot prove which reckon/crew/resumption.py produced the 6 passes."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-skips-a-superseded-head.html",
+      "id": "f77c7af2eca",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states 'Measured at head eb23726' while the log it cites (node-head.log) is headed revision 256c27f7fa23db82939f35f796e8d245ce9c054b, so the fragment names a revision the measurement was not taken at even though the code under it is identical."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/resumption.py:1932 in the sweep's review pass and reckon/crew/recovery_review_dispatch.py:4002 in _settled_delivery_refusal both reach launch_mark_holds, read at head.",
+    "diff": "read both commits against 42fe90d0: eb2372658c adds eleven lines to reckon/crew/resumption.py (docstring paragraph plus the registry early return) and 256c27f7 adds the 22-line evidence fragment; no test file changed, because the failing test already existed at the base.",
+    "done_when": "done_when names the node file passing at head as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict list, an importers arm, a negative control and clean ruff; node-head.log records 6 passed EXIT=0 at 256c27f7 in trees/head and stream.jsonl records 'sbatch --wait --partition all_debug ... job 1329642 completed in 74s', but the recorded suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which reference resumption.py as text and do not import it.",
+    "goal": "dispatch-detail.json's NODE line states 'Make tests/test_review_reflex_skips_a_superseded_head.py pass in full on the primary branch'; node-head.log shows '6 passed' at 256c27f7, and the three added lines at reckon/crew/resumption.py:338-340 are what turn it green.",
+    "manifest": "read; it records commits eb2372658c76 and 256c27f7fa23, four logs with a bare EXIT= line each, suite arms as inline JSON at full 40-character revisions, negative_control_log at node-base.log, and the two pre-existing census failures it declines to triage.",
+    "write_paths": "the node's declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround; the diff touches only reckon/crew/resumption.py and a fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-skips-a-superseded-head.html."
+  },
+  "justifications": {
+    "durability": "tests/test_review_reflex_skips_a_superseded_head.py:113 asserts world.heads == [], which fails whenever a review is composed inside the resume window: removing the three added lines at reckon/crew/resumption.py:338-340 is exactly node-base.log's 1 failed, 5 passed, and the failure names the superseded head fda570d1.",
+    "evidence": "node-base.log and node-head.log each carry a revision header, the literal command and a bare EXIT= line, and suite-base.log/suite-after.log record 2 failed, 56 passed with the same two pre-existing ids on both arms, but the two tests chosen for the importers arm do not import resumption and the scratch-tree logs name neither module.__file__ nor the resolved cwd.",
+    "fit": "reckon/crew/resumption.py:336-340 keeps the module's existing shape of a docstring paragraph plus an early return, and names the pre-existing registry rather than a new one, though the guard sits in launch_mark_holds rather than in launch_in_flight whose own-pid exemption is what the docstring describes.",
+    "goal_fidelity": "reckon/crew/resumption.py:338-340 returns True from launch_mark_holds while the run is in _LAUNCHES_IN_THIS_PROCESS, and node-head.log records 6 passed against node-base.log's 1 failed 5 passed at 42fe90d0, so the node file the goal names passes in full at head.",
+    "reuse": "a search over reckon/ for per-process launch state found the owner _LAUNCHES_IN_THIS_PROCESS at reckon/crew/resumption.py:541 with its reader _refuse_a_launch_already_running at :557 and its writers at :2158/:2252; the change consumes that registry and forks no second mechanism.",
+    "scope_discipline": "git diff 42fe90d0..256c27f7 lands two files, reckon/crew/resumption.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-skips-a-superseded-head.html, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T051908074591-review-of-qwnw-red-file-review-reflex-skips-a-superseded-head-256c27f7fa",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "256c27f7fa23db82939f35f796e8d245ce9c054b",
+  "reviewed_run_id": "r-20261118T062803388372-qwnw-red-file-review-reflex-skips-a-superseded-head",
+  "scores": {
+    "durability": 20,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:55:00Z",
+  "total": 112
+}

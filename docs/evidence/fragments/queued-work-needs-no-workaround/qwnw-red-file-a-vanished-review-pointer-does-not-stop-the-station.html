@@ -1,0 +1,63 @@
+<section id="qwnw-red-file-a-vanished-review-pointer-does-not-stop-the-station-landing">
+  <h2>A vanished review pointer does not stop the station</h2>
+
+  <p><strong>What was wrong.</strong> The station views its live pointers over
+  a snapshot and reads each listed review's own pointer from disk, so a review
+  promoted or discarded during a slow tick is listed but unreadable; the reader
+  must see a falsy value rather than an exception. That half of the file already
+  held: <code>_current_review_in_flight</code> passed at the base revision, and
+  the case that asserts it passed there untouched. The two failures were in the
+  station-loop cases, and neither was about the vanished pointer.</p>
+
+  <p><strong>The cause, and which side was wrong.</strong> Both failures were
+  the test's own station double, not the product. <code>run_station</code>'s
+  shutdown drains the station's duties — a bounded moment for a derivation in
+  flight to land — and the tick loop polls the reloader with those duties. The
+  double carried a clock, a reflex and a tick and nothing else, so the teardown
+  raised <code>AttributeError: 'types.SimpleNamespace' object has no attribute
+  'duties'</code>. In the case whose tick raises, that teardown error was
+  raised <em>over</em> the error the case asserts on, so the recorded traceback
+  named the double rather than the failing read. The real <code>Station</code>
+  always constructs <code>duties</code> and the real
+  <code>StationReloader.poll</code> takes them, so the product rule is intact:
+  verdict <em>test wrong</em>, and the double now carries a duty drain that
+  lands immediately and a reloader that answers "no reload owed". No assertion
+  was deleted or weakened; the three assertions of the file are unchanged.</p>
+
+  <h3 id="qwnw-red-file-a-vanished-review-pointer-does-not-stop-the-station-arms">Arms</h3>
+
+  <table id="qwnw-red-file-a-vanished-review-pointer-does-not-stop-the-station-table">
+    <caption>Each arm is a log under the run directory whose first lines name
+    the revision, tree and command and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control (base)</td><td><code>2437205f9a762420c943f3c0b0312ded03f7395f</code></td>
+        <td>extraction of the base revision</td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>gate (head)</td><td><code>67a4fc75c2c694633d82fec824ccb7e50c4ace4e</code></td>
+        <td>committed head, on <code>all_debug</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite, base arm</td><td><code>2437205f9a762420c943f3c0b0312ded03f7395f</code></td>
+        <td>extraction of the base revision</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite, after arm</td><td><code>67a4fc75c2c694633d82fec824ccb7e50c4ace4e</code></td>
+        <td>committed head</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-a-vanished-review-pointer-does-not-stop-the-station-ids">The
+  base revision's failing ids, verbatim from its log:</p>
+
+  <pre id="qwnw-red-file-a-vanished-review-pointer-does-not-stop-the-station-red">
+FAILED tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_tick_that_raises_costs_one_tick_and_the_station_goes_on - AttributeError: 'types.SimpleNamespace' object has no attribute 'duties'
+FAILED tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_lost_lease_still_ends_the_station - AttributeError: 'types.SimpleNamespace' object has no attribute 'duties'
+2 failed, 1 passed</pre>
+
+  <p><strong>Why the control could have failed.</strong> The base arm runs the
+  same file for real, and its log ends <code>EXIT=1</code>; the head arm's
+  command is the same command at a different revision, and its log ends
+  <code>EXIT=0</code> with <code>3 passed</code>. The delta is two failures
+  turning green, with the file's third case passing in both arms.</p>
+</section>

@@ -1,0 +1,127 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_derivation": "read from the reviewed run's own arms: baseline_suite-1795050083202838100.log (06ed97e, 58 passed, EXIT=0, failure_ids []) and after_suite-1795053211324943177.log (642821cf, 58 passed, EXIT=0, failure_ids []), both completed through their summary line",
+  "added_failure_ids": [],
+  "assertion_verdicts": [
+    {
+      "assertion": "tests/test_lane_reading_at_dispatch.py:344 assert zero_result.exit_code == 0",
+      "fails_when": "the lane-hold path returns to the retired exit-75 refusal; the base arm shows exactly this failure ('assert 0 == 75')",
+      "independent_of": "the CLI's own exit status, asserted against the literal 0"
+    },
+    {
+      "assertion": "tests/test_lane_reading_at_dispatch.py:345 assert zero_payload['ok'] is True and zero_payload['queued'] is True",
+      "fails_when": "the queued branch stops reporting an acceptance, or the request is refused rather than stored",
+      "independent_of": "the payload the command emitted"
+    },
+    {
+      "assertion": "tests/test_lane_reading_at_dispatch.py:348 assert zero_payload['lane_gate']['held'] is True",
+      "fails_when": "the gate's hold stops riding the result",
+      "independent_of": "the lane gate the router produced"
+    },
+    {
+      "assertion": "tests/test_lane_reading_at_dispatch.py:349 assert zero_payload['phase'] == 'queued'",
+      "fails_when": "the request is reported in another phase (running, failed) or the phase field is dropped",
+      "independent_of": "the phase the store assigned"
+    },
+    {
+      "assertion": "tests/test_lane_reading_at_dispatch.py:350 assert 'grants 0' in zero_payload['reason']",
+      "fails_when": "the queued result stops carrying the router's reason",
+      "independent_of": "the router's own verdict sentence"
+    },
+    {
+      "assertion": "tests/test_lane_reading_at_dispatch.py:351 assert runs.read_pointer(zero_payload['run_id'])['phase'] == 'queued'",
+      "fails_when": "no pointer is written, or the pointer's phase is not queued; this is the assertion the acceptance rests on",
+      "independent_of": "the payload, read back from the store the CLI writes"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_emit_held_result",
+    "reckon/crew/runs.py:1655",
+    "reckon/resources.py:65",
+    "reckon/crew/reports.py:2793"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:38:46Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks that ruff check and ruff format --check report nothing new on the changed paths and the manifest carries no result for either clause, so a reader cannot tell that obligation was measured \u2014 it does hold when measured (ruff check passes, and the one format finding at tests/test_lane_reading_at_dispatch.py:42 is present identically at the base revision), so record the pair beside the gate result rather than leaving the clause unread."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 06ed97e3a38086e2e5feabb18d5965f8ded3886b, where 61f3b0436d replaces the exit-75 refusal assertions with queued ones at tests/test_lane_reading_at_dispatch.py:344-351 including a pointer read through reckon.crew.runs, and 642821cfff adds the 35-line evidence fragment, with nothing else changed.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job, a base run first, a cause verdict per failing id, no assertion deleted or weakened, both suite arms carrying 40-character revisions, the base failing id logged in the fragment, and ruff reporting nothing new on the changed paths; the manifest records the head gate (10 passed, EXIT=0 at 642821cf from all_debug via rerun-gate.sh), the base run first (negative-control-1795050032488777989.log, 1 failed at 06ed97e), one cause with its verdict, both arms as inline JSON with full 40-character revisions (58 passed each), and the failing id inside docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-reading-at-dispatch.html, while its ruff clause has no recorded result.",
+    "goal": "dispatch-detail.json's node.goal asks that tests/test_lane_reading_at_dispatch.py pass in full on the file's own gate, and the landed commit 61f3b0436da5ba1131da7c25082c648cd0f9fc8e rewrites the single failing case while scoped-gate-1795051945447875360.log records 10 passed in 1.10s at 642821cfffe524fb69f40148b3ad93a04927e115.",
+    "manifest": "read in full, it reports status complete, two full-length commit ids, both suite arms with empty failure_ids, a committed evidence fragment, and the gate command `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_reading_at_dispatch.py` with its test_logs naming the scoped gate and the negative control.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node html, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-lane-reading-at-dispatch; the diff changes only tests/test_lane_reading_at_dispatch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-reading-at-dispatch.html, both inside that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_lane_reading_at_dispatch.py:344 reddens on the retired contract, so the base arm already shows the failure the assertion now guards, and tests/test_lane_reading_at_dispatch.py:351 reads the stored pointer rather than the payload the same call returned.",
+    "evidence": "scoped-gate-1795051945447875360.log records 10 passed and EXIT=0 at 642821cf and negative-control-1795050032488777989.log records the base failing id, but the done_when's ruff clause carries no result in the reviewed manifest.md:11.",
+    "fit": "the added import and assertions follow the module's existing style and the fragment's quoted srun line matches four sibling fragments under docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal_fidelity": "tests/test_lane_reading_at_dispatch.py is fully green at the reviewed head, so the goal's deliverable is met and only the promoted-branch step that belongs to promotion remains.",
+    "reuse": "the only added reference is the existing owner reckon/crew/runs.py:1655 read_pointer, imported rather than re-implemented, and no new helper was defined.",
+    "scope_discipline": "both changed paths, tests/test_lane_reading_at_dispatch.py and the node's evidence fragment, sit inside the declared write paths and the diff carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json's node.goal asks that tests/test_lane_reading_at_dispatch.py pass in full on the file's own gate, and the landed commit 61f3b0436da5ba1131da7c25082c648cd0f9fc8e rewrites the single failing case while scoped-gate-1795051945447875360.log records 10 passed in 1.10s at 642821cfffe524fb69f40148b3ad93a04927e115.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job, a base run first, a cause verdict per failing id, no assertion deleted or weakened, both suite arms carrying 40-character revisions, the base failing id logged in the fragment, and ruff reporting nothing new on the changed paths; the manifest records the head gate (10 passed, EXIT=0 at 642821cf from all_debug via rerun-gate.sh), the base run first (negative-control-1795050032488777989.log, 1 failed at 06ed97e), one cause with its verdict, both arms as inline JSON with full 40-character revisions (58 passed each), and the failing id inside docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-reading-at-dispatch.html, while its ruff clause has no recorded result.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node html, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-lane-reading-at-dispatch; the diff changes only tests/test_lane_reading_at_dispatch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-reading-at-dispatch.html, both inside that declaration.\nVERDICT manifest: read in full, it reports status complete, two full-length commit ids, both suite arms with empty failure_ids, a committed evidence fragment, and the gate command `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_reading_at_dispatch.py` with its test_logs naming the scoped gate and the negative control.\nVERDICT diff: read both commits against base 06ed97e3a38086e2e5feabb18d5965f8ded3886b, where 61f3b0436d replaces the exit-75 refusal assertions with queued ones at tests/test_lane_reading_at_dispatch.py:344-351 including a pointer read through reckon.crew.runs, and 642821cfff adds the 35-line evidence fragment, with nothing else changed.\nCALL_SITES: reckon/crew_dispatch_commands.py:_emit_held_result, reckon/crew/runs.py:1655, reckon/resources.py:65, reckon/crew/reports.py:2793\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_lane_reading_at_dispatch.py is fully green at the reviewed head, so the goal's deliverable is met and only the promoted-branch step that belongs to promotion remains.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795051945447875360.log records 10 passed and EXIT=0 at 642821cf and negative-control-1795050032488777989.log records the base failing id, but the done_when's ruff clause carries no result in the reviewed manifest.md:11.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths, tests/test_lane_reading_at_dispatch.py and the node's evidence fragment, sit inside the declared write paths and the diff carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_lane_reading_at_dispatch.py:344 reddens on the retired contract, so the base arm already shows the failure the assertion now guards, and tests/test_lane_reading_at_dispatch.py:351 reads the stored pointer rather than the payload the same call returned.\nSCORE fit: 19\nJUSTIFICATION fit: the added import and assertions follow the module's existing style and the fragment's quoted srun line matches four sibling fragments under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE reuse: 20\nJUSTIFICATION reuse: the only added reference is the existing owner reckon/crew/runs.py:1655 read_pointer, imported rather than re-implemented, and no new helper was defined.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch/manifest.md:11 non-blocking: the done_when asks that ruff check and ruff format --check report nothing new on the changed paths and the manifest carries no result for either clause, so a reader cannot tell that obligation was measured \u2014 it does hold when measured (ruff check passes, and the one format finding at tests/test_lane_reading_at_dispatch.py:42 is present identically at the base revision), so record the pair beside the gate result rather than leaving the clause unread.\n",
+  "reuse_search": "searched the repository for an existing reader of a run's live pointer by capability (read a run's phase from the store) and found reckon/crew/runs.py:1655 read_pointer, which the diff imports rather than reimplements; no other definition was added by the diff",
+  "review_run_id": "r-20261119T020841903385-review-of-qwnw-red-file-lane-reading-at-dispatch-642821cfffe5",
+  "reviewed_base_sha": "06ed97e3a38086e2e5feabb18d5965f8ded3886b",
+  "reviewed_head_sha": "642821cfffe524fb69f40148b3ad93a04927e115",
+  "reviewed_run_id": "r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch",
+  "reviewed_worker_commits": [
+    "61f3b0436da5ba1131da7c25082c648cd0f9fc8e",
+    "642821cfffe524fb69f40148b3ad93a04927e115"
+  ],
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after": {
+      "exit": 0,
+      "failure_ids": [],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch/after_suite-1795053211324943177.log",
+      "revision": "642821cfffe524fb69f40148b3ad93a04927e115",
+      "summary": "58 passed in 35.59s"
+    },
+    "baseline": {
+      "exit": 0,
+      "failure_ids": [],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch/baseline_suite-1795050083202838100.log",
+      "revision": "06ed97e3a38086e2e5feabb18d5965f8ded3886b",
+      "summary": "58 passed in 36.00s"
+    },
+    "gate": {
+      "exit": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch/scoped-gate-1795051945447875360.log",
+      "revision": "642821cfffe524fb69f40148b3ad93a04927e115",
+      "summary": "10 passed in 1.10s"
+    },
+    "negative_control": {
+      "exit": 1,
+      "failure_ids": [
+        "tests/test_lane_reading_at_dispatch.py::test_a_zero_reading_holds_a_real_dispatch_while_ample_and_absent_proceed"
+      ],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch/negative-control-1795050032488777989.log",
+      "revision": "06ed97e3a38086e2e5feabb18d5965f8ded3886b",
+      "summary": "1 failed, 9 passed in 1.16s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:59:00.034178+00:00",
+  "total": 113
+}

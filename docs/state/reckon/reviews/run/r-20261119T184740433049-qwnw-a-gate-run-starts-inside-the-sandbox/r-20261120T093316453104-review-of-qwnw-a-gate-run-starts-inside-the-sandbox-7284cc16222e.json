@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_worker_fence.py:2225",
+    "reckon/_backends.py:3336",
+    "reckon/nested_launch.py:586"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T09:34:38Z",
+  "evidence_limits": [
+    "The reviewed run's two suite arms ran on 98dci4-clu-3141.iter.org, not the rigel the section's done-when names.",
+    "The reviewed delta is one commit (7284cc1622) that adds only a test; the falsification of the production guard rests on the repair negative-control log the manifest records, which the reviewer read but did not re-run.",
+    "The mock destination expectation is derived from the monkeypatched NODE_TMP_ROOT the code under test reads, so the assertion proves the emission uses that constant, not that the production default /tmp is correct."
+  ],
+  "finding_dispositions": {},
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 7284cc1622 (the only commit gained since the review filed at f4b3b5b963) against its parent: one file, tests/test_a_gate_run_starts_inside_the_sandbox.py, +38/-1, adding test_the_composed_recipe_names_the_node_temps_bind at :67 and the _carried_recipe decoder at :96.",
+    "done_when": "node.json's done-when requires a one-test gate on all_debug ending EXIT=0 naming the node, a refusal naming an unbindable directory, and base arms; the reviewed run's after_suite-1795164164373610374.log records 61 passed at 7284cc1622 on 98dci4-clu-3141.iter.org with EXIT=0, and the new test is the falsifiable guard the prior review found missing.",
+    "goal": "dispatch-detail.json's node goal is \"A gate run starts inside the worker sandbox on a compute node\"; the landed delta adds the production guard for the temp_overlay emission at reckon/_worker_fence.py:2225 that the prior review named blocking.",
+    "manifest": "the reviewed manifest.md states status complete, lists 61-passed suite arms at 28fbf2bc2f and 7284cc1622, and records repair-negative-control.log with 1 failed of 2 under the declared mutation; its test_logs line names only the scoped-gate logs while the suite arms are carried in test_logs' sibling fields.",
+    "write_paths": "the seven declared paths include tests/test_a_gate_run_starts_inside_the_sandbox.py and the landed delta touches no other path."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gate_run_starts_inside_the_sandbox.py:88 composes the fence through reckon._worker_fence.fence_argv and reddens with KeyError: 'temp_overlay' when the emission at reckon/_worker_fence.py:2225 is deleted, as repair-negative-control.log shows (1 failed, 2 passed, EXIT=1).",
+    "evidence": "repair-negative-control.log records EXIT=1 with 1 failed and 2 passed on the mutated tree, and after_suite-1795164164373610374.log:7 records 61 passed at 7284cc1622 with EXIT=0, but both arms ran on all_debug while the done-when names rigel.",
+    "fit": "the test follows the file's existing docstring-and-module-docstring idiom and uses monkeypatch as the surrounding tests do, though tests/test_a_gate_run_starts_inside_the_sandbox.py:99 inlines the env-var name where tests/test_a_job_fence_starts_on_any_node.py:457 uses nested_launch.WORKER_FENCE_ENV.",
+    "goal_fidelity": "tests/test_a_gate_run_starts_inside_the_sandbox.py:67-93 now composes the fence in production form and asserts the temp_overlay source and destination, which is exactly the missing guard the prior review named blocking at :103.",
+    "reuse": "the capability search over tests/ and reckon/ for carried-recipe decoding found inline decodes at tests/test_shared_environments_are_read_only.py:382 and tests/test_a_job_fence_starts_on_any_node.py:457 with no shared owner, and reckong/nested_launch.py:497,836 decode only in the task bootstrap, so _carried_recipe names a helper where the repository had ad-hoc duplication.",
+    "scope_discipline": "the reviewed delta touches only tests/test_a_gate_run_starts_inside_the_sandbox.py, which is one of the seven declared write paths, and carries no production change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json records the source node goal \"A gate run starts inside the worker sandbox on a compute node\", and the delta adds the production guard at tests/test_a_gate_run_starts_inside_the_sandbox.py:67 for the emission at reckon/_worker_fence.py:2225.\nVERDICT done_when: node.json's done-when names a one-test gate on all_debug ending EXIT=0 with the node named; the reviewed manifest records scoped-gate-1795121430498485799.log at 98dci4-clu-3141.iter.org, 1 passed, EXIT=0, while the arm clause names rigel and both arms ran on all_debug.\nVERDICT write_paths: the seven declared paths include tests/test_a_gate_run_starts_inside_the_sandbox.py, and the landed delta (7284cc1622) changes only that file.\nVERDICT manifest: the reviewed manifest.md reports status complete with suite arms at 28fbf2bc2f (58 passed) and 7284cc1622 (61 passed), both EXIT=0, and quotes repair-negative-control.log's 1 failed of 2.\nVERDICT diff: commit 7284cc1622 is the only commit gained since the review filed at f4b3b5b963, and it adds test_the_composed_recipe_names_the_node_temps_bind plus _carried_recipe in tests/test_a_gate_run_starts_inside_the_sandbox.py (+38/-1) with no production change.\nCALL_SITES: reckon/_worker_fence.py:2225, reckon/_backends.py:3336, reckon/nested_launch.py:586\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_gate_run_starts_inside_the_sandbox.py:67-93 composes the fence through fence_argv and asserts the temp_overlay source and destination, closing the blocking durability finding the prior review named at :103.\nSCORE evidence: 15\nJUSTIFICATION evidence: repair-negative-control.log records EXIT=1 with 1 failed and 2 passed on the mutated tree, and after_suite-1795164164373610374.log:7 records 61 passed at 7284cc1622 with EXIT=0, though both arms ran on all_debug rather than the rigel the done-when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed delta touches only tests/test_a_gate_run_starts_inside_the_sandbox.py, one of the seven declared write paths, and carries no production change.\nSCORE durability: 19\nJUSTIFICATION durability: deleting the emission at reckon/_worker_fence.py:2225 reddens tests/test_a_gate_run_starts_inside_the_sandbox.py:88 with KeyError: 'temp_overlay', recorded in repair-negative-control.log as 1 failed, 2 passed, EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the test follows the module-docstring and monkeypatch idiom of tests/test_a_gate_run_starts_inside_the_sandbox.py:1-45, though :99 inlines the env-var name where tests/test_a_job_fence_starts_on_any_node.py:457 uses nested_launch.WORKER_FENCE_ENV.\nSCORE reuse: 17\nJUSTIFICATION reuse: _carried_recipe at tests/test_a_gate_run_starts_inside_the_sandbox.py:96 names a decoder the repository only had inline at tests/test_shared_environments_are_read_only.py:382 and tests/test_a_job_fence_starts_on_any_node.py:457, and no shared owner exists to extend.\n",
+  "review_run_id": "r-20261120T093316453104-review-of-qwnw-a-gate-run-starts-inside-the-sandbox-7284cc16222e",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "7284cc16222edb17bf5d04088ead20af5a5a0eb7",
+  "reviewed_run_id": "r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "baseline": {
+      "exit": 0,
+      "failed": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/baseline_suite-1795164088495286382.log",
+      "passed": 58,
+      "revision": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+      "summary": "58 passed in 37.03s"
+    },
+    "head": {
+      "exit": 0,
+      "failed": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/after_suite-1795164164373610374.log",
+      "passed": 61,
+      "revision": "7284cc16222edb17bf5d04088ead20af5a5a0eb7",
+      "summary": "61 passed in 37.84s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T09:42:21.131614+00:00",
+  "total": 107
+}

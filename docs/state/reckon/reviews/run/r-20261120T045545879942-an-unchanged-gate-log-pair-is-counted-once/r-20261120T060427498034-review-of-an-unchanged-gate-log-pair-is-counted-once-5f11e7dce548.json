@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs with the product's reader (reckon/crew/review.py gate_log_failure_ids): baseline_suite-1795154422622896808.log lines to its summary '58 passed in 42.77s' name no failing id and after_suite-1795154497321837899.log '62 passed in 42.88s' names none, so the set difference is empty (0); the same reader finds 3 FAILED ids in negative-control-unchanged-gate-log-pair.log, so the zero is a read and not a blind reader.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/review.py:4602 (read_review -> annotate_review_of_run)",
+    "reckon/crew/obligations.py:4300",
+    "reckon/crew/promotion_checks.py:719",
+    "reckon/crew/repair.py:908",
+    "reckon/crew/repair.py:986",
+    "reckon/crew/recovery_repair_dispatch.py:1097",
+    "reckon/crew/recovery_review_dispatch.py:1713",
+    "reckon/crew/recovery_review_subject.py:148"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T06:04:54Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "evidence wording names the first round's memo kind; the code at the reviewed head holds the pair in a bounded map, and the landing comment on s105 states that",
+      "recorded_at": "2026-11-20T06:22:04.553972+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the retry test covers the head side; the production condition reads either side, and a base-side assertion is a small follow-up rather than a reason to hold the landing",
+      "recorded_at": "2026-11-20T06:22:07.637663+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-gate-log-pair-is-counted-once.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 'What landed' paragraph still says _added_failures_for_arm_logs keys file_memo.memoized_key(..., \"review_gate_log_added_failures\", ...) and that _read_gate_log_at is the one place an arm log is read, but at the reviewed head that memo kind is gone (reckon/crew/review.py:2931 holds the pair in file_memo.bounded_map(\"review_gate_log_pair_results\", limit=4096)) and _read_gate_log_at (review.py:2887) only delegates to _read_gate_log_attempt, so the permanent evidence record describes a mechanism the same node's repair removed."
+    },
+    {
+      "file": "tests/test_an_unchanged_gate_log_pair_is_counted_once.py",
+      "line": "259",
+      "severity": "non-blocking",
+      "text": "non-blocking: the stand-in raises OSError only for the head log, so the retry case guards head_failed alone \u2014 an implementation that kept a pair when only the base read failed, or that reduced the condition to head_failed, would leave this test green while review.py:3012's base_failed or head_failed says otherwise."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against e6d692b1 and again across a35432d2..5f11e7dce5, the commits gained since the record at head a35432d2: 72979fc842 splits the derivation into _derive_arm_log_pair returning a failure flag and skips _PAIR_RESULTS.put when either read failed (reckon/crew/review.py:2986-3013), and 5f11e7dce5 records the retry and the 62-test figures in docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-gate-log-pair-is-counted-once.html:26-29 and :35, both inside the declared paths.",
+    "done_when": "the done_when names tests/test_an_unchanged_gate_log_pair_is_counted_once.py, whose four cases assert five reads leave each arm log read once (:149-165), a rewritten head log reads both arms again and reports one more added failure (:184-233), a log in neither format reads as unmeasured (:236-240) and a failed read is retried (:243-279); its stated base-arm control is recorded at negative-control-unchanged-gate-log-pair.log:92-98 as 3 failed, EXIT=1, each log read 5 times, and I re-ran its lint clause on the two staged python paths at this head: ruff check 'All checks passed!' and ruff format --check '2 files already formatted'.",
+    "goal": "the node's goal is that the added-failure count for an unchanged pair of arm logs reads each log once across repeated review reads; reckon/crew/review.py:2969-2982 answers an unchanged pair from _PAIR_RESULTS keyed on both logs' stat identities and the two arm directories, and 72979fc842 adds that a result a failed read produced is handed back without being kept.",
+    "manifest": "read; it declares status complete, records scoped-gate-1795154374895134817.log at 62 passed EXIT=0 for head 5f11e7dce, baseline_suite-1795154422622896808.log at 58 passed EXIT=0 for e6d692b1 and after_suite-1795154497321837899.log at 62 passed EXIT=0 for the head, and names negative-control-failed-read-kept.log at 1 failed EXIT=1.",
+    "write_paths": "the declared paths are reckon/crew/review.py, tests/test_an_unchanged_gate_log_pair_is_counted_once.py, the evidence fragment and a figures directory; all three changed paths in e6d692b1..5f11e7dce5 lie inside them and the figures directory carries no change."
+  },
+  "justifications": {
+    "durability": "the finding at tests/test_an_unchanged_gate_log_pair_is_counted_once.py:259 stands: the stand-in raises only for the head log, so a derivation honouring only head_failed still passes, and the base-side half of base_failed or head_failed (reckon/crew/review.py:3012) is unguarded.",
+    "evidence": "scoped-gate-1795154374895134817.log:2-7 records 62 passed EXIT=0 at 5f11e7dce with the node's test file in its command and negative-control-failed-read-kept.log:53-56 records the new case failing when a failed read's result is kept, though the manifest records no lint log for the done_when's ruff clause.",
+    "fit": "the new helper follows the module's own idiom of a small private function beside its one caller (reckon/crew/review.py:2870), though _read_gate_log_at at :2887 is now a one-line delegate with no production caller.",
+    "goal_fidelity": "the failing read no longer poisons the pair: reckon/crew/review.py:2980-2982 stores the derived pair only when _derive_arm_log_pair reported neither read failed, so the next read of the same stat identities reads the log again.",
+    "reuse": "the change keeps the capability where the repository owns it, holding pair state in file_memo.bounded_map (reckon/file_memo.py:537) and reusing added_failures_from_gate_logs and file_memo.file_signature rather than forking a second cache or stat helper.",
+    "scope_discipline": "every hunk in e6d692b1..5f11e7dce5 lands in reckon/crew/review.py, the node's test file or its evidence fragment, and the figure directory the node also declared is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the added-failure count for an unchanged pair of arm logs reads each log once across repeated review reads; reckon/crew/review.py:2969-2982 answers an unchanged pair from _PAIR_RESULTS keyed on both logs' stat identities and the two arm directories, and 72979fc842 adds that a result a failed read produced is handed back without being kept.\nVERDICT done_when: the done_when names tests/test_an_unchanged_gate_log_pair_is_counted_once.py, whose four cases assert five reads leave each arm log read once (:149-165), a rewritten head log reads both arms again and reports one more added failure (:184-233), a log in neither format reads as unmeasured (:236-240) and a failed read is retried (:243-279); its stated base-arm control is recorded at negative-control-unchanged-gate-log-pair.log:92-98 as 3 failed, EXIT=1, each log read 5 times, and I re-ran its lint clause on the two staged python paths at this head: ruff check 'All checks passed!' and ruff format --check '2 files already formatted'.\nVERDICT write_paths: the declared paths are reckon/crew/review.py, tests/test_an_unchanged_gate_log_pair_is_counted_once.py, the evidence fragment and a figures directory; all three changed paths in e6d692b1..5f11e7dce5 lie inside them and the figures directory carries no change.\nVERDICT manifest: read; it declares status complete, records scoped-gate-1795154374895134817.log at 62 passed EXIT=0 for head 5f11e7dce, baseline_suite-1795154422622896808.log at 58 passed EXIT=0 for e6d692b1 and after_suite-1795154497321837899.log at 62 passed EXIT=0 for the head, and names negative-control-failed-read-kept.log at 1 failed EXIT=1.\nVERDICT diff: read commit by commit against e6d692b1 and again across a35432d2..5f11e7dce5, the commits gained since the record at head a35432d2: 72979fc842 splits the derivation into _derive_arm_log_pair returning a failure flag and skips _PAIR_RESULTS.put when either read failed (reckon/crew/review.py:2986-3013), and 5f11e7dce5 records the retry and the 62-test figures in docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-gate-log-pair-is-counted-once.html:26-29 and :35, both inside the declared paths.\nCALL_SITES: reckon/crew/review.py:4602 (read_review -> annotate_review_of_run), reckon/crew/obligations.py:4300, reckon/crew/promotion_checks.py:719, reckon/crew/repair.py:908, reckon/crew/repair.py:986, reckon/crew/recovery_repair_dispatch.py:1097, reckon/crew/recovery_review_dispatch.py:1713, reckon/crew/recovery_review_subject.py:148\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 16\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the failing read no longer poisons the pair: reckon/crew/review.py:2980-2982 stores the derived pair only when _derive_arm_log_pair reported neither read failed, so the next read of the same stat identities reads the log again.\nJUSTIFICATION evidence: scoped-gate-1795154374895134817.log:2-7 records 62 passed EXIT=0 at 5f11e7dce with the node's test file in its command and negative-control-failed-read-kept.log:53-56 records the new case failing when a failed read's result is kept, though the manifest records no lint log for the done_when's ruff clause.\nJUSTIFICATION scope_discipline: every hunk in e6d692b1..5f11e7dce5 lands in reckon/crew/review.py, the node's test file or its evidence fragment, and the figure directory the node also declared is untouched.\nJUSTIFICATION durability: the finding at tests/test_an_unchanged_gate_log_pair_is_counted_once.py:259 stands: the stand-in raises only for the head log, so a derivation honouring only head_failed still passes, and the base-side half of base_failed or head_failed (reckon/crew/review.py:3012) is unguarded.\nJUSTIFICATION fit: the new helper follows the module's own idiom of a small private function beside its one caller (reckon/crew/review.py:2870), though _read_gate_log_at at :2887 is now a one-line delegate with no production caller.\nJUSTIFICATION reuse: the change keeps the capability where the repository owns it, holding pair state in file_memo.bounded_map (reckon/file_memo.py:537) and reusing added_failures_from_gate_logs and file_memo.file_signature rather than forking a second cache or stat helper.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-gate-log-pair-is-counted-once.html:24 non-blocking: the 'What landed' paragraph still says _added_failures_for_arm_logs keys file_memo.memoized_key(..., \"review_gate_log_added_failures\", ...) and that _read_gate_log_at is the one place an arm log is read, but at the reviewed head that memo kind is gone (reckon/crew/review.py:2931 holds the pair in file_memo.bounded_map(\"review_gate_log_pair_results\", limit=4096)) and _read_gate_log_at (review.py:2887) only delegates to _read_gate_log_attempt, so the permanent evidence record describes a mechanism the same node's repair removed.\nFINDING tests/test_an_unchanged_gate_log_pair_is_counted_once.py:259 non-blocking: the stand-in raises OSError only for the head log, so the retry case guards head_failed alone \u2014 an implementation that kept a pair when only the base read failed, or that reduced the condition to head_failed, would leave this test green while review.py:3012's base_failed or head_failed says otherwise.",
+  "review_node": "review-of-an-unchanged-gate-log-pair-is-counted-once-5f11e7dce548",
+  "review_run_id": "r-20261120T060427498034-review-of-an-unchanged-gate-log-pair-is-counted-once-5f11e7dce548",
+  "reviewed_base_sha": "e6d692b1b42efe97685bb9dcc2f542c0de4135a1",
+  "reviewed_head_sha": "5f11e7dce5482d2a54a34e90ed63b1d41a757dca",
+  "reviewed_run_id": "r-20261120T045545879942-an-unchanged-gate-log-pair-is-counted-once",
+  "reviewer": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T06:09:36.896590+00:00",
+  "total": 110
+}

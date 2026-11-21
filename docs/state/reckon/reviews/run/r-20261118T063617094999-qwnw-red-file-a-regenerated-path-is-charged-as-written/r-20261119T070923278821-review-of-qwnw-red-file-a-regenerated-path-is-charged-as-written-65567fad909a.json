@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:_live_conflict_rows",
+    "reckon/crew/dispatch_claims.py:_claim_shares_overlap",
+    "reckon/crew/runs.py:_shared_write_paths",
+    "reckon/crew/dispatch_plan.py:1222"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:44:54Z",
+  "findings": [
+    {
+      "file": "gate-head-65567fad909a2f7c1bf68d9294a326eb91fe9b14.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "The head log's own '# command:' header records PYTHONPATH=. ... pytest ... and drops the 'env -u SLURM_JOB_ID' prefix the done_when requires, so a reader who takes the log's header as the executed command cannot see that SLURM_JOB_ID was stripped; gate-head.sh:32 does carry the strip, and the manifest's tests line names it."
+    }
+  ],
+  "notes": "Scores are independent. The diff adds no assertion: it retargets the fixture constant LARGE_PATH at tests/test_a_regenerated_path_is_charged_as_written.py:37 from docs/research/generated.html to docs/state/generated.html. The base arm reproduces the defect it repairs ('assert 0 == 7' at :339, EXIT=1) and the head arm records '6 passed in 2.13s' EXIT=0 on job 1330077, partition all_debug. The premise was checked against the sharing policy rather than taken from the worker's account: _SharedWritePaths(repo, default_share=True).exclusive_pattern returns '' for docs/research/generated.html and 'docs/state/' for docs/state/generated.html, so the old fixture path could never reach the peer check. The retargeted case is still a guard: reverting the constant, dropping docs/state/ from DEFAULT_EXCLUSIVE_PATHS (reckon/crew/runs.py:2213), or removing the regenerated_paths fold in TaskNode.__post_init__ each reddens the exit-code assertion at :339. added_failure_count is derived from the reviewed run's own arms: baseline_suite at b24fe95a has failure_ids [tests/test_a_regenerated_path_is_charged_as_written.py::test_a_live_claim_on_a_regenerated_path_refuses_a_second_dispatch]; after_suite at 65567fad has none, so nothing is added. The worker's scratch tree under /tmp/reckon-crew-scratch is the harness's own TMPDIR root name (dispatch_launch.py:881), not a bare /tmp path. The goal's 'on the primary branch' is measured in the detached worktree; the merged measurement belongs to a separate test node.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T070923278821-review-of-qwnw-red-file-a-regenerated-path-is-charged-as-written-65567fad909a",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_commits": [
+    "65567fad909a2f7c1bf68d9294a326eb91fe9b14"
+  ],
+  "reviewed_head_sha": "65567fad909a2f7c1bf68d9294a326eb91fe9b14",
+  "reviewed_node": "qwnw-red-file-a-regenerated-path-is-charged-as-written",
+  "reviewed_run_id": "r-20261118T063617094999-qwnw-red-file-a-regenerated-path-is-charged-as-written",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:01:45.975357+00:00",
+  "total": 111,
+  "verdicts": {
+    "call_sites": "Verified the retargeted case against the production code it now reaches: reckon/crew/dispatch_claims.py:_live_conflict_rows reads the sharing policy at :1667 and skips a candidate only when _claim_shares_overlap excuses it, reckon/crew/runs.py:_shared_write_paths returns default_share=True for a project with no sharing declaration, and reckon/crew/dispatch_plan.py:1222 is the scope-conflict payload the CLI turns into exit 7.",
+    "diff": "Read commit by commit from b24fe95a to 65567fad: one commit touches one file, tests/test_a_regenerated_path_is_charged_as_written.py, replacing LARGE_PATH = 'docs/research/generated.html' with 'docs/state/generated.html' at :37 beside a three-line comment at :34-36; 4 insertions, 1 deletion, no assertion changed.",
+    "done_when": "The done_when is the named file passing in full as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; the manifest records that literal command, the head log at 65567fad on job 1330077 partition all_debug with '6 passed in 2.13s' and EXIT=0, and the base log at b24fe95a with '1 failed, 5 passed' and EXIT=1, so the measure was run through the launcher rather than claimed.",
+    "goal": "The goal is 'Make tests/test_a_regenerated_path_is_charged_as_written.py pass in full on the primary branch'; the landed diff retargets the fixture path at tests/test_a_regenerated_path_is_charged_as_written.py:37 and the head arm of that file is green at '6 passed' EXIT=0 where base b24fe95a fails test_a_live_claim_on_a_regenerated_path_refuses_a_second_dispatch.",
+    "manifest": "Read the reviewed run's manifest.md: status complete, commits 65567fad909a, changed_paths naming only the test file, baseline_suite (b24fe95a, exit 1, completed true, failure_count 1) and after_suite (65567fad, exit 0, completed true, failure_count 0) both carrying full 40-character revisions and log paths.",
+    "write_paths": "The declared paths are reckon, tests, the plan's evidence fragment directory and its figure directory as the reviewed dispatch lists them; the delivered diff names exactly one path, tests/test_a_regenerated_path_is_charged_as_written.py, which is inside 'tests' and touches no fenced class."
+  }
+}

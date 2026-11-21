@@ -1,0 +1,110 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T20:42:04Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-rollout-receipt-da98e975eed9",
+      "recorded_at": "2026-11-20T21:22:05.964641+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-rollout-receipt-da98e975eed9",
+      "recorded_at": "2026-11-20T21:22:08.225482+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md",
+      "line": "4",
+      "severity": "blocking",
+      "text": "the run's manifest is four lines and records no commits, no tests command, no test_logs, no baseline_suite/after_suite arm as inline JSON, no per-cause verdict and no negative-control log, so the done_when's own manifest clauses are unmet and a promotion reading this receipt finds no gate to re-run; its orientation_worktree line is also `/home/ITER/mcintos/Code/.reckon-worktrees/receipt 2>/dev/null`, a shell fragment rather than a path."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "commit da98e975eed930a8272ac49214c8f7217d0676d3, which adds this fragment, carries no message body (`git log -1 --format=%b` returns a single newline), and the repository rule makes a bodiless commit a review failure; the repair is one amend, not a code change."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "the fragment quotes `[24_495_394, 1_644_077, 900_000]` while tests/test_rollout_receipt.py:773 writes `[24_495_394, 900_000, 1_644_077]`, so the stated fold `readings[0] + (last - readings[1])` evaluates to 23,751,317 rather than the 25,239,471 the case asserts and a reader checking the evidence against the code gets a value that cannot pass."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html",
+      "line": "51",
+      "severity": "non-blocking",
+      "text": "the fragment says \"The head run is the gate log named in the manifest\" while the manifest at manifest.md names no log at all, so the pointer resolves to nothing and the only record of the head arm is the run directory's head-arm-1795065495643901714.log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "the third base failing id is recorded as `test_real_named_rollout_cumulative` where the full id the log's verbatim id at logs/base-tests-test_rollout_receipt.log:81 is `test_real_named_rollout_cumulative_beats_naive_single_readings`, so the \"verbatim from that log\" claim is false and the id cannot be matched against the recorded failure."
+    },
+    {
+      "file": "tests/test_rollout_receipt.py",
+      "line": "441",
+      "severity": "non-blocking",
+      "text": "`files_found` is computed and only printed at :468, while every assertion in the case from :457 is guarded by isinstance, so a regression that made read_rollout_receipt answer Unmeasured.MISSING_ROLLOUT for the fixture sessions would leave the case green reporting \"rollout retention: 0/12\"; an `assert files_found == len(session_ids)` is the floor the fixture exists to guarantee."
+    },
+    {
+      "file": "tests/test_rollout_receipt.py",
+      "line": "760",
+      "severity": "non-blocking",
+      "text": "`assert 1 < share < 99` is entailed by the selection filter at :746 `if 3 < share < 97` applied to the same generation/machine pair, so the line can never fail on its own and the documented (1, 99) band is decided by the filter, not by this assertion."
+    }
+  ],
+  "item_aggregate": {
+    "present": 6,
+    "required": 6
+  },
+  "item_verdicts": {
+    "call_sites": "no production call site can reach the change: the diff touches only a test module and an evidence fragment, and nothing imports a test module at runtime; the module the rewritten tests exercise, reckon/crew/rollout.py, is unchanged by the diff.",
+    "diff": "read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478 commit by commit: 86a34ba83c rewrites three machine-reading cases in tests/test_rollout_receipt.py into fixture-built populations with _stamp/_span_session/POPULATIONS and adds one fold assertion, and da98e975 records the 64-line evidence fragment with no message body.",
+    "done_when": "the done_when asks for tests/test_rollout_receipt.py green at head as an all_debug job with SLURM_JOB_ID unset, red at base first, each cause verdicted, an arm over importing test files adding no failure, both arms as inline JSON with 40-character revisions, a negative control logged beside the head run in qwnw-red-file-rollout-receipt.html, a commits field, and ruff clean. head-arm-1795065495643901714.log reads `22 passed` EXIT=0 at revision da98e975 on 98dci4-clu-3142 with `# slurm_job_id_present: no`; logs/base-tests-test_rollout_receipt.log reads `3 failed, 19 passed` EXIT=1 at 42fe90d0; suite-arms.json records both arms' 58 passed at full revisions. The manifest carries none of it, so the gate asserts the measure's substance but not its manifest clause.",
+    "goal": "the reviewed run's record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/node.json carries no `goal` key (its keys are admission_findings, brief, done_when, peer_scopes, and brief is empty), so the deliverable is read from its done_when: make tests/test_rollout_receipt.py pass in full at head after it was red at base. The landed diff does that \u2014 the base log reads 3 failed, 19 passed and the head log reads 22 passed.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md, which is four lines \u2014 an orientation_worktree carrying a leaked `2>/dev/null`, orientation_base_sha 42fe90d0b0a46060bafde2490dda7d4002cda478, the node, and status complete \u2014 and carries no commits, no tests command, no test_logs, no baseline_suite/after_suite, no cause verdicts, no negative-control log and no artifacts.",
+    "write_paths": "the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment and figure sub-paths; `git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..da98e975eed930a8272ac49214c8f7217d0676d3` lists only tests/test_rollout_receipt.py (+112 -26) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html (+64 -0), both inside the fence and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_rollout_receipt.py:784 `cumulative == readings[0] + (last_value - readings[1])` reddens if the segmented fold returns the maximum or the last reading, but the ledger case guards every assertion from :457 behind isinstance and never asserts its own files_found, so a reader answering Unmeasured.MISSING_ROLLOUT for every fixture session leaves the case green reporting 0/12.",
+    "evidence": "the base arm at logs/base-tests-test_rollout_receipt.log (3 failed, EXIT=1) and the head arm at head-arm-1795065495643901714.log (22 passed, EXIT=0, revision da98e975) are on disk, but manifest.md records neither, and the fragment at qwnw-red-file-rollout-receipt.html:43 and :56 misstates the fixture and truncates a failing id.",
+    "fit": "the rewritten cases use `monkeypatch.setattr(rollout, \"CLIENT_SESSIONS_DIR\", tmp_path)` exactly as the sibling modules do (tests/test_promotion_harvests_the_receipt.py:29, tests/test_backend_observation.py:223) and name nothing the repository naming rules forbid, though da98e975 is a bodiless commit.",
+    "goal_fidelity": "tests/test_rollout_receipt.py at head builds its ledger, rollouts and span sessions under tmp_path through the module's own helpers, so the named file is green (22 passed) where the base run at 42fe90d0 was red (3 failed), but the run record's absent goal leaves the delivered state assertable only through done_when.",
+    "reuse": "the added helpers extend this file's existing owners \u2014 _span_session composes _tool_call/_tool_output at tests/test_rollout_receipt.py:558,566 and _write_rollout at :74 \u2014 and a search over tests/ for rollout fixture writers found only module-local _write_rollout copies, none of which this change duplicates or forks.",
+    "scope_discipline": "git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..da98e975eed930a8272ac49214c8f7217d0676d3 touches only tests/test_rollout_receipt.py and the fragment, both inside the declared paths, and adds no production code the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed run's record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/node.json carries no `goal` key (its keys are admission_findings, brief, done_when, peer_scopes, and brief is empty), so the deliverable is read from its done_when: make tests/test_rollout_receipt.py pass in full at head after it was red at base. The landed diff does that \u2014 the base log reads 3 failed, 19 passed and the head log reads 22 passed.\nVERDICT done_when: the done_when asks for tests/test_rollout_receipt.py green at head as an all_debug job with SLURM_JOB_ID unset, red at base first, each cause verdicted, an arm over importing test files adding no failure, both arms as inline JSON with 40-character revisions, a negative control logged beside the head run in qwnw-red-file-rollout-receipt.html, a commits field, and ruff clean. head-arm-1795065495643901714.log reads `22 passed` EXIT=0 at revision da98e975 on 98dci4-clu-3142 with `# slurm_job_id_present: no`; logs/base-tests-test_rollout_receipt.log reads `3 failed, 19 passed` EXIT=1 at 42fe90d0; suite-arms.json records both arms' 58 passed at full revisions. The manifest carries none of it, so the gate asserts the measure's substance but not its manifest clause.\nVERDICT write_paths: the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment and figure sub-paths; `git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..da98e975eed930a8272ac49214c8f7217d0676d3` lists only tests/test_rollout_receipt.py (+112 -26) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html (+64 -0), both inside the fence and nothing outside it.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md, which is four lines \u2014 an orientation_worktree carrying a leaked `2>/dev/null`, orientation_base_sha 42fe90d0b0a46060bafde2490dda7d4002cda478, the node, and status complete \u2014 and carries no commits, no tests command, no test_logs, no baseline_suite/after_suite, no cause verdicts, no negative-control log and no artifacts.\nVERDICT diff: read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478 commit by commit: 86a34ba83c rewrites three machine-reading cases in tests/test_rollout_receipt.py into fixture-built populations with _stamp/_span_session/POPULATIONS and adds one fold assertion, and da98e975 records the 64-line evidence fragment with no message body.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/test_rollout_receipt.py at head builds its ledger, rollouts and span sessions under tmp_path through the module's own helpers, so the named file is green (22 passed) where the base run at 42fe90d0 was red (3 failed), but the run record's absent goal leaves the delivered state assertable only through done_when.\nSCORE evidence: 13\nJUSTIFICATION evidence: the base arm at logs/base-tests-test_rollout_receipt.log (3 failed, EXIT=1) and the head arm at head-arm-1795065495643901714.log (22 passed, EXIT=0, revision da98e975) are on disk, but manifest.md records neither, and the fragment at qwnw-red-file-rollout-receipt.html:43 and :56 misstates the fixture and truncates a failing id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..da98e975eed930a8272ac49214c8f7217d0676d3 touches only tests/test_rollout_receipt.py and the fragment, both inside the declared paths, and adds no production code the goal does not imply.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_rollout_receipt.py:784 `cumulative == readings[0] + (last_value - readings[1])` reddens if the segmented fold returns the maximum or the last reading, but the ledger case guards every assertion from :457 behind isinstance and never asserts its own files_found, so a reader answering Unmeasured.MISSING_ROLLOUT for every fixture session leaves the case green reporting 0/12.\nSCORE fit: 17\nJUSTIFICATION fit: the rewritten cases use `monkeypatch.setattr(rollout, \"CLIENT_SESSIONS_DIR\", tmp_path)` exactly as the sibling modules do (tests/test_promotion_harvests_the_receipt.py:29, tests/test_backend_observation.py:223) and name nothing the repository naming rules forbid, though da98e975 is a bodiless commit.\nSCORE reuse: 19\nJUSTIFICATION reuse: the added helpers extend this file's existing owners \u2014 _span_session composes _tool_call/_tool_output at tests/test_rollout_receipt.py:558,566 and _write_rollout at :74 \u2014 and a search over tests/ for rollout fixture writers found only module-local _write_rollout copies, none of which this change duplicates or forks.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062757007803-qwnw-red-file-rollout-receipt/manifest.md:4 blocking: the run's manifest is four lines and records no commits, no tests command, no test_logs, no baseline_suite/after_suite arm as inline JSON, no per-cause verdict and no negative-control log, so the done_when's own manifest clauses are unmet and a promotion reading this receipt finds no gate to re-run; its orientation_worktree line is also `/home/ITER/mcintos/Code/.reckon-worktrees/receipt 2>/dev/null`, a shell fragment rather than a path.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html:1 blocking: commit da98e975eed930a8272ac49214c8f7217d0676d3, which adds this fragment, carries no message body (`git log -1 --format=%b` returns a single newline), and the repository rule makes a bodiless commit a review failure; the repair is one amend, not a code change.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html:43 non-blocking: the fragment quotes `[24_495_394, 1_644_077, 900_000]` while tests/test_rollout_receipt.py:773 writes `[24_495_394, 900_000, 1_644_077]`, so the stated fold `readings[0] + (last - readings[1])` evaluates to 23,751,317 rather than the 25,239,471 the case asserts and a reader checking the evidence against the code gets a value that cannot pass.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html:51 non-blocking: the fragment says \"The head run is the gate log named in the manifest\" while the manifest at manifest.md names no log at all, so the pointer resolves to nothing and the only record of the head arm is the run directory's head-arm-1795065495643901714.log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-rollout-receipt.html:56 non-blocking: the third base failing id is recorded as `test_real_named_rollout_cumulative` where the full id the log's verbatim id at logs/base-tests-test_rollout_receipt.log:81 is `test_real_named_rollout_cumulative_beats_naive_single_readings`, so the \"verbatim from that log\" claim is false and the id cannot be matched against the recorded failure.\nFINDING tests/test_rollout_receipt.py:441 non-blocking: `files_found` is computed and only printed at :468, while every assertion in the case from :457 is guarded by isinstance, so a regression that made read_rollout_receipt answer Unmeasured.MISSING_ROLLOUT for the fixture sessions would leave the case green reporting \"rollout retention: 0/12\"; an `assert files_found == len(session_ids)` is the floor the fixture exists to guarantee.\nFINDING tests/test_rollout_receipt.py:760 non-blocking: `assert 1 < share < 99` is entailed by the selection filter at :746 `if 3 < share < 97` applied to the same generation/machine pair, so the line can never fail on its own and the documented (1, 99) band is decided by the filter, not by this assertion.\n",
+  "review_run_id": "r-20261120T203915742314-review-of-qwnw-red-file-rollout-receipt-da98e975eed9",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "da98e975eed930a8272ac49214c8f7217d0676d3",
+  "reviewed_run_id": "r-20261118T062757007803-qwnw-red-file-rollout-receipt",
+  "reviewer": {
+    "backend": "omp",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261120T203915742314-review-of-qwnw-red-file-rollout-receipt-da98e975eed9"
+  },
+  "reviewer_run_id": "r-20261120T203915742314-review-of-qwnw-red-file-rollout-receipt-da98e975eed9",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T21:11:04.678347+00:00",
+  "total": 98
+}

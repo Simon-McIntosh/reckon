@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:39:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite carry the harness's armed pair (tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py, 58 passed each) rather than the importer arms the done_when requires as inline JSON with 40-character revisions; the importer results survive only as log paths in test_logs, so the required record shape is unmet even though the arms themselves ran (base 8 failed/601 passed at 2437205f, head 7 failed/602 passed at 510f2874)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths and the manifest records neither result; a bounded re-run at 510f2874 gives \"All checks passed!\" and \"1 file already formatted\", so the work is right and the record omits the evidence a reader would need."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the diff touches only a test file and an evidence fragment, so no production module reaches the landed change; the product renderer the test exercises, reckon/crew/ticker.py, is unchanged by the node.",
+    "diff": "read all three commits against 2437205f: f64f68a6 replaces the whole-row marker count with a counter-block count and a rest-of-row count, 672fb6eb drops the trailing blank line ruff format flagged, 510f2874 adds the 46-line evidence fragment; the two changed paths are both inside the declared scope.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, the base run with its failing id logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/, an importer arm per revision as inline JSON, ruff on the changed paths and plain full commit ids; the gate log and the fragment satisfy the file and base halves, the importer arms ran at 40-character revisions but are recorded as log paths rather than inline JSON, and ruff is not recorded.",
+    "goal": "the goal inherits \u00a729's deliverable, tests/test_ticker_row_drops_unread_cells.py passing in full at head; scoped-gate-1795112196403785320.log reports 13 passed with EXIT=0 at 510f2874 against 1 failed/12 passed EXIT=1 at 2437205f, and the manifest records the cause as test-wrong, so the named file is green.",
+    "manifest": "read manifest.md against the logs it names; it records the file's 13 passed at head against 1 failed/12 passed at base with both logs, the importer arms in prose at 40-character revisions, the armed pair 58 passed at both revisions, and no ruff result.",
+    "write_paths": "the declared scope is reckon, tests and the plan's evidence fragments; tests/test_ticker_row_drops_unread_cells.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ticker-row-drops-unread-cells.html are the only paths in the diff and both lie inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_ticker_row_drops_unread_cells.py:141-143 split the marker count so re-adding the rate cell's marker reddens the rest-of-row count and a second promotion mark reddens the counter count, both mutations recorded in the fragment; the elapsed-cell half of line 143 is entailed by line 133, so that line's independent value is the guard against any other cell.",
+    "evidence": "scoped-gate-1795112196403785320.log carries 13 passed and EXIT=0 at 510f2874 beside negative-control-base-2437205.log with 1 failed/12 passed and EXIT=1, but the importer arms are in manifest.md:13 as log paths rather than the inline JSON the done_when names and ruff is unrecorded.",
+    "fit": "the new assertions use the file's own COUNTER_COLUMN geometry at tests/test_ticker_row_drops_unread_cells.py:140 and the product constant ticker_module.STATS rather than restating either, matching the column arithmetic already at tests/test_ticker_row_drops_unread_cells.py:27-43.",
+    "goal_fidelity": "tests/test_ticker_row_drops_unread_cells.py:129-143 is the only test changed and the file's head run in scoped-gate-1795112196403785320.log is 13 passed EXIT=0, so the deliverable the goal names is met without another file being touched.",
+    "reuse": "a search over tests/ for counter-block slicing found each ticker test computing its own offsets from ticker_module.STATS and ticker_module.GAP (tests/test_ticker_shows_the_lane_mean.py:73, tests/test_ticker_reads_cleanly.py:50) with no shared helper to extend, and the node's change adds no new mechanism.",
+    "scope_discipline": "the diff's two paths are tests/test_ticker_row_drops_unread_cells.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ticker-row-drops-unread-cells.html, both inside the declared write paths, and nothing the goal does not imply rides along."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal inherits the plan's deliverable that tests/test_ticker_row_drops_unread_cells.py passes in full at head; scoped-gate-1795112196403785320.log reports 13 passed with EXIT=0 at 510f2874 against 1 failed/12 passed EXIT=1 at 2437205f, and the manifest records the cause as test-wrong, so the named file is green.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, the base run with its failing id logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/, an importer arm per revision as inline JSON, ruff on the changed paths and plain full commit ids; the gate log and fragment satisfy the file and base halves, the importer arms ran at 40-character revisions but are recorded as log paths rather than inline JSON, and ruff is not recorded.\nVERDICT write_paths: the declared scope is reckon, tests and the plan's evidence fragments; tests/test_ticker_row_drops_unread_cells.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ticker-row-drops-unread-cells.html are the only paths in the diff and both lie inside it.\nVERDICT manifest: read; it records 13 passed at head against 1 failed/12 passed at base with both logs named, the importer arms in prose at 40-character revisions, the armed pair 58 passed at both revisions, and no ruff result.\nVERDICT diff: read all three commits against 2437205f; f64f68a6 replaces the whole-row marker count with a counter-block count and a rest-of-row count, 672fb6eb drops the trailing blank line ruff format flagged, 510f2874 adds the 46-line evidence fragment, and the two changed paths are both inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_ticker_row_drops_unread_cells.py:129-143 is the only test changed and its head run in scoped-gate-1795112196403785320.log is 13 passed EXIT=0.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795112196403785320.log carries 13 passed and EXIT=0 at 510f2874 beside negative-control-base-2437205.log with 1 failed/12 passed and EXIT=1, but the importer arms are log paths rather than the inline JSON the done_when names and ruff is unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths are tests/test_ticker_row_drops_unread_cells.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ticker-row-drops-unread-cells.html, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_ticker_row_drops_unread_cells.py:141-143 redden when the rate cell's marker is reinstated or a second promotion mark is added, though the elapsed-cell half of line 143 is entailed by line 133.\nSCORE fit: 19\nJUSTIFICATION fit: the new assertions use the file's own COUNTER_COLUMN geometry at tests/test_ticker_row_drops_unread_cells.py:140 and the product constant ticker_module.STATS instead of restating either.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over tests/ found each ticker test computing its own offsets from ticker_module.STATS (tests/test_ticker_shows_the_lane_mean.py:73, tests/test_ticker_reads_cleanly.py:50) with no shared helper to extend, and no mechanism is duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/manifest.md:18 non-blocking: baseline_suite and after_suite carry the harness's armed pair rather than the importer arms the done_when requires as inline JSON with 40-character revisions, so the required record shape is unmet even though the arms ran (base 8 failed/601 passed at 2437205f, head 7 failed/602 passed at 510f2874).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/manifest.md:21 non-blocking: the manifest records no ruff check or ruff format --check result on the changed paths as the done_when requires; a bounded re-run at 510f2874 gives \"All checks passed!\" and \"1 file already formatted\".",
+  "review_run_id": "r-20261119T183529566574-review-of-qwnw-red-file-ticker-row-drops-unread-cells-510f287458f0",
+  "reviewed_base_sha": "2437205f9a762420c943f3c0b0312ded03f7395f",
+  "reviewed_head_sha": "510f287458f00b42de301306443d1f04378dbf1e",
+  "reviewed_run_id": "r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:53:55.016638+00:00",
+  "total": 111
+}

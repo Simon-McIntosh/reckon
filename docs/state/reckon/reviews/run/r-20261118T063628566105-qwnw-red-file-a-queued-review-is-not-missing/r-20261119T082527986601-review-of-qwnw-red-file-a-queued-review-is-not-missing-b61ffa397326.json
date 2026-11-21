@@ -1,0 +1,98 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:4821 (obligations opens live_pointer_snapshot)",
+    "reckon/crew/obligation_snapshot.py:1908 (sweep derivation opens live_pointer_snapshot(project))",
+    "reckon/crew/station_subscriber.py:359 (subscriber passes its own pointers snapshot)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:02:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "854",
+      "severity": "non-blocking",
+      "text": "non-blocking: live_pointer_snapshot restates the held-listing resolution that _live_pointers already implements at obligations.py:890, so two copies of one fallback can drift apart with no test noticing."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "5230",
+      "severity": "non-blocking",
+      "text": "non-blocking: the touched unreconciled line keeps .get(session, 0) from base b24fe95 while the primary branch has replaced this hunk with runs.unreconciled_for_session at reckon/crew/runs.py:4151, and git merge-tree b1d7f9e with b61ffa39 reports a content conflict in reckon/crew/obligations.py at exactly this hunk, so the merge resolution must keep the pointer-derived counts wrapped in unreconciled_for_session rather than taking this side wholesale."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment's declared-suite paragraph cites after_suite-1795075853145234440.log at a453d47a7e40 while the manifest's after_suite field cites after_suite-1795076237594798417.log at b61ffa397326; both logs exist and read 58 passed EXIT=0, but one receipt recorded from two different after arms leaves a later reader unable to tell which arm the review rests on."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the three commits against base b24fe95a789c. Commit a87c5fb changes two hunks of reckon/crew/obligations.py; a453d47 and b61ffa3 add and then complete the evidence fragment; no other path moved.",
+    "done_when": "the plan's done-when asks for the named file green at head as an all_debug job, a cause-with-verdict list, an import arm that adds no failure, and the base run logged beside the head run; the gate log names host 98dci4-clu-3141 at a87c5fb, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html:15 states product wrong, and the two 20-file import arms carry identical 31-id failing sets.",
+    "goal": "the source node's goal, set by plan section s29 and its dispatch brief, is that tests/test_a_queued_review_is_not_missing.py passes in full with a verdict per cause; reckon/crew/obligations.py:854 and :5229 make the view derive from the one listing its read scope holds, and scoped-gate-1795072067330862277.log records 8 passed EXIT=0.",
+    "manifest": "the source manifest.md records 1 failed and 7 passed at b24fe95 on the named file and 8 passed at head, and names both suite arms completed with EXIT=0; every log it cites exists and carries its EXIT= line.",
+    "write_paths": "the reviewed pointer declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path; git diff b24fe95a789c..b61ffa397326 touches only reckon/crew/obligations.py and that fragment, both inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_review_is_not_missing.py:421 asserts len(reads) == 1 over a call counter independent of any value the test supplies, and the recorded base run reddens it on 3 reads, so reverting either obligations.py hunk reddens it.",
+    "evidence": "scoped-gate-1795072067330862277.log carries 8 passed with EXIT=0 at a87c5fb on host 98dci4-clu-3141 and base-run-test_a_queued_review_is_not_missing.log carries 1 failed and 7 passed with EXIT=1 at b24fe95, though the head gate predates the docs-only commits to b61ffa3 rather than naming the landed head.",
+    "fit": "obligations.py:852 repeats the lazy open_run_index import idiom that obligations.py:890 already uses, and ruff check reports reckon/crew/obligations.py clean at the reviewed head.",
+    "goal_fidelity": "reckon/crew/obligations.py:854 reuses the enclosing read scope's listing and obligations.py:5229 counts unreconciled rows over live_pointers, and the named file reads 8 passed at a87c5fb in an all_debug job.",
+    "reuse": "obligations.py:854 calls the existing open_run_index.pointers owner rather than listing the directory itself, but restates the held-listing fallback obligations.py:890 already implements instead of extending one resolver.",
+    "scope_discipline": "only reckon/crew/obligations.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html changed, both inside the declared reckon and fragment paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal, set by plan section s29 and its dispatch brief, is that tests/test_a_queued_review_is_not_missing.py passes in full with a verdict per cause; reckon/crew/obligations.py:854 and :5229 make the view derive from the one listing its read scope holds, and scoped-gate-1795072067330862277.log records 8 passed EXIT=0.\nVERDICT done_when: the plan's done-when asks for the named file green at head as an all_debug job, a cause-with-verdict list, an import arm that adds no failure, and the base run logged beside the head run; the gate log names host 98dci4-clu-3141 at a87c5fb, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html:15 states product wrong, and the two 20-file import arms carry identical 31-id failing sets.\nVERDICT write_paths: the reviewed pointer declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path; git diff b24fe95a789c..b61ffa397326 touches only reckon/crew/obligations.py and that fragment, both inside the declaration.\nVERDICT manifest: the source manifest.md records 1 failed and 7 passed at b24fe95 on the named file and 8 passed at head, and names both suite arms completed with EXIT=0; every log it cites exists and carries its EXIT= line.\nVERDICT diff: read the three commits against base b24fe95a789c. Commit a87c5fb changes two hunks of reckon/crew/obligations.py; a453d47 and b61ffa3 add and then complete the evidence fragment; no other path moved.\nCALL_SITES: reckon/crew/obligations.py:4821 (obligations opens live_pointer_snapshot), reckon/crew/obligation_snapshot.py:1908 (sweep derivation opens live_pointer_snapshot(project)), reckon/crew/station_subscriber.py:359 (subscriber passes its own pointers snapshot)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:854 reuses the enclosing read scope's listing and obligations.py:5229 counts unreconciled rows over live_pointers, and the named file reads 8 passed at a87c5fb in an all_debug job.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-1795072067330862277.log carries 8 passed with EXIT=0 at a87c5fb on host 98dci4-clu-3141 and base-run-test_a_queued_review_is_not_missing.log carries 1 failed and 7 passed with EXIT=1 at b24fe95, though the head gate predates the docs-only commits to b61ffa3 rather than naming the landed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only reckon/crew/obligations.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html changed, both inside the declared reckon and fragment paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_review_is_not_missing.py:421 asserts len(reads) == 1 over a call counter independent of any value the test supplies, and the recorded base run reddens it on 3 reads, so reverting either obligations.py hunk reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: obligations.py:852 repeats the lazy open_run_index import idiom that obligations.py:890 already uses, and ruff check reports reckon/crew/obligations.py clean at the reviewed head.\nSCORE reuse: 19\nJUSTIFICATION reuse: obligations.py:854 calls the existing open_run_index.pointers owner rather than listing the directory itself, but restates the held-listing fallback obligations.py:890 already implements instead of extending one resolver.\nFINDING reckon/crew/obligations.py:854 non-blocking: live_pointer_snapshot restates the held-listing resolution that _live_pointers already implements at obligations.py:890, so two copies of one fallback can drift apart with no test noticing.\nFINDING reckon/crew/obligations.py:5230 non-blocking: the touched unreconciled line keeps .get(session, 0) from base b24fe95 while the primary branch has replaced this hunk with runs.unreconciled_for_session at reckon/crew/runs.py:4151, and git merge-tree b1d7f9e with b61ffa39 reports a content conflict in reckon/crew/obligations.py at exactly this hunk, so the merge resolution must keep the pointer-derived counts wrapped in unreconciled_for_session rather than taking this side wholesale.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html:25 non-blocking: the fragment's declared-suite paragraph cites after_suite-1795075853145234440.log at a453d47a7e40 while the manifest's after_suite field cites after_suite-1795076237594798417.log at b61ffa397326; both logs exist and read 58 passed EXIT=0, but one receipt recorded from two different after arms leaves a later reader unable to tell which arm the review rests on.",
+  "review_method": "Read-only review of the committed diff and the reviewed run's recorded logs; the named test was not re-run and no mutation was applied to the reviewed tree.",
+  "review_run_id": "r-20261119T082527986601-review-of-qwnw-red-file-a-queued-review-is-not-missing-b61ffa397326",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "b61ffa3973265933c957486cfbca0ea594afb26b",
+  "reviewed_run_id": "r-20261118T063628566105-qwnw-red-file-a-queued-review-is-not-missing",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "a87c5fb7c6f9e555307ddb1feee66f9d05530b2c",
+    "a453d47a7e40d65cc09178ad64567af58fcb2c3d",
+    "b61ffa3973265933c957486cfbca0ea594afb26b"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": "0",
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063628566105-qwnw-red-file-a-queued-review-is-not-missing/after_suite-1795076237594798417.log",
+      "observed_summary": "58 passed in 44.89s",
+      "revision": "b61ffa3973265933c957486cfbca0ea594afb26b"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": "0",
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063628566105-qwnw-red-file-a-queued-review-is-not-missing/baseline_suite-1795075808272907073.log",
+      "observed_summary": "58 passed in 35.09s",
+      "revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193"
+    },
+    "derivation": "added_failure_count and added_failure_ids are the difference between the two arms' failing-id sets, read from the reviewed manifest's own baseline_suite and after_suite logs."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:28:06.858384+00:00",
+  "total": 113
+}

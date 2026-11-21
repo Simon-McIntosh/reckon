@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_session_fleet_counts",
+    "reckon/crew/recovery_watch.py:fleet_summary",
+    "reckon/crew/runs.py:watch_stream_cursor",
+    "reckon/crew/admission/holds.py:_append_watch_row"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:15:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 2340,
+      "severity": "non-blocking",
+      "text": "the awaiting_review sum restates in the counter the delivered rule that _delivery_reading at reckon/crew/recovery_classification.py:3518 owns, so two modules now decide whether a scoring run is delivered work and nothing fails when they drift; commit 67d2d6890d on the primary branch repaired the same defect by widening that owner instead, and it is an ancestor of the branch this node will be merged onto, so the two statements (and the two repairs) must be reconciled at landing."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html",
+      "line": 45,
+      "severity": "non-blocking",
+      "text": "the done_when requires the no-added-failure arm over the changed module's importers to be recorded as inline JSON with both revisions at full 40 characters, but no manifest field carries it: manifest.md:16-17's baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and the 101-file importer pair survives only as this prose table and verify/imp-base-failed.txt against verify/imp-head-failed.txt, so a promotion reading the structured fields cannot see that arm."
+    },
+    {
+      "file": "verify/base-run.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the base arm ran in the scratch extraction verify/base-tree and its header names revision, tree, command and host but no module.__file__ and no resolved working directory, and the manifest carries no measurement_module or measurement_cwd entry, so a reader cannot prove which copy of reckon.crew.recovery_watch the red run imported; the head arm ran in the worktree and is not affected."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_resumed_run_counts_as_working.py:236 asserts counts[\"unpromoted\"] == 1 against a run the fixture builds independently and reddens when the repair is reinstated, as verify/base-run.log shows with assert 0 == 1 EXIT=1; the run adds no assertion of its own and no case covers a mixed fleet of scoring and promotable rows.",
+    "evidence": "verify/base-run.log and verify/head-run.log (header lines 1-5) carry revision, tree, command, pytest_slurm_job_id=unset and EXIT lines that reconcile with the manifest's recorded results, but the done_when's importer-arm inline-JSON clause has no field in the manifest (manifest.md:16-17 carries the declared suite pair instead), so the no-added-failure arm is recorded only as prose and as the two failing-id files.",
+    "fit": "the addition at reckon/crew/recovery_watch.py:2340-2343 follows the function's own row-sum idiom and str() coercion, introduces no new vocabulary and carries its rule in the comment immediately above it.",
+    "goal_fidelity": "tests/test_a_resumed_run_counts_as_working.py passes in full at the reviewed head 0cb37bf4feabaf9835b4a02c30c246f9ee46029f (verify/head-run.log reads 5 passed EXIT=0, and my own re-run of that file in the head worktree read 5 passed) while the same file fails one case at base b24fe95a789c82cd33f22a912b4dbbf94d5e2193.",
+    "reuse": "the rule 'a scoring run is delivered work' is owned by _delivery_reading at reckon/crew/recovery_classification.py:3518, and the change restates it in the counter as awaiting_review rather than widening the owner, so two places now decide whether a run is delivered.",
+    "scope_discipline": "git diff b24fe95a..0cb37bf4 touches only reckon/crew/recovery_watch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html, both inside the declared write paths, with no test, plan or state document changed."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T075315425514-review-of-qwnw-red-file-a-resumed-run-counts-as-working-0cb37bf4feab",
+  "review_text": "VERDICT goal: the goal is to make tests/test_a_resumed_run_counts_as_working.py pass in full on the primary branch, and at the reviewed head 0cb37bf4fe that file reads 5 passed EXIT=0 in verify/head-run.log, which my own re-run of the same file in the head worktree confirmed.\nVERDICT done_when: verify/base-run.log:1-5 and verify/head-run.log:1-5 record revision, tree, command and pytest_slurm_job_id=unset on compute hosts, base reading 1 failed, 4 passed EXIT=1 on test_a_live_worker_*_predates_*_manifest_*_keeps_todays_verdict and head 5 passed EXIT=0, so the named measure is met, while the no-added-failure arm's inline-JSON clause is unmet in the manifest.\nVERDICT write_paths: the declared scope is reckon, tests, the fragment path and a figures directory; the delivered diff b24fe95a..0cb37bf4 carries exactly reckon/crew/recovery_watch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html.\nVERDICT manifest: read at the run's manifest.md; status complete, two commits ending 0cb37bf4fe, the literal gate command, and baseline_suite/after_suite as inline JSON naming full 40-character revisions with 2 failing ids at base and none at head, both logs present on disk and reconciling with those fields.\nVERDICT diff: read both commits against b24fe95a; 46c40734ea adds the awaiting_review sum and widens counts[\"unpromoted\"] at reckon/crew/recovery_watch.py:2340-2343, and 0cb37bf4fe adds the 92-line evidence fragment, with nothing else changed.\nCALL_SITES: reckon/crew/recovery_watch.py:_session_fleet_counts, reckon/crew/recovery_watch.py:fleet_summary, reckon/crew/runs.py:watch_stream_cursor, reckon/crew/admission/holds.py:_append_watch_row\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_resumed_run_counts_as_working.py passes 5/5 at reckon's reviewed head, shown in verify/head-run.log and reproduced in my own run of that file in the head worktree.\nSCORE evidence: 15\nJUSTIFICATION evidence: verify/base-run.log:1-5 and verify/head-run.log:1-5 carry the revision, tree, command and EXIT lines the manifest's recorded result rests on, but no manifest field carries the importer arm's inline JSON.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's two paths, reckon/crew/recovery_watch.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, are both inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_resumed_run_counts_as_working.py:236 reddens when the repair is reinstated, shown by verify/base-run.log's assert 0 == 1, though the run adds no assertion and no case covers a mixed fleet.\nSCORE fit: 17\nJUSTIFICATION fit: the added lines at reckon/crew/recovery_watch.py:2340-2343 use the function's own sum-and-coerce idiom and add no new name or vocabulary.\nSCORE reuse: 10\nJUSTIFICATION reuse: the delivered rule already has an owner at reckon/crew/recovery_classification.py:3518 _delivery_reading, and reckon/crew/recovery_watch.py:2340 restates it in the counter rather than extending that owner.\nFINDING reckon/crew/recovery_watch.py:2340 non-blocking: the awaiting_review sum restates the delivered rule owned by _delivery_reading at reckon/crew/recovery_classification.py:3518, so two modules decide whether a scoring run is delivered and nothing fails when they drift; commit 67d2d6890d, an ancestor of the branch this lands onto, repaired the same defect by widening that owner instead.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:45 non-blocking: the done_when's importer arm is recorded only as this prose table and as verify/imp-base-failed.txt against verify/imp-head-failed.txt, with no inline-JSON field at full 40-character revisions, so a promotion reading the manifest's structured fields cannot see the no-added-failure arm.\nFINDING verify/base-run.log:1 non-blocking: the scratch-tree base arm names revision, tree, command and host but no module.__file__ and no resolved working directory, and the manifest carries no measurement_module or measurement_cwd, so the module the red run imported cannot be proved from the artefact.",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "0cb37bf4feabaf9835b4a02c30c246f9ee46029f",
+  "reviewed_run_id": "r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working",
+  "reviewer_run_id": "r-20261119T075315425514-review-of-qwnw-red-file-a-resumed-run-counts-as-working-0cb37bf4feab",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:52:13.619624+00:00",
+  "total": 95
+}

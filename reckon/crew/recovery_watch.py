@@ -11,11 +11,12 @@ import socket
 import subprocess
 import time
 from contextlib import contextmanager, suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon import file_memo
+from reckon._worker_fence import BackendError
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -781,7 +782,7 @@ def overdue_unreconciled_runs(
 
 def _utc_seconds() -> float:
     """Current time as epoch seconds, matching a file mtime's clock."""
-    return datetime.now(tz=timezone.utc).timestamp()
+    return datetime.now(tz=UTC).timestamp()
 
 
 # A producer that finds its project's seat held by a live producer on another
@@ -1685,7 +1686,15 @@ def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
 
 
 _SNAPSHOT_CACHE: dict[str, tuple[str, dict[str, Any]]] = {}
-_SNAPSHOT_CACHE_LIMIT = 256
+# The cache has to hold every live run of the project at once, or a poll
+# recomputes the runs it just evicted: each recomputation classifies a run from
+# its streams, so a fleet one run over the bound re-reads streams every poll.
+# A snapshot is a small mapping, so the bound sits well above any fleet this
+# process watches and exists only to stop a leak.
+_SNAPSHOT_CACHE_LIMIT = 4096
+# A trim removes this share of the bound, so the directory checks it costs are
+# paid once per that many stores rather than on every store past the bound.
+_SNAPSHOT_CACHE_TRIM = 8
 
 
 def _remember_snapshot(
@@ -1707,11 +1716,20 @@ def _remember_snapshot(
     store[run_id] = (key, snapshot)
     if len(store) <= _SNAPSHOT_CACHE_LIMIT:
         return
+    # Past the bound, runs whose directory has gone are dropped first, then the
+    # oldest entries down to a margin below the bound. The margin is what keeps
+    # this from running on every store: without it each store past the bound
+    # checked every cached run's directory, which on a fleet larger than the
+    # bound was one directory check per pair of runs per poll.
     for rid in list(store):
         if rid != run_id and not runs.run_dir(rid).is_dir():
             del store[rid]
-    while len(store) > _SNAPSHOT_CACHE_LIMIT:
-        store.pop(next(iter(store)))
+    target = _SNAPSHOT_CACHE_LIMIT - _SNAPSHOT_CACHE_LIMIT // _SNAPSHOT_CACHE_TRIM
+    while len(store) > target:
+        oldest = next(iter(store))
+        if oldest == run_id:
+            break
+        store.pop(oldest)
 
 
 def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
@@ -2316,6 +2334,17 @@ def _fleet_counts(
         for snapshot in rows
     )
     buckets = [_bucket_of(state) for state in states]
+    # A row is delivered when its own row word says delivered, and the
+    # classifier's promotion debt reads only the promotable ones. Counting the
+    # fold alone would drop a run whose review is still owed — drawn delivered
+    # while it is classified ``scoring`` — out of every cell, so the state the
+    # pane draws it with counts here, one row once, and the fold adds the
+    # promotable rows the delivered states do not name.
+    delivered_rows = sum(
+        state in FLEET_UNPROMOTED_STATES
+        or str((snapshot.get("delivery") or {}).get("status") or "") == "delivered"
+        for snapshot, state in zip(rows, states, strict=True)
+    )
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states)
         - reviewing
@@ -2325,14 +2354,19 @@ def _fleet_counts(
         # word and the figure cannot disagree if there is one statement of
         # which bucket a state belongs to.
         "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
-        - repairing,
+        "unpromoted": delivered_rows - repairing,
     }
-    if any("delivery" in row and row["delivery"] is not None for row in rows):
+    # The promotion figures join the counts only when some row carries a
+    # delivery reading. An empty one is the classifier's "nothing delivered
+    # here" rather than a zero to publish, the same way ``reviewing`` and
+    # ``waiting`` join the result only when a run is in them: metadata with no
+    # reading behind it would sit in a dict of counts as a value that is not a
+    # count, and the fleet's figures are read as a partition that adds up to
+    # the rows it summarises.
+    if any(row.get("delivery") for row in rows):
         from .recovery_classification import delivery_summary
 
         delivery = delivery_summary(rows, pointers=pointers)
-        counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
         counts["oldest_promotion_requested_at"] = delivery[
@@ -2425,12 +2459,23 @@ def _manifest_rewritten(
 
 
 def _ledger_landing_word(project: str, row: Mapping[str, Any]) -> str:
-    """A promotion only announces landing once its head reaches primary."""
+    """A promotion only announces landing once its head reaches primary.
+
+    A ledger row names its project and never its checkout, so the ancestry
+    question is asked against the project's registered mount: that is the tree
+    the landing puts the row's head on, and asking it nowhere would word every
+    landed promotion as still awaiting its merge.
+    """
     if not row.get("commits"):
         return "recorded"
+    from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.recovery_classification import _promoted_awaiting_merge
 
-    if _promoted_awaiting_merge({**row, "project": project}, moment=time.time()):
+    record = {**row, "project": project}
+    checkout = project_mount_repository(project)
+    if checkout is not None:
+        record["repo"] = str(checkout)
+    if _promoted_awaiting_merge(record, moment=time.time(), row=row):
         return "complete"
     return "promoted"
 
@@ -4434,7 +4479,12 @@ def recover(
         if run_id:
             try:
                 observed = observe(run_id, config=config)
-            except CrewError as exc:
+            except (CrewError, BackendError) as exc:
+                # A stream a backend's dialect refuses is one run's fault. A
+                # pointer moved to another harness keeps the stream its first
+                # harness wrote, and left uncaught that refusal ended the pass
+                # for every other run of the project, so none of them was
+                # classified and no review they owed was composed.
                 unreadable = str(exc)
         observed = _derive_missing_manifest(observed, config=config)
         report = classify_pointer(observed)

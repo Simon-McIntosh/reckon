@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T08:09:47Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 548,
+      "severity": "non-blocking",
+      "text": "the landed change appends its own 'reckon crew watch: producer ... exited at start' line after the 'reckon crew watch stopped: producer crashed repeatedly' line dispatch_watch.py still writes at the restart limit, and _logged_producer_stop reads only the last non-blank line and returns None unless it carries the 'stopped: ' marker, so a producer whose start fails now yields no stop reason at crew_follow_commands.py:2359 where the base reported one, and the follower pane falls silent on a silent fleet; the news reaches a reader only through the new obligations duty and the launch warning."
+    },
+    {
+      "file": "tests/test_a_failed_producer_start_names_its_reason.py",
+      "line": 165,
+      "severity": "non-blocking",
+      "text": "the done_when's fourth fact asks for a launch's record saying no producer was armed, but test_a_launch_while_the_start_fails_is_admitted asserts producer_armed on the dict _ensure_watch_producer returns and on the warning string and never on the pointer record a launch writes, so a caller that dropped watch_state's producer_armed key from record['watch'] would leave this file green."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatching/requests.py:367, reckon/crew/dispatch_plan.py:1261, reckon/crew/obligations.py:4893, reckon/crew/obligation_snapshot.py:2070 and the supervising wrapper script at reckon/crew/dispatch_watch.py:6-10, whose note_failure runs as its own process.",
+    "diff": "read 28fbf2bc..fc513bd2 commit by commit: fc4922bc79 adds the start-failure record, the start-failure duty and the admission warning across five product files plus the test file, and fc513bd2 adds only the 32-line evidence fragment; nothing else changed.",
+    "done_when": "the done_when asks four facts of a temporary crew home, a quoted base log line and refusal, and an evidence fragment; tests/test_a_failed_producer_start_names_its_reason.py:135-179 asserts all four against the autouse isolated home at tests/conftest.py:1569, the base arm is negative-control-base.log (4 failed, EXIT=1) and the fragment is docs/evidence/fragments/queued-work-needs-no-workaround/s32.html, but the fourth fact's 'record saying no producer was armed' is asserted only on the returned watch state at lines 173-175, not on a written launch pointer.",
+    "goal": "read the node goal 'A producer that cannot start records its reason and holds no launch' beside reckon/crew/watch_unit.py:153 record_producer_start_failure, which writes the reason beside the watch log and drops the dead pid, and reckon/crew/dispatch_watch.py:1417, which admits a launch met by that record with a warning instead of refusing it.",
+    "manifest": "read r-20261119T184428067524-qwnw-a-failed-producer-start-names-its-reason/manifest.md; status complete, two commits cited, the gate command quoted literally, scoped gate 62 passed at exit 0, baseline arm 58 passed and after arm 62 passed, negative control exit 1 with four failing ids, and outside_scope naming test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted as pre-existing.",
+    "write_paths": "read the manifest's orientation_write_paths and the node's declared list of ten paths; all seven changed paths -- reckon/crew/dispatch_watch.py, reckon/crew/fleet_supervisor.py, reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, the new tests/test_a_failed_producer_start_names_its_reason.py and docs/evidence/fragments/queued-work-needs-no-workaround/s32.html -- are inside it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal \"A producer that cannot start records its reason and holds no launch\" beside reckon/crew/watch_unit.py:153 record_producer_start_failure, which writes the reason beside the watch log and drops the dead pid, and reckon/crew/dispatch_watch.py:1417, which admits a launch met by that record with a warning instead of refusing it.\nVERDICT done_when: the done_when asks four facts of a temporary crew home, a quoted base log line and refusal, and an evidence fragment; tests/test_a_failed_producer_start_names_its_reason.py:135-179 asserts all four against the autouse isolated home at tests/conftest.py:1569, the base arm is negative-control-base.log (4 failed, exit 1) and the fragment is docs/evidence/fragments/queued-work-needs-no-workaround/s32.html, but the fourth fact's \"record saying no producer was armed\" is asserted only on the returned watch state at lines 173-175, not on a written launch pointer.\nVERDICT write_paths: read the manifest's orientation_write_paths and the node's declared list of ten paths; all seven changed paths -- reckon/crew/dispatch_watch.py, reckon/crew/fleet_supervisor.py, reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, the new tests/test_a_failed_producer_start_names_its_reason.py and docs/evidence/fragments/queued-work-needs-no-workaround/s32.html -- are inside it.\nVERDICT manifest: read manifest.md; status complete, two commits cited, the gate command quoted literally, scoped gate 62 passed at exit 0, baseline arm 58 passed and after arm 62 passed, negative control exit 1 with four failing ids, and outside_scope naming test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted as pre-existing.\nVERDICT diff: read 28fbf2bc..fc513bd2 commit by commit: fc4922bc79 adds the start-failure record, the start-failure duty and the admission warning across five product files plus the test file, and fc513bd2 adds only the 32-line evidence fragment; nothing else changed.\nCALL_SITES: reckon/crew/dispatching/requests.py:367, reckon/crew/dispatch_plan.py:1261, reckon/crew/obligations.py:4893, reckon/crew/obligation_snapshot.py:2070, reckon/crew/dispatch_watch.py:316\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:153 records the reason beside the watch log and reckon/crew/watch_unit.py:192 clears the registration's pid, while reckon/crew/dispatch_watch.py:1417 admits the launch instead of refusing it, which is the goal's two halves.\nSCORE evidence: 17\nJUSTIFICATION evidence: the scoped gate log records 62 passed at exit 0 and the base arm records 4 failed at exit 1, so the measure the done_when states is recorded rather than claimed, though the launch-record clause is measured at the state level only.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all seven paths in the 28fbf2bc..fc513bd2 diff are among the ten declared, including the two one-line obligation call sites at reckon/crew/obligations.py:4893 and reckon/crew/obligation_snapshot.py:2070.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_failed_producer_start_names_its_reason.py:137 reddens when the wrapper returns the producer's stderr to the null device, as negative-control.log shows for all four ids, but line 165 asserts the admission on watch_state and the warning rather than on the launch record the done_when names.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers at reckon/crew/watch_unit.py:123-234 follow the module's record/read/derive shape and the duty at reckon/crew/fleet_supervisor.py:1057 mirrors fleet_test_obligations, though the embedded wrapper script carries lowercase module-level constants log_path and message_limit at reckon/crew/dispatch_watch.py:296-297.\nSCORE reuse: 17\nJUSTIFICATION reuse: the record reuses write_json_atomically, watch_log_path and watch_state rather than forking a store, and the one near-duplicate is produced_message at reckon/crew/dispatch_watch.py:300, which re-reads a log tail beside reckon/crew_follow_commands.py:529 _producer_log_tail but must live inside the pre-import wrapper script.\nFINDING reckon/crew_follow_commands.py:548 non-blocking: the appended start-failure log line displaces the \"stopped: \" marker line _logged_producer_stop matches on, so the follower pane at reckon/crew_follow_commands.py:2359 reports no reason where the base reported the crash-limit line.\nFINDING tests/test_a_failed_producer_start_names_its_reason.py:165 non-blocking: the fourth done_when fact is asserted on the returned watch state and the warning, never on the launch pointer record's producer_armed.",
+  "review_run_id": "r-20261120T075421960812-review-of-qwnw-a-failed-producer-start-names-its-reason-fc513bd260b4",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "fc513bd260b4f93f67bfafba4de32e88c2c1c6f2",
+  "reviewed_run_id": "r-20261119T184428067524-qwnw-a-failed-producer-start-names-its-reason",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T08:30:27.747723+00:00",
+  "total": 105
+}

@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "none"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:10:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-scratch.html",
+      "line": 41,
+      "severity": "non-blocking",
+      "text": "The fragment states every arm is a batch job on all_debug launched with SLURM_JOB_ID unset, but head-gate.log line 4 records the job id 1328670 on 98dci4-clu-3141.iter.org, so the measured pytest process ran with SLURM_JOB_ID set: the arm script prints that value from the measured job's own environment and never unsets it before the measured command, where the sibling idiom runs the measured command under env -u SLURM_JOB_ID. The done_when clause is therefore unverified and the landed evidence asserts a condition that did not hold. Non-blocking because neither reckon/_worker_fence.py nor reckon/crew/dispatch_admission.py reads SLURM_JOB_ID, so the path under test is unaffected and both arms were measured under the same condition."
+    },
+    {
+      "file": "tests/test_a_worker_cannot_remove_another_runs_scratch.py",
+      "line": 116,
+      "severity": "non-blocking",
+      "text": "The added pin of NODE_TMP_ROOT and node_tmp_runtime_paths carries no assertion of its own, so its regression is visible only where the ambient pytest tmp root falls under NODE_TMP_ROOT: the base arm at 5b0a1f53 reddens on this node because tmp_path sits under /tmp, but a host whose TMPDIR lies outside the node tmp would still run green with the pin removed and these added lines would be unguarded."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "No production module changed: the diff is one test fixture and one docs fragment, so no runtime call site reaches this change and none was found to examine.",
+    "diff": "Read commit by commit against 5b0a1f53: 029461d3 adds 19 lines to the test file's fixture only, and d07f87bd, 0bb3d508 and 986afc01 touch only the 97-line evidence fragment; no assertion in the test was changed, removed or weakened.",
+    "done_when": "Read at dispatch-detail.json:61 against the gate the worker ran; base-gate.log carries the red arm (1 failed, 2 passed EXIT=1, FAILED test_a_fenced_run_cannot_remove_a_siblings_scratch) and head-gate.log the green one (3 passed EXIT=0), both suite arms are recorded as inline JSON with full 40-character revisions, and the negative control is logged and named in the fragment, but head-gate.log:4 records the job id so the measured process ran with SLURM_JOB_ID set rather than unset, and no log carries the ruff claim.",
+    "goal": "The node goal is to make tests/test_a_worker_cannot_remove_another_runs_scratch.py pass in full on the primary branch; the fixture pin at tests/test_a_worker_cannot_remove_another_runs_scratch.py:101-121 lets it and head-gate.log records 3 passed EXIT=0 at 0bb3d508.",
+    "manifest": "Read in full: it names four full commit ids, the two changed paths, gate and suite logs with revisions and EXIT codes, the negative control log, and readable baseline_suite and after_suite JSONs both at 58 passed with failure_count 0.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file itself; the diff's two paths, tests/test_a_worker_cannot_remove_another_runs_scratch.py and the fragment, both sit inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_worker_cannot_remove_another_runs_scratch.py pass in full on the primary branch; the fixture pin at tests/test_a_worker_cannot_remove_another_runs_scratch.py:101-121 lets it and head-gate.log records 3 passed EXIT=0 at 0bb3d508.\nVERDICT done_when: read at dispatch-detail.json:61 against the gate the run recorded; base-gate.log carries the red arm (1 failed, 2 passed EXIT=1, FAILED test_a_fenced_run_cannot_remove_a_siblings_scratch) and head-gate.log the green one (3 passed EXIT=0), both suite arms are inline JSON at full 40-character revisions, and the negative control is logged and named in the fragment, but head-gate.log:4 records the job id so the measured process ran with SLURM_JOB_ID set rather than unset, and no log carries the ruff claim.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file; the diff's two paths, tests/test_a_worker_cannot_remove_another_runs_scratch.py and the fragment, both sit inside them.\nVERDICT manifest: read; it names the four full commit ids, the two changed paths, gate and suite logs with revisions and EXIT codes, the negative control log, and readable baseline_suite and after_suite JSONs at 58 passed each with failure_count 0.\nVERDICT diff: read commit by commit against 5b0a1f53; 029461d3 adds 19 lines to the test file's fixture only and the three later commits touch only the evidence fragment, with no assertion changed, removed or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_remove_another_runs_scratch.py:101-121 pins the node tmp inside the fixture's tree, and head-gate.log records 3 passed EXIT=0 with the executed refusal exercised.\nSCORE evidence: 14\nJUSTIFICATION evidence: base-gate.log and head-gate.log carry the red and green pair with EXIT codes at full revisions, but head-gate.log:4 shows the measured process ran with SLURM_JOB_ID set although dispatch-detail.json:61 requires it unset.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both diff paths, tests/test_a_worker_cannot_remove_another_runs_scratch.py and the fragment, lie inside the declared write paths and no product file changed.\nSCORE durability: 17\nJUSTIFICATION durability: the executed refusal at tests/test_a_worker_cannot_remove_another_runs_scratch.py:247 reddens when the pin is absent, as base-gate.log records at 5b0a1f53, but nothing asserts the pin itself so those added lines are guarded only by the ambient tmp layout.\nSCORE fit: 18\nJUSTIFICATION fit: the pin at tests/test_a_worker_cannot_remove_another_runs_scratch.py:116 repeats the inline idiom of tests/test_a_worker_cannot_remove_another_runs_reports.py:172 and introduces no name the repository naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner for a node-tmp pin exists (tests/conftest.py carries no such fixture), so the addition repeats the inline idiom of tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:156 rather than extending a shared helper.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-scratch.html:41 non-blocking: the fragment states the arms ran with SLURM_JOB_ID unset while head-gate.log:4 records job 1328670, so the done_when clause is unverified and the landed evidence asserts a condition that did not hold; neither reckon/_worker_fence.py nor reckon/crew/dispatch_admission.py reads that variable, so the measurement itself stands.\nFINDING tests/test_a_worker_cannot_remove_another_runs_scratch.py:116 non-blocking: the added pin of NODE_TMP_ROOT and node_tmp_runtime_paths has no assertion of its own and its regression is visible only where pytest's tmp root falls under NODE_TMP_ROOT, so a host whose TMPDIR lies elsewhere would run green with the pin removed.\n",
+  "review_run_id": "r-20261119T002000759635-review-of-qwnw-red-file-a-worker-cannot-remove-another-runs-scratch-986afc018eab",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "986afc018eab315fde75a06759d6932cb6689402",
+  "reviewed_run_id": "r-20261118T044626803858-qwnw-red-file-a-worker-cannot-remove-another-runs-scratch",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "scores_note": "dimensions scored 0..20, scored independently",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:23:13Z",
+  "total": 106
+}

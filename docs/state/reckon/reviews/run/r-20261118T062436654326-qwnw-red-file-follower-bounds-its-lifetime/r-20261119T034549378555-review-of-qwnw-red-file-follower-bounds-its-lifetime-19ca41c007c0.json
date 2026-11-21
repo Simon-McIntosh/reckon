@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "json.loads(result.stdout) raises when the dispatch command stops writing its refusal as one JSON document to stdout, or stops redirects the created-run notice away from stdout; the base arm shows both this id and :949 reddening on exactly that regression.",
+      "independence": "The decoded payload is produced by the command under test and asserted against product-owned fields (error, detail) at :894, not against any value the test supplied.",
+      "limit": "A notice written to stdout before the document is suppressed by _single_document_stdout only because that wrapper exists; a change to the wrapper is caught here, a change confined to stderr wording is not.",
+      "location": "tests/test_follower_bounds_its_lifetime.py:892"
+    },
+    {
+      "conditions_for_failure": "Same shape as :892 for the launch-kind case; it reddens if the in-harness refusal stops reaching stdout or the created-run notice returns to it.",
+      "independence": "Payload fields are asserted against the product's refusal contract, not against a value handed in by the test.",
+      "limit": "Both cases assert only the document's presence and a subset of its fields; a document that stays parseable while losing a field this case does not name is not caught.",
+      "location": "tests/test_follower_bounds_its_lifetime.py:949"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_emit (under _single_document_stdout and _holds_stdout_for_one_document)",
+    "reckon/crew_dispatch_commands.py:460",
+    "reckon/crew/dispatching/preparation.py:1581"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:29:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the fragment states \"Head 55bdc82b264df34ab53b80549f0eeb0189ec54d4: 5 passed\" and repeats that sha on both head rows at :39 and :41, while the head.log and suitehead.log it points at in :48-49 are headed revision 19ca41c007c03c250b9a2e7838630ced23621994, so a reader comparing the table to the log it cites finds two revisions for one arm; the counts are still true of the reviewed head because 19ca41c0 is docs-only, but the citation alone no longer reconciles."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "the plan section 29 done-when asks the negative-control evidence to carry the base run's failing ids, and the fragment gives only counts (2 failed, 3 passed) plus the JSONDecodeError shape, never the two test ids that base.log names, so the negative control has to be read out of the log rather than the fragment the plan points a reader at."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the three commits against 42fe90d0b0a46060bafde2490dda7d4002cda478; 55bdc82b touches only tests/test_follower_bounds_its_lifetime.py (+8 -2, result.output -> result.stdout at :892 and :949), fe252a3f adds the 56-line fragment and 19ca41c0 edits 10 lines of it, with no product source changed.",
+    "done_when": "the done_when requires the named file green at head as an all_debug job with SLURM_JOB_ID unset plus a no-added-failure arm over the importing files; the run's go.sh submits with /usr/bin/sbatch --partition=all_debug --wait and runner.sh unsets SLURM_JOB_ID, head.log reads 5 passed EXIT=0, and suitebase.log/suitehead.log each read 58 passed EXIT=0.",
+    "goal": "the source node's goal (\"Make tests/test_follower_bounds_its_lifetime.py pass in full on the primary branch\") is met at the reviewed head: tests/test_follower_bounds_its_lifetime.py:892 and :949 read the dispatch refusal from the stdout document that reckon/crew_dispatch_commands.py:_emit writes, and the run's head.log records 5 passed EXIT=0 at 19ca41c007c03c250b9a2e7838630ced23621994.",
+    "manifest": "the source manifest.md states tests: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_bounds_its_lifetime.py, names base.log/head.log/suitebase.log/suitehead.log, records head 5 passed, base 2 failed 3 passed and 58 passed per suite arm, and its artifacts line reconciles with those logs.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment plus the figure directory; the two changed paths (tests/test_follower_bounds_its_lifetime.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html) are inside them and nothing else changed."
+  },
+  "justifications": {
+    "durability": "restoring the pre-change line json.loads(result.output) at tests/test_follower_bounds_its_lifetime.py:892 and :949 is exactly the base arm, whose base.log records both ids failing with JSONDecodeError, so the two assertions the change protects are proven to redden on the regression.",
+    "evidence": "head.log records 5 passed EXIT=0 and suitehead.log 58 passed EXIT=0 at 19ca41c0, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html:13 names head 55bdc82b while the logs it cites are headed 19ca41c0, and no cited log carries the job id, host or partition the done_when names so the all_debug requirement is shown by go.sh alone.",
+    "fit": "the change adopts the repository's prevailing payload idiom (json.loads(result.stdout), the honour the call sites in tests/test_an_edit_that_answers_a_review_is_covered.py:346 and tests/test_review_plan_command.py:320 already do), with one three-line comment duplicated across the two cases at :889-891 and :946-948.",
+    "goal_fidelity": "tests/test_follower_bounds_its_lifetime.py:892 and :949 decode the payload from result.stdout, the channel reckon/crew_dispatch_commands.py:_emit writes the one document to, and head.log proves 5 passed at the reviewed head.",
+    "reuse": "the diff adds no function, class or module; the capability it leans on is owned by reckon/crew_dispatch_commands.py:_single_document_stdout and the read idiom has owners across tests/ (searched by capability for a CLI-payload reader and for an evidence-fragment writer, the latter owned by reckon/resources.py:65 and reckon/crew/dispatch_claims.py:2226).",
+    "scope_discipline": "the diff 42fe90d0b0a46060bafde2490dda7d4002cda478..19ca41c007c03c250b9a2e7838630ced23621994 holds only tests/test_follower_bounds_its_lifetime.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal (\"Make tests/test_follower_bounds_its_lifetime.py pass in full on the primary branch\") is met at the reviewed head: tests/test_follower_bounds_its_lifetime.py:892 and :949 read the dispatch refusal from the stdout document that reckon/crew_dispatch_commands.py:_emit writes, and the run's head.log records 5 passed EXIT=0 at 19ca41c007c03c250b9a2e7838630ced23621994.\nVERDICT done_when: the done_when requires the named file green at head as an all_debug job with SLURM_JOB_ID unset plus a no-added-failure arm over the importing files; the run's go.sh submits with /usr/bin/sbatch --partition=all_debug --wait and runner.sh unsets SLURM_JOB_ID, head.log reads 5 passed EXIT=0, and suitebase.log/suitehead.log each read 58 passed EXIT=0.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment plus the figure directory; the two changed paths (tests/test_follower_bounds_its_lifetime.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html) are inside them and nothing else changed.\nVERDICT manifest: the source manifest.md states tests: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_bounds_its_lifetime.py, names base.log/head.log/suitebase.log/suitehead.log, records head 5 passed, base 2 failed 3 passed and 58 passed per suite arm, and its artifacts line reconciles with those logs.\nVERDICT diff: read the three commits against 42fe90d0b0a46060bafde2490dda7d4002cda478; 55bdc82b touches only tests/test_follower_bounds_its_lifetime.py (+8 -2, result.output -> result.stdout at :892 and :949), fe252a3f adds the 56-line fragment and 19ca41c0 edits 10 lines of it, with no product source changed.\nCALL_SITES: reckon/crew_dispatch_commands.py:_emit (under _single_document_stdout/_holds_stdout_for_one_document), reckon/crew_dispatch_commands.py:460, reckon/crew/dispatching/preparation.py:1581\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_follower_bounds_its_lifetime.py:892 and :949 decode the payload from result.stdout, the channel reckon/crew_dispatch_commands.py:_emit writes the one document to, and head.log proves 5 passed at the reviewed head.\nSCORE evidence: 14\nJUSTIFICATION evidence: head.log records 5 passed EXIT=0 and suitehead.log 58 passed EXIT=0 at 19ca41c0, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html:13 names head 55bdc82b while the logs it cites are headed 19ca41c0, and no cited log carries the job id, host or partition the done_when names so the all_debug requirement is shown by go.sh alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 42fe90d0b0a46060bafde2490dda7d4002cda478..19ca41c007c03c250b9a2e7838630ced23621994 holds only tests/test_follower_bounds_its_lifetime.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the pre-change line json.loads(result.output) at tests/test_follower_bounds_its_lifetime.py:892 and :949 is exactly the base arm, whose base.log records both ids failing with JSONDecodeError, so the two assertions the change protects are proven to redden on the regression.\nSCORE fit: 18\nJUSTIFICATION fit: the change adopts the repository's prevailing payload idiom (json.loads(result.stdout), the honour the call sites in tests/test_an_edit_that_answers_a_review_is_covered.py:346 and tests/test_review_plan_command.py:320 already do), with one three-line comment duplicated across the two cases at :889-891 and :946-948.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; the capability it leans on is owned by reckon/crew_dispatch_commands.py:_single_document_stdout and the read idiom has owners across tests/ (searched by capability for a CLI-payload reader and for an evidence-fragment writer, the latter owned by reckon/resources.py:65 and reckon/crew/dispatch_claims.py:2226).\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html:13 non-blocking: the fragment states \"Head 55bdc82b264df34ab53b80549f0eeb0189ec54d4: 5 passed\" and repeats that sha on both head rows at :39 and :41, while the head.log and suitehead.log it points at in :48-49 are headed revision 19ca41c007c03c250b9a2e7838630ced23621994, so a reader comparing the table to the log it cites finds two revisions for one arm; the counts are still true of the reviewed head because 19ca41c0 is docs-only, but the citation alone no longer reconciles.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-bounds-its-lifetime.html:37 non-blocking: the plan section 29 done-when asks the negative-control evidence to carry the base run's failing ids, and the fragment gives only counts (2 failed, 3 passed) plus the JSONDecodeError shape, never the two test ids that base.log names, so the negative control has to be read out of the log rather than the fragment the plan points a reader at.\n",
+  "review_method": "Read-only source and recorded-log review; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T034549378555-review-of-qwnw-red-file-follower-bounds-its-lifetime-19ca41c007c0",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "19ca41c007c03c250b9a2e7838630ced23621994",
+  "reviewed_run_id": "r-20261118T062436654326-qwnw-red-file-follower-bounds-its-lifetime",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "55bdc82b264df34ab53b80549f0eeb0189ec54d4",
+    "fe252a3fa81ca0d44bb21a2f25843e031ba1b1e5",
+    "19ca41c007c03c250b9a2e7838630ced23621994"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062436654326-qwnw-red-file-follower-bounds-its-lifetime/suitehead.log",
+      "observed_summary": "58 passed in 44.94s",
+      "revision": "19ca41c007c03c250b9a2e7838630ced23621994"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062436654326-qwnw-red-file-follower-bounds-its-lifetime/suitebase.log",
+      "observed_summary": "58 passed in 41.33s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:59:21.535720+00:00",
+  "total": 110
+}

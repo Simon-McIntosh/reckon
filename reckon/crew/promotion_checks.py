@@ -638,6 +638,26 @@ def _commit_holds_path(tree: Path, commit: str, path: str) -> bool:
     return _git(tree, "cat-file", "-e", f"{commit}:{path}", check=False).returncode == 0
 
 
+def _a_later_cited_commit_drops(
+    tree: Path, commit: str, path: str, cited: Sequence[str]
+) -> bool:
+    """Whether a cited commit that descends from ``commit`` no longer holds ``path``.
+
+    Read from the cited commits alone, like the finding it qualifies: a
+    descendant is one ``commit`` is an ancestor of, and its own tree answers
+    whether the path survived to it.
+    """
+    for other in cited:
+        if other == commit:
+            continue
+        descends = _git(
+            tree, "merge-base", "--is-ancestor", commit, other, check=False
+        )
+        if descends.returncode == 0 and not _commit_holds_path(tree, other, path):
+            return True
+    return False
+
+
 def _png_twin_findings_in_run_commits(record: Mapping[str, Any]) -> list[str]:
     """The PNG twins this run's own commits add beside an SVG of the same stem.
 
@@ -675,6 +695,12 @@ def _png_twin_findings_in_run_commits(record: Mapping[str, Any]) -> list[str]:
         for png in sorted(pngs):
             svg = png[:-4] + ".svg"
             if not _commit_holds_path(tree, commit, svg):
+                continue
+            if _a_later_cited_commit_drops(tree, commit, png, resolved):
+                # The run removed its own copy: the head it delivers holds one
+                # SVG and no twin, and the remedy this finding names is already
+                # done. Charging the earlier commit would refuse a run that can
+                # only comply by rewriting its history.
                 continue
             findings.append(
                 f"{png} adds a PNG twin of the SVG figure {svg} in the same "

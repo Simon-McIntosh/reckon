@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own declared arms on disk: baseline_suite-1795065365868172065.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 reads 58 passed and ends EXIT=0, and after_suite-1795065409113897159.log at 22a359fc8cd584cfc77d90408795ce1cea718ceb reads 58 passed and ends EXIT=0, neither carrying a FAILED line, so both arms are readable and the after-minus-baseline set difference is empty.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:29:14Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_counts_worker_slots.py",
+      "line": "405",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion reads the gate's allowance back as 0, the same zero the case itself wrote into lane-zero-allowance.json, so its two sides move with the input the test supplied and a router that echoed that input would satisfy it; the guard's force comes from the router-composed strings asserted at lines 406-407 and from the decision-level case at lines 186-189, not from this line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063041986934-qwnw-red-file-dispatch-counts-worker-slots/manifest.md",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commits field gives the head as 8f19c4f31d, an abbreviation, where the done_when asks for plain full commit ids, so the record does not carry the head 8f19c4f31d2ed5a8a0909512b39b09904ea215d3 in full."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063041986934-qwnw-red-file-dispatch-counts-worker-slots/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when also requires that ruff check and ruff format --check report nothing new on the changed paths, and the manifest records no ruff result at all; I measured it instead and both arms carry the same single I001 finding and the same single format difference at 42fe90d and 8f19c4f, so the fact holds while the record does not state it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits of 42fe90d0b0a46060bafde2490dda7d4002cda478..8f19c4f31d2ed5a8a0909512b39b09904ea215d3; 22a359fc8c rewrites one case to the queued rule over tests/test_dispatch_counts_worker_slots.py (+26/-13) and 8f19c4f31d adds the 7-line evidence fragment, with no product file touched.",
+    "done_when": "the done_when asks for the file green at head as a job on all_debug, the base run first with its failing ids, a cause verdict, two arms in inline JSON with 40-character revisions, and ruff unchanged on the changed paths; scoped-gate-1795065501676973072.log reads 11 passed EXIT=0 on host 98dci4-clu-3141, base-arm.log reads 1 failed and 10 passed EXIT=1 on 'assert 0 == 75', both suite arms read 58 passed EXIT=0 at their own 40-character revisions, and the fragment carries the base failing id, but manifest.md:13 records no ruff result.",
+    "goal": "the node goal is to make tests/test_dispatch_counts_worker_slots.py pass in full on the primary branch, and scoped-gate-1795065501676973072.log records 11 passed EXIT=0 at 22a359fc8cd584cfc77d90408795ce1cea718ceb over exactly that file.",
+    "manifest": "read the reviewed run's manifest.md in full; it states status complete, names the single cause with the verdict 'test wrong', cites both suite arms at zero failures with 40-character revisions, and points at three logs, while abbreviating the head on line 8 and recording no ruff result.",
+    "write_paths": "the declared paths are tests/, docs/evidence/fragments/queued-work-needs-no-workaround/, this node's fragment and its figures directory, and the diff touches only tests/test_dispatch_counts_worker_slots.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-counts-worker-slots.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_counts_worker_slots.py:397-415 reddens on the regression it guards: a hold that refuses again fails 'assert result.exit_code == 0' at line 397, a request that is not stored fails 'payload[queued] is True' at line 399, and a pointer that stops carrying the hold raises KeyError at line 415, which negative-control.log shows with the hold short-circuited in reckon/crew/dispatching/preparation.py.",
+    "evidence": "the gate named in manifest.md:13 ran as a job and its log ends EXIT=0 at 11 passed, and the base arm and both suite arms are on disk, but manifest.md:13 records no ruff result for the done_when's last obligation.",
+    "fit": "the case keeps the file's own idiom at tests/test_dispatch_counts_worker_slots.py:373-381, the CliRunner invoke and monkeypatch.setattr calls already used there, and reads the store through runs.list_live, adding no helper and no new name.",
+    "goal_fidelity": "tests/test_dispatch_counts_worker_slots.py reads 11 passed EXIT=0 at 22a359fc8cd584cfc77d90408795ce1cea718ceb in scoped-gate-1795065501676973072.log, which is the whole of the goal.",
+    "reuse": "the addition is one case inside the file that owns the worker-slot boundary, and tests/test_held_dispatch_is_queued.py:35 pins the same queued answer for a per-session share of zero, so this case adds the global worker_slots boundary rather than re-implementing that mechanism.",
+    "scope_discipline": "the diff contains only tests/test_dispatch_counts_worker_slots.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-counts-worker-slots.html, both inside the declared paths, with no product, plan or index write."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_dispatch_counts_worker_slots.py pass in full on the primary branch, and scoped-gate-1795065501676973072.log records 11 passed EXIT=0 at 22a359fc8cd584cfc77d90408795ce1cea718ceb over exactly that file.\nVERDICT done_when: the done_when asks for the file green at head as a job on all_debug, the base run first with its failing ids, a cause verdict, two arms in inline JSON with 40-character revisions, and ruff unchanged on the changed paths; scoped-gate-1795065501676973072.log reads 11 passed EXIT=0 on host 98dci4-clu-3141, base-arm.log reads 1 failed and 10 passed EXIT=1 on 'assert 0 == 75', both suite arms read 58 passed EXIT=0 at their own 40-character revisions, and the fragment carries the base failing id, but manifest.md:13 records no ruff result.\nVERDICT write_paths: the declared paths are tests/, docs/evidence/fragments/queued-work-needs-no-workaround/, this node's fragment and its figures directory, and the diff touches only tests/test_dispatch_counts_worker_slots.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-counts-worker-slots.html, both inside them.\nVERDICT manifest: read the reviewed run's manifest.md in full; it states status complete, names the single cause with the verdict 'test wrong', cites both suite arms at zero failures with 40-character revisions, and points at three logs, while abbreviating the head on line 8 and recording no ruff result.\nVERDICT diff: read both commits of 42fe90d0b0a46060bafde2490dda7d4002cda478..8f19c4f31d2ed5a8a0909512b39b09904ea215d3; 22a359fc8c rewrites one case to the queued rule over tests/test_dispatch_counts_worker_slots.py (+26/-13) and 8f19c4f31d adds the 7-line evidence fragment, with no product file touched.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_dispatch_counts_worker_slots.py reads 11 passed EXIT=0 at 22a359fc8cd584cfc77d90408795ce1cea718ceb in scoped-gate-1795065501676973072.log, which is the whole of the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate named in manifest.md:13 ran as a job and its log ends EXIT=0 at 11 passed, and the base arm and both suite arms are on disk, but manifest.md:13 records no ruff result for the done_when's last obligation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff contains only tests/test_dispatch_counts_worker_slots.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-counts-worker-slots.html, both inside the declared paths, with no product, plan or index write.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_dispatch_counts_worker_slots.py:397-415 reddens on the regression it guards: a hold that refuses again fails 'assert result.exit_code == 0' at line 397, a request that is not stored fails 'payload[queued] is True' at line 399, and a pointer that stops carrying the hold raises KeyError at line 415, which negative-control.log shows with the hold short-circuited in reckon/crew/dispatching/preparation.py.\nSCORE fit: 19\nJUSTIFICATION fit: the case keeps the file's own idiom at tests/test_dispatch_counts_worker_slots.py:373-381, the CliRunner invoke and monkeypatch.setattr calls already used there, and reads the store through runs.list_live, adding no helper and no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition is one case inside the file that owns the worker-slot boundary, and tests/test_held_dispatch_is_queued.py:35 pins the same queued answer for a per-session share of zero, so this case adds the global worker_slots boundary rather than re-implementing that mechanism.\nFINDING tests/test_dispatch_counts_worker_slots.py:405 non-blocking: the assertion reads the gate's allowance back as 0, the same zero the case itself wrote into lane-zero-allowance.json, so its two sides move with the input the test supplied and a router that echoed that input would satisfy it; the guard's force comes from the router-composed strings asserted at lines 406-407 and from the decision-level case at lines 186-189, not from this line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063041986934-qwnw-red-file-dispatch-counts-worker-slots/manifest.md:8 non-blocking: the commits field gives the head as 8f19c4f31d, an abbreviation, where the done_when asks for plain full commit ids, so the record does not carry the head 8f19c4f31d2ed5a8a0909512b39b09904ea215d3 in full.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063041986934-qwnw-red-file-dispatch-counts-worker-slots/manifest.md:13 non-blocking: the done_when also requires that ruff check and ruff format --check report nothing new on the changed paths, and the manifest records no ruff result at all; I measured it instead and both arms carry the same single I001 finding and the same single format difference at 42fe90d and 8f19c4f, so the fact holds while the record does not state it.\n",
+  "review_node": "review-of-qwnw-red-file-dispatch-counts-worker-slots-8f19c4f31d2e",
+  "review_run_id": "r-20261119T054245905965-review-of-qwnw-red-file-dispatch-counts-worker-slots-8f19c4f31d2e",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "8f19c4f31d2ed5a8a0909512b39b09904ea215d3",
+  "reviewed_run_id": "r-20261118T063041986934-qwnw-red-file-dispatch-counts-worker-slots",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:53:11.012648+00:00",
+  "total": 114
+}

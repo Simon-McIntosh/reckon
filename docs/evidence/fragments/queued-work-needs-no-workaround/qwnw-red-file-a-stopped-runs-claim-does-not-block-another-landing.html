@@ -1,0 +1,55 @@
+<section id="qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing-landing">
+  <h2>A stopped run's claim does not block another landing</h2>
+
+  <p><strong>What changed: the test, not the product.</strong> The file's only
+  two failing cases read the promotion record straight out of
+  <code>crew complete</code>'s own reply. That reply has been a bounded summary
+  naming <code>record_path</code> since the batch completion landed
+  (<code>ba811581d3</code>), so both cases raised <code>KeyError: 'record'</code>
+  before judging a single rule. They now read the receipt the reply names, and
+  drive promotion with <code>--wait</code> instead of leaving a queued request
+  the case never drains.</p>
+
+  <p>The source-path variant then asserted an acceptance was recorded for a
+  companion <code>.txt</code> beside the declared path. A companion source file
+  is not a class a merge cannot reconcile, so
+  <code>_changed_artifacts_needing_acceptance</code> filters it out before
+  <code>_accepted_scope_exceptions</code> is reached and the row records no
+  acceptance for it — the rule the module states as "a companion source file
+  needs no acceptance at all, so it never reaches here". The case now asserts
+  that absence, and the artifact variant keeps its
+  <code>stopped_peer_claims</code> account unchanged. No assertion was deleted
+  or weakened: the source case still proves the landing happens, the pointer is
+  removed, the peer's pointer is untouched and the ledger gains a row.</p>
+
+  <h3 id="qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing-arms">Arms</h3>
+
+  <table>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th><th>failing ids</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base (negative control)</td>
+        <td><code>be17b57484c74a3432a3d7372aa84da6702ad965</code></td>
+        <td>2 failed, 8 passed, <code>EXIT=1</code></td>
+        <td><code>test_stopped_artifact_peer_is_recorded_on_the_acceptance</code>[False], [True]</td>
+      </tr>
+      <tr>
+        <td>head (scoped gate)</td>
+        <td><code>3a659a36c41023a0358a5d1b1de64580c2bcbcdf</code></td>
+        <td>10 passed, <code>EXIT=0</code></td>
+        <td>none</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The head arm ran as an <code>all_debug</code> job with
+  <code>SLURM_JOB_ID</code> unset, in the tree the gate materialised at that
+  revision; the base arm ran the same way in a scratch extraction of the base
+  revision under the run's scratch directory, where <code>PYTHONPATH=.</code>
+  resolved <code>reckon</code> from
+  <code>/tmp/reckon-crew-scratch/r-20261118T062521490110-qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing/node-base/reckon/__init__.py</code>.
+  The base log is <code>negative-control-base.log</code> in the run directory;
+  the head log is <code>scoped-gate-1795095881801290995.log</code>.</p>
+</section>

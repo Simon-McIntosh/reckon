@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:28:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "the phrase '137 commits since it' freezes a live commit count into committed evidence, so the figure becomes false as soon as more commits land and nothing recomputes it; state the rule instead of a count that moves on its own"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "the gate-arm heading labels the run all_debug at e9dffe52 while its own pre block at lines 26-28 records no SLURM job id and no partition, so the done_when's 'at head as a job on all_debug with SLURM_JOB_ID unset' leg is evidenced only at the base revision, job 1328386 in base-run.log, and not at the head it is meant to certify"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064004269787-qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main/after_suite-1795043393146425467.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the named file or any test importing what changed, so their 0-failure result is true but cannot detect a regression in this node; they are the run's default scoped suite, not an arm over the change"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "the range holds one commit, record that the held-tree index file is green at the primary, adding one new 46-line HTML fragment and no code change.",
+    "done_when": "the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset plus arms as inline JSON; the manifest records the head gate log scoped-gate-1795043269252428977.log, the base job log base-run.log with job 1328386, and both arms as JSON carrying 40-character revisions.",
+    "goal": "the goal is to make tests/test_held_worktree_records_match_each_record_once.py pass in full on the primary branch; the file is byte-identical to its earlier repair 980a8e8a8a, verified with git log over the path, and reads 5 passed at base e9dffe52 and at head ba41c41a.",
+    "manifest": "the manifest reads complete, names its gate command, both gate logs, both suite arms with 0 failures and a negative control log whose tail is 2 failed, 3 passed, EXIT=1.",
+    "write_paths": "the declared paths are reckon, tests, the qwnw fragment directory and that fragment; the single changed path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html, inside them."
+  },
+  "justifications": {
+    "durability": "no test asserts this fragment's content (tests/test_read_plan_composes_the_record.py covers composition only), so its claims are carried by no assertion and the frozen figure at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html:14 would never redden a suite.",
+    "evidence": "the gate log scoped-gate-1795043269252428977.log:1-8 records revision ba41c41a, 5 passed and EXIT=0, and base-run.log:2-7 records the all_debug job 1328386 with SLURM_JOB_ID unset, but the head arm names no partition and no unset job id.",
+    "fit": "the fragment follows the sibling evidence idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html, one section with h2 plus pre blocks carrying revision, host and command, and its path matches the <plan>/<node>.html rule in reckon/evidence.py:866.",
+    "goal_fidelity": "the goal was to make tests/test_held_worktree_records_match_each_record_once.py pass in full, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html:22 reports the 5-passed run the done_when asks the worker to deliver when the file already passes.",
+    "reuse": "the diff adds no function, class or module, and the fragment is consumed by the existing composer reckon/evidence.py:compose_landed_record rather than by a new reader.",
+    "scope_discipline": "git diff e9dffe52..ba41c41a changes exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html, which is a declared write path and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_held_worktree_records_match_each_record_once.py pass in full on the primary branch; the file is byte-identical to its earlier repair 980a8e8a8a and reads 5 passed at base e9dffe52 and at head ba41c41a.\nVERDICT done_when: the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset plus arms as inline JSON; the manifest records the head gate log scoped-gate-1795043269252428977.log, the base job log base-run.log with job 1328386, and both arms as JSON carrying 40-character revisions.\nVERDICT write_paths: the declared paths are reckon, tests, the qwnw fragment directory and that fragment; the single changed path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html is inside them.\nVERDICT manifest: the manifest reads complete, names its gate command, both gate logs, both suite arms with 0 failures and a negative control log whose tail is 2 failed, 3 passed, EXIT=1.\nVERDICT diff: the range holds one commit, record that the held-tree index file is green at the primary, adding one new 46-line HTML fragment and no code change.\nCALL_SITES: reckon/evidence.py:compose_landed_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal was to make tests/test_held_worktree_records_match_each_record_once.py pass in full, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html:22 reports the 5-passed run the done_when asks the worker to deliver when the file already passes.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log scoped-gate-1795043269252428977.log:1-8 records revision ba41c41a, 5 passed and EXIT=0, and base-run.log:2-7 records the all_debug job 1328386 with SLURM_JOB_ID unset, but the head arm names no partition and no unset job id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e9dffe52..ba41c41a changes exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html, which is a declared write path and nothing else.\nSCORE durability: 12\nJUSTIFICATION durability: no test asserts this fragment's content (tests/test_read_plan_composes_the_record.py covers composition only), so its claims are carried by no assertion and the frozen figure at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html:14 would never redden a suite.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the sibling evidence idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html, one section with h2 plus pre blocks carrying revision, host and command, and its path matches the <plan>/<node>.html rule in reckon/evidence.py:866.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the fragment is consumed by the existing composer reckon/evidence.py:compose_landed_record rather than by a new reader.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html:14 non-blocking: the phrase '137 commits since it' freezes a live commit count into committed evidence, so the figure becomes false as soon as more commits land and nothing recomputes it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main.html:25 non-blocking: the gate-arm heading labels the run all_debug at e9dffe52 while its own pre block at lines 26-28 records no SLURM job id and no partition, so the done_when's 'at head as a job on all_debug with SLURM_JOB_ID unset' leg is evidenced only at the base revision, job 1328386 in base-run.log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064004269787-qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main/after_suite-1795043393146425467.log:4 non-blocking: both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the named file or any test importing what changed, so their 0-failure result cannot detect a regression in this node.",
+  "review_run_id": "r-20261118T233543711365-review-of-qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main-ba41c41a04d0",
+  "reviewed_base_sha": "e9dffe5259e14aac4f921e6ee6e63ce03e43ad86",
+  "reviewed_head_sha": "ba41c41a04d08fccf54a7d8c5c37aac298a4b764",
+  "reviewed_run_id": "r-20261118T064004269787-qwnw-red-file-held-worktree-records-match-each-record-once-at-current-main",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:53:54.926956+00:00",
+  "total": 104
+}

@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived with added_failures_from_gate_logs over the reviewed run's baseline_suite-arm.log (revision 42fe90d0b0a46060bafde2490dda7d4002cda478, 58 passed) and after_suite-arm-head.log (revision 8e67c55fe84e92793829b90e480eba16d9ffda84, 58 passed): 0 added.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2909",
+    "reckon/crew/recovery_watch.py:2922",
+    "reckon/crew/recovery_watch.py:3535",
+    "reckon/crew/admission/holds.py:527",
+    "reckon/crew/runs.py:5294"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:50:19Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-state-reads-what-the-worker-reached.html",
+      "id": "ff23ba9c670",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence reads \"its next action names row[next_action] names the repair command\", a garbled clause in the node's evidence record that names a dict access where it means the command the row carries."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-state-reads-what-the-worker-reached.html",
+      "id": "f1b52f2ee76",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the gate \"now requires a reading with a status\", but reckon/crew/recovery_watch.py:2338 tests only the reading's truthiness, so a non-empty status-less reading would still install the null promotion cells the paragraph says is fixed."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "id": "f5a78ffaa1e",
+      "line": "2344",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added comment at :2336-2337 justifies the guard by a partition that adds up to the rows it summarises, but a delivered row with no queued promotion still stores oldest_promotion_position None here, so sum(counts.values()) still raises for that fleet and the comment claims a property the test does not establish."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062751616208-qwnw-red-file-run-state-reads-what-the-worker-reached/manifest.md",
+      "id": "fa0878987b2",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed manifest ends at its tests line with no landing line, no test_logs and no baseline_suite or after_suite JSON, so the arms its done_when requires recorded as inline JSON with full revisions are only recoverable from log files beside it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "the diff against 42fe90d0b0a46060bafde2490dda7d4002cda478 is two commits, fb18ca80 changing one condition in reckon/crew/recovery_watch.py:2338 plus its comment, and 8e67c55 adding the 37-line evidence fragment, with nothing else changed.",
+    "done_when": "the done_when names tests/test_run_state_reads_what_the_worker_reached.py and a base arm, and the reviewed run's negative-control-base.log records 1 failed, 4 passed with EXIT=1 on the id it names while scoped-gate-1795065145701507938.log records 5 passed with EXIT=0 at the reviewed head; the arms it also requires as inline JSON are absent from the manifest and are read here from baseline_suite-arm.log and after_suite-arm-head.log, both 58 passed.",
+    "goal": "the node goal is to make tests/test_run_state_reads_what_the_worker_reached.py pass in full; reckon/crew/recovery_watch.py:2338 narrows the promotion-figure gate so an empty delivery reading contributes nothing, which removes the None value that broke the assertion at tests/test_run_state_reads_what_the_worker_reached.py:179.",
+    "manifest": "the manifest at the reviewed run's manifest.md records status complete and both commits, but it carries no landing line, no test_logs and no baseline_suite/after_suite JSON, so its own account of the arms is a tests command only.",
+    "write_paths": "the declared scope is reckon, tests and the node's fragment under docs/evidence/fragments/queued-work-needs-no-workaround, and both changed paths (reckon/crew/recovery_watch.py and the fragment) fall inside it, with tests/ unchanged."
+  },
+  "justifications": {
+    "durability": "restoring the old condition at reckon/crew/recovery_watch.py:2338 makes tests/test_run_state_reads_what_the_worker_reached.py:179 raise TypeError from sum(counts.values()), the same failure the base log records and the worker's base log shows.",
+    "evidence": "scoped-gate-1795065145701507938.log:7 records 5 passed and its last line EXIT=0 at the reviewed head, but the reviewed manifest.md names no log path and no arms JSON, so the done_when's recording clause rests on files outside the manifest.",
+    "fit": "the guard reads row.get(\"delivery\") like the surrounding reads of the same field above reckon/crew/recovery_watch.py:2338, but its added comment at :2336-2337 claims an invariant the same block still breaks for a delivered row.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:2338 stops the classifier's empty reading from installing the promotion figures, and the named test passes at that head while it fails at unrepaired main with the same TypeError.",
+    "reuse": "the change adds no definition and keeps delivery_summary at reckon/crew/recovery_classification.py:3569 the sole owner of the figures; a search of reckon/crew for another delivery-reading mechanism found only _delivery_reading and delivery_summary.",
+    "scope_discipline": "the diff's only source change is reckon/crew/recovery_watch.py:2338 and every changed path is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_run_state_reads_what_the_worker_reached.py pass in full; reckon/crew/recovery_watch.py:2338 narrows the promotion-figure gate so an empty delivery reading contributes nothing, which removes the None value that broke the assertion at tests/test_run_state_reads_what_the_worker_reached.py:179.\nVERDICT done_when: the done_when names tests/test_run_state_reads_what_the_worker_reached.py and a base arm, and the reviewed run's negative-control-base.log records 1 failed, 4 passed with EXIT=1 on the id it names while scoped-gate-1795065145701507938.log records 5 passed with EXIT=0 at the reviewed head; the arms it also requires as inline JSON are absent from the manifest and are read here from baseline_suite-arm.log and after_suite-arm-head.log, both 58 passed.\nVERDICT write_paths: the declared scope is reckon, tests and the node's fragment under docs/evidence/fragments/queued-work-needs-no-workaround, and both changed paths (reckon/crew/recovery_watch.py and the fragment) fall inside it, with tests/ unchanged.\nVERDICT manifest: the manifest at the reviewed run's manifest.md records status complete and both commits, but it carries no landing line, no test_logs and no baseline_suite/after_suite JSON, so its own account of the arms is a tests command only.\nVERDICT diff: the diff against 42fe90d0b0a46060bafde2490dda7d4002cda478 is two commits, fb18ca80 changing one condition in reckon/crew/recovery_watch.py:2338 plus its comment, and 8e67c55 adding the 37-line evidence fragment, with nothing else changed.\nCALL_SITES: reckon/crew/recovery_watch.py:2909, reckon/crew/recovery_watch.py:2922, reckon/crew/recovery_watch.py:3535, reckon/crew/admission/holds.py:527, reckon/crew/runs.py:5294\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2338 stops the classifier's empty reading from installing the promotion figures, and the named test passes at that head while it fails at unrepaired main with the same TypeError.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795065145701507938.log:7 records 5 passed and its last line EXIT=0 at the reviewed head, but the reviewed manifest.md names no log path and no arms JSON, so the done_when's recording clause rests on files outside the manifest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's only source change is reckon/crew/recovery_watch.py:2338 and every changed path is inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: restoring the old condition at reckon/crew/recovery_watch.py:2338 makes tests/test_run_state_reads_what_the_worker_reached.py:179 raise TypeError from sum(counts.values()), the same failure the base log records and the worker's base log shows.\nSCORE fit: 17\nJUSTIFICATION fit: the guard reads row.get(\"delivery\") like the surrounding reads of the same field above reckon/crew/recovery_watch.py:2338, but its added comment at :2336-2337 claims an invariant the same block still breaks for a delivered row.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and keeps delivery_summary at reckon/crew/recovery_classification.py:3569 the sole owner of the figures; a search of reckon/crew for another delivery-reading mechanism found only _delivery_reading and delivery_summary.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-state-reads-what-the-worker-reached.html:20 non-blocking: the sentence reads \"its next action names row[next_action] names the repair command\", a garbled clause in the node's evidence record that names a dict access where it means the command the row carries.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-state-reads-what-the-worker-reached.html:29 non-blocking: the fragment states the gate \"now requires a reading with a status\", but reckon/crew/recovery_watch.py:2338 tests only the reading's truthiness, so a non-empty status-less reading would still install the null promotion cells the paragraph says is fixed.\nFINDING reckon/crew/recovery_watch.py:2344 non-blocking: the added comment at :2336-2337 justifies the guard by a partition that adds up to the rows it summarises, but a delivered row with no queued promotion still stores oldest_promotion_position None here, so sum(counts.values()) still raises for that fleet and the comment claims a property the test does not establish.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062751616208-qwnw-red-file-run-state-reads-what-the-worker-reached/manifest.md:8 non-blocking: the reviewed manifest ends at its tests line with no landing line, no test_logs and no baseline_suite or after_suite JSON, so the arms its done_when requires recorded as inline JSON with full revisions are only recoverable from log files beside it.\n",
+  "review_run_id": "r-20261119T053152096084-review-of-qwnw-red-file-run-state-reads-what-the-worker-reached-8e67c55fe84e",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "8e67c55fe84e92793829b90e480eba16d9ffda84",
+  "reviewed_run_id": "r-20261118T062751616208-qwnw-red-file-run-state-reads-what-the-worker-reached",
+  "reviewer": "omp",
+  "reviewer_run_id": "r-20261119T053152096084-review-of-qwnw-red-file-run-state-reads-what-the-worker-reached-8e67c55fe84e",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:21:28.069448+00:00",
+  "total": 104
+}

@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795153212094058553.log reads as pytest and names no failing id ('58 passed in 42.25s', line 7) and after_suite-1795153286978033387.log reads as pytest and names none either ('61 passed in 43.19s', line 7), so the set difference is empty (0); the same reader finds 3 FAILED ids in negative-control-unchanged-gate-log-pair.log, so the zero is a read rather than a reader that saw nothing.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligations.py:4300",
+    "reckon/crew/promotion_checks.py:719",
+    "reckon/crew/repair.py:908",
+    "reckon/crew/recovery_review_subject.py:148",
+    "reckon/crew/recovery_review_dispatch.py:1713"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T05:44:15Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "an-unchanged-gate-log-pair-is-counted-once",
+      "recorded_at": "2026-11-20T05:55:28.392411+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "_read_gate_log keeps one test caller and no production caller; removing it is outside the memo repair",
+      "recorded_at": "2026-11-20T05:55:34.713636+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "2882",
+      "severity": "non-blocking",
+      "text": "non-blocking: an OSError from the single arm-log read is turned into None and that unmeasured pair is then memoised at :2960 under the file's own stat identity, so a transient read failure on a long-lived station is reported as unmeasured for the life of the process even after the log is readable again; before this change every read retried and the state healed."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "2895",
+      "severity": "non-blocking",
+      "text": "non-blocking: _read_gate_log now has no production caller \u2014 annotate_review_of_run reaches the pair through _gate_log_file and _added_failures_for_arm_logs \u2014 and is reached only from tests/test_a_run_leaves_nothing_behind.py:72, so a wrapper production never exercises stays in the module."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 7ccd5f0d1f and across the wider e6d692b1..a35432d2 range \u2014 7ccd5f0d1f added the pair memo and the annotate split (already covered by the prior record at head 7ccd5f0d1f), 252be86322 removed the retained arm-log text so a miss reads both arms again, and a35432d289 added the 36-line evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_an_unchanged_gate_log_pair_is_counted_once.py and its three cases \u2014 :149-159 assert one read per log over five reads, :188-208 assert a rewritten head log is read again and the count moves to 2, :232-240 assert a log in neither format reads as unmeasured \u2014 and the base-arm control the done_when states is recorded at 3 failed EXIT=1 with 5 reads per log in negative-control-unchanged-gate-log-pair.log:92-98.",
+    "goal": "the node's goal is that the added-failure count for an unchanged pair of arm logs reads each log once across repeated review reads; reckon/crew/review.py:2916 derives the pair and reckon/crew/review.py:2960 answers every later read from the memo keyed on both logs' stat identities, and reckon/crew/review.py:3683 is the only production path into it.",
+    "manifest": "read; it reports status complete, commits 7ccd5f0d1f/252be86322/a35432d289, a scoped gate of 61 passed EXIT=0 at a35432d289, a base arm of 58 passed EXIT=0 at e6d692b1, and two negative controls at 3 failed EXIT=1, and each figure reconciles with the log line it names (scoped-gate-1795153148843243265.log:7, baseline_suite-1795153212094058553.log:7, after_suite-1795153286978033387.log:7).",
+    "write_paths": "the node declared reckon/crew/review.py, tests/test_an_unchanged_gate_log_pair_is_counted_once.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-gate-log-pair-is-counted-once.html and a figures directory; the delivered diff e6d692b1..a35432d2 touches exactly the first three (git show --stat) and the figures directory is unused, so nothing in the diff sits outside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_gate_log_pair_is_counted_once.py:152 and :200 redden when the pair memo is removed (negative-control-pair-memo-removed.log:92-98, 3 failed EXIT=1, 5 reads per log) and :196-200 also redden if an arm log's bytes are retained again, though :200 pins the re-read-both-arms design rather than the read-once requirement.",
+    "evidence": "scoped-gate-1795153148843243265.log:7 records 61 passed in 43.01s EXIT=0 at a35432d289 with the new test file in its command, and negative-control-unchanged-gate-log-pair.log:92-98 records the done_when's own base-arm control as 3 failed EXIT=1 with each log read 5 times.",
+    "fit": "the addition follows the module's own idiom \u2014 a NamedTuple result at reckon/crew/review.py:2900, a module-level memo kind at :2842 and file_memo.memoized_key as the cache \u2014 and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/review.py:2960 returns the held _ArmLogPair for an unchanged pair of stat identities, so a repeated read of a stored review neither reads nor scans either arm log, and only the result \u2014 not the bytes \u2014 is retained.",
+    "reuse": "reckon/crew/review.py:2960 wraps file_memo.memoized_key and reckon/crew/review.py:2890 file_memo.file_signature, which are the owners of stat-keyed memoised derivation, and a search over reckon/crew and reckon/file_memo.py found no second stat-keyed derivation cache for the addition to fork.",
+    "scope_discipline": "every one of the three changed paths in e6d692b1..a35432d2 is named in the manifest's declared write paths, and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the added-failure count for an unchanged pair of arm logs reads each log once across repeated review reads; reckon/crew/review.py:2916 derives the pair and reckon/crew/review.py:2960 answers every later read from the memo keyed on both logs' stat identities, and reckon/crew/review.py:3683 is the only production path into it.\nVERDICT done_when: the done_when names tests/test_an_unchanged_gate_log_pair_is_counted_once.py and its three cases \u2014 :149-159 assert one read per log over five reads, :188-208 assert a rewritten head log is read again and the count moves to 2, :232-240 assert a log in neither format reads as unmeasured \u2014 and the base-arm control the done_when states is recorded at 3 failed EXIT=1 with 5 reads per log in negative-control-unchanged-gate-log-pair.log:92-98.\nVERDICT write_paths: the node declared reckon/crew/review.py, tests/test_an_unchanged_gate_log_pair_is_counted_once.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/an-unchanged-gate-log-pair-is-counted-once.html and a figures directory; the delivered diff e6d692b1..a35432d2 touches exactly the first three (git show --stat) and the figures directory is unused, so nothing in the diff sits outside the fence.\nVERDICT manifest: read; it reports status complete, commits 7ccd5f0d1f/252be86322/a35432d289, a scoped gate of 61 passed EXIT=0 at a35432d289, a base arm of 58 passed EXIT=0 at e6d692b1, and two negative controls at 3 failed EXIT=1, and each figure reconciles with the log line it names (scoped-gate-1795153148843243265.log:7, baseline_suite-1795153212094058553.log:7, after_suite-1795153286978033387.log:7).\nVERDICT diff: read commit by commit against base 7ccd5f0d1f and across the wider e6d692b1..a35432d2 range \u2014 7ccd5f0d1f added the pair memo and the annotate split (already covered by the prior record at head 7ccd5f0d1f), 252be86322 removed the retained arm-log text so a miss reads both arms again, and a35432d289 added the 36-line evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/obligations.py:4300, reckon/crew/promotion_checks.py:719, reckon/crew/repair.py:908, reckon/crew/recovery_review_subject.py:148, reckon/crew/recovery_review_dispatch.py:1713\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2960 returns the held _ArmLogPair for an unchanged pair of stat identities, so a repeated read of a stored review neither reads nor scans either arm log, and only the result \u2014 not the bytes \u2014 is retained.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-1795153148843243265.log:7 records 61 passed in 43.01s EXIT=0 at a35432d289 with the new test file in its command, and negative-control-unchanged-gate-log-pair.log:92-98 records the done_when's own base-arm control as 3 failed EXIT=1 with each log read 5 times.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the three changed paths in e6d692b1..a35432d2 is named in the manifest's declared write paths, and the change carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_unchanged_gate_log_pair_is_counted_once.py:152 and :200 redden when the pair memo is removed (negative-control-pair-memo-removed.log:92-98, 3 failed EXIT=1, 5 reads per log) and :196-200 also redden if an arm log's bytes are retained again, though :200 pins the re-read-both-arms design rather than the read-once requirement.\nSCORE fit: 18\nJUSTIFICATION fit: the addition follows the module's own idiom \u2014 a NamedTuple result at reckon/crew/review.py:2900, a module-level memo kind at :2842 and file_memo.memoized_key as the cache \u2014 and introduces no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/review.py:2960 wraps file_memo.memoized_key and reckon/crew/review.py:2890 file_memo.file_signature, which are the owners of stat-keyed memoised derivation, and a search over reckon/crew and reckon/file_memo.py found no second stat-keyed derivation cache for the addition to fork.\nFINDING reckon/crew/review.py:2882 non-blocking: an OSError from the single arm-log read is turned into None and that unmeasured pair is then memoised at :2960 under the file's own stat identity, so a transient read failure on a long-lived station is reported as unmeasured for the life of the process even after the log is readable again; before this change every read retried and the state healed.\nFINDING reckon/crew/review.py:2895 non-blocking: _read_gate_log now has no production caller \u2014 annotate_review_of_run reaches the pair through _gate_log_file and _added_failures_for_arm_logs \u2014 and is reached only from tests/test_a_run_leaves_nothing_behind.py:72, so a wrapper production never exercises stays in the module.",
+  "review_node": "review-of-an-unchanged-gate-log-pair-is-counted-once-a35432d2893e",
+  "review_run_id": "r-20261120T054332381254-review-of-an-unchanged-gate-log-pair-is-counted-once-a35432d2893e",
+  "reviewed_base_sha": "7ccd5f0d1f351e0bf30d95e7c236ce6721814948",
+  "reviewed_head_sha": "a35432d2893e1fd66d105c7e07b1d00b1440a6d0",
+  "reviewed_run_id": "r-20261120T045545879942-an-unchanged-gate-log-pair-is-counted-once",
+  "reviewer": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T05:51:27.787773+00:00",
+  "total": 112
+}

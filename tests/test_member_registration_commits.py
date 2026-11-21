@@ -1,20 +1,23 @@
-"""A named member's registration reaches the repository as its own commit.
+"""A named member's registration reaches the shared store, and commits nothing.
 
 A dispatch that names no member is disposable: it runs under an identity minted
 from its own run id and registers nothing, so no unrelated task is refused for a
 row another run in flight happens to hold. A declared member is registered by
-the registration code, which commits what it writes, so its row is readable from
-the repository rather than existing only in the checkout that wrote it — an
-uncommitted row is invisible to every other checkout and rides whichever
-unrelated commit comes next.
+the registration code as one store transaction: the roster is store-only, so its
+row is readable by every checkout rather than existing only in the tree of the
+checkout that wrote it, and the registration commits no revision and stages no
+path. The ``commit`` argument is retained for callers and changes no outcome,
+and ``write_members`` pairs the roster version it read, so a writer that lost
+that pairing is refused rather than overwriting the row of whichever writer won.
 
-These tests build a throwaway repository; the suite's autouse fixture points
-the configuration home at a temp tree. They assert a registration is committed,
-that the commit names only the roster file, that a caller which does not ask to
-commit still does not, that a commit which fails is surfaced rather than
-returned as a registration, that a dispatch naming no member neither registers
-nor commits, and that the live fleet home and the shared checkout are
-untouched.
+These tests build a throwaway repository; the suite's autouse fixture points the
+configuration home at a temp tree, so the store they write is that temp tree's.
+They assert a registration reaches the store and leaves the tree it ran in
+exactly as it found it, that the row the store serves is the roster another
+checkout reads, that a registration stages and commits nothing, that a caller
+which does not ask to commit still persists its row, that a roster write which
+lost its version race is refused and changes nothing, and that the live fleet
+home and the shared checkout are untouched.
 """
 
 from __future__ import annotations
@@ -32,7 +35,6 @@ from tests.helpers.git import git as _git
 from tests.real_home_traces import traces_naming
 
 PROJECT = "proj"
-ROSTER = f"docs/state/{PROJECT}/crew.json"
 SESSION = "session-for-a-node"
 
 CONFIG = {
@@ -54,7 +56,7 @@ CONFIG = {
 
 
 def _run(repository: Path, *arguments: str) -> None:
-    subprocess.run(["git", *arguments], cwd=repository, check=True, capture_output=True)
+    subprocess.run(["git", *arguments], cwd=repository, check=True)
 
 
 def _seed(repository: Path, tracked: list[str]) -> None:
@@ -69,9 +71,9 @@ def _seed(repository: Path, tracked: list[str]) -> None:
 def _repository(tmp_path: Path) -> Path:
     """A throwaway checkout whose state directory is deliberately untracked.
 
-    Nothing under ``docs/`` is committed, so every path the call touches
-    outside the roster file shows up as a dirty entry rather than hiding inside
-    an already-committed tree.
+    Nothing under ``docs/`` is committed, so any path a call touched outside the
+    store would show up as a dirty entry rather than hiding inside an
+    already-committed tree.
     """
     repository = tmp_path / "repository"
     state = repository / "docs" / "state" / PROJECT
@@ -94,109 +96,105 @@ def _register_session(repository: Path, member_id: str = SESSION) -> dict:
     )
 
 
-def _roster_at_head(repository: Path) -> list[dict]:
-    envelope = json.loads(_git(repository, "show", f"HEAD:{ROSTER}"))
-    return envelope["data"]["members"]
+def _stored_ids(repository: Path) -> list[str]:
+    return [str(entry["id"]) for entry in ledger.members(PROJECT, root=repository)]
 
 
-# The registration is committed
+# The registration reaches the store, and writes no path
 
 
-def test_a_session_registration_is_committed(tmp_path: Path) -> None:
-    """The falsifier: the row is readable from the repository, not the tree."""
+def test_a_session_registration_reaches_the_shared_store(tmp_path: Path) -> None:
+    """The falsifier: another checkout reads the row the registration wrote."""
     repository = _repository(tmp_path)
+    other = tmp_path / "other-checkout"
+    other.mkdir()
     base = _git(repository, "rev-parse", "HEAD")
+    before = _git(repository, "status", "--porcelain")
+    assert ledger.members(PROJECT, root=other) == []
 
     stored = _register_session(repository)
 
     assert stored["id"] == SESSION
-    assert _git(repository, "rev-list", "--count", f"{base}..HEAD") == "1"
-    subject = _git(repository, "log", "-1", "--format=%s")
-    assert subject == f"chore(roster): register {SESSION}"
-    assert _git(repository, "log", "-1", "--format=%b")
-    assert _git(repository, "status", "--porcelain", "--", ROSTER) == ""
+    assert _stored_ids(repository) == [SESSION]
+    # The roster is the project's, not the checkout's: a reader resolving from
+    # a second checkout answers the same rows.
+    assert ledger.members(PROJECT, root=other) == ledger.members(
+        PROJECT, root=repository
+    )
+    # A registration commits nothing and leaves the tree it ran in untouched.
+    assert _git(repository, "status", "--porcelain") == before
+    assert _git(repository, "rev-parse", "HEAD") == base
 
 
-def test_the_registration_commit_names_only_the_roster_file(tmp_path: Path) -> None:
+def test_a_registration_leaves_the_checkout_clean(tmp_path: Path) -> None:
+    """The registration cannot ride whichever unrelated commit comes next."""
     repository = _repository(tmp_path)
     unrelated = repository / "notes.txt"
     unrelated.write_text("committed\n", encoding="utf-8")
     _run(repository, "add", "--", "notes.txt")
     _run(repository, "commit", "-q", "-m", "docs: add fixture note")
     unrelated.write_text("dirty\n", encoding="utf-8")
+    base = _git(repository, "rev-parse", "HEAD")
 
     _register_session(repository)
 
-    tree = _git(repository, "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
-    assert tree.splitlines() == [ROSTER]
-    staged = _git(repository, "diff", "--cached", "--name-only")
-    assert staged == ""
-    dirty = _git(repository, "status", "--porcelain").splitlines()
-    assert "M notes.txt" in dirty
-    assert "?? " + ROSTER not in dirty
+    assert _git(repository, "rev-parse", "HEAD") == base
+    assert _git(repository, "diff", "--cached", "--name-only") == ""
+    assert _git(repository, "status", "--porcelain").splitlines() == [
+        "M notes.txt",
+        "?? docs/",
+    ]
 
 
-def test_the_committed_row_is_what_the_roster_serves(tmp_path: Path) -> None:
+def test_the_stored_row_is_what_the_roster_serves(tmp_path: Path) -> None:
     repository = _repository(tmp_path)
 
     _register_session(repository)
 
-    rows = _roster_at_head(repository)
-    assert [str(e["id"]) for e in rows] == [SESSION]
-    assert ledger.members(PROJECT, repository) == rows
+    rows = ledger.members(PROJECT, root=repository)
+    assert _stored_ids(repository) == [SESSION]
+    assert ledger.member(PROJECT, SESSION, root=repository) == rows[0]
+    assert rows[0]["harness"] == "alpha"
+    assert rows[0]["role"] == "implement"
 
 
-# A caller that does not ask to commit still does not
+# A caller that does not ask to commit still persists its row
 
 
-def test_a_caller_that_does_not_ask_to_commit_leaves_the_write_untracked(
+def test_a_caller_that_does_not_ask_to_commit_still_persists_the_row(
     tmp_path: Path,
 ) -> None:
+    """The ``commit`` argument is retained for callers and changes no outcome."""
     repository = _repository(tmp_path)
     base = _git(repository, "rev-parse", "HEAD")
 
     ledger.register_member(PROJECT, "internal-a", harness="alpha", root=repository)
 
+    assert _stored_ids(repository) == ["internal-a"]
     assert _git(repository, "rev-parse", "HEAD") == base
     assert _git(repository, "status", "--porcelain") == "?? docs/"
-    untracked = _git(repository, "status", "--porcelain", "--", ROSTER)
-    assert untracked == "?? " + ROSTER
 
 
-def test_an_uncommitted_row_already_in_the_roster_blocks_the_registration(
+def test_a_roster_write_that_lost_its_version_race_is_refused(
     tmp_path: Path,
 ) -> None:
+    """A stale expected version is refused, and the row already stored survives."""
     repository = _repository(tmp_path)
+    _unused, stale_version = ledger.load_auxiliary(PROJECT, root=repository)
     ledger.register_member(PROJECT, "internal-a", harness="alpha", root=repository)
-    base = _git(repository, "rev-parse", "HEAD")
+    ledger.register_member(PROJECT, "internal-b", harness="alpha", root=repository)
 
-    with pytest.raises(crew.CrewError) as excinfo:
-        _register_session(repository)
+    with pytest.raises(ledger.LedgerError) as excinfo:
+        ledger.write_members(
+            PROJECT,
+            [{"id": SESSION, "harness": "alpha"}],
+            stale_version,
+            root=repository,
+        )
 
-    assert "could not provision session member" in str(excinfo.value)
-    assert "internal-a" in str(excinfo.value)
-    assert _git(repository, "rev-parse", "HEAD") == base
-    assert ledger.member(PROJECT, SESSION, root=repository) is None
-
-
-def test_a_failed_registration_commit_is_surfaced(tmp_path: Path) -> None:
-    repository = _repository(tmp_path)
-    base = _git(repository, "rev-parse", "HEAD")
-    calls = tmp_path / "hook-calls"
-    hook = repository / ".git" / "hooks" / "pre-commit"
-    script = chr(10).join(
-        ["#!/bin/sh", "echo called >> " + str(calls), "exit 1"]
-    ) + chr(10)
-    hook.write_text(script, encoding="utf-8")
-    hook.chmod(0o755)
-
-    with pytest.raises(crew.CrewError) as excinfo:
-        _register_session(repository)
-
-    assert "not committed" in str(excinfo.value)
-    assert _git(repository, "rev-parse", "HEAD") == base
-    assert calls.read_text(encoding="utf-8").splitlines() == ["called"]
-    assert _git(repository, "status", "--porcelain", "--", ROSTER) == "?? " + ROSTER
+    assert "roster version changed" in str(excinfo.value)
+    assert _stored_ids(repository) == ["internal-a", "internal-b"]
+    assert _git(repository, "status", "--porcelain") == "?? docs/"
 
 
 def _dispatch_repository(tmp_path: Path) -> Path:
@@ -242,19 +240,18 @@ def _dispatch_node(node_id: str, section: str = "session-routing") -> crew.TaskN
     )
 
 
-def test_a_dispatch_naming_no_member_is_disposable_and_commits_nothing(
+def test_a_dispatch_naming_no_member_is_disposable_and_writes_nothing(
     tmp_path: Path,
 ) -> None:
-    """The unnamed dispatch is disposable: no roster row, no commit, own identity.
+    """The unnamed dispatch is disposable: no roster row, no write, own identity.
 
-    A named member is registered and committed first, so the roster the unnamed
-    dispatch leaves alone is one these assertions have already seen hold a row.
+    A named member is registered first, so the roster the unnamed dispatch
+    leaves alone is one these assertions have already seen hold a row.
     """
     repository = _dispatch_repository(tmp_path)
-    ledger.register_member(
-        PROJECT, "named-member", harness="alpha", root=repository, commit=True
-    )
+    ledger.register_member(PROJECT, "named-member", harness="alpha", root=repository)
     base = _git(repository, "rev-parse", "HEAD")
+    before = ledger.members(PROJECT, root=repository)
 
     record = crew.dispatch(
         node=_dispatch_node("node-a"),
@@ -269,11 +266,9 @@ def test_a_dispatch_naming_no_member_is_disposable_and_commits_nothing(
     assert str(record["member"]) == "disposable-" + str(record["run_id"])
     assert record["session_id"] is None
     assert _git(repository, "rev-list", "--count", base + "..HEAD") == "0"
-    assert [str(e["id"]) for e in _roster_at_head(repository)] == ["named-member"]
-    assert [str(e["id"]) for e in ledger.members(PROJECT, repository)] == [
-        "named-member"
-    ]
-    assert _git(repository, "status", "--porcelain", "--", ROSTER) == ""
+    assert _git(repository, "status", "--porcelain") == ""
+    assert _stored_ids(repository) == ["named-member"]
+    assert ledger.members(PROJECT, root=repository) == before
 
 
 def test_a_dispatch_naming_a_member_still_registers_and_serialises(
@@ -344,13 +339,13 @@ def test_the_live_home_and_the_shared_checkout_are_untouched(tmp_path: Path) -> 
 
 
 def test_a_reap_before_a_registration_does_not_block_it(tmp_path: Path) -> None:
-    """Both roster writes a dispatch makes are recorded, so neither blocks the other.
+    """Both roster writes a dispatch makes are store transactions, one after the other.
 
     A dispatch reaps idle session rows before it registers its own, so the two
-    writes land in the same checkout one after the other. A reap whose removal
-    were left in the tree would be refused by the registration's own commit, the
-    way any roster write the registration did not make is refused, and the
-    dispatch would then provision no member at all.
+    writes reach the same project's roster in that order. Each pairs the roster
+    version it read, so the reap's removal and the registration's row are two
+    recorded transactions: the registration never meets the reap's removal as a
+    write it did not make, and the dispatch provisions its member.
     """
     repository = _repository(tmp_path)
     ledger.register_member(
@@ -359,25 +354,19 @@ def test_a_reap_before_a_registration_does_not_block_it(tmp_path: Path) -> None:
         harness="alpha",
         root=repository,
         now="2020-01-01T00:00:00Z",
-        commit=True,
     )
     base = _git(repository, "rev-parse", "HEAD")
 
     reaped = routing.reap_idle_session_members(PROJECT, root=repository)
 
     assert reaped["reaped"] == ["session-old"]
-    assert _git(repository, "rev-list", "--count", f"{base}..HEAD") == "1"
-    assert (
-        _git(repository, "log", "-1", "--format=%s")
-        == "chore(roster): retire session-old"
-    )
-    assert _git(repository, "status", "--porcelain", "--", ROSTER) == ""
+    assert _stored_ids(repository) == []
+    assert _git(repository, "rev-parse", "HEAD") == base
+    assert _git(repository, "status", "--porcelain") == "?? docs/"
     assert ledger.member(PROJECT, "session-old", root=repository) is None
 
     stored = _register_session(repository)
 
     assert stored["id"] == SESSION
-    assert _git(repository, "status", "--porcelain", "--", ROSTER) == ""
-    assert _roster_at_head(repository) == [
-        ledger.member(PROJECT, SESSION, root=repository)
-    ]
+    assert _git(repository, "status", "--porcelain") == "?? docs/"
+    assert _stored_ids(repository) == [SESSION]

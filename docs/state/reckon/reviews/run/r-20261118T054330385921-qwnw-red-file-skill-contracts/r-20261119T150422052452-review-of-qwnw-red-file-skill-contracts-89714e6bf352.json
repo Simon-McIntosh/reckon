@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk, read directly rather than from the manifest's count: suite-base.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 ends '2 failed, 56 passed in 19.03s' / EXIT=1 with FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and FAILED tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write; suite-head3.log at 89714e6bf35240f5de5bf5dafc2f37878fb8efc2 ends with the identical '2 failed, 56 passed' and the same two FAILED ids. The set difference after-minus-baseline is empty, so 0 failures were added.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:1657 compose_landed_record appends the fragment's bytes into the plan's landed record",
+    "reckon/serve.py:2751 serves the composed record built from the fragment",
+    "reckon/mcp.py:1344 returns the composed record with the fragment included",
+    "reckon/doccheck.py:1971 checks the composed record text"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:22:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after arm is recorded at a92b9d037772 while the landing record's after_suite in the manifest names 89714e6b / suite-head3.log, and neither row nor the surrounding prose names the log each figure came from, so a reader comparing this table with the manifest sees two different revisions for one arm and cannot open the source of either figure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from the reviewed head a92b9d0377 to 89714e6b: one commit, one file, and its figures match the logs I opened (suite-base.log 2 failed / 56 passed / EXIT=1 at 42fe90d0b0a4; suite-head2.log identical at a92b9d0377), with no code or test change in the range.",
+    "done_when": "the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a red base control, and both arms as inline JSON at full 40-character revisions; skill-contracts-head.log reads 73 passed with EXIT=0 at 208a799184e44dd4615529b08afe4f1295904f65 and a '# SLURM_JOB_ID: unset' header, sacct reports jobs 1329187 COMPLETED (exit 0) and 1329198 FAILED (exit 1) both on partition all_debug, sbatch-base-nc.log reads 1 failed / 72 passed / EXIT=1 at 42fe90d0b0a46060bafde2490dda7d4002cda478, and the manifest now carries tests, test_logs, baseline_suite (42fe90d0, suite-base.log, 2 failed / 56 passed, completed true) and after_suite (89714e6b, suite-head3.log, 2 failed / 56 passed, same two failing ids), so the gate the worker ran does assert the measure.",
+    "goal": "the reviewed delta is the one commit 89714e6b gained over the reviewed head a92b9d03, whose only change is 23 insertions and 1 deletion in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:37-57 recording both landing suite arms; the node goal of a fully green tests/test_skill_contracts.py was carried by the already-reviewed 208a7991 and is untouched here.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/manifest.md; it reads status complete with the three commits, the literal tests and test_logs lines, both arm JSONs at 40-character revisions with log paths, the negative-control log path, and rubric lines for all six dimensions; `HOME=/home/ITER/mcintos reckon crew check --manifest --run r-20261118T054330385921-qwnw-red-file-skill-contracts` answers {\"findings\": [], \"ok\": true} with no finding.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment, the figures directory and skills/reckon-build/SKILL.md; the delta changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html and the run's whole diff changes only that fragment, skills/reckon-build/SKILL.md:286-302 and tests/test_skill_contracts.py:1334,1420-1480, all inside them."
+  },
+  "justifications": {
+    "durability": "no assertion in the delta can fail: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:45-57 is hand-written prose whose numbers only reckon/evidence.py:1657 renders, so a wrong figure in it reddens nothing and is caught only by a reader.",
+    "evidence": "the delta's four arm figures reproduce the logs' own summary lines, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:50 and :54 against suite-base.log and suite-head2.log in the run directory.",
+    "fit": "the new section repeats the table shape, id prefix and short-revision convention already used at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:6-20.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:37-57 adds exactly the arm record the previous review found missing from the manifest, and leaves nothing else in the node's goal unfinished.",
+    "reuse": "the delta adds prose and introduces no definition, and the capability that composes a fragment into the landed record remains the single owner at reckon/evidence.py:1657.",
+    "scope_discipline": "the delta touches only the declared fragment path and adds no code, test, figure or plan line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed delta is the one commit 89714e6b gained over the reviewed head a92b9d03 whose only change is 23 insertions and 1 deletion in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:37-57 recording both landing suite arms; the node goal of a fully green tests/test_skill_contracts.py was carried by the already-reviewed 208a7991 and is untouched here.\nVERDICT done_when: the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a red base control, and both arms as inline JSON at full 40-character revisions; skill-contracts-head.log reads 73 passed with EXIT=0 at 208a799184e44dd4615529b08afe4f1295904f65 with a '# SLURM_JOB_ID: unset' header, sacct reports jobs 1329187 COMPLETED (exit 0) and 1329198 FAILED (exit 1) both on partition all_debug, sbatch-base-nc.log reads 1 failed / 72 passed / EXIT=1 at 42fe90d0b0a46060bafde2490dda7d4002cda478, and the manifest carries tests, test_logs, baseline_suite (42fe90d0, suite-base.log, 2 failed / 56 passed, completed true) and after_suite (89714e6b, suite-head3.log, 2 failed / 56 passed) at full revisions.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment, the figures directory and skills/reckon-build/SKILL.md; the delta changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html and the run's whole diff changes only that fragment, skills/reckon-build/SKILL.md:286-302 and tests/test_skill_contracts.py:1334,1420-1480, all inside them.\nVERDICT manifest: read at the run directory's manifest.md; it reads status complete with the three commits, the literal tests and test_logs lines, both arm JSONs at 40-character revisions with log paths, the negative-control log path, and rubric lines for all six dimensions; `HOME=/home/ITER/mcintos reckon crew check --manifest --run r-20261118T054330385921-qwnw-red-file-skill-contracts` answers {\"findings\": [], \"ok\": true} with no finding.\nVERDICT diff: read commit by commit from the reviewed head a92b9d0377 to 89714e6b: one commit, one file, 23 insertions and 1 deletion, and its figures match the logs I opened (suite-base.log 2 failed / 56 passed / EXIT=1 at 42fe90d0b0a4, suite-head2.log identical at a92b9d0377), with no code or test change in the range.\nCALL_SITES: reckon/evidence.py:1657 compose_landed_record, reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1971\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:37-57 adds exactly the arm record the previous review found missing from the manifest, and leaves nothing else in the node's goal unfinished.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four arm figures reproduce the logs' own summary lines at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:50 and :54 against suite-base.log and suite-head2.log in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only the declared fragment path and adds no code, test, figure or plan line.\nSCORE durability: 10\nJUSTIFICATION durability: no assertion in the delta can fail, because docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:45-57 is hand-written prose whose numbers only reckon/evidence.py:1657 renders, so a wrong figure reddens nothing and is caught only by a reader.\nSCORE fit: 19\nJUSTIFICATION fit: the new section repeats the table shape, id prefix and short-revision convention already used at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:6-20.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds prose and introduces no definition, and the capability that composes a fragment into the landed record remains the single owner at reckon/evidence.py:1657.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:53 non-blocking: the after arm is recorded at a92b9d037772 while the landing record's after_suite names 89714e6b / suite-head3.log, and neither row nor the surrounding prose names the log each figure came from, so a reader comparing this table with the manifest sees two different revisions for one arm and cannot open the source of either figure.",
+  "review_node": "review-of-qwnw-red-file-skill-contracts-89714e6bf352",
+  "review_run_id": "r-20261119T150422052452-review-of-qwnw-red-file-skill-contracts-89714e6bf352",
+  "reviewed_base_sha": "a92b9d037772a9bdc6000acd077dbabce82dac70",
+  "reviewed_head_sha": "89714e6bf35240f5de5bf5dafc2f37878fb8efc2",
+  "reviewed_run_id": "r-20261118T054330385921-qwnw-red-file-skill-contracts",
+  "scores": {
+    "durability": 10,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:53:23.279602+00:00",
+  "total": 102
+}

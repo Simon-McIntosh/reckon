@@ -404,6 +404,13 @@ def store_stamp(path: str | Path | None = None) -> tuple[int, ...] | None:
     )
 
 
+def change_token(path: str | Path | None = None) -> tuple[Any, ...]:
+    """Every store file a read may answer from, stamped as one token."""
+
+    target = store_path() if path is None else Path(path)
+    return (store_stamp(target), store_stamp(_archive_path(target)))
+
+
 def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
     """Prepare an existing store during a separate, one-time maintenance job.
 
@@ -855,7 +862,7 @@ def stored_run_payloads(
     target = store_path() if path is None else Path(path)
     if not target.exists():
         return None
-    token = (store_stamp(target), store_stamp(_archive_path(target)))
+    token = change_token(target)
 
     def read() -> Iterator[tuple[Any, ...]]:
         connection = None
@@ -980,6 +987,96 @@ def _plan_owner_sql() -> str:
         f"NULLIF(trim(json_extract({merged}, '$.{field}')), '')" for field in fields
     ]
     return "COALESCE(" + ", ".join([*terms, "''"]) + ")"
+
+
+def stored_run_exists(project: str, *, path: str | Path | None = None) -> bool:
+    """Whether the store holds any row for a project, reading one row.
+
+    A reader asking whether a project's history is answered by the store rather
+    than by the committed ledger asks for a boolean, and this answers that
+    question at the store's own cost: one indexed row whether the project holds
+    a single run or twenty thousand. :func:`stored_run_rows` answers a
+    membership question with the whole membership, which is the right read for
+    a caller that will use every id and the wrong one for this question.
+
+    The retired rows count, exactly as they do for the read whose selection
+    this decides: an archive holding every row of a project is a store that
+    holds the project's history. Absent and empty both answer false.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.exists():
+        return False
+    connection = _open_readonly(target)
+    try:
+        if not _refuse_owed_migration(connection, target):
+            return False
+        for schema in _read_attached_tables(connection, target):
+            found = connection.execute(
+                f'SELECT 1 FROM "{schema}".runs WHERE project = ? LIMIT 1',  # noqa: S608 - fixed schema name
+                (project,),
+            ).fetchone()
+            if found is not None:
+                return True
+        return False
+    except sqlite3.Error as error:
+        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
+    finally:
+        connection.close()
+
+
+def stored_run_signature(
+    project: str,
+    *,
+    path: str | Path | None = None,
+) -> tuple[tuple[Any, ...], ...] | None:
+    """Each stored row's identity, indexed columns and encoded size.
+
+    A reader that already holds a project's decoded history answers its next
+    read from what it holds, decoding only the rows this signature differs
+    from. One metadata row per stored run carries what a write moves: the
+    rowid an insert takes, every column the store indexes, the revision a
+    backfill stamps, and the encoded size of both halves of the record. No
+    payload is decoded, so comparing the whole of a project's history costs the
+    store's own page reads rather than one parse per run.
+
+    The comparison is a token, not an answer: a rewrite in place that moves no
+    indexed column and encodes to the same number of bytes does not appear
+    here. That is why :func:`reckon.ledger.stored_history` also watches the
+    project's write generation and refreshes a signature that moves without
+    showing a change.
+
+    None distinguishes an absent store from one holding no runs for this
+    project, matching :func:`stored_run_rows`.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.exists():
+        return None
+    connection = _open_readonly(target)
+    try:
+        if not _refuse_owed_migration(connection, target):
+            return ()
+        selected = ", ".join(f'r."{name}"' for name in (*QUERY_KEYS, ROW_REVISION))
+        signature: list[tuple[Any, ...]] = []
+        for schema in _read_attached_tables(connection, target):
+            if not _table_columns(connection, schema):
+                continue
+            query = (
+                f'SELECT r."run_id", r.rowid, LENGTH(r."payload"), '  # noqa: S608 - fixed schema and column names
+                "LENGTH(COALESCE(d.\"detail\", '')), "
+                f'{selected}, r."activity_seconds" '
+                f'FROM "{schema}"."runs" r '
+                f'LEFT JOIN "{schema}"."run_details" d ON d."run_id" = r."run_id" '
+                f'WHERE r."project" = ? ORDER BY r.rowid'
+            )
+            signature.extend(
+                (str(row[0]), schema, *row[1:])
+                for row in connection.execute(query, (project,))
+            )
+        return tuple(signature)
+    except sqlite3.Error as error:
+        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
+    finally:
+        connection.close()
 
 
 def project_snapshot(project: str) -> dict[str, Any]:
@@ -1204,6 +1301,10 @@ class RunStore:
         if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
             self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
         self._archive_attached = False
+        # The committed state each project's membership was last judged at.
+        # Reading membership costs a stat per run file, so a repeated read of
+        # an unchanged ledger answers from this record instead.
+        self._membership_stamps: dict[str, dict[str, Any]] = {}
         self._create()
 
     def __enter__(self) -> Self:
@@ -1788,9 +1889,22 @@ class RunStore:
 
         roots = self._ledger_roots()
         changed = {}
+        # A rebuild records its stamp only once the rows it wrote agree with the
+        # ledger: a refused write leaves the store stale, and a stamp taken
+        # before the write would stop the next read from trying again.
+        rebuilt: dict[str, Any] = {}
         stale: set[str] = set()
         for name, root in roots.items():
             if project is not None and name != project:
+                continue
+            stamp = ledger.index_state_stamp(name, root)
+            if self._membership_stamps.get(name) == stamp:
+                continue
+            # A project whose documents are absent or empty is left alone. The
+            # committed set would read as empty and the rebuild would delete
+            # rows a mount that is simply not present here still legitimately
+            # holds: no absent mount deletes a project's cached history.
+            if not ledger._ledger_holds_content(name, root):
                 continue
             indexed = {
                 str(row[0])
@@ -1798,12 +1912,19 @@ class RunStore:
                     "SELECT run_id FROM runs WHERE project = ?", (name,)
                 )
             } | self._archived_ids(name)
-            if not ledger._ledger_holds_content(name, root):
-                continue
-            if indexed != ledger.run_ids(name, root, use_index=False):
+            # The store's own rows are one side of this comparison, so the
+            # other side must be the committed documents: asking run_ids() here
+            # answers through the store whenever one exists and leaves the
+            # check comparing the store with itself, so a ledger that moved
+            # would never rebuild the rows it outgrew.
+            committed = ledger.run_ids(name, root, use_index=False)
+            if indexed != committed:
                 data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
+                rebuilt[name] = stamp
                 stale |= indexed
+            else:
+                self._membership_stamps[name] = stamp
         if not changed:
             return None
         # The payload is the record, so the rows it replaces are named by id
@@ -1897,6 +2018,8 @@ class RunStore:
                 self._path,
                 exc,
             )
+        else:
+            self._membership_stamps.update(rebuilt)
         return records
 
     def records(self) -> dict[str, dict[str, Any]]:

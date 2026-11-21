@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-19T10:54:18Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-stop-before-spawn-spawns-nothing-00c3211adbff",
+      "recorded_at": "2026-11-19T11:20:33.444711+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-19T10:37:14Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-stop-before-spawn-spawns-nothing-00c3211adbff",
+      "recorded_at": "2026-11-19T11:20:32.372642+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_stop_before_spawn_spawns_nothing.py",
+      "line": 365,
+      "severity": "non-blocking",
+      "text": "The added _stub_base re-implements the same capability the repository already owns at tests/test_fenced_worker_tmp_is_its_scratch.py:184 _base_outside(node_tmp), which is present at the base 4d464485 (commit e543aa06d8): the same /dev/shm-then-home loop, the same os.access probe, the same is_relative_to(node_tmp) exclusion and the same RuntimeError tail, differing only in the mkdtemp prefix and one word of the message. It does not extend the existing helper, so the two copies will drift and the six-line clone detector misses it because the added function's extra `node_tmp = Path('/tmp').resolve()` line shifts every window out of alignment with the sibling."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing/manifest.md",
+      "line": 1,
+      "severity": "blocking",
+      "text": "The delivered manifest is nine lines and carries none of the fields its done_when makes the measure: no tests line naming the gate command, no test_logs, no baseline_suite or after_suite arms as inline JSON with 40-character revisions, no cause verdict and no artifacts. The run's evidence exists in scoped-gate-1795050175190579266.log, base-arm-stop-gate.log and the fragment, but the record a coordinator promotes from is empty of it, so promotion cannot read the gate receipt and the done_when clause 'the manifest lists each cause with a verdict' is unmet."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "The fragment quotes the base reproduction as `bwrap: execvp .../stub-bin/claude: No such file or directory` with the supervisor's exit.json reading `ended_during: launch`, but neither string appears in the log the fragment cites for that arm: base-arm-stop-gate.log records the shorter assertion text 'the stub worker never ran, so the group stop would find nothing to end' with supervisor stderr of '', and no log in the run directory contains 'execvp' or 'ended_during: launch'. The measured facts (base red on the named id, head green) stand, but the quoted reproduction is not in its artefact."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html",
+      "line": 38,
+      "severity": "non-blocking",
+      "text": "The 'Declared suite, base extraction' row records '1 failed, 58 passed, 2 errors', but its log baseline-suite-base.log ends at '56 passed, 2 errors' (line 79) with EXIT=1 and no failure at all, and its own command header (line 5) resolves the suite without tests/test_stop_before_spawn_spawns_nothing.py, so the row merges the node-file arm (1 failed, from base-arm-stop-gate.log) into the census arm and states a count neither log carries; the 1 failed / 58 passed pairing also has no log behind it anywhere in the run directory."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none: the added helper and the fixture change are called only from the node's own test module, and the production mount they are built against is reckon/_worker_fence.py:1716 worker_tmp_mount_source, which the diff does not touch.",
+    "diff": "Read both commits against 4d464485: 01e09365 adds the _stub_base helper at tests/test_stop_before_spawn_spawns_nothing.py:365, turns the host fixture into a yield at :395-409 so the base is removed, and repoints the two stub directories at :422 and :614; 00c3211adbff adds the 51-line evidence fragment. No production file changes, no assertion is added, deleted or weakened.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a base run with its failing ids in the evidence fragment, each cause with a product-or-test verdict, no assertion deleted or weakened, an importer arm adding no failure against the base with both arms as inline JSON, ruff clean on the changed paths, and the commits field; the head and base runs exist on shared storage (scoped-gate-1795050175190579266.log '3 passed', base-arm-stop-gate.log '1 failed, 2 passed', EXIT=1), but the delivered manifest carries none of tests, test_logs, baseline_suite or after_suite, so the arms the done_when names are recorded in the fragment's table rather than in the manifest as inline JSON.",
+    "goal": "The node goal is 'Make tests/test_stop_before_spawn_spawns_nothing.py pass in full on the test_stop_before_spawn_spawns_nothing.py run at head'; the head arm in scoped-gate-1795050175190579266.log runs that file at 01e09365 and reads '3 passed in 11.30s' with EXIT=0, and after-suite-head.log reads '61 passed in 56.18s' EXIT=0 for the same file plus the two census files at the same revision.",
+    "manifest": "Read the nine-line record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing/manifest.md: it names the node, status complete, a checkpoint, the two commits, changed_paths and retry_failures; it carries no tests, test_logs, negative_control_log, baseline_suite, after_suite, artifacts, landing or rubric lines, and exit.json shows the worker was force-terminated at 2026-11-19T01:52:18Z mid-write, so the author's own account of its gate was lost while the logs and fragment survive.",
+    "write_paths": "Declared paths are reckon, tests, the evidence-fragment directory and file and the figures path; the delivered diff 4d464485..00c3211a touches exactly tests/test_stop_before_spawn_spawns_nothing.py (+46 -13) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html (+51 -0), both inside the scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_stop_before_spawn_spawns_nothing.py pass in full on the primary branch; the head arm at 01e09365 in scoped-gate-1795050175190579266.log reads 3 passed EXIT=0, and after-suite-head.log reads 61 passed EXIT=0 for the same file with the two census files.\nVERDICT done_when: the done_when names a head job on all_debug with SLURM_JOB_ID unset, a base run with its failing ids in the fragment, a verdict per cause, no assertion deleted or weakened, both arms as inline JSON and ruff clean on the changed paths; the head and base runs exist (3 passed EXIT=0 at 01e09365; 1 failed, 2 passed EXIT=1 at 4d464485 in base-arm-stop-gate.log) and ruff reports All checks passed with the same single pre-existing format finding as the base file (ruff format --diff shows only tests/test_stop_before_spawn_spawns_nothing.py:703, untouched by the diff), but the manifest carries no arms and no verdict.\nVERDICT write_paths: the declared scope is reckon, tests, the evidence-fragment directory and file and the figures path; the delivered diff touches exactly tests/test_stop_before_spawn_spawns_nothing.py (+46 -13) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html (+51 -0).\nVERDICT manifest: read the nine-line manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing/manifest.md; it records status complete, the checkpoint and two commits but no tests, test_logs, baseline_suite, after_suite, negative_control_log, artifacts or rubric lines, and exit.json shows a forced terminal exit at 2026-11-19T01:52:18Z, so the gate the worker ran is recorded only in the fragment and the logs.\nVERDICT diff: read both commits against the base 4d464485; 01e09365 adds _stub_base at tests/test_stop_before_spawn_spawns_nothing.py:365, makes the host fixture yield a stub base outside pytest's temporary root (:395-409) and repoints the two stub directories (:422, :614), and 00c3211a adds the 51-line evidence fragment; no production file changes and no assertion is added, deleted or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scoped-gate-1795050175190579266.log runs tests/test_stop_before_spawn_spawns_nothing.py at 01e09365 and reads 3 passed in 11.30s with EXIT=0, the file the goal names now green.\nSCORE evidence: 12\nJUSTIFICATION evidence: scoped-gate-1795050175190579266.log and base-arm-stop-gate.log carry the two measurements, but manifest.md:1-9 records neither arm nor a tests line, and the fragment states base counts (qwnw-red-file-stop-before-spawn-spawns-nothing.html:38) its own logs do not carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 4d464485..00c3211a touches only tests/test_stop_before_spawn_spawns_nothing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html, both inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: base-arm-stop-gate.log shows the third case red at 4d464485 on the old fixture, so restoring tests/test_stop_before_spawn_spawns_nothing.py:422/:614 to host['base'] puts the case back to red rather than leaving it green.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at tests/test_stop_before_spawn_spawns_nothing.py:365 follows the module's existing tmp_path-and-fixture idiom and ruff check reports All checks passed with the same single pre-existing format finding as the base file.\nSCORE reuse: 4\nJUSTIFICATION reuse: tests/test_stop_before_spawn_spawns_nothing.py:365 duplicates _base_outside at tests/test_fenced_worker_tmp_is_its_scratch.py:184 rather than importing or hoisting it.\nFINDING tests/test_stop_before_spawn_spawns_nothing.py:365 non-blocking: _stub_base duplicates the existing _base_outside helper at tests/test_fenced_worker_tmp_is_its_scratch.py:184 line for line apart from its mkdtemp prefix, so the second copy is a capability fork the six-line clone detector does not flag.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing/manifest.md:1 blocking: the nine-line manifest carries no tests, test_logs, baseline_suite or after_suite field, so the arms and the cause verdict the done_when requires are absent from the record promotion reads.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html:7 non-blocking: the fragment quotes a bwrap execvp line and an exit.json 'ended_during: launch' that no log in the run directory contains; base-arm-stop-gate.log records the same failure with supervisor stderr of ''.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html:38 non-blocking: the base-extraction arm is recorded as '1 failed, 58 passed, 2 errors' while baseline-suite-base.log:79 reads '56 passed, 2 errors' and its command at :5 excludes the node's file, so the row merges two arms and states a count no log carries.\n",
+  "review_run_id": "r-20261119T015512272385-review-of-qwnw-red-file-stop-before-spawn-spawns-nothing-00c3211adbff",
+  "reviewed_base_sha": "4d464485b8d773934c39db59a4ba4d43e8648a97",
+  "reviewed_head_sha": "00c3211adbff7facedef26b33c7e60930a9a3236",
+  "reviewed_run_id": "r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:04:46.038027+00:00",
+  "total": 91
+}

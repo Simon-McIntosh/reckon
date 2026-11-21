@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:22:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claimless-review-is-refused-at-store.html",
+      "line": 29,
+      "severity": "non-blocking",
+      "text": "The arm table's 'node tests, head gate' row names revision afd2113bb7bbd71b99c123dd37e9a0146794ce1c and 4 passed, but the reviewed head is f057ad10b37eb5856c44846ad95ed5c328503ca8, whose own gate log scoped-gate-1795099819521073390.log records 60 passed EXIT=0 over the named fixture file, the added tests/test_qwnw_red_file_a_claimless_review_is_refused_at_store.py and two importer arms. The fragment therefore presents a pre-head measurement under a 'head gate' label and leaves the reviewed head's gate result to the manifest's test_logs pointer alone; a row naming f057ad10 with the 60-passed figure would make the evidence self-contained."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062615707658-qwnw-red-file-a-claimless-review-is-refused-at-store/manifest.md",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "The artifacts line offers 'revert control EXIT=4 naming the missing test file' (logs/negctl-revert-answering-commit.log) as a falsification of the added test, but reverting the commit that introduces tests/test_qwnw_red_file_a_claimless_review_is_refused_at_store.py also deletes that file, so pytest reports 'file or directory not found' and no assertion is ever evaluated. The genuine falsification is the base arm at logs/negctl-base.log (2 failed, 2 passed, EXIT=1), which does show the fixture defect; the EXIT=4 run adds no evidence about the new guard and should not be read as a negative control for it."
+    }
+  ],
+  "notes": "Scores are independent. added_failure_count 0 is derived from the reviewed run's own arms, not asserted: baseline_suite-1795099574227319972.log at 42fe90d0 reads '58 passed', EXIT=0, failure_ids [], and after_suite-1795099649729679563.log at f057ad10 reads '60 passed', EXIT=0, failure_ids []; the two extra passes are the added test file, so the set difference is empty. Durability: the diff adds two assertions, tests/test_qwnw_red_file_a_claimless_review_is_refused_at_store.py:92 (exit_code != 0 and the MESSAGES_FINDING substring) and :101 (exit_code == 0 and findings == []); both sides of each are an independent product output and an independent constant, never the value the test handed in, and removing the messages rule at reckon/hooks/worker_inbox.py:358 would make the first assertion fail while over-rejecting would make the second fail. The node's actual change (the fixture line) is guarded by the pre-existing assertions at tests/test_a_claimless_review_is_refused_at_store.py:114 (len(findings) == 1) and :128 (exit_code == 0), which logs/negctl-base.log shows red at the base revision (2 failed, 2 passed, EXIT=1) with the ids test_check_manifest_refuses_a_handwritten_claimless_record and test_a_stated_claim_passes_both_paths. Reuse: the added file does not fork a named-file mechanism; it drives the existing crew check --manifest path and the rule owner at reckon/hooks/worker_inbox.py:358, and its CLI-level case is a second layer over the unit cases at tests/test_worker_inbox.py:645 rather than a reimplementation.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T145827275781-review-of-qwnw-red-file-a-claimless-review-is-refused-at-store-f057ad10b37e",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_commits": [
+    "1cfbeeb7ed39b6eddda53bf7b6b10c179005e134",
+    "afd2113bb7bbd71b99c123dd37e9a0146794ce1c",
+    "f057ad10b37eb5856c44846ad95ed5c328503ca8"
+  ],
+  "reviewed_head_sha": "f057ad10b37eb5856c44846ad95ed5c328503ca8",
+  "reviewed_node": "qwnw-red-file-a-claimless-review-is-refused-at-store",
+  "reviewed_run_id": "r-20261118T062615707658-qwnw-red-file-a-claimless-review-is-refused-at-store",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:47:05.062989+00:00",
+  "total": 110,
+  "verdicts": {
+    "call_sites": "The diff adds no production code, so no runtime path executes a new line; the behaviour the tests exercise is reached through reckon/crew_run_commands.py:1502 (crew check) into reckon/hooks/worker_inbox.py:358 (the messages_received refusal), neither of which this node touches.",
+    "diff": "Read all three commits against base 42fe90d0: 1cfbeeb7ed adds the 'messages_received: none' line to the fixture manifest (tests/test_a_claimless_review_is_refused_at_store.py:51); afd2113bb7 adds the 47-line evidence fragment; f057ad10b3 adds tests/test_qwnw_red_file_a_claimless_review_is_refused_at_store.py (103 lines, two CLI cases) and rewrites the fragment's arm table and id list. No product file changed.",
+    "done_when": "Read the done_when against the artefacts: the head clause is measured by scoped-gate-1795099819521073390.log (60 passed, EXIT=0, revision f057ad10) and by scoped-gate-1795061275094737226.log (4 passed, EXIT=0, revision afd2113); the one cause and its 'test wrong' verdict are stated at tests/.../qwnw-red-file-a-claimless-review-is-refused-at-store.html:10-16 and manifest.md:11; both suite arms are inline JSON at manifest.md:16-17 with full 40-character revisions and empty failure_ids; the negative control at logs/negctl-base.log reads 2 failed, 2 passed, EXIT=1; and the manifest's own crew check now exits 0 (logs/manifest-check-after-repair.log), answering the blocking finding the previous review raised.",
+    "goal": "Read the node goal ('Make tests/test_a_claimless_review_is_refused_at_store.py pass in full on the primary branch') against the delivered diff 42fe90d0..f057ad10: the fixture manifest at tests/test_a_claimless_review_is_refused_at_store.py:51 now writes 'messages_received: none', and the reviewed run's gate log scoped-gate-1795099819521073390.log records 60 passed EXIT=0 at f057ad10 including that file; the earlier 4-passed run at afd2113 (scoped-gate-1795061275094737226.log) covers the named file alone.",
+    "manifest": "Read manifest.md at the reviewed run directory: status complete, the three commits named. tests names the literal pytest command, test_logs cite scoped-gate-1795099819521073390.log and logs/negctl-base.log, baseline_suite is 58 passed at 42fe90d0 and after_suite 60 passed at f057ad10 (both EXIT=0, failure_ids []), negative_control_log names the bare path logs/negctl-base.log, and artifacts reconcile with those logs; the delta since the previous review (afd2113) is exactly these fields plus the new test file, and crew check --manifest exits 0.",
+    "write_paths": "Read the declared write paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html file, docs/figures/... plus the named test file) against git diff --stat 42fe90d0..f057ad10: the three changed paths are the evidence fragment, tests/test_qwnw_red_file_a_claimless_review_is_refused_at_store.py and tests/test_a_claimless_review_is_refused_at_store.py (+1 line), all inside the declared scope, and no reckon/ or tests/ file outside it moved."
+  }
+}

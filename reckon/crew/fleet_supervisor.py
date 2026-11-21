@@ -1047,6 +1047,59 @@ def fleet_test_obligations(
     ]
 
 
+#: A duty naming a producer start that failed while the session holds work in
+#: the project. It is owed per session, not per run: one failing producer leaves
+#: every session whose work it would have swept with the same absence, and each
+#: of them reads it on the surface it already reads its duties from.
+PRODUCER_START_FAILED_DUTY_KIND = "producer-start-failed"
+
+
+def producer_start_failure_obligations(
+    project: str,
+    session: str,
+    *,
+    now: datetime,
+    pointers: Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """The duty a failed producer start owes a session holding work in its project.
+
+    The failure is read through the watcher's own state, so a producer that is
+    live, or one that took the seat after the failure, raises nothing: the
+    record is then history and the project is staffed. The row quotes the
+    producer's own last line, because the reason a producer could not start is
+    the only thing that says what to fix, and names the log the whole traceback
+    went to.
+    """
+    from reckon.crew import watch_unit
+
+    failure = watch_unit.producer_start_failure(project)
+    if failure is None:
+        return []
+    if str(failure.get("project") or project) != project:
+        return []
+    if not any(str(pointer.get("session") or "") == session for pointer in pointers):
+        return []
+    message = str(failure.get("message") or "").strip()
+    status = failure.get("exit_status")
+    log = str(failure.get("log_path") or watch_unit.watch_log_path(project))
+    return [
+        {
+            "kind": PRODUCER_START_FAILED_DUTY_KIND,
+            "run_id": "",
+            "age_seconds": max(0, int(now.timestamp() - float(failure["failed_at"]))),
+            "reason": (
+                f"the watch producer for {project} could not start "
+                f"(exit status {status}): {message or 'it exited without a message'}"
+            ),
+            "next_command": (
+                f"make the producer start and re-arm it with "
+                f"`reckon crew watch --ensure --project {project}`; its log is "
+                f"{log}"
+            ),
+        }
+    ]
+
+
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:
     """Name the inherited variables the fleet must not pass on."""
     return [

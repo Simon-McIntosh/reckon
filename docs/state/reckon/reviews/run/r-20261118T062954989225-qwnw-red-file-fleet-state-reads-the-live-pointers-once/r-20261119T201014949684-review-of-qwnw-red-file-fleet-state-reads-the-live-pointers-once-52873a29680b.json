@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/holds.py:638",
+    "reckon/crew/admission/launching.py:503",
+    "reckon/crew/admission/release.py:683",
+    "reckon/crew/claims.py:288",
+    "reckon/crew/review.py:730",
+    "reckon/run_record.py:170"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T20:12:53Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the reviewed head 52873a29680b62844102f288cd46d297643ebbd3 is not cited anywhere in the manifest: commits (line 11), changed_paths (line 12) and checkpoint (line 10) all stop at 3f576e4b76, so the run's own report describes the tree before the commit whose fragment content this review read, and a reader who lands the run at the checkpoint it names lands a tree that is not the head"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the fragment states '300 decodes for 300 pointers' as a measured figure (repeated at lines 61-63), but no log in the run directory prints a decode count; the head assertion is the bound tests/test_fleet_state_reads_the_live_pointers_once.py:253 decodes.count <= POINTERS, so the number is implied by a passing run rather than read from one"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html",
+      "line": 88,
+      "severity": "non-blocking",
+      "text": "the negative-control row (lines 88-92) and the control paragraph (lines 106-119) cite 442cb3178b plus the one-line revert, but the test they describe was rewritten at 3f576e4b76 (fixture shape at tests/test_fleet_state_reads_the_live_pointers_once.py:160-175 and the projection at :325-327) and _pointer_as_read gained hydration, so no recorded arm shows the reworded assertion reddening on the reverted deep copy it claims to guard"
+    },
+    {
+      "file": "tests/test_fleet_state_reads_the_live_pointers_once.py",
+      "line": 218,
+      "severity": "non-blocking",
+      "text": "the decode counter only counts documents carrying run_id, so the 300-document figure it bounds excludes the node.json body each pointer now names (reckon/crew/runs.py:283-291 is read once per by-id read, without a memo), and a regression that re-read the body per pointer would not redden the assertion at :253"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 442cb3178b..52873a2968: the merge 82e8440be6 folds primary's node-definition hydration into _pointer_as_read (reckon/crew/runs.py:1917) while keeping the deep copy and the station-pid strip, 3f576e4b76 makes the fixture write the post-move pointer shape (tests/test_fleet_state_reads_the_live_pointers_once.py:160-175) and projects the copy assertion onto the node fields the pointer holds (:325-327), and 52873a2968 rewrites the fragment's arms table",
+    "done_when": "the measure names the file green as an all_debug job with SLURM_JOB_ID unset, a base arm, a per-cause verdict, an importer arm and a negative control; merge-head-node-file.log and merge-head-suite.log record 3 passed and 58 passed EXIT=0 at 3f576e4b76, but both name a worktree rather than a job and manifest.md:16's gate names the declared pair rather than the node's file",
+    "goal": "the node's goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full with a derivation decoding each live pointer once; at 52873a2968 merge-head-node-file.log records 3 passed EXIT=0 at 3f576e4b76, whose tree differs from the reviewed head only in the evidence fragment",
+    "manifest": "read in full; it records commits up to 3f576e4b76, changed_paths over the four files, the node file at 3 passed, both declared suites at 0 failures, the base arm, the importer arms and six rubric lines, but its commits, changed_paths and checkpoint never cite the reviewed head 52873a2968",
+    "write_paths": "the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment and figures path; the three commits gained since 442cb3178b (82e8440be6 merge resolution, 3f576e4b76 fixture, 52873a2968 fragment), all inside it; the merge's other 336 paths are primary's"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full with a derivation decoding each live pointer once; at 52873a2968 merge-head-node-file.log records 3 passed EXIT=0 at 3f576e4b76, whose tree differs from the reviewed head only in the evidence fragment.\nVERDICT done_when: the measure names the file green as an all_debug job with SLURM_JOB_ID unset, a base arm, a per-cause verdict, an importer arm and a negative control; merge-head-node-file.log and merge-head-suite.log record 3 passed and 58 passed EXIT=0 at 3f576e4b76, but both name a worktree rather than a job and manifest.md:16's gate names the declared pair rather than the measured file.\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment and figures path; the three commits gained since 442cb3178b (82e8440be6, 3f576e4b76, 52873a2968) touch only reckon/crew/runs.py:1917, the node's test file at :160-175 and :325-327, and the named fragment, all inside it.\nVERDICT manifest: read in full; it records commits up to 3f576e4b76, changed_paths over the four files, the node file at 3 passed, both declared suites at 0 failures, the base arm, the importer arms and six rubric lines, but commits, changed_paths and checkpoint never cite the reviewed head 52873a2968.\nVERDICT diff: read commit by commit over 442cb3178b..52873a2968: the merge 82e8440be6 folds primary's node-definition hydration into _pointer_as_read while keeping the deep copy and the station-pid strip, 3f576e4b76 makes the fixture write the post-move pointer shape and projects the copy assertion onto the fields the pointer holds, and 52873a2968 rewrites the fragment's arms table.\nCALL_SITES: reckon/crew/admission/holds.py:638, reckon/crew/admission/launching.py:503, reckon/crew/admission/release.py:683, reckon/crew/claims.py:288, reckon/crew/review.py:730, reckon/run_record.py:170\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1917 hydrates the definition inside _pointer_as_read and merge-head-node-file.log records the node's file at 3 passed EXIT=0 for the head's tree.\nSCORE evidence: 13\nJUSTIFICATION evidence: merge-head-node-file.log records the file at 3 passed EXIT=0 but names a worktree rather than the all_debug job with SLURM_JOB_ID unset, and manifest.md:16's gate names the declared pair rather than the measured file.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the node's three commits since 442cb3178b touch only reckon/crew/runs.py, the node's test file and the named fragment, all inside the declared write paths, while the merge carries primary's 336 other paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_fleet_state_reads_the_live_pointers_once.py:253 reddens if a by-id read decodes the pointer again, and runs.py:1917's hydration is guarded by tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:256, but the recorded negative control predates the fixture change at :160-175.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_fleet_state_reads_the_live_pointers_once.py:164-175 writes the pointer through runs.node_body_path and runs._write_json, the two accessors the production writer uses at reckon/crew/runs.py:644.\nSCORE reuse: 20\nJUSTIFICATION reuse: the round adds no production definition; it calls runs.node_definition (reckon/crew/runs.py:343) rather than re-implementing hydration, and its new fixture code drives the existing runs.node_body_path and runs._write_json.\nFINDING manifest.md:11 non-blocking: the reviewed head 52873a2968 is cited nowhere, so commits, changed_paths and checkpoint describe the tree before the last commit.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html:19 non-blocking: '300 decodes for 300 pointers' is not printed by any log; the head assertion is the bound at tests/test_fleet_state_reads_the_live_pointers_once.py:253.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html:88 non-blocking: the recorded negative control predates the fixture and assertion changes at 3f576e4b76.\nFINDING tests/test_fleet_state_reads_the_live_pointers_once.py:218 non-blocking: the counter excludes the node.json body reads the merge added, so the bound at :253 does not cover them.",
+  "review_run_id": "r-20261119T201014949684-review-of-qwnw-red-file-fleet-state-reads-the-live-pointers-once-52873a29680b",
+  "reviewed_base_sha": "442cb3178bb6cbfd4864d870d01eb00af23ed3a9",
+  "reviewed_head_sha": "52873a29680b62844102f288cd46d297643ebbd3",
+  "reviewed_run_id": "r-20261118T062954989225-qwnw-red-file-fleet-state-reads-the-live-pointers-once",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T20:33:58.461948+00:00",
+  "total": 103
+}
