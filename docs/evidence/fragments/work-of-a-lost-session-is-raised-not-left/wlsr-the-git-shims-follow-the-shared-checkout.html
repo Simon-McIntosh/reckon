@@ -32,7 +32,7 @@
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>gate, head</td>
-        <td><code>9e5c1bd9df</code>, this worktree</td>
+        <td><code>1d55a47021</code>, this worktree</td>
         <td>8 passed, <code>EXIT=0</code></td></tr>
       <tr><td>negative control, base</td>
         <td><code>e689315bb7</code>, <code>git archive</code> extraction with the
@@ -41,7 +41,7 @@
         git image cases, which assert the checkout's directory and were handed
         the image's; the other six pass, so the instrument reaches the code</td></tr>
       <tr><td>neighbouring suites</td>
-        <td><code>9e5c1bd9df</code>, this worktree, fence env removed</td>
+        <td><code>e689315bb7</code> plus this node's diff, working tree, fence env removed</td>
         <td>24 passed, <code>EXIT=0</code></td></tr>
     </tbody>
   </table>
@@ -53,9 +53,9 @@
   The four scheduler cases are unchanged in substance and keep their own names.</p>
 
   <p>The neighbouring suites copy <code>os.environ</code> into their fixtures,
-  so run inside a fenced worker they inherit <code>RECKON_SHIM_HOME</code>,
-  the fence's own relocation names, the shim forwards to the fence's real binary
-  instead of the fixture's fake, and the fake records nothing. That is a
+  so run inside a fenced worker they inherit <code>RECKON_SHIM_HOME</code> and
+  the other relocation names; the shim then forwards to the fence's real
+  binary instead of the fixture's fake, and the fake records nothing. That is a
   property of the harness, not of this change: with those names removed the
   three files pass 24 of 24 at this revision.</p>
 </section>
