@@ -682,13 +682,17 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
                 "kind",
                 "run_id",
                 "age_seconds",
+                "review_tier",
                 "reason",
                 "next_command",
             )
             if key in item
         }
         # The run id is the key of the full read, so the bounded row need not
-        # repeat the manifest, pointer, worktree and review paths.
+        # repeat the manifest, pointer, worktree and review paths. The review
+        # tier is short and is what the row's own kind is decided by: a reader
+        # handed ``review-ready`` without it cannot tell a run whose review
+        # passed from one the tier rule exempted.
         row["record_action"] = "observe"
         row = project_run_rows(
             [row],
