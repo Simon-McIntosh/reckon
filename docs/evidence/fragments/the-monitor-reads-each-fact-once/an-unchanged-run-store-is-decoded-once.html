@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s108">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-21">
+  <meta name="evidence-commit" content="52001750db">
+  <title>An unchanged run store is decoded once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="an-unchanged-run-store-is-decoded-once">
+  <h2>An unchanged run store is decoded once</h2>
+
+  <p><strong>The defect.</strong> <code>run_store.stored_run_rows</code> opened
+  the store and decoded every selected row on every call. Many readers reach it
+  within one pass &mdash; the budget verdict through
+  <code>budget._ledger_readings</code>, <code>ledger.load</code>, the readiness
+  waits, section attempt counts and plan-owned identities &mdash; so one
+  dispatch's worth of work decoded the same rows several times over even when
+  nothing had written to the store between the reads. A 150 s py-spy record at
+  05:21Z put 35.8% of samples in <code>stored_run_rows</code>, with JSON
+  decoding 25.3% of self time.</p>
+
+  <p><strong>What landed.</strong> Each answer is held beside the store's change
+  token, which stamps the store file and its archive
+  (<code>store_stamp</code>/<code>change_token</code>, the same token the file
+  memo already uses). A call whose question and token both match the held
+  answer returns it without opening the store at all. The token is read before
+  and after the rows are read, and an answer is kept only when the two agree,
+  so a write that lands during the read cannot be cached under a token it moved
+  past. The question &mdash; project, run ids, plan, node, fields, activity
+  cut-off and the store's path &mdash; is part of the key, so one call is never
+  answered from another call's rows. Every answer is copied out, so a caller
+  that mutates a record it was given cannot change the next caller's answer.
+  Both bounds on what is held are counted: 32 answers and 50,000 rows between
+  them, and an answer larger than the row bound is not held at all.</p>
+
+  <h3 id="an-unchanged-run-store-is-decoded-once-measure">Four identical calls, 2,000 rows</h3>
+
+  <p><code>tests/test_an_unchanged_run_store_is_decoded_once.py</code> builds a
+  temporary store holding 2,000 run rows across three projects, 800 of them for
+  <code>alpha</code>, and counts decoded rows through a stand-in on
+  <code>json.loads</code> that counts a dict carrying a <code>run_id</code>. Four
+  calls of <code>stored_run_rows("alpha", path=store)</code> at head make
+  <strong>800 decodes in total</strong>: the first call decodes the rows and the
+  next three decode nothing, and all four answers are equal.</p>
+
+  <p>Against the same unchanged store the file then asks with a different
+  project, with <code>run_ids</code> naming one run, with
+  <code>fields=("run_id",)</code>, with a node filter and with a plan filter.
+  Each answer is compared with the same read taken from a byte-identical copy of
+  the store that has no held answer to reuse, which is the read the base
+  revision makes, so each argument is shown answered with its own rows and not
+  ones another call left behind.</p>
+
+  <p>Updating one row through <code>RunStore.sync_run</code> moves the token;
+  the next read of <code>alpha</code> decodes the 800 rows again and returns the
+  amended record. Mutating a record in a returned answer leaves the next
+  answer's copy of that record unchanged, and leaves it decoding nothing.</p>
+
+  <h3 id="an-unchanged-run-store-is-decoded-once-negative">The negative control</h3>
+
+  <p>At base <code>43f48118fa</code> (main after <code>0958895bcc</code>) the
+  same file fails its decode-count assertion with
+  <code>assert 3200 == 800</code> &mdash; the four identical calls decode
+  project <code>alpha</code>'s 800 rows four times &mdash; and the mutation case
+  reports <code>assert 1600 == 800</code> after two reads. The log is
+  <code>logs/negative-control-base.log</code> under the run directory, ending
+  <code>EXIT=1</code>.</p>
+
+  <h3 id="an-unchanged-run-store-is-decoded-once-arms">Matched arms</h3>
+
+  <p>The node's suite template resolves to the two tests that exist at base
+  <code>43f48118fa</code> (<code>EXIT=0</code>) and to all three at head
+  <code>52001750db</code> (<code>EXIT=0</code>); the new test file is absent from
+  the base tree, so the two commands differ by exactly that path. Both arms and
+  the scoped gate ran as <code>all_debug</code> jobs submitted from this
+  allocation.</p>
+</section>
+</main>
+</body>
+</html>
