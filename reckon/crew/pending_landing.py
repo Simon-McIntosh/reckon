@@ -1141,14 +1141,24 @@ def landed_workspace_refusal(
     """Read the evidence that must survive before a merged run can be retired."""
     from reckon.crew import merge, routing
     from reckon.crew.promotion_checks import _fresh_manifest
-    from reckon.crew.promotion_evidence import _commit_canonical_id
+    from reckon.crew.promotion_evidence import (
+        _commit_canonical_id,
+        _presented_commits_without_a_declaration,
+    )
 
     manifest = _fresh_manifest(pointer)
     if manifest is None:
         return "the manifest is unreadable or does not belong to this attempt"
     if manifest.get("status") != "complete":
         return "the manifest does not declare a completed delivery"
-    for citation in manifest.get("commits") or ():
+    # A report-only run has no repository work to commit, so its field states
+    # the absence instead of a revision. The list reader leaves that sentence
+    # where a citation list would be, so the release path asks the promotion
+    # reader whether the declaration means none rather than resolving the
+    # prose as a revision and refusing a delivery that changed nothing.
+    for citation in _presented_commits_without_a_declaration(
+        pointer, manifest.get("commits") or ()
+    ):
         resolved = _commit_canonical_id(repository, str(citation))
         if not resolved:
             return f"manifest commit {citation!r} does not resolve"
