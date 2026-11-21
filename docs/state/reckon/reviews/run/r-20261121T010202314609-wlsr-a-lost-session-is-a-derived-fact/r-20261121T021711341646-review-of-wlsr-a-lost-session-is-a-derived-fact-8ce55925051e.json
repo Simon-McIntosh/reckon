@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed node was dispatched unarmed (its manifest carries baseline_suite: null and after_suite: null), so it has no baseline/after pair to difference and no failure id can be added against a base; its only regression evidence is the informal neighbour arm it records (22 passed over six adjacent suites, no failures at either end), which is not a gate pair and is not read as one here",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "armed": false,
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/directory.py:846 directory -> LostSessionReads.answer per row (consumed by reckon/crew_run_commands.py:564, reckon/mcp_views.py:4473, reckon/crew/plan_coordinator.py:233)",
+    "reckon/crew/admission/selection.py:159 admit_once -> LostSessionReads.answers per pass",
+    "reckon/crew/admission/service.py:248 _READ_SOURCES -> _read_tally patches lost_sessions.session_lost"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:18:22Z",
+  "findings": [
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "176",
+      "severity": "blocking",
+      "text": "The declared negative control is not performed. The done_when and the plan's \u00a72 Negative control both require that a derivation keyed on process age reads the ten-day-old process as lost so the live case fails; here no process carrying session-long-lived is ever started (the fixture at :159-173 takes only `home` and renews a lease sixty seconds old), and the 'control' is `keyed_on_process_age = (NOW - ten_days_ago).total_seconds() > 72 * HOUR` followed by `assert keyed_on_process_age is True` -- arithmetic over the test's own literal NOW, which is true whatever the code does. A derivation that keyed on process age would find no process for this session, fall back to the same fresh lease, and still read live, so the assertion at :171 cannot redden on the regression the control names. negative-control.log repeats the same fiction, printing 'process-age derivation: lost = True' for a comparison no code computed. The gate's central discrimination claim therefore rests on an assertion whose two sides move together."
+    },
+    {
+      "file": "tests/test_a_lost_session_is_a_derived_fact.py",
+      "line": "113",
+      "severity": "non-blocking",
+      "text": "The case 'the setting moves the boundary' passes after_hours= directly to session_lost, so the flight-setting path the deliverable rests on -- lost_session_after_hours resolving lost_session.after_hours through flight.resolve() at reckon/crew/lost_sessions.py:42-57 -- is only ever exercised at its default. A regression that stopped reading the flight layer and always returned DEFAULT_AFTER_HOURS would leave all six cases green, so the schema, defaults and generated model this change adds are unverified by any test."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "160",
+      "severity": "non-blocking",
+      "text": "The admit pass computes result['lost_sessions'] outside any _read_tally block, so the 'lost-session reads' row added to service.py's _READ_SOURCES is never emitted by a production pass: neither admit_once nor its service callers at service.py:470 and :536 open a tally around it. The commit message's claim that 'its own receipt reports those reads under a named label so a later pass can show the bound holds' is true only of the test, which wraps admit_once in its own tally at tests/test_a_lost_session_is_a_derived_fact.py:218-219. The production receipt therefore cannot show the bound this node declares."
+    },
+    {
+      "file": "reckon/crew/lost_sessions.py",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "The schema admits after_hours = 0 (reckon/schema/flight.yaml's minimum_value: 0, the pydantic ge=0 at reckon/_flight_schema.py:759, and the JSON schema's minimum: 0), but lost_session_after_hours silently replaces any non-positive value with 72. A layer that sets 0 to mean 'anything unheard is lost' gets the shipped threshold instead, with no warning and no record of the override, so the declared setting and the value the derivation uses can disagree without either surface reporting it."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "137",
+      "severity": "non-blocking",
+      "text": "The commit carries ruff-format rewrites of pre-existing lines unrelated to the goal -- the result['released_plan_review'] call at :137-139, the _record_pass_hold and _verdict_row calls at :190-205, and an import reorder moving reckon.crew.open_run_index above the relative imports -- which the worker flags as a deviation. The repo's own rule is that a formatting sweep is its own commit, so this churn hides the intended change inside the one declared path a reviewer must read most closely."
+    }
+  ],
+  "head_log_revision": "8ce55925051e818a8b6b2fd87ae2607374f4f6ca",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the derivation's three production reaches: directory() at reckon/crew/directory.py:846 drives it for every board row (consumed by reckon/crew_run_commands.py:564, reckon/mcp_views.py:4473, reckon/crew/plan_coordinator.py:233), admit_once at reckon/crew/admission/selection.py:159 for each pass, and the _READ_SOURCES row at reckon/crew/admission/service.py:248 that a tally patches.",
+    "diff": "read commit 8ce5592505 against base e689315bb7: a new 374-line reckon/crew/lost_sessions.py, 15 lines in directory.py:840-855, the admit-pass block at selection.py:157-166, one _READ_SOURCES row at service.py:248, and the regenerated flight schema, model and defaults; selection.py also carries unrelated ruff-format churn at :137 and :190-205.",
+    "done_when": "the done_when names five behaviours and a read bound; tests/test_a_lost_session_is_a_derived_fact.py:76-103 asserts 71 h live and 73 h lost from the fixture's own instants, :126-136 a running process over a 200 h lease, :113-124 the boundary moving, :186-210 the three directory fields and :212-227 the at-most-six-reads bound over 40 pointers across 6 sessions, but the ten-day-process case at :159-180 constructs no process and its control at :176 asserts its own literal, so one named case and the declared negative control are not asserted.",
+    "goal": "the node's goal is 'derive whether a coordinator session is lost from the instant it was last heard'; reckon/crew/lost_sessions.py:288-374 answers lost and lost_since from the newest of a live follower registration, a live session-host pair, a running process carrying the id as a whole argument, or the session's own lease, falling back to its oldest live record, and reads no process start time.",
+    "manifest": "read; status complete, commits 8ce5592505, changed_paths the nine landed files, gate_result '6 passed, EXIT=0', test_logs gate.log and negative-control.log, and a negative_control_note claiming an in-file process-age control that tests/test_a_lost_session_is_a_derived_fact.py:174-180 does not implement.",
+    "write_paths": "the reviewed node declared eleven paths; the diff e689315bb7..8ce5592505 touches nine of them and nothing outside them, leaving the evidence fragment and the figures directory undelivered, which the plan section's 'Owner and surface' paragraph does not require."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lost_session_is_a_derived_fact.py:219-226 reddens if the admit pass derives per pointer rather than per session, but the same file at :168-180 starts no process carrying the long-lived session id, so a derivation keyed on process age would fall back to the fresh lease and still read live and the assertion cannot fail on the regression the control names.",
+    "evidence": "tests/test_a_lost_session_is_a_derived_fact.py:76-227 and gate.log (6 passed, EXIT=0 at 8ce5592505) record the boundary ages, the running process, the directory fields and the read bound, but the done_when's ten-day-process case at :159-176 constructs no process and its control at :176 asserts the test's own arithmetic, so the declared negative control is asserted rather than performed.",
+    "fit": "reckon/crew/lost_sessions.py:13-49 follows the surrounding prose-docstring idiom and carries no forbidden name, but service.py:248's 'lost-session reads' label is never emitted by a production pass because admit_once's lost block at selection.py:159-166 sits outside every tally.",
+    "goal_fidelity": "reckon/crew/lost_sessions.py:288-359 answers lost and lost_since from the newest of a live follower registration, a live session-host pair, a running process carrying the session id, or the session's own lease, and never reads a process start time, which is the deliverable the plan section states.",
+    "reuse": "reckon/crew/lost_sessions.py:288-374 extends the existing readers rather than forking them (runs._unattended_seconds, session_host.live_census, follower_registration._follower_liveness, dispatch_accounting._ancestor_processes), and a search of reckon/crew found no owner for whole-argument session-id matching: census._processes carries no argv and fleet_migrate._local_session_processes maps panes, not ids.",
+    "scope_discipline": "git diff --stat e689315bb7..8ce5592505 touches nine of the eleven declared paths and nothing outside them, but selection.py:137 and :190-205 carry ruff-format rewrites of pre-existing lines the goal does not imply, and the declared evidence fragment and figures directory are not delivered."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'derive whether a coordinator session is lost from the instant it was last heard'; reckon/crew/lost_sessions.py:288-374 answers lost and lost_since from the newest of a live follower registration, a live session-host pair, a running process carrying the id as a whole argument, or the session's own lease, falling back to its oldest live record, and reads no process start time, so the landed change does what the goal states.\nVERDICT done_when: the done_when names five behaviours and a read bound; tests/test_a_lost_session_is_a_derived_fact.py:76-103 asserts 71 h live and 73 h lost from the fixture's own instants, :126-136 a running process over a 200 h lease, :113-124 the boundary moving, :186-210 the three directory fields, and :212-227 the at-most-six-reads bound over 40 pointers across 6 sessions, but the ten-day-process case at :159-180 constructs no process and its 'control' at :176 asserts its own literal, so the declared negative control is not asserted.\nVERDICT write_paths: the reviewed node declared eleven paths; the diff e689315bb7..8ce5592505 touches nine of them -- flight.schema.json, _flight_schema.py, selection.py, service.py, directory.py, lost_sessions.py, flight-defaults.yaml, flight.yaml and the test module -- and nothing outside them, leaving the evidence fragment and the figures directory undelivered, which the plan section's 'Owner and surface' paragraph does not require.\nVERDICT manifest: read; status complete, commits 8ce5592505, changed_paths the nine landed files, gate_result '6 passed, EXIT=0', test_logs gate.log and negative-control.log, and a negative_control_note claiming an in-file process-age control that tests/test_a_lost_session_is_a_derived_fact.py:174-180 does not implement.\nVERDICT diff: read commit 8ce5592505 against base e689315bb7: a new 374-line reckon/crew/lost_sessions.py, 15 lines in directory.py:840-855, the admit-pass block at selection.py:157-166, one _READ_SOURCES row at service.py:248, and the regenerated flight schema, model and defaults; selection.py also carries unrelated ruff-format churn at :137 and :190-205.\nCALL_SITES: reckon/crew/directory.py:846 directory -> LostSessionReads.answer per row, reckon/crew/admission/selection.py:159 admit_once -> LostSessionReads.answers per pass, reckon/crew/admission/service.py:248 _READ_SOURCES -> _read_tally patches lost_sessions.session_lost, reckon/crew_run_commands.py:564, reckon/mcp_views.py:4473, reckon/crew/plan_coordinator.py:233\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/lost_sessions.py:288-359 answers lost and lost_since from the newest of a live follower registration, a live session-host pair, a running process carrying the session id, or the session's own lease, and never reads a process start time, which is the deliverable the plan section states.\nSCORE evidence: 11\nJUSTIFICATION evidence: tests/test_a_lost_session_is_a_derived_fact.py:76-227 and gate.log (6 passed, EXIT=0 at 8ce5592505) record most of the measure, but the done_when's ten-day-process case at :159-176 constructs no process and its control at :176 asserts the test's own arithmetic, so the declared negative control is asserted rather than performed.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff --stat e689315bb7..8ce5592505 touches nine of the eleven declared paths and nothing outside them, but selection.py:137 and :190-205 carry ruff-format rewrites of pre-existing lines the goal does not imply.\nSCORE durability: 9\nJUSTIFICATION durability: tests/test_a_lost_session_is_a_derived_fact.py:219-226 reddens if the pass derives per pointer rather than per session, but the same file at :168-180 starts no process carrying the long-lived session id, so a derivation keyed on process age would fall back to the fresh lease, still read live, and never redden the assertion.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/lost_sessions.py:13-49 follows the surrounding prose-docstring idiom and carries no forbidden name, but service.py:248's 'lost-session reads' label is never emitted by a production pass because admit_once's block at selection.py:159-166 sits outside every tally.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/lost_sessions.py:288-374 extends the existing readers rather than forking them (runs._unattended_seconds, session_host.live_census, follower_registration._follower_liveness, dispatch_accounting._ancestor_processes), and a search of reckon/crew found no owner for whole-argument session-id matching: census._processes carries no argv and fleet_migrate._local_session_processes maps panes, not ids.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:176 blocking: the fixture starts no process carrying session-long-lived and the 'control' asserts (NOW - ten_days_ago) > 72 h, arithmetic over the test's own literal, so a derivation keyed on process age would find no process, fall back to the same fresh lease and still read live; the declared negative control is therefore asserted rather than performed and negative-control.log prints an outcome no code computed.\nFINDING tests/test_a_lost_session_is_a_derived_fact.py:113 non-blocking: the boundary moves only through the after_hours= kwarg, so lost_session_after_hours resolving the flight layer at reckon/crew/lost_sessions.py:42-57 is exercised only at its default and a regression that ignored the setting would leave the suite green.\nFINDING reckon/crew/admission/selection.py:160 non-blocking: result['lost_sessions'] is computed outside any _read_tally block, so the 'lost-session reads' row at service.py:248 is never emitted by a production pass and the commit's claim that the pass's own receipt shows the bound holds is true only of the test.\nFINDING reckon/crew/lost_sessions.py:54 non-blocking: the schema admits after_hours = 0 (flight.yaml minimum_value: 0, _flight_schema.py:759 ge=0, JSON schema minimum: 0) but the derivation silently replaces any non-positive value with 72, so the declared setting and the value used can disagree unreported.\nFINDING reckon/crew/admission/selection.py:137 non-blocking: the commit carries ruff-format rewrites of pre-existing lines unrelated to the goal at :137-139, :190-205 and an import reorder, which the repo's own rule says belongs in its own commit.\n",
+  "review_run_id": "r-20261121T021711341646-review-of-wlsr-a-lost-session-is-a-derived-fact-8ce55925051e",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "8ce55925051e818a8b6b2fd87ae2607374f4f6ca",
+  "reviewed_run_id": "r-20261121T010202314609-wlsr-a-lost-session-is-a-derived-fact",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T021711341646-review-of-wlsr-a-lost-session-is-a-derived-fact-8ce55925051e"
+  },
+  "reviewer_run_id": "r-20261121T021711341646-review-of-wlsr-a-lost-session-is-a-derived-fact-8ce55925051e",
+  "scores": {
+    "durability": 9,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:38:33.779995+00:00",
+  "total": 87
+}
