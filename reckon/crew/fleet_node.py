@@ -649,6 +649,17 @@ def query_jobs(
     return jobs
 
 
+def _fleet_token(comment: str) -> str:
+    """The fleet identity at the head of an allocation's comment.
+
+    A fleet allocation's comment can carry an owner after its token, added by
+    the scheduler shim to name the session that submitted it. The fleet
+    identity is the first word; everything after it belongs to that owner.
+    """
+    words = comment.strip().split()
+    return words[0] if words else ""
+
+
 def find_allocations(
     jobs: Iterable[Mapping[str, str]], *, fleet: str | None = None
 ) -> list[Mapping[str, str]]:
@@ -657,17 +668,17 @@ def find_allocations(
         tokens = {FLEET_COMMENT, *EARLIER_FLEET_COMMENTS}
     else:
         tokens = {fleet_comment(fleet)}
-    return [job for job in jobs if job.get("comment", "").strip() in tokens]
+    return [job for job in jobs if _fleet_token(job.get("comment", "")) in tokens]
 
 
 def fleet_of_allocation(job: Mapping[str, str]) -> str | None:
     """The fleet an allocation row belongs to, or None when it is no fleet's."""
-    comment = job.get("comment", "").strip()
-    if comment in {FLEET_COMMENT, *EARLIER_FLEET_COMMENTS}:
+    token = _fleet_token(job.get("comment", ""))
+    if token in {FLEET_COMMENT, *EARLIER_FLEET_COMMENTS}:
         return CATCH_ALL_FLEET
     prefix = FLEET_COMMENT + FLEET_COMMENT_SEPARATOR
-    if comment.startswith(prefix) and comment[len(prefix) :]:
-        return comment[len(prefix) :]
+    if token.startswith(prefix) and token[len(prefix) :]:
+        return token[len(prefix) :]
     return None
 
 

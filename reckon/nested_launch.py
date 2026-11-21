@@ -882,24 +882,27 @@ def _scheduler_options(
 
 
 def owner_comment(environ: Mapping[str, str]) -> str:
-    """The comment naming the run and session that submits a job, or ``""``.
+    """The comment naming the session and run that submits a job, or ``""``.
 
-    A submission outside any run carries nothing: without ``RECKON_RUN_ID``
-    there is no owner to name, whatever a session variable says. The session
-    is the run's coordinator, so it is added when the launch states it and the
-    run id alone is still named when it is absent.
+    A submission made for a coordinator session with no run names that
+    session: the coordinator is the owner even when no worker's run id exists,
+    and a session is what a reader of ``squeue`` can trace the job back to. A
+    submission with neither a session nor a run carries nothing, because there
+    is no owner to name.
     """
     run_id = str(environ.get(RUN_ID_ENV) or "").strip()
-    if not run_id:
-        return ""
     session = ""
     for name in SESSION_ID_ENVS:
         session = str(environ.get(name) or "").strip()
         if session:
             break
-    if session:
+    if session and run_id:
         return f"{OWNER_COMMENT_PREFIX} session={session} run={run_id}"
-    return f"{OWNER_COMMENT_PREFIX} run={run_id}"
+    if session:
+        return f"{OWNER_COMMENT_PREFIX} session={session}"
+    if run_id:
+        return f"{OWNER_COMMENT_PREFIX} run={run_id}"
+    return ""
 
 
 def with_owner_comment(argv: Sequence[str], environ: Mapping[str, str]) -> list[str]:
@@ -942,6 +945,64 @@ def _batch_directives(script: bytes) -> list[str]:
         if stripped.startswith("#SBATCH"):
             directives.append(line)
     return directives
+
+
+def _script_comment(directives: Sequence[str]) -> tuple[str, list[str]]:
+    """The comment a submitted script declares, and its directives without it.
+
+    A scheduler gives its command line precedence over the script's own
+    directives, so a comment left inside the script is discarded as soon as a
+    command-line ``--comment`` is present. The shim adds one to name the
+    submitting session and run, so the script's text is lifted out here and
+    carried on the command line beside the owner instead of being silently
+    overridden.
+    """
+    text = ""
+    kept: list[str] = []
+    for line in directives:
+        body = line.strip()[len("#SBATCH") :].strip()
+        declared = ""
+        rest = body
+        at = body.find("--comment=")
+        if at >= 0:
+            declared = body[at + len("--comment=") :].strip()
+            rest = body[:at].strip()
+        else:
+            at = body.find("--comment")
+            if at >= 0 and body[at + len("--comment") :][:1].isspace():
+                declared = body[at + len("--comment") :].strip()
+                rest = body[:at].strip()
+        if not declared:
+            kept.append(line)
+            continue
+        text = f"{text} {declared}".strip()
+        if rest:
+            kept.append("#SBATCH " + rest)
+    return text, kept
+
+
+def _with_comment_text(argv: Sequence[str], text: str) -> list[str]:
+    """The argv with ``text`` merged into its comment field, other words kept."""
+    if not text:
+        return list(argv)
+    arguments = list(argv)
+    for index, argument in enumerate(arguments):
+        if argument == "--":
+            break
+        if argument.startswith("--comment="):
+            existing = argument[len("--comment=") :]
+            arguments[index] = f"--comment={existing} {text}".strip()
+            return arguments
+        if argument == "--comment":
+            following = index + 1
+            if following < len(arguments) and not arguments[following].startswith("-"):
+                arguments[following] = f"{arguments[following]} {text}".strip()
+            else:
+                arguments[index] = f"--comment={text}"
+            return arguments
+        if not argument.startswith("-"):
+            break
+    return [f"--comment={text}", *arguments]
 
 
 def fenced_scheduler_task(
@@ -1007,9 +1068,9 @@ def fenced_scheduler_task(
     if not script.startswith(b"#!"):
         raise ValueError("fenced sbatch script must start with an interpreter shebang")
     command = _task_command(recipe, operands[1:], script=script)
-    wrapper = "\n".join(
-        ["#!/bin/sh", *_batch_directives(script), "exec " + shlex.join(command), ""]
-    )
+    script_comment, directives = _script_comment(_batch_directives(script))
+    options = _with_comment_text(options, script_comment)
+    wrapper = "\n".join(["#!/bin/sh", *directives, "exec " + shlex.join(command), ""])
     # The scheduler spools this stdin script before exec returns. An anonymous
     # file keeps it alive through exec without leaving a wrapper on disk.
     with tempfile.TemporaryFile() as stream:

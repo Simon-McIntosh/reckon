@@ -22,7 +22,8 @@ import sys
 
 import pytest
 
-from reckon import nested_launch
+from reckon import _backends, nested_launch
+from reckon.crew import dispatch_launch, fleet_node
 
 # The stand-in scheduler: it records its own argv and launches nothing. NUL
 # separated, because one fenced task argument is a program with newlines in it.
@@ -105,17 +106,19 @@ def _environment(sandbox, *, session=SESSION, run=RUN):
     return environment
 
 
-def _submit(sandbox, tool, arguments, *, session=SESSION, run=RUN):
+def _submit(sandbox, tool, arguments, *, session=SESSION, run=RUN, environment=None):
     """Run one submission through the shim and read the scheduler's argv."""
     sandbox["record"].unlink(missing_ok=True)
     shim = nested_launch.shim_directory() / tool
+    env = _environment(sandbox, session=session, run=run)
+    env.update(environment or {})
     result = subprocess.run(
         [str(shim), *arguments],
         capture_output=True,
         text=True,
         check=False,
         timeout=120,
-        env=_environment(sandbox, session=session, run=run),
+        env=env,
     )
     assert result.returncode == 0, (result.returncode, result.stderr)
     assert sandbox["record"].exists(), (
@@ -166,13 +169,98 @@ def test_a_callers_comment_is_kept_beside_the_ids(sandbox, tool):
 
 
 @pytest.mark.parametrize("tool", TOOLS)
-def test_a_submission_outside_any_run_adds_nothing(sandbox, tool):
+def test_a_session_with_no_run_names_the_session(sandbox, tool):
     received = _submit(sandbox, tool, SUBMISSIONS[tool], run=None)
 
-    assert _comment(received) is None, (
-        f"a submission with no run in its environment was given a comment "
-        f"naming an owner it does not have: {received}"
+    comment = _comment(received)
+    assert comment is not None, (
+        f"{tool} submitted for a coordinator session with no run was given no "
+        f"comment, so the job names no owner: {received}"
     )
+    assert SESSION in comment, comment
+
+
+@pytest.mark.parametrize("tool", TOOLS)
+def test_a_submission_with_neither_session_nor_run_adds_nothing(sandbox, tool):
+    received = _submit(sandbox, tool, SUBMISSIONS[tool], session=None, run=None)
+
+    assert _comment(received) is None, (
+        f"a submission with no session and no run in its environment was given "
+        f"a comment naming an owner it does not have: {received}"
+    )
+
+
+def test_a_script_comment_survives_beside_the_ids(sandbox):
+    script = sandbox["tmp"] / "nightly.sh"
+    script.write_text(
+        "#!/bin/sh\n#SBATCH --partition=all_debug\n"
+        "#SBATCH --comment=nightly calibration\necho task\n",
+        encoding="utf-8",
+    )
+
+    received = _submit(sandbox, "sbatch", [str(script)])
+
+    comment = _comment(received)
+    assert comment is not None, received
+    assert "nightly calibration" in comment, (
+        f"the comment declared inside the submitted script was dropped: {comment}"
+    )
+    assert SESSION in comment and RUN in comment, comment
+
+
+def test_a_fleet_allocation_is_found_once_its_comment_gains_an_owner():
+    owner = "reckon session=0f6b2a4c-session run=r-20260101T000000000000-fleetish"
+    rows = [
+        {"jobid": "1", "comment": f"{fleet_node.FLEET_COMMENT} {owner}"},
+        {"jobid": "2", "comment": f"{fleet_node.fleet_comment('nightly')} {owner}"},
+        {"jobid": "3", "comment": "an unrelated job"},
+    ]
+
+    catch_all = fleet_node.find_allocations(rows)
+    assert [job["jobid"] for job in catch_all] == ["1"], catch_all
+    assert fleet_node.fleet_of_allocation(rows[0]) == fleet_node.CATCH_ALL_FLEET
+    assert fleet_node.find_allocations(rows, fleet="nightly")[0]["jobid"] == "2"
+    assert fleet_node.fleet_of_allocation(rows[1]) == "nightly"
+    assert fleet_node.find_allocations(rows, fleet="other") == []
+
+
+def test_a_composed_dispatch_launch_hands_its_worker_the_session(
+    sandbox, tmp_path, monkeypatch
+):
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch-root"))
+    plan = _backends.launch_plan(
+        backend_name="claude",
+        backend={"launch": "cli", "command": "claude", "sandbox": "worktree-full"},
+        prompt="do the work",
+        worktree=str(tmp_path),
+        fence=False,
+    )
+    # The session is what the run's record carries, read here exactly as the
+    # launch reads it rather than handed to the composition as a literal.
+    record = {"session": SESSION}
+    composed = dispatch_launch._worker_runtime_plan(
+        plan,
+        run_id=RUN,
+        manifest_path=str(tmp_path / "manifest.md"),
+        attempt_started_at="2026-01-01T00:00:00Z",
+        coordinator_session=str(record.get("session") or ""),
+    )
+
+    assert composed.environment.get("RECKON_SESSION_ID") == SESSION, (
+        f"a dispatched worker's launch environment does not carry the session "
+        f"its run record names: {composed.environment.get('RECKON_SESSION_ID')!r}"
+    )
+    received = _submit(
+        sandbox,
+        "sbatch",
+        SUBMISSIONS["sbatch"],
+        environment={
+            "RECKON_RUN_ID": composed.environment["RECKON_RUN_ID"],
+            "RECKON_SESSION_ID": composed.environment["RECKON_SESSION_ID"],
+        },
+    )
+    comment = _comment(received)
+    assert comment is not None and SESSION in comment and RUN in comment, comment
 
 
 def test_the_owner_comment_names_the_session_before_the_run():
@@ -189,5 +277,12 @@ def test_a_run_without_a_session_still_names_the_run():
     assert owner == f"reckon run={RUN}"
 
 
-def test_no_run_means_no_comment_even_with_a_session():
-    assert nested_launch.owner_comment({"RECKON_SESSION_ID": SESSION}) == ""
+def test_a_session_with_no_run_is_named_by_the_comment():
+    assert (
+        nested_launch.owner_comment({"RECKON_SESSION_ID": SESSION})
+        == f"reckon session={SESSION}"
+    )
+
+
+def test_no_session_and_no_run_means_no_comment():
+    assert nested_launch.owner_comment({}) == ""
