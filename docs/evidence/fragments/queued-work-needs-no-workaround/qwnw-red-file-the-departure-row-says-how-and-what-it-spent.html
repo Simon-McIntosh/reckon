@@ -1,0 +1,99 @@
+<section id="qwnw-red-file-the-departure-row-says-how-and-what-it-spent-landing">
+  <h2>The departure row's test reads the word the pane now draws</h2>
+
+  <p><strong>What changed.</strong> Only
+  <code>tests/test_the_departure_row_says_how_and_what_it_spent.py</code>. The
+  product was not wrong in any of the three failures: each is a test asserting a
+  rule the code no longer keeps, and each is updated to the rule the code now
+  asserts. The delivered file passes in full.</p>
+
+  <p><strong>Cause 1 — a row naming a commit no branch carries is not a landed
+  promotion.</strong> The file asked the fleet fold for <code>promoted</code>
+  from a ledger row whose commit list held the literal
+  <code>"recorded-commit"</code> and whose row named no repository. The fold
+  now resolves the word from the delivered head's ancestry
+  (<code>recovery_classification._promoted_awaiting_merge</code>), and an
+  unverifiable ancestry reads <code>complete</code> — delivered, merge owed.
+  That rule is the subject of
+  <code>tests/test_a_landed_reading_follows_the_primary_branch.py</code>, so
+  the verdict is <em>test wrong</em>: the fixture assumed row presence earned the
+  word. It now builds a repository under the fixture root, commits the delivered
+  change, and names that head and repository on the row, so
+  <code>promoted</code> is earned rather than assumed. The assertion itself is
+  unchanged.</p>
+
+  <p><strong>Cause 2 — the blocked group's pane word is <code>help</code>.</strong>
+  The file expected <code>needs you</code> on the stopped departure.
+  <code>ticker.SUPERSEDED_PANE_WORDS</code> records that the group is now drawn
+  as <code>help</code>, and <code>hidden</code> before that; the pane's own word
+  table (<code>PANE_STATES[&quot;help&quot;]</code>) holds
+  <code>stopped</code>. Verdict: <em>test wrong</em>, encoding a superseded pane
+  word. The expectation is <code>help</code>.</p>
+
+  <p><strong>Cause 3 — a line-wide absence-marker scan answers the wrong
+  question.</strong> The measured-zero case asserted the marker appears nowhere
+  on a row whose spend is a measured zero. The row also carries the
+  promotion-position column, which prints the same marker whenever no promotion
+  is queued, so the line-wide scan fails on a cell that says nothing about spend.
+  Verdict: <em>test wrong</em>. The assertion now reads the spend cell, derived
+  from the grid's own layout constants the way
+  <code>tests/test_ticker_row_drops_unread_cells.py</code> reads the elapsed
+  cell, and is stricter than before: the unknown row's cell is exactly the
+  marker, the zero row's cell is exactly <code>0m</code>.</p>
+
+  <p>The four departures' pane-word check was rewritten from one
+  <code>all()</code> over four pairs to a loop that names the pair it failed on;
+  the four expectations themselves are unchanged apart from cause 2.</p>
+
+  <p><strong>Repair.</strong> The file's local <code>_git</code> duplicated
+  <code>tests/helpers/git.py</code>'s <code>git</code> and dropped the
+  <code>RECKON_RUN_ID</code> scrubbing that helper exists to perform, so under a
+  worker's git shim the fixture's own <code>git init</code> was refused; the
+  file now imports the shared helper. Under
+  <code>PATH=reckon/worker_shims</code> with
+  <code>RECKON_RUN_ID=r-0000…-no-such-run</code>, the pre-repair file fails 2 of
+  5 with exit 97 and the repaired file passes 5 of 5.</p>
+
+  <h3 id="qwnw-red-file-the-departure-row-says-how-and-what-it-spent-measured">Measured</h3>
+
+  <table id="qwnw-red-file-the-departure-row-says-how-and-what-it-spent-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's named file, base arm (the negative control)</td>
+        <td><code>4d464485b8d773934c39db59a4ba4d43e8648a97</code></td>
+        <td>3 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's named file, head arm, all_debug job</td>
+        <td><code>eac99bb130f2b91dd0c3da08c3af08c19358d532</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, baseline arm, all_debug job</td>
+        <td><code>4d464485b8d773934c39db59a4ba4d43e8648a97</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm, all_debug job</td>
+        <td><code>eac99bb130f2b91dd0c3da08c3af08c19358d532</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm's failing ids, quoted from its log:</p>
+
+  <pre id="qwnw-red-file-the-departure-row-says-how-and-what-it-spent-red-ids">FAILED tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words
+FAILED tests/test_the_departure_row_says_how_and_what_it_spent.py::test_promoted_transition_keeps_the_live_pointer_figures
+FAILED tests/test_the_departure_row_says_how_and_what_it_spent.py::test_unknown_spend_and_measured_zero_render_differently
+3 failed, 2 passed</pre>
+
+  <p>The base failure of the first case, quoted unchanged from the red
+  run:</p>
+
+  <pre id="qwnw-red-file-the-departure-row-says-how-and-what-it-spent-red-quote">&gt;       assert words == ["promoted", "discarded", "stopped", "withdrawn"]
+E       AssertionError: assert ['complete', ..., 'withdrawn'] == ['promoted', ..., 'withdrawn']
+E         
+E         At index 0 diff: 'complete' != 'promoted'</pre>
+
+  <p>Logs live in the run directory
+  <code>r-20261118T054128002906-qwnw-red-file-the-departure-row-says-how-and-what-it-spent</code>
+  as <code>logs/base-departure.log</code> beside the newest
+  <code>scoped-gate-*.log</code>, <code>baseline_suite-*.log</code> and
+  <code>after_suite-*.log</code>.</p>
+</section>

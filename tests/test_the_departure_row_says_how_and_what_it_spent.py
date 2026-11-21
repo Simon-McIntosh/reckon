@@ -9,6 +9,7 @@ import pytest
 
 from reckon import ledger
 from reckon.crew import metering, recovery, recovery_watch, ticker
+from tests.helpers.git import git as _git
 
 
 @pytest.fixture()
@@ -24,6 +25,17 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({"sample": str(root / "docs")}), encoding="utf-8"
     )
     return root
+
+
+def _repository(home: Path) -> str:
+    """Make the fixture root a repository whose primary branch carries a head."""
+    _git(home, "init", "-q", "-b", "main")
+    _git(home, "config", "user.email", "t@example.invalid")
+    _git(home, "config", "user.name", "T")
+    (home / "delivered.txt").write_text("delivered\n", encoding="utf-8")
+    _git(home, "add", "delivered.txt")
+    _git(home, "commit", "-q", "-m", "feat: the delivered change")
+    return _git(home, "rev-parse", "HEAD")
 
 
 def _snapshot(run_id: str, state: str = "working") -> dict:
@@ -44,10 +56,13 @@ def _row(
     commits: list[str],
     throughput=None,
     no_commit: str | None = None,
+    repo: str | None = None,
 ) -> None:
     path = ledger.run_path("sample", run_id, root)
     path.parent.mkdir(parents=True, exist_ok=True)
     record = {"run_id": run_id, "commits": commits, "throughput": throughput}
+    if repo is not None:
+        record["repo"] = repo
     if no_commit is not None:
         record["no_commit"] = no_commit
     path.write_text(
@@ -73,10 +88,22 @@ def _plain(event: dict) -> str:
     return recovery.format_watch_transition(event)
 
 
+TRANSITION_COLUMN = (
+    ticker.CLOCK + ticker.GAP + ticker.ROLE + ticker.GAP + ticker.NODE + ticker.GAP
+)
+
+
+SPEND_COLUMN = TRANSITION_COLUMN + ticker.STATE + ticker.GAP + ticker.SPEND_GAP
+
+
+def _spend_cell(event: dict) -> str:
+    return _plain(event)[SPEND_COLUMN : SPEND_COLUMN + ticker.SPEND]
+
+
 def test_four_departures_render_three_pane_words(home: Path, monkeypatch) -> None:
     run_id = "r-same-shape"
     snapshot = _snapshot(run_id)
-    _row(home, run_id, commits=["recorded-commit"])
+    _row(home, run_id, commits=[_repository(home)], repo=str(home))
     promoted = recovery.fleet_transitions({run_id: snapshot}, {})[0][0][2]
 
     # The other three outcomes keep the same run and snapshot shape. The
@@ -94,12 +121,10 @@ def test_four_departures_render_three_pane_words(home: Path, monkeypatch) -> Non
     words = [promoted, discarded, stopped, withdrawn]
     assert words == ["promoted", "discarded", "stopped", "withdrawn"]
     lines = [_plain(_event(snapshot, word)) for word in words]
-    assert all(
-        word in line
-        for word, line in zip(
-            ("landed", "dropped", "needs you", "dropped"), lines, strict=True
-        )
-    )
+    for needle, line in zip(
+        ("landed", "dropped", "help", "dropped"), lines, strict=True
+    ):
+        assert needle in line, (needle, line)
     assert len(set(lines)) == 3
 
 
@@ -171,7 +196,13 @@ def test_promoted_transition_keeps_the_live_pointer_figures(home: Path) -> None:
         )
     ] == [20.0, 150, 10.0]
 
-    _row(home, run_id, commits=["recorded-commit"], throughput=pointer["throughput"])
+    _row(
+        home,
+        run_id,
+        commits=[_repository(home)],
+        repo=str(home),
+        throughput=pointer["throughput"],
+    )
     word = recovery.fleet_transitions({run_id: snapshot}, {})[0][0][2]
     assert word == "promoted"
     after = _event(snapshot, word, spend_runs=[])
@@ -204,6 +235,5 @@ def test_unknown_spend_and_measured_zero_render_differently(home: Path) -> None:
     assert unknown["spend_charged_tokens"] is None
     assert zero["spend_charged_tokens"] == 0
     assert _plain(unknown) != _plain(zero)
-    assert ticker.DIM_MARKER in _plain(unknown)
-    assert ticker.DIM_MARKER not in _plain(zero)
-    assert "0m" in _plain(zero)
+    assert _spend_cell(unknown).strip() == ticker.DIM_MARKER
+    assert _spend_cell(zero).strip() == "0m"
