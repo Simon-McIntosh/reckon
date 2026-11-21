@@ -25,7 +25,7 @@
   <title>Work Of A Lost Session Is Raised, Not Left | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="61">
+<meta name="plan-version" content="62">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -391,7 +391,10 @@ head.</p></div>
     <div class="r-comment-body"><p>none</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261121T054018314813-review-of-wlsr-a-wait-that-cannot-resolve-is-removed-d3ec47714cfc" data-who="reckon-build" data-when="2026-11-21T05:44:49.075Z">
-    <div class="r-comment-body"><p>Attached an independent review of r-20261121T010257382729-wlsr-a-wait-that-cannot-resolve-is-removed covering the two commits gained since f743b68f74 (e653b0c984, d3ec47714c): the schema-source repair is declared in reckon/schema/flight.yaml and both generated artifacts regenerate from it, the prior blocking finding is answered, all six dimensions score 20/18/20/19/20/20, and added_failure_count is 0 against the run&#x27;s green baseline/after suite pair.</p></div>
+    <div class="r-comment-body"><p>Attached an independent review of r-20261121T010257382729-wlsr-a-wait-that-cannot-resolve-is-removed covering the two commits gained since f743b68f74 (e653b0c984, d3ec47714c): the schema-source repair is declared in reckon/schema/flight.yaml and both generated artifacts regenerate from it, the prior blocking finding is answered, all six dimensions score 20/18/20/19/20/20, and added_failure_count is 0 against the run's green baseline/after suite pair.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261121T010257382729-wlsr-a-wait-that-cannot-resolve-is-removed" data-who="reckon-build" data-when="2026-11-21T05:26:44Z">
+    <div class="r-comment-body"><p>Classed every awaiting-upstream request by what could release it — progressing, idle, or stranded — stamping wait_class and wait_detail on the request from the per-ref states the readiness resolution already computes; retired the stranded class on the first pass with a discard record naming the upstream and its reason; the stranded_wait setting is declared in the LinkML source with its own config class and shipped default, and both generated artifacts are regenerated rather than hand-edited (after_suite 66 passed, exit 0, at head e653b0c984).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261121T015204971994-review-of-wlsr-a-scheduler-job-names-its-owner-fda33621ae89" data-who="reckon-build" data-when="2026-11-21T02:22:00.967Z">
     <div class="r-comment-body"><p>Review of fda33621ae against e689315b: parsed, 6 dimensions scored (goal_fidelity 16, evidence 16, scope_discipline 19, durability 13, fit 18, reuse 17), 4 non-blocking findings, no added failures.</p></div>
