@@ -121,4 +121,31 @@ EXIT=0
 58 passed in 36.41s
 EXIT=0
 </pre>
+<h3 id="ldop-an-answer-reaches-its-owner-and-releases-what-it-held-merged">The branch merges into main, and the merge is green</h3>
+<p>The branch's two files that main had also rewritten were replaced with main's
+text with this section's behaviour re-expressed as a hunk on top, so the merge
+carries no conflict. The proof runs on the merge itself: git's own merge writes
+the tree, and the gate and both suite arms run inside a tree materialised from
+that merged commit.</p>
+<pre># command git merge-tree --write-tree HEAD main
+516b89918e2134988c052cb6c2823c22a31dbacf
+# conflicts (a conflict prints a CONFLICT line and exits 1)
+EXIT=0
+</pre>
+<pre># merged commit 64455c81b778bd67aa1450957f19502820934458 (tree 516b89918e2134988c052cb6c2823c22a31dbacf)
+# merged parents main 9a4d4d5d34af9fae67f395b5441fe281cdd86bf0 + head 00e4c25b6df5b48542820645cfc9851489600344
+# tree /tmp/reckon-crew-scratch/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/merged.KGjhoj
+# command PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_decision_answer_releases_what_it_held.py
+.......                                                                  [100%]
+7 passed in 1.08s
+EXIT=0
+</pre>
+<pre># merged commit 64455c81b778bd67aa1450957f19502820934458 (tree 516b89918e2134988c052cb6c2823c22a31dbacf)
+# merged parents main 9a4d4d5d34af9fae67f395b5441fe281cdd86bf0 + head 00e4c25b6df5b48542820645cfc9851489600344
+# tree /tmp/reckon-crew-scratch/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/merged.KGjhoj
+# command PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/ldop-an-answer-reaches-its-owner-and-releases-what-it-held/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 36.56s
+EXIT=0
+</pre>
 </section>
