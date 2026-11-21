@@ -2155,9 +2155,9 @@ def _adopt_a_plan_edited_after_the_snapshot(
 
     A landing comment is an append, so the document now on disk is the other
     writer's committed plan plus this run's comment. That is recognised by
-    removing this run's comment from the current document and requiring the
-    result to be byte-identical to the plan at HEAD: a writer that changed
-    anything else does not match, and the caller's refusal stands. When it does
+    re-rendering the plan at HEAD with the state parsed from disk and requiring
+    the result to be byte-identical to the file: a writer that changed anything
+    else does not match, and the caller's refusal stands. When it does
     match, the rollback target becomes HEAD's plan — the state a refusal must
     leave behind — rather than the preimage this run snapshotted before the
     other writer's edit existed.
