@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from . import launching as _launching
 from . import readiness as _readiness
 from . import reviews as _reviews
@@ -532,8 +533,12 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     readiness read walking the tree again. Both close before the pass returns,
     so a landing that merges while the pass runs is seen by the next one.
     """
+    from reckon.crew import decision_answers
+
     with _readiness.plan_read_scopes():
-        return _advance_waiting_requests(live)
+        released = decision_answers.release_answered_holds(live)
+        moved = _advance_waiting_requests(live)
+    return {**moved, "released": released}
 
 
 def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:

@@ -4830,6 +4830,9 @@ def _obligations_view(
     from reckon.crew.fleet_supervisor import fleet_test_obligations
 
     items.extend(fleet_test_obligations(project, session, now=now))
+    from reckon.crew import decision_answers
+
+    items.extend(decision_answers.answered_items(project, session, now=now))
     pointers = {
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
