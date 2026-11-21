@@ -191,9 +191,39 @@ def done_when_warnings(done_when: str) -> list[dict[str, str]]:
 
 # An unresolved template placeholder names nothing the worker can act on, so a
 # goal or a done-when may not carry one that survives into the brief. A quoted
-# string or a code span is the author quoting a literal, so a placeholder
-# inside one is data to reproduce rather than a gap to fill.
+# string is the author quoting a literal, so a placeholder inside one is data to
+# reproduce rather than a gap to fill.
+#
+# A code span is NOT exempt on its own: which text an author quoted says nothing
+# about whether the token inside it is a gap. What decides that is the shape of
+# the text around the token, because a test-data literal and an unfilled
+# template differ in exactly that way. A bracketed token embedded in a path or
+# filename pattern (`pf<n>-terminal-edge.json`, `tests/<name>.py`) is a
+# filename to reproduce, and a bracketed token that is itself an HTML element
+# (`<strong>`) is markup written as test data. A token standing alone, such as
+# `<project>` in a code span or `<n>` in prose, is a placeholder the worker
+# would have to resolve, and is refused wherever it appears.
 _PLACEHOLDER_TOKEN = re.compile(r"<[a-z][a-z0-9-]*>")
+
+# The HTML elements a section may name as test data. A bracketed token in this
+# set is markup being described, not a template to fill.
+_HTML_ELEMENT_NAMES = frozenset(
+    """
+    a abbr address area article aside audio b base bdi bdo blockquote body br
+    button canvas caption cite code col colgroup data datalist dd del details
+    dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2
+    h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label
+    legend li link main map mark menu meta meter nav noscript object ol optgroup
+    option output p param picture pre progress q rp rt ruby s samp script
+    section select slot small source span strong style sub summary sup table
+    tbody td template textarea tfoot th thead time title tr track u ul var
+    video wbr
+    """.split()
+)
+
+# Characters that separate one whitespace-delimited word from punctuation an
+# author wrapped around it or a sentence put after it.
+_WORD_EDGE_PUNCTUATION = "`'\"()[]{}<>,;:."
 
 # The vague placeholder words are refused in the goal, where they stand in for
 # the work. The same words inside a done-when are the author naming a marker to
@@ -206,19 +236,70 @@ _UNSPECIFIED = re.compile(
     re.IGNORECASE,
 )
 
-# Quoted strings and code spans, blanked before a placeholder search so their
-# contents are read as a literal the author quoted.
-_QUOTED_OR_CODE_SPAN = re.compile(r'"[^"]*"|`[^`]*`')
+# Quoted strings, blanked before a placeholder search so their contents are read
+# as a literal the author quoted.
+_QUOTED_STRING = re.compile(r'"[^"]*"')
+
+# Code spans are kept rather than blanked: a span is one context unit, so the
+# whole span text is what the shape test judges.
+_CODE_SPAN = re.compile(r"`[^`]*`")
+
+
+def _reads_as_literal(context: str) -> bool:
+    """Whether a token's surrounding text reads as a filename pattern or a tag.
+
+    ``context`` is the code span the token sits in, or the whitespace-delimited
+    word containing it. It is a literal to reproduce when it holds a path
+    separator or a file extension, or when the token itself names an HTML
+    element that a section may carry as test data.
+    """
+    trimmed = context.strip(_WORD_EDGE_PUNCTUATION)
+    if not trimmed:
+        return False
+    token = _PLACEHOLDER_TOKEN.search(context)
+    if token is not None and token.group(0)[1:-1] in _HTML_ELEMENT_NAMES:
+        return True
+    # A path separator or a trailing file extension is what distinguishes a
+    # pattern such as ``pf<n>-terminal-edge.json`` or ``tests/<name>.py`` from a
+    # bracket standing in for a value.
+    if "/" in trimmed:
+        return True
+    return bool(re.search(r"\.\w{1,8}$", trimmed))
+
+
+def _placeholder_context(text: str, token: re.Match[str]) -> str:
+    """The text whose shape decides whether one bracketed token is a literal.
+
+    A token inside a code span is judged on the whole span, so a span naming a
+    path is read as the pattern it is. Any other token is judged on the word it
+    belongs to, which is what tells ``pf<n>-terminal-edge.json`` from a bare
+    placeholder.
+    """
+    for span in _CODE_SPAN.finditer(text):
+        if span.start() <= token.start() and token.end() <= span.end():
+            return span.group(0)
+    start = token.start()
+    while start > 0 and not text[start - 1].isspace():
+        start -= 1
+    end = token.end()
+    while end < len(text) and not text[end].isspace():
+        end += 1
+    return text[start:end]
 
 
 def _placeholder_gap(*texts: str) -> str | None:
-    """Return an unresolved placeholder in unquoted, non-code text, if any."""
+    """Return an unresolved placeholder in a goal or done-where text, if any."""
     for text in texts:
-        literal_free = _QUOTED_OR_CODE_SPAN.sub(" ", text)
-        token = _PLACEHOLDER_TOKEN.search(literal_free)
-        if token:
+        searchable = _QUOTED_STRING.sub(" ", text)
+        for token in _PLACEHOLDER_TOKEN.finditer(searchable):
+            # A token inside a quoted string was already blanked out of
+            # ``searchable``, so every match here is either code-span or prose.
+            if _reads_as_literal(_placeholder_context(searchable, token)):
+                continue
             return token.group(0)
-    word = _UNSPECIFIED.search(_QUOTED_OR_CODE_SPAN.sub(" ", texts[0]))
+    word = _UNSPECIFIED.search(
+        _CODE_SPAN.sub(" ", _QUOTED_STRING.sub(" ", texts[0]))
+    )
     return word.group(0) if word else None
 
 

@@ -215,6 +215,15 @@ def queue_requests(
         live=live,
     )
     for node in nodes:
+        # A node naming a plan section names its authority, and the section
+        # already states the measure, the sizing, the specification level and
+        # the mutation its check must fail against. Taking every field the node
+        # left unsaid from the section is what makes a section-only request
+        # dispatchable on any path, so it runs here, where the single dispatch
+        # and the batch both arrive before the contract is judged.
+        from reckon.crew.dispatch_batch import apply_section_defaults
+
+        apply_section_defaults(node, project=project, repo_root=repo_root)
         node.manifest_path = node.manifest_path or str(
             run_dir(assigned_ids[node.id]) / "manifest.md"
         )

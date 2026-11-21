@@ -636,6 +636,17 @@ def plan_dispatch(
     # ``None``: only the dispatch path turns that into the mount.
     if repo is not None and project_mount_repository(project) is not None:
         repo = resolve_project_repository(project, repo)
+    # A node naming a plan section names its authority, and the section already
+    # states the measure, the sizing, the specification level and the mutation
+    # its check must fail against. Every field the node left unsaid is taken
+    # from the section here, before the fence fills the defaults beneath it, so
+    # the section's own estimate is what a section-only dispatch runs on.
+    if project and node.plan and node.section:
+        from reckon.crew.dispatch_batch import apply_section_defaults
+
+        work_root = repo if repo is not None else project_mount_repository(project)
+        if work_root is not None:
+            apply_section_defaults(node, project=project, repo_root=work_root)
     # The run a --repairs dispatch repairs must already have landed, so the
     # declaration is judged here, beside the other preconditions, before a
     # worktree, pointer or process exists. A dry run reaches the same refusal

@@ -489,6 +489,64 @@ def _as_list(value: Any) -> list[str]:
     raise BatchEntryRefusedError(f"{value!r} is not a list of strings")
 
 
+#: How a section's declared autonomy maps onto the specification level a
+#: dispatch records. Autonomy names who owns the design — the section fixes it
+#: (``guided``) or the worker derives it (``autonomous`` → an open spec) — which
+#: is exactly the question the specification level answers.
+_SPEC_LEVEL_FROM_AUTONOMY = {"guided": "guided", "autonomous": "open"}
+
+#: A capability request that states no autonomy still declares a design the
+#: worker implements, so its section dispatches guided rather than undeclared.
+DEFAULT_SECTION_SPEC_LEVEL = "guided"
+
+#: The sentence a done-when closes with that names the mutation its own check
+#: must fail against. It is the negative control the dispatch owes for a node
+#: that writes a check.
+_NEGATIVE_CONTROL_MARKER = re.compile(
+    r"\bnegative control\b\s*[:.—-]?\s*", re.IGNORECASE
+)
+
+
+def section_time_budget(effort_hours: Any) -> str:
+    """The wall-clock budget a section's effort estimate buys.
+
+    The estimate is the plan's own sizing of the work, so an entry that names
+    no budget inherits it. It is stated in whole minutes: an estimate of 2.5
+    hours is ``150m``, which ``parse_duration`` reads back as the same figure.
+    """
+    try:
+        minutes = int(round(float(effort_hours) * 60))
+    except (TypeError, ValueError):
+        return ""
+    return f"{minutes}m" if minutes > 0 else ""
+
+
+def section_spec_level(capability: Mapping[str, Any] | None) -> str:
+    """The specification level a section's capability request declares.
+
+    A section that declares no capability request states nothing about the
+    design's ownership, so it supplies no level and the node's own declaration
+    (or its absence) stands.
+    """
+    requirements = (capability or {}).get("requirements") or {}
+    if not (capability or {}).get("class") and not requirements:
+        return ""
+    autonomy = str(requirements.get("tool_autonomy") or "").strip().lower()
+    return _SPEC_LEVEL_FROM_AUTONOMY.get(autonomy, DEFAULT_SECTION_SPEC_LEVEL)
+
+
+def negative_control_sentence(done_when: str) -> str:
+    """The mutation the done-when says its own check must fail against."""
+    match = _NEGATIVE_CONTROL_MARKER.search(done_when or "")
+    if match is None:
+        return ""
+    rest = done_when[match.end() :]
+    stop = _SENTENCE_END.search(rest)
+    if stop is not None:
+        rest = rest[: stop.start()]
+    return " ".join(rest.split()).strip()
+
+
 def section_derivation(
     read: _PlanRead, section: str, *, derive_write_paths: bool = True
 ) -> dict[str, tuple[Any, str]]:
@@ -514,10 +572,68 @@ def section_derivation(
         paths = read.write_paths(section)
         if paths:
             values["write_paths"] = paths
-    estimate = read.section_record(section).get("effort_hours")
+    record = read.section_record(section)
+    estimate = record.get("effort_hours")
     if isinstance(estimate, (int, float)):
         values["estimated_hours"] = float(estimate)
+        budget = section_time_budget(estimate)
+        if budget:
+            values["time_budget"] = budget
+    values["spec_level"] = section_spec_level(record.get("capability"))
+    if "done_when" in values:
+        control = negative_control_sentence(values["done_when"])
+        if control:
+            values["negative_control"] = control
     return {name: (value, _digest(value)) for name, value in values.items()}
+
+
+#: The node fields a section supplies to a dispatch that omits them.
+SECTION_SUPPLIED_NODE_FIELDS = (
+    "done_when",
+    "time_budget",
+    "spec_level",
+    "negative_control",
+)
+
+
+def apply_section_defaults(
+    node: Any, *, project: str, repo_root: str | Path
+) -> list[str]:
+    """Fill every node field this section supplies and the node left unsaid.
+
+    A dispatch that names a plan section names its authority, and the section
+    already states the measure, the sizing and the mutation its check must fail
+    against. Requiring the caller to repeat them is how a section-only request
+    gets refused for fields the plan owns. Only an empty field is filled: a
+    value the caller gave always wins.
+
+    A plan or section that cannot be read is left alone rather than refused
+    here, because the dispatch paths already name that failure (plan visibility,
+    routing evidence) with the flag the caller can correct.
+    """
+    plan = str(getattr(node, "plan", "") or "").strip()
+    section = str(getattr(node, "section", "") or "").strip()
+    if not plan or not section:
+        return []
+    omitted = [
+        name
+        for name in SECTION_SUPPLIED_NODE_FIELDS
+        if not str(getattr(node, name, "") or "").strip()
+    ]
+    if not omitted:
+        return []
+    try:
+        read = _PlanRead(project, plan, Path(repo_root))
+        derivation = section_derivation(read, section, derive_write_paths=False)
+    except (BatchEntryRefusedError, OSError):
+        return []
+    filled: list[str] = []
+    for name in omitted:
+        if name not in derivation:
+            continue
+        setattr(node, name, derivation[name][0])
+        filled.append(name)
+    return filled
 
 
 def rederived_section_fields(
@@ -640,7 +756,19 @@ def _entry_node(
     estimated_hours = entry.get("estimated_hours")
     if estimated_hours is None and "estimated_hours" in derivation:
         estimated_hours, derived["estimated_hours"] = derivation["estimated_hours"]
+    # Every field the entry leaves out is the section's. The budget, the
+    # specification level and the negative control are read from the section
+    # exactly as the done-when and the write paths already were, so an entry
+    # naming only its project, plan, section, node and goal is dispatchable.
+    time_budget = str(entry.get("time_budget") or "")
+    if not time_budget and "time_budget" in derivation:
+        time_budget, derived["time_budget"] = derivation["time_budget"]
     spec_level = str(entry.get("spec_level") or "")
+    if not spec_level and "spec_level" in derivation:
+        spec_level, derived["spec_level"] = derivation["spec_level"]
+    negative_control = str(entry.get("negative_control") or "")
+    if not negative_control and "negative_control" in derivation:
+        negative_control, derived["negative_control"] = derivation["negative_control"]
     # A field the entry leaves out falls back to the command-level value, so a
     # coordinator queuing one batch for many sections states a reason, a
     # comment or a lane once rather than on every entry.
@@ -658,13 +786,13 @@ def _entry_node(
         brief=str(entry.get("brief") or ""),
         role=str(entry.get("role") or "implement"),
         spec_level=spec_level,
-        negative_control=str(entry.get("negative_control") or ""),
+        negative_control=negative_control,
         mcp_set=str(entry.get("mcp_set") or ""),
         done_when=done_when,
         write_paths=list(write_paths),
         regenerate_paths=_as_list(entry.get("regenerate_paths")),
         anchor_paths=_as_list(entry.get("anchor_paths")),
-        time_budget=str(entry.get("time_budget") or ""),
+        time_budget=time_budget,
         over_fence_reason=over_fence_reason,
         estimated_hours=estimated_hours,
         manifest_path=str(entry.get("manifest") or ""),
