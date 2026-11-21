@@ -433,7 +433,6 @@ _MODULE_EXPORTS = {
         "_watch_request_slug",
         "_watcher_delivery_admission",
         "_wire_peer_channels",
-        "_with_anchored_edit_instruction",
         "_worker_default_signals",
         "_worker_git_shim_directory",
         "_worker_host_line",

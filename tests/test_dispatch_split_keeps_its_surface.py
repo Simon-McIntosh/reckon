@@ -441,7 +441,6 @@ EXPECTED_SURFACE = (
     "_watch_request_slug",
     "_watcher_delivery_admission",
     "_wire_peer_channels",
-    "_with_anchored_edit_instruction",
     "_worker_default_signals",
     "_worker_git_shim_directory",
     "_worker_host_line",
@@ -700,3 +699,23 @@ def test_dispatch_patches_use_the_crew_facade_owner(monkeypatch, tmp_path):
         ), "dispatch assignment bypassed the crew facade's forwarding owner"
     assert original == facade.ATTEMPT_RECORD_NAME
     assert facade._attempt_record_for("sample") == tmp_path / "sample" / original
+
+
+def test_dispatch_path_offers_no_tool_edit_instruction():
+    """The launcher composes the prompt from the node alone.
+
+    The dispatch path no longer consults a backend flag to append a steering
+    instruction for an editing tool, so neither the prompt-composition call
+    site nor any re-exported name carries an instruction helper.
+    """
+    import inspect
+
+    launch = importlib.import_module("reckon.crew.dispatching.launch")
+    facade = dispatch_module()
+    assert "edit_instruction" not in inspect.getsource(launch._launch_dispatch)
+    names = set(facade._MODULE_EXPORTS.get("_imports", ()))
+    for module in (facade, *facade._CONCERN_MODULES):
+        names |= set(getattr(module, "_MODULE_EXPORTS", {}).get("_imports", ()))
+    assert not any(name.endswith("_edit_instruction") for name in names), sorted(
+        name for name in names if name.endswith("_edit_instruction")
+    )

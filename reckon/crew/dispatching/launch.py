@@ -57,7 +57,6 @@ from ._imports import (
     _watch_arming_line,
     _watch_attach_line,
     _wire_peer_channels,
-    _with_anchored_edit_instruction,
     _worker_host_line,
     _worker_runtime_environment,
     _write_boundary_tree_snapshot,
@@ -382,11 +381,6 @@ def _launch_dispatch(
             host_line=_worker_host_line(dispatch_host, directory),
             brief=_brief_text(node, project=project),
         )
-        # The anchored arm's other half is its instruction: the argv makes the
-        # tool callable and this is what makes the worker reach for it. Keyed
-        # on the resolved backend, so a lane that did not receive the server
-        # never reads an instruction naming a tool it does not have.
-        prompt = _with_anchored_edit_instruction(prompt, backend)
         if shadow_lineage:
             prompt += (
                 "\n\nSHADOW RUN — produce the named evidence without committing. "
