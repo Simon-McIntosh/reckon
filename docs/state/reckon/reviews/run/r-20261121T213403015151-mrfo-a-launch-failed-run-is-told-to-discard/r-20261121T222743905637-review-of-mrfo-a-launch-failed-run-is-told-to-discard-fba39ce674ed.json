@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T22:29:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 3157,
+      "severity": "non-blocking",
+      "text": "The launch-failed arm still composes \"fix the command and PATH ... then launch a fresh attempt with `reckon crew resume --run <id>\" as the row's next_action, so the resume remedy the plan's defect narrative complains about survives on the classifier surface (crew status/recovery status) even though the obligation now names a discard; a reader there is still offered a command resume refuses."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-a-launch-failed-run-is-told-to-discard.html",
+      "line": 67,
+      "severity": "non-blocking",
+      "text": "The fragment says the checklist case fails at base because the cause is not printed, but the cited negative-control log (logs/negative-control-base.log, 2 failed, 1 passed) names only the launch case and the acceptance case; the checklist case did not exist when that log ran, so the claim is asserted rather than recorded."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261121T222743905637-review-of-mrfo-a-launch-failed-run-is-told-to-discard-fba39ce674ed",
+  "reviewed_base_sha": "2a3bf52e35d7158acaadb24634be5db1606853c3",
+  "reviewed_head_sha": "fba39ce674ed42d3acfb5b5105fb2d0d4ee11a3c",
+  "reviewed_run_id": "r-20261121T213403015151-mrfo-a-launch-failed-run-is-told-to-discard",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T22:51:56.030013+00:00",
+  "total": 106,
+  "verdicts": {
+    "call_sites": "reckon/crew/obligations.py:2071 (duty projection reached from obligations.obligations via _classified_rows), reckon/hooks/coordinator_obligations.py:915 (_work_lines reached from format_checklist), reckon/crew/recovery_classification.py:3119 (classify_pointer consumed by recovery_writer/watch, query, serve and resumption).",
+    "diff": "Read commit by commit (3c82596208 fix, c4cba0fe84 evidence fragment, fba39ce674 fragment reconciliation): +19/-2 in obligations.py, +33/-2 in recovery_classification.py, +10/-1 in the hook, a 235-line new test module, and the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_launch_failed_run_is_told_to_discard.py with four behaviours; the diff adds four cases matching them and the manifest records the after arm at logs/after-suite.log (62 passed, EXIT=0) and the base negative control at logs/negative-control-base.log (2 failed, 1 passed).",
+    "goal": "The node goal (plan section 110: a run that ended during launch with no stream record is told a remedy that works and never resume, carrying the first line of its launch error) is what the diff delivers: reckon/crew/obligations.py:2071 overrides next_command to `reckon crew discard --run <id>` for a row the classifier marks ended_during_launch and appends launch_error to the reason.",
+    "manifest": "Read; status complete, three commits cited, both arms recorded with literal commands, revisions, log paths and closing EXIT= lines, and the negative control quoted in negative_control_note.",
+    "write_paths": "Read the reviewed manifest's declared paths and the diff: all five changed files sit inside the declared write paths; the declared figures directory is unused, and no file outside the declared set is touched."
+  }
+}
