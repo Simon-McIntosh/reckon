@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1125">
+<meta name="plan-version" content="1126">
 <meta name="plan-modified" content="2026-11-21">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3396,6 +3396,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row" data-who="reckon-build" data-when="2026-11-19T03:48:04Z">
     <div class="r-comment-body"><p>The named file already passes at the base revision 42fe90d (3 passed, EXIT=0) and at head 554aa68 (3 passed, EXIT=0), and a mutation that makes _ledger_row_was_rolled_back return False turns its first case red (1 failed, 2 passed, EXIT=1), so the pass exercises the receipt branch; the declared-suite arms are 58 passed, EXIT=0 at both revisions, and the only changed path is the evidence fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062803388372-qwnw-red-file-review-reflex-skips-a-superseded-head" data-who="reckon-build" data-when="2026-11-19T03:47:27Z">
+    <div class="r-comment-body"><p>reckon/crew/resumption.py: launch_mark_holds now reads the per-process launch registry, so a sweep running inside a resume withholds the review of the superseded head (base 42fe90d 1 failed 5 passed, head 256c27 6 passed as an all_debug job; census arms 2 failed 56 passed both sides)</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
