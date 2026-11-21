@@ -364,6 +364,7 @@ def _launch_queued(
     units_token = routing.ADMISSION_REVIEW_UNITS.set(plan_review_units(node.section))
     try:
         from reckon.crew.stage_receipts import note_review
+
         note_review(pointer, "review_admitted")
         launched = dispatch(
             node=node,
@@ -845,8 +846,49 @@ def _failed_launch_follows_work(pointer: Mapping[str, Any]) -> bool:
     return isinstance(attempt, int) and not isinstance(attempt, bool) and attempt > 1
 
 
+def _launch_failure_limit(
+    pointer: Mapping[str, Any],
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> int:
+    """How many failed launches in a row this request may take.
+
+    Read from the project's resolved configuration, so a lane or a project
+    retunes the bound without a code change.
+    """
+    from reckon import flight
+
+    config = config_for(pointer) if config_for is not None else None
+    return flight.queue_launch_failure_limit(config)
+
+
+def _stamp_terminal_launch_failure(
+    run_id: str, failure: Mapping[str, Any] | None
+) -> None:
+    """Record the last launch failure on a run left ``launch-failed``.
+
+    The phase already says no further pass will retry the request. Naming the
+    failure on the pointer is what lets its coordinator read the cause without
+    walking the run's history.
+    """
+    record = dict(failure or {})
+    record.setdefault("kind", LAUNCH_FAILED_PHASE)
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        current["failure"] = record
+        current["failure_at"] = _service._now().isoformat()
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, stamp)
+    except CrewError:
+        return
+
+
 def _requeue_admitted_failures(
-    live: list[dict[str, Any]], *, verdicts: list[dict[str, Any]] | None = None
+    live: list[dict[str, Any]],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+    verdicts: list[dict[str, Any]] | None = None,
 ) -> list[str]:
     """Re-queue runs this drainer launched that the reaper marked launch-failed.
 
@@ -854,6 +896,12 @@ def _requeue_admitted_failures(
     launched from. A run the reaper later marks ``launch-failed`` is a request
     still waiting behind a launch that never reached a model, so the next pass
     writes it back as one fresh queued pointer carrying the failure.
+
+    A request that has failed to launch the configured number of times in a row
+    is the exception. Whatever is stopping it has not been cured by waiting, so
+    writing it back would cycle it through release, refusal and re-queue for
+    ever while it reads queued. It stays ``launch-failed``, carrying the last
+    failure, where its coordinator can see and resume it.
     """
     requeued = []
     for pointer in live:
@@ -871,6 +919,10 @@ def _requeue_admitted_failures(
             continue
         failures = list(pointer.get("launch_failures") or ())
         failure = dict(failures[-1]) if failures else {}
+        limit = _launch_failure_limit(pointer, config_for)
+        if int(request.get("failure_attempts") or 0) + 1 >= limit:
+            _stamp_terminal_launch_failure(str(pointer["run_id"]), failure)
+            continue
         restored = _requeued_request(request, str(pointer["run_id"]))
         restored.setdefault("created_at", restored["queued_at"])
         # Stamp the re-queue with the same back-off a failed attempt records, so

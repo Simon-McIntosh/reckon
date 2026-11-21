@@ -193,6 +193,13 @@ QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
 QUEUE_REPICK_AFTER_SECONDS_KEY = "repick_after_seconds"
 DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
+# How many failed launches in a row one queued request takes before it stops
+# being re-queued and stays ``launch-failed`` with its last failure. A request
+# that cannot launch — a brief no launcher can read, a command that is absent —
+# would otherwise cycle through release, refusal and re-queue for ever.
+QUEUE_LAUNCH_FAILURE_LIMIT_KEY = "launch_failure_limit"
+DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT = 3
+
 # How long a run whose launch step has left the scheduler may keep writing
 # before it is read as a worker that ended without delivering. The bound is in
 # hours because it is measured against a stream that has stopped: a run still
@@ -1335,6 +1342,28 @@ def queue_max_requests(config: Mapping[str, Any] | None) -> int:
     )
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         return DEFAULT_QUEUE_MAX_REQUESTS
+    return int(value)
+
+
+def queue_launch_failure_limit(config: Mapping[str, Any] | None) -> int:
+    """How many failed launches in a row a request takes before it stops.
+
+    A queued request whose launch keeps failing without reaching a model is
+    re-queued so a transient cause costs one pass. A cause that never clears
+    would otherwise cycle it through release, refusal and re-queue for ever,
+    so past this many failures in a row the request stays ``launch-failed``,
+    carrying the last failure, where its coordinator can see it. Read from the
+    resolved config's ``queue`` namespace with the same fallbacks as
+    :func:`queue_max_requests`.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    value = (
+        queue.get(QUEUE_LAUNCH_FAILURE_LIMIT_KEY, DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT)
+        if isinstance(queue, Mapping)
+        else DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT
+    )
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        return DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT
     return int(value)
 
 

@@ -107,7 +107,9 @@ def admit_once(
             queued = [selected]
         else:
             result["requeued"] = _launching._requeue_admitted_failures(
-                runs.list_live(phase=LAUNCH_FAILED_PHASE), verdicts=result["verdicts"]
+                runs.list_live(phase=LAUNCH_FAILED_PHASE),
+                config_for=config_for,
+                verdicts=result["verdicts"],
             )
             live = runs.list_live()
             # A launch past its bound holds a claim no worker backs. Releasing it
