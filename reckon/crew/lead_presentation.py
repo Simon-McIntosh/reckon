@@ -99,6 +99,7 @@ def choice(row: Mapping[str, Any]) -> dict[str, Any]:
             None if "held_work" in absent else row.get("held_work_count")
         ),
         "releases": None if "held_work" in absent else _releases(row),
+        "plan_has_live_session": bool(row.get("plan_has_live_session")),
         "lead_action": row.get("lead_action") or "",
         "risk": row.get("risk") or "",
         "absent": absent,
@@ -124,6 +125,7 @@ def _read(project: str | None) -> tuple[dict[str, Any], list[dict[str, str]]]:
         if project and project != "*":
             raise
         first_refusal = str(exc)
+    from reckon.crew.lead_decisions import held_work_order
     from reckon.flight import mounted_project_docs
 
     merged: dict[str, Any] = {
@@ -148,6 +150,11 @@ def _read(project: str | None) -> tuple[dict[str, Any], list[dict[str, str]]]:
         merged["projects"].append(owner)
         for key in ("decisions", "pending", "taken_and_reversible", "plan_block"):
             merged[key].extend(one.get(key) or ())
+    # A merged list is one list: the order the read put each project's rows in
+    # is re-applied across the whole fleet, so the lead still answers largest
+    # held work first rather than project by project.
+    for key in ("decisions", "pending", "taken_and_reversible", "plan_block"):
+        merged[key].sort(key=held_work_order)
     if unread and len(unread) == len(owners):
         raise ValueError(first_refusal)
     return merged, unread

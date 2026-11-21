@@ -239,3 +239,50 @@ def test_the_present_verb_prints_the_choice_set() -> None:
         payload = json.loads(result.output)
         assert payload["view"] == "lead-choices"
         assert "unread_projects" in payload
+
+
+def test_a_refused_project_is_named_and_does_not_reorder_the_fleet(
+    tmp_path, monkeypatch
+):
+    """A project whose documents cannot be read is named and dropped, and the
+    rows that survive keep one fleet-wide held-work order.
+
+    The fallback reads project by project, so the order it merges in is not the
+    order the read sorts in: without re-sorted lists the lead would be handed
+    one project's one-request choice before another project's four-request one.
+    """
+    home = tmp_path / "config"
+    home.mkdir()
+    mounts = {}
+    for project in ("broken", "small", "busy"):
+        docs = tmp_path / project / "docs"
+        (docs / "plans").mkdir(parents=True)
+        mounts[project] = str(docs)
+    registry = home / "mounts.json"
+    registry.write_text(json.dumps(mounts), encoding="utf-8")
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(registry))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(home / "state"))
+
+    # A research-located document carrying no reckon-type of its own refuses
+    # the fleet read with a location/type collision.
+    research = Path(mounts["broken"]) / "research"
+    research.mkdir()
+    (research / "colliding.html").write_text(
+        "<html><head><title>Collision</title></head><body>"
+        "<p>No reckon-type, so the location and the type disagree.</p>"
+        "</body></html>",
+        encoding="utf-8",
+    )
+    from reckon.crew.lead_decisions import record_decision
+
+    small = record_decision(_record("small", held_sections=["payload"]))
+    busy = record_decision(
+        _record("busy", held_sections=["one", "two", "three", "four"])
+    )
+
+    view = lead_presentation.choices()
+    assert [item["id"] for item in view["choices"]] == [busy["id"], small["id"]]
+    assert [item["held_work_count"] for item in view["choices"]] == [4, 1]
+    assert [row["project"] for row in view["unread_projects"]] == ["broken"]
+    assert "colliding.html" in view["unread_projects"][0]["detail"]
