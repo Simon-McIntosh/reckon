@@ -213,6 +213,7 @@ def present(*, session: str, project: str | None = None) -> dict[str, Any]:
             "error": "presentation_error",
             "detail": "presenting the lead's decisions needs the presenting session",
         }
+    survey = _survey_before_presenting(session)
     view = choices(project)
     held: list[dict[str, Any]] = []
     elsewhere: list[dict[str, Any]] = []
@@ -235,6 +236,26 @@ def present(*, session: str, project: str | None = None) -> dict[str, Any]:
         "count": len(held),
         "choices": held,
         "claimed_elsewhere": elsewhere,
+        **survey,
+    }
+
+
+def _survey_before_presenting(session: str) -> dict[str, Any]:
+    """The survey's list, or the reason it could not be taken.
+
+    A presentation must not be lost because the harness keeps no session
+    records on this host: the choices are what the lead came for, and an ask
+    that could not be written is reported beside them rather than raised over
+    them.
+    """
+    try:
+        step = survey(session=session)
+    except (OSError, ValueError, TypeError) as exc:
+        return {"survey_error": str(exc)}
+    return {
+        key: step[key]
+        for key in ("asked", "already_asked", "unreached", "replied")
+        if key in step
     }
 
 

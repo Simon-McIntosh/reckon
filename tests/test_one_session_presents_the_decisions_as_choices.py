@@ -204,11 +204,17 @@ def test_the_survey_asks_each_live_session_once_and_names_the_unreached(fleet):
     assert "peer" in unreached["no-peer"]
 
     _session_record(sessions, "reachable-session", alive=True)
+    presented = lead_presentation.present(session="presenter")
+    assert [row["session"] for row in presented["asked"]] == ["reachable-session"]
+    assert {row["session"] for row in presented["unreached"]} == {
+        "live-session",
+        "no-peer",
+    }
+    assert presented["replied"] == []
+
     second = lead_presentation.survey(session="presenter")
-    assert [row["session"] for row in second["asked"]] == ["reachable-session"]
-    third = lead_presentation.survey(session="presenter")
-    assert third["asked"] < second["asked"] or third["asked"] == []
-    assert [row["session"] for row in third["already_asked"]] == ["reachable-session"]
+    assert second["asked"] == []
+    assert [row["session"] for row in second["already_asked"]] == ["reachable-session"]
 
 
 def test_an_answer_is_recorded_through_the_presenting_session(fleet):
@@ -248,13 +254,14 @@ def test_a_refused_project_is_named_and_does_not_reorder_the_fleet(
     rows that survive keep one fleet-wide held-work order.
 
     The fallback reads project by project, so the order it merges in is not the
-    order the read sorts in: without re-sorted lists the lead would be handed
-    one project's one-request choice before another project's four-request one.
+    order the read sorts in. The two readable projects are named so that the
+    alphabetical read puts the one-request project first: without the merge
+    re-sorting, the lead is handed the smaller choice first.
     """
     home = tmp_path / "config"
     home.mkdir()
     mounts = {}
-    for project in ("broken", "small", "busy"):
+    for project in ("broken", "a-small", "z-busy"):
         docs = tmp_path / project / "docs"
         (docs / "plans").mkdir(parents=True)
         mounts[project] = str(docs)
@@ -276,9 +283,9 @@ def test_a_refused_project_is_named_and_does_not_reorder_the_fleet(
     )
     from reckon.crew.lead_decisions import record_decision
 
-    small = record_decision(_record("small", held_sections=["payload"]))
+    small = record_decision(_record("a-small", held_sections=["payload"]))
     busy = record_decision(
-        _record("busy", held_sections=["one", "two", "three", "four"])
+        _record("z-busy", held_sections=["one", "two", "three", "four"])
     )
 
     view = lead_presentation.choices()
