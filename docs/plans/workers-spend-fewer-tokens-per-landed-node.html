@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-live-worker-can-be-reached">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;],&quot;s5&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;],&quot;s7&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s6&quot;],&quot;s8&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s5&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s7&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s10&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s14&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s17&quot;],&quot;s14&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s13&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="106">
+<meta name="plan-version" content="107">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -323,6 +323,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T082623623266-replay-omp-local-ab-s9" data-who="reckon-build" data-when="2026-11-17T08:28:05.416Z">
     <div class="r-comment-body"><p>§9 landed: the armed suite command now names only files pytest collects — a one-place predicate `is_collectible_test_path` in `reckon/crew/node.py` (pytest's defaults `test_*.py` / `*_test.py`, since this project declares no `python_files`) beside the dispatcher's `is_test_path`, used by `_node_test_files` and by `_landing_test_files`'s changed-path fallback, with `_suite_gate_prompt_body` stating the narrowed rule. At b80df254 a scope holding `tests/fixtures/omp-stream.jsonl` resolved to `pytest -q tests/fixtures/omp-stream.jsonl tests/test_x.py` and pytest exited 4 on the fixture; at head the same shape resolves to `pytest -q tests/test_x.py`, and a fixture-bearing scope plus the census runs 51 passed, EXIT=0, naming no fixture. Five tests in `tests/test_armed_suite_collectible_tests.py`: a mixed scope names only `tests/test_x.py`; a fixture-only scope names no node test file and still carries the census; a fixture-only delivery names nothing at landing; `is_test_path` still returns true for the fixture; and the armed command and the compared command agree.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T204139363637-review-of-anchored-dispatch-s18-ce451ced1132" data-who="reckon-build" data-when="2026-11-21T21:03:56.640Z">
+    <div class="r-comment-body"><p>Independent review of r-20261121T201933445469-anchored-dispatch-s18 at base 1666d19f and head ce451ced: scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20 (total 118), one non-blocking finding on the guard&#x27;s source-text scope; both review records pass crew check --review with added_failure_count 0 derived from the reviewed run&#x27;s own base and head arms (64 then 65 passed, EXIT=0 both, capture logs) and its red negative control (1 failed, 6 passed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
