@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": "after_suite.failure_ids minus baseline_suite.failure_ids: [] - [] = [], so added_failure_count 0; both arms report 58 passed at full 40-character revisions in the reviewed run's manifest.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T15:32:33Z",
+  "findings": [
+    "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-direct-resume-needs-an-observed-death.html:53 non-blocking: the fragment states the head arm ran on the all_debug partition, but no artefact records the partition for that arm - scoped-gate-1795106852302550199.log's header carries revision, host, tree and command only, and suite-arms.json names all_debug for the two declared-suite arms alone, so that clause of the done_when is claimed rather than evidenced.",
+    "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-direct-resume-needs-an-observed-death.html:27 non-blocking: the fragment says the stored pointer is byte-identical across the preview, but the only guard is tests/test_direct_resume_needs_an_observed_death.py:497, which compares runs.read_pointer's hydrated reading on both sides, so a preview write that re-splits dispatch detail or changes a field the projection normalises leaves the assertion green while the stronger claim stays unverified."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_direct_resume_needs_an_observed_death.py pass in full on the primary branch\"; the diff at 798b0681 rewrites tests/test_direct_resume_needs_an_observed_death.py:468-497 so the preview case reads its prior record through runs.read_pointer, and the head gate log records 9 passed.\nVERDICT done_when: the done_when requires the file green as an all_debug job with SLURM_JOB_ID unset, a base negative control with its failing id recorded in the fragment, and suite arms as inline JSON at full 40-character revisions; scoped-gate-1795106852302550199.log runs the file at 57506aa3 with `env -u SLURM_JOB_ID -u SLURM_JOBID` (9 passed, EXIT=0), negative-control-base-05b3eea9.log shows 1 failed, 8 passed with EXIT=1, and the manifest's baseline_suite/after_suite both carry 58 passed at 05b3eea9/57506aa3.\nVERDICT write_paths: the node carried in dispatch-detail.json's admit_request declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; both changed paths (tests/test_direct_resume_needs_an_observed_death.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/) are inside them.\nVERDICT manifest: read the reviewed run's manifest.md; it reports status complete, commits 57506aa3d9dfc2747182287baa5740e642b07eb4,798b0681c20aa0b1b4978b8b5c01af6bd005d98c, names the env -u SLURM_JOB_ID pytest command as its gate, its base log as the negative control, and both suite arms are inline JSON with full revisions.\nVERDICT diff: read 05b3eea9..798b0681 commit by commit (57506aa3d9 and 798b0681c2); the test change is +10 -2 confined to the one preview case and the new 86-line fragment, no product line touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_direct_resume_needs_an_observed_death.py:487,497 replaces the always-failing full-record comparison with the accessor's own reading on both sides, and the head gate log reports 9 passed, so the named file passes in full.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795106852302550199.log records the command, revision 57506aa3 and the 9-passed summary, but no artefact records the partition the done_when's all_debug clause names for that arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_direct_resume_needs_an_observed_death.py and the new docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-direct-resume-needs-an-observed-death.html, both inside the declared write paths, and adds no product line.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_direct_resume_needs_an_observed_death.py:497 reddens if the preview writes a moved lane, since both sides are read through runs.read_pointer, but it compares a hydrated projection rather than the bytes the fragment claims are identical, so a projection-invisible write would pass.\nSCORE fit: 19\nJUSTIFICATION fit: the case uses the module's existing runs.read_pointer and _lane_pointer helpers and the file's docstring idiom, and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it calls the owner of pointer reads, reckon/crew/runs.py:1950 read_pointer, rather than re-deriving the stored shape, and a search over reckon/crew for a second pointer-reading capability found only that module's _pointer_record/_pointer_as_read pair behind it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-direct-resume-needs-an-observed-death.html:53 non-blocking: the fragment states the head arm ran on the all_debug partition, but no artefact records the partition for that arm - scoped-gate-1795106852302550199.log's header carries revision, host, tree and command only, and suite-arms.json names all_debug for the two declared-suite arms alone, so that clause of the done_when is claimed rather than evidenced.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-direct-resume-needs-an-observed-death.html:27 non-blocking: the fragment says the stored pointer is byte-identical across the preview, but the only guard is tests/test_direct_resume_needs_an_observed_death.py:497, which compares runs.read_pointer's hydrated reading on both sides, so a preview write that re-splits dispatch detail or changes a field the projection normalises leaves the assertion green while the stronger claim stays unverified.\n",
+  "review_run_id": "r-20261121T152957732359-review-of-qwnw-red-file-direct-resume-needs-an-observed-death-798b0681c20a",
+  "reviewed_base_sha": "05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b",
+  "reviewed_head_sha": "798b0681c20aa0b1b4978b8b5c01af6bd005d98c",
+  "reviewed_run_id": "r-20261118T063055690305-qwnw-red-file-direct-resume-needs-an-observed-death",
+  "reviewed_suite_arms": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063055690305-qwnw-red-file-direct-resume-needs-an-observed-death/after_suite-1795106936507790517.log",
+      "revision": "57506aa3d9dfc2747182287baa5740e642b07eb4"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063055690305-qwnw-red-file-direct-resume-needs-an-observed-death/baseline_suite-1795106893021394092.log",
+      "revision": "05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b"
+    }
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T15:58:36.264085+00:00",
+  "total": 110,
+  "verdicts": {
+    "call_sites": "none: the change is a test file and a docs fragment, so no production runtime code reaches it.",
+    "diff": "read commit by commit against 05b3eea9; two paths changed, both in scope, no product line touched.",
+    "done_when": "the gate runs the named file with env -u SLURM_JOB_ID and 9 passed, the base log is red with its failing id, and both suite arms are inline JSON at full revisions; the all_debug clause for the named-file arm is claimed, not recorded.",
+    "goal": "the node's goal names the file passing in full; the head gate log records 9 passed at 57506aa3 and the diff makes the preview case compare the accessor's own reading.",
+    "manifest": "read; it states the gate command, the base negative-control log and both suite arms at full revisions.",
+    "write_paths": "both changed paths are inside the node's declared write paths."
+  }
+}
