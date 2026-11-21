@@ -25,7 +25,7 @@
   <title>A Worker Or Its Job Cannot Overwrite Shared Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -325,6 +325,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261121T113540548990-review-of-wjso-an-unread-fence-refuses-the-submission-35bcfa40e9a5" data-who="reckon-build" data-when="2026-11-21T11:50:10.847Z">
     <div class="r-comment-body"><p>Review of r-20261121T111103185677-wjso-an-unread-fence-refuses-the-submission at base cfee1a029c86c79d279b1a8d6f4a31a95994a99e, head 35bcfa40e9a540efc66336e75782ecb7c689301c: parsed, six dimensions scored (goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 18), added_failure_count 0, two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261121T111103185677-wjso-an-unread-fence-refuses-the-submission" data-who="reckon-build" data-when="2026-11-21T11:35:31.670Z">
+    <div class="r-comment-body"><p>A submission whose ancestor fence search stops early is now refused instead of forwarded unfenced: nested_launch.ancestry_fence returns empty only on reaching the kernel&#x27;s pid 0, and raises AncestryIncompleteError naming the unreadable parent&#x27;s pid or the bound, which the shim turns into a refusal naming the run; the scoped gate ran all three declared test files to 0 failures on all_debug (head revision 35bcfa40e9), and both suite arms were green (base cfee1a02: 67 passed; head: 70 passed).</p></div>
 </div>
 </section>
   </main>
