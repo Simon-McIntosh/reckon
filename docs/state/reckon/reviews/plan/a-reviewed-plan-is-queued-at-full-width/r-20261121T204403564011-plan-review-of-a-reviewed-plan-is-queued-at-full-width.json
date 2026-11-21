@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T20:45:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html#s3",
+      "id": "wiring-1",
+      "reason": "dispatched at full width, the s3 node reaches a merge head where its first test arm has no whole-plan call to make, so it either fails its own gate or invents a shim that \u00a72 later contradicts.",
+      "text": "\u00a73's done-when requires \"a request from a whole-plan call\", but a plan-naming dispatch is refused without a section today and only \u00a72 makes that call exist, yet `plan-section-depends-on` declares no wait for s3",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html#s4",
+      "id": "done_when-1",
+      "reason": "on the plan-level reading a plan with two of three sections queued raises nothing and two sections sit unqueued, which is precisely the state \u00a71's own table (109 sections, 6 requests) shows is the norm rather than the edge.",
+      "text": "the deliverable reads \"at least one section declared implementable and no live request for it\", where \"it\" is grammatically the plan, but the obligation \"names the count of unqueued sections\" implies a per-section condition; the done-when's five arms cover only zero or all implementable sections queued, never the partial case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html#s5",
+      "id": "done_when-2",
+      "reason": "a node can satisfy every arm while recording an upstream with no reason, which is the one fact the lead's 20 November ruling turns on when triaging a retirement later.",
+      "text": "the deliverable requires the discard record to name \"the upstream and why it cannot land\", while the done-when asserts only that it \"names its upstream\", so the reason half of the endpoint is unmeasured",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "171d9c8b254d3932ddccbc9aeaf9ff3b013a10de",
+  "plan_fingerprint": "6d6becb7f1fb9d6ca3cf36fbfcae773bc9b07b65e8e4f79f14dca3ee63f097b7",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261121T204403564011-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "a986c4633581951ef654fae2b51a889f479306b8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `130892970e` is a commit and an ancestor of main; `plan-after` `queued-work-needs-no-workaround` and the same-plan wait `a-reviewed-plan-is-queued-at-full-width#s2` both resolve (the same-plan wait form matches `work-of-a-lost-session-is-raised-not-left`); the five named test files are new files, not citations; the snapshot is byte-identical to the source plan file.",
+    "done_when": "a finding \u2014 \u00a74's condition \"no live request for it\" reads at plan level while the done-when only tests a fully-unqueued plan and a fully-queued one, so a partially-dispatched plan is untested; \u00a75's done-when also omits the \"why it cannot land\" half of its own negative-control reason.",
+    "evidence_paths": "pass \u2014 every arm's log is required to sit \"under the run directory\" with its revision, literal command and closing `EXIT=` line, which is a durable path, not a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol or comment; the section ids exist only as plan anchors, and the prose names existing subsystems (`the admit pass`, `the pane's own renderer`) rather than symbols to write.",
+    "reasoning": "pass \u2014 all three checks hold: \u00a75's premise is supported by the shipped code (`blocked-upstream` is set from a ref closed abandoned or failed in `admission/release.py`, while `wait_class` comes from the plan inventory through `stranded_wait.classify`, so a request can be in that phase and still classed `idle` with the detail \"nobody is building\"; the shipped retirement keys on the class, so retiring by phase is genuinely unbuilt and \u00a75's negative control can fail); \u00a71's table totals reconcile (107 live plans, 298 sections, 28 requests, and the two 15 November requests are 5.9 days old at 20:40Z on 21 November); and no section prescribes a code path, step sequence or formula \u2014 the subsystems named (`the admit pass`, the pane's renderer) are the endpoint's existing actors, and no symbol or file to extend is named.",
+    "single_goal": "pass \u2014 each section names one deliverable (full-width queueing, a width field, an obligation, a retirement, a split figure).",
+    "wiring": "a finding \u2014 `plan-section-depends-on` declares only `s4`\u2192`#s2`, but \u00a73's first done-when arm requires \"a request from a whole-plan call\", which no code path produces until \u00a72 lands; \u00a73 therefore needs the same wait."
+  },
+  "section_digests": {
+    "_document": "448a1355ec2872d529cf725ad09ff7a0d3a181b6399b8e2e396abb51d9ae3012",
+    "s1": "945f8192ba732e39775a62f309dac8f70be446863df5da2d0106234609894eeb",
+    "s2": "b96d0d4a387a7df8054bf90cf48f7a097a2c0e1102fda7ee546d4b8cc46f963a",
+    "s3": "072e525acac0eebf1bfbc75f216687e5dea2b9318687210153ae22b8296dbd9e",
+    "s4": "392f877c826770fb83ff7922ead5eadc264186d8147b0c1e9104f687cb79b355",
+    "s5": "0032ad9fde7e1c41733a025d6e7f992cccf27ba60deb8f195ff3cffd091ddfcd",
+    "s6": "6e8492474b3eefba9051c5e9dc353856693810abce0a8fd10ee27a503d6e5f68"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T21:00:06.743576+00:00",
+  "total": null
+}
