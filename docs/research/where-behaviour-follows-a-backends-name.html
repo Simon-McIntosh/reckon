@@ -10,6 +10,8 @@
   <meta name="plan-summary" content="Every place under reckon/ that decides behaviour from a backend's name or a harness dialect: its path and line at one named revision, what it decides, and whether it falls under one of the four permitted harness differences or under none">
   <meta name="plan-source" content="a ten-pattern grep set over reckon/**.py at revision e689315bb7, with every returned candidate classified or excluded">
   <meta name="plan-source-quality" content="primary">
+<meta name="plan-measured-at" content="e689315bb74ca1efdd63eee69d7a55ed9b235a0e">
+<meta name="plan-row-count" content="111">
   <meta name="plan-reviewed-at" content="2026-11-21">
   <meta name="plan-tags" content="reckon-tooling">
   <title>Where behaviour follows a backend's name | reckon</title>
@@ -44,10 +46,14 @@
 
     <h2 id="s2">§2 — The search, so a reader can run it again and count the same sites</h2>
     <p>
-      Every row in this record was returned by one of the greps below, run from the
-      repository root at revision <code>e689315bb74ca1efdd63eee69d7a55ed9b235a0e</code>.
-      A reader who runs the same commands at the same revision gets the same
-      candidates. The counts are the number of matching lines, not files.
+      The greps below, run from the repository root at revision
+      <code>e689315bb74ca1efdd63eee69d7a55ed9b235a0e</code>, return the search's
+      candidate set: 97 distinct lines. A reader who runs the same commands at the
+      same revision gets the same 97 candidates, of which 95 are rows of this
+      record. The other 16 rows — 111 in all — were established by reading, not by
+      a name comparison, and are named in the paragraph after the block. So the
+      greps reproduce the candidates, not the whole table. The counts are the
+      number of matching lines, not files.
     </p>
     <pre>
 D1  grep -rnE 'dialect(\.name)? *(==|!=) *"|"(claude|codex|omp|clive)" *(==|!=) *dialect'   19
@@ -750,15 +756,33 @@ reckon/crew/admission/selection.py:732     if lane == local:
       the stream, and in the few decisions those surfaces were allowed to leak into.
     </p>
 
-    <h2 id="s8">§8 — Reading this record again</h2>
+    <h2 id="s8">§8 — Reading this record again, and the check that keeps it true</h2>
     <p>
-      The ten greps in §2 reproduce the candidate set; run them at the revision named
+      The greps in §2 reproduce the candidate set; run them at the revision named
       there and the same 97 distinct lines come back. What each of those lines
       decides is the middle column, and the classification question applied to every
       row is whether the line <em>translates</em> a harness interface or
       <em>decides a worker's treatment</em>. Each row's path and line was resolved
       against revision <code>e689315bb74ca1efdd63eee69d7a55ed9b235a0e</code> before
       this table was written, so every row is a line that existed at that revision.
+    </p>
+    <p>
+      The table is checked rather than trusted.
+      <code>docs/research/where-behaviour-follows-a-backends-name.check.py</code>
+      reads this document, takes the revision from its
+      <code>plan-measured-at</code> meta and the row count from
+      <code>plan-row-count</code>, resolves every row with
+      <code>git show &lt;revision&gt;:&lt;path&gt;</code>, and exits non-zero naming
+      each row that no longer resolves, or that has fallen past the end of its file,
+      or whose line has gone blank. It also fails when the table's row count
+      disagrees with the meta. Run it after any edit to this document:
+    </p>
+    <pre>python docs/research/where-behaviour-follows-a-backends-name.check.py</pre>
+    <p>
+      A row that stops resolving is the signal that the code moved; a row that still
+      resolves but no longer decides what its sentence says is the signal that the
+      decision changed, and only a reader can catch that. The check holds the half a
+      machine can hold.
     </p>
     <p>
       When a later change removes a branch, the row that named it no longer resolves.
