@@ -36,32 +36,48 @@ NOW = time.time()
 SUITE_JOB = "4112"
 SETTLE_BOUND_SECONDS = 6.0 * 3600.0
 
-#: What the scheduler lists for a settled run's job: its batch step, and no step
-#: carrying the run's own name. The negative control sets this true.
-SCHEDULER_LISTS_THE_STEP = False
+#: A step another run placed in the same reservation is running in. Its name is
+#: what separates a listing that names only this run's step from one that names
+#: the whole job.
+OTHER_RUNS_STEP = ("4112.1", "r-other-run")
 
 
 def _at(seconds: float) -> str:
     return datetime.fromtimestamp(seconds, UTC).isoformat()
 
 
-def _install_scheduler(monkeypatch: pytest.MonkeyPatch, run_id: str) -> dict:
-    """Point the step query at a scheduler that answers for this fixture.
+def _install_scheduler(
+    monkeypatch: pytest.MonkeyPatch, steps: list[tuple[str, str]]
+) -> dict:
+    """Model the scheduler's step listing at the probe the reader really calls.
 
-    The real query runs ``squeue``, whose answer on the operator's machine says
-    nothing about a synthesised crew home and changes with the fleet. The stub
-    answers the one question this reading asks and records the command it was
-    given, so the test can check the query names the run's own job.
+    Two properties of the real instrument are reproduced rather than smoothed
+    over. The model answers the WHOLE listing, because the shared reader
+    (``process_liveness._ask_scheduler``) returns only its last line: a model
+    that answered one line would hide the truncation the query has to survive.
+    And the model honours ``--name=`` as ``squeue`` does, so a query naming this
+    run's step gets only that step back however busy the job is.
+
+    ``steps`` is the job's inventory in print order, as ``(step id, name)``.
     """
     seen: dict = {}
 
-    def ask(argv, runner=None):
+    def probe(argv):
         seen["argv"] = list(argv)
-        if SCHEDULER_LISTS_THE_STEP:
-            return f"{SUITE_JOB}.9 {run_id}"
-        return f"{SUITE_JOB}.batch batch"
+        wanted = next(
+            (
+                str(word).removeprefix("--name=")
+                for word in argv
+                if str(word).startswith("--name=")
+            ),
+            None,
+        )
+        lines = [
+            f"{step_id} {name}" for step_id, name in steps if wanted in (None, name)
+        ]
+        return "\n".join(lines) + ("\n" if lines else "")
 
-    monkeypatch.setattr(process_liveness, "_ask_scheduler", ask)
+    monkeypatch.setattr(process_liveness, "_run_scheduler_query", probe)
     return seen
 
 
@@ -120,7 +136,7 @@ def test_a_starting_pointer_with_no_step_and_no_stream_past_the_setting_settles(
     record = _write_run(
         run_id, phase="starting", started_hours_ago=10.0, stream_hours_ago=7.0
     )
-    seen = _install_scheduler(monkeypatch, run_id)
+    seen = _install_scheduler(monkeypatch, [OTHER_RUNS_STEP])
 
     row = recovery.classify_pointer(record, now_seconds=NOW)
 
@@ -130,14 +146,19 @@ def test_a_starting_pointer_with_no_step_and_no_stream_past_the_setting_settles(
     assert settled["quiet_after_seconds"] == int(SETTLE_BOUND_SECONDS)
     assert settled["quiet_seconds"] == int(7.0 * 3600.0)
     assert settled["stream"] == str(runs.run_dir(run_id) / "stream.jsonl")
-    # The evidence names the run's own job, so a shared reservation's other
-    # steps are never read as this run's.
-    assert seen["argv"][:5] == [
+    # The query names the run's own job and its own step. The name is what
+    # keeps a busy reservation's listing from being read as this run's, and it
+    # is load-bearing rather than tidiness: the shared scheduler reader answers
+    # one line, so an unfiltered listing loses this run's step whenever another
+    # step prints after it.
+    assert seen["argv"] == [
         "squeue",
         "--steps",
         "-h",
         "--jobs",
         SUITE_JOB,
+        f"--name={run_id}",
+        "--format=%i %j",
     ]
     assert "settled" in row["detail"]
 
@@ -149,7 +170,7 @@ def test_a_working_pointer_whose_step_is_gone_and_stream_stale_settles(
     record = _write_run(
         run_id, phase="working", started_hours_ago=10.0, stream_hours_ago=7.0
     )
-    _install_scheduler(monkeypatch, run_id)
+    _install_scheduler(monkeypatch, [OTHER_RUNS_STEP])
 
     row = recovery.classify_pointer(record, now_seconds=NOW)
 
@@ -166,10 +187,17 @@ def test_a_working_pointer_whose_step_is_listed_is_untouched(
     record = _write_run(
         run_id, phase="working", started_hours_ago=10.0, stream_hours_ago=7.0
     )
-    monkeypatch.setattr(
-        process_liveness,
-        "_ask_scheduler",
-        lambda argv, runner=None: f"{SUITE_JOB}.9 {run_id}",
+    # The run's step is still listed, and it is not the last step the job
+    # holds: two other runs placed in the same reservation print after it. A
+    # listing read without naming the step would end on another run's line and
+    # this run would be settled while its worker is still placed.
+    _install_scheduler(
+        monkeypatch,
+        [
+            OTHER_RUNS_STEP,
+            (f"{SUITE_JOB}.9", run_id),
+            ("4112.4", "r-other-run-later"),
+        ],
     )
 
     row = recovery.classify_pointer(record, now_seconds=NOW)
@@ -185,7 +213,7 @@ def test_a_starting_pointer_younger_than_the_setting_is_untouched(
     record = _write_run(
         run_id, phase="starting", started_hours_ago=1.0, stream_hours_ago=0.5
     )
-    _install_scheduler(monkeypatch, run_id)
+    _install_scheduler(monkeypatch, [OTHER_RUNS_STEP])
 
     row = recovery.classify_pointer(record, now_seconds=NOW)
 
@@ -204,7 +232,7 @@ def test_a_worker_alive_and_quiet_is_untouched(
         stream_hours_ago=7.0,
         process_alive=True,
     )
-    _install_scheduler(monkeypatch, run_id)
+    _install_scheduler(monkeypatch, [OTHER_RUNS_STEP])
 
     row = recovery.classify_pointer(record, now_seconds=NOW)
 
@@ -219,7 +247,7 @@ def test_a_settled_run_appears_once_in_its_owners_obligations(
     record = _write_run(
         run_id, phase="starting", started_hours_ago=10.0, stream_hours_ago=7.0
     )
-    _install_scheduler(monkeypatch, run_id)
+    _install_scheduler(monkeypatch, [OTHER_RUNS_STEP])
 
     view = obligations.obligations(PROJECT, SESSION)
     rows = [row for row in view["obligations"] if str(row.get("run_id")) == run_id]

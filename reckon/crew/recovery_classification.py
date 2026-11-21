@@ -758,11 +758,15 @@ def _launch_step_command(record: Mapping[str, Any]) -> list[str] | None:
     describe it. The run's recorded argv is the step's one statement of itself,
     and it lives in the run directory rather than on the pointer.
 
-    The query names the job and asks for each step's id and name, because a
-    reservation's job also carries the steps of every other run placed in it: a
-    bare listing of the job's steps would read another run's step as this one's.
-    The step carries the run's id as its own name, which is the name the launch
-    composes and the stop path addresses.
+    The query names the job and the step, because a reservation's job also
+    carries the steps of every other run placed in it. Both halves are needed
+    for a different reason. ``--jobs`` bounds the question to the allocation;
+    ``--name`` is what makes the answer about this run alone, since each launch
+    composes the run's id as its step's name and the stop path addresses the
+    same name. Naming the step in the query is not an optimisation: the shared
+    scheduler reader answers one line, the last, so an unfiltered listing of a
+    busy reservation would drop this run's step whenever another step printed
+    after it, and a step that is still listed would read as gone.
     """
     from reckon.crew import runs as runs_module
     from reckon.crew.process_signal import _step_argv, argv_uses_step
@@ -784,7 +788,15 @@ def _launch_step_command(record: Mapping[str, Any]) -> list[str] | None:
     ]
     if len(job_ids) != 1 or not job_ids[0].isdigit():
         return None
-    return ["squeue", "--steps", "-h", "--jobs", job_ids[0], "--format=%i %j"]
+    return [
+        "squeue",
+        "--steps",
+        "-h",
+        "--jobs",
+        job_ids[0],
+        f"--name={run_id}",
+        "--format=%i %j",
+    ]
 
 
 def _launch_step_state(record: Mapping[str, Any], *, runner=None) -> str | None:
