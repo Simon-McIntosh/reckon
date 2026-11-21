@@ -1,0 +1,88 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T08:32:56Z",
+  "findings": [
+    {
+      "anchor": "plan.html:24",
+      "id": "wiring-1",
+      "reason": "the DAG orders nodes the queue dispatches, and a section that consumes \u00a714/\u00a715's landed shim behaviour must be held behind them or it launches ungated; this is the same defect an earlier round fixed for s15 and s12.",
+      "text": "`s16` is declared `implementable` (plan.html:141) and rewritten into the same scheduler-shim and fence path \u00a714 and \u00a715 landed, yet it appears in no `plan-section-depends-on` entry, so a batch dispatch gives the one node that extends the shim no upstream gate at all",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:13",
+      "id": "wiring-2",
+      "reason": "`reckon/roadmap.py:564` sizes remaining effort as `_effort_hours(plan) * (1 - progress)`, so the plan understates its own remaining work by a whole section's share, the same understatement an earlier round corrected for s15.",
+      "text": "`plan-effort-hours` is 18.5 but the sixteen declared sections sum to 20.0, and the shortfall is exactly s16's 1.5, which was added today without the scalar being raised",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:142",
+      "id": "reasoning-1",
+      "reason": "the build contract requires a worker to confirm a recorded defect still reproduces and quote the reproduction, and a section whose incident has no citable record leaves the worker to reconstruct the trigger from prose and cannot show its red arm is the measured failure.",
+      "text": "the Why names \"a nova worker\" and \"three jobs to a GPU node\" with no run id, job id or stream, while every sibling Why in this plan cites the artifact it rests on (\u00a712's jobs 1326129/1326150/1326382, \u00a714's jobs 1327697/1327709, \u00a715's run r-20261119T181303457799 and jobs 1332134/1332191/1332272), so the negative control's premise \u2014 that at the base revision the job is submitted unwrapped \u2014 rests on no record a worker can open",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:144",
+      "id": "done_when-1",
+      "reason": "an unnamed venue lets the worker run a namespace-spawning gate on the fleet node, which the fleet rule forbids, and without the importer arm the section carries no regression-surface measure, so its gate proves less than its siblings' gates.",
+      "text": "\u00a716's done-when requires a test that builds a fenced worker launch and submits a job, which needs a partition the way \u00a715's equivalent test does, yet it names no venue and no \"importers add no failure against the base\" arm, where every sibling that launches a fence names `all_debug`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:29",
+      "id": "wiring-3",
+      "reason": "the lifecycle record dates itself a day before its own newest content, and `reckon/doccheck.py:323` measures plan staleness from that field, so the plan reads one day older than it is.",
+      "text": "`plan-modified` reads 2026-11-20 while the plan now carries \u00a716 describing a 21 November incident and `plan-version` 36, the edit having landed in commit 573fbcc761 on 21 November",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "573fbcc761471b783fc6a63bf6418e6eb3a87e4a",
+  "plan_fingerprint": "eb43f741ca440d9c64503ac0a02a619cccfa5b60437ce56f1eb894757a1f31a3",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 36,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261121T083047672388-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "682322e28b5a864ed5117b83e524deb258b02f19",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a716's only cross-references are to \u00a714 (plan.html:131) and \u00a715 (plan.html:137), both of which exist as headings, and the test path it names is a file the node creates rather than an anchor that must resolve now.",
+    "done_when": "a finding \u2014 \u00a716's done-when (plan.html:144) names no compute venue and no importer arm, unlike every sibling that builds a fenced launch.",
+    "evidence_paths": "pass \u2014 \u00a716 names no scratch or node-local path; its evidence is the run-directory gate log the harness writes by default, and nothing in the section routes evidence anywhere that does not survive the run.",
+    "naming": "pass \u2014 \u00a716's heading carries the `\u00a716` label like its siblings, and neither its prose nor its test name carries a ticket number, version tag or plan label.",
+    "reasoning": "a finding \u2014 \u00a716's Why (plan.html:142) states a measured incident with no run id, job ids or stream, so its root cause is asserted rather than cited, though the mechanism it names is real: `reckon/nested_launch.py:956` returns the caller's argv unchanged when `RECKON_WORKER_FENCE` is absent, and `job_fence` at `reckon/nested_launch.py:584` documents \"no recipe means the worker itself ran unfenced\".",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable, that a submission from inside a fence runs fenced or is refused, with the refusal naming the run.",
+    "wiring": "a finding \u2014 the plan's `plan-effort-hours` (plan.html:13) is 18.5 while the declared sections sum to 20.0, and `s16` appears in `plan-section-declarations` (plan.html:23) but in no `plan-section-depends-on` entry (plan.html:24)."
+  },
+  "section_digests": {
+    "_document": "dd80efddffd3e6228ead5f0345c8aaec385f5ffc6f4ffaaac0dea19fdb8e81a4",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "2921806863fa66f192dc45d31056b040e9e07cc5f67e20df721264aafdecb087",
+    "s11": "a23ab44da2be981ee6a354e5c6393269b7bec3c26c755667911cf7cc88de1a44",
+    "s12": "53044d21d6e76db24a2a0c0bd2e8fc0cef89b2ce90b3bf713bd1770d356942cd",
+    "s13": "d72ebf8dbff5d3fe58b4a0aa65cd38ceeb0c6b9e2fa2d40ce7faf8b3db016cf5",
+    "s14": "8f9362c607ea0d2310ac1bd4c85d058093aa9bddb81aa1ac8e23baebaa0dc994",
+    "s15": "8caa9d0422f06ecb37e972ab98f63530b33b00a69ceea98aae8d065b01ac3668",
+    "s16": "ec727a12e7a4e6daaa0320393d1fdb150350dc621dad4efe3ef8297d09d7e065",
+    "s2": "672162d0e96a24a032f95b7ade817c96cf03b6d88f8f4c83f57f8e7b253409ce",
+    "s3": "9b6d5901be84127eaa75a84242d4374832a661d904144efdfaa597367a03eaac",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "4d339ca4c2860c39db4a36518f8045c9b620085666f9beffdd963261346af665",
+    "s7": "2099f1fb292d04b4514f50a5dac17e2c0480f9b2d27c3a83ba62c45c0c7e1afb",
+    "s8": "1b886461a44e82b5dcefddc891828d3bd8e080296db484cac33bf8e4d032637f",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:51:37.050370+00:00",
+  "total": null
+}
