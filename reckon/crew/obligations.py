@@ -370,6 +370,19 @@ PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 # the request.
 WAIT_UNRESOLVABLE_DUTY_KIND = "wait-unresolvable"
 
+# A request waiting on an upstream that is still open and that no run or request
+# is building. Unlike the unresolvable kind this wait can still resolve -- the
+# owner or a coordinator can queue the upstream -- so the row is a prompt rather
+# than a lost cause. It is reported on the pass that first sees it past the
+# threshold and not again.
+WAIT_IDLE_DUTY_KIND = "wait-idle"
+
+# A request the admission pass removed because an upstream it named can never
+# land -- the plan is gone, closed, or no longer carries the section. The row
+# carries the pass's own reason so the owner learns why the request went away
+# without reading the discard store.
+UPSTREAM_RETIRED_DUTY_KIND = "wait-retired-upstream"
+
 # A run the dispatcher placed on a default lane because its pick failed rather
 # than answered. The route is not the router's reading of the run, so the row
 # names the step the pick gave up in and the lane the run therefore takes. It is
@@ -2118,6 +2131,31 @@ def admission_verdicts() -> dict[str, dict[str, Any]]:
             if run_id:
                 verdicts[run_id] = dict(row)
     return verdicts
+
+
+def recent_upstream_retirements() -> list[dict[str, Any]]:
+    """The upstream retirements the most recent admission pass recorded.
+
+    A retired request has no pointer left to read, so the pass's own record is
+    the only account of it. Only the last record's list is returned: the pass
+    that retired the request carried it, and a later pass carrying none means
+    the retirement has already been read.
+    """
+    path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    for line in reversed(text.splitlines()):
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        retired = record.get("retired")
+        if not isinstance(retired, list):
+            return []
+        return [dict(row) for row in retired if isinstance(row, Mapping)]
+    return []
 
 
 def _stalled_item(
@@ -4934,6 +4972,57 @@ def _obligations_view(
                     f"fix the wait or drop the request: no project holds the run "
                     f"this request waits on, so it can never be released while "
                     f"the ref stands (reckon crew discard --run {run_id})"
+                ),
+            }
+        )
+    # A request whose upstream is still open and that nobody is building waits
+    # for work no one has taken. The pass records the report on the request the
+    # first time it crosses the threshold, so the row exists for an owner who is
+    # looking and is never re-raised by a later pass.
+    for pointer in live_pointers:
+        if str(pointer.get("wait_class") or "") != "idle":
+            continue
+        if not pointer.get("idle_reported_at"):
+            continue
+        if str(pointer.get("session") or "") != session:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        started = parse_utc(pointer.get("waits_at") or pointer.get("created_at"))
+        items.append(
+            {
+                "kind": WAIT_IDLE_DUTY_KIND,
+                "run_id": run_id,
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "plan": str(
+                    pointer.get("plan") or (pointer.get("node") or {}).get("plan") or ""
+                ),
+                "age_seconds": (int((now - started).total_seconds()) if started else 0),
+                "reason": str(pointer.get("wait_detail") or ""),
+                "next_command": (
+                    f"queue the upstream this request waits on, or drop the "
+                    f"request (reckon crew discard --run {run_id})"
+                ),
+            }
+        )
+    # A request the pass removed because an upstream could never land. The
+    # departure is recorded, so the owner is told why it went rather than left
+    # to notice a request that is no longer there.
+    for row in recent_upstream_retirements():
+        if str(row.get("session") or "") != session:
+            continue
+        if str(row.get("project") or project) != project:
+            continue
+        items.append(
+            {
+                "kind": UPSTREAM_RETIRED_DUTY_KIND,
+                "run_id": str(row.get("run_id") or ""),
+                "node": str(row.get("node") or ""),
+                "plan": str(row.get("plan") or ""),
+                "age_seconds": 0,
+                "reason": str(row.get("reason") or ""),
+                "next_command": (
+                    "the request was retired because its upstream can never land; "
+                    "examine the discard record if the plan is expected to change"
                 ),
             }
         )

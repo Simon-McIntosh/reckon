@@ -506,6 +506,7 @@ def _pass_verdict_record(
     landing = result.get("landing") or {}
     if (
         not verdicts
+        and not result.get("retired")
         and not landing.get("landed")
         and not landing.get("skipped")
         and not landing.get("obligations")
