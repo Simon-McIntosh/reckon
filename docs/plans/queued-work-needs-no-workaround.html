@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1124">
+<meta name="plan-version" content="1125">
 <meta name="plan-modified" content="2026-11-21">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3393,6 +3393,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063006130879-qwnw-red-file-every-removal-path-reads-the-wide-claim" data-who="reckon-build" data-when="2026-11-19T03:50:52Z">
     <div class="r-comment-body"><p>Every removal path is judged by the wide claim it already reads, the exemption is now the path a removal frees rather than every name its call mentions, and both evidence clauses are measured rather than claimed: the gate log names its all_debug job and the unset SLURM_JOB_ID the measured process saw (5 passed, EXIT=0 at 438b4f05), the after arm carries its own summary (63 passed, EXIT=0) against a baseline re-run with the same command at 42fe90d0 (1 failed, 60 passed, EXIT=1, this node own red).</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row" data-who="reckon-build" data-when="2026-11-19T03:48:04Z">
+    <div class="r-comment-body"><p>The named file already passes at the base revision 42fe90d (3 passed, EXIT=0) and at head 554aa68 (3 passed, EXIT=0), and a mutation that makes _ledger_row_was_rolled_back return False turns its first case red (1 failed, 2 passed, EXIT=1), so the pass exercises the receipt branch; the declared-suite arms are 58 passed, EXIT=0 at both revisions, and the only changed path is the evidence fragment.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
