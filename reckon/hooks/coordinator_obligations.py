@@ -281,6 +281,11 @@ _NON_BLOCKING_KINDS = frozenset(
 # than one the turn must be refused for.
 _NAMED_WAIT_KINDS = frozenset({"unreadable-review-record"})
 
+#: The duty kind a launch that ended before reaching a model owes. Its line
+#: carries the recorded cause, because the remedy it names gives up on the run
+#: and a coordinator taking that step needs to know what failed.
+_LAUNCH_FAILED_DUTY_KIND = "launch-failed"
+
 # A session worktree's directory component is the repository name plus a short
 # hex digest, e.g. ``reckon-c8f839407e49``.
 _WORKTREE_COMPONENT = ".reckon-worktrees"
@@ -910,10 +915,14 @@ def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
             )
             continue
         name = str(item.get("node") or item.get("run_id") or "?")
+        cause = ""
+        if str(item.get("kind") or "") == _LAUNCH_FAILED_DUTY_KIND:
+            reason = str(item.get("reason") or "").strip()
+            cause = f" -- {reason}" if reason else ""
         lines.append(
             f"- [{item.get('kind') or '?'}] {item.get('run_id') or '?'} "
             f"({name}, {_format_age(int(item.get('age_seconds') or 0))} old): "
-            f"{item.get('next_command') or ''}"
+            f"{item.get('next_command') or ''}{cause}"
         )
     return lines
 
