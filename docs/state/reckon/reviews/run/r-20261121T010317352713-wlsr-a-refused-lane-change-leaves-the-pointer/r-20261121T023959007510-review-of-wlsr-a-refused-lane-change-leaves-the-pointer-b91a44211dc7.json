@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:2757",
+    "reckon/crew/dispatch.py:468"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:41:01Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-a-refused-lane-change-leaves-the-pointer-b91a44211dc7",
+      "recorded_at": "2026-11-21T03:21:27.318908+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 2194,
+      "severity": "blocking",
+      "text": "The guard detects a no-worker launch only by a new launch_failures receipt or a phase transition, but reckon/crew/dispatch_launch.py:359 returns without recording either when the pointer is already in the launch-failed phase; a run that was lane-changed once and failed can be lane-changed again, and that second attempt commits the pointer move, reproducing the 20 November outcome the section exists to close."
+    },
+    {
+      "file": "tests/test_a_refused_lane_change_leaves_the_pointer.py",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "NEGATIVE_CONTROL_MUTATION is defined and never referenced, and it quotes another node's mutation (\"first-harness session lookup\"); the comment above it claims it is printed verbatim as the red log's first line, but this node's red log begins with its revision header, so the constant is dead code carrying a false statement."
+    },
+    {
+      "file": "tests/test_a_refused_lane_change_leaves_the_pointer.py",
+      "line": 313,
+      "severity": "non-blocking",
+      "text": "The assertion checks only the phrase \"no worker\" in the reason, so dropping the launch-failure receipt's cause from _refused_lane_change_result keeps the test green while the done_when's requirement that the reason name why no worker started lapses."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the only production caller is reckon/crew_run_commands.py:2757, the crew resume --backend door, which reaches change_lane through reckon/crew/dispatch.py; it emits the returned dict and returns.",
+    "diff": "read commit by commit against ff3bb24bcf; one commit adds two helpers and an early return in change_lane plus a new 381-line test module, and nothing outside the two expected paths.",
+    "done_when": "the done_when names tests/test_a_refused_lane_change_leaves_the_pointer.py with three cases; the manifest records that run at b91a44211d and its gate log shows 3 passed, EXIT=0.",
+    "goal": "the node's goal is that a lane change that starts no worker leaves the run pointer's backend, attempt, agent and dialect unchanged; reckon/crew/dispatch_sessions.py:2194 adds the check that returns a refusal instead of committing the move.",
+    "manifest": "read; it reports 3 passed with a gate log, a base arm failing with assert 'codex' == 'clive', and no baseline_suite or after_suite arm for this node.",
+    "write_paths": "read the node's declared paths; the delivered diff touches reckon/crew/dispatch_sessions.py and tests/test_a_refused_lane_change_leaves_the_pointer.py, both inside them."
+  },
+  "justifications": {
+    "durability": "the base arm at ff3bb24bcf fails the accepted-launch case with assert 'codex' == 'clive', so the test reddens on the regression, though the reason assertion at tests/test_a_refused_lane_change_leaves_the_pointer.py:313 never checks the receipt's cause.",
+    "evidence": "the gate log at the reviewed head names its revision, tree, command and imported module, ends in a bare EXIT=0, and the base arm reproduces the declared failure.",
+    "fit": "the helpers follow the module's mechanism-named style, but tests/test_a_refused_lane_change_leaves_the_pointer.py:43 leaves a dead NEGATIVE_CONTROL_MUTATION constant quoting another node's mutation beside a comment that misdescribes the red log's first line.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:2194 covers the accepted-launch-no-worker and refused-before-launch paths, but a run already stored in the launch-failed phase records no second receipt (reckon/crew/dispatch_launch.py:359) and the guard therefore sees no change and commits the move.",
+    "reuse": "the guard reads the launch path's existing launch_failures receipt and LAUNCH_FAILED_PHASE (reckon/crew/dispatch_launch.py:364) rather than adding a second notion of a failed start, though its cause extraction overlaps reckon/crew/resumption.py:1728.",
+    "scope_discipline": "every path in the diff (reckon/crew/dispatch_sessions.py and tests/test_a_refused_lane_change_leaves_the_pointer.py) is inside the node's declared write paths and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261121T023959007510-review-of-wlsr-a-refused-lane-change-leaves-the-pointer-b91a44211dc7",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "b91a44211dc75f83008b1726453ff35da1efcf1f",
+  "reviewed_run_id": "r-20261121T010317352713-wlsr-a-refused-lane-change-leaves-the-pointer",
+  "rubric": "landed",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 14,
+    "goal_fidelity": 13,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:55:21.484556+00:00",
+  "total": 97
+}

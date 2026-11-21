@@ -216,7 +216,12 @@ def test_parked_request_claim_is_recorded_on_the_acceptance(
     )
 
     assert result.exit_code == 0, result.output
-    stored = json.loads(result.output)["record"]
+    # The command's own reply is a bounded summary; the receipt it names holds
+    # the full promotion result this case judges.
+    receipt = json.loads(
+        Path(json.loads(result.output)["record_path"]).read_text(encoding="utf-8")
+    )
+    stored = receipt["record"]
     assert stored["scope_acceptances"] == [
         {
             "path": ACCEPTED,

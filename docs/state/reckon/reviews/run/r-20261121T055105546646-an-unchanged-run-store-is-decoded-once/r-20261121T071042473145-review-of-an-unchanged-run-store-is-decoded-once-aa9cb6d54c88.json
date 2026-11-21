@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "The reviewed run's baseline_suite (revision 43f48118fa, 58 passed, EXIT=0) and after_suite (revision aa9cb6d54c, 65 passed, EXIT=0) both record failure_count 0 and failure_ids [], so no gate failure was added. The importer arms add nothing either: arm-43f48118fa (868 passed) and arm-976ad99598 (875 passed) each report 16 failed, and a diff of their FAILED ids is empty (16 == 16, added [], fixed []).",
+  "call_sites": [
+    "reckon/ledger.py:1805",
+    "reckon/ledger.py:2846",
+    "reckon/ledger.py:2871",
+    "reckon/ledger.py:4584",
+    "reckon/mcp_views.py:1934",
+    "reckon/mcp_views.py:1938",
+    "reckon/velocity.py:823",
+    "reckon/crew/dispatching/preparation.py:143",
+    "reckon/crew/picker/lane_context.py:814",
+    "reckon/crew/review.py:1286",
+    "reckon/crew/promotion_release.py:715",
+    "reckon/crew/recovery_watch.py:3192",
+    "reckon/crew/pending_landing.py:626",
+    "reckon/crew/open_run_index.py:345"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:11:24Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the claim is wrong only for asyncio tasks created after a synchronous read, which inherit the context; the station and every reader of the run store are threaded, not async, so no task shares a cache in practice; the comment is worth correcting in a later pass",
+      "recorded_at": "2026-11-21T07:28:45.100856+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": 929,
+      "severity": "non-blocking",
+      "text": "non-blocking: the _READ_CONTEXT comment at reckon/run_store.py:929-930 and the stored_run_rows docstring at :1025 both claim 'a second thread or task decodes for itself', but a ContextVar set during a synchronous read is copied into every asyncio task created afterwards (asyncio.Task captures contextvars.copy_context() at creation; verified on this interpreter), so tasks created after a synchronous read share the parent's object and its cache, and only a fresh thread gets the default. The claim is false for tasks; the node's test at tests/test_an_unchanged_run_store_is_decoded_once.py:162 exercises only a threading.Thread, so a future async reader, or an async seam like the four paused-decoder guards, would not get the per-task isolation the comment promises."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 49c8d70: 976ad99598 adds _READ_CONTEXT and _read_context to key answers per reader and a per-thread test, 4400fe0bb2 records that scoping in the fragment and refreshes evidence-commit; aa9cb6d54c records the 73-file importer arms in the fragment; no other code change is present.",
+    "done_when": "The done_when names tests/test_an_unchanged_run_store_is_decoded_once.py; at the reviewed head it builds the declared 2,000-row three-project store, counts decodes through a json.loads stand-in, and asserts the 800-once total (:97), every differently-argued call against a cold-copy (:120-126), the re-decode after an update (:141-146), mutation isolation (:159), the cleared-memo case (:187) and the new per-reader guard (:161-179).",
+    "goal": "The node goal is that a repeated stored_run_rows query over an unchanged store decodes no row, decodes again after the token moves, and returns records each caller may mutate; the commits gained since 49c8d70 hold each answer per reader context (reckon/run_store.py:935, :1039) so four identical project-alpha reads still decode 800 rows once while a decoder paused in another thread still observes its read.",
+    "manifest": "Read; it records status complete, changed_paths the three files, baseline_suite 58 passed / after_suite 65 passed (both EXIT=0, failure_count 0), a negative control at logs/negative-control-guards-49c8d703ca.log (4 failed, EXIT=1) and ruff-clean staged paths; the gate logs open with their revision and literal command and end in a bare EXIT= line.",
+    "write_paths": "The declared paths are reckon/run_store.py, tests/test_an_unchanged_run_store_is_decoded_once.py, the evidence fragment and a figures directory; git diff 49c8d70..aa9cb6d touches the first three and nothing else, and leaves the figures directory unused."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_run_store_is_decoded_once.py:178 reddens if the reader context leaves the key ('0 == 800', decoded read from the counter), :159 reddens if a record is handed out uncopied, and the four importer guards redden at 49c8d70 without the keying; the before/after token re-check at reckon/run_store.py:1070 and the 50,000-row skip remain untested.",
+    "evidence": "logs/negative-control-guards-49c8d703ca.log shows the four paused-decoder importer guard ids failing at 49c8d70 with EXIT=1, and the two importer arms report 16 identical failures each with an empty added-failure set verified, while the done_when's ruff clause still has no receipt in the manifest.",
+    "fit": "The helpers follow the module's idiom and introduce no plan label or ticket reference, but the comment at reckon/run_store.py:929-930 and the docstring at :1025 overstate per-task isolation that asyncio does not give.",
+    "goal_fidelity": "reckon/run_store.py:1039 puts the reader context into the answer key, so a repeat read in one reader decodes nothing while another thread's read at the same token cannot be answered from a cache the first built.",
+    "reuse": "reckon/run_store.py:924 keeps the answers in file_memo.bounded_map, the container reckon/ledger.py already holds decoded histories in, and the new ContextVar is the same primitive file_memo uses at reckon/file_memo.py:146 rather than a forked mechanism; no owner exists for a reader-identity key.",
+    "scope_discipline": "git diff --stat 49c8d70..aa9cb6d names only reckon/run_store.py, the test file and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a repeated stored_run_rows query over an unchanged store decodes no row and decodes again after the token moves; reckon/run_store.py:935 and :1039 hold each answer per reader context so the decode-once measure survives while a per-reader seam stays observable.\nVERDICT done_when: the done_when names tests/test_an_unchanged_run_store_is_decoded_once.py, which at the reviewed head builds the declared 2,000-row three-project store and asserts the 800-once total (:97), each differently-argued call against a cold-copy (:120-126), the re-decode after an update (:141-146), mutation isolation (:159), the cleared-memo case (:187) and the new per-reader guard (:161-179).\nVERDICT write_paths: declared reckon/run_store.py, the named test file, the evidence fragment and a figures directory; git diff 49c8d70..aa9cb6d touches exactly the first three.\nVERDICT manifest: read; status complete, changed_paths the three files, baseline_suite 58 passed and after_suite 65 passed both EXIT=0 with failure_count 0, negative control logs/negative-control-guards-49c8d703ca.log 4 failed EXIT=1, staged paths ruff-clean; gate logs open with revision and literal command and end in a bare EXIT= line.\nVERDICT diff: read commit by commit against 49c8d70; 976ad99598 adds _READ_CONTEXT, _read_context and the per-thread test, 4400fe0bb2 records the scoping in the fragment, aa9cb6d54c records the 73-file importer arms; no other code changes.\nCALL_SITES: reckon/ledger.py:1805, reckon/ledger.py:2846, reckon/ledger.py:2871, reckon/ledger.py:4584, reckon/mcp_views.py:1934, reckon/mcp_views.py:1938, reckon/velocity.py:823, reckon/crew/dispatching/preparation.py:143, reckon/crew/picker/lane_context.py:814, reckon/crew/review.py:1286, reckon/crew/promotion_release.py:715, reckon/crew/recovery_watch.py:3192, reckon/crew/pending_landing.py:626, reckon/crew/open_run_index.py:345\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1039 puts the reader context into the answer key so a repeat read in one reader decodes nothing while another thread's read cannot be answered from a cache the first built.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/negative-control-guards-49c8d703ca.log shows four importer guard ids failing at 49c8d70 with EXIT=1, and the two importer arms report 16 identical failures with an empty added-failure set, while the done_when's ruff clause has no receipt in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 49c8d70..aa9cb6d names only reckon/run_store.py, the test file and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_unchanged_run_store_is_decoded_once.py:178 reddens if the reader context leaves the key ('0 == 800'), :159 reddens if a record is handed out uncopied, and the four importer guards redden at 49c8d70 without the keying; the token re-check at run_store.py:1070 is untested.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers follow the module's idiom, but the comment at reckon/run_store.py:929-930 and the docstring at :1025 overstate per-task isolation that asyncio does not give.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/run_store.py:924 keeps the answers in file_memo.bounded_map, the container reckon/ledger.py already holds decoded histories in, and the ContextVar is the same primitive file_memo uses at reckon/file_memo.py:146.\nFINDING reckon/run_store.py:929 non-blocking: the _READ_CONTEXT comment and the stored_run_rows docstring at :1025 claim a second task decodes for itself, but a ContextVar set during a synchronous read is copied into every later asyncio task, which shares the parent's cache; the node's test at tests/test_an_unchanged_run_store_is_decoded_once.py:162 exercises only a thread.",
+  "review_run_id": "r-20261121T071042473145-review-of-an-unchanged-run-store-is-decoded-once-aa9cb6d54c88",
+  "reviewed_base_sha": "49c8d703cac1e6b0845e6bb26afec2382f095782",
+  "reviewed_head_sha": "aa9cb6d54c883d2eec709fbe3f40e2ca6bc793be",
+  "reviewed_run_id": "r-20261121T055105546646-an-unchanged-run-store-is-decoded-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:20:00+00:00",
+  "total": 111
+}

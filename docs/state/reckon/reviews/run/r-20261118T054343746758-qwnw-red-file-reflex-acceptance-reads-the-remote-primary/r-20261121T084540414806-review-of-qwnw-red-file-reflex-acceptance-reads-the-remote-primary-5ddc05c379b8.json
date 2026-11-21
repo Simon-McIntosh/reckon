@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:accept_clean_review",
+    "reckon/crew/landing_measure.py:measure_run"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-reflex-acceptance-reads-the-remote-primary-5ddc05c379b8",
+      "recorded_at": "2026-11-21T10:18:46.807963+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T09:38:26Z",
+  "findings": [
+    {
+      "file": "tests/test_reflex_acceptance_reads_the_remote_primary.py",
+      "line": "171",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_local_scheduler` at :171 is a near-verbatim third copy of the in-place scheduler transport this repository already carries at tests/test_an_acceptance_check_holds_no_lease.py:33 and tests/test_cleanly_reviewed_run_lands_itself.py:116 (same `--wrap` argv split, same `bash -c` execution, same appended log, same synthetic `12345` job id), so it duplicates rather than extends that capability; this file already imports tests/helpers/landing_repository.py, which is where the lifted helper belongs."
+    },
+    {
+      "file": "tests/test_reflex_acceptance_reads_the_remote_primary.py",
+      "line": "243",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm that asserted the `unmerged_commits` refusal was replaced wholesale, so after this change no green test asserts that refusal for a role acceptance does not land -- the only other assertion, tests/test_review_acceptance_promotes.py:326, is red at 5ddc05c379's base 42fe90d0b0 for the same test-wrong cause this node repaired, so the surviving guard is unasserted; folding the restoration into the node that repairs that file would close it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-acceptance-reads-the-remote-primary.html",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node's-file head row names revision c635e4ae4eddcd4b5800f6f1c025d0b15df86fb3 while the only log behind that row, gate-head.log, names 5ddc05c379b8671731c14daa8e88b1ebd432e800 on its first line, so a reader holding the fragment cannot reconcile the row with the artefact the table's caption says proves it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "No runtime path imports a test file, so the diff itself has no production call site; the product code the changed arm drives was read instead -- reckon/crew/recovery_review_acceptance.py:739 (`automatic_land = bool(missing and implementation)`) and reckon/crew/landing_measure.py:1085 (`runner = run or _RUN`, the seam the arm patches at tests/test_reflex_acceptance_reads_the_remote_primary.py:231).",
+    "diff": "Read commit by commit against 42fe90d0b0: c635e4ae4 renames the local-main arm to a promotion arm, adds `_local_scheduler` and an optional `worktree` on `_write_run` and gives the run a detached worktree; 41b958927 adds the 94-line evidence fragment; 5ddc05c379 replaces one job number with the partition and a bare /tmp with $TMPDIR in that fragment. No product source changed.",
+    "done_when": "The done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, the base run, an importer arm, and ruff clauses; the manifest records the base arm (negative-control-base.log, 1 failed, 11 passed, 1 error, EXIT=1), the suite pair (58 passed each arm with full 40-character revisions in baseline_suite/after_suite), and the importer arm (13 passed each arm); the ruff clause is the one clause the manifest does not record, and ruff at head here reports 'All checks passed!' and '1 file already formatted'.",
+    "goal": "The node's goal is that tests/test_reflex_acceptance_reads_the_remote_primary.py passes in full at head; the landed arm at :220-247 is the repair and gate-head.log reads 12 passed EXIT=0 at 5ddc05c379, so the file is green in full.",
+    "manifest": "The source manifest reads status complete and states the gate command, gate-head.log, negative-control-base.log, suite-base.log and suite-head.log (58 passed each), importer-base.log and importer-head.log (13 passed each), three scaffolding-attributed retry failures, and a test-wrong verdict for each of the two causes.",
+    "write_paths": "Declared: tests, reckon, and the plan's evidence fragment plus its figure directory; the diff 42fe90d0b0..5ddc05c379 changes exactly tests/test_reflex_acceptance_reads_the_remote_primary.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-acceptance-reads-the-remote-primary.html, both inside the declaration, with no reckon/ path at all."
+  },
+  "item_verdicts_note": "see item_verdicts",
+  "justifications": {
+    "durability": "tests/test_reflex_acceptance_reads_the_remote_primary.py:243-247 reddens if automatic_land (reckon/crew/recovery_review_acceptance.py:739) stops landing an implementation or if the pointer survives, but the arm's former unmerged_commits assertions are gone and that refusal for roles acceptance does not land now has no green assertion.",
+    "evidence": "gate-head.log names revision 5ddc05c379, the worktree and the pytest command and ends EXIT=0 with 12 passed, gate-job.sh runs it under sbatch on all_debug with SLURM_JOB_ID unset, and negative-control-base.log carries its module and cwd headers beside 1 failed/1 error; only the ruff clause is absent from the manifest and was re-verified clean.",
+    "fit": "tests/test_reflex_acceptance_reads_the_remote_primary.py:171 follows the file's private-seam monkeypatch idiom and docstring style, and no added name carries a plan, stage or ticket label.",
+    "goal_fidelity": "tests/test_reflex_acceptance_reads_the_remote_primary.py:243-247 now asserts the promotion, the retired pointer and the reviewed head on the origin branch, and gate-head.log records 12 passed at that file.",
+    "reuse": "tests/test_reflex_acceptance_reads_the_remote_primary.py:171 duplicates the in-place scheduler transport already written at tests/test_an_acceptance_check_holds_no_lease.py:33 and tests/test_cleanly_reviewed_run_lands_itself.py:116 rather than extending tests/helpers/landing_repository.py, which this file already imports.",
+    "scope_discipline": "the two changed paths are tests/test_reflex_acceptance_reads_the_remote_primary.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-acceptance-reads-the-remote-primary.html, both inside the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_reflex_acceptance_reads_the_remote_primary.py passes in full at head; the reworked arm at :220-247 is the repair and gate-head.log reads 12 passed EXIT=0 at 5ddc05c379, so the file is green in full.\nVERDICT done_when: the done_when's first clause is the file passing on all_debug with SLURM_JOB_ID unset, which gate-job.sh and gate-head.log record at 5ddc05c379; the base run is negative-control-base.log (1 failed, 11 passed, 1 error, EXIT=1, naming test_a_run_only_on_local_main_is_not_promoted), the suite pair and importer arm are recorded with full revisions (58 passed and 13 passed on both arms), and the manifest records no ruff result for the done_when's ruff clause, which re-ran clean at head here ('All checks passed!', '1 file already formatted').\nVERDICT write_paths: the declared scope is tests, reckon and the plan's fragment path; the diff 42fe90d0b0..5ddc05c379 changes only tests/test_reflex_acceptance_reads_the_remote_primary.py (+56 -18) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-acceptance-reads-the-remote-primary.html (+94), both inside it.\nVERDICT manifest: the source manifest reads complete and records commits c635e4ae4e, 41b9589279 and 5ddc05c379, the gate and arm log paths, both suite arms with 40-character revisions, three scaffolding-attributed retry failures and two test-wrong causes with the product untouched.\nVERDICT diff: read commit by commit against 42fe90d0b0 -- c635e4ae4 rewrites the local-main arm to a promotion arm and adds the worktree option and scheduler stub, 41b9589279 adds the evidence fragment, 5ddc05c379 corrects two fragment sentences; no product path changed.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:accept_clean_review, reckon/crew/landing_measure.py:measure_run\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_reflex_acceptance_reads_the_remote_primary.py:243-247 asserts the promotion, the retired pointer and the head on the origin branch, and gate-head.log records 12 passed at that file.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log names revision 5ddc05c379 and ends EXIT=0 with 12 passed, negative-control-base.log shows the base 1 failed/1 error with its module and cwd headers, and the ruff clause omitted from the manifest was re-verified clean at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two changed paths are the node's test file and its fragment under the declared docs/evidence directory, with no reckon/ path in the diff.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_reflex_acceptance_reads_the_remote_primary.py:243-247 reddens on reinstating the pre-automatic-land refusal, but the arm's former unmerged_commits assertions are gone and that refusal for roles acceptance does not land has no green assertion left.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_reflex_acceptance_reads_the_remote_primary.py:171 follows the file's private-seam monkeypatch idiom and docstring style, and no added name carries a plan or stage label.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_reflex_acceptance_reads_the_remote_primary.py:171 duplicates the scheduler stub already at tests/test_an_acceptance_check_holds_no_lease.py:33 and tests/test_cleanly_reviewed_run_lands_itself.py:116 instead of extending tests/helpers/landing_repository.py.\nFINDING tests/test_reflex_acceptance_reads_the_remote_primary.py:171 non-blocking: `_local_scheduler` is a third near-verbatim copy of the in-place scheduler transport this repository already carries at tests/test_an_acceptance_check_holds_no_lease.py:33 and tests/test_cleanly_reviewed_run_lands_itself.py:116, and the file already imports tests/helpers/landing_repository.py, the owner it could extend.\nFINDING tests/test_reflex_acceptance_reads_the_remote_primary.py:243 non-blocking: replacing the arm deleted its unmerged_commits assertions, so no green test now asserts that refusal for a role acceptance does not land -- the remaining one at tests/test_review_acceptance_promotes.py:326 is red at 42fe90d0b0.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-acceptance-reads-the-remote-primary.html:53 non-blocking: the head row names c635e4ae4e while gate-head.log, the log the caption promises behind the row, names 5ddc05c379 on its first line.\n",
+  "reuse_search": {
+    "added_definitions": "_local_scheduler (tests/test_reflex_acceptance_reads_the_remote_primary.py:171) and the `worktree` keyword on the file's existing _write_run; no product module, class or function is added",
+    "judgement": "the scheduler stub duplicates a test capability the repository already carries twice, and the file's own import of tests/helpers/landing_repository.py names the owner it could have extended",
+    "searched": [
+      "tests/helpers/ (the shared test-helper owner: git.py, landing_repository.py, __init__.py only)",
+      "tests/test_an_acceptance_check_holds_no_lease.py:33 (_local_scheduler, identical body)",
+      "tests/test_cleanly_reviewed_run_lands_itself.py:116 (inner `scheduler`, same capability)",
+      "reckon/crew/landing_measure.py:100 (_RUN) and :188 submit_measurement (the product's scheduler seam the stubs replace)"
+    ]
+  },
+  "review_run_id": "r-20261121T084540414806-review-of-qwnw-red-file-reflex-acceptance-reads-the-remote-primary-5ddc05c379b8",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "5ddc05c379b8671731c14daa8e88b1ebd432e800",
+  "reviewed_run_id": "r-20261118T054343746758-qwnw-red-file-reflex-acceptance-reads-the-remote-primary",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "derivation": "The reviewed run's baseline_suite (42fe90d0b0a46060bafde2490dda7d4002cda478, failure_count 0) and after_suite (41b958927975d6dd7b7eebce50eebb2a9487f0fb, failure_count 0) both completed with EXIT=0 and 58 passed in suite-base.log and suite-head.log, so after-minus-baseline is empty: added_failure_count 0 with an honest empty added_failure_ids.",
+    "reviewed_manifest_suite_fields": "present on both sides with full 40-character revisions and readable log paths"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:02:53.211046+00:00",
+  "total": 93
+}

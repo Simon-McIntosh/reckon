@@ -1,0 +1,21 @@
+<section id="qwnw-red-file-a-claim-refused-launch-returns-to-the-queue-landing">
+  <h2>A claim on a shared source file does not hold a queued request</h2>
+
+  <p><strong>Cause.</strong> The test was wrong. The admission fence judges a
+  peer's claim through the project's sharing policy, and the shared-by-default
+  commit of 11 November made ordinary source files shared, so a stopped holder's
+  claim on <code>claimed.txt</code> no longer fences a peer. Generated state
+  stays exclusive, which is the path the two cases now claim.</p>
+
+  <table id="qwnw-red-file-a-claim-refused-launch-returns-to-the-queue-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>42fe90d0b0a46060bafde2490dda7d4002cda478</td><td>2 failed, 4 passed, EXIT=1</td></tr>
+      <tr><td>head</td><td>64793cdce464000d665a2d5a189039af4e663856</td><td>7 passed, EXIT=0</td></tr>
+    </tbody>
+  </table>
+  <pre id="qwnw-red-file-a-claim-refused-launch-returns-to-the-queue-base-ids">
+FAILED tests/test_a_claim_refused_launch_returns_to_the_queue.py::test_a_stopped_holders_claim_holds_the_request_before_launch - AssertionError: a held claim must cost the pass no dispatch
+FAILED tests/test_a_claim_refused_launch_returns_to_the_queue.py::test_the_request_launches_once_the_holders_commits_reach_main - AssertionError: assert ['r-queued'] == []
+</pre>
+</section>

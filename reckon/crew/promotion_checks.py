@@ -634,68 +634,151 @@ def _commit_added_paths(tree: Path, commit: str) -> tuple[str, ...]:
 
 
 def _commit_holds_path(tree: Path, commit: str, path: str) -> bool:
-    """Whether ``commit``'s own tree carries ``path``."""
     return _git(tree, "cat-file", "-e", f"{commit}:{path}", check=False).returncode == 0
 
 
+def _revision_is_readable(tree: Path, revision: str) -> bool:
+    """Whether ``revision`` resolves to a commit ``tree`` can read."""
+    probe = _git(tree, "rev-parse", "--verify", f"{revision}^{{commit}}", check=False)
+    return probe.returncode == 0
+
+
+def _is_ancestor(tree: Path, ancestor: str, descendant: str) -> bool:
+    return (
+        _git(
+            tree, "merge-base", "--is-ancestor", ancestor, descendant, check=False
+        ).returncode
+        == 0
+    )
+
+
+def _record_worktree_head(record: Mapping[str, Any]) -> str | None:
+    """The committed head of the run's own worktree, when the record names one."""
+    from reckon.crew.promotion_release import _record_worktree
+
+    worktree = _record_worktree(record)
+    if worktree is None:
+        return None
+    resolved = _git(worktree, "rev-parse", "--verify", "HEAD^{commit}", check=False)
+    if resolved.returncode:
+        return None
+    return resolved.stdout.strip() or None
+
+
+def _reviewed_head(tree: Path, record: Mapping[str, Any], cited: Sequence[str]) -> str:
+    """The commit whose tree is the run's reviewed head.
+
+    The twin is judged on what the run delivers, not each commit it moved
+    through: a run that adds a rasterised copy in one commit and removes it in
+    a later one delivers a head holding only the SVG, and charging the earlier
+    commit would refuse it for work the head no longer carries.
+
+    The run's own worktree is that head whenever the record still names one,
+    because it is the tree the run worked in and its committed head is what it
+    hands over. A record whose worktree is gone falls back to the cited
+    commits, taking one no other cited commit descends from — the tip a linear
+    run pushes — so a released worktree still answers about the run's own
+    change rather than about the integration branch.
+    """
+    worktree_head = _record_worktree_head(record)
+    if worktree_head is not None:
+        return worktree_head
+    for commit in cited:
+        descends_elsewhere = any(
+            other != commit and _is_ancestor(tree, commit, other) for other in cited
+        )
+        if not descends_elsewhere:
+            return commit
+    return cited[-1]
+
+
+def _recorded_base_revision(record: Mapping[str, Any]) -> str:
+    """The revision the run started from, as its manifest or record names it.
+
+    The manifest's ``orientation_base_sha`` is the revision the run oriented
+    at, so it answers what the run already found in the tree. The live run
+    record's ``base_sha`` is the fallback for a run whose manifest is gone.
+    """
+    manifest_path = str(record.get("manifest_path") or "")
+    if manifest_path:
+        try:
+            declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
+        except (OSError, KeyError, ValueError):
+            declared = {}
+        base = str(declared.get("orientation_base_sha") or "").strip()
+        if base:
+            return base
+    return str(record.get("base_sha") or "").strip()
+
+
 def _png_twin_findings_in_run_commits(record: Mapping[str, Any]) -> list[str]:
-    """The PNG twins this run's own commits add beside an SVG of the same stem.
+    """The PNG twins on the run's reviewed head, that the base tree did not hold.
 
-    The twin is judged on the commits the run cites rather than on everything
-    that appeared since its base: a peer's commit, or the content a merge
-    brought from the integration branch, is not this run's work, and a
-    base-to-head diff charges all of it, so a run is refused for a copy it
-    never made. Each cited commit is read through its own diff, and the SVG is
-    looked for in that same commit, so neither the tree's whole file list nor
-    any other run's paths are consulted.
+    The twin is read from the tree the run delivers rather than from each
+    commit it moved through. A run that adds a rasterised copy in one commit
+    and removes it in a later one delivers a head holding only the SVG, and
+    judging the additions charged that run for work its head no longer
+    carries — a run that could only comply by rewriting its history. The
+    figure rule asks about the tree: the page renders the SVG, and a PNG copy
+    beside it drifts out of step. A PNG the base tree already held is not this
+    run's to answer for.
 
-    A run that cites no commit adds nothing to a commit, so it carries no twin
-    to find. A record naming no readable tree measures no commit either: the
-    diff belongs to the run's own tree, and the directory the promotion happens
-    to run in cannot supply it.
+    A run that cites no commit delivers nothing to a commit and carries no
+    finding. A record naming no readable tree measures no tree either: the
+    tree belongs to the run, not to the directory the promotion happens to run
+    in. An unreadable base leaves the check unarmed rather than charging the
+    run for copies it cannot be shown to have added.
     """
     tree = _record_tree(record)
     if tree is None:
         return []
-    declared = [
-        str(entry).strip()
-        for entry in _declared_manifest_commits(record)
-        if str(entry).strip()
-    ]
+    declared = [str(entry).strip() for entry in _declared_manifest_commits(record)]
     if not declared:
         return []
     resolved = _resolve_commits(
         cwd=tree, revisions=declared, run_id=str(record.get("run_id") or "")
     )
+    if not resolved:
+        return []
+    base = _recorded_base_revision(record)
+    if base and not _revision_is_readable(tree, base):
+        return []
+    head = _reviewed_head(tree, record, resolved)
+    candidates = {
+        path
+        for commit in resolved
+        for path in _commit_added_paths(tree, commit)
+        if path.endswith(".png")
+    }
     findings: list[str] = []
-    for commit in resolved:
-        pngs = [
-            path for path in _commit_added_paths(tree, commit) if path.endswith(".png")
-        ]
-        for png in sorted(pngs):
-            svg = png[:-4] + ".svg"
-            if not _commit_holds_path(tree, commit, svg):
-                continue
-            findings.append(
-                f"{png} adds a PNG twin of the SVG figure {svg} in the same "
-                "directory; the figure rule keeps one SVG per figure and bans a "
-                "PNG copy beside it, because the page renders the SVG and the copy "
-                f"drifts out of step, so remove {png}"
-            )
+    for png in sorted(candidates):
+        if base and _commit_holds_path(tree, base, png):
+            continue
+        if not _commit_holds_path(tree, head, png):
+            continue
+        svg = png[:-4] + ".svg"
+        if not _commit_holds_path(tree, head, svg):
+            continue
+        findings.append(
+            f"{png} adds a PNG twin of the SVG figure {svg} in the same "
+            "directory; the figure rule keeps one SVG per figure and bans a "
+            "PNG copy beside it, because the page renders the SVG and the copy "
+            f"drifts out of step, so remove {png}"
+        )
     return findings
 
 
 def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> None:
-    """Refuse a promotion whose commits add a PNG twin of an SVG figure.
+    """Refuse a promotion whose reviewed head carries a PNG twin of an SVG figure.
 
     The figure rule keeps one SVG per figure and bans a PNG copy beside it,
     because the reckon page renders the SVG and the copy drifts out of step. A
     worker that rasterises its SVG to look at it leaves exactly that copy in the
     tree, and the same finding reaches the worker through ``crew check
-    --manifest`` while it can still remove it. The check reads the commits the
-    run cites rather than the working tree, so a PNG the run rendered and never
-    committed is not a finding, and a PNG a peer's commit or a merged branch
-    brought in is not charged to this run.
+    --manifest`` while it can still remove it. The check reads the tree at the
+    run's reviewed head rather than each commit's additions, so a copy the run
+    added earlier and removed before its head is not charged, and a PNG already
+    present at the base is not the run's to answer for.
     """
     findings = _png_twin_findings_in_run_commits(record)
     if findings:
@@ -1252,9 +1335,17 @@ def _with_the_runs_whole_change(
     tier none, and was offered for promotion without a review. Adding the base
     to head commits can only widen the measured change, so the tier never reads
     lighter than the run's whole change. A record naming no readable tree or
-    base keeps the cited commits alone, as before.
+    base keeps the tier to the cited commits alone, as before, and so does a
+    role that may not write repository paths: a verifier's tree is the tier's
+    own graded tree, so its history is the work being graded rather than the
+    verifier's change, and reading it as the run's work would charge a review
+    of code the run is measuring rather than writing.
     """
     cited = [str(commit) for commit in commit_list if str(commit).strip()]
+    from reckon.crew.recovery import _pointer_role
+
+    if not role_may_write_repository_paths(_pointer_role(record)):
+        return cited
     tree = _record_tree(record)
     base = str(record.get("base_sha") or "").strip()
     if tree is None or not base:

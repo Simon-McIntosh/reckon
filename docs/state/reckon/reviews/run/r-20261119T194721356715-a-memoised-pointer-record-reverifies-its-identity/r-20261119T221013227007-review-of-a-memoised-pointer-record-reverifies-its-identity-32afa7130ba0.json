@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/runs.py:_list_live_records",
+    "reckon/roadmap.py:3824",
+    "reckon/crew/session_host.py:417",
+    "reckon/crew/admission/holds.py:513",
+    "reckon/crew/merge.py:168",
+    "reckon/crew/watch_unit.py:342"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T22:10:46Z",
+  "findings": [
+    {
+      "file": "tests/test_a_memoised_pointer_record_reverifies_its_identity.py",
+      "line": "109",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion accepts either of the two values the test's own rename stand-in can leave behind, so it holds whatever the listing returns and cannot redden on a regression \u2014 the independent assertions at :100, :112 and :166 carry the guard, and the done_when requires this acceptance clause."
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "414",
+      "severity": "non-blocking",
+      "text": "non-blocking: the region fast path returns region[key] without comparing the caller-supplied identity, so a second memoized call for one path at a different identity inside one region is answered from the first entry; unreachable from this node's call path because reckon/crew/runs.py:1758 opens a region per pointer, but the new argument is silently ignorable in that branch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit \u2014 e823cf2 stores the record under the text's identity in reckon/file_memo.py and reckon/crew/runs.py plus the new test, e7e7835 adds the 45-line evidence fragment, 32afa71 rewrites one arm sentence in that fragment.",
+    "done_when": "the done_when names tests/test_a_memoised_pointer_record_reverifies_its_identity.py; it asserts the rename-at-store stand-in fired and changed the inode (:100-107), accepts old-or-new in the met listing (:109), requires the next listing to read the new record (:112), and requires one decode after a rename over 301 pointers (:166).",
+    "goal": "the source node's goal in its dispatch (prompt.txt:38) is \"Make a memoised pointer record return the new record on the listing after a rename that lands between the text fetch and the memo store\"; the listing's store is reckon/crew/runs.py:1757-1763 handing file_memo.memoized the identity its text was read at, and reckon/file_memo.py:400-413 answers only from what was stored under that identity.",
+    "manifest": "read; status complete, three commits named, the tests line is the literal PYTHONPATH=. .venv/bin/python -m pytest command, and it records baseline_suite 58 passed at eed783c and after_suite 61 passed at e7e7835 with logs/negative-control-base.log at EXIT=1.",
+    "write_paths": "the manifest's orientation_write_paths lists five paths; the diff touches four of them and nothing else (reckon/file_memo.py, reckon/crew/runs.py, the node test file, the evidence fragment), so the figures path was declared and left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_memoised_pointer_record_reverifies_its_identity.py:112 and :166 redden when the identity plumbing is reverted as the base arm shows, but :109 admits both values its own stand-in can leave and cannot catch a regression.",
+    "evidence": "the gate line and its 61-passed result are in the manifest, and logs/negative-control-base.log shows the same file failing 2 of 3 at the head's base eed783c with EXIT=1 and assert 'working' == 'complete'.",
+    "fit": "the added keyword follows the docstring-and-keyword-only shape of reckon/file_memo.py:365-403, and reckon/crew/runs.py:1665 takes the identity through file_memo.file_signature rather than naming stat fields itself.",
+    "goal_fidelity": "reckon/crew/runs.py:1763 passes the identity taken before the text read, so the store at reckon/file_memo.py:418 no longer pairs old text with the replacing file's stat.",
+    "reuse": "the effect extends file_memo.memoized itself (reckon/file_memo.py:371) and signature_from_stat stays the one place identity fields are written; a search over reckon/ for a memo accepting a caller-observed identity found no owner other than this one.",
+    "scope_discipline": "every path in git diff eed783c7..32afa71 is one of the manifest's declared write paths, and the declared docs/figures path was left unwritten."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal in its dispatch (prompt.txt:38) is \"Make a memoised pointer record return the new record on the listing after a rename that lands between the text fetch and the memo store\"; the listing's store is reckon/crew/runs.py:1757-1763 handing file_memo.memoized the identity its text was read at, and reckon/file_memo.py:400-413 answers only from what was stored under that identity.\nVERDICT done_when: the done_when names tests/test_a_memoised_pointer_record_reverifies_its_identity.py; it asserts the rename-at-store stand-in fired and changed the inode (:100-107), accepts old-or-new in the met listing (:109), requires the next listing to read the new record (:112), and requires one decode after a rename over 301 pointers (:166).\nVERDICT write_paths: the manifest's orientation_write_paths lists five paths; the diff touches four of them and nothing else (reckon/file_memo.py, reckon/crew/runs.py, the node test file, the evidence fragment), so the figures path was declared and left unused.\nVERDICT manifest: read; status complete, three commits named, the tests line is the literal PYTHONPATH=. .venv/bin/python -m pytest command, and it records baseline_suite 58 passed at eed783c and after_suite 61 passed at e7e7835 with logs/negative-control-base.log at EXIT=1.\nVERDICT diff: read commit by commit \u2014 e823cf2 stores the record under the text's identity in reckon/file_memo.py and reckon/crew/runs.py plus the new test, e7e7835 adds the 45-line evidence fragment, 32afa71 rewrites one arm sentence in that fragment.\nCALL_SITES: reckon/crew/runs.py:_list_live_records, reckon/roadmap.py:3824, reckon/crew/session_host.py:417, reckon/crew/admission/holds.py:513, reckon/crew/merge.py:168, reckon/crew/watch_unit.py:342\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1763 passes the identity taken before the text read, so the store at reckon/file_memo.py:418 no longer pairs old text with the replacing file's stat.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate line and its 61-passed result are in the manifest, and logs/negative-control-base.log shows the same file failing 2 of 3 at the head's base eed783c with EXIT=1 and assert 'working' == 'complete'.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff eed783c7..32afa71 is one of the manifest's declared write paths, and the declared docs/figures path was left unwritten.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_memoised_pointer_record_reverifies_its_identity.py:112 and :166 redden when the identity plumbing is reverted as the base arm shows, but :109 admits both values its own stand-in can leave and cannot catch a regression.\nSCORE fit: 18\nJUSTIFICATION fit: the added keyword follows the docstring-and-keyword-only shape of reckon/file_memo.py:365-403, and reckon/crew/runs.py:1665 takes the identity through file_memo.file_signature rather than naming stat fields itself.\nSCORE reuse: 20\nJUSTIFICATION reuse: the effect extends file_memo.memoized itself (reckon/file_memo.py:371) and signature_from_stat stays the one place identity fields are written; a search over reckon/ for a memo accepting a caller-observed identity found no owner other than this one.\nFINDING tests/test_a_memoised_pointer_record_reverifies_its_identity.py:109 non-blocking: the assertion accepts either of the two values the test's own rename stand-in can leave behind, so it holds whatever the listing returns and cannot redden on a regression \u2014 the independent assertions at :100, :112 and :166 carry the guard, and the done_when requires this acceptance clause.\nFINDING reckon/file_memo.py:414 non-blocking: the region fast path returns region[key] without comparing the caller-supplied identity, so a second memoized call for one path at a different identity inside one region is answered from the first entry; unreachable from this node's call path because reckon/crew/runs.py:1758 opens a region per pointer, but the new argument is silently ignorable in that branch.",
+  "review_run_id": "r-20261119T221013227007-review-of-a-memoised-pointer-record-reverifies-its-identity-32afa7130ba0",
+  "reviewed_base_sha": "eed783c702b16cd8ef596bf8d7c785e2e39e3538",
+  "reviewed_head_sha": "32afa7130ba046ae9b23e914a7bf73ea0a3f2fd3",
+  "reviewed_run_id": "r-20261119T194721356715-a-memoised-pointer-record-reverifies-its-identity",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:23:09.433321+00:00",
+  "total": 114
+}

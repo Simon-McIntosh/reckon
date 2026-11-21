@@ -426,11 +426,18 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
     return commits
 
 
-def _entry_commits(cwd: Path, entry: str) -> list[str]:
-    """The commits one citation entry names, in the order it writes them."""
+def _entry_commits(cwd: Path, entry: str, *, strict: bool = False) -> list[str]:
+    """The commits one citation entry names, in the order it writes them.
+
+    ``strict`` is the resolver's own keyword, passed through rather than
+    restated: the caller choosing the revision the run's work reached reads an
+    empty answer as licence to leave an entry out of the comparison, so it asks
+    for a git that ran out of its bound or could not start to raise instead of
+    arriving as a citation that names nothing.
+    """
     found: list[str] = []
     for candidate in [entry, *_citation_tokens(str(entry))]:
-        resolved = _resolve_commit(cwd, candidate)
+        resolved = _resolve_commit(cwd, candidate, strict=strict)
         if resolved and resolved not in found:
             found.append(resolved)
     return found
@@ -490,18 +497,19 @@ def _descendant_commit(run_tree: Path, presented: Sequence[str]) -> str:
         text = str(entry).strip()
         if not text:
             continue
-        canonical = _resolve_commit(run_tree, text, strict=True)
-        if not canonical:
+        resolved = _entry_commits(run_tree, text, strict=True)
+        if not resolved:
             raise CrewError(
                 f"the citation {text!r} presented for this promotion names no "
                 f"commit in the run's tree {run_tree}, so the revision the run's "
                 "work reached cannot be chosen while it still has to be placed "
                 "in the history. Present the commit the run's work ended at"
             )
-        if canonical in seen:
-            continue
-        seen.add(canonical)
-        entries.append(canonical)
+        for canonical in resolved:
+            if canonical in seen:
+                continue
+            seen.add(canonical)
+            entries.append(canonical)
     if not entries:
         return ""
     descendants = [
@@ -548,22 +556,32 @@ def _repository_scope_paths(
     return tuple(roots)
 
 
+def _commit_parents(cwd: Path, revision: str) -> tuple[str, ...]:
+    """Return the parents ``git`` reports for one revision, empty when unreadable.
+
+    One read answers both questions the scope path and the citation guard ask of
+    a revision — whether it is a merge at all, and whether it names a particular
+    commit as a parent — so the invocation is owned here rather than repeated by
+    each caller. A revision the tree cannot read has no parents to report, and
+    the caller's question then answers itself as false.
+    """
+    parents = subprocess.run(
+        ["git", "rev-list", "--parents", "-n1", revision],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if parents.returncode:
+        return ()
+    return tuple(parents.stdout.split()[1:])
+
+
 def _merge_revisions(cwd: Path, revisions: Iterable[str]) -> list[str]:
     """Return the cited revisions that are merges rather than a worker's commit."""
-    merges = []
-    for revision in revisions:
-        parents = subprocess.run(
-            ["git", "rev-list", "--parents", "-n", "1", revision],
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if parents.returncode:
-            continue
-        if len(parents.stdout.split()) > 2:
-            merges.append(revision)
-    return merges
+    return [
+        revision for revision in revisions if len(_commit_parents(cwd, revision)) > 1
+    ]
 
 
 def _scope_worktree(record: Mapping[str, Any], tree: Path) -> Path:
@@ -3219,9 +3237,8 @@ def _commit_branch_writes(
             },
         )
 
-    committed, _retries = _run_waiting_out_a_held_index_lock(
-        checkout,
-        lambda _attempt: _git(
+    def commit_by_pathspec() -> subprocess.CompletedProcess:
+        return _git(
             checkout,
             "commit",
             "--only",
@@ -3232,7 +3249,26 @@ def _commit_branch_writes(
             "--",
             *(str(p) for p in targets),
             check=False,
-        ),
+        )
+
+    def commit_staged_writes(_attempt: int) -> subprocess.CompletedProcess:
+        # While an earlier attempt waited on a peer's index lock, that peer's
+        # index write can have dropped a path this landing added, and a commit
+        # by pathspec refuses a path the index no longer knows. Such a refusal
+        # stages the paths again and commits once more.
+        result = commit_by_pathspec()
+        if result.returncode != 0 and "did not match any file" in result.stderr:
+            restaged = _git(
+                checkout, "add", "--", *(str(p) for p in targets), check=False
+            )
+            if restaged.returncode != 0:
+                return restaged
+            result = commit_by_pathspec()
+        return result
+
+    committed, _retries = _run_waiting_out_a_held_index_lock(
+        checkout,
+        commit_staged_writes,
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         on_retry=record_commit_retry,

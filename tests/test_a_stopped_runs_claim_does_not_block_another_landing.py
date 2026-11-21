@@ -187,6 +187,7 @@ def complete_arguments(head: str) -> list[str]:
     return [
         "crew",
         "complete",
+        "--wait",
         "--run",
         OURS,
         "--gate",
@@ -238,14 +239,25 @@ def test_stopped_artifact_peer_is_recorded_on_the_acceptance(
     )
 
     assert result.exit_code == 0, result.output
-    stored = json.loads(result.output)["record"]
-    expected = {
-        "path": ACCEPTED,
-        "reason": "companion of the stopped peer's declared path",
-    }
+    # The command's own reply is a bounded summary; the receipt it names holds
+    # the full promotion result this case judges.
+    receipt = json.loads(
+        Path(json.loads(result.output)["record_path"]).read_text(encoding="utf-8")
+    )
+    stored = receipt["record"]
     if exclusive_claim:
-        expected["stopped_peer_claims"] = [{"run_id": PEER, "claim": ACCEPTED}]
-    assert stored["scope_acceptances"] == [expected]
+        assert stored["scope_acceptances"] == [
+            {
+                "path": ACCEPTED,
+                "reason": "companion of the stopped peer's declared path",
+                "stopped_peer_claims": [{"run_id": PEER, "claim": ACCEPTED}],
+            }
+        ]
+    else:
+        # A companion source path is not a class a merge cannot reconcile, so
+        # the row records no acceptance for it: the peer's claim was never a
+        # fence this landing had to answer for.
+        assert stored["scope_acceptances"] is None
     assert not pointer_path(OURS).exists()
     assert peer_record() == peer_before
     assert ledger.runs(PROJECT, root=repository)

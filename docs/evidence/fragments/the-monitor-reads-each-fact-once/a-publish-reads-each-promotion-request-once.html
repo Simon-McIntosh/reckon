@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s104">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-20">
+  <meta name="evidence-commit" content="9d49b2f393">
+  <title>A publish reads each promotion request once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-publish-reads-each-promotion-request-once">
+  <h2>A publish reads each promotion request once</h2>
+
+  <p><strong>The defect.</strong> An obligations publish called
+  <code>promotion_requests.failure_obligations</code> once per subscribed
+  session, and each call listed and decoded every file under
+  <code>crew/promotion-requests/</code> before filtering on project and session.
+  Six sessions therefore decoded the station's 1,578 requests six times, 28&nbsp;MB
+  each, and the function held 11.9% of every sample in the tick's profile.</p>
+
+  <p><strong>What landed.</strong> A request is decoded at most once per version
+  of its file, through <code>file_memo.memoized</code> — the repository's owner
+  of the identity-keyed decode, which keys on the file's stat signature,
+  re-verifies it after the read so a write landing in between stores nothing,
+  and decodes uncached when the file cannot be stat'ed. One publish reads the
+  directory inside a read-only region, so every slice is handed the stored
+  record's view rather than a copy, and builds one <code>RequestIndex</code>
+  from it grouped by owner. The index travels on the fleet state, so a slice
+  decodes and lists nothing its publish has not changed; a request the publish
+  settles is left out of its own later slices, and the settle guard reads
+  through the same memoised decode. Each candidate a slice would raise a duty
+  for is re-read through that memo's identity check, so a request another drain
+  settled between the reading and a later slice is skipped as the base revision
+  skipped it, at one stat per candidate.</p>
+
+  <p><strong>The measure.</strong> 400 requests across 3 projects and 6
+  sessions, one publish:</p>
+
+  <table>
+    <thead>
+      <tr><th>arm</th><th>decodes for 400 requests</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base revision (<code>5ffa858df0</code>), six session reads</td><td>2,401</td></tr>
+      <tr><td>head, one index shared by six sessions</td><td>400</td></tr>
+      <tr><td>head, six session reads with nothing shared</td><td>401</td></tr>
+      <tr><td>head, a second publish</td><td>1 &mdash; the request the first publish rewrote</td></tr>
+    </tbody>
+  </table>
+
+  <p>The 401 in the third row is the request the same publish settled: it is the
+  only file whose version changed mid-publish, so the session that re-lists the
+  directory after the rewrite decodes it again. One index for the publish leaves
+  it at one decode, because the settled request is left out of the later
+  slices.</p>
+
+  <p><strong>The publish itself.</strong> A second census derives a fleet state
+  over a synthesised home, so the counts are taken over the derivation the
+  station runs rather than a hand-built index. The derivation reads the request
+  directory once and decodes its 42 requests once each; the two session slices
+  that follow decode nothing and list the directory nothing. Reverting either
+  the derivation's <code>request_index()</code> or the slice's
+  <code>index=</code> argument makes that census fail — two listings, or no
+  index on the state at all.</p>
+
+  <p><strong>Parity.</strong> The duties each session is owed, and the set of
+  requests a publish settles, are compared against a transcription of the base
+  revision's loop over the same files &mdash;
+  <code>tests/test_a_publish_reads_each_promotion_request_once.py</code>. Every
+  failed or waiting request in that fixture carries a live pointer, so it is
+  raised as a duty; the one failed request with no pointer is settled and its
+  file rewritten, and the earlier settled requests are left as their readers
+  wrote them.</p>
+</section>
+</main>
+</body>
+</html>

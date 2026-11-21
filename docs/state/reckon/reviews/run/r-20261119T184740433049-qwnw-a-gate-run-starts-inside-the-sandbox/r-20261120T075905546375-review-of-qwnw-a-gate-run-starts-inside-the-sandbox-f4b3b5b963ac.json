@@ -1,0 +1,118 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/nested_launch.py:872",
+    "reckon/nested_launch.py:878",
+    "reckon/nested_launch.py:886",
+    "reckon/_backends.py:3336"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T08:10:00Z",
+  "evidence_limits": [
+    "No suite was re-run; the reviewed run's baseline and head logs were read.",
+    "Both suite arms ran on all_debug rather than the rigel the section's done-when names.",
+    "The recorded negative-control.log reddens test_a_temp_directory_the_job_node_cannot_supply_is_named, not the temp-directory test the declared negative control names."
+  ],
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-a-gate-run-starts-inside-the-sandbox-f4b3b5b963ac",
+      "recorded_at": "2026-11-20T08:47:10.271242+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_gate_run_starts_inside_the_sandbox.py",
+      "line": "103",
+      "severity": "blocking",
+      "text": "blocking: _recipe injects temp_overlay itself and no test composes a recipe through fence_argv, so deleting the emission at reckon/_worker_fence.py:2225 changes no test outcome and the production half of the change has no guard."
+    },
+    {
+      "file": "tests/test_a_gate_run_starts_inside_the_sandbox.py",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: NEGATIVE_CONTROL_MUTATION removes the source check rather than restoring the temp bind to its base form, so negative-control.log records test_the_tasks_own_temp_directory_stands_in_and_the_task_runs passing and only test_a_temp_directory_the_job_node_cannot_supply_is_named failing, and the node's declared negative control is not the one shown."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/s33.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes the refusal as \"absent on this node and not the task's temp directory\", a wording commit b3232aa051 deleted, where reckon/nested_launch.py:665 now says \"absent on this node, so the task was not started and the fence was not dropped\"."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/s33.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records both suite arms on all_debug while the section's done-when requires each arm run on rigel, and no record states why the partition changed."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "645",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment claims every source the inherited fence mounts is checked, but the scan at :649 covers only --bind, --dev-bind, --bind-try and --dev-bind-try, so an absent --ro-bind source still reaches bubblewrap whose message names no node, and the deliverable's \"message naming the path and the node it ran on\" does not hold for seals."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "649",
+      "severity": "non-blocking",
+      "text": "non-blocking: the grant option tuple duplicates the prepare block's grants tuple at :599, so a grant form added to one scan is silently unchecked by the other."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all five commits 28fbf2bc2fe2b27addcf04248210222f2115c1ee..f4b3b5b963acc7ccb25d2fa098fb200576fa0c62; four paths changed, product hunks are the temp_overlay key at reckon/_worker_fence.py:2225 and the source scan at reckon/nested_launch.py:586-587,645-668, and every path is inside the declared scope.",
+    "done_when": "node.json records the done-when; the one-test gate named in the supplied run's manifest ran on 98dci4-clu-3141.iter.org and scoped-gate-1795121430498485799.log ends EXIT=0 with 1 passed, while the arm clause names rigel and both suite arms ran on all_debug instead.",
+    "goal": "the node goal is \"A gate run starts inside the worker sandbox on a compute node\" (dispatch-detail.json:node.goal), and reckon/nested_launch.py:645-668 lands a refusal for a carried fence whose grant source is absent, not a gate start that was previously impossible.",
+    "manifest": "the source manifest.md records both suite arms green at 58 and 60 passed with EXIT=0 and a one-test gate at e4ed877fce, but its negative_control_note describes the temp-directory test failing where negative-control.log's failure is test_a_temp_directory_the_job_node_cannot_supply_is_named.",
+    "write_paths": "the seven declared paths (reckon/_worker_fence.py, reckon/crew/dispatch_launch.py, tests/test_a_gate_run_starts_inside_the_sandbox.py, the two fragment paths and docs/figures/queued-work-needs-no-workaround/qwnw-a-gate-run-starts-inside-the-sandbox) contain every path the diff touches, and dispatch_launch.py needed no change."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gate_run_starts_inside_the_sandbox.py:161 reddens when the source check is removed (negative-control.log), but :103 supplies temp_overlay from the test itself, so deleting the emission at reckon/_worker_fence.py:2225 leaves both tests green.",
+    "evidence": "scoped-gate-1795121430498485799.log:2-7 names host 98dci4-clu-3141.iter.org and ends EXIT=0 with 1 passed, and unbindable-job.out carries the base bwrap message, but negative-control.log reddens the other test than the declared control names and both arms ran on all_debug rather than the rigel the done_when requires.",
+    "fit": "the hunks follow the surrounding constant-and-comment idiom of reckon/nested_launch.py:80-90 in naming and documentation, but the option tuple at reckon/nested_launch.py:649 restates the prepare block's grants tuple at :599 instead of sharing it.",
+    "goal_fidelity": "reckon/nested_launch.py:645-668 names an absent grant source and the node before the fence runs, but scoped-gate-1795121212759301953.log shows the same submission already ran 58 tests on all_debug at base 28fbf2bc, so the landed change adds refusal naming where the strength of the goal was already met.",
+    "reuse": "the capability search over reckon for carried-bind-source validation found only the prepare scan at reckon/nested_launch.py:596-608 and dispatch's vanished-bind retry, and the addition extends that bootstrap rather than forking a module, though it re-walks the argv without reusing that scan.",
+    "scope_discipline": "the four changed paths (docs/evidence/fragments/queued-work-needs-no-workaround/s33.html, reckon/_worker_fence.py:2225, reckon/nested_launch.py:645-668, tests/test_a_gate_run_starts_inside_the_sandbox.py) all lie inside the declared write paths and touch no plan or state file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"A gate run starts inside the worker sandbox on a compute node\" (dispatch-detail.json:node.goal), and reckon/nested_launch.py:645-668 lands a refusal for a carried fence whose grant source is absent, not a gate start that was previously impossible.\nVERDICT done_when: node.json records the done-when; the one-test gate named in the supplied run's manifest ran on 98dci4-clu-3141.iter.org and scoped-gate-1795121430498485799.log ends EXIT=0 with 1 passed, while the arm clause names rigel and both suite arms ran on all_debug instead.\nVERDICT write_paths: the seven declared paths (reckon/_worker_fence.py, reckon/crew/dispatch_launch.py, tests/test_a_gate_run_starts_inside_the_sandbox.py, the two fragment paths and docs/figures/queued-work-needs-no-workaround/qwnw-a-gate-run-starts-inside-the-sandbox) contain every path the diff touches, and dispatch_launch.py needed no change.\nVERDICT manifest: the source manifest.md records both suite arms green at 58 and 60 passed with EXIT=0 and a one-test gate at e4ed877fce, but its negative_control_note describes the temp-directory test failing where negative-control.log's failure is test_a_temp_directory_the_job_node_cannot_supply_is_named.\nVERDICT diff: read all five commits 28fbf2bc2fe2b27addcf04248210222f2115c1ee..f4b3b5b963acc7ccb25d2fa098fb200576fa0c62; four paths changed, product hunks are the temp_overlay key at reckon/_worker_fence.py:2225 and the source scan at reckon/nested_launch.py:586-587,645-668, and every path is inside the declared scope.\nCALL_SITES: reckon/nested_launch.py:872, reckon/nested_launch.py:878, reckon/nested_launch.py:886, reckon/_backends.py:3336\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:645-668 names an absent grant source and the node before the fence runs, but scoped-gate-1795121212759301953.log shows the same submission already ran 58 tests on all_debug at base 28fbf2bc, so the landed change adds refusal naming where the strength of the goal was already met.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795121430498485799.log:2-7 names host 98dci4-clu-3141.iter.org and ends EXIT=0 with 1 passed, and unbindable-job.out carries the base bwrap message, but negative-control.log reddens the other test than the declared control names and both arms ran on all_debug rather than the rigel the done_when requires.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four changed paths (docs/evidence/fragments/queued-work-needs-no-workaround/s33.html, reckon/_worker_fence.py:2225, reckon/nested_launch.py:645-668, tests/test_a_gate_run_starts_inside_the_sandbox.py) all lie inside the declared write paths and touch no plan or state file.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_a_gate_run_starts_inside_the_sandbox.py:161 reddens when the source check is removed (negative-control.log), but :103 supplies temp_overlay from the test itself, so deleting the emission at reckon/_worker_fence.py:2225 leaves both tests green.\nSCORE fit: 15\nJUSTIFICATION fit: the hunks follow the surrounding constant-and-comment idiom of reckon/nested_launch.py:80-90 in naming and documentation, but the option tuple at reckon/nested_launch.py:649 restates the prepare block's grants tuple at :599 instead of sharing it.\nSCORE reuse: 14\nJUSTIFICATION reuse: the capability search over reckon for carried-bind-source validation found only the prepare scan at reckon/nested_launch.py:596-608 and dispatch's vanished-bind retry, and the addition extends that bootstrap rather than forking a module, though it re-walks the argv without reusing that scan.\nFINDING tests/test_a_gate_run_starts_inside_the_sandbox.py:103 blocking: _recipe injects temp_overlay itself and no test composes a recipe through fence_argv, so deleting the emission at reckon/_worker_fence.py:2225 changes no test outcome and the production half of the change has no guard.\nFINDING tests/test_a_gate_run_starts_inside_the_sandbox.py:39 non-blocking: NEGATIVE_CONTROL_MUTATION removes the source check rather than restoring the temp bind to its base form, so negative-control.log records test_the_tasks_own_temp_directory_stands_in_and_the_task_runs passing and only test_a_temp_directory_the_job_node_cannot_supply_is_named failing, and the node's declared negative control is not the one shown.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/s33.html:35 non-blocking: the fragment quotes the refusal as \"absent on this node and not the task's temp directory\", a wording commit b3232aa051 deleted, where reckon/nested_launch.py:665 now says \"absent on this node, so the task was not started and the fence was not dropped\".\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/s33.html:43 non-blocking: the fragment records both suite arms on all_debug while the section's done-when requires each arm run on rigel, and no record states why the partition changed.\nFINDING reckon/nested_launch.py:645 non-blocking: the comment claims every source the inherited fence mounts is checked, but the scan at :649 covers only --bind, --dev-bind, --bind-try and --dev-bind-try, so an absent --ro-bind source still reaches bubblewrap whose message names no node, and the deliverable's \"message naming the path and the node it ran on\" does not hold for seals.\nFINDING reckon/nested_launch.py:649 non-blocking: the grant option tuple duplicates the prepare block's grants tuple at :599, so a grant form added to one scan is silently unchecked by the other.",
+  "review_run_id": "r-20261120T075905546375-review-of-qwnw-a-gate-run-starts-inside-the-sandbox-f4b3b5b963ac",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "f4b3b5b963acc7ccb25d2fa098fb200576fa0c62",
+  "reviewed_run_id": "r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox",
+  "scores": {
+    "durability": 10,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 13,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "baseline": {
+      "exit": 0,
+      "failed": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/baseline_suite-1795121680021806134.log",
+      "passed": 58,
+      "revision": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+      "summary": "58 passed in 35.26s"
+    },
+    "head": {
+      "exit": 0,
+      "failed": 0,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/after_suite-1795121430498485799.log",
+      "passed": 60,
+      "revision": "f4b3b5b963acc7ccb25d2fa098fb200576fa0c62",
+      "summary": "60 passed in 36.06s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T08:27:42.901215+00:00",
+  "total": 84
+}

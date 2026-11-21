@@ -12,14 +12,14 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, ledger
-from reckon.crew import landing_measure, pending_landing, recovery, runs
+from reckon.crew import pending_landing, recovery, runs
 from reckon.crew import review as review_module
 from tests.helpers.git import git as _git
 from tests.helpers.landing_repository import (
     PLAN,
     PROJECT,
     _write_origin_and_checkout,
-    in_place_scheduler,
+    install_in_place_scheduler,
 )
 
 RUN = "r-clean-delivery"
@@ -118,11 +118,10 @@ def delivery(tmp_path, isolated_reckon_home, monkeypatch):
     )
     review_module.store_review(record)
     submissions = []
-    scheduler = in_place_scheduler(submissions)
+    install_in_place_scheduler(monkeypatch, submissions)
 
     # The test gate itself is allocated on all_debug. Only scheduler transport
     # is replaced: checkout construction, the command and receipt reading run.
-    monkeypatch.setattr(landing_measure, "_RUN", scheduler)
     return {
         "repo": repo,
         "origin": origin,

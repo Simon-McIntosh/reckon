@@ -5,7 +5,7 @@ import signal
 import subprocess
 import sys
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 
@@ -815,6 +815,142 @@ def signal_pending_step_client(pid: int, run_dir: str | Path) -> str | None:
         )
         else None
     )
+
+
+# How long a stop waits for a placed step to leave the step listing after the
+# scheduler has been asked to end it, and how often it asks. Bounded so a stop
+# never hangs on a scheduler that does not answer.
+STEP_STOP_SETTLE_SECONDS = 5.0
+STEP_STOP_POLL_SECONDS = 0.1
+
+# A step query is on the stop path, so it is bounded for the same reason the
+# liveness query is: a controller that hangs must not make the stop hang.
+_STEP_QUERY_TIMEOUT_SECONDS = 5.0
+
+
+def _listed_step_ids(
+    job: str, runner: Callable[..., Any] | None = None
+) -> list[str] | None:
+    """The step ids the scheduler lists under one job, or None when unread.
+
+    The empty list is a successful query that named no step: a job whose steps
+    have all ended lists none. None is a question that could not be asked at
+    all — no scheduler, a non-zero exit, a timeout — and must not be read as an
+    ended step.
+    """
+    scheduler = shutil.which("squeue")
+    if scheduler is None:
+        return None
+    probe = runner or subprocess.run
+    try:
+        answer = probe(
+            [
+                scheduler,
+                "--steps",
+                "--jobs",
+                str(job),
+                "--noheader",
+                "--format=%i",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=_STEP_QUERY_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if answer.returncode != 0:
+        return None
+    return [line.split()[0] for line in answer.stdout.splitlines() if line.split()]
+
+
+def cancel_placed_step(
+    run_dir: str | Path | None,
+    *,
+    settle_seconds: float | None = None,
+    runner: Callable[..., Any] | None = None,
+    clock: Callable[[], float] | None = None,
+    sleeper: Callable[[float], None] | None = None,
+) -> dict[str, Any] | None:
+    """End a placed worker's scheduler step, and say whether it left.
+
+    A step's worker runs on the node the allocation is held on, not on the host
+    that composed the launch, so a signal sent from this host cannot reach it
+    and the ``srun`` client waits for the step rather than ending with it. The
+    scheduler holds the step by the id the step itself wrote, so it is ended
+    there, by that id and nothing wider, and the stop waits a bounded time for
+    the id to leave the listing.
+
+    Returns None for a run that is not step-placed or whose own record names no
+    step id — such a run has no step to end. Otherwise the answer carries the
+    step id, the command that ends it, and ``surviving``: False when the step
+    left the listing, True when it was still listed after the bound, and None
+    when the scheduler could not be asked.
+    """
+    identity = _step_worker_identity(run_dir)
+    if identity is None:
+        return None
+    step = identity[0]
+    job = step.split(".", 1)[0]
+    bound = STEP_STOP_SETTLE_SECONDS if settle_seconds is None else settle_seconds
+    now = clock or time.monotonic
+    pause = sleeper or time.sleep
+    command = f"scancel {step}"
+    listed = _listed_step_ids(job, runner)
+    cancel_exit: int | None = None
+    cancel_output = ""
+    if listed is None or step in listed:
+        scheduler = shutil.which("scancel")
+        if scheduler is None:
+            cancel_output = "scancel is installed nowhere on this PATH"
+        else:
+            probe = runner or subprocess.run
+            try:
+                answer = probe(
+                    [scheduler, step],
+                    capture_output=True,
+                    text=True,
+                    timeout=_STEP_QUERY_TIMEOUT_SECONDS,
+                )
+            except (OSError, subprocess.SubprocessError) as exc:
+                cancel_output = f"could not run {command}: {exc}"
+            else:
+                cancel_exit = int(answer.returncode)
+                cancel_output = str(answer.stdout or "") + str(answer.stderr or "")
+    if listed is not None and step not in listed:
+        surviving: bool | None = False
+    else:
+        deadline = now() + bound
+        while True:
+            listed = _listed_step_ids(job, runner)
+            if listed is None:
+                surviving = None
+                break
+            if step not in listed:
+                surviving = False
+                break
+            if now() >= deadline:
+                surviving = True
+                break
+            pause(STEP_STOP_POLL_SECONDS)
+    if surviving is False:
+        detail = f"step {step} left the scheduler after it was cancelled"
+    elif surviving is True:
+        detail = (
+            f"step {step} is still listed after {bound:g}s; end it with `{command}`"
+        )
+    else:
+        detail = (
+            f"step {step} could not be observed: the scheduler did not answer, "
+            f"so `{command}` was issued and not confirmed"
+        )
+    return {
+        "step": step,
+        "command": command,
+        "surviving": surviving,
+        "cancel_exit": cancel_exit,
+        "cancel_output": cancel_output.strip(),
+        "detail": detail,
+    }
 
 
 def _cgroup_names_step(cgroup: str, required: tuple[str, str]) -> bool:

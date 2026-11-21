@@ -167,6 +167,9 @@ LIVE_CLASSIFICATION_FIELDS = (
     "terminal_age_seconds",
     "terminal_at",
     "wait_age_seconds",
+    # What could release a request held on its upstream waits, as the admission
+    # pass resolved it: progressing, idle or stranded.
+    "wait_class",
     "wait_condition_state",
     "waiting_seconds",
     "wait_key_defect",

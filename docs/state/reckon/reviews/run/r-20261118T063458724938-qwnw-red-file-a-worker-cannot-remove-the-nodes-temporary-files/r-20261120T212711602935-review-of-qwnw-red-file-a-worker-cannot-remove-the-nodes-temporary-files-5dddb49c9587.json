@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:59:11Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+      "line": "609",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert Path(source) == shims / Path(destination).name` compares the composed mask source against a path built from `shim_directory()`, the product function the composition itself calls, so a regression in `shim_directory()` moves both sides together and the assertion stays green; the same self-reference sits at line 584 (SHIM_HOME_ENV value) and line 634 (`fence_program()`), and only `Path(destination).is_file()` at 610, the name equality at 615 and `source in masked` at 618 test the argv against an independent fact."
+    },
+    {
+      "file": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+      "line": "605",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert masks` and `assert relays` (605-606) assert a property of the host PATH, because the guard's copies come from scheduler_shields' PATH search (reckon/_worker_fence.py:2340 on main) and the fixture neither sets PATH nor supplies a scheduler directory; on a host where no sbatch/srun/salloc resolves the composition masks nothing and the file reddens for an environment reason rather than a guard regression."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files.html",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted head run re-entered the fence as an srun step of the worker's own held job (gate/merged-gate.log line 1 is the shim's task re-entry message), so SLURM_JOB_ID was set, while the done_when requires the file to pass as a job with SLURM_JOB_ID unset; neither the fragment nor the manifest records that condition being set up."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read b24fe95a..5dddb49c commit by commit: ce86d1f8 and 8b451998 are the state the earlier review read, 7adfb550 rewrites the tail assertions and adds the guard and recipe checks (tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:566-661), and 5dddb49c rewrites only the fragment's head section; no production path changed.",
+    "done_when": "read done_when from the source run's node.json: the file passes in full at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict, no weakened assertion, an arm adding no failure with both arms as inline JSON at full revision, and a negative control in the fragment; the manifest records the base red run (gate/negative-control.log), the merged head green run, both suite arms at 0 failures and a per-cause \"test wrong\" verdict, but no log shows SLURM_JOB_ID unset.",
+    "goal": "read the source node's goal from brief-for-worker.md line 28, \"Make tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py pass in full on the primary branch\"; the landed test at 5dddb49c asserts the guard, and gate/merged-gate.log records 8 passed with EXIT=0 at the cherry-picked merged head e9eeda5e0d, so the file passes on the merged primary-branch result.",
+    "manifest": "read the source run's manifest.md; it lists the four commits, the tests command, gate/merged-gate.log and gate/negative-control.log, baseline_suite and after_suite as inline JSON carrying full 40-character revisions with 0 failures each, a negative_control_log, and claims ruff clean on the changed test file without a log.",
+    "write_paths": "read the declared paths from the review dispatch (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, docs/figures/...); the delivered diff b24fe95a..5dddb49c touches only tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:605 fails if the composition masks nothing and :618 fails if a relay forwards to an unmasked copy, but :609 and :584 compare against values produced by product functions (shim_directory(), SHIM_HOME_ENV) so those lines move with the code they test.",
+    "evidence": "gate/merged-gate.log records the merged head and 8 passed with EXIT=0, and baseline_suite-1795069057450525537.log and gate/suite-head.log each record 58 passed with EXIT=0, but no recorded log or manifest field shows the done_when's SLURM_JOB_ID-unset condition.",
+    "fit": "the added block keeps the file's existing commented-literal idiom at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:567-572 and imports the shim names from their owner, naming no identifier the repository forbids.",
+    "goal_fidelity": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:566-661 now asserts the composition the product on main (reckon/_worker_fence.py:2340 scheduler_shields) emits, and gate/merged-gate.log's last summary is \"8 passed\" with EXIT=0.",
+    "reuse": "the only added definition is none; the imports at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:55-59 take SHIM_HOME_ENV, SHIM_REAL_DIRECTORY_ENV and shim_directory from reckon/nested_launch.py:396, the owner of the shim directory, and no recipe-decoding helper exists in reckon/ to extend (the inline base64/json decode has precedent at reckon/nested_launch.py:578).",
+    "scope_discipline": "the two paths in the delivered diff sit inside the declared write paths, and neither the test nor the fragment touches a production module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal from brief-for-worker.md line 28, \"Make tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py pass in full on the primary branch\"; the landed test at 5dddb49c asserts the guard, and gate/merged-gate.log records 8 passed with EXIT=0 at the cherry-picked merged head e9eeda5e0d, so the file passes on the merged primary-branch result.\nVERDICT done_when: read done_when from the source run's node.json: the file passes in full at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict, no weakened assertion, an arm adding no failure with both arms as inline JSON at full revision, and a negative control in the fragment; the manifest records the base red run (gate/negative-control.log), the merged head green run, both suite arms at 0 failures and a per-cause \"test wrong\" verdict, but no log shows SLURM_JOB_ID unset.\nVERDICT write_paths: read the declared paths from the review dispatch (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, docs/figures/...); the delivered diff b24fe95a..5dddb49c touches only tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files.html, both inside them.\nVERDICT manifest: read the source run's manifest.md; it lists the four commits, the tests command, gate/merged-gate.log and gate/negative-control.log, baseline_suite and after_suite as inline JSON carrying full 40-character revisions with 0 failures each, a negative_control_log, and claims ruff clean on the changed test file without a log.\nVERDICT diff: read b24fe95a..5dddb49c commit by commit: ce86d1f8 and 8b451998 are the state the earlier review read, 7adfb550 rewrites the tail assertions and adds the guard and recipe checks (tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:566-661), and 5dddb49c rewrites only the fragment's head section; no production path changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:566-661 now asserts the composition the product on main (reckon/_worker_fence.py:2340 scheduler_shields) emits, and gate/merged-gate.log's last summary is \"8 passed\" with EXIT=0.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate/merged-gate.log records the merged head and 8 passed with EXIT=0, and baseline_suite-1795069057450525537.log and gate/suite-head.log each record 58 passed with EXIT=0, but no recorded log or manifest field shows the done_when's SLURM_JOB_ID-unset condition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two paths in the delivered diff sit inside the declared write paths, and neither the test nor the fragment touches a production module.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:605 fails if the composition masks nothing and :618 fails if a relay forwards to an unmasked copy, but :609 and :584 compare against values produced by product functions (shim_directory(), SHIM_HOME_ENV) so those lines move with the code they test.\nSCORE fit: 19\nJUSTIFICATION fit: the added block keeps the file's existing commented-literal idiom at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:567-572 and imports the shim names from their owner, naming no identifier the repository forbids.\nSCORE reuse: 20\nJUSTIFICATION reuse: the only added definition is none; the imports at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:55-59 take SHIM_HOME_ENV, SHIM_REAL_DIRECTORY_ENV and shim_directory from reckon/nested_launch.py:396, the owner of the shim directory, and no recipe-decoding helper exists in reckon/ to extend (the inline base64/json decode has precedent at reckon/nested_launch.py:578).\nFINDING tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:609 non-blocking: `assert Path(source) == shims / Path(destination).name` compares the composed mask source against a path built from `shim_directory()`, the product function the composition itself calls, so a regression in `shim_directory()` moves both sides together and the assertion stays green; the same self-reference sits at line 584 (SHIM_HOME_ENV value) and line 634 (`fence_program()`), and only `Path(destination).is_file()` at 610, the name equality at 615 and `source in masked` at 618 test the argv against an independent fact.\nFINDING tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:605 non-blocking: `assert masks` and `assert relays` (605-606) assert a property of the host PATH, because the guard's copies come from scheduler_shields' PATH search (reckon/_worker_fence.py:2340 on main) and the fixture neither sets PATH nor supplies a scheduler directory; on a host where no sbatch/srun/salloc resolves the composition masks nothing and the file reddens for an environment reason rather than a guard regression.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files.html:17 non-blocking: the quoted head run re-entered the fence as an srun step of the worker's own held job (gate/merged-gate.log line 1 is the shim's task re-entry message), so SLURM_JOB_ID was set, while the done_when requires the file to pass as a job with SLURM_JOB_ID unset; neither the fragment nor the manifest records that condition being set up.\n",
+  "review_run_id": "r-20261120T212711602935-review-of-qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files-5dddb49c9587",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "5dddb49c95875ec0bd4f6ab0b61e5c221761a095",
+  "reviewed_run_id": "r-20261118T063458724938-qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:20:41.164912+00:00",
+  "total": 107
+}

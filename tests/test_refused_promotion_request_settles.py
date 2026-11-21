@@ -195,7 +195,8 @@ def test_a_landed_run_settles_its_refused_request_as_landed(repository, tmp_path
     _refuse(REVIEW_RUN_ID)
     assert _refused_run_ids() == [REVIEW_RUN_ID]
 
-    row = {"run_id": REVIEW_RUN_ID, "commits": ["a" * 40]}
+    head = git(repository, "rev-parse", "HEAD")
+    row = {"run_id": REVIEW_RUN_ID, "commits": [head]}
     ledger.run_path(PROJECT, REVIEW_RUN_ID, repository).parent.mkdir(
         parents=True, exist_ok=True
     )

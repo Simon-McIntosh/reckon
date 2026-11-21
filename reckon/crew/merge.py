@@ -441,8 +441,9 @@ def _copy_objects(
                 "cannot store the merge's objects: "
                 + unpacked.stderr.decode("utf-8", "replace").strip()
             )
-    present = _run(repo, "cat-file", "-e", f"{revision}^{{commit}}")
-    if present.returncode != 0:
+    from reckon.crew.recovery import _resolve_commit
+
+    if not _resolve_commit(repo, revision):
         raise MergeError(
             f"the built merge {revision} did not reach the repository's store"
         )
@@ -1284,17 +1285,16 @@ def head_on_remote_branch(
         answer["cause"] = REMOTE_BRANCH_MISSING
         return answer
     answer["remote_head"] = remote_head
-    present = _run(repo, "cat-file", "-e", f"{remote_head}^{{commit}}")
-    if present.returncode != 0:
+    from reckon.crew.recovery import _resolve_commit
+
+    if not _resolve_commit(repo, remote_head):
         fetched = _run(repo, "fetch", remote, f"refs/heads/{branch}", env=env)
         if fetched.returncode != 0 and env is None:
             failed = fetched.stderr.strip() or fetched.stdout.strip()
             if _port22_refused(failed):
                 env = _port443_env()
                 fetched = _run(repo, "fetch", remote, f"refs/heads/{branch}", env=env)
-        if fetched.returncode != 0 or (
-            _run(repo, "cat-file", "-e", f"{remote_head}^{{commit}}").returncode != 0
-        ):
+        if fetched.returncode != 0 or (not _resolve_commit(repo, remote_head)):
             answer["cause"] = REMOTE_UNREACHABLE
             answer["detail"] = fetched.stderr.strip() or fetched.stdout.strip()
             return answer

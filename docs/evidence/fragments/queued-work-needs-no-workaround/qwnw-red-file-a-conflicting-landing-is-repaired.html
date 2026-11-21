@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-a-conflicting-landing-is-repaired-causes">
+<h2>Two causes, both product</h2>
+<p>The file was red at base in both parametrised cases, revision
+42fe90d0b0a46060bafde2490dda7d4002cda478, log
+<code>logs/negative-control-base.log</code> beside the head run:</p>
+<pre>tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]
+tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]
+2 failed, 2 passed
+EXIT=1</pre>
+<pre><code>reckon.crew.CrewError: no live run 'r-delivery-second'
+  (looked in .../config/crew/live/r-delivery-second.json)</code></pre>
+<div class="evidence">
+<section id="qwnw-red-file-a-conflicting-landing-is-repaired-cause-1">
+<h3>Cause 1: the promoted-run refusal blocked the repair round</h3>
+<p>A delivery that promotes and then meets a merge conflict has no live
+pointer, because promotion retired it. The repair round is the only owner of
+that conflict, so <code>dispatch_merge_repair</code> rebuilt the pointer through
+<code>mark_pending_landing_repair</code>. That writer refused every promoted
+run, so the round was recorded as <code>"status": "refused"</code>, the pending
+landing reported <code>record-obligation</code> on every pass, and
+<code>read_pointer</code> raised <code>no live run</code>.</p>
+<p>The refusal is right for the replay it was written for: a landing re-read long
+after it ran must not recreate a promoted run's pointer, or a landing that
+already happened is read as live again. What it could not tell apart is the
+conflict in front of the pass. Its first round now rebuilds the marked pointer.</p>
+</section>
+<p>The rebuild applies only to a first round. It needs all of these:</p>
+<ul>
+<li>the run is promoted;</li>
+<li>a pending record exists for the run;</li>
+<li>that record names no merge conflict yet;</li>
+<li>a project is named, so the promotion row can be read;</li>
+<li>the record names no landing group, because a group's members are resumed by
+the group journal as one cohort.</li>
+</ul>
+</div>
+</section>
+<section id="qwnw-red-file-a-conflicting-landing-is-repaired-cause-2">
+<h3>Cause 2: a running round was re-issued on every sweep</h3>
+<p>The landing pass calls <code>dispatch_merge_repair</code> for the same conflict
+again on the next sweep. That call found the round resumed and, with the
+pointer live again, tried the write a second time, so the test saw the
+round resumed twice. <code>dispatch_merge_repair</code> now returns the round it
+already opened and resumed, so one conflict resumes one worker.</p>
+</section>
+<section id="qwnw-red-file-a-conflicting-landing-is-repaired-guards">
+<h2>The refusals this change keeps</h2>
+<p>Suites that drive the guards all pass at this head:</p>
+<ul>
+<li><code>test_concurrent_edits_land_unattended.py</code>: a promoted landing
+group member that meets a conflicting primary is refused rather than resumed.</li>
+<li><code>test_a_landing_group_ends_when_its_members_land.py</code>: a round the
+record already names stays a <code>record-obligation</code>.</li>
+<li><code>test_a_live_pointer_carries_no_clone_report.py</code></li>
+<li><code>test_a_finished_pending_landing_retires_its_run.py</code></li>
+</ul>
+</section>
+<section id="qwnw-red-file-a-conflicting-landing-is-repaired-arms">
+<h2>Base arm, head arm, and the neighbourhood</h2>
+<p>The gate ran as a job on all_debug at each head, and the log sits under the
+run directory. The neighbourhood is the 53 test files that import
+<code>recovery_repair_dispatch</code> or <code>pending_landing</code>, run in a
+tree at each revision.</p>
+<pre>
+base  42fe90d0b0a46060bafde2490dda7d4002cda478  2 failed,   2 passed  EXIT=1
+head  4 passed              EXIT=0  (gate job on all_debug, cited in the manifest)
+</pre>
+<p>Neighbourhood: the 53 files importing the changed modules:</p>
+<pre>
+base  42fe90d0b0a46060bafde2490dda7d4002cda478  14 failed, 438 passed  EXIT=1
+head  1d848fa09c88a7050389e06f14aec0495ad20abe   9 failed, 443 passed  EXIT=1
+no failure id at head that is absent at base
+five ids fail at base and pass at head
+</pre>
+</section>

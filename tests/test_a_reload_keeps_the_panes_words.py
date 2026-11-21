@@ -64,6 +64,9 @@ class _Subscriber:
     def wake(self, **_kwargs):
         return iter(())
 
+    def drain(self):
+        return []
+
 
 def _attach_events(*, reloaded_in_place: bool) -> list[dict]:
     subscriber = _Subscriber(

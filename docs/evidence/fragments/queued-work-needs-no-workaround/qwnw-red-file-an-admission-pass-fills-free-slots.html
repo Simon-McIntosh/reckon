@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-an-admission-pass-fills-free-slots-landing">
+  <h2>An admission pass fills free slots — already green at base</h2>
+
+  <p><strong>What the node measured.</strong>
+  <code>tests/test_an_admission_pass_fills_free_slots.py</code> was run at the
+  node's base revision <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code>,
+  before any merge or pull, as the dispatch requires. It passed in full:
+  <code>7 passed in 26.21s</code>. Per the spec a green base run is the
+  deliverable run, so no product rule was repaired and no assertion was
+  touched. The work is in the node's own tree, not on the primary branch.</p>
+
+  <p>The same file was then measured through the composable gate as its own
+  batch job on <code>all_debug</code>, tree imported on
+  <code>98dci4-clu-3142</code> from a scratch extraction of that revision with
+  <code>SLURM_JOB_ID</code> unset: <code>EXIT=0</code>,
+  <code>7 passed in 23.86s</code>, zero failure ids. Every command in the table
+  was afterwards re-run at the run's committed head, where the same three
+  checks passed again; the manifest's <code>after_suite</code>,
+  <code>tests</code> and <code>test_logs</code> are the head arm's own
+  receipt, so this fragment quotes the base revision only.</p>
+
+  <h3 id="qwnw-red-file-an-admission-pass-fills-free-slots-measured">Measured runs at the base revision</h3>
+
+  <table id="qwnw-red-file-an-admission-pass-fills-free-slots-arms">
+    <caption>Every scheduler arm is a log whose first lines name the revision,
+    tree and command, and whose last line is a bare <code>EXIT=</code>
+    receipt.</caption>
+    <thead>
+      <tr><th>Arm</th><th>Command</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, local worktree</td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_pass_fills_free_slots.py</code></td>
+        <td>7 passed in 26.21s</td>
+        <td>node shell, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>scoped gate, <code>all_debug</code></td>
+        <td>the same command, in its own extracted tree</td>
+        <td>7 passed in 23.86s</td>
+        <td><code>scoped-gate-1795068396469106880.log</code></td>
+      </tr>
+      <tr>
+        <td>declared suite, base arm</td>
+        <td>the same runner over <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed</td>
+        <td><code>baseline_suite-1795069490357044872.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-an-admission-pass-fills-free-slots-flake">The failures seen on a loaded host</h3>
+
+  <p>Two of five local repetitions failed, both on the shared interactive host
+  and both in <code>test_the_admit_service_stops_after_its_launches_finish</code>
+  with <em>“admission service did not reach its requested boundary”</em> — the
+  test's own 15-second bound on a freshly spawned Python child in a loaded
+  host: that child (<code>Popen</code>, no scheduler hop) must spawn, import
+  <code>reckon.crew</code> and reach its began marker. Each of the two failures
+  ran while another pytest process occupied the same worktree: a suite job
+  submitted minutes earlier in the first case, and a full-suite run started in
+  the same tree in the second. The failing ids are in
+  <code>local-rerun-1.log</code> and <code>single-2.log</code>; the three
+  passing repetitions are the base run above, <code>local-rerun-2.log</code>
+  and <code>single-1.log</code> of the node's run directory. No assertion was
+  relaxed and no product path was changed: the declared measure runs in its own
+  extracted tree on <code>all_debug</code>, where it passed at both the base
+  revision and the latter head of this node's runs.</p>
+</section>

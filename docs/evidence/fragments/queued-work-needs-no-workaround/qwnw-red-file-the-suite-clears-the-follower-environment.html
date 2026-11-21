@@ -1,0 +1,30 @@
+<section id="qwnw-red-file-the-suite-clears-the-follower-environment-landing">
+<h3>The named file already passes at the base revision; the guard it carries was shown to fire</h3>
+<p><code>tests/test_the_suite_clears_the_follower_environment.py</code> was green at the base revision <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> before any change: 3 passed, exit 0, in 75.48 s in the run's own worktree. Per §29's deliverable, a file that already passes when the node starts is delivered as such with the passing run, so this node changes no product line and no test line. The file's subject — that <code>tests/conftest.py</code> clears the four crew-host variables for every test — is unchanged and unfixed, because nothing was broken.</p>
+
+<h4 id="qwnw-red-file-the-suite-clears-the-follower-environment-run">The named file at head, as an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-the-suite-clears-the-follower-environment
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -rfE tests/test_the_suite_clears_the_follower_environment.py
+...                                                                      [100%]
+3 passed in 81.89s (0:01:21)
+EXIT=0
+</pre>
+<p>The run's log is <code>logs/named-check-head.log</code> in the crew run directory, submitted as job <code>1329414</code> on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset inside the job.</p>
+
+<h4 id="qwnw-red-file-the-suite-clears-the-follower-environment-negative-control">Negative control: the guarded thing made to happen</h4>
+<p>A green suite does not show that the fixture fires. The control sets the four variables a crew-host session stamps — <code>RECKON_SESSION_HOST_SETTLE=1</code>, <code>RECKON_FOLLOWER_OWNER={"pid": 4242, "start_time": "999.0"}</code>, <code>RECKON_FOLLOWER_IMAGE_COMMIT=0000000000000000000000000000000000000000</code>, <code>RECKON_FOLLOWER_SOURCE_ROOT=&lt;worktree&gt;</code> — and loads no conftest (<code>--noconftest</code>), so the autouse fixture cannot clear them. The file's own first case reads the leak, and the run turns red on exactly that assertion:</p>
+<pre>
+# revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-the-suite-clears-the-follower-environment
+# command: env RECKON_SESSION_HOST_SETTLE=1 RECKON_FOLLOWER_OWNER='{"pid": 4242, "start_time": "999.0"}' RECKON_FOLLOWER_IMAGE_COMMIT=0000000000000000000000000000000000000000 RECKON_FOLLOWER_SOURCE_ROOT=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-the-suite-clears-the-follower-environment PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q --noconftest -rfE tests/test_the_suite_clears_the_follower_environment.py
+FAILED tests/test_the_suite_clears_the_follower_environment.py::test_the_follower_session_is_absent_in_this_process - AssertionError: the follower session leaked into the suite: ['RECKON_SESSION_HOST_SETTLE', 'RECKON_FOLLOWER_OWNER', 'RECKON_FOLLOWER_IMAGE_COMMIT', 'RECKON_FOLLOWER_SOURCE_ROOT']
+1 failed, 2 passed in 83.90s (0:01:23)
+EXIT=1
+</pre>
+<p>The control's log is <code>logs/negative-control-fixture-bypassed.log</code> in this run's directory. The failing id is one the head run does not fail, which is what separates the two runs: with the fixture bypassed the same file is red, so the green run depends on the fixture clearing the environment rather than on the environment being empty.</p>
+
+<h4 id="qwnw-red-file-the-suite-clears-the-follower-environment-verdict">Causes and verdicts</h4>
+<p>None: the file is green at the base revision, so no cause is attributed and no assertion is deleted or weakened. The manifest carries the suite arms and the scoped gate measured at the delivered head.</p>
+</section>

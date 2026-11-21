@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:225",
+    "reckon/crew/queue_landing.py:2282",
+    "reckon/crew_run_commands.py:631",
+    "reckon/crew/lead_decisions.py:188"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:19:44Z",
+  "findings": [
+    {
+      "detail": "read_decisions globs crew_home()/decisions/*.json and lead_decisions.decision_path resolves that same directory with the same filename, so reverting lost_session_work.raise_lost_session_work to write_json_atomically(decision_path(session), record) still yields a row whose project, session and records satisfy validate_decision. The test evidences the done_when statement but does not distinguish the new store-backed write from the old one.",
+      "file": "tests/test_a_lost_sessions_work_is_raised.py",
+      "line": 194,
+      "severity": "non-blocking",
+      "summary": "test_the_raised_decision_is_read_and_validated_by_the_store cannot fail on the regression it nominally guards: the bespoke write it replaced resolved crew_home()/decisions/<id>.json and produced a shape validate_decision already accepts, so reinstating that write leaves the assertion green and the store-routing change is not regression-covered."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_lost_sessions_work_is_raised.py:219 and :245 redden when the live-adopter and vanished-run guards are removed, and :370 reddens under the recorded negative control, but :194's store-read assertion passes under the replaced bespoke write because lead_decisions.decision_path and the old lost_session_work._decisions_dir path both resolve crew_home()/decisions/<id>.json.",
+    "evidence": "The scoped gate log records 11 passed at 66350a1727 with EXIT=0, the base and after arm logs record 65 and 69 passed with EXIT=0 and zero FAILED lines, and the negative control at negative-control.log:390 shows the lander landing case red with EXIT=1 when the skip is removed.",
+    "fit": "reckon/crew/lead_decisions.py:171 makes request_identity public with a mechanism-worded docstring, and the function-local imports at lost_session_work.py:88 and :353 follow the surrounding lazy-import idiom with no plan label anywhere in the diff.",
+    "goal_fidelity": "reckon/crew/lost_session_work.py:352 routes the raise through lead_decisions.record_decision_at and :479 closes through close_decision_at, and :400 adds the live-session refusal, closing all five gaps plan section s31 names.",
+    "reuse": "reckon/crew/lead_decisions.py:196 and :221 add record_decision_at and close_decision_at to the decisions-store owner, and lost_session_work.py:149 deletes its duplicate _identity in favour of the store's request_identity rather than forking either capability.",
+    "scope_discipline": "The delivered diff touches only reckon/crew/lead_decisions.py, reckon/crew/lost_session_work.py and tests/test_a_lost_sessions_work_is_raised.py, all inside the declared write paths, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a raised decision is written by the decisions store and answered safely; the diff does exactly that at reckon/crew/lost_session_work.py:352, :400 and :479.\nVERDICT done_when: the done_when's four added cases are present at tests/test_a_lost_sessions_work_is_raised.py:194, :219, :245 and :370, and a grep of both named files at the head for a section mark followed by a number returns nothing.\nVERDICT write_paths: the declared paths are seven; the diff touches three of them and nothing outside, so every landed path is inside the declared scope.\nVERDICT manifest: the manifest records the scoped gate 11 passed, base 65 passed and after 69 passed, both EXIT=0, and one negative control red at EXIT=1, and each cited log exists with that summary.\nVERDICT diff: two commits, f53c1dc4ad and 66350a1727, were read against base 65c0479b14; they change lead_decisions.py, lost_session_work.py and the test file as described, with no incidental edits.\nCALL_SITES: reckon/crew/admission/selection.py:225, reckon/crew/queue_landing.py:2282, reckon/crew_run_commands.py:631, reckon/crew/lead_decisions.py:188\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/lost_session_work.py:352 routes the raise through lead_decisions.record_decision_at and :479 closes through close_decision_at, and :400 adds the live-session refusal, closing all five gaps plan section s31 names.\nSCORE evidence: 19\nJUSTIFICATION evidence: the scoped gate log records 11 passed at 66350a1727 with EXIT=0, the base and after arm logs record 65 and 69 passed with EXIT=0 and zero FAILED lines, and negative-control.log:390 shows the lander landing case red with EXIT=1 when the skip is removed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delivered diff touches only reckon/crew/lead_decisions.py, reckon/crew/lost_session_work.py and tests/test_a_lost_sessions_work_is_raised.py, all inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_lost_sessions_work_is_raised.py:219 and :245 redden when the live-adopter and vanished-run guards are removed and :370 reddens under the recorded negative control, but :194's store-read assertion passes under the replaced bespoke write because both paths resolve crew_home()/decisions/<id>.json.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/lead_decisions.py:171 makes request_identity public with a mechanism-worded docstring, and the function-local imports at lost_session_work.py:88 and :353 follow the surrounding lazy-import idiom with no plan label in the diff.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/lead_decisions.py:196 and :221 add record_decision_at and close_decision_at to the decisions-store owner, and lost_session_work.py:149 deletes its duplicate _identity in favour of the store's request_identity rather than forking either capability.\nFINDING tests/test_a_lost_sessions_work_is_raised.py:194 non-blocking: test_the_raised_decision_is_read_and_validated_by_the_store cannot fail on the regression it nominally guards, because both the replaced bespoke write and the store's decision_path resolve crew_home()/decisions/<id>.json and the old record already satisfies validate_decision, so the store-routing change is not regression-covered.\n",
+  "review_run_id": "r-20261121T071821921087-review-of-wlsr-a-raised-decision-uses-the-decisions-store-66350a172713",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "66350a172713820107ee7975bc81ac0e42d8b2c5",
+  "reviewed_run_id": "r-20261121T064900360346-wlsr-a-raised-decision-uses-the-decisions-store",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T08:24:00+00:00",
+  "total": 109,
+  "verdicts": {
+    "call_sites": "Read reckon/crew/admission/selection.py:225, reckon/crew/queue_landing.py:2282 and reckon/crew_run_commands.py:631 as the production callers of the raise, the skip and the answer.",
+    "diff": "Two commits, f53c1dc4ad and 66350a1727, were read against base 65c0479b14; they change lead_decisions.py, lost_session_work.py and the test file as described, with no incidental edits.",
+    "done_when": "The done_when's four added cases are present at tests/test_a_lost_sessions_work_is_raised.py:194, :219, :245 and :370, and a grep of both named files at the head for a section mark followed by a number returns nothing.",
+    "goal": "The node goal is that a raised decision is written by the decisions store and answered safely; the diff does exactly that at reckon/crew/lost_session_work.py:352, :400 and :479.",
+    "manifest": "The manifest records the scoped gate 11 passed, base 65 passed and after 69 passed, both EXIT=0, and one negative control red at EXIT=1, and each cited log exists with that summary.",
+    "write_paths": "The declared paths are seven; the diff touches three of them and nothing outside, so every landed path is inside the declared scope."
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:1418",
+    "reckon/crew/promotion_scope.py:344",
+    "reckon/crew/routing.py:2176"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:06:26Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_merge_reads_labelled_suites.py",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "no case gives a labelled baseline a non-empty failure set, so a regression that compared every label's after arm against one label's baseline would still pass all four tests; a UNIT baseline naming a failure its VALIDATION after arm also names would be the negative control for the central claim."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 1698,
+      "severity": "non-blocking",
+      "text": "the labelled branch returns before _arm_missing_fields runs, so a labelled arm recorded at a revision behind the run head, or carrying a different suite command, is accepted as evidence where the unlabelled path would refuse it; the manifest documents this limitation, and closing it is a follow-up rather than a repair to this node."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 1516,
+      "severity": "non-blocking",
+      "text": "labelled_suite_pairs duplicates the capability of reckon/crew/promotion_evidence.py:2123 _recorded_suite_pairs without extending it, and promotion_evidence._suite_pair_for_gate still reads only the unlabelled pair and the suite_pairs mapping, so a manifest armed with baseline_suite_<LABEL> arms is still unpaired there and one population's inherited failures can read as added."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 862,
+      "severity": "non-blocking",
+      "text": "_suite_arm_field_names restates the two prefixes that promotion_records.py:1513 already holds as _LABELLED_SUITE_PREFIXES, so a third spelling could be added in one place and silently not the other."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_crew_merge_reads_labelled_suites.py:79 builds every labelled baseline with an empty failure_ids list, so all four cases pass even if every label's after arm were judged against one label's baseline \u2014 the cross-population laundering the fragment claims is prevented is not the thing any assertion would catch.",
+    "evidence": "the gate the worker ran is tests/test_crew_merge_reads_labelled_suites.py recorded as \"4 passed\" with EXIT=0 in gate-head.log, and the negative control in negative-control-base.log reproduces \"armed promotion requires complete baseline and after suite evidence; missing baseline_suite, after_suite\" at ff3bb24bcf, which is the refusal the done_when says must appear at base; the gate log's header names the base revision because it ran pre-commit in the dirty worktree, and my re-run at 01b7af4e52 supplies the head-revision result the record lacks.",
+    "fit": "the helpers follow the surrounding private-helper idiom of reckon/crew/promotion_records.py and the manifest module, carry no plan or ticket labels, and ruff check reports clean on the three staged files at head.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:1690 routes a manifest holding only labelled arms to the per-label evaluation, so the precise defect the section records (a passing labelled run refused for absent unlabelled fields) is what the change repairs.",
+    "reuse": "the comparison itself reuses reckon/ledger.py's added_failure_ids and normalized_suite_observation, but reckon/crew/promotion_records.py:1516 re-implemented the \"further suite pairs a manifest records\" enumeration that reckon/crew/promotion_evidence.py:2123 _recorded_suite_pairs already owns, under a different manifest spelling, so the two readers now disagree about which pairs a manifest has.",
+    "scope_discipline": "the four delivered paths all serve the section's deliverable and none touches plan state, pyproject or the figures tree, though reckon/crew/reports.py and reckon/crew/promotion_records.py lie outside the two paths the dispatch declared as expected."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"accept labelled suite arms in crew merge\"; promotion_records.py:1690 now takes a manifest with only labelled arms down _evaluate_labelled_suite_delta, which judges each label's own baseline against its own after arm and refuses a missing side (1584) or an added failure (1590), so a passing labelled manifest merges and the goal is met.\nVERDICT done_when: the done_when names tests/test_crew_merge_reads_labelled_suites.py with three cases; the file at head carries all three plus a fourth clean-delta case (lines 88, 182, 198, 221), the manifest records \"4 passed, EXIT=0\" in gate-head.log, and I re-ran that file at 01b7af4e52 in a scratch tree and got 4 passed.\nVERDICT write_paths: the source dispatch declared only docs/evidence/fragments for this node; the delivered diff is four paths including two modules of reckon/crew and one test file, which are the files the section's deliverable (\"crew merge accepts a manifest whose suite arms are labelled\") actually requires, so the departure is a section-scope requirement rather than drift, and no declared-path artefact is missing (the figures directory is legitimately empty because the change has nothing to draw).\nVERDICT manifest: read; it states commits e1d03bc8b1 and 01b7af4e52, records 4 passed EXIT=0 with gate-head.log, records the negative-control log and its EXIT=1, and records its own scope limitation (no revision/command parity for labelled arms) under outside_scope.\nVERDICT diff: read commit by commit against ff3bb24bcf; e1d03bc8b1 changes reports.py (typing every suite-arm key), promotion_records.py (labelled_suite_pairs and _evaluate_labelled_suite_delta plus the branch at 1690) and adds the test file; 01b7af4e52 adds the 85-line evidence fragment; every changed line is inside the goal's subject.\nCALL_SITES: reckon/crew/promotion.py:1418, reckon/crew/promotion_scope.py:344, reckon/crew/routing.py:2176\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:1690 routes a manifest holding only labelled arms to the per-label evaluation, so the precise defect the section records (a passing labelled run refused for absent unlabelled fields) is what the change repairs.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate the worker ran is tests/test_crew_merge_reads_labelled_suites.py recorded as \"4 passed\" with EXIT=0 in gate-head.log, and the negative control in negative-control-base.log reproduces \"armed promotion requires complete baseline and after suite evidence; missing baseline_suite, after_suite\" at ff3bb24bcf, which is the refusal the done_when says must appear at base; the gate log's header names the base revision because it ran pre-commit in the dirty worktree, and my re-run at 01b7af4e52 supplies the head-revision result the record lacks.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the four delivered paths all serve the section's deliverable and none touches plan state, pyproject or the figures tree, though reckon/crew/reports.py and reckon/crew/promotion_records.py lie outside the two paths the dispatch declared as expected.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_crew_merge_reads_labelled_suites.py:79 builds every labelled baseline with an empty failure_ids list, so all four cases pass even if every label's after arm were judged against one label's baseline \u2014 the cross-population laundering the fragment claims is prevented is not the thing any assertion would catch.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers follow the surrounding private-helper idiom of reckon/crew/promotion_records.py and the manifest module, carry no plan or ticket labels, and ruff check reports clean on the three staged files at head.\nSCORE reuse: 9\nJUSTIFICATION reuse: the comparison itself reuses reckon/ledger.py's added_failure_ids and normalized_suite_observation, but reckon/crew/promotion_records.py:1516 re-implemented the \"further suite pairs a manifest records\" enumeration that reckon/crew/promotion_evidence.py:2123 _recorded_suite_pairs already owns, under a different manifest spelling, so the two readers now disagree about which pairs a manifest has.\nFINDING tests/test_crew_merge_reads_labelled_suites.py:79 non-blocking: no case gives a labelled baseline a non-empty failure set, so a regression that compared every label's after arm against one label's baseline would still pass all four tests; a UNIT baseline naming a failure its VALIDATION after arm also names would be the negative control for the central claim.\nFINDING reckon/crew/promotion_records.py:1698 non-blocking: the labelled branch returns before _arm_missing_fields runs, so a labelled arm recorded at a revision behind the run head, or carrying a different suite command, is accepted as evidence where the unlabelled path would refuse it; the manifest documents this limitation, and closing it is a follow-up rather than a repair to this node.\nFINDING reckon/crew/promotion_records.py:1516 non-blocking: labelled_suite_pairs duplicates the capability of reckon/crew/promotion_evidence.py:2123 _recorded_suite_pairs without extending it, and promotion_evidence._suite_pair_for_gate still reads only the unlabelled pair and the suite_pairs mapping, so a manifest armed with baseline_suite_<LABEL> arms is still unpaired there and one population's inherited failures can read as added.\nFINDING reckon/crew/reports.py:862 non-blocking: _suite_arm_field_names restates the two prefixes that promotion_records.py:1513 already holds as _LABELLED_SUITE_PREFIXES, so a third spelling could be added in one place and silently not the other.",
+  "review_run_id": "r-20261121T020528136728-review-of-wlsr-crew-merge-reads-labelled-suites-01b7af4e52c5",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "01b7af4e52c5c7853f8c184f78523f429bb6b2d3",
+  "reviewed_run_id": "r-20261121T010321811834-wlsr-crew-merge-reads-labelled-suites",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 9,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:32:19.547196+00:00",
+  "total": 88,
+  "verdicts": {
+    "diff": "read commit by commit against ff3bb24bcf; e1d03bc8b1 changes reports.py (typing every suite-arm key), promotion_records.py (labelled_suite_pairs and _evaluate_labelled_suite_delta plus the branch at 1690) and adds the test file; 01b7af4e52 adds the 85-line evidence fragment; every changed line is inside the goal's subject.",
+    "done_when": "the done_when names tests/test_crew_merge_reads_labelled_suites.py with three cases; the file at head carries all three plus a fourth clean-delta case (lines 88, 182, 198, 221), the manifest records \"4 passed, EXIT=0\" in gate-head.log, and I re-ran that file at 01b7af4e52 in a scratch tree and got 4 passed.",
+    "goal": "the node goal is \"accept labelled suite arms in crew merge\"; promotion_records.py:1690 now takes a manifest with only labelled arms down _evaluate_labelled_suite_delta, which judges each label's own baseline against its own after arm and refuses a missing side (1584) or an added failure (1590), so a passing labelled manifest merges and the goal is met.",
+    "manifest": "read; it states commits e1d03bc8b1 and 01b7af4e52, records 4 passed EXIT=0 with gate-head.log, records the negative-control log and its EXIT=1, and records its own scope limitation (no revision/command parity for labelled arms) under outside_scope.",
+    "write_paths": "the source dispatch declared only docs/evidence/fragments for this node; the delivered diff is four paths including two modules of reckon/crew and one test file, which are the files the section's deliverable (\"crew merge accepts a manifest whose suite arms are labelled\") actually requires, so the departure is a section-scope requirement rather than drift, and no declared-path artefact is missing (the figures directory is legitimately empty because the change has nothing to draw)."
+  }
+}

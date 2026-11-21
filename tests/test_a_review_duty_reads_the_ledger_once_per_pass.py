@@ -13,6 +13,13 @@ review describes an earlier head. Each therefore reads ``scoring`` with a
 ``_open_review_refusal`` and, through it, the ledger membership read. The
 count is taken after one warm-up read, so the index build on a fresh home is not
 attributed to the duties; what is counted is calls to ``_load_aggregate``.
+
+The closure answer itself is a named-row lookup — ``open_run_index.has_row``
+— which reads the run's own file identity rather than enumerating membership,
+so the pass pays no aggregate parse at all. The control arm answers the same
+question from membership rebuilt from the committed sources on every call, which
+shows both that the duty text does not move with the read path and that the
+counter can see the aggregate parse it is counting.
 """
 
 from __future__ import annotations
@@ -31,6 +38,7 @@ from reckon.crew import follower_registration, runs, station_subscriber
 from tests.helpers.git import git as _git
 
 ledger_module = importlib.import_module("reckon.ledger")
+open_run_index_module = importlib.import_module("reckon.crew.open_run_index")
 obligations_module = importlib.import_module("reckon.crew.obligations")
 recovery_classification = importlib.import_module("reckon.crew.recovery_classification")
 recovery_review_dispatch = importlib.import_module(
@@ -232,16 +240,13 @@ def test_a_station_pass_reads_the_ledger_once(
     }
     assert len(reads) == before, "a later caller is served from the cached index"
 
-    # The duties' text is what the ledger path produced before the change.
-    def base_run_ids(project: str, root: Any = None) -> set[str]:
-        data, _version = ledger_module._load_aggregate(project, root)
-        return {
-            str(record["run_id"])
-            for record in data["runs"]
-            if isinstance(record, dict) and record.get("run_id")
-        } | {path.stem for path in ledger_module._run_files(project, root)}
+    # The closure answer is a named-row lookup now; the control answers from
+    # membership rebuilt from the committed sources on every call, which is the
+    # per-run aggregate parse this pass must not pay.
+    def base_has_row(project: str, run_id: str, root: Any = None) -> bool:
+        return run_id in ledger_module.run_ids(project, root, use_index=False)
 
-    monkeypatch.setattr(ledger_module, "run_ids", base_run_ids)
+    monkeypatch.setattr(open_run_index_module, "has_row", base_has_row)
     opened.clear()
     duties.clear()
     station_subscriber.live_work_populations(fleet["pointers"])
@@ -255,7 +260,9 @@ def test_a_station_pass_reads_the_ledger_once(
     ]
     assert base_texts == texts, "the duty text does not move with the read path"
     assert {str(record.get("run_id")) for record in opened} == entered
-    assert len(reads) - before, "the control path does read the aggregate per run"
+    assert len(reads) - before >= DELIVERED_RUNS, (
+        "the control path does read the aggregate per run"
+    )
 
 
 def _runs_directory() -> Path:

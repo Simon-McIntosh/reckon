@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "The reviewed run's baseline_suite (58 passed) and after_suite (63 passed) both record failure_ids [] at 43f48118fa and 52001750db, so no failure was added.",
+  "call_sites": [
+    "reckon/ledger.py:1805",
+    "reckon/ledger.py:2846",
+    "reckon/ledger.py:2871",
+    "reckon/crew/dispatching/preparation.py:143",
+    "reckon/crew/picker/lane_context.py:814",
+    "reckon/mcp_views.py:1934",
+    "reckon/crew/promotion_release.py:715",
+    "reckon/crew/open_run_index.py:345"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T06:32:10Z",
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": 922,
+      "severity": "non-blocking",
+      "text": "non-blocking: the answer cache re-implements reckon/file_memo.py:562 memoized_key (bounded LRU under one lock, deepcopy out) and reckon/ledger.py:1740's decoded-rows cache, adding a second cache with its own lock and eviction loop that file_memo.clear() does not empty, so the repository's documented cold-read instrument no longer reaches the run store; it should extend file_memo.bounded_map/memoized_key (keeping the row bound) rather than duplicate it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 43f48118fa; 52001750db adds the answer cache, token re-check and _decode_run_row with a 158-line test, 251c036af9 adds the 91-line evidence fragment.",
+    "done_when": "The done_when names tests/test_an_unchanged_run_store_is_decoded_once.py with five cases; the file has exactly those five and re-ran 5 passed in 3.76s at the reviewed head.",
+    "goal": "The goal is to answer a repeated run-store query without decoding rows while the store is unchanged; reckon/run_store.py:985 stored_run_rows consults a token-keyed answer before opening a connection, so four identical project-A reads decode 800 rows once.",
+    "manifest": "Read; status complete, scoped gate 63 passed EXIT=0, baseline_suite 58 passed, after_suite 63 passed, all_debug logs ending EXIT=0, negative-control log named.",
+    "write_paths": "Declared reckon/run_store.py, the named test file, the evidence fragment and the figures directory; the diff touches only the first three, all inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_run_store_is_decoded_once.py:88 reddens if the token leaves the key, :119 if any of run_ids/plan/node/fields leaves the key, and :130 if the answer is handed out uncopied, each shown failing at base in logs/negative-control-base.log. The concurrent-read token re-check and the cache lock have no test.",
+    "evidence": "logs/negative-control-base.log:17 reads 'assert 3200 == 800' and :37 'assert 1600 == 800' with EXIT=1, while the head gate logs record 63 passed and EXIT=0; the manifest records no ruff receipt though ruff check and format --check were verified clean on both staged paths.",
+    "fit": "The module-level _row_answers OrderedDict and its own lock at reckon/run_store.py:922-923 restate reckon/file_memo.py's bounded-map idiom rather than using it, so file_memo.clear() no longer forces a cold run-store read.",
+    "goal_fidelity": "reckon/run_store.py:1005-1013 answers a repeated question from the held answer before opening the store, and :1039-1040 re-reads the token so a moved store forces a decode.",
+    "reuse": "_row_answers/_cached_answer/_remember_answer at reckon/run_store.py:922-972 duplicate reckon/file_memo.py:562 memoized_key (bounded LRU, shared lock, deepcopy on store and handout), which reckon/ledger.py:1740-1765 already uses for the same decoded-rows capability.",
+    "scope_discipline": "git diff --stat over 43f48118fa..251c036af9 names only reckon/run_store.py, the test file and the fragment, all inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to answer a repeated run-store query without decoding rows while the store is unchanged; reckon/run_store.py:985 stored_run_rows now consults a token-keyed answer before opening a connection, so four identical project-A reads decode 800 rows once.\nVERDICT done_when: the done_when names tests/test_an_unchanged_run_store_is_decoded_once.py with five cases (800-once, argument isolation, re-decode after update, mutation safety); the file has exactly those five and I re-ran it at the reviewed head, 5 passed in 3.76s.\nVERDICT write_paths: declared reckon/run_store.py, the named test file, the evidence fragment and the figures directory; the diff touches only the first three, all inside the declaration.\nVERDICT manifest: read; it records status complete, the scoped gate (63 passed, EXIT=0), baseline_suite (58 passed) and after_suite (63 passed) as all_debug logs ending EXIT=0, and names the negative-control log.\nVERDICT diff: read commit by commit against 43f48118fa; 52001750db adds the answer cache, token re-check and _decode_run_row with the 158-line test, 251c036af9 adds the 91-line evidence fragment.\nCALL_SITES: reckon/ledger.py:1805, reckon/ledger.py:2846, reckon/ledger.py:2871, reckon/crew/dispatching/preparation.py:143, reckon/crew/picker/lane_context.py:814, reckon/mcp_views.py:1934, reckon/crew/promotion_release.py:715, reckon/crew/open_run_index.py:345\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1005-1013 answers a repeated question from the held answer before opening the store, and :1039-1040 re-reads the token so a moved store forces a decode.\nSCORE evidence: 17\nJUSTIFICATION evidence: the negative control at logs/negative-control-base.log line 17 reads \"assert 3200 == 800\" and line 37 \"assert 1600 == 800\" with EXIT=1, while the head gate logs record 63 passed and EXIT=0; the manifest records no ruff receipt though I verified ruff check and format --check clean on both staged paths.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat over 43f48118fa..251c036af9 names only reckon/run_store.py, the test file and the fragment, all inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_unchanged_run_store_is_decoded_once.py:88 reddens if the token leaves the key, :119 reddens if any of run_ids/plan/node/fields leaves the key, and :130 reddens if the answer is handed out uncopied, each shown failing at base in logs/negative-control-base.log.\nSCORE fit: 15\nJUSTIFICATION fit: the module-level _row_answers OrderedDict and its own lock at reckon/run_store.py:922-923 restate reckon/file_memo.py's bounded-map idiom rather than using it, so file_memo.clear() no longer forces a cold run-store read.\nSCORE reuse: 4\nJUSTIFICATION reuse: _row_answers/_cached_answer/_remember_answer at reckon/run_store.py:922-972 duplicate reckon/file_memo.py:562 memoized_key (bounded LRU, shared lock, deepcopy on store and handout), which reckon/ledger.py:1740-1765 already uses for the same decoded-rows capability.\nFINDING reckon/run_store.py:922 non-blocking: the answer cache re-implements reckon/file_memo.py:562 memoized_key (bounded LRU under one lock, deepcopy out) and reckon/ledger.py:1740's decoded-rows cache, adding a second cache with its own lock and eviction loop that file_memo.clear() does not empty, so the repository's documented cold-read instrument no longer reaches the run store; it should extend file_memo.bounded_map/memoized_key (keeping the row bound) rather than duplicate it.",
+  "review_run_id": "r-20261121T063100562095-review-of-an-unchanged-run-store-is-decoded-once-251c036af9a9",
+  "reviewed_base_sha": "43f48118fa076fccb9208cb0f577158e32457e90",
+  "reviewed_head_sha": "251c036af9a9a1f6245e3c0c747de4f8fb145b4d",
+  "reviewed_run_id": "r-20261121T055105546646-an-unchanged-run-store-is-decoded-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T06:36:25.538205+00:00",
+  "total": 91
+}

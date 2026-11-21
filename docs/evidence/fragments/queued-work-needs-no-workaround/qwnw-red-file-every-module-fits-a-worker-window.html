@@ -1,0 +1,27 @@
+<section id="qwnw-red-file-every-module-fits-a-worker-window-landing">
+  <h2>The module-width ratchet arms at the modules it holds</h2>
+
+  <p><strong>What changed.</strong> Only the constant in
+  <code>tests/test_every_module_fits_a_worker_window.py</code>. The guard's
+  docstring already said it: <code>ALLOWLIST</code> is a ratchet whose entries
+  are removed as splits land. The list was emptied when the last split landed,
+  and eighteen modules had grown past the bound again: new modules from splits
+  of the old exceptions, plus regrowth. The guard read red on the list's absence,
+  not on a rule the code broke.</p>
+
+  <h3 id="qwnw-red-file-every-module-fits-a-worker-window-measured">Measured</h3>
+
+  <p>Both arms run the test file whole. The base arm is the worktree head at
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>; the head arm is
+  <code>cd9161eb535febf46ea5b18cb569d911f0c7e638</code>, run as an
+  <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset.</p>
+
+  <table id="qwnw-red-file-every-module-fits-a-worker-window-arms">
+    <caption>Each arm's revision and its pytest summary line.</caption>
+    <thead><tr><th>Arm</th><th>Summary</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>1 failed, 3 passed</td><td>base-arm.log</td></tr>
+      <tr><td>head</td><td>4 passed</td><td>head-arm.slurm.log</td></tr>
+    </tbody>
+  </table>
+</section>

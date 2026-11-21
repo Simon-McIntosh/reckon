@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs: baseline_suite.log:1 '# revision: 42fe90d0b0a46060bafde2490dda7d4002cda478' and :5 '58 passed in 47.74s', and after_suite.log:1 '# revision: bdd6806d445bf1e4aa7085181d6f1f8af3739e56' and :5 '58 passed in 49.93s', both closing with EXIT=0 and neither carrying a FAILED line, so the after arm adds no failing id the base arm did not have. The manifest's inline baseline_suite and after_suite name the same two log paths with completed true and failure_count 0.",
+  "call_sites": "reckon/crew/promotion.py:1364, reckon/crew/promotion_evidence.py:215, reckon/crew/promotion_evidence.py:481",
+  "completed_at": "",
+  "coverage_note": "Covers the two commits the run gained since its review at 414d4e87: 1f53a866bf (the parent read factored into promotion_scope._commit_parents) and bdd6806d44 (the evidence fragment's 'One parent read, one owner' section). The earlier deltas 42fe90d0..84832e9c and 84832e9c..414d4e87 are covered by review r-20261119T025653150733-review-of-qwnw-red-file-run-scope-measure-nets-churn-84832e9c7671 and the record at .at-414d4e877a70458ac256e6b7b671cf8ec896ebb0.json. The run's whole diff 42fe90d0..bdd6806d was read for context; only the delta is scored.",
+  "dispatched_at": "2026-11-19T21:36:49Z",
+  "findings": [
+    {
+      "disposition": null,
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "551",
+      "severity": "non-blocking",
+      "text": "non-blocking: _commit_parents is a second implementation of a commit's parent read that reckon/crew/merge.py:289 _parents already owns (git rev-parse <commit>^@, returning the parents or nothing), so two parent readers can drift while the delta only merges the copies inside promotion_scope."
+    },
+    {
+      "disposition": null,
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the rewritten sentence names partition all_debug and crew verify-gate --worker as the mechanism, but the log it cites, scoped-gate-1795054334811684200.log:1-6, records only a bare pytest command on host 98dci4-clu-3142 with a 0-byte scheduler sidecar, so neither the partition nor the mechanism is attested by the page's own source."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:1364 and its import at :3849 reach _require_commits_beyond_base; reckon/crew/promotion_evidence.py:481 calls _integration_brings_the_run and :215 calls _merge_revisions",
+    "diff": "read 414d4e87..bdd6806d commit by commit: 1f53a866 moves the parent read into promotion_scope._commit_parents and re-expresses _merge_revisions over it, bdd6806d adds the fragment section 'One parent read, one owner'",
+    "done_when": "the head gate at scoped-gate-1795123946442004066.log reads 5 passed with EXIT=0 at bdd6806d and both suite arms are inline with full revisions, but the all_debug / SLURM_JOB_ID-unset condition the measure names is unattested by any scheduler receipt",
+    "goal": "the node goal is for tests/test_run_scope_measure_nets_churn.py to pass in full; the gained commits are review-response work (parent read ownership and its fragment section) and the file reads 5 passed at bdd6806d",
+    "manifest": "read; tests, test_logs, artifacts, baseline_suite at 42fe90d0 and after_suite at bdd6806d with completed true and failure_count 0 are all present, and the named head gate log exists with EXIT=0",
+    "write_paths": "the declared paths are reckon, tests and the fragment; the gained commits touch only reckon/crew/promotion_scope.py, reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html"
+  },
+  "justifications": {
+    "durability": "tests/test_crew_promotion_scope.py:853 reddens if promotion_scope._commit_parents stops dropping the revision from git's parent list",
+    "evidence": "scoped-gate-1795123946442004066.log:6 records 5 passed at bdd6806d with EXIT=0 and both arms are recorded, but the all_debug condition has no scheduler receipt",
+    "fit": "promotion_scope.py:551 follows the module idiom and ruff check is 5 findings at both 42fe90d0 and bdd6806d",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:551 keeps the guard's behaviour intact and the named file reads 5 passed at bdd6806d, though the delta serves the review rather than the goal sentence",
+    "reuse": "promotion_scope.py:551 duplicates the parent read owned by reckon/crew/merge.py:289",
+    "scope_discipline": "every path in 414d4e87..bdd6806d is inside the declared write paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_run_scope_measure_nets_churn.py pass in full on the primary branch', and the gained commits 1f53a866 and bdd6806d are review-response work that moves the citation guard's parent read to reckon/crew/promotion_scope.py:551 and records it at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html:29-34, leaving the named file passing at the reviewed head.\nVERDICT done_when: the measure asks for the named file at head on all_debug with SLURM_JOB_ID unset plus both arms as inline JSON at full 40-character revisions; scoped-gate-1795123946442004066.log:1-6 records '5 passed in 3.06s' at revision bdd6806d with EXIT=0 and manifest.md records baseline_suite at 42fe90d0 and after_suite at bdd6806d, each '58 passed', but no scheduler receipt, partition line or SLURM_JOB_ID-unset invocation attests the all_debug condition.\nVERDICT write_paths: the declared paths are reckon, tests, the fragment directory and the fragment file; the two gained commits touch only reckon/crew/promotion_scope.py, reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html, all inside them.\nVERDICT manifest: read at the listed path; it now carries tests, test_logs, artifacts, baseline_suite at 42fe90d0 and after_suite at bdd6806d with completed true and failure_count 0, and points the head gate at scoped-gate-1795123946442004066.log, which exists and reads 5 passed.\nVERDICT diff: read 414d4e87..bdd6806d commit by commit; 1f53a866 replaces the guard's inline git read at reckon/crew/promotion_evidence.py:410-419 with promotion_scope._commit_parents and re-expresses _merge_revisions over it, and bdd6806d appends the fragment section at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html:29-34.\nCALL_SITES: reckon/crew/promotion.py:1364, reckon/crew/promotion_evidence.py:215, reckon/crew/promotion_evidence.py:481\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:551 keeps the guard's behaviour intact -- two parents with the run head among them -- so tests/test_run_scope_measure_nets_churn.py still reads 5 passed at bdd6806d, though the delta itself serves the review rather than the goal sentence.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795123946442004066.log:6 records '5 passed in 3.06s' at bdd6806d with EXIT=0 and both suite arms are recorded with full revisions, but no scheduler receipt attests the all_debug / SLURM_JOB_ID-unset condition the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 414d4e87..bdd6806d is one of reckon/crew/promotion_scope.py, reckon/crew/promotion_evidence.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_promotion_scope.py:853 fails with a worker commit reported as a merge if promotion_scope._commit_parents stops slicing the revision off its own output, so the refactor's one behavioural risk is guarded by an existing assertion that does not rest on a value the test handed in.\nSCORE fit: 18\nJUSTIFICATION fit: promotion_scope.py:551 follows the module's inline subprocess.run idiom and private-underscore naming, and ruff check reports the same five pre-existing I001 findings at 42fe90d0 and at bdd6806d with promotion_scope.py unformatted on both sides.\nSCORE reuse: 5\nJUSTIFICATION reuse: promotion_scope.py:551 adds a second commit-parent read while reckon/crew/merge.py:289 _parents already owns that capability, so the definition duplicates an existing owner rather than extending it.\nFINDING reckon/crew/promotion_scope.py:551 non-blocking: _commit_parents is a second implementation of a commit's parent read that reckon/crew/merge.py:289 _parents already owns (git rev-parse <commit>^@, returning the parents or nothing), so two parent readers can drift while the delta only merges the copies inside promotion_scope.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html:13 non-blocking: the rewritten sentence names partition all_debug and crew verify-gate --worker as the mechanism, but the log it cites, scoped-gate-1795054334811684200.log:1-6, records only a bare pytest command on host 98dci4-clu-3142 with a 0-byte scheduler sidecar, so neither the partition nor the mechanism is attested by the page's own source.",
+  "remarks": "Read 414d4e87..bdd6806d only, as the goal asks, and read the run's whole diff 42fe90d0..bdd6806d for context. The head gate log was read, not re-run; the reviewed commits are not on this worktree's HEAD, so every head-side read was taken with git show bdd6806d:<path>. Lint delta measured on extracted base and head copies under TMPDIR: five I001 findings at both revisions.",
+  "review_run_id": "r-20261119T213555084340-review-of-qwnw-red-file-run-scope-measure-nets-churn-bdd6806d445b",
+  "reviewed_at": "2026-11-19T21:55:00Z",
+  "reviewed_base_sha": "414d4e877a70458ac256e6b7b671cf8ec896ebb0",
+  "reviewed_head_sha": "bdd6806d445bf1e4aa7085181d6f1f8af3739e56",
+  "reviewed_run_id": "r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn",
+  "rubric": "recorded five item verdicts plus the CALL_SITES line and six dimension scores; two findings, both carrying an explicit non-blocking severity",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:45:18.325673+00:00",
+  "total": 90
+}

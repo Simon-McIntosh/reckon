@@ -1,0 +1,72 @@
+<section id="qwnw-red-file-crew-members-landing">
+  <h2>The crew-members test compares the roster where the roster lives</h2>
+
+  <p><strong>The defect, reproduced at the base revision.</strong> The base run
+  of <code>tests/test_crew_members.py</code> at
+  <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> failed one case before
+  the dispatch under test ran:</p>
+
+  <pre id="qwnw-red-file-crew-members-repro">FAILED tests/test_crew_members.py::test_bare_session_from_member_add_is_not_offered_to_a_task_that_never_ran_it
+FileNotFoundError: [Errno 2] No such file or directory:
+  '/tmp/reckon-crew-scratch/.../repo/docs/state/proj/crew.json'
+1 failed, 2 passed</pre>
+
+  <p>The cause is the test, not the product. The roster moved into the run
+  store, and <code>ledger.write_members</code> now states that it replaces a
+  version-paired roster <em>without writing a committed path</em>;
+  <code>register_member</code> is a store-only transaction. The assertion that
+  the roster file is byte-identical therefore cannot hold, while the rule it
+  was there to assert — the dispatch leaves the roster alone — still holds. The
+  two file reads are replaced by a snapshot of the store's auxiliary payload
+  and version (<code>ledger.load_auxiliary</code>), the same idiom the sibling
+  roster assertions in <code>tests/test_ledger.py</code> use. No assertion is
+  deleted or weakened: the version moves on any roster write, so a roster
+  write is still visible.</p>
+
+  <p><strong>The instrument sees something.</strong> A probe registered
+  <code>worker-a</code> in a synthesised repository: the snapshot returned
+  <code>({'members': [{'id': 'worker-a', 'harness': 'alpha', ...}], 'holds': [],
+  ...}, 1)</code>, the committed
+  <code>docs/state/proj/crew.json</code> did not exist, and a second
+  registration that changed the harness returned version 2 with different
+  data. The comparison is not caught.</p>
+
+  <table id="qwnw-red-file-crew-members-arms">
+    <caption>Each arm is a job on <code>all_debug</code>; the log's last line is
+    its bare exit status.</caption>
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, this test file</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>1 failed, 2 passed (the failing id above)</td>
+        <td><code>negative-control-base-red.log</code></td>
+      </tr>
+      <tr>
+        <td>head, this test file (scoped gate)</td>
+        <td><code>23e7d3fb1b423934cda8598c2efa8cb235f278e8</code></td>
+        <td>3 passed, <code>EXIT=0</code></td>
+        <td><code>scoped-gate-1795067888943357416.log</code></td>
+      </tr>
+      <tr>
+        <td>armed suite, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td><code>baseline_suite-1795067992252396772.log</code></td>
+      </tr>
+      <tr>
+        <td>armed suite, after</td>
+        <td><code>23e7d3fb1b423934cda8598c2efa8cb235f278e8</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td><code>after_suite-1795068035195535977.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Logs live under the run directory
+  <code>~/.config/reckon/crew/runs/r-20261118T063135844055-qwnw-red-file-crew-members/</code>.
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing on
+  the changed path.</p>
+</section>

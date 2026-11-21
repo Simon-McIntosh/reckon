@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1533",
+    "reckon/crew/obligations.py:1711",
+    "reckon/crew/recovery_watch.py:758",
+    "reckon/crew/promotion.py:1146",
+    "reckon/crew/query.py:458",
+    "reckon/crew/recovery_review_dispatch.py:3251"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T03:30:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "802",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_launch_step_state` re-implements the step enumeration and `.batch`/`.extern` filter that reckon/crew/fleet_migrate.py:632 `_worker_steps` already owns; the owner was not extended, so the filter now lives in two places and a change to step naming reaches only one of them."
+    },
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-live-reading-with-no-process-is-settled.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph states a head gate \"6 passed EXIT=0\" with no revision and places the 64-passed suite arm at 97ea0ca184 while the log it is drawn from (after-suite.log) is headed 3caa472dfd, and the gate.log named in the manifest is headed e088a441; a reader following the cited logs reads a header at a different revision than the sentence claims, which is the trap of a record that cannot be tied to the revision it read."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 5d918444bb \u2014 97ea0ca184 adds `--name=<run id>` to the step query and rewrites its docstring (reckon/crew/recovery_classification.py:788-800), 3caa472dfd updates the evidence paragraph (docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-live-reading-with-no-process-is-settled.html:24); the test fixture moves from stubbing `_ask_scheduler` to modelling the probe so the one-line truncation is exercised (tests/test_a_live_reading_with_no_process_is_settled.py:49-82).",
+    "done_when": "the done_when names tests/test_a_live_reading_with_no_process_is_settled.py with four required cases and a negative control; the file carries those plus two more (reckon/crew/recovery_classification.py:1533 arm), and I re-ran the named gate at the reviewed head: 6 passed, EXIT=0.",
+    "goal": "read the node goal (\"settle a pointer that reads live with no step behind it\") and plan \u00a714 at docs/plans/work-of-a-lost-session-is-raised-not-left.html:148; the gained commits repair the step query at reckon/crew/recovery_classification.py:752 so the settle reading answers about this run's own step in a shared reservation, which is the goal's remaining defect.",
+    "manifest": "read; it records status complete, the head gate 6 passed EXIT=0, the repair's negative control 2 failed EXIT=1, the earlier control 3 failed EXIT=1, baseline 58 passed and after 64 passed, and the prior review's blocking finding quoted as answered.",
+    "write_paths": "the node declared seven paths and the full range ff3bb24..3caa472 touches six of them; the gained commits 97ea0ca184..3caa472 touch only three \u2014 the evidence fragment, reckon/crew/recovery_classification.py and the test file \u2014 all declared."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_reading_with_no_process_is_settled.py:197-212 places two other runs' steps after this run's and reddens if the name filter is removed, which the repair's own control log shows at EXIT=1.",
+    "evidence": "after-suite.log records revision 3caa472dfd with 64 passed EXIT=0 and negative-control-repair.log records 2 failed EXIT=1 when `--name` is removed, though the on-disk gate.log still carries revision e088a441.",
+    "fit": "reckon/crew/recovery_classification.py:788 keeps the lazy-import idiom and the query follows squeue's documented `--name` option, which the local man page (squeue(1) 861-863) states requests \"jobs or job steps\".",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:797 names the run's step in the scheduler query, so a settled reading no longer rests on whichever step printed last in a shared reservation.",
+    "reuse": "the gained commits add no definition and reuse `_ask_scheduler`, but reckon/crew/recovery_classification.py:802 still enumerates a job's steps and filters `.batch`/`.extern` alongside reckon/crew/fleet_migrate.py:632 `_worker_steps`, a duplication the earlier review recorded and these commits leave in place.",
+    "scope_discipline": "the gained diff is three files, each inside the node's declared write paths, with no plan state, sprint state or peer file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"settle a pointer that reads live with no step behind it\") and plan \u00a714 at docs/plans/work-of-a-lost-session-is-raised-not-left.html:148; the gained commits repair the step query at reckon/crew/recovery_classification.py:752 so the settle reading answers about this run's own step in a shared reservation, which is the goal's remaining defect.\nVERDICT done_when: the done_when names tests/test_a_live_reading_with_no_process_is_settled.py with four required cases and a negative control; the file carries those plus two more (reckon/crew/recovery_classification.py:1533 arm), and I re-ran the named gate at the reviewed head: 6 passed, EXIT=0.\nVERDICT write_paths: the node declared seven paths and the full range ff3bb24..3caa472 touches six of them; the gained commits 97ea0ca184..3caa472 touch only three \u2014 the evidence fragment, reckon/crew/recovery_classification.py and the test file \u2014 all declared.\nVERDICT manifest: read; it records status complete, the head gate 6 passed EXIT=0, the repair's negative control 2 failed EXIT=1, the earlier control 3 failed EXIT=1, baseline 58 passed and after 64 passed, and the prior review's blocking finding quoted as answered.\nVERDICT diff: read commit by commit against 5d918444bb \u2014 97ea0ca184 adds `--name=<run id>` to the step query and rewrites its docstring (reckon/crew/recovery_classification.py:788-800), 3caa472dfd updates the evidence paragraph (docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-live-reading-with-no-process-is-settled.html:24); the test fixture moves from stubbing `_ask_scheduler` to modelling the probe so the one-line truncation is exercised (tests/test_a_live_reading_with_no_process_is_settled.py:49-82).\nCALL_SITES: reckon/crew/recovery_classification.py:1533, reckon/crew/obligations.py:1711, reckon/crew/recovery_watch.py:758, reckon/crew/promotion.py:1146, reckon/crew/query.py:458, reckon/crew/recovery_review_dispatch.py:3251\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:797 names the run's step in the scheduler query, so a settled reading no longer rests on whichever step printed last in a shared reservation.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-suite.log records revision 3caa472dfd with 64 passed EXIT=0 and negative-control-repair.log records 2 failed EXIT=1 when `--name` is removed, though the on-disk gate.log still carries revision e088a441.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff is three files, each inside the node's declared write paths, with no plan state, sprint state or peer file touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_live_reading_with_no_process_is_settled.py:197-212 places two other runs' steps after this run's and reddens if the name filter is removed, which the repair's own control log shows at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:788 keeps the lazy-import idiom and the query follows squeue's documented `--name` option, which the local man page (squeue(1) 861-863) states requests \"jobs or job steps\".\nSCORE reuse: 12\nJUSTIFICATION reuse: the gained commits add no definition and reuse `_ask_scheduler`, but reckon/crew/recovery_classification.py:802 still enumerates a job's steps and filters `.batch`/`.extern` alongside reckon/crew/fleet_migrate.py:632 `_worker_steps`, a duplication the earlier review recorded and these commits leave in place.\nFINDING reckon/crew/recovery_classification.py:802 non-blocking: `_launch_step_state` re-implements the step enumeration and `.batch`/`.extern` filter that reckon/crew/fleet_migrate.py:632 `_worker_steps` already owns; the owner was not extended, so the filter now lives in two places and a change to step naming reaches only one of them.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-live-reading-with-no-process-is-settled.html:26 non-blocking: the paragraph states a head gate \"6 passed EXIT=0\" with no revision and places the 64-passed suite arm at 97ea0ca184 while the log it is drawn from (after-suite.log) is headed 3caa472dfd, and the gate.log named in the manifest is headed e088a441; a reader following the cited logs reads a header at a different revision than the sentence claims, which is the trap of a record that cannot be tied to the revision it read.",
+  "review_run_id": "r-20261121T032853535816-review-of-wlsr-a-live-reading-with-no-process-is-settled-3caa472dfd14",
+  "reviewed_base_sha": "5d918444bb57bdb92298a2055077da0d3191797a",
+  "reviewed_head_sha": "3caa472dfd14b72d891eb1d6650e040649c3afc3",
+  "reviewed_run_id": "r-20261121T010307921886-wlsr-a-live-reading-with-no-process-is-settled",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:59:17.164809+00:00",
+  "total": 104
+}

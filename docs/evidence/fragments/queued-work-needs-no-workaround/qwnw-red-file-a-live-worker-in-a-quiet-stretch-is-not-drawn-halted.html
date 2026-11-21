@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-a-live-worker-in-a-quiet-stretch-is-not-drawn-halted-landing">
+  <h2>A quiet stretch is read by the pane's current word for the bucket</h2>
+
+  <p><strong>What changed.</strong> One line of
+  <code>tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py</code>.
+  The file's third case asks that a run with no live process beside stale stream
+  output is drawn in the pane's action bucket, and it read that bucket as
+  <code>PANE_STATES["needs you"]</code>. The pane renamed that bucket to
+  <code>help</code> (<code>SUPERSEDED_PANE_WORDS = {"halted": "help", "needs you":
+  "help"}</code> in <code>reckon/crew/ticker.py</code>), so the assertion died on
+  a <code>KeyError</code> rather than on the rule it asserts. The same assertion
+  now reads <code>PANE_STATES["help"]</code>; nothing is deleted, weakened or
+  re-scoped.</p>
+
+  <p><strong>Verdict per cause: the test was wrong, the product was right.</strong>
+  The classification itself is intact and reads <code>state=blocked</code>, which
+  is a member of <code>PANE_STATES["help"]</code>; the retired word survives only
+  as a mapping for records written before the rename. A product repair would have
+  reinstated a retired spelling to satisfy a stale test.</p>
+
+  <h3 id="qwnw-red-file-a-live-worker-in-a-quiet-stretch-is-not-drawn-halted-arms">Measured</h3>
+
+  <table id="qwnw-red-file-a-live-worker-in-a-quiet-stretch-is-not-drawn-halted-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code>, extraction</td>
+        <td>2 passed, 1 failed, <code>EXIT=1</code>:
+        <code>test_no_live_process_and_stale_output_is_halted</code> —
+        <code>KeyError: 'needs you'</code></td></tr>
+      <tr><td>the node's file, head</td>
+        <td><code>6ad097fb741105625272da11841847a6c290c100</code>, job on
+        <code>all_debug</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td><code>completed</code>, 0 failures, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, head</td>
+        <td><code>6ad097fb741105625272da11841847a6c290c100</code></td>
+        <td><code>completed</code>, 0 failures, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+</section>

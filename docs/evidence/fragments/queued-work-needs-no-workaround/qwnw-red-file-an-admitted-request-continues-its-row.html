@@ -1,0 +1,29 @@
+<section id="qwnw-red-file-an-admitted-request-continues-its-row-verdict">
+<h2>One cause, and it is the test's block literal</h2>
+<p>The base run of <code>tests/test_an_admitted_request_continues_its_row.py</code> at
+<code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> fails one case,
+<code>test_session_counts_scope_each_sessions_own_figures_without_a_live_read</code>, and passes three.</p>
+<p><strong>Verdict: test wrong.</strong> The case pins the counter block as it read before the pane grew
+a promotion cell. <code>reckon/crew/ticker.py</code> renders seven cells — <code>w r h d q p s</code> — and
+the promotion cell carries an <code>@</code> position marker that reads as an en dash when no request
+waits (<code>0p@ –</code>). The committed change (<code>130499dbb3</code>) introduced the cell after this
+literal was written, and the case's own property — a session-scoped render shows that session's
+partition, the unscoped render shows the fleet's — already held: the case failed on the block
+literal alone, with <code>1w 0r 0h 0d 0q</code> scoped correctly and the promotion cell the only
+difference. The literal is updated to the block the pane now draws, with the empty-position
+<code>DIM_MARKER</code> taken from the pane rather than written a second time. No assertion is
+deleted or weakened, and the <code>session_counts</code> assertions above it are untouched.</p>
+<pre># revision: b24fe95a789c82cd33f22a912b4dbbf94d5e2193 (test file from b24fe95a789c82cd33f22a912b4dbbf94d5e2193 run against the worktree's product code at 0c44569adcab03d563817c722c229435bbc0e7e8)
+# command: PYTHONPATH=&lt;worktree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q &lt;scratch&gt;/tests/test_an_admitted_request_continues_its_row.py
+&gt;       assert " 1w  0r  0h  0d  0q  0s" in scoped
+E       AssertionError: assert ' 1w  0r  0h  0d  0q  0s' in '07:14:03  implement  n-a1   new &#8594; working   &#8211;   1w  0r  0h  0d  0q  0p@ &#8211;  0s'
+1 failed, 3 passed in 1.13s
+EXIT=1</pre>
+<p>Head run, on all_debug with the scheduler id unset (scoped gate at
+<code>8dc70a70ff81a01cd1cb618804ac3c94b2966c54</code>):</p>
+<pre># revision: 8dc70a70ff81a01cd1cb618804ac3c94b2966c54
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admitted_request_continues_its_row.py'
+....                                                                     [100%]
+4 passed in 0.33s
+EXIT=0</pre>
+</section>

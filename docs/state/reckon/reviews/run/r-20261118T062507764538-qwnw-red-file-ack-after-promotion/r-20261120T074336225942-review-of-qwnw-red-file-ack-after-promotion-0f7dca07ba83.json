@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T19:33:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ack-after-promotion.html",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "the repro block quotes '2 failed, 2 passed in 2.19s', but the run's only stored base log (negative-control-base-ack-after-promotion.log:63) records 1.17s; the counts and both failing ids reconcile, the duration matches no stored log, so a reader checking the quoted figure against its cited evidence cannot."
+    },
+    {
+      "file": "tests/test_ack_after_promotion.py",
+      "line": "73",
+      "severity": "non-blocking",
+      "text": "the manifest's baseline_suite and after_suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports or exercises the changed fixture, so the arm clause of the done_when is answered in letter (0 added failures) while measuring nothing about this change; the manifest discloses this under outside_scope and the dispatcher picked the file list."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062507764538-qwnw-red-file-ack-after-promotion/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the done_when's 'ruff check and ruff format --check report nothing new on the changed paths' clause carries no recorded evidence: no ruff log is named in test_logs and the manifest never mentions ruff. I ran both at the reviewed head and they exit 0 ('All checks passed!', '1 file already formatted'), so the fact holds while the record that should show it is absent."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call site can reach this change: the diff is one test file and one docs fragment, so nothing under reckon/ is modified and nothing at runtime imports the fixture.",
+    "diff": "read commit by commit against 28fbf2bc2f: fd2313dd58 adds a commit to the fixture's retained worktree plus the docstring stating the rule, 0f7dca07ba adds the 45-line evidence fragment; no assertion was deleted or weakened, and both paths are inside the declared scope.",
+    "done_when": "the done_when's gate is the file passing in full at head with all_debug output on shared storage: scoped-gate-1795119735877025671.log carries revision fd2313dd58, host 98dci4-clu-3142, the literal command and EXIT=0; its negative-control clause is met by negative-control-base-ack-after-promotion.log (2 failed, 2 passed, EXIT=1 at base 28fbf2bc2f) which is reproduced in the fragment at lines 12-18.",
+    "goal": "the node's goal is 'Make tests/test_ack_after_promotion.py pass in full on the primary branch'; the file is 4 passed at head 0f7dca07ba (scoped-gate-1795119735877025671.log:7, '4 passed in 0.92s', EXIT=0) and I reproduced that by running it at the reviewed head, while my own base 7ffe0eca66 \u2014 which predates the change \u2014 gives 2 failed, 2 passed with the same two ids (gate-base-ack-after-promotion.log:50-51, EXIT=1), so the repaired defect still reproduces at a later revision.",
+    "manifest": "read; status complete, commits fd2313dd589cb5ecafdd6e83cb02e46eb9c370b2 and 0f7dca07ba8318c039a6a5fa91fdbd4858426a1a, both suite arms inline JSON with 40-character revisions and failure_count 0, and `reckon crew check --manifest --run ...` returns ok true with no findings.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path; the diff's two paths \u2014 tests/test_ack_after_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ack-after-promotion.html \u2014 are both inside them, and no path under reckon/ changed."
+  },
+  "justifications": {
+    "durability": "the added commit in the fixture at tests/test_ack_after_promotion.py:86-88 makes the assertion at :120 fire again; the negative control reddens exactly :120 and :151 when the fixture is reverted, so the guard is proven by reinstating the regression rather than by observing a pass.",
+    "evidence": "scoped-gate-1795119735877025671.log:1-7 and negative-control-base-ack-after-promotion.log:1-4 each carry revision, tree, cwd, literal command and a bare EXIT line, but the two suite arms named in the manifest at tests/test_ack_after_promotion.py:73 exercise nothing this node changed and the done_when's ruff clause is recorded nowhere.",
+    "fit": "the docstring at tests/test_ack_after_promotion.py:74-81 explains the mechanism in the surrounding style, the commits carry conventional subjects with bodies, and no source name or comment states a plan, stage or tracker identifier.",
+    "goal_fidelity": "tests/test_ack_after_promotion.py is 4 passed at head 0f7dca07ba and 2 failed at my base 7ffe0eca66, which is the goal's own measure met at the revision being reviewed.",
+    "reuse": "the change adds no production definition and extends the file's own _worktree helper using tests.helpers.git.git:28; a search of tests/helpers found only git.py and landing_repository.py and neither owns a 'leave a fixture worktree with unmerged work' capability to duplicate.",
+    "scope_discipline": "the diff touches only tests/test_ack_after_promotion.py:73-89 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ack-after-promotion.html:1-45, both inside the manifest's declared paths at line 3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_ack_after_promotion.py pass in full on the primary branch'; the file is 4 passed at head 0f7dca07ba (scoped-gate-1795119735877025671.log:7, '4 passed in 0.92s', EXIT=0) and I reproduced that by running it at the reviewed head, while my own base 7ffe0eca66 \u2014 which predates the change \u2014 gives 2 failed, 2 passed with the same two ids (gate-base-ack-after-promotion.log:50-51, EXIT=1), so the repaired defect still reproduces at a later revision.\nVERDICT done_when: the done_when's gate is the file passing in full at head with all_debug output on shared storage: scoped-gate-1795119735877025671.log carries revision fd2313dd58, host 98dci4-clu-3142, the literal command and EXIT=0; its negative-control clause is met by negative-control-base-ack-after-promotion.log (2 failed, 2 passed, EXIT=1 at base 28fbf2bc2f) which is reproduced in the fragment at lines 12-18.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path; the diff's two paths \u2014 tests/test_ack_after_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ack-after-promotion.html \u2014 are both inside them, and no path under reckon/ changed.\nVERDICT manifest: read; status complete, commits fd2313dd589cb5ecafdd6e83cb02e46eb9c370b2 and 0f7dca07ba8318c039a6a5fa91fdbd4858426a1a, both suite arms inline JSON with 40-character revisions and failure_count 0, and `reckon crew check --manifest --run ...` returns ok true with no findings.\nVERDICT diff: read commit by commit against 28fbf2bc2f: fd2313dd58 adds a commit to the fixture's retained worktree plus the docstring stating the rule, 0f7dca07ba adds the 45-line evidence fragment; no assertion was deleted or weakened, and both paths are inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_ack_after_promotion.py is 4 passed at head 0f7dca07ba and 2 failed at my base 7ffe0eca66, which is the goal's own measure met at the revision being reviewed.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795119735877025671.log:1-7 and negative-control-base-ack-after-promotion.log:1-4 each carry revision, tree, cwd, literal command and a bare EXIT line, but the two suite arms named in the manifest at tests/test_ack_after_promotion.py:73 exercise nothing this node changed and the done_when's ruff clause is recorded nowhere.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/test_ack_after_promotion.py:73-89 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ack-after-promotion.html:1-45, both inside the manifest's declared paths at line 3.\nSCORE durability: 19\nJUSTIFICATION durability: the added commit in the fixture at tests/test_ack_after_promotion.py:86-88 makes the assertion at :120 fire again; the negative control reddens exactly :120 and :151 when the fixture is reverted, so the guard is proven by reinstating the regression rather than by observing a pass.\nSCORE fit: 18\nJUSTIFICATION fit: the docstring at tests/test_ack_after_promotion.py:74-81 explains the mechanism in the surrounding style, the commits carry conventional subjects with bodies, and no source name or comment states a plan, stage or tracker identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition and extends the file's own _worktree helper using tests.helpers.git.git:28; a search of tests/helpers found only git.py and landing_repository.py and neither owns a 'leave a fixture worktree with unmerged work' capability to duplicate.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ack-after-promotion.html:16 non-blocking: the repro block quotes '2 failed, 2 passed in 2.19s', but the run's only stored base log records 1.17s; the counts and both failing ids reconcile, the duration matches no stored log, so a reader checking the quoted figure against its cited evidence cannot.\nFINDING tests/test_ack_after_promotion.py:73 non-blocking: the manifest's baseline_suite and after_suite arms run tests that neither import nor exercise the changed fixture, so the arm clause is answered in letter while measuring nothing about this change; the manifest discloses this under outside_scope and the dispatcher picked the file list.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062507764538-qwnw-red-file-ack-after-promotion/manifest.md:12 non-blocking: the done_when's ruff clause carries no recorded evidence; I ran both commands at the reviewed head and they exit 0, so the fact holds while the record that should show it is absent.\n",
+  "review_run_id": "r-20261120T074336225942-review-of-qwnw-red-file-ack-after-promotion-0f7dca07ba83",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "0f7dca07ba8318c039a6a5fa91fdbd4858426a1a",
+  "reviewed_run_id": "r-20261118T062507764538-qwnw-red-file-ack-after-promotion",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T20:52:00.000000+00:00",
+  "total": 111
+}

@@ -245,6 +245,7 @@ _READ_SOURCES: tuple[tuple[str, str, str], ...] = (
     ("reckon.crew.admission.verdicts", "_record_readiness_verdicts", "readiness scan"),
     ("reckon.crew.admission.reviews", "_release_plan_review_holds", "review-hold scan"),
     ("reckon.crew.admission.release", "_rederive_waits", "request wait rewrite"),
+    ("reckon.crew.lost_sessions", "session_lost", "lost-session reads"),
 )
 
 

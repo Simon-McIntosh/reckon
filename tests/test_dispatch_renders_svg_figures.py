@@ -34,6 +34,12 @@ def _source(repo: Path, name: str, *, valid: bool = True) -> Path:
     return path
 
 
+def _record(result) -> dict:
+    # click's ``result.output`` interleaves stderr, where a dispatch's
+    # progress notices go; stdout alone is the command's one JSON document.
+    return json.loads(result.stdout)
+
+
 def _images(argv: list[str]) -> list[str]:
     return [argv[index + 1] for index, flag in enumerate(argv[:-1]) if flag == "-i"]
 
@@ -92,7 +98,7 @@ def test_svg_cli_dispatch_records_a_run_local_png_and_resume_reuses_it(
         ],
     )
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)
+    record = _record(result)
     run_id = record["run_id"]
     directory = crew.run_dir(run_id)
     expected_png = directory / "image-0.png"
@@ -163,7 +169,7 @@ def test_png_cli_dispatch_keeps_the_input_path(
         ],
     )
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)
+    record = _record(result)
     assert record["node"]["images"] == [str(png)]
     assert _images(record["argv"]) == [str(png)]
 

@@ -1,0 +1,114 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    "tests/test_a_publish_reads_each_promotion_request_once.py:281 len(counts) == len(fixture.paths) \u2014 reddens if the stand-in stops seeing the population; the instrument check that makes the zeros below readable.",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:283 repeated == {settled path} \u2014 reddens if any unchanged request is decoded twice; reinstating the per-session _read makes it fail with the base arm's 2,401.",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:284 sum(counts.values()) == len(paths) + 1 \u2014 reddens to 2401 on a per-session read and to 400 if the settle rewrite is not re-read.",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:305 set(counts.values()) == {1} \u2014 reddens if the shared index decodes a request twice or the settle is re-raised.",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:318 rewritten == expected_settled \u2014 compares the second publish's decoded set against _base_projection's settlement, an independent re-read of the fixture files.",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:407-412 listings == 1 and 2 + DERIVED_PADDING records \u2014 reddens with two listings when promotion_index=request_index() at obligation_snapshot.py:2049 is reverted (logs/negative-control-derivation-index.log).",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:424-426 slices decode nothing and list nothing \u2014 reddens with 2 decodes when index=state.promotion_index at obligation_snapshot.py:2300 is reverted to None (logs/negative-control-index-argument.log).",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:448 a slice with index=None lists once \u2014 shows the listing counter fires, so the zero above is an absence of listings rather than of a reader.",
+    "tests/test_a_publish_reads_each_promotion_request_once.py:487-490 a request settled after the index is not raised \u2014 reddens when for_owner serves the index's record (logs/negative-control-stale-index.log)."
+  ],
+  "assertion_independence": "No added assertion compares a value against the variable the test handed the code. _rows and _settled_now compare failure_obligations' projections against _base_projection, which re-reads the fixture files with json.loads and never calls the function under test; its reuse of requests._settled_state, _waited_seconds and WAITING_OBLIGATION_SECONDS is the unchanged predicate both revisions call, which is the one dependency under which the parity assertions cannot fail.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:2299 -> failure_obligations(..., index=state.promotion_index)",
+    "reckon/crew/obligations.py:5192 -> failure_obligations(project, session, now=now), no index, one per session",
+    "reckon/crew/promotion_requests.py:1454 -> _request_record in _settle's guard read"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T05:56:00Z",
+  "evidence_limits": [
+    "The baseline and after arms ran on host 98dci4-clu-3141 with an empty .log.scheduler companion, so the partition is not observable from the record; the differing host and landing_measure.py:895's argv are what identify them as submitted jobs rather than in-process runs.",
+    "The 1,578-request station figure in the fragment is quoted from the profile that motivated the section and is not re-measured here."
+  ],
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the same one-sweep window accepted in the first round: a request appearing or turning failed inside one publish is raised on the next",
+      "recorded_at": "2026-11-20T06:17:21.817675+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "an evidence-wording overstatement: decodes are once per publish as measured, copies remain per slice; the landing comment on s104 states it correctly",
+      "recorded_at": "2026-11-20T06:17:32.316940+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "an unexercised guard for a session sliced twice; harmless state that no caller reaches, left for a later cleanup",
+      "recorded_at": "2026-11-20T06:17:41.713021+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": "390",
+      "severity": "non-blocking",
+      "text": "non-blocking: RequestIndex.for_owner decides membership and the phase gate from the record the index holds (line 390) and only then re-reads through the memo, so a request that appears after the derivation, or turns from settled into failed/waiting inside one publish, is not raised by any later slice of that publish where the base revision's per-session re-listing would have raised it; the window is one sweep (obligation_snapshot.py:2448 derives once, then slices at :2452) and it self-corrects on the next publish, but the docstring at :377 says the slice reads the requests 'as the files stand now', which holds only for the records the index already held."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-publish-reads-each-promotion-request-once.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states 'every slice is handed the stored record's view rather than a copy', but the read-only region closes at promotion_requests.py:415 before any slice runs, and for_owner's call at :392 is outside it, so file_memo.memoized returns copy.deepcopy(value) per candidate per session (reckon/file_memo.py:424); the decodes are once, the copies are per slice, and the evidence document overstates what the change removed."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": "395",
+      "severity": "non-blocking",
+      "text": "non-blocking: note_settled and the _settled set guard a session that is sliced twice inside one publish, which no production caller does \u2014 obligation_snapshot.py:2452 dedupes sessions with dict.fromkeys, and obligations.py:5192 passes no index so it builds a fresh one per call \u2014 and no test reddens if both are deleted, so the guard is unexercised state rather than a protected behaviour."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Three production call sites reach the change: the station publish at obligation_snapshot.py:2299 which passes the derived index, the per-session obligations view at obligations.py:5192 which passes none and builds its own index per session, and the settle guard at promotion_requests.py:1454 which now reads through the memo instead of _read.",
+    "diff": "Read commit by commit against e6d692b1b4: 9d49b2f393 reads requests through one index and 6cf52be5d1 records the census, 6ddb6cde75 replaces the local cache with file_memo and adds the derivation census, c0f5fb8826 names the owner in the fragment, 7454903b17 re-reads each candidate in for_owner, 0ac83d3963 documents it; 4 declared paths, no plan edit.",
+    "done_when": "tests/test_a_publish_reads_each_promotion_request_once.py builds 400 requests over 3 projects and 6 sessions with a live pointer for every failed or waiting request plus one settled-by-absence request, counts decodes through a _read stand-in, and asserts 401 decodes for six unshared reads and 400 for one shared index, one decode for the second publish, and duty and settlement parity against _base_projection; the derivation census at :404-412 adds the publish wiring the measure needs.",
+    "goal": "The source goal is that one obligations publish reads each promotion request once; reckon/crew/promotion_requests.py:404-415 lists the directory once and builds one RequestIndex per publish, and reckon/crew/obligation_snapshot.py:2045-2049 derives it once and :2299-2301 hands it to every session's slice, so the goal is met at the station's call shape.",
+    "manifest": "The manifest records status complete, six commits, the gate at 62 passed EXIT=0, baseline 58 passed and after 62 passed both EXIT=0 with empty failure_ids, and five negative-control logs; it also answers the prior review's four findings, three repaired in 6ddb6cde75/7454903b17/c0f5fb8826 and the fourth (arm host) declined with the landing-measure construction as its reason.",
+    "write_paths": "The declared paths are reckon/crew/promotion_requests.py, reckon/crew/obligation_snapshot.py, the new test file, the evidence fragment and a figures directory; the four paths in e6d692b1b4..0ac83d3963 are the first three plus the fragment, and the figures path stayed unused."
+  },
+  "justifications": {
+    "durability": "The three mutation logs each fail the case that names them and the base arm fails two tests at 2401 decodes, yet promotion_requests.py:395's _settled guard is reached by no test and no caller, so removing it leaves the suite green.",
+    "evidence": "The gate names tests/test_a_publish_reads_each_promotion_request_once.py in after_suite-1795153731069290624.log (62 passed, EXIT=0) and the arms ran through reckon/crew/landing_measure.py:895 sbatch --wait on host 98dci4-clu-3141 rather than this node, though the arm log records no partition and its .scheduler companion is empty.",
+    "fit": "reckon/crew/promotion_requests.py:347-415 follows the module's lazy-import and file_memo idiom, with reckon/crew/obligation_snapshot.py:1962-1965 typing the new field Any because this module resolves its siblings by local import rather than TYPE_CHECKING.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:404-415 and reckon/crew/obligation_snapshot.py:2045-2049 give each publish one reading, and the recorded after arm reads 400 decodes for 400 requests over six sessions where the base arm reads 2401.",
+    "reuse": "The identity-keyed decode it needs is owned by reckon/file_memo.py:365 memoized, which the module now calls at :354 inside a read_only_region at :411 instead of carrying the local table the prior revision landed, and no owner exists for an owner-grouped request index: the other readers of the directory at :818, :884, :1161 and :1474 each scan and filter inline.",
+    "scope_discipline": "Every path in the e6d692b1b4..0ac83d3963 diff is one of the declared write paths, and the fragment is the only non-code addition."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that one obligations publish reads each promotion request once; reckon/crew/promotion_requests.py:404-415 lists the directory once and builds one RequestIndex per publish, and reckon/crew/obligation_snapshot.py:2299-2301 hands that one index to every session's slice.\nVERDICT done_when: tests/test_a_publish_reads_each_promotion_request_once.py builds 400 requests over 3 projects and 6 sessions with a live pointer for every failed or waiting run, counts decodes through a _read stand-in, asserts 401 for six unshared reads (:284) and 400 for one shared index (:305), 1 for the second publish (:318), and adds the derivation census at :407-426 that holds the publish wiring.\nVERDICT write_paths: the declared paths are reckon/crew/promotion_requests.py, reckon/crew/obligation_snapshot.py, the new test file, the evidence fragment and a figures directory; the four paths in e6d692b1b4..0ac83d3963 are the first three plus the fragment and the figures path stayed unused.\nVERDICT manifest: read; it records status complete, six commits, the gate at 62 passed EXIT=0, baseline 58 passed and after 62 passed both EXIT=0 with empty failure_ids, and five negative-control logs, and it answers the prior review's four findings with three repairs and one decline.\nVERDICT diff: read commit by commit against e6d692b1b4 \u2014 9d49b2f393 and 6cf52be5d1 land the index and its census, 6ddb6cde75 replaces the local cache with file_memo and adds the derivation census, c0f5fb8826 names the owner, 7454903b17 re-reads each candidate, 0ac83d3963 documents it; 4 declared paths, no plan edit.\nCALL_SITES: reckon/crew/obligation_snapshot.py:2299, reckon/crew/obligations.py:5192, reckon/crew/promotion_requests.py:1454\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:404-415 and reckon/crew/obligation_snapshot.py:2299-2301 give each publish one reading, and the after arm reads 400 decodes for 400 requests over six sessions where the base arm reads 2401.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate names tests/test_a_publish_reads_each_promotion_request_once.py in after_suite-1795153731069290624.log (62 passed, EXIT=0) with arms submitted through reckon/crew/landing_measure.py:895 on host 98dci4-clu-3141, though the arm log names no partition and its .scheduler companion is empty.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the e6d692b1b4..0ac83d3963 diff is one of the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control-derivation-index.log, -index-argument.log and -stale-index.log each fail the case that names them and the base arm fails two tests at 2401 decodes, yet the _settled guard at reckon/crew/promotion_requests.py:395 is reached by no test and no caller.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:347-415 follows the module's lazy-import and file_memo idiom, with the new field typed Any at reckon/crew/obligation_snapshot.py:1965 beside typed neighbours.\nSCORE reuse: 20\nJUSTIFICATION reuse: the decode now calls reckon/file_memo.py:365 memoized at promotion_requests.py:354 instead of the local table the earlier revision landed, and no owner exists for an owner-grouped request index \u2014 the other readers at :818, :884, :1161 and :1474 scan and filter inline.\nFINDING reckon/crew/promotion_requests.py:390 non-blocking: for_owner gates membership and phase on the index's record before re-reading, so a request that appears or turns actionable after the derivation is raised by no later slice of that publish, where the base revision's per-session re-listing would have raised it; the docstring at :377 claims the slice reads the requests as the files stand now.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-publish-reads-each-promotion-request-once.html:35 non-blocking: the fragment says every slice is handed the stored record's view rather than a copy, but the region closes at promotion_requests.py:415 and for_owner's call at :392 sits outside it, so file_memo.memoized returns copy.deepcopy per candidate per session (reckon/file_memo.py:424).\nFINDING reckon/crew/promotion_requests.py:395 non-blocking: note_settled and the _settled set guard a session sliced twice in one publish, which no caller does \u2014 obligation_snapshot.py:2452 dedupes sessions and obligations.py:5192 builds a fresh index per call \u2014 and no test reddens if both are removed.\n",
+  "reuse_search": {
+    "outcome": "the added _request_record extends file_memo.memoized; RequestIndex grouping by owner has no existing owner (promotion_requests.py:818, :884, :1161, :1474 each re-scan and filter inline)",
+    "owners_found": [
+      "reckon/file_memo.py:365 memoized over :280 file_signature, with :372 read_only_region and :488 BoundedMap"
+    ],
+    "searched": "reckon/ for readers of the promotion request directory and for an identity-keyed decode owner"
+  },
+  "review_run_id": "r-20261120T055505817551-review-of-a-publish-reads-each-promotion-request-once-0ac83d3963d9",
+  "reviewed_base_sha": "e6d692b1b42efe97685bb9dcc2f542c0de4135a1",
+  "reviewed_head_sha": "0ac83d3963d9f0cbfaaf06b66ca38ab50beaf7af",
+  "reviewed_run_id": "r-20261120T045503326543-a-publish-reads-each-promotion-request-once",
+  "reviewed_worker_commits": [
+    "9d49b2f393",
+    "6cf52be5d1",
+    "6ddb6cde75",
+    "c0f5fb8826",
+    "7454903b17",
+    "0ac83d3963"
+  ],
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T06:02:18.326609+00:00",
+  "total": 110
+}

@@ -830,6 +830,7 @@ def _persisted_worker_environment(
     persisted = dict(environment or {})
     for key in (
         "RECKON_RUN_ID",
+        "RECKON_SESSION_ID",
         "RECKON_MANIFEST",
         "RECKON_ATTEMPT_STARTED_AT",
     ):
@@ -1178,6 +1179,17 @@ def _attribute_omp_requests(
     return True
 
 
+def coordinator_session(record: Mapping[str, Any]) -> str:
+    """The coordinator session a run's record names, or ``""`` when it names none.
+
+    The one read of that key: the launch takes the session from the pointer it
+    read, and every caller that reaches it — a first launch, a resume, a lane
+    change — goes through here, so a change to where the record keeps it lands
+    once rather than in each composed environment.
+    """
+    return str(record.get("session") or "")
+
+
 def _worker_runtime_environment(
     environment: Mapping[str, str] | None,
     *,
@@ -1206,6 +1218,8 @@ def _worker_runtime_environment(
             "RECKON_ATTEMPT_STARTED_AT": attempt_started_at,
         }
     )
+    if coordinator_session:
+        runtime["RECKON_SESSION_ID"] = coordinator_session
     if run_id:
         runtime["TMPDIR"] = (
             str(worker_scratch_dir(run_id))
@@ -3828,6 +3842,18 @@ def supervised_launch(
     disk.
     """
     _require_fleet_gate_open()
+    from reckon.crew.promotion import discard_recorded
+
+    if discard_recorded(run_directory.name):
+        # A discard that landed while this launch composed removed the pointer
+        # and recorded the departure, so the run is not the operator's any more.
+        # This is the last step every resume and review launch takes before a
+        # worker exists, and the worker's own first act is to publish a pointer,
+        # which would undo the discard: the launch refuses here instead.
+        raise CrewError(
+            f"run {run_directory.name!r} was discarded while its launch composed; "
+            "the launch is refused"
+        )
     record = read_pointer(run_directory.name)
     stream_name = Path(log_path).name
     attempt_kind = "lane-change" if stream_name.startswith("lane-change-") else "resume"
@@ -4070,14 +4096,46 @@ class _WorkerPid(int):
     naming neither a code nor a signal. The carrier stays an int because every
     other reader wants only the pid, and it must keep comparing and serialising
     as one.
+
+    The ``Popen`` the pid came from is carried beside it, and for a sharper
+    reason: ``subprocess`` reaps its own child from the handle's finaliser, so a
+    supervisor that kept only the number would lose the wait status the moment
+    the handle was collected — a worker that ended by signal would be recorded
+    as ending by neither code nor signal. Holding the handle keeps the reap
+    where the exit record is composed.
     """
 
     collected_wait_status: int | None
+    process: subprocess.Popen | None
 
-    def __new__(cls, pid: int, collected_wait_status: int | None = None) -> _WorkerPid:
+    def __new__(
+        cls,
+        pid: int,
+        collected_wait_status: int | None = None,
+        process: subprocess.Popen | None = None,
+    ) -> _WorkerPid:
         worker_pid = super().__new__(cls, pid)
         worker_pid.collected_wait_status = collected_wait_status
+        worker_pid.process = process
         return worker_pid
+
+
+def _exit_a_handle_already_collected(pid: int) -> int | None:
+    """The exit a ``Popen`` handle collected in its owner's place.
+
+    ``subprocess.Popen`` calls ``os.waitpid`` for its own child when the handle
+    polls or is finalised, so a wait by pid can find nothing left to collect.
+    The status is not lost by that: the handle holds it, and the carrier this
+    pid was spawned as is the only place the handle survives. A pid with no
+    child the supervisor still holds — one read from the process table rather
+    than spawned here — answers nothing, which is the honest reading for a
+    child somebody else already collected.
+    """
+    process = getattr(pid, "process", None)
+    returncode = getattr(process, "returncode", None)
+    if returncode is None:
+        return None
+    return _wait_status_from_returncode(int(returncode))
 
 
 class _PointerMissingError(CrewError):
@@ -4328,7 +4386,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         run_id=str(spec["run_id"]),
         manifest_path=_recorded_manifest_path(record, str(spec["run_id"])),
         attempt_started_at=_utc_now(),
-        coordinator_session=str(record.get("session") or ""),
+        coordinator_session=coordinator_session(record),
         claude_headers=str(plan.get("dialect") or "") == "claude",
         placed_step=step_placed,
         omp_headers=str(plan.get("dialect") or "") == "omp",
@@ -4417,6 +4475,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     return _WorkerPid(
         process.pid,
         None if collected is None else _wait_status_from_returncode(collected),
+        process,
     )
 
 
@@ -5257,7 +5316,7 @@ def _reap_worker_on_its_terminal_manifest(
         try:
             waited_pid, status = os.waitpid(pid, os.WNOHANG)
         except (ChildProcessError, OSError):
-            return None
+            return _exit_a_handle_already_collected(pid)
         if waited_pid == pid:
             return status
         now = time.monotonic()

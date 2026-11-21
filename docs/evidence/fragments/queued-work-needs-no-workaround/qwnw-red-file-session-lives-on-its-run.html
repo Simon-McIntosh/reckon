@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-session-lives-on-its-run — base red run, head green run</title>
+</head>
+<body>
+<article id="qwnw-red-file-session-lives-on-its-run">
+<h1>qwnw-red-file-session-lives-on-its-run</h1>
+
+<p><code>tests/test_session_lives_on_its_run.py</code> was red on the primary branch at
+<code>6fa2b177c511a297d3440956aa64eaa759d4554a</code>: three failures, four passes. The
+cause is in the test, not in the product; no product rule was broken and no product line
+changed.</p>
+
+<h2 id="qwnw-red-file-session-lives-on-its-run-cause">Cause</h2>
+
+<p>The roster's mutations moved to the run store. <code>ledger.register_member</code> and
+<code>ledger.write_members</code> are store-only transactions — "registration is a
+store-only transaction regardless of its value" — and
+<code>tests/test_members_and_holds_live_in_the_store.py</code> asserts that a roster
+mutation rewrites no committed path. This file still read its roster out of
+<code>&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json</code>, a committed file the store no
+longer writes, so every case that compared the roster before and after a dispatch raised
+before it reached a product call:</p>
+
+<pre id="qwnw-red-file-session-lives-on-its-run-repro">tests/test_session_lives_on_its_run.py:131: in _members
+    roster = json.loads((repo / "docs/state/proj/crew.json").read_bytes())
+E       FileNotFoundError: [Errno 2] No such file or directory: '.../repo/docs/state/proj/crew.json'
+FAILED tests/test_session_lives_on_its_run.py::test_dispatch_and_observe_leave_roster_members_byte_identical[False]
+FAILED tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[False]
+FAILED tests/test_session_lives_on_its_run.py::test_promoted_session_resumes_same_task_without_roster_write[True]
+3 failed, 4 passed in 12.17s</pre>
+
+<p>Verdict: <strong>test wrong</strong>. The file was updated to the rule the code keeps,
+and no assertion was deleted or weakened. <code>_members</code> now returns the store's
+canonical members JSON together with its version, and the <code>legacy_session</code> case
+seeds the member through <code>write_members</code> instead of the aggregate ledger file. A
+roster write that leaves the members alone still advances the store's version, so the
+comparison sees it, and the first case also asserts the worktree — tracked and untracked —
+is unchanged, which catches a roster write that landed on any committed path rather than
+only on one fixed filename.</p>
+
+<h2 id="qwnw-red-file-session-lives-on-its-run-runs">Runs</h2>
+
+<table id="qwnw-red-file-session-lives-on-its-run-table">
+<colgroup><col style="width:9%"><col style="width:26%"><col style="width:20%"><col style="width:45%"></colgroup>
+<thead>
+<tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>base</td>
+<td><code>6fa2b177c511a297d3440956aa64eaa759d4554a</code></td>
+<td>3 failed, 4 passed — <code>EXIT=1</code></td>
+<td><code>node-measure-base.log</code> in the run directory; a scratch tree archived from
+the base revision, whose <code>module.__file__</code> and resolved working directory are on
+its header lines</td>
+</tr>
+<tr>
+<td>head</td>
+<td><code>47505de5153f5c0319ec3ca5a81a71b6dd37b10f</code></td>
+<td>7 passed — <code>EXIT=0</code></td>
+<td><code>node-measure-head.log</code> in the run directory</td>
+</tr>
+</tbody>
+</table>
+
+<p>Both arms ran inside one job on <code>all_debug</code> (Slurm job 1328988). The job
+unsets <code>SLURM_JOB_ID</code> and <code>SLURM_JOBID</code> before pytest starts, so the
+file is measured outside a job environment. This file's own measure
+is the file's full run at each arm; the declared-suite arms over
+<code>tests/test_staged_write_inventory.py</code> and
+<code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> read 58 passed
+<code>EXIT=0</code> at base <code>6fa2b177c5</code> and at head, so the change adds no
+failure there either.</p>
+
+<h2 id="qwnw-red-file-session-lives-on-its-run-falsification">Falsification</h2>
+
+<p>The version clause is not decorative. In a throwaway copy of the head tree,
+<code>crew.observe</code> was made to rewrite the roster through
+<code>ledger.write_members</code>; the repaired file then fails 3 of the same 4 cases, and
+the quoted comparison shows the members bytes identical with only the store's version
+advanced, so the version is the only thing that caught the write:</p>
+
+<pre id="qwnw-red-file-session-lives-on-its-run-mutation">assert (b'[{"created":"2026-11-19","harness":"alpha","id":"worker",...,"sessions":{}}]', 2) == (b'[{"created":"2026-11-19","harness":"alpha","id":"worker",...,"sessions":{}}]', 1)
+3 failed, 4 passed in 14.31s
+EXIT=1</pre>
+
+<p>The mutation never entered the worktree; the log is
+<code>mutation-roster-write.log</code> in the run directory.</p>
+
+</article>
+</body>
+</html>

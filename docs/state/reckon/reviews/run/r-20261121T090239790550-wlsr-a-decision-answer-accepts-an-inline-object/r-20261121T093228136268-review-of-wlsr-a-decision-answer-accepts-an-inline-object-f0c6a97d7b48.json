@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:626 crew_decision_answer -> read_answers",
+    "reckon/crew/lost_session_work.py:407 answer_decision:read_answers' output",
+    "reckon/cli.py:main crew group -> crew_decision_answer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T09:35:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "610",
+      "severity": "non-blocking",
+      "text": "the option's destination and the parameter at :621 are called `answers_file` and the value read at :626 is no longer necessarily a file \u2014 it may be an inline object's text or `-` \u2014 so the name states one of the three accepted forms as though it were the whole with no test guarding the naming; rename the destination to `answers` when the option is next touched."
+    },
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-decision-answer-accepts-an-inline-object.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the new fragment ends without a trailing newline (the diff shows `\\ No newline at end of file`), which is the only formatting defect in an otherwise consistent file when the fragment is spliced into the cumulative record."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against base 2189513: e7d57af04b adds ANSWER_FORMS and read_answers to reckon/crew_run_commands.py's dependency module and drops `type=click.File(\"r\")` in favour of the raw value, and f0c6a97d7b adds the evidence fragment; the test file adds the file/inline parity case, the reader-equality case and the three-forms refusal case.",
+    "done_when": "the done_when names three cases; I ran the head tree (git archive of f0c6a97 into scratch, PYTHONPATH=$D) as 15 passed in tests/test_a_lost_sessions_work_is_raised.py, and read the run's own gate logs: scoped gate 73 passed EXIT=0 at e7d57af, baseline 69 passed EXIT=0 at 2189513, after 73 passed EXIT=0 at f0c6a97, negative control 3 failed / 12 passed EXIT=1 with the inline case refused as `No such file or directory`.",
+    "goal": "the node's goal is that `crew decision answer` accepts an answer given as an inline object; at the head the option at reckon/crew_run_commands.py:609-616 carries the raw value and reckon/crew/lost_session_work.py:366 read_answers resolves it as an inline JSON object, a readable file, or `-` for stdin, so an inline object is no longer opened as a path.",
+    "manifest": "read; it names commits e7d57af04b and f0c6a97d7b, the three gate logs on disk (73 passed scoped, 69 passed baseline, 73 passed after), the negative-control log with its base-revision header and EXIT=1, and a baseline_suite/after_simple pair that reports the same figures the logs carry.",
+    "write_paths": "the declared paths are reckon/crew_run_commands.py, reckon/crew/lost_session_work.py, tests/test_a_lost_sessions_work_is_raised.py and the scope evidence fragment; `git diff --stat 2189513..f0c6a97` lists exactly those four files (+141/-7) and nothing else, with the declared figure directory left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lost_sessions_work_is_raised.py:282 fails at the base revision with the missing-file refusal (recorded, and its [inline] parameter is one of the 3 failures), :339 fails at the base because the refusal is a click usage error (exit 2) rather than the forms message, and :335's two sides are both calls to read_answers but differ in input (a path versus the inline string) and are anchored by :336 against json.loads.",
+    "evidence": "tests/test_a_lost_sessions_work_is_*:282/:330/:339 are the three cases the done_when names, and the run's logs record 73 passed at head against 69 at base, with the negative control 3 failed EXIT=1 at the base revision; I confirmed 15 passed at head in a scratch extraction, so the gate measures the named measure.",
+    "fit": "the added names ANSWER_FORMS and read_answers describe mechanism and carry no plan, sprint, version or ticket label, but the click destination and parameter at reckon/crew_run_commands.py:610/:621 remain `answers_file` although the value is now an inline object's text or `-` as well as a path.",
+    "goal_fidelity": "reckon/crew/lost_session_work.py:366 read_answers returns a parsed dict for an inline object before it ever touches a path, keeps the readable-file branch and the `-` stream branch, and refuses anything else with the three forms named at :393.",
+    "reuse": "a search of reckon/ for a file-or-inline-or-stdin JSON source resolver (read_answers, json.loads followed by Path.read_text, ``or stdin`` option help) found no owner other than click.File, which read_answers replaces rather than duplicating; reports.py's inline decode and the other crew helpers read a path or a string, not one of three forms.",
+    "scope_discipline": "`git diff --stat 2189513a6c94cef3cffdffc756a31d4132ca67d9..f0c6a97d7b48ae28814082eb47f889930fec0f3a` lists only the four declared paths, with no plan edit and no shared-index write."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-wlsr-a-decision-answer-accepts-an-inline-object-f0c6a97d7b48",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that `crew decision answer` accepts an answer given as an inline object; at the head the option at reckon/crew_run_commands.py:609-616 carries the raw value and reckon/crew/lost_session_work.py:366 read_answers resolves it as an inline JSON object, a readable file, or `-` for stdin, so an inline object is no longer opened as a path.\nVERDICT done_when: the done_when names three cases; I ran the head tree (git archive of f0c6a97 into scratch, PYTHONPATH=$D) as 15 passed in tests/test_a_lost_sessions_work_is_raised.py, and read the run's own gate logs: scoped gate 73 passed EXIT=0 at e7d57af, baseline 69 passed EXIT=0 at 2189513, after 73 passed EXIT=0 at f0c6a97, negative control 3 failed / 12 passed EXIT=1 with the inline case refused as `No such file or directory`.\nVERDICT write_paths: the declared paths are reckon/crew_run_commands.py, reckon/crew/lost_session_work.py, tests/test_a_lost_sessions_work_is_raised.py and the scope evidence fragment; `git diff --stat 2189513..f0c6a97` lists exactly those four files (+141/-7) and nothing else, with the declared figure directory left unused.\nVERDICT manifest: read; it names commits e7d57af04b and f0c6a97d7b, the three gate logs on disk (73 passed scoped, 69 passed baseline, 73 passed after), the negative-control log with its base-revision header and EXIT=1, and a baseline_suite/after_suite pair that reports the same figures the logs carry.\nVERDICT diff: read both commits against base 2189513: e7d57af04b adds ANSWER_FORMS and read_answers to reckon/crew_run_commands.py's dependency module and drops `type=click.File(\"r\")` in favour of the raw value, and f0c6a97d7b adds the evidence fragment; the test file adds the file/inline parity case, the reader-equality case and the three-forms refusal case.\nCALL_SITES: reckon/crew_run_commands.py:626 crew_decision_answer -> read_answers, reckon/crew/lost_session_work.py:407 answer_decision:read_answers' output, reckon/cli.py:main crew group -> crew_decision_answer\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/lost_session_work.py:366 read_answers returns a parsed dict for an inline object before it ever touches a path, keeps the readable-file branch and the `-` stream branch, and refuses anything else with the three forms named at :393.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_lost_sessions_work_is_*:282/:330/:339 are the three cases the done_when names, and the run's logs record 73 passed at head against 69 at base, with the negative control 3 failed EXIT=1 at the base revision; I confirmed 15 passed at head in a scratch extraction, so the gate measures the named measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 2189513a6c94cef3cffdffc756a31d4132ca67d9..f0c6a97d7b48ae28814082eb47f889930fec0f3a` lists only the four declared paths, with no plan edit and no shared-index write.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_lost_sessions_work_is_raised.py:282 fails at the base revision with the missing-file refusal (recorded, and its [inline] parameter is one of the 3 failures), :339 fails at the base because the refusal is a click usage error (exit 2) rather than the forms message, and :335's two sides are both calls to read_answers but differ in input (a path versus the inline string) and are anchored by :336 against json.loads.\nSCORE fit: 17\nJUSTIFICATION fit: the added names ANSWER_FORMS and read_answers describe mechanism and carry no plan, sprint, version or ticket label, but the click destination and parameter at reckon/crew_run_commands.py:610/:621 remain `answers_file` although the value is now an inline object's text or `-` as well as a path.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ for a file-or-inline-or-stdin JSON source resolver (read_answers, json.loads followed by Path.read_text, ``or stdin`` option help) found no owner other than click.File, which read_answers replaces rather than duplicating; reports.py's inline decode and the other crew helpers read a path or a string, not one of three forms.\nFINDING reckon/crew_run_commands.py:610 non-blocking: the option's destination and the parameter at :621 are called `answers_file` and the value read at :626 is no longer necessarily a file \u2014 it may be an inline object's text or `-` \u2014 so the name states one of the three accepted forms as though it were the whole with no test guarding the naming; rename the destination to `answers` when the option is next touched.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-decision-answer-accepts-an-inline-object.html:21 non-blocking: the new fragment ends without a trailing newline (the diff shows `\\ No newline at end of file`), which is the only formatting defect in an otherwise consistent file when the fragment is spliced into the cumulative record.\n",
+  "review_run_id": "r-20261121T093228136268-review-of-wlsr-a-decision-answer-accepts-an-inline-object-f0c6a97d7b48",
+  "reviewed_base_sha": "2189513a6c94cef3cffdffc756a31d4132ca67d9",
+  "reviewed_head_sha": "f0c6a97d7b48ae28814082eb47f889930fec0f3a",
+  "reviewed_run_id": "r-20261121T090239790550-wlsr-a-decision-answer-accepts-an-inline-object",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T09:51:30.155460+00:00",
+  "total": 114
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="queued-work-needs-no-workaround">
+<meta name="plan-node" content="qwnw-a-relative-brief-launches-from-any-directory">
+<title>qwnw-a-relative-brief-launches-from-any-directory — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="qwnw-a-relative-brief-launches-from-1-what">What landed</h2>
+
+<p>A brief named by a relative path is resolved once at dispatch, in
+<code>plan_dispatch</code>, against the request's own repository. The stored
+path is absolute, so the admit service — which launches from whatever directory
+it was started in — reads the same file the coordinator named. A request whose
+brief file is absent is still refused at dispatch, before anything is stored;
+that refusal already existed and is now pinned by the test.</p>
+
+<p>A queued request whose launch keeps failing no longer cycles for ever. Past
+<code>queue.launch_failure_limit</code> failures in a row (a new flight setting,
+shipped default 3, declared in <code>reckon/schema/flight.yaml</code> and
+regenerated into both committed artifacts) the request is left
+<code>launch-failed</code> with the last failure recorded as its
+<code>failure</code>, instead of being written back as a fresh queued pointer.
+Below the limit it re-queues exactly as it did.</p>
+
+<h2 id="qwnw-a-relative-brief-launches-from-2-measure">Measure</h2>
+
+<p>The node's test, <code>tests/test_a_relative_brief_launches_from_any_directory.py</code>,
+fails three of its five cases at the base revision
+<code>3ab436fe38858d361bdd38ee97ab437d867b2043</code>: the relative brief is not
+resolved, the launch from an unrelated directory is refused
+(<code>result["failed"] == ["r-briefed"]</code>), and a request past its launch
+limit is still re-queued. At the head revision
+<code>47644df56735c5c19d3b68a7b32ff09dc024a756</code> all five pass.</p>
+
+<h2 id="qwnw-a-relative-brief-launches-from-3-control">Negative control</h2>
+
+<p>The head test file was copied into an extraction of the base revision and run
+there: <code>3 failed, 2 passed</code>, <code>EXIT=1</code>. The same file at
+the head is <code>5 passed</code>. The scoped gate and both suite arms are
+green at the head, and both suite arms are green at the base.</p>
+
+</main>
+</body>
+</html>

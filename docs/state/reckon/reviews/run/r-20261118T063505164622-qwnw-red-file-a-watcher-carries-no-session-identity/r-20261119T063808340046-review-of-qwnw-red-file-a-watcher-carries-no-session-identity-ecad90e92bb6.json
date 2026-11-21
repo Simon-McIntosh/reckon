@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "baseline_suite-1795069563325036186.log (b24fe95a789c) and after_suite-1795069606487554858.log (dc243630b3db) each ran to '58 passed' with EXIT=0 and no failing ids, so the head adds no failure the base does not carry",
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:10:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity.html",
+      "line": "60",
+      "severity": "non-blocking",
+      "text": "non-blocking: the note claims the gate command without its env -u prefix was also run against 'the full suite this node's write scope resolves to', while manifest.md:15-16 record arms over only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and no run over the node's tests scope exists among the artefacts, so the sentence cannot be reconciled with the arms it points at."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063505164622-qwnw-red-file-a-watcher-carries-no-session-identity/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: artifacts quotes '5 passed in 1.53s' against scoped-gate-1795069529792957789.log, whose own summary line at :7 reads '5 passed in 1.49s' (1.53s is the earlier scoped-gate-1795067708856035501.log), so the headline metric does not reconcile with the log it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063505164622-qwnw-red-file-a-watcher-carries-no-session-identity/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite at :15-16 measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed test nor any product module, and the node changed no product module, so their zero-failure delta is a measurement of a population the change cannot reach."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is a test-only edit plus an evidence fragment, so no production runtime code reaches it; the product function the case now calls, _watch_producer_argv at reckon/crew/dispatch_watch.py:365, was read and its only production caller is _start_watch_producer at :417.",
+    "diff": "read commit by commit against b24fe95a789c: dc243630b3db replaces the hand-written six-index argv in tests/test_a_watcher_carries_no_session_identity.py:246-262 with a prefix cut from dispatch_watch._watch_producer_argv(), leaving every assertion and the stub producer untouched, and ecad90e92bb6 adds only the 64-line evidence fragment.",
+    "done_when": "the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset and output on shared storage, a base run first, a product-or-test verdict per cause, no deleted or weakened assertion, and an importer arm where both arms carry full 40-character revisions; scoped-gate-1795069529792957789.log:7 reads 5 passed with EXIT=0 under env -u SLURM_JOB_ID on host 98dci4-clu-3144, logs/negative-control-base-node-test.log:96 reads 1 failed, 4 passed with EXIT=1 at b24fe95a789c, and the fragment at line 24 gives the cause as test-wrong; the partition is asserted at line 11 and by the log header rather than by a scheduler receipt, and the arms' population is the composed landing suite rather than importers of the change.",
+    "goal": "the goal asks that tests/test_a_watcher_carries_no_session_identity.py pass in full on the primary branch; the landed head rewrites only that case's setup and scoped-gate-1795069529792957789.log:7 records 5 passed at dc243630b3db; only the merge into the branch stands between the change and the goal.",
+    "manifest": "read; manifest.md:5 records status complete with commits dc243630b3db and ecad90e92bb6 at :7, the gate command at :11, the head gate at :17, the base control at :13-14 and zero-failure suite arms at :15-16; :17 quotes 1.53s for a log whose summary line is 1.49s, and :15-16 measure two files the change cannot reach.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its HTML record, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity; the diff b24fe95a789c..ecad90e92bb6 spans exactly tests/test_a_watcher_carries_no_session_identity.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity.html, both inside it."
+  },
+  "justifications": {
+    "durability": "the identity assertions at tests/test_a_watcher_carries_no_session_identity.py:276-279 redden if the supervisor's scrub loop is removed, and logs/negative-control-base-node-test.log:96 shows the pre-change case itself red at b24fe95a789c, so restoring the hand-written argv turns it red again.",
+    "evidence": "scoped-gate-1795069529792957789.log:7 records 5 passed and EXIT=0 under the env -u SLURM_JOB_ID prefix for the changed file on a compute node, while manifest.md:15-16 cite arms over two test files that import nothing this test-only change touches.",
+    "fit": "tests/test_a_watcher_carries_no_session_identity.py:249-253 states the argv layout in the comment idiom the file already uses, and the edit adds no name beyond locals settings, planned and module_root.",
+    "goal_fidelity": "tests/test_a_watcher_carries_no_session_identity.py:254-257 now takes the supervisor's settings prefix from dispatch_watch._watch_producer_argv(), and scoped-gate-1795069529792957789.log:7 records 5 passed at dc243630b3db where the file was red at base.",
+    "reuse": "the change adds no definition and instead reuses the owner of the capability it needs, _watch_producer_argv at reckon/crew/dispatch_watch.py:365, replacing the copy of that layout the case used to carry.",
+    "scope_discipline": "git diff --stat b24fe95a789c..ecad90e92bb6 lists only tests/test_a_watcher_carries_no_session_identity.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity.html, both inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that tests/test_a_watcher_carries_no_session_identity.py pass in full on the primary branch; the landed head rewrites only that case's setup and scoped-gate-1795069529792957789.log:7 records 5 passed at dc243630b3db; only the merge into the branch stands between the change and the goal.\nVERDICT done_when: the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset and output on shared storage, a base run first, a product-or-test verdict per cause, no deleted or weakened assertion, and an importer arm where both arms carry full 40-character revisions; scoped-gate-1795069529792957789.log:7 reads 5 passed with EXIT=0 under env -u SLURM_JOB_ID on host 98dci4-clu-3144, logs/negative-control-base-node-test.log:96 reads 1 failed, 4 passed with EXIT=1 at b24fe95a789c, and the fragment at line 24 gives the cause as test-wrong; the partition is asserted at line 11 and by the log header rather than by a scheduler receipt, and the arms' population is the composed landing suite rather than importers of the change.\nVERDICT write_paths: the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its HTML record, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity; the diff b24fe95a789c..ecad90e92bb6 spans exactly tests/test_a_watcher_carries_no_session_identity.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity.html, both inside it.\nVERDICT manifest: read; manifest.md:5 records status complete with commits dc243630b3db and ecad90e92bb6 at :7, the gate command at :11, the head gate at :17, the base control at :13-14 and zero-failure suite arms at :15-16; :17 quotes 1.53s for a log whose summary line is 1.49s, and :15-16 measure two files the change cannot reach.\nVERDICT diff: read commit by commit against b24fe95a789c: dc243630b3db replaces the hand-written six-index argv in tests/test_a_watcher_carries_no_session_identity.py:246-262 with a prefix cut from dispatch_watch._watch_producer_argv(), leaving every assertion and the stub producer untouched, and ecad90e92bb6 adds only the 64-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_watcher_carries_no_session_identity.py:254-257 now takes the supervisor's settings prefix from dispatch_watch._watch_producer_argv(), and scoped-gate-1795069529792957789.log:7 records 5 passed at dc243630b3db where the file was red at base.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795069529792957789.log:7 records 5 passed and EXIT=0 under the env -u SLURM_JOB_ID prefix for the changed file on a compute node, while manifest.md:15-16 cite arms over two test files that import nothing this test-only change touches.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b24fe95a789c..ecad90e92bb6 lists only tests/test_a_watcher_carries_no_session_identity.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity.html, both inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: the identity assertions at tests/test_a_watcher_carries_no_session_identity.py:276-279 redden if the supervisor's scrub loop is removed, and logs/negative-control-base-node-test.log:96 shows the pre-change case itself red at b24fe95a789c, so restoring the hand-written argv turns it red again.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_watcher_carries_no_session_identity.py:249-253 states the argv layout in the comment idiom the file already uses, and the edit adds no name beyond locals settings, planned and module_root.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and instead reuses the owner of the capability it needs, _watch_producer_argv at reckon/crew/dispatch_watch.py:365, replacing the copy of that layout the case used to carry.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-watcher-carries-no-session-identity.html:60 non-blocking: the note claims the gate command without its env -u prefix was also run against 'the full suite this node's write scope resolves to', while manifest.md:15-16 record arms over only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and no run over the node's tests scope exists among the artefacts, so the sentence cannot be reconciled with the arms it points at.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063505164622-qwnw-red-file-a-watcher-carries-no-session-identity/manifest.md:17 non-blocking: artifacts quotes '5 passed in 1.53s' against scoped-gate-1795069529792957789.log, whose own summary line at :7 reads '5 passed in 1.49s' (1.53s is the earlier scoped-gate-1795067708856035501.log), so the headline metric does not reconcile with the log it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063505164622-qwnw-red-file-a-watcher-carries-no-session-identity/manifest.md:15 non-blocking: baseline_suite and after_suite at :15-16 measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed test nor any product module, and the node changed no product module, so their zero-failure delta is a measurement of a population the change cannot reach.",
+  "review_method": "Read-only review of the source node's manifest, its gate and negative-control logs and the landed diff; no suite re-run, no mutation experiment and no repository file changed.",
+  "review_run_id": "r-20261119T063808340046-review-of-qwnw-red-file-a-watcher-carries-no-session-identity-ecad90e92bb6",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "ecad90e92bb68ba336aff8140b6c08eb1cbe4318",
+  "reviewed_run_id": "r-20261118T063505164622-qwnw-red-file-a-watcher-carries-no-session-identity",
+  "reviewer_run_id": "r-20261119T063808340046-review-of-qwnw-red-file-a-watcher-carries-no-session-identity-ecad90e92bb6",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:24:12+00:00",
+  "total": 111
+}

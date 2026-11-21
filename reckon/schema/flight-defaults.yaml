@@ -216,6 +216,13 @@ capability_raise:
   raised_reasoning: deep
   raised_verification: strict
 
+# How long a run whose launch step has left the scheduler may keep a live-looking
+# phase before it is settled as a worker that ended without delivering. Hours,
+# because the reading concludes nothing will write again: a run still thinking
+# must not be settled for a short quiet spell.
+settle:
+  quiet_after_hours: 6.0
+
 worktree:
   cleanup: conservative
   node_tmp_reserve_bytes: 8589934592
@@ -239,3 +246,15 @@ session_scratch:
   max_bytes: 2147483648
   disk_share: 0.5
   orphan_grace_seconds: 7200
+
+# How long a coordinator session may go unheard before its work is raised.
+# Three days: a wait can be correct for days, and only an owner gone this long
+# has work nobody can release. Read by the lost-session derivation.
+lost_session:
+  after_hours: 72
+
+# How long a request may wait on an upstream that no run or request is building
+# before its owner is told once. Three days, the same span as a lost session: a
+# wait nobody has taken that long is nobody's work. Read by the admission pass.
+stranded_wait:
+  report_after_hours: 72

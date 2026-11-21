@@ -1,0 +1,43 @@
+<section id="qwnw-red-file-the-section-prose-reader-has-one-home-run">
+<h3>The section-prose reader's one home, and the two arms</h3>
+<p>The assigned base fails one id: the reader count sees two names.</p>
+<p>The second name was <code>_PlanRead.section_prose</code> in
+<code>reckon/crew/dispatch_batch.py</code>, a lookup over prose the batch had
+already parsed. It neither parses nor slices HTML, so the verdict is product
+wrong: its duplicate name was all the guard saw. It is renamed
+<code>prose_for</code>.</p>
+<h4>Base arm</h4>
+<pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# host: 98dci4-clu-3144.iter.org
+# tree: /tmp/basetree.RKb9Le
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_section_prose_reader_has_one_home.py
+# measurement_module: /tmp/basetree.RKb9Le/reckon/mcp_views.py
+....F..                                                                  [100%]
+=================================== FAILURES ===================================
+___________ test_the_prose_reader_has_one_home_and_no_second_slicer ____________
+
+    def test_the_prose_reader_has_one_home_and_no_second_slicer():
+&gt;       assert len(_grep(r&quot;\bdef section_prose\b&quot;, (&quot;reckon&quot;,))) == 1
+E       AssertionError: assert 2 == 1
+E        +  where 2 = len([&#x27;reckon/_plan_html.py:517:def section_prose(&#x27;, &#x27;reckon/crew/dispatch_batch.py:311:    def section_prose(self, section: str) -&gt; str:&#x27;])
+E        +    where [&#x27;reckon/_plan_html.py:517:def section_prose(&#x27;, &#x27;reckon/crew/dispatch_batch.py:311:    def section_prose(self, section: str) -&gt; str:&#x27;] = _grep(&#x27;\\bdef section_prose\\b&#x27;, (&#x27;reckon&#x27;,))
+
+tests/test_the_section_prose_reader_has_one_home.py:252: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_the_section_prose_reader_has_one_home.py::test_the_prose_reader_has_one_home_and_no_second_slicer - AssertionError: assert 2 == 1
+ +  where 2 = len([&#x27;reckon/_plan_html.py:517:def section_prose(&#x27;, &#x27;reckon/crew/dispatch_batch.py:311:    def section_prose(self, section: str) -&gt; str:&#x27;])
+ +    where [&#x27;reckon/_plan_html.py:517:def section_prose(&#x27;, &#x27;reckon/crew/dispatch_batch.py:311:    def section_prose(self, section: str) -&gt; str:&#x27;] = _grep(&#x27;\\bdef section_prose\\b&#x27;, (&#x27;reckon&#x27;,))
+1 failed, 6 passed in 100.56s (0:01:40)
+EXIT=1
+</pre>
+<h4>Head arm</h4>
+<pre># revision: ec8ee8db8b9aa2bae03cb7fa0bb3be6b9c6a8e82
+# host: 98dci4-clu-3144.iter.org
+# tree: /tmp/basetree.Iz2hO3
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_section_prose_reader_has_one_home.py
+# measurement_module: /tmp/basetree.Iz2hO3/reckon/mcp_views.py
+.......                                                                  [100%]
+7 passed in 101.62s (0:01:41)
+EXIT=0
+</pre>
+</section>

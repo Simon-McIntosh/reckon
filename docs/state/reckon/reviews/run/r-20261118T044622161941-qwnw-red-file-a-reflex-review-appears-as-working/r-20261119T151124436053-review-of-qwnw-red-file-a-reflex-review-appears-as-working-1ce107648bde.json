@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own arms: baseline_suite at 5b0a1f537ef9 reads failure_ids [] and after_suite at 1ce107648b reads failure_ids [], so the difference is empty; each arm is 58 passed, EXIT=0",
+  "base_log_revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/evidence.py:1657 compose_landed_record",
+    "reckon/evidence.py:1610 _fragment_body_bytes",
+    "reckon/evidence.py:854 _fragment_href",
+    "reckon/serve.py:2739 _send_evidence_record",
+    "reckon/doccheck.py:2130 audit_fragment_ids"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:45:10Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the summary calls aea8a7db3b09cf22 'the run's head', but the run's delivered head is 1ce107648b, and no run of the named file exists at 1ce107648b; a reader comparing this row's reviewed_head_sha against the Head run block at :51 sees the gate one commit behind the delivered record. The revision the gate ran at is stated honestly and verifiable, and the one intervening commit is documentation only, so the record stays checkable."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html",
+      "line": "50-55",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Head run block quotes only the pass lines of scoped-gate-1795045790407984643.log, while line 5 of that log records 'station-obligations-failure: sample: export could not complete' followed by an uncaught FileNotFoundError from reckon/crew/station_obligations.py:591 publish; the row at :45 reads '2 passed; EXIT=0' with no mention of it, so a failure swallowed inside the measured run is invisible in the landed record."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new head row claims the gate ran as an all_debug job, but neither scoped-gate log's header names a partition (only '# host: 98dci4-clu-3141.iter.org') and both .scheduler files are zero bytes, so the done_when's 'as a job on all_debug' rests on the run manifest's prose rather than on the artefact the fragment cites; carried forward from the review at aea8a7db (finding 1), which the repair did not address."
+    }
+  ],
+  "head_log_revision": "aea8a7db3b09cf22cb69064f764cb9c2d04be7e4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is a static evidence fragment; runtime code that reads it is the evidence composer (reckon/evidence.py:1610 _fragment_body_bytes, :1657 compose_landed_record, :854 _fragment_href), the served evidence route (reckon/serve.py:2739 _send_evidence_record) and the promotion-side fragment audit (reckon/doccheck.py:2130 audit_fragment_ids), which returns [] for this fragment when run over it",
+    "diff": "read the single commit 1ce107648bde against aea8a7db3b09: 13 insertions and 3 deletions in the one fragment, splitting the arms row into a base row and a head row, adding a Head run block quoting scoped-gate-1795045790407984643.log at aea8a7db and a Base run block quoting scoped-gate-1795045375309005199.log at 5b0a1f5, and rewording the logs paragraph to cite both; no source, test or figure change",
+    "done_when": "the done_when requires the named file to pass in full at head as a job on all_debug with SLURM_JOB_ID unset, its output on shared storage, and the base run with its failing ids logged beside it; the delta gives the base and head gates separate rows (qwnw-red-file-a-reflex-review-appears-as-working.html:44-45) and separate quoted blocks (:50-63), drawing each figure from the log whose header names that revision, so the arrangement the done_when asks for now exists; what it does not carry is a run of the named file at the delivered head 1ce107648b, or any artefact naming the all_debug partition",
+    "goal": "the source node's goal is 'Make tests/test_a_reflex_review_appears_as_working.py pass in full on the primary branch' (node.goal in the run's dispatch-detail.json); the delta adds no product or test code, and the fragment it repairs records the file reading 2 passed EXIT=0 at base 5b0a1f5 and again at aea8a7db, which is the plan's already-passing branch delivered as such",
+    "manifest": "read the run manifest at .config/reckon/crew/runs/r-20261118T044622161941-qwnw-red-file-a-reflex-review-appears-as-working/manifest.md: status complete, changed_paths the single fragment, baseline_suite at 5b0a1f5 and after_suite at 1ce107648b each recording 58 passed EXIT=0 with no failing ids, and its checkpoint naming the repair this delta delivers",
+    "write_paths": "the declared write paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named fragment, and docs/figures/...; git diff aea8a7db3b09..1ce107648bde lists one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html, inside that set"
+  },
+  "justifications": {
+    "durability": "no assertion covers this delta - nothing compares a fragment's cited revision with the header of the log it cites, so the mislabel repaired here could return unremarked - and the only check that reads the fragment, reckon/doccheck.py:2130 audit_fragment_ids for duplicate element ids, reports [] on it",
+    "evidence": "both summaries the fragment quotes appear verbatim in their logs ('2 passed in 1.87s' at scoped-gate-1795045790407984643.log:7, '2 passed in 2.14s' at scoped-gate-1795045375309005199.log:6), each header names the revision it measured, and the suite arms read 58 passed EXIT=0 either side",
+    "fit": "the fragment keeps the document-wrapped shape of its siblings under docs/evidence/fragments/queued-work-needs-no-workaround and every element id begins with the node id as reckon/crew/prompts.py:299-308 requires",
+    "goal_fidelity": "the delta records the head gate at the revision it ran - aea8a7db3b09cf22cb69064f764cb9c2d04be7e4 at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html:51, matching the '# revision:' line of scoped-gate-1795045790407984643.log - which is what the repaired record owed, though :19 still calls that revision 'the run's head'",
+    "reuse": "the delta adds no definition; composing a plan's landed record from its fragments is owned by reckon/evidence.py:1657 compose_landed_record and :1610 _fragment_body_bytes, which read this path unchanged, and a capability search over reckon/ for fragment composition found only reckon/serve.py:2739 and reckon/doccheck.py:2130 as further readers",
+    "scope_discipline": "git diff aea8a7db3b09..1ce107648bde touches exactly the one declared fragment path and nothing else"
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T151124436053-review-of-qwnw-red-file-a-reflex-review-appears-as-working-1ce107648bde",
+  "reviewed_base_sha": "aea8a7db3b09cf22cb69064f764cb9c2d04be7e4",
+  "reviewed_commits": [
+    "1ce107648bdebf0b963822143f933953c9388e8c"
+  ],
+  "reviewed_delta_note": "this record covers only the commit gained since the review attached at aea8a7db3b09cf22cb69064f764cb9c2d04be7e4; the run's own base is 5b0a1f537ef9 and its suite arms are recorded at that base and at this head",
+  "reviewed_head_sha": "1ce107648bdebf0b963822143f933953c9388e8c",
+  "reviewed_run_id": "r-20261118T044622161941-qwnw-red-file-a-reflex-review-appears-as-working",
+  "reviewer_run_id": "r-20261119T151124436053-review-of-qwnw-red-file-a-reflex-review-appears-as-working-1ce107648bde",
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:11:43.971054+00:00",
+  "total": 99
+}

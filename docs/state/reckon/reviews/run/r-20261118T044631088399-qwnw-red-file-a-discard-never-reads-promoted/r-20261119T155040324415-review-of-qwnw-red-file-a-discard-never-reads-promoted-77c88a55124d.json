@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:fleet_transitions",
+    "reckon/crew/recovery_watch.py:_ledger_landing_word",
+    "reckon/crew/promotion.py:discard_record_path",
+    "reckon/ledger.py:run_path"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:50:54Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html",
+      "id": "f0d136e0a19",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "The paragraph calls scoped-gate-1795102749073214877 the promotion gate's own run \"at the head\" while the revision it then quotes, and the gate log's header, is a4e606c835fe7ebc4ffb5d55d147891f942d080f, one commit before the reviewed head 77c88a55124d311f6c6278e108acf95403a8c57c; the manifest's landing line repeats the attribution to 77c88a55. The intervening commit edits only this fragment, so the test result transfers, but the claim of a gate at the head is a commit early."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read a4e606c8 and 77c88a55 against db0350b2, the head the previous review read (the run's own base is 5b0a1f53): a4e606c8 adds landed_checkout and record_promoted_row to the helper and deletes the two private copies, changing no assertion; 77c88a55 rewrites the fragment's receipts to carry job 1331418/1331419, partition all_debug and the sacct table.",
+    "done_when": "the done_when names tests/test_a_discard_never_reads_promoted.py green at head as an all_debug job with each cause worded product-or-test; arm/head.log records 4 passed EXIT=0 in job 1331419 at a4e606c8, arm/base.log records 1 failed / 3 passed EXIT=1 in job 1331418 at 5b0a1f53, arm/sacct.txt records both COMPLETED on all_debug, and the final head 77c88a55 is a fragment-only commit whose after_suite log records 58 passed EXIT=0.",
+    "goal": "read the reviewed node's goal and the two commits it gained since the previous review; a4e606c8 lifts landed_checkout and record_promoted_row into tests/helpers/landing_repository.py:31 and :59, both departure modules import them, and the case the goal names reaches a landed checkout whose primary branch carries the delivered head.",
+    "manifest": "read in full; it names commits db0350b2, a4e606c8 and 77c88a55, the scoped gate's 4 passed EXIT=0, both suite arms 58 passed EXIT=0 with empty failure ids, both reuse checks passing at head and failing on the reverted answering commit, and one inaccuracy: its landing line attributes job 1331419 and the scoped gate to head 77c88a55 although both ran at a4e606c8.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, and a figures path; the gained diff touches only tests/helpers/landing_repository.py, tests/test_a_discard_never_reads_promoted.py, tests/test_crew_discard_reads_discarded.py and the fragment, all inside tests and the declared fragment path, with reckon and figures unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_discard_never_reads_promoted.py:108 asserts the computed word against 'promoted' rather than the head the test supplied, and arm/base.log records it failing with 'complete' when the checkout lacks the delivered head; the fragment's job receipts have no committed guard, only the run's scratch reuse-check.sh.",
+    "evidence": "arm/head.log:3 records job 1331419 at revision a4e606c8, one fragment-only commit before the reviewed head 77c88a55, so the one unmeasured step is named here rather than hidden.",
+    "fit": "landed_checkout and record_promoted_row sit in tests/helpers/landing_repository.py:31 and :59 beside _write_origin_and_checkout, use the module's _git driver and keyword-only project default, and the raw json row write matches the fixture idiom at tests/test_the_departure_row_says_how_and_what_it_spent.py:39.",
+    "goal_fidelity": "tests/helpers/landing_repository.py:31 landed_checkout builds the checkout whose primary branch carries the head the promoted row names, and both departure modules import it, which is the fixture the goal's failing case needs.",
+    "reuse": "the moved definitions extend tests/helpers/landing_repository.py, the module the repository already names as the home for a fixture a second test builds; a search for a second landed-checkout builder under tests found only tests/helpers/landing_repository.py:31 after the deletion.",
+    "scope_discipline": "every path in the two gained commits lies inside tests and docs/evidence/fragments/queued-work-needs-no-workaround, both declared, and the reckon and figures paths went unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the reviewed node's goal and the two commits it gained since the previous review; a4e606c8 lifts landed_checkout and record_promoted_row into tests/helpers/landing_repository.py:31 and :59, both departure modules import them, and the case the goal names reaches a landed checkout whose primary branch carries the delivered head.\nVERDICT done_when: the done_when names tests/test_a_discard_never_reads_promoted.py green at head as an all_debug job with each cause worded product-or-test; arm/head.log records 4 passed EXIT=0 in job 1331419 at a4e606c8, arm/base.log records 1 failed / 3 passed EXIT=1 in job 1331418 at 5b0a1f53, arm/sacct.txt records both COMPLETED on all_debug, and the final head 77c88a55 is a fragment-only commit whose after_suite log records 58 passed EXIT=0.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, and a figures path; the gained diff touches only tests/helpers/landing_repository.py, tests/test_a_discard_never_reads_promoted.py, tests/test_crew_discard_reads_discarded.py and the fragment, all inside tests and the declared fragment path, with reckon and figures unused.\nVERDICT manifest: read in full; it names commits db0350b2, a4e606c8 and 77c88a55, the scoped gate's 4 passed EXIT=0, both suite arms 58 passed EXIT=0 with empty failure ids, both reuse checks passing at head and failing on the reverted answering commit, and one inaccuracy: its landing line attributes job 1331419 and the scoped gate to head 77c88a55 although both ran at a4e606c8.\nVERDICT diff: read a4e606c8 and 77c88a55 against db0350b2, the head the previous review read (the run's own base is 5b0a1f53): a4e606c8 adds landed_checkout and record_promoted_row to the helper and deletes the two private copies, changing no assertion; 77c88a55 rewrites the fragment's receipts to carry job 1331418/1331419, partition all_debug and the sacct table.\nCALL_SITES: reckon/crew/recovery_watch.py:fleet_transitions, reckon/crew/recovery_watch.py:_ledger_landing_word, reckon/crew/promotion.py:discard_record_path, reckon/ledger.py:run_path\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/helpers/landing_repository.py:31 landed_checkout builds the checkout whose primary branch carries the head the promoted row names, and both departure modules import it, which is the fixture the goal's failing case needs.\nSCORE evidence: 16\nJUSTIFICATION evidence: arm/head.log:3 records job 1331419 at revision a4e606c8, one fragment-only commit before the reviewed head 77c88a55, so the one unmeasured step is named here rather than hidden.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two gained commits lies inside tests and docs/evidence/fragments/queued-work-needs-no-workaround, both declared, and the reckon and figures paths went unused.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_discard_never_reads_promoted.py:108 asserts the computed word against 'promoted' rather than the head the test supplied, and arm/base.log records it failing with 'complete' when the checkout lacks the delivered head; the fragment's job receipts have no committed guard, only the run's scratch reuse-check.sh.\nSCORE fit: 20\nJUSTIFICATION fit: landed_checkout and record_promoted_row sit in tests/helpers/landing_repository.py:31 and :59 beside _write_origin_and_checkout, use the module's _git driver and keyword-only project default, and the raw json row write matches the fixture idiom at tests/test_the_departure_row_says_how_and_what_it_spent.py:39.\nSCORE reuse: 19\nJUSTIFICATION reuse: the moved definitions extend tests/helpers/landing_repository.py, the module the repository already names as the home for a fixture a second test builds; a search for a second landed-checkout builder under tests found only tests/helpers/landing_repository.py:31 after the deletion.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html:4 non-blocking: the paragraph calls scoped-gate-1795102749073214877 the gate's run \"at the head\" while its quoted and logged revision is a4e606c8, one fragment-only commit before the reviewed head 77c88a55, and the manifest's landing line repeats that attribution.",
+  "review_run_id": "r-20261119T155040324415-review-of-qwnw-red-file-a-discard-never-reads-promoted-77c88a55124d",
+  "reviewed_base_sha": "db0350b2af728de36f79bdc3b8d7af50f0ee27b6",
+  "reviewed_head_sha": "77c88a55124d311f6c6278e108acf95403a8c57c",
+  "reviewed_run_id": "r-20261118T044631088399-qwnw-red-file-a-discard-never-reads-promoted",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:16:03.905702+00:00",
+  "total": 107
+}

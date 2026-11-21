@@ -1508,26 +1508,16 @@ def _plan_record(path: Path, archived: bool) -> dict:
     zero is indistinguishable from a plan that carries no open work, and the
     plan inventory as a whole is unknown rather than shorter. The figures
     derive from the shared per-file parse, so a plan another reader has already
-    parsed is not parsed again; a readability read refuses an unreadable file
-    first, because the shared parse reports one as an empty document — exactly
-    the reading this record exists to refuse.
+    parsed is not parsed again; the readability read comes first, because the
+    shared parse reports an unreadable file as an empty document — exactly the
+    reading this record exists to refuse.
     """
 
     from reckon._schema import plan_executable_remainder
 
     try:
-        text = path.read_text(encoding="utf-8")
+        state = _plan_html.read_readable_state_file(path)
     except (OSError, ValueError):
-        return _unreadable_record(archived)
-    try:
-        state, shared_text = _plan_html.read_state_and_text_file(path)
-        if shared_text != text:
-            # The shared text is a read taken while the file was unreadable, so
-            # it holds an empty document rather than this file's bytes; derive
-            # the figures from the bytes just read instead of reporting an
-            # empty plan.
-            state = _plan_html.read_state(text)
-    except ValueError:
         return _unreadable_record(archived)
     followups = state.get("followups") or []
     return {

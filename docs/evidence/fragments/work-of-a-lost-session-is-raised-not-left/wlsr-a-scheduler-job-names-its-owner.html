@@ -1,0 +1,38 @@
+<section id="wlsr-a-scheduler-job-names-its-owner" class="evidence-fragment">
+  <h2>§6 — A scheduler job names the session and run that submitted it</h2>
+  <p>
+    A scheduler job carried the job id and nothing about who asked for it, so
+    finding the owner of a record took three hand steps: the pointer named the
+    session, the job's comment named nothing, and the session had to be traced
+    through a worktree path and the harness's own session files. Dispatch
+    already exports <code>RECKON_RUN_ID</code> into every worker it starts; the
+    coordinator session lives on the run record and reached the worker only as
+    an HTTP header. It is now exported as <code>RECKON_SESSION_ID</code> from
+    <code>_worker_runtime_environment</code>, and the shims in front of
+    <code>sbatch</code>, <code>srun</code> and <code>salloc</code> — the one
+    place every scheduler call passes through, by name or by absolute path —
+    add both to the job's comment field before forwarding to the real scheduler.
+  </p>
+  <p>
+    The owner is added only when a run id is in the submitting environment: a
+    submission outside any run adds nothing, whatever a session variable says.
+    A comment the caller supplied is kept and the ids are appended to it, so a
+    site that states its own reason for the job does not lose it. The scan
+    stops at the first operand, because from there the words belong to the
+    launched command rather than to the scheduler, and the addition happens
+    after the fenced task is composed, so a wrapped task still carries it.
+  </p>
+  <p id="wlsr-a-scheduler-job-names-its-owner-measure">
+    Measure: <code>tests/test_a_scheduler_job_names_its_owner.py</code> drives
+    the real shim executable for all three tools against a stand-in scheduler
+    that records the argv it was handed, and reads the comment back from those
+    bytes: the comment holds both the session id and the run id, a caller's
+    comment survives beside them, and a submission with no run in its
+    environment reaches the scheduler with no comment at all. The gate
+    <code>tests/test_a_scheduler_job_names_its_owner.py
+    tests/test_nested_launch.py
+    tests/test_an_absolute_scheduler_call_runs_fenced.py</code> reports
+    <strong>26 passed</strong>. Negative control: with the session id removed
+    from the comment, the eight comment assertions fail and the gate exits 1.
+  </p>
+</section>

@@ -1115,6 +1115,39 @@ slots:
     range: integer
     minimum_value: 1
 
+  lost_session:
+    description: >-
+      When a coordinator session that nothing has heard from reads as lost. The
+      block is declared here so a host or project layer retunes the threshold
+      without a code change; the derivation reads it from the resolved config.
+    range: LostSessionConfig
+
+  after_hours:
+    description: >-
+      Hours a coordinator session may go unheard before it reads as lost. The
+      derivation dates a session from the last instant the session was heard --
+      a follower lease, a session-host record, or a coordinator process carrying
+      its id -- and never from the age of any one process. Defaults to 72.
+    range: float
+    minimum_value: 0
+
+  stranded_wait:
+    description: >-
+      How long a request waiting on an upstream that nobody is building may
+      stand before its owner is told once. The block is declared here so a host
+      or project layer retunes the threshold without a code change; the
+      admission pass reads it from the resolved config.
+    range: StrandedWaitConfig
+
+  report_after_hours:
+    description: >-
+      Hours a request waiting on an upstream that no run or request is building
+      may stand before it appears once in its owner's obligations. A wait whose
+      upstream can never land is retired whatever this figure is, and a wait is
+      never removed for its age alone. Defaults to 72.
+    range: float
+    minimum_value: 0
+
   max_bytes:
     description: Allocated file bytes above which a session owes scratch cleanup.
     range: integer
@@ -1220,6 +1253,14 @@ slots:
     range: integer
     minimum_value: 1
 
+  launch_failure_limit:
+    description: >-
+      How many failed launches in a row one queued request takes before it
+      stops being re-queued and stays `launch-failed`, carrying the last
+      failure. The runtime default is 3 when no layer sets this value.
+    range: integer
+    minimum_value: 1
+
   project_weights:
     description: >-
       Positive fair-use weight for each project sharing the local queue.
@@ -1297,6 +1338,8 @@ classes:
       - capability_raise
       - worktree
       - session_scratch
+      - lost_session
+      - stranded_wait
       - summary
       - ticker
       - domain
@@ -1331,6 +1374,7 @@ classes:
     description: Project-wide queue depth and fair-use weights.
     slots:
       - max_requests
+      - launch_failure_limit
       - project_weights
       - repick_after_seconds
       - priority_budget
@@ -1672,6 +1716,23 @@ classes:
       - max_bytes
       - disk_share
       - orphan_grace_seconds
+
+  LostSessionConfig:
+    description: >-
+      How long a coordinator session may go unheard before it is read as lost.
+      Its reviews are retired and its implement work is raised once it is, so
+      the threshold is a layer's decision rather than a constant of the code.
+    slots:
+      - after_hours
+
+  StrandedWaitConfig:
+    description: >-
+      How long an idle wait may stand before its owner is told. A wait whose
+      upstream nobody is building is the owner's to know about, and telling
+      them once is a layer's decision about work rather than a constant of the
+      code.
+    slots:
+      - report_after_hours
 
   SummaryConfig:
     description: When and how workers report.

@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/release.py:520 advance_waiting_requests calls decision_answers.release_answered_holds, reached from reckon/crew/admission/selection.py:131 and reckon/crew/admission/release.py:419 _release_tick",
+    "reckon/crew/obligations.py:4833 _obligations_view calls decision_answers.answered_items",
+    "reckon/crew/lead_decisions.py:157 store_answer reached only from decision_answers.answer_decision, which has no production caller at this revision (the presenting session is section 4)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T10:15:52Z",
+  "findings": [
+    {
+      "file": "tests/test_a_decision_answer_releases_what_it_held.py",
+      "line": "197",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert saved[\"choice\"] == \"wait\" compares the record answer_decision returns against the choice this test itself passed in, so it stays green for a regression that echoes the input without persisting it; the independent guards for this case are the release assertions at lines 199-200."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "407",
+      "severity": "non-blocking",
+      "text": "non-blocking: answered_items emits a duty for every answer ever recorded for the session, with no condition that retires the row once the owner has acted, so an owning session's obligations accumulate one permanent row per answer instead of reporting a current duty."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/manifest.md",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered manifest.md carries no tests or test_logs line and its as-delivered copy predates 4372c6b8, so the 6-test gate at the reviewed code head is recorded only in gate-repair.log rather than in the manifest a promotion reads."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): the admission pass reaches the release stage from two places and the obligations view builds the duty; answer_decision itself has no production caller yet, which the section DAG intends.",
+    "diff": "read commit by commit: 60983907ec adds reckon/crew/decision_answers.py, its 258-line test and the two hooks; 4372c6b8 moves the answer write into reckon/crew/lead_decisions.py:157 and routes the release through queue_edit.release with the in-memory writeback; 9a372bc43568 adds the 124-line evidence fragment.",
+    "done_when": "the done_when asks for four temporary-crew-home behaviours and a negative control logged to docs/evidence/fragments/lead-decisions-reach-one-place/s3.html; tests/test_a_decision_answer_releases_what_it_held.py:126,166,190,241 assert the four, gate-repair.log records 6 passed EXIT=0 at 4372c6b8, and the fragment exists at 9a372bc43568 with the base failure quoted.",
+    "goal": "the section 3 deliverable is an answer that closes a decision, reaches its owner, and releases what it held; reckon/crew/decision_answers.py:191 answer_decision accepts one only from the session holding the presentation claim, reckon/crew/decision_answers.py:214 writes it through reckon/crew/lead_decisions.py:157 store_answer, reckon/crew/decision_answers.py:388 answered_items yields the owner's duty, and reckon/crew/decision_answers.py:446 release_answered_holds lifts the recorded holds.",
+    "manifest": "read the delivered manifest.md and manifest.md.attempt-3.asdelivered; the latter names the 4-test gate at 60983907ec and both 58-passed suite arms, while the delivered copy names the three commits and the repair round but carries no tests or test_logs line, so the 6-test gate at 4372c6b8 survives only in gate-repair.log.",
+    "write_paths": "the declared paths are reckon, tests, the fragment directory and docs/evidence/fragments/lead-decisions-reach-one-place/s3.html; all six changed paths in 5417b373..9a372bc43568 lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_decision_answer_releases_what_it_held.py:159-163 reads each pointer's phase back from disk after the pass, lines 183-187 show a refused answer leaving the record bytes, the monitor stream and the pointer untouched, and negative-control-reuse.log shows line 268-275 red at 4372c6b8 with the refactor reverted; the residual non-independent assert is at line 197.",
+    "evidence": "the done_when's fragment exists with the base failure quoted (assert 'held' == 'queued', EXIT=1) and gate-repair.log records 6 passed EXIT=0 at 4372c6b8, but the fragment's head arm is quoted at 60983907ec rather than the reviewed head and the delivered manifest files no gate command.",
+    "fit": "reckon/crew/decision_answers.py follows the surrounding lazy-import idiom with its reason stated, but line 46's HELD_PHASE sits beside no reader of the other hold fields and answer_decision reuses a name reckon/crew/lost_session_work.py:445 already carries for a different decision store.",
+    "goal_fidelity": "reckon/crew/decision_answers.py:191-260 refuses every non-presenter before any write and stores the chosen option, note and time, reckon/crew/decision_answers.py:214 gives the owning session one duty and the project one monitor row, and reckon/crew/decision_answers.py:446 lifts the recorded holds inside the admission pass.",
+    "reuse": "the addition extends the owners it needs \u2014 reckon/crew/lead_decisions.py:157 store_answer, reckon/crew/queue_edit.py:899 release, reckon/crew/runs.py:4806 _append_watch_lines, reckon/mcp_edit_plan.py _lock_decision and reckon/_store.py write_json_atomically \u2014 and a search of reckon/crew (claims.py, dispatch_claims.py, host_lease.py, follower_registration.py) found no owner for a presentation claim on a decision record.",
+    "scope_discipline": "every changed path is inside the declared reckon, tests and fragment paths, though reckon/crew/admission/release.py:5 gains a blank line the change does not need."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section 3 deliverable is an answer that closes a decision, reaches its owner, and releases what it held; reckon/crew/decision_answers.py:191 answer_decision accepts one only from the session holding the presentation claim, reckon/crew/decision_answers.py:214 writes it through reckon/crew/lead_decisions.py:157 store_answer, reckon/crew/decision_answers.py:388 answered_items yields the owner's duty, and reckon/crew/decision_answers.py:446 release_answered_holds lifts the recorded holds.\nVERDICT done_when: the done_when asks for four temporary-crew-home behaviours and a negative control logged to docs/evidence/fragments/lead-decisions-reach-one-place/s3.html; tests/test_a_decision_answer_releases_what_it_held.py:126,166,190,241 assert the four, gate-repair.log records 6 passed EXIT=0 at 4372c6b8, and the fragment exists at 9a372bc43568 with the base failure quoted.\nVERDICT write_paths: the declared paths are reckon, tests, the fragment directory and docs/evidence/fragments/lead-decisions-reach-one-place/s3.html; all six changed paths in 5417b373..9a372bc43568 lie inside them.\nVERDICT manifest: read the delivered manifest.md and manifest.md.attempt-3.asdelivered; the latter names the 4-test gate at 60983907ec and both 58-passed suite arms, while the delivered copy names the three commits and the repair round but carries no tests or test_logs line, so the 6-test gate at 4372c6b8 survives only in gate-repair.log.\nVERDICT diff: read commit by commit: 60983907ec adds reckon/crew/decision_answers.py, its 258-line test and the two hooks; 4372c6b8 moves the answer write into reckon/crew/lead_decisions.py:157 and routes the release through queue_edit.release with the in-memory writeback; 9a372bc43568 adds the 124-line evidence fragment.\nCALL_SITES: reckon/crew/admission/release.py:520 advance_waiting_requests (from reckon/crew/admission/selection.py:131 and reckon/crew/admission/release.py:419), reckon/crew/obligations.py:4833 _obligations_view, reckon/crew/lead_decisions.py:157 store_answer\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/decision_answers.py:191-260 refuses every non-presenter before any write and stores the chosen option, note and time, reckon/crew/decision_answers.py:214 gives the owning session one duty and the project one monitor row, and reckon/crew/decision_answers.py:446 lifts the recorded holds inside the admission pass.\nSCORE evidence: 15\nJUSTIFICATION evidence: the done_when's fragment exists with the base failure quoted (assert 'held' == 'queued', EXIT=1) and gate-repair.log records 6 passed EXIT=0 at 4372c6b8, but the fragment's head arm is quoted at 60983907ec rather than the reviewed head and the delivered manifest files no gate command.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the declared reckon, tests and fragment paths, though reckon/crew/admission/release.py:5 gains a blank line the change does not need.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_decision_answer_releases_what_it_held.py:159-163 reads each pointer's phase back from disk after the pass, lines 183-187 show a refused answer leaving the record bytes, the monitor stream and the pointer untouched, and negative-control-reuse.log shows lines 268-275 red at 4372c6b8 with the refactor reverted; the residual non-independent assert is at line 197.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/decision_answers.py follows the surrounding lazy-import idiom with its reason stated, but line 46's HELD_PHASE sits beside no reader of the other hold fields and answer_decision reuses a name reckon/crew/lost_session_work.py:445 already carries for a different decision store.\nSCORE reuse: 19\nJUSTIFICATION reuse: the addition extends the owners it needs \u2014 reckon/crew/lead_decisions.py:157 store_answer, reckon/crew/queue_edit.py:899 release, reckon/crew/runs.py:4806 _append_watch_lines, reckon/mcp_edit_plan.py _lock_decision and reckon/_store.py write_json_atomically \u2014 and a search of reckon/crew (claims.py, dispatch_claims.py, host_lease.py, follower_registration.py) found no owner for a presentation claim on a decision record.\nFINDING tests/test_a_decision_answer_releases_what_it_held.py:197 non-blocking: assert saved[\"choice\"] == \"wait\" compares the record answer_decision returns against the choice this test itself passed in, so it stays green for a regression that echoes the input without persisting it; the independent guards for this case are the release assertions at lines 199-200.\nFINDING reckon/crew/decision_answers.py:407 non-blocking: answered_items emits a duty for every answer ever recorded for the session, with no condition that retires the row once the owner has acted, so an owning session's obligations accumulate one permanent row per answer instead of reporting a current duty.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held/manifest.md:5 non-blocking: the delivered manifest.md carries no tests or test_logs line and its as-delivered copy predates 4372c6b8, so the 6-test gate at the reviewed code head is recorded only in gate-repair.log rather than in the manifest a promotion reads.",
+  "review_run_id": "r-20261121T101412029390-review-of-ldop-an-answer-reaches-its-owner-and-releases-what-it-held-9a372bc43568",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "9a372bc43568d92cbf933c501f93569ee1f92990",
+  "reviewed_run_id": "r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T10:28:08.327478+00:00",
+  "total": 104
+}

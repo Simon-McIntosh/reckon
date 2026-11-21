@@ -1,0 +1,47 @@
+<section id="qwnw-red-file-refused-promotion-request-settles-landing">
+  <h2>A refused promotion request settles once its run has landed or gone</h2>
+
+  <p><strong>What changed.</strong> A refused promotion request settles once its
+  run has been promoted, landed or discarded, and the settlement word names
+  which. The landed word is decided by ancestry: whether the delivered head is
+  reachable from the primary branch. The reader asked that question of the
+  promotion request record, which names the project and never a checkout, so the
+  ancestry answer was always unread and every landed run settled as promoted.
+  The settlement now resolves the checkout a project's promoted heads land in
+  and asks ancestry there; a fabricated head still reads as unverified.</p>
+
+  <p><strong>Measured.</strong> The node check at head 072fc0976b reports 5
+  passed and EXIT=0 as a job on all_debug; at base 42fe90d0b0 the same file
+  fails <code>test_a_landed_run_settles_its_refused_request_as_landed</code>
+  with 4 passed and EXIT=1. Both suite arms of the declared selection report
+  58 passed and EXIT=0, at base and at head. The 34 importer test files report
+  7 failed of 335 at base and 6 failed of 334 at head: the head's failing ids
+  are a subset of the base's, and the id the head no longer fails is the
+  landed-settlement test. Ruff check and format report nothing on the two
+  changed paths.</p>
+
+  <p><strong>Negative control.</strong> The base run of the node's file, beside
+  the head run above, fails one id:
+
+  <pre id="qwnw-red-file-refused-promotion-request-settles-nc">
+FAILED tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed
+E   AssertionError: assert 'promoted' == 'landed'
+1 failed, 4 passed in 2.39s
+EXIT=1</pre>
+
+  <h3 id="qwnw-red-file-refused-promotion-request-settles-receipts">Receipts</h3>
+
+  <p>Every log is under
+  <code>~/.config/reckon/crew/runs/&lt;run id&gt;/</code>, and the run is
+  r-20261118T062806164054-qwnw-red-file-refused-promotion-request-settles.</p>
+
+  <ul id="qwnw-red-file-refused-promotion-request-settles-logs">
+    <li>tests, head 990f0090fa: scoped-gate-1795066901893401302.log, exit 0, 0 failed.</li>
+    <li>node check, head 990f0090fa: node-head.log, 5 passed, EXIT=0.</li>
+    <li>node check, base 42fe90d0b0: node-base.log, 1 failed, EXIT=1 (negative control).</li>
+    <li>suite, base 42fe90d0b0: baseline_suite-1795066957328700285.log, 58 passed, EXIT=0.</li>
+    <li>suite, head 990f0090fa: after_suite-1795067000501229381.log, 58 passed, EXIT=0.</li>
+    <li>importers, base 42fe90d0b0: pop-base.log, 7 failed of 334, EXIT=1.</li>
+    <li>importers, head 990f0090fa: pop-head.log, 6 failed of 334, EXIT=1.</li>
+  </ul>
+</section>

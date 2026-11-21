@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": {
+    "after_result": "58 passed in 36.49s, EXIT=0, revision ceaae721ad9b7bcf4a247522d02ec4ddce6903b6, failure_ids []",
+    "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063447695660-qwnw-red-file-an-admitted-request-continues-its-row/after_suite-1795069895215126558.log",
+    "baseline_result": "58 passed in 35.25s, EXIT=0, revision b24fe95a789c82cd33f22a912b4dbbf94d5e2193, failure_ids []",
+    "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063447695660-qwnw-red-file-an-admitted-request-continues-its-row/baseline_suite-1795069819793625847.log",
+    "derivation": "failure ids the after arm reports that the baseline arm does not; both arms report zero failures, so the added set is empty"
+  },
+  "base_log_revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:format_watch_transition",
+    "reckon/crew/ticker.py:3942-3946 (_counter_block suffix composition for _PROMOTION_CELL)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:11:09Z",
+  "findings": [
+    {
+      "file": "tests/test_an_admitted_request_continues_its_row.py",
+      "line": "206",
+      "severity": "non-blocking",
+      "text": "the expected empty-position marker is `f\"0p@{DIM_MARKER:>2}\"`, built from the constant `reckon/crew/ticker.py:103` that the row under test renders with, so the two sides move together for that substring and a regression that restyles the empty-position marker (a hyphen, a different dash, a blank) leaves the assertion green; the `0p@` prefix, the `>2` width and the four count literals on :207 and :211 are independent, so the case's stated property (session scoping) is still guarded."
+    }
+  ],
+  "head_log_revision": "ceaae721ad9b7bcf4a247522d02ec4ddce6903b6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery.py:format_watch_transition, reckon/crew/ticker.py:3942-3946 (_counter_block suffix composition for _PROMOTION_CELL)",
+    "diff": "read all three commits against b24fe95a \u2014 0c44569 imports DIM_MARKER and replaces the counter-block literals with the seven-cell block the pane draws, 8dc70a7 adds the evidence fragment with the red and head runs, ceaae72 corrects the fragment's quoted head revision from 0c44569 to 8dc70a7, which matches scoped-gate-1795069140572465174.log.",
+    "done_when": "the done_when requires the file to pass in full on all_debug with SLURM_JOB_ID unset, each cause to carry a product-wrong/test-wrong verdict with no assertion deleted or weakened, two suite arms with full 40-character revisions, and a base-revision negative control; the manifest records both suite arms (58 passed, EXIT=0, revisions b24fe95a\u2026 and ceaae721a\u2026) and the red log shows \"1 failed, 3 passed\" EXIT=1, all of which I read in the logs themselves.",
+    "goal": "the node's goal is \"Make tests/test_an_admitted_request_continues_its_row.py pass in full on the primary branch\"; tests/test_an_admitted_request_continues_its_row.py:204-211 now asserts the pane's promotion cell and the logged head runs (scoped-gate-1795069140572465174.log at 8dc70a70, scoped-gate-1795069794631859916.log at ceaae721) read \"4 passed\", so the deliverable exists as stated.",
+    "manifest": "read; status complete, three commits cited, tests line \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admitted_request_continues_its_row.py\", both suite arms recorded complete with EXIT=0 and empty failure_ids, negative_control_log naming a log that carries EXIT=1 and one failing id.",
+    "write_paths": "the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file; git diff b24fe95a..ceaae721 touches exactly tests/test_an_admitted_request_continues_its_row.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admitted-request-continues-its-row.html, both inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admitted_request_continues_its_row.py:207 reddens if the promotion cell is dropped from reckon/crew/ticker.py:3942-3946 (the literal `0p@` disappears from the row) or if session scoping leaks, but the empty-position glyph in the expected string at :206 is `DIM_MARKER` imported from the same module under test, so a marker-glyph regression moves both sides.",
+    "evidence": "both suite arms recorded in the manifest reconcile with their logs (baseline_suite-1795069819793625847.log and after_suite-1795069895215126558.log each \"58 passed\", EXIT=0, revisions b24fe95a\u2026/ceaae721a\u2026), and the fragment's quoted head pre block matches scoped-gate-1795069140572465174.log line for line; the manifest's `tests` line names the bare pytest command while the log header records the `env PYTHONPATH=. sh -c '\u2026'` wrapper, so the recorded command is the inner arm rather than the exact argv.",
+    "fit": "tests/test_an_admitted_request_continues_its_row.py:204-206 follows the file's existing literal-substring idiom and its two-line comment states the mechanism with no plan, sprint or ticket identifier and no attribution.",
+    "goal_fidelity": "tests/test_an_admitted_request_continues_its_row.py:207-211 pins the row counter block as reckon/crew/ticker.py:3943 renders it, and the head run in scoped-gate-1795069140572465174.log records \"4 passed in 0.33s\" EXIT=0, so the file passes in full as the goal asks.",
+    "reuse": "the change adds no definition and takes the dash from reckon/crew/ticker.py:103 DIM_MARKER, the owner of the marker glyph, instead of writing the EN DASH a second time.",
+    "scope_discipline": "the diff over b24fe95a..ceaae721 contains only tests/test_an_admitted_request_continues_its_row.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admitted-request-continues-its-row.html, both inside the declared write paths, and carries no change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_an_admitted_request_continues_its_row.py pass in full on the primary branch\"; tests/test_an_admitted_request_continues_its_row.py:204-211 now asserts the pane's promotion cell and the logged head runs (scoped-gate-1795069140572465174.log at 8dc70a70, scoped-gate-1795069794631859916.log at ceaae721) read \"4 passed\", so the deliverable exists as stated.\nVERDICT done_when: the done_when requires the file to pass in full on all_debug with SLURM_JOB_ID unset, each cause to carry a product-wrong/test-wrong verdict with no assertion deleted or weakened, two suite arms with full 40-character revisions, and a base-revision negative control; the manifest records both suite arms (58 passed, EXIT=0, revisions b24fe95a\u2026 and ceaae721a\u2026) and the red log shows \"1 failed, 3 passed\" EXIT=1, all of which I read in the logs themselves.\nVERDICT write_paths: the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file; git diff b24fe95a..ceaae721 touches exactly tests/test_an_admitted_request_continues_its_row.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admitted-request-continues-its-row.html, both inside the fence.\nVERDICT manifest: read; status complete, three commits cited, tests line \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admitted_request_continues_its_row.py\", both suite arms recorded complete with EXIT=0 and empty failure_ids, negative_control_log naming a log that carries EXIT=1 and one failing id.\nVERDICT diff: read all three commits against b24fe95a \u2014 0c44569 imports DIM_MARKER and replaces the counter-block literals with the seven-cell block the pane draws, 8dc70a7 adds the evidence fragment with the red and head runs, ceaae72 corrects the fragment's quoted head revision from 0c44569 to 8dc70a7, which matches scoped-gate-1795069140572465174.log.\nCALL_SITES: reckon/crew/recovery.py:format_watch_transition, reckon/crew/ticker.py:3942-3946 (_counter_block suffix composition for _PROMOTION_CELL)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_an_admitted_request_continues_its_row.py:207-211 pins the row counter block as reckon/crew/ticker.py:3943 renders it, and the head run in scoped-gate-1795069140572465174.log records \"4 passed in 0.33s\" EXIT=0, so the file passes in full as the goal asks.\nSCORE evidence: 17\nJUSTIFICATION evidence: both suite arms recorded in the manifest reconcile with their logs (baseline_suite-1795069819793625847.log and after_suite-1795069895215126558.log each \"58 passed\", EXIT=0, revisions b24fe95a\u2026/ceaae721a\u2026), and the fragment's quoted head pre block matches scoped-gate-1795069140572465174.log line for line; the manifest's `tests` line names the bare pytest command while the log header records the `env PYTHONPATH=. sh -c '\u2026'` wrapper, so the recorded command is the inner arm rather than the exact argv.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff over b24fe95a..ceaae721 contains only tests/test_an_admitted_request_continues_its_row.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admitted-request-continues-its-row.html, both inside the declared write paths, and carries no change the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_an_admitted_request_continues_its_row.py:207 reddens if the promotion cell is dropped from reckon/crew/ticker.py:3942-3946 (the literal `0p@` disappears from the row) or if session scoping leaks, but the empty-position glyph in the expected string at :206 is `DIM_MARKER` imported from the same module under test, so a marker-glyph regression moves both sides.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_an_admitted_request_continues_its_row.py:204-206 follows the file's existing literal-substring idiom and its two-line comment states the mechanism with no plan, sprint or ticket identifier and no attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and takes the dash from reckon/crew/ticker.py:103 DIM_MARKER, the owner of the marker glyph, instead of writing the EN DASH a second time.\nFINDING tests/test_an_admitted_request_continues_its_row.py:206 non-blocking: the expected empty-position marker is `f\"0p@{DIM_MARKER:>2}\"`, built from the constant `reckon/crew/ticker.py:103` that the row under test renders with, so the two sides move together for that substring and a regression that restyles the empty-position marker (a hyphen, a different dash, a blank) leaves the assertion green; the `0p@` prefix, the `>2` width and the four count literals on :207 and :211 are independent, so the case's stated property (session scoping) is still guarded.",
+  "review_run_id": "r-20261119T064221313478-review-of-qwnw-red-file-an-admitted-request-continues-its-row-ceaae721ad9b",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "ceaae721ad9b7bcf4a247522d02ec4ddce6903b6",
+  "reviewed_run_id": "r-20261118T063447695660-qwnw-red-file-an-admitted-request-continues-its-row",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T064221313478-review-of-qwnw-red-file-an-admitted-request-continues-its-row-ceaae721ad9b"
+  },
+  "reviewer_run_id": "r-20261119T064221313478-review-of-qwnw-red-file-an-admitted-request-continues-its-row-ceaae721ad9b",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:30:48.447873+00:00",
+  "total": 108
+}

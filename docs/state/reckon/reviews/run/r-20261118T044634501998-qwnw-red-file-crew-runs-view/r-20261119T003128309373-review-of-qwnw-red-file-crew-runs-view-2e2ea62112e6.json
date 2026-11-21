@@ -1,0 +1,92 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "added_by_this_run": false,
+      "fails_when": "read_readable_state_file",
+      "file": "tests/test_crew_runs_view.py",
+      "line": 526,
+      "note": "the run added no assertion: this case predates the node and its base arm fails it (assert 1 is None), which is the reinstated-regression evidence for the guard; its expected values are the literal None, not a value the test passes in."
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/runs.py:4030 (drain -> _drain_plan_states -> _plan_html.read_readable_state_file)",
+    "reckon/metadata_index.py:1486 (_resource_row -> _plan_record -> _plan_html.read_readable_state_file)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:24:17Z",
+  "findings": [
+    {
+      "file": "reckon/_plan_html.py",
+      "id": "f24d6dddc04",
+      "line": "1773",
+      "severity": "non-blocking",
+      "text": "the readability read memoises under a second kind (\"readable_plan_text\") beside the module's own plan-bytes reader _read_plan_text (:2647), so a plan read through both paths is read from disk twice per stat change even though the module's per-file memo exists to avoid exactly that; a refusal mode on the owner would keep one read."
+    },
+    {
+      "file": "manifest.md",
+      "id": "fc3aa4e8826",
+      "line": "17",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044634501998-qwnw-red-file-crew-runs-view/manifest.md",
+      "severity": "non-blocking",
+      "text": "the done_when asks for the arm over test files that import what changed recorded as inline JSON, but the two JSON arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and AST-scan source rather than the changed plan-read capability."
+    },
+    {
+      "file": "manifest.md",
+      "id": "f6499497578",
+      "line": "19",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044634501998-qwnw-red-file-crew-runs-view/manifest.md",
+      "severity": "non-blocking",
+      "text": "the done_when requires ruff check and ruff format --check to report nothing new on the changed paths; no manifest line records either run (the worker's session log shows both were run), so that clause cannot be verified from the record."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-runs-view.html",
+      "id": "fb2b97b280e",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "the sentence \"The nine failures in both arms are the same pre-existing ids apart from the runs-view case\" contradicts the table above it, whose head row reads 8 failed / 226 passed; a reader counting from the prose expects nine ids at head as well."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_crew_runs_view.py pass in full on the primary branch\"; the landed change (reckon/crew/runs.py:3363, reckon/_plan_html.py:1759, reckon/metadata_index.py:1519) makes the file's unreadable-inventory case pass, and scoped-gate-1795046002862325906.log records 20 passed at head 679a789104c7c0521aa7ffe54be7271912fa809b, so the goal's code condition is met while the primary-branch landing itself remains the promotion step.\nVERDICT done_when: the done_when (dispatch-detail.json node.done_when) asks for a green all_debug job with SLURM_JOB_ID unset, a base run first, a per-cause verdict, an arm over the importing test files as inline JSON at full 40-character revisions, a negative control in the fragment and ruff clean on the changed paths; the manifest records the 20-passed head log, the 1-failed base arm, cause verdict \"product wrong\", two inline-JSON arms and the fragment, but those arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and no manifest line carries the ruff result.\nVERDICT write_paths: the declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its qwnw-red-file-crew-runs-view.html, docs/figures/...) contain every path in git diff 5b0a1f53..2e2ea62, namely docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-runs-view.html, reckon/_plan_html.py, reckon/crew/runs.py and reckon/metadata_index.py.\nVERDICT manifest: manifest.md names commits 679a789104c7c0521aa7ffe54be7271912fa809b and 2e2ea62112e6d34becf5f1eea4fadfc0629903df, a 20-passed gate at head, a 1-failed base negative control and both suite arms at full 40-character revisions (58 passed / EXIT=0 each), with the ruff clause and the importing-arm identity of the JSON arms unrecorded.\nVERDICT diff: read both commits against base 5b0a1f537ef9bbca90907bd16f663732db844fb0; 679a789104 adds read_readable_state_file at reckon/_plan_html.py:1759 and routes reckon/crew/runs.py:3363 and reckon/metadata_index.py:1519 through it while deleting the index's inline copy of the guard, and 2e2ea62112 adds only the 70-line evidence fragment; no test file changes, so no assertion was deleted or weakened.\nCALL_SITES: reckon/crew/runs.py:4030 (drain -> _drain_plan_states -> read_readable_state_file), reckon/metadata_index.py:1486 (_resource_row -> _plan_record -> read_readable_state_file)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3363 is the one place that fed an unreadable plan to the closure count and it now reads through the refusing reader, which is what the goal's named file measures.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795046002862325906.log records 20 passed / EXIT=0 at 679a789104c7c0521aa7ffe54be7271912fa809b and negative-control-base-runs-view.log the base failure, but manifest.md:17-18 record the inline-JSON arms over two files that import only reckon.interface_counts and manifest.md:19 states no ruff result.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 5b0a1f53..2e2ea62 (reckon/_plan_html.py, reckon/crew/runs.py, reckon/metadata_index.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-runs-view.html) lies inside the declared write paths and no test was touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_runs_view.py:526 asserts report[\"executable_remainder\"] and report[\"uncovered_plans\"] are None against literals rather than a value it supplies, and reverting reckon/crew/runs.py:3363 to read_state_file reddens it exactly as the base arm does.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_plan_html.py:1769 keeps the module's local-import and memoised-derivation idiom used at :1754 and :1775, though the public name read_readable_state_file states a property where its neighbours state a capability (read_state_file, read_state_and_text_file).\nSCORE reuse: 15\nJUSTIFICATION reuse: the addition lives in the owner of plan reads and removes the duplicate guard that was inlined at reckon/metadata_index.py:1519, but reckon/_plan_html.py:1773 memoises a second bytes read beside the module's own _read_plan_text at :2647 instead of extending it.\nFINDING reckon/_plan_html.py:1773 non-blocking: the readability read memoises under a second kind (readable_plan_text) beside the module's own plan-bytes reader _read_plan_text at :2647, so a plan read through both paths is read from disk twice per stat change even though the per-file memo exists to avoid exactly that; a refusal mode on the owner would keep one read.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044634501998-qwnw-red-file-crew-runs-view/manifest.md:17 non-blocking: the done_when asks for the arm over test files that import what changed recorded as inline JSON, but the two JSON arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and AST-scan source rather than the changed plan-read capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044634501998-qwnw-red-file-crew-runs-view/manifest.md:19 non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths and no manifest line records either run, so that clause cannot be verified from the record.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-runs-view.html:55 non-blocking: the sentence saying both arms carry the same nine failures contradicts the table's head row of 8 failed / 226 passed.\n",
+  "review_method": "Read-only source and recorded-log review; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T003128309373-review-of-qwnw-red-file-crew-runs-view-2e2ea62112e6",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "2e2ea62112e6d34becf5f1eea4fadfc0629903df",
+  "reviewed_run_id": "r-20261118T044634501998-qwnw-red-file-crew-runs-view",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "source_commits": [
+    "679a789104c7c0521aa7ffe54be7271912fa809b",
+    "2e2ea62112e6d34becf5f1eea4fadfc0629903df"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044634501998-qwnw-red-file-crew-runs-view/after_suite-1795046100382025077.log",
+      "revision": "679a789104c7c0521aa7ffe54be7271912fa809b",
+      "summary": "58 passed"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044634501998-qwnw-red-file-crew-runs-view/baseline_suite-1795046058213219037.log",
+      "revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+      "summary": "58 passed"
+    },
+    "derivation": "both reviewed arms read 0 failed / EXIT=0, so nothing the head adds is a failure the baseline did not carry; the nine-file related arm reads 9 failed / 225 passed at base and 8 failed / 226 passed at head, its only differing id being tests/test_crew_runs_view.py::test_drain_reports_an_unreadable_inventory_as_unknown, which the head arm passes"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:00:57.591153+00:00",
+  "total": 100
+}

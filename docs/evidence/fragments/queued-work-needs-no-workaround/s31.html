@@ -1,0 +1,49 @@
+<section id="qwnw-a-sweep-failure-is-owed-by-the-runs-session-record">
+<h3>A stored sweep failure is owed by the session the run's live pointer names</h3>
+<p>The station kept failed runs per project as durable state, keyed by the
+session whose sweep recorded them, and republished each as a
+<code>sweep-failed</code> row in that same session's obligations. The key
+outlives the run's owner, and a sweep may record a failure with no session at
+all, so a run handed from one session to another raised its row where the row's
+own command (<code>reckon crew observe --run</code>) could not act on it: the
+wrong session could clear it only until the next sweep raised it again.</p>
+<p>The refresh now groups the stored failures under the session each run's live
+pointer names (<code>station_obligations._sweep_failures_by_owner</code>),
+selects sessions from that grouping rather than from the record's keys, and
+leaves a failure whose pointer names no session in the stored record while
+raising it nowhere.</p>
+
+<h4 id="qwnw-a-sweep-failure-is-owed-by-the-runs-session-gate">Gate
+<code>tests/test_a_sweep_failure_is_owed_by_the_runs_session.py</code></h4>
+<table id="qwnw-a-sweep-failure-is-owed-by-the-runs-session-arms">
+<thead><tr><th>Arm on <code>rigel</code></th><th>Result</th><th>Log</th></tr></thead>
+<tbody>
+<tr><td>Head, gate file</td><td>3 passed; <code>EXIT=0</code></td><td><code>head-gate.log</code></td></tr>
+<tr><td>Base <code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code>, same file copied in</td><td>2 failed, 1 passed; <code>EXIT=1</code></td><td><code>base-negative-control.log</code></td></tr>
+<tr><td>Head <code>4aa8e5f62c</code>, 24 pre-existing station-obligation importers</td><td>6 failed, 133 passed; <code>EXIT=1</code></td><td><code>head-importers.log</code></td></tr>
+<tr><td>Base, the same 24 importers</td><td>7 failed, 129 passed; <code>EXIT=1</code></td><td><code>base-importers.log</code></td></tr>
+</tbody></table>
+<p>The importer arm adds no failure: every id its log fails is one the base arm
+fails too — four cases in
+<code>test_held_worktrees_are_read_once_per_change.py</code> and two in
+<code>test_a_sweep_failure_is_an_obligation.py</code> — and its extra 4 passes
+are this node's three cases plus
+<code>test_a_held_input_does_not_hold_a_finished_project</code>, a
+budget-sized case that failed in the base run and passed here, so the two arms
+differ by a timing case rather than by a failure this change introduces.</p>
+
+<h4 id="qwnw-a-sweep-failure-is-owed-by-the-runs-session-control">Negative control</h4>
+<p>At the base revision the second case of the gate fails: with the pointer
+naming <code>sweep-owner-session</code> and the failure recorded under
+<code>sweep-recorder-session</code>, the owner's obligations hold no row
+(<code>assert [] == ['r-sweep-owner']</code>) because the recording session's
+obligations carry that row instead. The third case fails the other way: a
+pointer naming no session still raises <code>sweep-failed r-sweep-owner</code>
+in the recording session (<code>assert ['r-sweep-owner'] == []</code>). The
+second case — a run the recording session still owns — passes at both
+revisions, so the reading is not a new gate on unhanded runs.</p>
+<p>Logs live under
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T045024367328-qwnw-a-sweep-failure-is-owed-by-the-runs-session/</code>;
+each names its revision, tree, imported module, resolved working directory and
+literal command, and ends in a bare <code>EXIT=</code> line.</p>
+</section>

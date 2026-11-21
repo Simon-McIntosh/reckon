@@ -129,6 +129,10 @@ def _complete(root: Path, tmp_path: Path, run_id: str):
             str(gate_log),
             "--completed-at",
             "2026-01-01T00:00:01Z",
+            # A plain complete only requests promotion and answers with its
+            # receipt, so a refusal cannot surface on that call; --wait is what
+            # carries the promotion out here and returns its outcome.
+            "--wait",
         ],
     )
 

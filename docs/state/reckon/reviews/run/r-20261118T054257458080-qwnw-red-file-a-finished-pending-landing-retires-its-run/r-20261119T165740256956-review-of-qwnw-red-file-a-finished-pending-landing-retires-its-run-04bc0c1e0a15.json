@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own recorded arms: baseline_suite at 35fb9f3ae769586b2f364485bf2d6fc31caf87f5, command 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py', log baseline_suite-1795087191306674732.log, EXIT=0, 58 passed, failure_ids []; after_suite at 04bc0c1e0a15d4c0d4fe92e7ec0f4237bfc27915, same command, log scoped-gate-1795106783702009188.log, EXIT=0, 58 passed, failure_ids []. Both arms ran the same command over the same two files, so added failures = 0. The same head also carries the three-file arm after_suite-1795106667587418073.log (65 passed, EXIT=0) against baseline_suite-1795106592544291797.log (3 failed, 3 passed, EXIT=1); both its base failures are the target-file cases this node repairs, and the manifest discloses them under retry_failures.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3907 crew_complete",
+    "reckon/crew/queue_landing.py:1891 land_once",
+    "reckon/crew/pending_landing.py:1386 finish_pending_landings"
+  ],
+  "completed_at": "2026-11-19T18:28:40+00:00",
+  "dispatched_at": "2026-11-19T18:16:28Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "the fragment's 'scoped gate on all_debug' row names cff110d53fe8 with 6 passed (scoped-gate-1795087827399597220.log), which is the pre-repair head, while the final head 04bc0c1e0a's all_debug run scoped-gate-1795106532142342562.log (7 passed, the run the manifest cites) is absent from the table; the fragment is the place the done_when designates for the head run beside the base run, so the fragment records a superseded head as the measured one."
+    },
+    {
+      "file": "tests/test_a_finished_pending_landing_retires_its_run.py",
+      "line": "367",
+      "severity": "non-blocking",
+      "text": "the assertion int(runs.read_pointer(...)[\"attempt\"]) == captured_attempt + 1 is entailed by the equality on line 366 (read_pointer returns exactly the dict newer, which carries captured_attempt + 1), so it cannot fail while that line passes and it states a fixture value rather than adding a guard; the guard against a rewritten pointer is the written-bytes equality at line 365, not this line."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_a_finished_pending_landing_retires_its_run.py passes in full on the primary branch; at head 04bc0c1e the repair-round file carries seven cases and the all_debug run scoped-gate-1795106532142342562.log records '7 passed in 8.52s' with EXIT=0 against a base run of 3 failed, 3 passed in logs/base-target-35fb9f3a.log.\nVERDICT done_when: the done_when names the target file passing in full at head as a job on all_debug, each cause with a product-or-test verdict, no assertion deleted or weakened, an importer arm adding no failure against base, both arms as inline JSON with full 40-character revisions, the base run with its failing ids logged in the named fragment beside the head run, and a clean ruff on the changed paths; the manifest lists both causes and the suite arms, the fragment carries the base run beside a head run, and the all_debug target-file run is recorded at 04bc0c1e in scoped-gate-1795106532142342562.log though the fragment's table omits that row.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and the fragment, figure directory, target test file and manifest); the gained commits touch only tests/test_a_finished_pending_landing_retires_its_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html.\nVERDICT manifest: read at head; status complete, commits carry full 40-character ids ending 04bc0c1e0a15, the gained commits answer the prior review's first two findings, and the recorded arms are the target file 7 passed at 04bc0c1e and the two-file suite 58 passed at both revisions.\nVERDICT diff: read commit by commit over cff110d5..04bc0c1e; 474d1584 adds test_a_refused_push_keeps_the_run_and_its_recovery_state with a real pre-receive refusal and replaces the trivially-true attempt comparison, and 04bc0c1e adds the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:3907 crew_complete, reckon/crew/queue_landing.py:1891 land_once, reckon/crew/pending_landing.py:1386 finish_pending_landings\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_finished_pending_landing_retires_its_run.py at 04bc0c1e plus scoped-gate-1795106532142342562.log show the whole file green at the reviewed head.\nSCORE evidence: 15\nJUSTIFICATION evidence: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html:57 records a superseded revision as the all_debug row, so the artifact that carries the head run beside the base run is stale at the head it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commits touch only tests/test_a_finished_pending_landing_retires_its_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html, both inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_finished_pending_landing_retires_its_run.py:184-223 fails if a refused push clears the pending record, writes a live pointer, or removes the worktree, because it asserts the retained record's attempts and last_error, the unchanged remote, and the worktree still at its head.\nSCORE fit: 16\nJUSTIFICATION fit: the added case follows the file's existing fixture idiom (tests/test_a_finished_pending_landing_retires_its_run.py:181-186 setup) and the fragment follows the sibling section shape at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained test adds no mechanism -- it reuses the existing deliveries fixture and _complete_land helper, and a search of tests/ and reckon/ for 'pre-receive' finds no owner of a refused-push fixture besides this file's own base case, which the repair round restores at tests/test_a_finished_pending_landing_retires_its_run.py:184.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html:57 non-blocking: the all_debug row names cff110d5 (6 passed, scoped-gate-1795087827399597220.log), the pre-repair head, while the final head 04bc0c1e's all_debug run scoped-gate-1795106532142342562.log (7 passed) is absent, so the fragment records a superseded head as the measured one.\nFINDING tests/test_a_finished_pending_landing_retires_its_run.py:367 non-blocking: the added attempt assertion is entailed by the equality above it and cannot fail independently, so it states a fixture value rather than adding a guard.",
+  "review_run_id": "r-20261119T165740256956-review-of-qwnw-red-file-a-finished-pending-landing-retires-its-run-04bc0c1e0a15",
+  "reviewed_base_sha": "cff110d53fe80ba313f7740d7fb7ae548cc593e5",
+  "reviewed_commit_range": {
+    "base_sha": "cff110d53fe80ba313f7740d7fb7ae548cc593e5",
+    "commits": [
+      "474d1584d75061525912a6178d37472ef758bb69",
+      "04bc0c1e0a15d4c0d4fe92e7ec0f4237bfc27915"
+    ],
+    "head_sha": "04bc0c1e0a15d4c0d4fe92e7ec0f4237bfc27915",
+    "node_base_sha": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+    "note": "This review reads only the commits the run gained since its previous review at cff110d53fe8. The node's own base revision is 35fb9f3ae769586b2f364485bf2d6fc31caf87f5; the prior record at .at-cff110d53fe8 covered 35fb9f3a..cff110d5. The gained commits are 474d1584d7 (the test file) and 04bc0c1e0a (the evidence fragment); 04bc0c1e0a is docs-only, so the headed tree measured at 474d1584d7 carries the same code."
+  },
+  "reviewed_head_sha": "04bc0c1e0a15d4c0d4fe92e7ec0f4237bfc27915",
+  "reviewed_run_id": "r-20261118T054257458080-qwnw-red-file-a-finished-pending-landing-retires-its-run",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:28:40+00:00",
+  "total": 107
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms on disk: baseline_suite-1795072492639334474.log at b24fe95a789c82cd33f22a912b4dbbf94d5e2193 records 58 passed EXIT=0 and after_suite-1795072567454127255.log at 79e98bc434a50aca435bff62c38313bf0abf550d records 58 passed EXIT=0, neither carrying a FAILED line, so the set difference is empty.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:46:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-checked-once.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment presents its head run under \"At head the same file passes in full\" while the quoted revision is c743040e, the repair commit, not the landed head 79e98bc4, so a reader comparing the promoted commit against the quoted run finds a parent, and no run of the named file exists at 79e98bc4 in the run directory."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against b24fe95a789c82cd33f22a912b4dbbf94d5e2193; c743040e adds CONFIG at tests/test_a_queued_request_is_checked_once.py:22-39 and four fields on the node helper at :140-143 with no assertion added, removed or weakened, and 79e98bc4 adds only the 59-line evidence fragment.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, both importer arms as inline JSON at 40-character revisions, and the base run's failing ids logged beside the head run under the fragment directory; head-arm.sh runs env -u SLURM_JOB_ID -u SLURM_JOBID, base-arm-window.log records EXIT=1 with FAILED tests/test_a_queued_request_is_checked_once.py::test_the_request_records_its_digests_at_queue_time at b24fe95a, and the manifest carries both suite arms as inline JSON at 40-character revisions with zero failures each, but head-arm.log and the run the fragment quotes at line 47 are at c743040e, an ancestor of the landed 79e98bc4, and the suite arms the manifest records run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed test module nor its production imports.",
+    "goal": "the goal names tests/test_a_queued_request_is_checked_once.py passing in full, and the landed tree holds that repair at tests/test_a_queued_request_is_checked_once.py:22-39 (CONFIG) and :140-143 (the node's done-when, write path, time budget and specification level), whose blob 153dfa8089 head-arm.log ran green at 14 passed EXIT=0.",
+    "manifest": "read; it records status complete, the gate command line, five log paths, baseline_suite and after_suite as inline JSON at b24fe95a and 79e98bc4 both completed with 0 failures and empty failure_ids, one cause carrying the verdict test wrong, negative control at base-arm-window.log, and an outside_scope entry for the fence recipe that breaks a submitted job.",
+    "write_paths": "the declared paths cover reckon, tests, the queued-work-needs-no-workaround fragment directory and this node's fragment; git diff b24fe95a789c82cd33f22a912b4dbbf94d5e2193..79e98bc434a50aca435bff62c38313bf0abf550d touches only tests/test_a_queued_request_is_checked_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-checked-once.html, both inside them."
+  },
+  "justifications": {
+    "durability": "the repaired fixture at tests/test_a_queued_request_is_checked_once.py:140-143 is guarded by the untouched assertions at :274-278, which fail on reinstating the two-key config as base-arm-window.log shows, though the diff itself adds no new assertion.",
+    "evidence": "head-arm.log and base-arm-window.log both carry EXIT lines and base-arm-window.log names the failing id, but the named file's head run is at c743040e rather than 79e98bc4, and the armed suite pair imports neither the changed module nor its production imports.",
+    "fit": "CONFIG at tests/test_a_queued_request_is_checked_once.py:22-39 repeats the shape of the block in tests/test_a_queued_request_is_stamped_at_queue_time.py:24-46, and ruff check and ruff format --check pass on the file.",
+    "goal_fidelity": "tests/test_a_queued_request_is_checked_once.py is the only file the goal names, its blob 153dfa8089 is identical at c743040e and 79e98bc4, and head-arm.log records 14 passed EXIT=0 over it.",
+    "reuse": "no owner exists for a queue-test config \u2014 tests/conftest.py exports none and 262 test modules carry their own literal \u2014 so the added CONFIG extends the repository's per-file convention rather than forking a mechanism.",
+    "scope_discipline": "every path in the diff b24fe95a..79e98bc4 lies inside the declared write paths, tests/ and the per-node fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal names tests/test_a_queued_request_is_checked_once.py passing in full, and the landed tree holds that repair at tests/test_a_queued_request_is_checked_once.py:22-39 (CONFIG) and :140-143 (the node's done-when, write path, time budget and specification level), whose blob 153dfa8089 head-arm.log ran green at 14 passed EXIT=0.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, both importer arms as inline JSON at 40-character revisions, and the base run's failing ids logged beside the head run under the fragment directory; head-arm.sh runs env -u SLURM_JOB_ID -u SLURM_JOBID, base-arm-window.log records EXIT=1 with FAILED tests/test_a_queued_request_is_checked_once.py::test_the_request_records_its_digests_at_queue_time at b24fe95a, and the manifest carries both suite arms as inline JSON at 40-character revisions with zero failures each, but head-arm.log and the run the fragment quotes at line 47 are at c743040e, an ancestor of the landed 79e98bc4, and the suite arms the manifest records run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed test module nor its production imports.\nVERDICT write_paths: the declared paths cover reckon, tests, the queued-work-needs-no-workaround fragment directory and this node's fragment; git diff b24fe95a789c82cd33f22a912b4dbbf94d5e2193..79e98bc434a50aca435bff62c38313bf0abf550d touches only tests/test_a_queued_request_is_checked_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-checked-once.html, both inside them.\nVERDICT manifest: read; it records status complete, the gate command line, five log paths, baseline_suite and after_suite as inline JSON at b24fe95a and 79e98bc4 both completed with 0 failures and empty failure_ids, one cause carrying the verdict test wrong, negative control at base-arm-window.log, and an outside_scope entry for the fence recipe that breaks a submitted job.\nVERDICT diff: read both commits against b24fe95a789c82cd33f22a912b4dbbf94d5e2193; c743040e adds CONFIG at tests/test_a_queued_request_is_checked_once.py:22-39 and four fields on the node helper at :140-143 with no assertion added, removed or weakened, and 79e98bc4 adds only the 59-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_queued_request_is_checked_once.py is the only file the goal names, its blob 153dfa8089 is identical at c743040e and 79e98bc4, and head-arm.log records 14 passed EXIT=0 over it.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm.log and base-arm-window.log both carry EXIT lines and base-arm-window.log names the failing id, but the named file's head run is at c743040e rather than 79e98bc4, and the armed suite pair imports neither the changed module nor its production imports.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff b24fe95a..79e98bc4 lies inside the declared write paths, tests/ and the per-node fragment.\nSCORE durability: 18\nJUSTIFICATION durability: the repaired fixture at tests/test_a_queued_request_is_checked_once.py:140-143 is guarded by the untouched assertions at :274-278, which fail on reinstating the two-key config as base-arm-window.log shows, though the diff itself adds no new assertion.\nSCORE fit: 19\nJUSTIFICATION fit: CONFIG at tests/test_a_queued_request_is_checked_once.py:22-39 repeats the shape of the block in tests/test_a_queued_request_is_stamped_at_queue_time.py:24-46, and ruff check and ruff format --check pass on the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for a queue-test config \u2014 tests/conftest.py exports none and 262 test modules carry their own literal \u2014 so the added CONFIG extends the repository's per-file convention rather than forking a mechanism.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-checked-once.html:47 non-blocking: the fragment presents its head run under \"At head the same file passes in full\" while the quoted revision is c743040e, the repair commit, not the landed head 79e98bc4, so a reader comparing the promoted commit against the quoted run finds a parent, and no run of the named file exists at 79e98bc4 in the run directory.\nreviewed_base_sha: b24fe95a789c82cd33f22a912b4dbbf94d5e2193\nreviewed_head_sha: 79e98bc434a50aca435bff62c38313bf0abf550d",
+  "review_node": "review-of-qwnw-red-file-a-queued-request-is-checked-once-79e98bc434a5",
+  "review_run_id": "r-20261119T072440742596-review-of-qwnw-red-file-a-queued-request-is-checked-once-79e98bc434a5",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "79e98bc434a50aca435bff62c38313bf0abf550d",
+  "reviewed_run_id": "r-20261118T063633230315-qwnw-red-file-a-queued-request-is-checked-once",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T072440742596-review-of-qwnw-red-file-a-queued-request-is-checked-once-79e98bc434a5"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:07:06.643018+00:00",
+  "total": 113
+}

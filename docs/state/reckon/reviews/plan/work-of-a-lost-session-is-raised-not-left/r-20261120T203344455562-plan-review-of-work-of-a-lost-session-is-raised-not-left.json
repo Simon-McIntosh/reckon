@@ -1,0 +1,139 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T20:34:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:227",
+      "id": "wiring-1",
+      "reason": "one sentence must change, and leaving it lets \u00a716, which composes the fix from \u00a712's list, be dispatched ahead of its upstream.",
+      "text": "the followup `f-wlsr-001` says \"\u00a73, \u00a74 and \u00a75 wait on \u00a72; the other sections are independent\", but `plan-section-depends-on` in the same document declares `s16` waits on `s12`; a coordinator reading the followup dispatches \u00a716 before the inventory exists",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:132",
+      "id": "done_when-1",
+      "reason": "a worker must either write a false row naming a comparison that no longer decides anything from that name, or fail a gate no truthful record can pass; the control must name a site still in the tree.",
+      "text": "\u00a712's negative control requires the record to include \"the admission gate-hold comparison against the configured local backend's name\", yet \u00a712's own preceding paragraph says that comparison \"was corrected the same evening\"; the gate-hold in `reckon/crew/admission/holds.py:104` now resolves a backend from `pointer[\"backend\"]` and compares against no configured local backend name, so a correct search will not return the named site",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-of-a-lost-session-is-raised-not-left.html:164",
+      "id": "single_goal-1",
+      "reason": "the three need separate code paths and separate proof, and one verdict cannot close a node whose failures may sit in any of them; the third is not a harness-move property at all and belongs with the run-settlement work.",
+      "text": "\u00a717's deliverable joins three mechanisms under one section: a refused lane change leaving the pointer unchanged, streams folded by the dialect that wrote each attempt, and a new scope-release command for a run that can be neither resumed nor promoted; its done-when carries four cases across them",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e93ceb0c2c266075af9fae2d49131bf76551e59e",
+  "plan_fingerprint": "ca8c4f0556d454e109945971a4b2a7fa550a1593a898ab815dcb4a15e9a90ed2",
+  "plan_slug": "work-of-a-lost-session-is-raised-not-left",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e93ceb0c2c266075af9fae2d49131bf76551e59e",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "the followup now says sections 3 and 5 wait on 2, 4 on 2 and 5, and 16 on 12",
+      "reason": "",
+      "when": "2026-11-21T00:36:53.087964+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e93ceb0c2c266075af9fae2d49131bf76551e59e",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the control names a site still in the tree: the fleet-gate hold in reckon/crew/admission/selection.py, which compares a queued pointer's backend with the configured local_backend",
+      "reason": "",
+      "when": "2026-11-21T00:36:57.733514+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e93ceb0c2c266075af9fae2d49131bf76551e59e",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "section 17 keeps the refused lane change; the per-attempt dialect fold and the scope release become sections of their own",
+      "reason": "",
+      "when": "2026-11-21T00:37:02.775653+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e93ceb0c2c266075af9fae2d49131bf76551e59e",
+      "commit_basis": "edit",
+      "note": "the control names a site still in the tree: the fleet-gate hold in reckon/crew/admission/selection.py, which compares a queued pointer's backend with the configured local_backend",
+      "reason": "",
+      "when": "2026-11-21T00:36:57.733514+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e93ceb0c2c266075af9fae2d49131bf76551e59e",
+      "commit_basis": "edit",
+      "note": "section 17 keeps the refused lane change; the per-attempt dialect fold and the scope release become sections of their own",
+      "reason": "",
+      "when": "2026-11-21T00:37:02.775653+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "e93ceb0c2c266075af9fae2d49131bf76551e59e",
+      "commit_basis": "edit",
+      "note": "the followup now says sections 3 and 5 wait on 2, 4 on 2 and 5, and 16 on 12",
+      "reason": "",
+      "when": "2026-11-21T00:36:53.087964+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-of-a-lost-session-is-raised-not-left/r-20261120T203344455562-plan-review-of-work-of-a-lost-session-is-raised-not-left.json",
+  "review_run_id": "r-20261120T203344455562-plan-review-of-work-of-a-lost-session-is-raised-not-left",
+  "reviewed_blob_sha": "c0cc28aa3a0167bd75e9c3c681cf718f69a3536c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the three cited run ids (`r-20261117T223040695957-icm-linear-refinement`, `r-20261120T094110687720-shared-root-paths`, `r-20261120T074437034953-cym-s5`) each resolve as a directory under `~/.config/reckon/crew/runs/`; the research record and test files are deliverables rather than anchors to existing artifacts.",
+    "done_when": "a finding \u2014 \u00a712's negative control requires the record to contain the admission gate-hold comparison against the configured local backend's name, a comparison \u00a712's own history says was corrected, so a truthful record cannot satisfy it.",
+    "evidence_paths": "pass \u2014 the research record and each test path are durable under `docs/research/` and `tests/`, and no gate log is placed on a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new sections name a research record and test files by capability, with no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 \u00a716's four permitted differences and \u00a75's wait classes each name a mechanism the section's own evidence supports; the \u00a712 self-contradiction is recorded under `done_when` because what it breaks is the gate.",
+    "single_goal": "a finding \u2014 \u00a717 carries three mechanisms (pointer integrity on a refused lane change, per-attempt stream dialects, and a new scope-release command) under one deliverable and one gate.",
+    "wiring": "a finding \u2014 the build followup `f-wlsr-001` states \"the other sections are independent\", but `plan-section-depends-on` declares `s16` waits on `s12`."
+  },
+  "section_digests": {
+    "_document": "a42a8336f24b02667adc4cd400b365498e56179aff9ff81bf27e7ad86fcb6342",
+    "s1": "97d20596806fb031c34ba234b045b924725cca184c9388f84deb8af3eb261f80",
+    "s10": "f66c53b4748748a78b7c31563d293a6af014ee4a840b956d71347b0096e660f5",
+    "s11": "1341132808dce8dd3c6a87cd636c721a410a267f9f8742db1b4662c176f7b331",
+    "s12": "60adeafffc07259fe4daa8f8213dd4fde101663e49717dba59e9002bdd03c6e0",
+    "s13": "8c7941fb9e31f4fe6645a53b4002dc1cc43dd8c1469d99fbf1b04ef83b53d5a4",
+    "s14": "afbbd7f80d9f62aa469b45b36f858ca76dd9edcaa70832468dd8aeb4a59aa15e",
+    "s15": "876745decb177167b13adafcdf8ea882fce64a3c37c980e3deccdac1b9b9745b",
+    "s16": "6ae0e537f34a3d091c8552c4ed875f0082022dd873e2ac5036ef0ded0595a621",
+    "s17": "8d192aa6dc57a20dbe4d5f0610b0aad213e6ca226567c8ef7e5aaca27f0a8e6d",
+    "s18": "0a606130a1b501905afae13124f3f29dbfb6812b70fda2419e115282fe106037",
+    "s19": "14ac1cbfba7af1087c4209e18319bb00d110c57bcfa8d9907881a121fbc39ab1",
+    "s2": "ecdcbe285873c64a11ebf0715354dde88c6e75b834f94c16f74aae6fe987fef2",
+    "s20": "c5932b646d93f63d6bb200ccd9d622fb7068e270f01ef6e989265d7cde2bc89c",
+    "s21": "c5d6bfa9d6ac9335da56af60b650acc6f41bf7bb4d4a8750bf5141e26b5c50e6",
+    "s22": "0f5fa7900e7a1a9b4a58e589e9dd701bcbb8004bb87e93dad858f23630592e96",
+    "s3": "36d2e2500f8d8b34f9a08006e3980de143b30d0d219a541fae72768d29dd88e7",
+    "s4": "4c9e804b0931d4eaa4cc0e387f126a2785223052e3f1bb082b948a2d149ecfb1",
+    "s5": "8ef84516e6b992074ace6d454fe0af322fa490b120e68829b962d62dc9163bcf",
+    "s6": "e4c2c3412596e5b597b5ed69e381f8b6b8cb0f20ef095352896df0c66eb9c7e2",
+    "s7": "1fcb9877d1467576d37f1eb5e1b29ed55f5ddd8991ed8313cf145d20b69f73d9",
+    "s8": "146e3d4e2ba80e663cea4c0fba4083ccd453211522f93be9cacf5ad586f95cd0",
+    "s9": "69ef00a968d16bb6e2fc3751e4cf08b229e16c3dbaea7d2c74ef9cadf9f75459"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T20:50:16.429792+00:00",
+  "total": null
+}

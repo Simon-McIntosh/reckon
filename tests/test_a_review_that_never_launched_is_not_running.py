@@ -11,9 +11,11 @@ read as running indefinitely and surfaced only as an overdue review.
 
 The launch is dated from the claim its dispatch registered, and failing that
 from the pointer's own creation, so past the stranded-launch bound it is read
-as a launch failure naming the host that issued it. The fallback is confined to
-a cli pointer: an in-harness pointer under the same conditions still reads as
-running, because its liveness belongs to the calling harness.
+as a launch failure naming the host that issued it. An in-harness launch is
+dated only from a claim that names the holder whose liveness decides it: a
+claim naming no holder proves nothing about a launch made in a calling harness,
+so that pointer still reads as running, because its liveness belongs to the
+harness that called the dispatch.
 
 A launch that left no claim behind is dated from the pointer's creation, and a
 claim naming another run is refused by the reader that owns it, so a foreign
@@ -201,7 +203,13 @@ def test_a_young_review_with_no_attempt_clock_still_reads_as_running() -> None:
 
 
 def test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running() -> None:
-    """In-harness liveness belongs to the calling harness, however old the claim."""
+    """In-harness liveness belongs to the calling harness, however old the claim.
+
+    A claim naming no holder proves nothing about a launch made in a calling
+    harness: this host has no launcher process to find gone, so the pointer
+    keeps its reading however old the claim instant is. The row reads as the
+    claim it is — a pre-spawn phase whose launcher has not started the worker.
+    """
     _never_launched_pointer(
         IN_HARNESS_RUN_ID,
         claimed_seconds_ago=STALE_SECONDS,
@@ -212,7 +220,8 @@ def test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running() -> Non
     row = _row(IN_HARNESS_RUN_ID)
 
     assert row["classification"] == "running"
-    assert "in-harness" in row["detail"]
+    assert row["recovery_classification"] == "running"
+    assert "claimed this run" in row["detail"]
 
 
 def test_a_claim_less_launch_is_dated_from_its_pointer_creation() -> None:

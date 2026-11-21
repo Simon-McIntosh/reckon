@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:_repository_scope_claims",
+    "reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict",
+    "reckon/crew/dispatch_claims.py:_pointer_can_meet"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:16:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the fragment records '6 passed in 5.68 s' for a worktree head run that leaves no log in the run's logs/ directory, where the only captured runs of this file are the base red run and the all_debug 3.04 s and 2.86 s gate runs (scoped-gate-1795096628219273248.log, scoped-gate-1795096658437046241.log), so the figure cannot be checked by any later reader."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the sentence calls ed462fb7b1 'the committed head', but the node's head is 3f7d8fe9; the delta is docs-only so the measure carries, and the fragment should say so rather than name a revision that is not the head it records."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062605318328-qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the baseline_suite and after_suite commands run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and never import the changed test module, so the done-when's arm over the files that import what changed is answered only by an empty population that evidence_inputs explains and the fragment never records."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read ed462fb7b1 and 3f7d8fe9 against be17b57484; the code commit moves the overlapping claim from package to docs/figures/topic over an uncommitted panel.svg and repoints four candidate paths, altering no assertion, and the second commit adds only the 25-line fragment.",
+    "done_when": "docs/plans/queued-work-needs-no-workaround.html:334 asks the file green at head as an all_debug job, each cause with a verdict, an importer arm adding no failure, and the base run logged; manifest.md names the cause test_wrong, logs 2 failed / 4 passed at be17b57484 with both ids, and records both arms at 58 passed / EXIT=0, while scoped-gate-1795096658437046241.log shows the all_debug run at ed462fb7b1.",
+    "goal": "dispatch-detail.json:admit_request.node.goal asks only that tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py pass in full on the primary branch, and scoped-gate-1795096658437046241.log records 6 passed / EXIT=0 at ed462fb7b1 for exactly that file.",
+    "manifest": "manifest.md at the reviewed run reads status complete, gives the literal gate command with its module-identity probe, names three log paths, records the cause verdict 'test wrong', and carries both suite arms with full 40-character revisions.",
+    "write_paths": "the node declared five paths including tests and docs/evidence/fragments/queued-work-needs-no-workaround, and git diff --stat be17b57484..3f7d8fe9 touches only a file inside each."
+  },
+  "justifications": {
+    "durability": "no assertion is added, and logs/base-run.log shows the reinstated regression reddening the existing refusal assertion at tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:364 with 'conflict must not launch' against the claim policy at reckon/crew/runs.py:2276; every added line is fixture data, so no assertion compares a value with an input the test itself supplied.",
+    "evidence": "logs/base-run.log and scoped-gate-1795096658437046241.log record the measure and its negative control, but the gate ran at ed462fb7b1 rather than the reviewed head 3f7d8fe9 and the baseline_suite/after_suite arms at manifest.md:18-19 run two source-inventory tests that do not import the changed module.",
+    "fit": "the fixture reuses _repository at tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:58 and _stopped_claim at :240, and its docstring at :271 states why the overlap must stay unmergeable; ruff format --check and ruff check both pass on the reviewed file.",
+    "goal_fidelity": "scoped-gate-1795096658437046241.log records 6 passed with EXIT=0 at ed462fb7b1, whose tests delta is the whole of the node's code change, and the goal at dispatch-detail.json:admit_request.node.goal names only that file passing in full.",
+    "reuse": "the diff adds no function, class or module, and the claim policy it exercises stays owned by reckon/crew/runs.py:2467 _claim_paths_share, found by a capability search over reckon/crew for an existing unmergeable-class policy.",
+    "scope_discipline": "git diff --stat be17b57484..3f7d8fe9 names only tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json:admit_request.node.goal asks only that tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py pass in full on the primary branch, and scoped-gate-1795096658437046241.log records 6 passed / EXIT=0 at ed462fb7b1 for exactly that file.\nVERDICT done_when: docs/plans/queued-work-needs-no-workaround.html:334 asks the file green at head as an all_debug job, each cause with a verdict, an importer arm adding no failure, and the base run logged; manifest.md names the cause test_wrong, logs 2 failed / 4 passed at be17b57484 with both ids, and records both arms at 58 passed / EXIT=0, while scoped-gate-1795096658437046241.log shows the all_debug run at ed462fb7b1.\nVERDICT write_paths: the node declared five paths including tests and docs/evidence/fragments/queued-work-needs-no-workaround, and git diff --stat be17b57484..3f7d8fe9 touches only a file inside each.\nVERDICT manifest: manifest.md at the reviewed run reads status complete, gives the literal gate command with its module-identity probe, names three log paths, records the cause verdict 'test wrong', and carries both suite arms with full 40-character revisions.\nVERDICT diff: read ed462fb7b1 and 3f7d8fe9 against be17b57484; the code commit moves the overlapping claim from package to docs/figures/topic over an uncommitted panel.svg and repoints four candidate paths, altering no assertion, and the second commit adds only the 25-line fragment.\nCALL_SITES: reckon/crew/dispatch_claims.py:_repository_scope_claims, reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict, reckon/crew/dispatch_claims.py:_pointer_can_meet\nSCORE goal_fidelity: 19\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: scoped-gate-1795096658437046241.log records 6 passed with EXIT=0 at ed462fb7b1, whose tests delta is the whole of the node's code change.\nJUSTIFICATION evidence: logs/base-run.log and scoped-gate-1795096658437046241.log record the measure and its negative control, but the gate ran at ed462fb7b1 rather than the reviewed head 3f7d8fe9 and the arms at manifest.md:18-19 run two source-inventory tests that do not import the changed module.\nJUSTIFICATION scope_discipline: git diff --stat be17b57484..3f7d8fe9 names only tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py and the evidence fragment, both inside the declared write paths.\nJUSTIFICATION durability: no assertion is added, and logs/base-run.log shows the reinstated regression \u2014 the fixture's claim overlap placed back in the mergeable package directory \u2014 reddening tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:364 with 'conflict must not launch', a condition the claim policy at reckon/crew/runs.py:2276 decides and not a value the test supplies.\nJUSTIFICATION fit: the fixture reuses _repository at tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:58 and _stopped_claim at :240, and ruff format --check and ruff check both pass on the reviewed file.\nJUSTIFICATION reuse: the diff adds no function, class or module, and the claim policy it exercises stays owned by reckon/crew/runs.py:2467 _claim_paths_share.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own.html:21 non-blocking: the fragment records '6 passed in 5.68 s' for a worktree head run that leaves no log in the run's logs/ directory.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own.html:21 non-blocking: the sentence calls ed462fb7b1 'the committed head', but the node's head is 3f7d8fe9.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062605318328-qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own/manifest.md:18 non-blocking: the suite arms run two source-inventory tests that never import the changed module, so the done-when's importer arm is answered only by an empty population.\n",
+  "review_run_id": "r-20261119T142929668205-review-of-qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-3f7d8fe9abfd",
+  "reviewed_base_sha": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "reviewed_head_sha": "3f7d8fe9abfdba96d2d82fc136b49f75cf16517b",
+  "reviewed_run_id": "r-20261118T062605318328-qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062605318328-qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own/after_suite-1795096717448224144.log",
+      "revision": "ed462fb7b1f0a974b373e9402f5b8e22ad0903b4",
+      "summary": "58 passed in 35.42s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062605318328-qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own/baseline_suite-1795096674752769874.log",
+      "revision": "be17b57484c74a3432a3d7372aa84da6702ad965",
+      "summary": "58 passed in 34.97s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:47:28.191940+00:00",
+  "total": 113
+}

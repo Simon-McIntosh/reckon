@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "docs/ui/state-loader.js:220 derivedBlocks",
+    "docs/ui/state-loader.js:266 window.DERIVED_STATE_KEYS",
+    "docs/ui/state-loader.js:675 revalidation keep loop",
+    "reckon/serve.py:1896 _attach_composed_review"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T08:08:36Z",
+  "findings": [
+    {
+      "file": "tests/test_page_paints_from_the_index.py",
+      "line": "192",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture's priority is a list of slug strings while the served block composes ranked dicts, so the fixture does not mirror the payload it stands for and a later reader can mistake the string list for the served shape; the identity comparison still bites, so the guard itself is unaffected."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062858962857-qwnw-red-file-page-paints-from-the-index/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and the after_suite at line 18 name two files the node never changed and that import nothing it touched, so the recorded arms answer the done-when only in the vacuous sense, and a promotion reader taking the pair as an arm over the change is reading unrelated code."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all three commits against the base - d3636f93402b adds 24 test lines, 1573eb2a93fd adds the 38-line fragment, 0da1c6f4ca1c edits seven fragment lines to name the logs it cites; no product source, plan file or other test file is touched.",
+    "done_when": "the done_when asks for the file passing in full at head as a job on all_debug with its output on shared storage, each cause given a product-or-test verdict, no assertion deleted or weakened, both arms recorded as inline JSON at full forty-character revisions, the base run's failing ids logged in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-page-paints-from-the-index.html, and no new ruff finding on the changed paths; the manifest carries each of those, the fragment's lines 10-14 and 20-23 quote logs/base-arm-all_debug.log (1 failed, 17 passed, EXIT=1) and logs/head-arm-all_debug.log (18 passed, EXIT=0) verbatim, and ruff on the changed file reports one UP031 finding and one would-reformat verdict at both revisions.",
+    "goal": "the node's goal is that tests/test_page_paints_from_the_index.py passes in full on the primary branch; the landed change repairs the test's hand-written key literal at tests/test_page_paints_from_the_index.py:162-179 and serves the block it names from the discovery fixture at :183-193 and :211, and logs/head-arm-all_debug.log reads 18 passed EXIT=0 over that file.",
+    "manifest": "read in full; status complete, three full commit ids, tests naming the file's gate command, the scoped gate and both arms' logs at absolute paths on shared storage, baseline_suite and after_suite as inline JSON at forty-character revisions, and outside_scope naming the template's two unrelated files as the arm's declared pair.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 23b901694b4bfec73d95be3a082d4c336d9a4101..0da1c6f4ca1c7c2a008616fb3fd9e7e809d32968 touches only tests/test_page_paints_from_the_index.py (+24, at lines 172-174, 183-193, 211 and 1113-1118) and that directory's qwnw-red-file-page-paints-from-the-index.html (+38 then 7 changed), so every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "logs/mutation-review-unkept-from-kept-set.log and logs/mutation-review-absent-from-derived-blocks.log each read 1 failed EXIT=1 against the head extraction, failing at tests/test_page_paints_from_the_index.py:1103 and :1101, so restoring either mechanism reddens the case.",
+    "evidence": "every done-when measure has a log, but baseline_suite at manifest.md:17 and after_suite at :18 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports what changed, so the recorded zero delta measures files the change cannot reach.",
+    "fit": "the REVIEW constant at tests/test_page_paints_from_the_index.py:183-193 and the comment at :172-174 follow the file's own literal-and-comment convention at :160-179, and no plan, sprint or ticket identifier is added.",
+    "goal_fidelity": "the repair sits where the loader names the key, at tests/test_page_paints_from_the_index.py:172-174, and logs/head-arm-all_debug.log reads 18 passed EXIT=0, though \"in full\" holds only under the PLAYWRIGHT_BROWSERS_PATH export the fragment records at line 37.",
+    "reuse": "no helper is added, the case reuses the run helper at tests/test_page_paints_from_the_index.py:455 and the DISCOVERY fixture, and the derived-key list's production owner docs/ui/state-loader.js:266 is deliberately restated as an independent expectation rather than re-implemented.",
+    "scope_discipline": "the whole diff is tests/test_page_paints_from_the_index.py:162-211 and :1113-1118 plus the fragment under the declared write paths, with no product, plan or pyproject change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_page_paints_from_the_index.py passes in full on the primary branch; the landed change repairs the test's hand-written key literal at tests/test_page_paints_from_the_index.py:162-179 and serves the block it names from the discovery fixture at :183-193 and :211, and logs/head-arm-all_debug.log reads 18 passed EXIT=0 over that file.\nVERDICT done_when: the done_when asks for the file passing in full at head as a job on all_debug with its output on shared storage, each cause given a product-or-test verdict, no assertion deleted or weakened, both arms recorded as inline JSON at full forty-character revisions, the base run's failing ids logged in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-page-paints-from-the-index.html, and no new ruff finding on the changed paths; the manifest carries each of those, the fragment's lines 10-14 and 20-23 quote logs/base-arm-all_debug.log (1 failed, 17 passed, EXIT=1) and logs/head-arm-all_debug.log (18 passed, EXIT=0) verbatim, and ruff on the changed file reports one UP031 finding and one would-reformat verdict at both revisions.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 23b901694b4bfec73d95be3a082d4c336d9a4101..0da1c6f4ca1c7c2a008616fb3fd9e7e809d32968 touches only tests/test_page_paints_from_the_index.py (+24, at lines 172-174, 183-193, 211 and 1113-1118) and that directory's qwnw-red-file-page-paints-from-the-index.html (+38 then 7 changed), so every path is inside the fence.\nVERDICT manifest: read in full; status complete, three full commit ids, tests naming the file's gate command, the scoped gate and both arms' logs at absolute paths on shared storage, baseline_suite and after_suite as inline JSON at forty-character revisions, and outside_scope naming the template's two unrelated files as the arm's declared pair.\nVERDICT diff: read all three commits against the base - d3636f93402b adds 24 test lines, 1573eb2a93fd adds the 38-line fragment, 0da1c6f4ca1c edits seven fragment lines to name the logs it cites; no product source, plan file or other test file is touched.\nCALL_SITES: docs/ui/state-loader.js:220 derivedBlocks, docs/ui/state-loader.js:266 window.DERIVED_STATE_KEYS, docs/ui/state-loader.js:675 revalidation keep loop, reckon/serve.py:1896 _attach_composed_review\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the repair sits where the loader names the key, at tests/test_page_paints_from_the_index.py:172-174, and logs/head-arm-all_debug.log reads 18 passed EXIT=0, though \"in full\" holds only under the PLAYWRIGHT_BROWSERS_PATH export the fragment records at line 37.\nSCORE evidence: 16\nJUSTIFICATION evidence: every done-when measure has a log, but baseline_suite at manifest.md:17 and after_suite at :18 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports what changed, so the recorded zero delta measures files the change cannot reach.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is tests/test_page_paints_from_the_index.py:162-211 and :1113-1118 plus the fragment under the declared write paths, with no product, plan or pyproject change.\nSCORE durability: 19\nJUSTIFICATION durability: logs/mutation-review-unkept-from-kept-set.log and logs/mutation-review-absent-from-derived-blocks.log each read 1 failed EXIT=1 against the head extraction, failing at tests/test_page_paints_from_the_index.py:1103 and :1101, so restoring either mechanism reddens the case.\nSCORE fit: 20\nJUSTIFICATION fit: the REVIEW constant at tests/test_page_paints_from_the_index.py:183-193 and the comment at :172-174 follow the file's own literal-and-comment convention at :160-179, and no plan, sprint or ticket identifier is added.\nSCORE reuse: 20\nJUSTIFICATION reuse: no helper is added, the case reuses the run helper at tests/test_page_paints_from_the_index.py:455 and the DISCOVERY fixture, and the derived-key list's production owner docs/ui/state-loader.js:266 is deliberately restated as an independent expectation rather than re-implemented.\nFINDING tests/test_page_paints_from_the_index.py:192 non-blocking: the fixture's priority is a list of slug strings while the served block composes ranked dicts, so the fixture does not mirror the payload it stands for and a later reader can mistake the string list for the served shape; the identity comparison still bites, so the guard itself is unaffected.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062858962857-qwnw-red-file-page-paints-from-the-index/manifest.md:17 non-blocking: baseline_suite and the after_suite at line 18 name two files the node never changed and that import nothing it touched, so the recorded arms answer the done-when only in the vacuous sense, and a promotion reader taking the pair as an arm over the change is reading unrelated code.",
+  "review_run_id": "r-20261118T162412973258-review-of-qwnw-red-file-page-paints-from-the-index-0da1c6f4ca1c",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "0da1c6f4ca1c7c2a008616fb3fd9e7e809d32968",
+  "reviewed_run_id": "r-20261118T062858962857-qwnw-red-file-page-paints-from-the-index",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T162412973258-review-of-qwnw-red-file-page-paints-from-the-index-0da1c6f4ca1c"
+  },
+  "reviewer_run_id": "r-20261118T162412973258-review-of-qwnw-red-file-page-paints-from-the-index-0da1c6f4ca1c",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T08:47:10.935854+00:00",
+  "total": 113
+}

@@ -16,7 +16,7 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="elevated">
-  <meta name="plan-sprint" content="S27">
+  <meta name="plan-sprint" content="S28">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-node-stays-in-service">
@@ -95,8 +95,9 @@
     <h2 id="s8">§8 — A batch dispatch holds a bounded amount of memory</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> A single <code>crew dispatch --batch</code> was seen at 47 GB, half the old job's limit, and a coordinator queueing a plan can run several. Queueing work should not be what kills the node.</p>
-    <p><strong>Deliverable.</strong> Peak resident memory of a batch dispatch does not grow with the number of entries beyond a stated amount per entry, and stays under 4 GB for a batch of forty entries on this workstation's stores. The requests it stores are the same as before.</p>
-    <p><strong>Done when.</strong> On §7's harness and input, an eight-entry and a forty-entry batch are profiled before and after: the forty-entry peak is under 4 GB and within 1 GB of the eight-entry peak, and each run's stored requests equal the base's. Negative control: at the base revision the forty-entry peak exceeds the eight-entry peak by more than 1 GB, or the section records that it does not and closes on the absolute bound alone. Runs on <code>rigel</code>; importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/dispatch_batch.py</code>, <code>reckon/crew/dispatch_plan.py</code> and <code>tests/test_dispatch_batch_memory_profile.py</code>.</p>
+    <p><strong>Measured.</strong> On 18 November, both arms on one prepared home, the same partition and identical input, the base <code>4b7aa8a071</code> peaked at 10.15 GiB for eight entries and 11.65 GiB for forty, over 58,836 and 127,817 store rows. Eight entries already cost 10 GiB, so the peak is set by the population of decoded delivered-run records the batch holds at once, not by the number of entries. The 4 GB figure this section first carried was never measured.</p>
+    <p><strong>Deliverable.</strong> A batch dispatch holds the delivered-run records of one node at a time, so its peak resident memory no longer scales with the size of the run store. The requests it stores are the same as before.</p>
+    <p><strong>Done when.</strong> On §7's harness, with both arms on one prepared home, the same partition, the same time and identical input, an eight-entry and a forty-entry batch are profiled at the base and at the head. The head's forty-entry peak is at most half the base's forty-entry peak measured in the same job, and the head's eight-entry peak is at most half the base's. A third arm doubles the number of delivered-run rows in the prepared store and shows the head's forty-entry peak rise by less than 10 %. Each run's stored requests equal the base's, read from the store and not from the batch's own count. Negative control: at the base revision doubling the store's rows raises the forty-entry peak by more than 10 %. Runs on <code>rigel</code>; importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/dispatch_batch.py</code>, <code>reckon/crew/section_holds.py</code> and <code>tests/test_dispatch_batch_memory_profile.py</code>.</p>
 
     <h2 id="s9">§9 — The admission service does not grow with its age</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
@@ -135,8 +136,16 @@
     <div class="r-fu-body"><p>§2 comes first: every later section is judged by which kills remain. §4, §5, §6, §7 and §10 are independent of one another; §5 follows §4 at the merge, since both extend the health sample. §3 waits on the composed gate command in the write-safety plan. §8 and §9 wait on §7's profiles. §11 runs last.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-inside-its-memory</pre>
     </article>
+<article class="r-fu" data-id="f-tfnsim-s28" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-review" data-written-at="2026-11-19" data-recommends-skill="/reckon-build the-fleet-node-stays-inside-its-memory" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Dispatch the rewritten bound, then measure</h4>
+    <div class="r-fu-body"><p>§8 was discarded and rewritten against the measured base of 11.65 GiB and has not been dispatched. §11 is the fleet measurement. The four fleet-measurement sections of sprint S28 (this plan, and its three siblings) need the same quiet 24 hours; take them in one window.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-inside-its-memory</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s8" data-id="c-s8-discarded-and-rewritten" data-who="reckon-build" data-when="2026-11-19T04:50:00Z">
+    <div class="r-comment-body"><p>The first §8 run was discarded on the lead's decision of 19 November; its head <code>9b5c6d8b7f</code> measured 0.88 GiB above the base at forty entries and nothing from it landed. The section is rewritten around what the measurement showed: the peak is the population of decoded delivered-run records held at once, and the bound is stated against the measured base, not the unmeasured 4 GB.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-s8-measured-like-for-like" data-who="reckon-build" data-when="2026-11-18T06:05:00Z">
     <div class="r-comment-body"><p>§8 is delivered and not landed. Both arms were measured on one prepared home, on the same partition at the same time, with identical batch input. Peak resident memory at the base <code>4b7aa8a071</code>: 10.15 GiB for eight entries and 11.65 GiB for forty. At the head <code>c934eb586f</code>: 11.52 GiB and 13.03 GiB. The head uses 0.88 GiB more than the base at forty entries, forty entries cost about 1.5 GiB more than eight at both revisions, and both revisions are about three times the 4 GB bound. Eight entries already cost 10 GiB, so the peak is set by the population of decoded delivered-run records the batch holds at once (58,836 store rows at eight entries), not by the batch width. The run is held for the lead's decision on the bound and the approach.</p></div>
 </div>

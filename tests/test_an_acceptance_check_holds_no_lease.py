@@ -16,7 +16,7 @@ from reckon import ledger
 from reckon.crew import landing_measure, merge, promotion, review, runs
 from reckon.crew import recovery_review_acceptance as acceptance
 from tests.helpers.git import git
-from tests.helpers.landing_repository import in_place_scheduler
+from tests.helpers.landing_repository import install_in_place_scheduler
 from tests.test_reflex_acceptance_reads_the_remote_primary import (
     PROJECT,
     RUN_ID,
@@ -81,7 +81,7 @@ def refusing_candidate(
     assert runs.crew_home().is_relative_to(isolated_reckon_home)
     real_pointer = Path.home() / ".config/reckon/crew/live" / f"{RUN_ID}.json"
     assert not real_pointer.exists()
-    monkeypatch.setattr(landing_measure, "_RUN", in_place_scheduler())
+    install_in_place_scheduler(monkeypatch)
     _origin, repository = origin_and_repository
     base, _commit = _land_run_commit(repository, push=False)
     (repository / "node.txt").write_text("broken\n", encoding="utf-8")

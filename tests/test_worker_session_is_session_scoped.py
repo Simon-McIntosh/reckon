@@ -185,8 +185,11 @@ def test_a_run_of_this_task_supplies_the_session_instead(
 def test_the_capture_path_records_the_session_on_the_run(
     home: Path, repo: Path
 ) -> None:
-    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
-    roster_before = roster_path.read_bytes()
+    # The roster lives in the run store rather than in a committed file, so
+    # "capture writes no roster" reads the store's roster region: its payload
+    # and its version must both survive the capture untouched.
+    roster_before, version_before = ledger.load_auxiliary("proj", repo)
+    assert [entry["id"] for entry in roster_before["members"]] == ["worker-a"]
     dispatched = _dispatch(home, repo)
     _complete(dispatched, STORED_SESSION)
 
@@ -196,7 +199,9 @@ def test_the_capture_path_records_the_session_on_the_run(
     assert recorded["session_id"] == STORED_SESSION
     assert recorded["session_harness"] == "codex"
     assert recorded["session_model"] == "some-model"
-    assert roster_path.read_bytes() == roster_before
+    roster_after, version_after = ledger.load_auxiliary("proj", repo)
+    assert roster_after == roster_before
+    assert version_after == version_before
 
 
 # ── the run record still resolves a session ─────────────────────────────────

@@ -34,6 +34,11 @@ CONFIG = {
     "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
 }
 
+# Mergeable source files are shared by default: each dispatch gets its own
+# worktree and a merge reconciles the two. A claim on an artifact a textual
+# merge cannot reconcile still fences, so a refusal test names one of those.
+ARTIFACT = "docs/figures/interface/topic"
+
 
 @pytest.fixture()
 def repo(tmp_path: Path, home: Path) -> Path:
@@ -80,7 +85,7 @@ def repo(tmp_path: Path, home: Path) -> Path:
     return root
 
 
-def _node(node_id: str, path: str) -> crew.TaskNode:
+def _node(node_id: str, path: str, *artifacts: str) -> crew.TaskNode:
     return crew.TaskNode(
         id=node_id,
         goal="record one adjacent interface",
@@ -89,14 +94,14 @@ def _node(node_id: str, path: str) -> crew.TaskNode:
         role="implement",
         spec_level="guided",
         done_when=("pytest reports 2 durable channel copies with one matching answer"),
-        write_paths=[path],
+        write_paths=[path, *artifacts],
         time_budget="20m",
     )
 
 
 def _dispatch_pair(repo: Path) -> tuple[dict, dict]:
     definition = crew.dispatch(
-        node=_node("definition-owner", "package/definition.py"),
+        node=_node("definition-owner", "package/definition.py", ARTIFACT),
         project="proj",
         repo=repo,
         config=CONFIG,
@@ -202,12 +207,20 @@ def test_unanswered_peer_read_delivers_a_named_needs_help_report(
 
 
 def test_peer_channel_does_not_relax_live_scope_refusal(home: Path, repo: Path) -> None:
+    """The peer channel carries questions and replies, never a write grant.
+
+    Mergeable source files are shared between peers because each dispatch edits
+    its own worktree and a merge reconciles the two, so the region a refusal
+    still covers is the artifact a textual merge cannot reconcile. A third
+    dispatch naming the live peer's artifact is refused with that peer named,
+    and no run is recorded for the refused call.
+    """
     definition, caller = _dispatch_pair(repo)
     before = sorted(path.name for path in crew.runs_dir().iterdir())
 
     with pytest.raises(crew.ScopeConflict, match=definition["run_id"]):
         crew.dispatch(
-            node=_node("scope-taker", "package/definition.py"),
+            node=_node("scope-taker", ARTIFACT),
             project="proj",
             repo=repo,
             config=CONFIG,

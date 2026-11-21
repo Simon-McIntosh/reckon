@@ -27,7 +27,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
-from reckon.crew import landing_measure, merge, recovery
+from reckon.crew import merge, recovery
 from reckon.crew import recovery_review_acceptance as acceptance
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, crew_home, pointer_path
@@ -36,7 +36,7 @@ from tests.helpers.landing_repository import (
     PLAN,
     PROJECT,
     _write_origin_and_checkout,
-    in_place_scheduler,
+    install_in_place_scheduler,
 )
 
 RUN_ID = "r-20261109T120000000000-reflex-acceptance"
@@ -211,7 +211,7 @@ def test_a_run_only_on_local_main_is_landed_by_acceptance(
     remote carries the reviewed head rather than being left behind by a
     checkout whose own push failed.
     """
-    monkeypatch.setattr(landing_measure, "_RUN", in_place_scheduler())
+    install_in_place_scheduler(monkeypatch)
     origin, repository = origin_and_repository
     base, commit = _land_run_commit(repository, push=False)
     worker = tmp_path / "run-worktree"

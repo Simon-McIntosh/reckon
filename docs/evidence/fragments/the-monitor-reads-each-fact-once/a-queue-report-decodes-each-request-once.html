@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s106">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-20">
+  <meta name="evidence-commit" content="7ffe0eca66">
+  <title>A queue report decodes each promotion request once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-queue-report-decodes-each-request-once">
+  <h2>A queue report decodes each promotion request once</h2>
+
+  <p><strong>The defect.</strong> <code>promotion_queue_report</code> is reached
+  from the fleet's delivery summary on every station tick that has a
+  <code>promotion-queued</code> tick, and on a busy fleet that is most ticks.
+  Its <code>_pending_requests</code> listed
+  <code>crew/promotion-requests/</code> and decoded every file there with
+  <code>_read</code> on each call, so a directory of about 1,600 requests &mdash;
+  28 MB &mdash; was JSON-decoded in full for every report. The tick after the
+  obligations path was fixed still spent 16% of its samples in this call, 21.7%
+  of that self time in the decoder.</p>
+
+  <p><strong>What landed.</strong> <code>_pending_requests</code> now reads each
+  file through <code>_request_record</code>, the same identity-keyed memo the
+  obligations path already uses. The memo stores a decode under the file's full
+  stat signature, re-verifies that signature after the read, and hands back a
+  fresh copy outside a read-only region, so the report owns what it may write a
+  priority override onto. The directory is still listed per call, so a request
+  added or removed between ticks is seen; only the decode of a request whose
+  bytes did not move is skipped.</p>
+
+  <h3 id="a-queue-report-decodes-each-request-once-measure">What the measure shows</h3>
+
+  <p>The gate builds 400 requests over the three projects and six sessions of
+  the obligations fixture &mdash; 100 requested, 100 running, 150 settled and 50
+  failed &mdash; and counts every decode through a stand-in for
+  <code>_read</code>. Each report is compared with a transcription of the base
+  revision's loop over the same files, so a faster report is held to the same
+  answer.</p>
+
+  <table>
+    <thead><tr><th>call</th><th>requests decoded</th><th>report</th></tr></thead>
+    <tbody>
+      <tr><td>first, untouched directory</td><td>400 (one each)</td><td>equals base</td></tr>
+      <tr><td>second, no file changed</td><td>0</td><td>equals base</td></tr>
+      <tr><td>third, one request rewritten</td><td>1 (the rewritten request)</td><td>equals base for the new files; the rewritten request appears in its new phase</td></tr>
+    </tbody>
+  </table>
+
+  <p>At the base revision every one of those calls decoded all 400 requests. The
+  first call's count is the instrument's positive control: it saw the whole
+  population, so the second call's zero is an absence of decodes rather than an
+  absent reader.</p>
+</section>
+</main>
+</body>
+</html>

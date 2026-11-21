@@ -1,0 +1,67 @@
+<section id="qwnw-red-file-no-source-names-the-retired-field-landing">
+  <h2>A red file must not name the retired field in its own source</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_no_source_names_the_retired_field.py</code>
+  scans every <code>.py</code> under the package and fails on the retired
+  deferred-work field being spelled anywhere, exempting only the one constant
+  that maps the retired name to the replacement. <code>reckon/doccheck.py</code>
+  failed it: the doc-comment block above <code>_DEFERRED_WORK_TERM</code>
+  described what the term detector does <em>not</em> catch by spelling the
+  hyphenated and run-together forms of the retired name itself. The exemption is
+  the literal, not prose.</p>
+
+  <p>The fix is three lines of that comment. It now says what escapes the
+  detector without naming the term — the retired term's own other spellings, a
+  verb of onward motion followed by a section number, and a verb of onward
+  motion aiming at a qualifying noun, each retaining its example. The detector's
+  pattern and the exempt mapping constant are untouched.</p>
+
+  <h3 id="qwnw-red-file-no-source-names-the-retired-field-measured">Measured</h3>
+
+  <p>Each arm extracts its revision into its own tree under a scratch directory,
+  links the worktree's virtual environment, imports the tree's own
+  <code>reckon.doccheck</code>, and runs pytest. Every log's header names the
+  revision, the tree, and <code>module.__file__</code>; its last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-no-source-names-the-retired-field-arms">
+    <caption>Arms recorded in <code>r-20261118T044640679579-qwnw-red-file-no-source-names-the-retired-field</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the gate, head arm</td>
+        <td><code>06b868c086</code>, extraction</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the negative control</td>
+        <td><code>73b9ac21a5</code>, extraction</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importers of <code>doccheck</code>, base arm</td>
+        <td><code>73b9ac21a5</code>, extraction with the node's own test added</td>
+        <td>1 failed, 520 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importers of <code>doccheck</code>, head arm</td>
+        <td><code>06b868c086</code>, extraction</td>
+        <td>521 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the suite template both arms share</td>
+        <td><code>73b9ac21a5</code> / <code>06b868c086</code>, extractions</td>
+        <td>58 passed / 58 passed, <code>EXIT=0</code> at each</td></tr>
+    </tbody>
+  </table>
+
+  <p>The importers arm covers the 44 test files whose source names
+  <code>reckon.doccheck</code> or drives a command that does, plus the node's own
+  file, so both arms run the same 45 files at both revisions and the delta is the
+  source change. It also runs the suite's declared template over
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> at each
+  revision: 58 passed at both.</p>
+
+  <h3 id="qwnw-red-file-no-source-names-the-retired-field-control">Negative control</h3>
+
+  <p>At the base revision the gate is red for exactly the documented reason:
+  <code>tests/test_no_source_names_the_retired_field.py::test_no_reckon_source_names_the_retired_field</code>
+  reports the comment line <code>reckon/doccheck.py:420</code>. At the head
+  revision the same command, run the same way, passes in full.</p>
+
+  <p>Both gate arms ran as batch jobs, so the measure is a job rather than a
+  shell in the worker's fence; each log names the host, its tree, and the loaded
+  module's path.</p>
+</section>

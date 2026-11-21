@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-a-landing-judges-the-head-by-its-suite-landing">
+  <h2>A repeated complete reports the promotion it drove</h2>
+
+  <p><strong>What changed.</strong> A <code>crew complete</code> whose own
+  promotion request is still queued does not answer
+  <code>duplicate</code> and stop: it carries that queued request out in the
+  call that found it, settling the request and writing the ledger row. The
+  completion record it writes on disk says so, with
+  <code>"driven": true</code>. The public reply does not, because
+  <code>_complete_many</code> in <code>reckon/crew_run_commands.py</code>
+  assembles that reply from a fixed key list, and the list omitted
+  <code>driven</code>. A coordinator repeating its own complete therefore could
+  not tell the promotion it drove from one it waited on: the reply named
+  <code>ledger_path</code> and <code>pointer_removed</code>, the same words a
+  synchronous promotion answers with.</p>
+
+  <p>The record is the evidence, and it disagrees with the reply:</p>
+
+  <pre><code>completion-&lt;first&gt;.json   no driven key        (the queueing call)
+completion-&lt;second&gt;.json  "driven": true        (the repeat that drove it)
+second reply             {"ledger_path": ..., "ok": true, "pointer_removed": true,
+                          "record_path": ..., "run_id": ...}   no driven key</code></pre>
+
+  <p>One key joins the list, so the bounded reply carries the marker its own
+  record already held. No assertion was deleted or weakened; the test file is
+  unchanged.</p>
+
+  <h3 id="qwnw-red-file-a-landing-judges-the-head-by-its-suite-arms">Measured</h3>
+
+  <p>Each arm is a log whose header lines name the revision, the tree, the
+  command and — for the two runs of the node's file — that
+  <code>SLURM_JOB_ID</code> was unset for the run, and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>. The head arm and both suite arms ran as
+  <code>all_debug</code> jobs.</p>
+
+  <table id="qwnw-red-file-a-landing-judges-the-head-by-its-suite-runs">
+    <caption>The node's own file, base against head.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node file, base</td>
+        <td><code>d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72</code></td>
+        <td>1 failed, 7 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>node file, head</td>
+        <td><code>d6e73e47f0df9ef313bda883c485e1a5e59f92e5</code></td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The failing id at base is the same one the head arm passes:
+  <code>tests/test_a_landing_judges_the_head_by_its_suite.py::test_a_repeat_carries_the_queued_promotion</code>.</p>
+
+  <p>The suite the dispatcher armed for this run — the two project-wide
+  inventory and lock tests — reads 58 passed at both revisions, so the change
+  adds no failure there.</p>
+
+  <p>The thirty test files that import <code>reckon.crew_run_commands</code> run
+  as one arm on each revision, and the two arms name the same twenty failing
+  ids: the population carries twenty reds at its base none of which this change
+  touches, and the head adds none. Both read <code>20 failed, 518 passed</code>
+  with <code>EXIT=1</code>, so the added-failure count is zero.</p>
+
+  <h3 id="qwnw-red-file-a-landing-judges-the-head-by-its-suite-control">Negative control</h3>
+
+  <p>The base arm of the node's file is the control. At
+  <code>d8baf52ad2</code> the repeat's reply carries <code>ledger_path</code> and
+  <code>pointer_removed</code> and no <code>driven</code> key, the assertion
+  reads <code>assert None is True</code>, and the run exits <code>1</code> with
+  <code>1 failed, 7 passed</code>. At <code>d6e73e47f0</code> the same command
+  reads <code>8 passed</code> and exits <code>0</code>.</p>
+</section>
