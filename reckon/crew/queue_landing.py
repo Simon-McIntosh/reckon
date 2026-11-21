@@ -115,6 +115,45 @@ def _primary_carries_the_delivery(
     return "carried", ""
 
 
+#: A carried delivery's settlement answers: its pointer was retired, or it is
+#: held because its workspace could not be released.
+CARRIED_SETTLED = "settled"
+CARRIED_HELD = "held"
+
+
+def settle_a_carried_delivery(
+    pointer: Mapping[str, Any], row: Mapping[str, Any] | None
+) -> tuple[str, str]:
+    """Retire a run whose delivery the primary branch already carries.
+
+    The caller has already read the delivery as carried, so nothing is
+    promoted, measured, gated or merged again: the ledger keeps the row the
+    first promotion wrote, with the verdict recorded there. The workspace is
+    released through the same integrated release a completed merge uses, and
+    only then is the pointer removed.
+
+    ``("settled", "")`` means the pointer is gone. ``("held", reason)`` means
+    the delivery is carried but the workspace could not be released, so the
+    pointer stays and the caller reports the refusal it returns.
+    """
+    from reckon.crew import pending_landing
+    from reckon.crew.stage_receipts import record_stage
+
+    run_id = str(pointer["run_id"])
+    retired, _release, refusal = pending_landing._release_integrated_pointer(
+        pointer,
+        Path(str(pointer.get("repo") or "")),
+        _primary_revision(pointer),
+        row,
+    )
+    if retired != pending_landing.POINTER_RETIRED:
+        return CARRIED_HELD, refusal or (
+            "the settled run's workspace could not be released"
+        )
+    record_stage(run_id, "landing")
+    return CARRIED_SETTLED, ""
+
+
 def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
     """Read current ownership, not the live-set snapshot used for selection."""
     try:
@@ -2519,32 +2558,19 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
             pointer, head, _primary_revision(pointer)
         )
         if carried == "carried":
-            from reckon.crew import pending_landing
-
             try:
                 row = _ledger_row(pointer, run_id)
             except CrewError:
                 row = None
-            retired, _release, release_refusal = (
-                pending_landing._release_integrated_pointer(
-                    pointer,
-                    Path(str(pointer.get("repo") or "")),
-                    _primary_revision(pointer),
-                    row,
-                )
-            )
-            if retired == pending_landing.POINTER_RETIRED:
-                from reckon.crew.stage_receipts import record_stage
-
-                record_stage(run_id, "landing")
+            status, release_refusal = settle_a_carried_delivery(pointer, row)
+            if status == CARRIED_SETTLED:
                 skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             else:
                 skipped.append(
                     {
                         "run_id": run_id,
                         "status": "landed-elsewhere-held",
-                        "reason": release_refusal
-                        or "the settled run's workspace could not be released",
+                        "reason": release_refusal,
                     }
                 )
             continue

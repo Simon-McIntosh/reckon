@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from reckon import ledger
 from reckon.crew import (
     landing_measure,
+    promotion,
     promotion_gate,
     promotion_requests,
     queue_landing,
@@ -167,3 +170,147 @@ def test_a_replay_that_exits_with_no_log_records_its_own_failure(
     assert "3" in str(report.get("replay_failure") or "")
     assert report["reason"]
     assert report["ok"] is False
+
+
+def _ledger_rows_for(repo: Path) -> list[dict]:
+    """Every ledger row the repository holds for the delivered run."""
+    rows = []
+    per_run = ledger.run_path(PROJECT, RUN, str(repo))
+    if per_run.is_file():
+        rows.append(json.loads(per_run.read_text(encoding="utf-8")))
+    aggregate = ledger.ledger_path(PROJECT, str(repo))
+    if aggregate.is_file():
+        document = json.loads(aggregate.read_text(encoding="utf-8"))
+        held = document.get("runs")
+        if held is None and isinstance(document.get("data"), dict):
+            held = document["data"].get("runs")
+        rows.extend(dict(row) for row in held or () if dict(row).get("run_id") == RUN)
+    return rows
+
+
+@pytest.fixture()
+def promotion_request_for_a_landed_delivery(
+    delivery_case, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> dict:
+    """A delivered run whose ledger row is written, and a branch that carries it.
+
+    The branch moved on past the reviewed head before the request arrives, so
+    the head is an ancestor rather than the tip — the shape a re-request comes
+    from. The promotion step itself is counted, because that is the step a
+    request otherwise takes and the step that replays the run's gate.
+    """
+    _accept(base=str(delivery_case["base"]), head=str(delivery_case["head"]))
+    repo = Path(delivery_case["repo"])
+    head = str(delivery_case["head"])
+    _git(repo, "commit", "--allow-empty", "-q", "-m", "chore: a later landing")
+    worktree = tmp_path / "worker-tree"
+    _git(repo, "worktree", "add", "--detach", str(worktree), head)
+    pointer = runs.read_pointer(RUN)
+    runs._write_json(runs.pointer_path(RUN), {**pointer, "worktree": str(worktree)})
+    row_path = ledger.run_path(PROJECT, RUN, str(repo))
+    row_path.parent.mkdir(parents=True, exist_ok=True)
+    row_path.write_text(
+        json.dumps(
+            {
+                "run_id": RUN,
+                "project": PROJECT,
+                "commits": [head],
+                "promoted_revision": head,
+                "gate": "passed",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(review_landing, "finish_landing", lambda *a, **k: "")
+    counters = _Counters()
+
+    def running_the_promotion(*_args, **_kwargs):
+        counters.gate_replays += 1
+        return {
+            "ok": False,
+            "promoted": False,
+            "reason": "the gate replay exited 3 with no log",
+        }
+
+    monkeypatch.setattr(promotion, "complete", running_the_promotion)
+    return {
+        **delivery_case,
+        "repo": repo,
+        "worktree": worktree,
+        "row_path": row_path,
+        "counters": counters,
+    }
+
+
+def _drive_promotion_request(run_id: str) -> dict:
+    """Queue one request, drain it, and read the outcome it settled on."""
+    request = promotion_requests.request_promotion(run_id, kind="complete")
+    assert request["phase"] == promotion_requests.REQUESTED, request
+    service = promotion_requests.PromotionService()
+    assert service.tick() == [run_id]
+    service.settle(timeout=60)
+    return promotion_requests.read_promotion(run_id)
+
+
+def test_a_promotion_request_for_a_carried_delivery_settles_without_a_gate(
+    promotion_request_for_a_landed_delivery,
+) -> None:
+    case = promotion_request_for_a_landed_delivery
+
+    receipt = _drive_promotion_request(RUN)
+
+    assert case["counters"].gate_replays == 0, (
+        "a carried delivery must cost no gate replay"
+    )
+    assert receipt["phase"] == promotion_requests.PROMOTED, receipt
+    assert (receipt.get("result") or {}).get("settled") == "landed-elsewhere", receipt
+    assert runs.pointer_path(RUN).exists() is False
+    rows = _ledger_rows_for(Path(case["repo"]))
+    assert len(rows) == 1, rows
+    assert rows[0]["run_id"] == RUN
+    assert rows[0]["gate"] == "passed", rows[0]
+
+
+def test_a_promotion_request_for_a_head_off_the_primary_branch_replays_its_gate(
+    promotion_request_for_a_landed_delivery,
+) -> None:
+    case = promotion_request_for_a_landed_delivery
+    repo = Path(case["repo"])
+    # The branch no longer reaches the delivered head: it is not carried.
+    _git(repo, "update-ref", "refs/heads/main", str(case["base"]))
+
+    receipt = _drive_promotion_request(RUN)
+
+    assert case["counters"].gate_replays == 1
+    assert receipt["phase"] == promotion_requests.REFUSED, receipt
+    assert runs.pointer_path(RUN).exists()
+
+
+def test_a_promotion_request_for_a_delivery_the_branch_dropped_is_not_settled(
+    promotion_request_for_a_landed_delivery,
+) -> None:
+    case = promotion_request_for_a_landed_delivery
+    repo = Path(case["repo"])
+    path = "reckon/crew/queue_landing.py"
+    _git(repo, "rm", "-q", path)
+    _git(repo, "commit", "-q", path, "-m", "chore: drop the delivered file")
+
+    receipt = _drive_promotion_request(RUN)
+
+    assert case["counters"].gate_replays == 1
+    assert receipt["phase"] == promotion_requests.REFUSED, receipt
+    assert runs.pointer_path(RUN).exists()
+    assert len(_ledger_rows_for(repo)) == 1
+
+
+def test_a_promotion_request_with_no_ledger_row_is_not_settled(
+    promotion_request_for_a_landed_delivery,
+) -> None:
+    case = promotion_request_for_a_landed_delivery
+    Path(case["row_path"]).unlink()
+
+    receipt = _drive_promotion_request(RUN)
+
+    assert case["counters"].gate_replays == 1
+    assert receipt["phase"] == promotion_requests.REFUSED, receipt
+    assert runs.pointer_path(RUN).exists()
