@@ -530,6 +530,7 @@ def _pass_verdict_record(
         "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
         "retired": list(result.get("retired") or ()),
+        "retired_lost_session": list(result.get("retired_lost_session") or ()),
         "obligations": list(result.get("obligations") or ()),
         "landing": landing,
     }

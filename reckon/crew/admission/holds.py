@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from . import launching as _launching
 from . import ordering as _ordering
 from . import service as _service
@@ -13,6 +15,8 @@ from .shared import (
     _RETRY_HOLD_VERDICTS,
     ADMISSION_RETRY_BACKOFF_CAP_SECONDS,
     ADMISSION_RETRY_BACKOFF_SECONDS,
+    AWAITING_UPSTREAM_PHASE,
+    QUEUED_PHASE,
     RECORDED_HOLD_FIELD,
     REVIEW_ROLE,
     Any,
@@ -1107,6 +1111,214 @@ def _record_retirement(
         runs._mutate_pointer(run_id, stamp)
     except CrewError:
         return
+
+
+def _lost_session_review_answer(
+    pointer: Mapping[str, Any],
+    *,
+    lost_reads: Any,
+) -> Mapping[str, Any] | None:
+    """The answer that retires this request, or ``None`` when it stays.
+
+    Only a review request whose owning session reads lost is retired here. A
+    review's own record names the session that owes it, and a session nothing
+    has heard for the threshold is one no reader is left behind: composing or
+    launching its review creates work that can only be refused, and the duty is
+    carried into the decision raised for the session rather than dropped. An
+    implement request is never touched: that work is raised as one decision for
+    the operator to adopt or retire, and retiring it here would remove the work
+    the decision lists.
+    """
+
+    node = pointer.get("node") or {}
+    if str(node.get("role") or "") != REVIEW_ROLE:
+        return None
+    session = str(pointer.get("session") or "")
+    if not session:
+        return None
+    answer = lost_reads.answer(session, str(pointer.get("project") or ""))
+    return answer if answer.get("lost") else None
+
+
+def _lost_session_rule(answer: Mapping[str, Any]) -> str:
+    """The rule sentence a retirement records, from the configured threshold."""
+
+    from .. import lost_sessions as _lost_sessions
+
+    threshold = _lost_sessions.lost_session_after_hours()
+    last_heard = answer.get("last_heard_at")
+    return (
+        "the request's session was last heard at "
+        f"{last_heard or '<no dated record>'} and nothing has heard it for "
+        f"longer than lost_session.after_hours ({threshold:g}h), so its "
+        "reviews are retired rather than composed or launched"
+    )
+
+
+def _stamp_discard_reason(
+    run_id: str, *, reason: str, answer: Mapping[str, Any]
+) -> str:
+    """Write the retirement's facts onto the discard record it just left.
+
+    The discard writes its own marker; the lost-session facts are added to that
+    same marker so a later reader of the departure sees who owned the request,
+    when it was last heard and which rule retired it, rather than a bare
+    removal. A marker that cannot be read or rewritten is reported: the discard
+    itself has already happened, so this is a loss of the account and not of the
+    retirement.
+    """
+
+    from reckon.crew import promotion
+
+    marker = next(
+        (
+            path
+            for path in (
+                promotion.discard_record_path(run_id),
+                promotion.discard_spool_path(run_id),
+            )
+            if path.is_file()
+        ),
+        None,
+    )
+    if marker is None:
+        return "its pointer was discarded; no marker was readable to hold the reason"
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "its pointer was discarded; the reason could not be read back"
+    if not isinstance(data, Mapping):
+        return "its pointer was discarded; the marker held no record"
+    written = dict(data)
+    written["reason"] = reason
+    written["lost_session"] = str(answer.get("session") or "")
+    written["last_heard_at"] = answer.get("last_heard_at")
+    written["rule"] = _lost_session_rule(answer)
+    try:
+        runs._write_json(marker, written)
+    except OSError:
+        return "its pointer was discarded; the reason could not be written"
+    return "its pointer was discarded with the reason recorded"
+
+
+def _retire_lost_session_review(
+    pointer: Mapping[str, Any],
+    answer: Mapping[str, Any],
+    *,
+    moment: datetime,
+    result: dict[str, Any],
+) -> str:
+    """Discard a review request whose session is lost.
+
+    The departure names the lost session, the instant it was last heard and the
+    rule, on the discard record every reader of a departure already asks for.
+    The pointer is reported retired only once the discard has gone through: a
+    discard that refuses leaves the request where it was and the next pass tries
+    again, rather than reporting a retirement that never happened.
+    """
+
+    from reckon.crew import promotion
+
+    run_id = str(pointer.get("run_id") or "")
+    session = str(answer.get("session") or pointer.get("session") or "")
+    reason = (
+        f"retired without launching: {_lost_session_rule(answer)}; session "
+        f"{session!r} owns this review and nobody is left to read it"
+    )
+    try:
+        promotion.discard(run_id)
+        outcome = _stamp_discard_reason(run_id, reason=reason, answer=answer)
+    except (CrewError, OSError) as exc:
+        outcome = f"its discard was refused: {exc}"
+    except Exception as exc:  # noqa: BLE001 - one refusal must not end the pass
+        outcome = f"its discard failed: {exc}"
+    detail = (
+        f"review {run_id!r} was retired without launching: its session "
+        f"{session!r} was last heard at {answer.get('last_heard_at')}"
+    )
+    result["obligations"].append({"run_id": run_id, "detail": detail})
+    if runs.pointer_path(run_id).is_file():
+        _record_lost_session_retirement(pointer, answer, moment=moment, outcome=outcome)
+        return f"{session}: {outcome}"
+    return session
+
+
+def _record_lost_session_retirement(
+    pointer: Mapping[str, Any],
+    answer: Mapping[str, Any],
+    *,
+    moment: datetime,
+    outcome: str,
+) -> None:
+    """Record a lost-session retirement on a pointer a discard left in place.
+
+    A discard that refused leaves the request queued, so the next pass finds the
+    same lost session and tries again; the stamp is what a reader of the request
+    sees meanwhile.
+    """
+
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return
+    record = {
+        "verdict": "retired-lost-session",
+        "reason": f"{_lost_session_rule(answer)}: {outcome}",
+        "lost_session": str(answer.get("session") or ""),
+        "last_heard_at": answer.get("last_heard_at"),
+        "recorded_at": moment.isoformat(),
+    }
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        current[RECORDED_HOLD_FIELD] = record
+        current["reason"] = record["reason"]
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, stamp)
+    except CrewError:
+        return
+
+
+def _retire_lost_session_reviews(
+    live: Sequence[Mapping[str, Any]],
+    *,
+    lost_reads: Any,
+    moment: datetime,
+    result: dict[str, Any],
+) -> list[str]:
+    """Retire every review request of a lost session on this pass.
+
+    The pass retires a request in ``queued`` or ``awaiting-upstream``: both are
+    requests the fleet still holds and would otherwise keep attempting. A request
+    the operator has already discarded, or one that has left the fleet, is
+    absent from ``live`` and so is not visited twice.
+    """
+
+    from . import verdicts as verdicts_module
+
+    retired: list[str] = []
+    for pointer in tuple(live):
+        phase = str(pointer.get("phase") or "")
+        if phase not in (QUEUED_PHASE, AWAITING_UPSTREAM_PHASE):
+            continue
+        answer = _lost_session_review_answer(pointer, lost_reads=lost_reads)
+        if answer is None:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        detail = _retire_lost_session_review(
+            pointer, answer, moment=moment, result=result
+        )
+        retired.append(run_id)
+        result["verdicts"].append(
+            verdicts_module._verdict_row(
+                pointer,
+                allowance=None,
+                allowance_source="",
+                verdict="retired-lost-session",
+                detail=detail,
+            )
+        )
+    return retired
 
 
 def _until_changed_hold(

@@ -171,6 +171,20 @@ def admit_once(
                 ]
             )
         _service._record_stage_reads(result, "lost sessions", lost_tally)
+        # A review request of a session nothing has heard for the threshold is
+        # retired here, before any ordering or lane question, so no pass ever
+        # attempts a launch for it. It is retired on this pass rather than held
+        # because no lane state, and no later answer, can make it admissible: the
+        # session that would read the review is gone. The pass re-reads its live
+        # pointers afterwards so a retired request costs no place in the ordering.
+        result["retired_lost_session"] = _holds._retire_lost_session_reviews(
+            live, lost_reads=lost_reads, moment=moment, result=result
+        )
+        if result["retired_lost_session"]:
+            live = runs.list_live()
+            queued = [
+                pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
+            ]
         if lane:
 
             def included(pointer: Mapping[str, Any]) -> bool:
