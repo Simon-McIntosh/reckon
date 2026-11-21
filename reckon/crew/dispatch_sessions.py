@@ -1806,6 +1806,70 @@ def _restate_time_fence(
     return f"{prompt.rstrip()}\n\n{fence}"
 
 
+def _lane_change_launch_failure(
+    before: Mapping[str, Any], current: Mapping[str, Any]
+) -> Mapping[str, Any] | None:
+    """The launch-failure receipt this lane change's spawn added, if any.
+
+    A spawn that returns a pid is an accepted launch, not a started worker: the
+    launch path records a failure on the run when the spawned process ended
+    without reaching a model, and it returns the pid regardless. So the receipt
+    the spawn added is the fact that no worker is running. Reading the run's
+    launch failures before and after the spawn isolates the one this move
+    caused from any an earlier attempt left; the phase is read too because the
+    same writer sets it.
+    """
+    recorded_before = before.get("launch_failures") or ()
+    recorded_after = current.get("launch_failures") or ()
+    if len(recorded_after) > len(recorded_before):
+        newest = recorded_after[-1]
+        return newest if isinstance(newest, Mapping) else {}
+    if str(current.get("phase") or "") == LAUNCH_FAILED_PHASE and str(
+        before.get("phase") or ""
+    ) != LAUNCH_FAILED_PHASE:
+        return {}
+    return None
+
+
+def _refused_lane_change_result(
+    record: Mapping[str, Any],
+    destination: str,
+    *,
+    failure: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """The result of a lane change whose launch started no worker.
+
+    The pointer is left exactly as it was, so the four fields that name what
+    the run is executing move nowhere: the backend, attempt, agent and dialect
+    reported here are the source attempt's, not the destination's. The reason
+    names why no worker started, taken from the launch-failure receipt the
+    spawn recorded when it left any, so a reader meets the cause rather than a
+    bare failure.
+    """
+    source = str(record.get("backend") or "")
+    detail = str(
+        (failure or {}).get("detail")
+        or (failure or {}).get("kind")
+        or (failure or {}).get("scheduler_reason")
+        or ""
+    ).strip()
+    cause = f": {detail}" if detail else ""
+    return {
+        "ok": False,
+        "run_id": str(record.get("run_id") or ""),
+        "backend": source,
+        "attempt": int(record.get("attempt") or 1),
+        "agent": record.get("agent"),
+        "dialect": record.get("dialect"),
+        "reason": (
+            f"the lane change to backend {destination!r} was accepted but started "
+            f"no worker{cause}; the run stays on backend {source!r} at attempt "
+            f"{int(record.get('attempt') or 0) or 1}, and no lane-change record "
+            "was written"
+        ),
+    }
+
+
 def change_lane(
     run_id: str,
     backend_name: str,
@@ -2121,6 +2185,17 @@ def change_lane(
             stderr_path=stderr_path,
             prompt_path=prompt_path,
         )
+        # A spawn that returned a pid is a supervisor that exists, not a worker
+        # that started: the launch path records a launch failure on the run
+        # when the process it started ended without reaching a model, and
+        # returns the pid regardless. The pointer move is committed only when
+        # the spawn left no such receipt, so a lane change that ran nowhere
+        # leaves the run on the backend and attempt it is actually executing.
+        failure = _lane_change_launch_failure(record, read_pointer(run_id))
+        if failure is not None:
+            return _refused_lane_change_result(
+                record, resolution.backend, failure=failure
+            )
 
     def move(current: dict[str, Any]) -> dict[str, Any]:
         if str(current.get("worktree") or "") != str(record.get("worktree") or ""):
