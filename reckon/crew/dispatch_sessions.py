@@ -30,6 +30,7 @@ from reckon.crew.prompts import (
 from reckon.crew.recovery import (
     PLAN_REVIEW_NODE_PREFIX,
     REVIEW_NODE_PREFIX,
+    _pointer_role,
     _resolve_commit,
     resume_window_refusal,
 )
@@ -63,6 +64,7 @@ from reckon.crew.runs import (
     run_dir,
     unmergeable_patterns,
 )
+from reckon.crew.worker_behaviour import IMPLEMENT_ROLE
 
 
 def _shadow_mask_paths(
@@ -1499,6 +1501,10 @@ def resume_plan(
             # same servers the dispatch did rather than to whatever the flight's
             # default list says now.
             worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
+            # A resume continues the same node, so it owes what that node was
+            # dispatched for rather than the implement default: a review run
+            # resumed without its role would owe a review of its own.
+            behaviour_role=_pointer_role(record) or IMPLEMENT_ROLE,
             unmergeable_patterns=_resume_unmergeable_patterns(record),
             masked_paths=_shadow_masks_for_record(record),
         )
@@ -2117,6 +2123,9 @@ def change_lane(
                 fence=FENCE_WORKERS,
                 fence_config=config,
                 worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
+                # The moved attempt runs the same node, so it keeps the role
+                # the run was dispatched for across the lane change.
+                behaviour_role=_pointer_role(record) or IMPLEMENT_ROLE,
                 unmergeable_patterns=_resume_unmergeable_patterns(record),
                 masked_paths=_shadow_masks_for_record(record),
             )

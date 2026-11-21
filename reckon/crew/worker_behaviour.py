@@ -59,6 +59,12 @@ class WorkerBehaviour:
         """
         return {
             "lane": self.lane,
+            # The role is a fact of the launch rather than of the lane: it is
+            # equal across a lane's backends for one node, and a reader of the
+            # recorded treatment needs it to know what the launch owes. Left
+            # out, a review launch records no role and reads as an implement
+            # one from the duty and landing facts alone.
+            "role": self.role,
             "inbox_directory": self.inbox_directory,
             "mcp_server_allowlist": self.mcp_server_allowlist,
             "fence_protections": self.fence_protections,
