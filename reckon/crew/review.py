@@ -514,6 +514,12 @@ FIGURE_VERDICT_SHORTFALLS_KEY = "figure_verdict_shortfalls"
 # RUBRIC grammar this module declares for every rubric's verdict lines.
 FIGURE_LINES_KEY = "rubric_lines"
 
+# The keys a figure record may state its flat item map under, first one wins
+# per item. ``rubric_items`` is the name the brief asks for. A reviewer told
+# only to "include the rubric verdicts" wrote the same map as
+# ``rubric_verdicts``, and records filed that way answer the rubric as fully.
+FIGURE_ITEM_MAP_KEYS = ("rubric_items", "rubric_verdicts")
+
 
 def figure_line_verdicts(record: Mapping[str, Any]) -> dict[str, str]:
     """The item verdicts a record states as ``RUBRIC <item>: <verdict>`` lines.
@@ -559,12 +565,14 @@ def figure_rubric_verdicts(
     stands for every figure and clears that figure-and-item pair from the
     shortfalls.
     """
-    flat = record.get("rubric_items")
-    stated = (
-        {str(key): str(value) for key, value in flat.items()}
-        if isinstance(flat, Mapping)
-        else {}
-    )
+    stated: dict[str, str] = {}
+    for key in FIGURE_ITEM_MAP_KEYS:
+        flat = record.get(key)
+        if not isinstance(flat, Mapping):
+            continue
+        for item, verdict in flat.items():
+            if not str(stated.get(str(item)) or "").strip():
+                stated[str(item)] = str(verdict)
     lines = figure_line_verdicts(record)
     for item, verdict in lines.items():
         if not str(stated.get(item) or "").strip():

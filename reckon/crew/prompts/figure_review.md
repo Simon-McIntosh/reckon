@@ -69,7 +69,8 @@ states why the finding is not acted on.
 
 Write the review record at one of the declared write paths. It must identify
 the project, reviewed run, review run, reviewed base and head, carry
-`"rubric": "figure"`, include the rubric verdicts and findings in the shape
-above, and use a recognised review status. A figure record carries no `scores`:
+`"rubric": "figure"`, carry the verdicts as `"rubric_items"` (an object mapping
+each of the six item names above to its verdict text), include the findings in
+the shape above, and use a recognised review status. A figure record carries no `scores`:
 omit them rather than writing the six text dimensions as `null`, and do not
 claim suite-delta measurements for a figure review.
