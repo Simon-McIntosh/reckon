@@ -2954,8 +2954,9 @@ def classify_pointer(
         else:
             action = (
                 f"fix the command and PATH for backend "
-                f"{latest.get('backend') or record.get('backend')!r}, then resume "
-                f"{run_id} by hand — the lift loop stays stopped until then"
+                f"{latest.get('backend') or record.get('backend')!r}, then launch "
+                f"a fresh attempt with `reckon crew resume --run {run_id} "
+                f"--advice continue` — the lift loop stays stopped until then"
             )
     elif _stranded_launch(record, now_seconds=moment):
         # A launch cut off between composing its record and spawning a worker
