@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import ledger
 from reckon.crew import metering, recovery, recovery_watch, ticker
+from tests.helpers.git import git as _git
 
 
 @pytest.fixture()
@@ -25,15 +25,6 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({"sample": str(root / "docs")}), encoding="utf-8"
     )
     return root
-
-
-def _git(repo: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", "-C", str(repo), *args],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
 
 
 def _repository(home: Path) -> str:

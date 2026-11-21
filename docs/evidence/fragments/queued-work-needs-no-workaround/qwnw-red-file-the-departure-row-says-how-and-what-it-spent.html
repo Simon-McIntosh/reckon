@@ -45,6 +45,15 @@
   <code>all()</code> over four pairs to a loop that names the pair it failed on;
   the four expectations themselves are unchanged apart from cause 2.</p>
 
+  <p><strong>Repair.</strong> The file's local <code>_git</code> duplicated
+  <code>tests/helpers/git.py</code>'s <code>git</code> and dropped the
+  <code>RECKON_RUN_ID</code> scrubbing that helper exists to perform, so under a
+  worker's git shim the fixture's own <code>git init</code> was refused; the
+  file now imports the shared helper. Under
+  <code>PATH=reckon/worker_shims</code> with
+  <code>RECKON_RUN_ID=r-0000…-no-such-run</code>, the pre-repair file fails 2 of
+  5 with exit 97 and the repaired file passes 5 of 5.</p>
+
   <h3 id="qwnw-red-file-the-departure-row-says-how-and-what-it-spent-measured">Measured</h3>
 
   <table id="qwnw-red-file-the-departure-row-says-how-and-what-it-spent-arms">
