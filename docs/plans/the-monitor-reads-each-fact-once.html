@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="559">
+<meta name="plan-version" content="560">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -1130,6 +1130,18 @@ staged paths.</p>
 <div class="r-comment" data-section="s107" data-id="c-run-r-20261120T202733679890-a-tick-reports-what-it-recomputed" data-who="reckon-build" data-when="2026-11-21T01:44:51Z">
     <div class="r-comment-body"><p>A finished station tick and a finished sweep pass now publish under memo_counts the answers they served from cache, extended incrementally, and recomputed in full with the bytes read; over 20 live pointers, 20 streams and 20 plans a cold round reads 83,318 B in the tick and 243,205 B in the sweep pass, an unchanged round reads 0 B in both, and a round that rewrites one plan and grows one stream by 4,096 B reports exactly one 4,096 B incremental extension plus exactly one recompute for each of the plan's two memo kinds (442 B each, the rewritten plan's length) and nothing else; each parsed stream read is recorded once, by one function, into both the fleet-wide counter and the pass-level record.</p></div>
 </div>
+<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T063100562095-review-of-an-unchanged-run-store-is-decoded-once-251c036af9a9" data-who="reckon-build" data-when="2026-11-21T06:37:47.561Z">
+    <div class="r-comment-body"><p>Reviewed r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at 251c036af9 (base 43f48118fa): the answer cache honours the store token and copies every answer out, the five-case test fails at base (assert 3200 == 800) and passes at head, and the one defect is reuse — reckon/run_store.py:922 re-implements reckon/file_memo.py:562 memoized_key rather than extending it.</p></div>
+</div>
+<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T064644930406-review-of-an-unchanged-run-store-is-decoded-once-49c8d703cac1" data-who="reckon-build" data-when="2026-11-21T06:59:30.754Z">
+    <div class="r-comment-body"><p>Review of r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at head 49c8d703ca stores a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 16 and reuse 19, with one non-blocking finding that run_store.py:967 claims a single decode point that :486, :1198 and :1953 contradict, and added_failure_count 0 derived from the run's own baseline_suite and after_suite.</p></div>
+</div>
+<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T071042473145-review-of-an-unchanged-run-store-is-decoded-once-aa9cb6d54c88" data-who="reckon-build" data-when="2026-11-21T07:21:22.996Z">
+    <div class="r-comment-body"><p>review of run r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at head aa9cb6d54c, covering only the three commits gained since it was last reviewed at 49c8d703ca; scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 19; one non-blocking finding that the per-reader ContextVar comment and docstring claim per-task isolation asyncio does not give.</p></div>
+</div>
+<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T055105546646-an-unchanged-run-store-is-decoded-once" data-who="reckon-build" data-when="2026-11-21T07:10:25Z">
+    <div class="r-comment-body"><p>reckon/run_store.py answers a repeated stored_run_rows query from an answer held beside the store&#x27;s change token in file_memo&#x27;s shared bounded map, keyed also by the reader context that asked, so four identical project-A reads decode 800 rows once in total against 3,200 at base, every differently-argued call is compared with a cold-copy read, an updated row forces a fresh decode, file_memo.clear() empties the answers, and a read in a thread that has not read before decodes for itself.</p></div>
+</div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261027T045950194125-review-of-a-lift-row-reads-as-a-lift-4112d7fe4231" data-who="reckon-build" data-when="2026-10-27T05:05:34.764Z">
     <div class="r-comment-body"><p>Independent review of a-lift-row-reads-as-a-lift at head 4112d7fe423163695922e63d7b0bae188e395f45 from base 54f4934f3dd3b2238d514f8b4e085958da53395c: all six checklist items answered, total 99/120 (goal_fidelity 16, evidence 16, scope_discipline 19, durability 17, fit 18, reuse 13), added_failure_count 0 over the reviewed run's own base/head gate logs; three non-blocking findings — a merged grant is drawn twice because the grant's own row is emitted before the merged copy, the replaced lift id is inferred from event order rather than read from the producer's record, and _lift_line duplicates the trailing-cell scaffolding of _reset_line.</p></div>
 </div>
@@ -2005,15 +2017,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
-</div>
-<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T063100562095-review-of-an-unchanged-run-store-is-decoded-once-251c036af9a9" data-who="reckon-build" data-when="2026-11-21T06:37:47.561Z">
-    <div class="r-comment-body"><p>Reviewed r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at 251c036af9 (base 43f48118fa): the answer cache honours the store token and copies every answer out, the five-case test fails at base (assert 3200 == 800) and passes at head, and the one defect is reuse — reckon/run_store.py:922 re-implements reckon/file_memo.py:562 memoized_key rather than extending it.</p></div>
-</div>
-<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T064644930406-review-of-an-unchanged-run-store-is-decoded-once-49c8d703cac1" data-who="reckon-build" data-when="2026-11-21T06:59:30.754Z">
-    <div class="r-comment-body"><p>Review of r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at head 49c8d703ca stores a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 16 and reuse 19, with one non-blocking finding that run_store.py:967 claims a single decode point that :486, :1198 and :1953 contradict, and added_failure_count 0 derived from the run's own baseline_suite and after_suite.</p></div>
-</div>
-<div class="r-comment" data-section="s108" data-id="c-run-r-20261121T071042473145-review-of-an-unchanged-run-store-is-decoded-once-aa9cb6d54c88" data-who="reckon-build" data-when="2026-11-21T07:21:22.996Z">
-    <div class="r-comment-body"><p>review of run r-20261121T055105546646-an-unchanged-run-store-is-decoded-once at head aa9cb6d54c, covering only the three commits gained since it was last reviewed at 49c8d703ca; scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 19; one non-blocking finding that the per-reader ContextVar comment and docstring claim per-task isolation asyncio does not give.</p></div>
 </div>
 </section>
 </main>
