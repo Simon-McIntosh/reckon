@@ -1,0 +1,126 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T00:41:10Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:2805",
+      "id": "reuse_search-1",
+      "reason": "\u00a718 should collapse to a verification of an existing reader or delete, not a new implementation.",
+      "text": "\u00a718's whole deliverable already exists: `gate_log_failure_ids` branches on `per_file_gate_runs` (review.py:2832) and returns the union of every marked file's failure ids, and it is documented as \"the one reader both the review's added-failure count and the promotion-side readers go through\" (promotion_checks.py:2448, promotion_evidence.py:1689, pending_landing.py:956). The test file `tests/test_a_per_file_gate_log_counts_every_failure.py:75` already asserts the exact case \u00a718 lists first (three files, failures in the first two, union read), and its docstring names \u00a718's incident verbatim: \"the promotion's receipt reader once took the log's last run only ... refused a landing whose arm recorded six\". A node briefed from \u00a718 would rebuild a landed reader and re-add a passing test. The honest change, if anything remains, is to verify the landing path calls this reader rather than `last_run=True`.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_evidence.py:912",
+      "id": "reuse_search-2",
+      "reason": "\u00a713's scope is either \"route release through the existing declaration reader\" or \"extend its spellings\", and those are different nodes.",
+      "text": "\u00a713 proposes to make the release step tolerate a prose `commits` field, but `_commits_field_declares_absence` already parses a commitless role's field and its docstring names the three spellings \u00a713 lists (`none.`, `none (review node)`, `none under the repository`), with `_commitless_raw_field` gating it on `_COMMITS_ROLES`. The brief for \u00a713 must say whether the defect is that the *release* path (promotion_release.py) does not call this reader, or that the reader misses a fourth spelling \u2014 the plan text implies the former is unimplemented, which is not evident.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/forgotten_runs.py:82",
+      "id": "reuse_search-3",
+      "reason": "\u00a72 should state whether it extends the forgotten-run derivation to session granularity or is a genuinely different fact; as written it re-derives.",
+      "text": "\u00a72 derives \"a session is lost\" from follower liveness and unattended age, which `forgotten_runs` already derives: it reads `follower_registration._follower_liveness`, `runs._unattended_seconds`, and treats an unknown session as passed-threshold, with a documented threshold parameter. `session_host.live_census` (session_host.py:297) and `host_lease.process_runs_here` (host_lease.py:46) are the other two readers of the same three facts. A node briefed from \u00a72 without this map will add a fourth read of the same state and a second threshold with the same meaning.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/directory.py:296",
+      "id": "duplicate_owner-1",
+      "reason": "a second address field beside `transport` gives one row two addresses with no stated precedence.",
+      "text": "\u00a711 adds a session address to the directory view, but the view already carries one: `_observed_transport` reads a `messaging_socket_path` from a run's stream and `_run_row` attaches it as `transport`, and `directory()` already aggregates them per coordinator as `coordinator[\"transports\"]` (directory.py:804). The plan's \"the name another session uses to message it\" is a different address family (peer name from harness session files), which nothing under `reckon/` reads today \u2014 so the owner to extend is the transport resolution in `directory.py`, and the brief must say whether a peer name is a second address kind on the same field or a replacement.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/nested_launch.py:452",
+      "id": "duplicate_owner-2",
+      "reason": "\"one test states that rule for both\" is only honest if one function implements it for both.",
+      "text": "\u00a710 says the git shim directory is \"derived the same way\" and should follow the scheduler shim rule, but `worker_shim_directory` (worker_git_shim.py:259) derives from `__file__` with no image rule at all, while `shim_directory` (nested_launch.py:452) carries the whole rule: `published_reload_image`, `SOURCE_ROOT_ENV`, `sys.prefix`'s parent, keep-own fallback. Implementing \u00a710 by copying that block into `worker_git_shim.py` creates a second copy of a rule that must stay identical; the owner is `nested_launch.shim_directory`'s image-root resolution, which should be extracted to one function both callers pass their own directory name to.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/admission/readiness.py:770",
+      "id": "duplicate_owner-3",
+      "reason": "the brief must name `readiness.py` as the owner, or the node forks the wait resolution.",
+      "text": "\u00a75's `wait_class` classifies an awaiting-upstream request by what could release it, which is what `admission/readiness.py` already answers: `_wait_state` (readiness.py:770), `_ref_state` (readiness.py:1303), `wait_ref_kind` (readiness.py:448) and `dispatch_wait_blockers` (readiness.py:1080) resolve a wait's refs against the plan's declarations and the ledger. \u00a75's three classes (progressing / idle / stranded) are a naming of the states that reader already computes, so the class belongs as an enum on `_wait_state`'s result, not as a parallel pass over the same refs. A second walk of `plan-section-depends-on` and the mount registry per request is the cost of not extending it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_classification.py",
+      "id": "deep_module-1",
+      "reason": "the plan is right to describe endpoints only; this changes the brief, not the plan text.",
+      "text": "\u00a72 (lost session), \u00a75 (`wait_class`), \u00a714 (live-with-no-process settled), \u00a715 (head already landed) and \u00a722 (landing-refused duty clears) each add a distinct predicate over the same live-pointer set, evaluated per pass per pointer, and each adds its own field to the directory row or obligations view. `classify_pointer` is the one module that already hides phase, classification and process liveness behind one call, and `_run_row` (directory.py:326) is the one place a row is built so \"one run cannot read two ways across the views that render it\". Five separate derivations instead of fields on that classification is the surface-spread this item is about: five passes over N pointers where one would do, and five chances for two views to disagree. The plan does not ask for the module, so this is a brief-level finding: the node composes them into the classifier's result.",
+      "type": "deep_module",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/directory.py:804",
+      "id": "thin_wrapper-1",
+      "reason": "the justification belongs in the node brief, which is where the item says it should go.",
+      "text": "\u00a711 wraps `_observed_transport`'s result with a peer-name lookup and a boolean without saying why the existing `transport` cannot carry reachability (it already carries `observed_in`, a path into the stream it was read from, so liveness of that address is derivable). A wrapper that adds a name and a flag beside an address the row already holds is the parallel layer this item flags.",
+      "type": "thin_wrapper",
+      "would_change": false
+    },
+    {
+      "anchor": "<plan>#s2",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface surface it adds in its own text, per this item's rule.",
+      "text": "\u00a72 adds three directory fields (`last_heard_at`, `lost`, `lost_since`) and a new flight setting `lost_session.after_hours`; \u00a75 adds `wait_class` and `stranded_wait.report_after_hours`; \u00a711 adds `peer_name` and `reachable`; \u00a714 adds a settled phase and a setting; \u00a719 adds a `stop-pending` phase; \u00a724 adds a recorded command. That is six sections adding to the four counted families (public_definitions 3061, cli_options 528, mcp_views 15, refusal_families 25) and not one states what it retires or merges. The obvious candidates the plan could name and does not: \u00a72's three fields could replace `forgotten_runs`' separately-reported threshold, \u00a75's class could subsume `WAIT_UNRESOLVABLE_PREFIX`'s scattered refusal strings, and \u00a724's release command could merge with the existing resume-lane-change form \u00a717 is repairing.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2867be7b5a77832c785b656e59e56d913a37a3fa",
+  "plan_fingerprint": "cc293435d5cb8eca875e269c33968c8a1c309a73678f315b8478b26309160dfd",
+  "plan_slug": "work-of-a-lost-session-is-raised-not-left",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261121T003955085672-plan-review-of-work-of-a-lost-session-is-raised-not-left",
+  "reviewed_blob_sha": "ab6c4f75c56a6247df31611f74dc510dc3a16a9c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72, \u00a75, \u00a714 and \u00a715 each add a fresh derivation over the same live-pointer population where one classifier already answers for it, so the complexity lands in four readers instead of behind one.",
+    "duplicate_owner": "a finding \u2014 five duplicate owners, each named below with the file to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 3061, cli_options 528, mcp_views 15, refusal_families 25; six sections add view fields, flight settings, a command or a phase and none names what it retires, merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 four sections propose machinery that already exists at this revision: the per-file gate-log reader (\u00a718), the commitless-commits declaration reader (\u00a713), the shared-checkout shim-root rule (\u00a710), and the session-loss derivation (\u00a72, `forgotten_runs.py`).",
+    "thin_wrapper": "a finding \u2014 \u00a711 adds `peer_name`/`reachable` to a directory row that already carries a per-run and per-session `transport` address, with no statement of why that cannot be extended."
+  },
+  "section_digests": {
+    "_document": "f9d44b33d1fa8fdcdb4638e38bd48e3c0bfeedc955140344b43d12c95524fcf5",
+    "s1": "97d20596806fb031c34ba234b045b924725cca184c9388f84deb8af3eb261f80",
+    "s10": "f66c53b4748748a78b7c31563d293a6af014ee4a840b956d71347b0096e660f5",
+    "s11": "1341132808dce8dd3c6a87cd636c721a410a267f9f8742db1b4662c176f7b331",
+    "s12": "a864b5979050d34ceb0190d68bb129f05700640fec87e61674e144629f83a304",
+    "s13": "8c7941fb9e31f4fe6645a53b4002dc1cc43dd8c1469d99fbf1b04ef83b53d5a4",
+    "s14": "afbbd7f80d9f62aa469b45b36f858ca76dd9edcaa70832468dd8aeb4a59aa15e",
+    "s15": "876745decb177167b13adafcdf8ea882fce64a3c37c980e3deccdac1b9b9745b",
+    "s16": "6ae0e537f34a3d091c8552c4ed875f0082022dd873e2ac5036ef0ded0595a621",
+    "s17": "09713fbe37f19bcc7bba202beef3b6faeff198e83a46299ba9e56b0f165e4485",
+    "s18": "0a606130a1b501905afae13124f3f29dbfb6812b70fda2419e115282fe106037",
+    "s19": "14ac1cbfba7af1087c4209e18319bb00d110c57bcfa8d9907881a121fbc39ab1",
+    "s2": "ecdcbe285873c64a11ebf0715354dde88c6e75b834f94c16f74aae6fe987fef2",
+    "s20": "c5932b646d93f63d6bb200ccd9d622fb7068e270f01ef6e989265d7cde2bc89c",
+    "s21": "c5d6bfa9d6ac9335da56af60b650acc6f41bf7bb4d4a8750bf5141e26b5c50e6",
+    "s22": "0f5fa7900e7a1a9b4a58e589e9dd701bcbb8004bb87e93dad858f23630592e96",
+    "s23": "2e4e3c34d303b531104a4492c2113c0bfba5136774d0f8ec4f770355657e26b3",
+    "s24": "d77e3120a7dbee48dab741842b8413e97ff2a7dcf9fbb0f4ea0e83a210c10f28",
+    "s3": "36d2e2500f8d8b34f9a08006e3980de143b30d0d219a541fae72768d29dd88e7",
+    "s4": "4c9e804b0931d4eaa4cc0e387f126a2785223052e3f1bb082b948a2d149ecfb1",
+    "s5": "8ef84516e6b992074ace6d454fe0af322fa490b120e68829b962d62dc9163bcf",
+    "s6": "e4c2c3412596e5b597b5ed69e381f8b6b8cb0f20ef095352896df0c66eb9c7e2",
+    "s7": "1fcb9877d1467576d37f1eb5e1b29ed55f5ddd8991ed8313cf145d20b69f73d9",
+    "s8": "146e3d4e2ba80e663cea4c0fba4083ccd453211522f93be9cacf5ad586f95cd0",
+    "s9": "69ef00a968d16bb6e2fc3751e4cf08b229e16c3dbaea7d2c74ef9cadf9f75459"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T00:45:23.317140+00:00",
+  "total": null
+}
