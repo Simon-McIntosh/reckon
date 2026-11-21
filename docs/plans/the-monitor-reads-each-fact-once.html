@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="563">
+<meta name="plan-version" content="564">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -2020,6 +2020,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s63" data-id="c-run-r-20261121T090343041609-review-of-mrfo-record-names-come-from-the-cached-grouping-5a9bba5b8574" data-who="reckon-build" data-when="2026-11-21T09:28:21.729Z">
     <div class="r-comment-body"><p>recorded a parsed review of run r-20261121T081845340411-mrfo-record-names-come-from-the-cached-grouping at head 5a9bba5b8574b5ed13ce4b9b9bd8adfc4900444d (base 80eb238ff01eb47620e1db2599eb7f9ce7aff656): all six dimensions scored, no blocking findings, no added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s63" data-id="c-run-r-20261121T081845340411-mrfo-record-names-come-from-the-cached-grouping" data-who="reckon-build" data-when="2026-11-21T09:02:55.626Z">
+    <div class="r-comment-body"><p>review_run_record_names now reads the index&#x27;s cached per-run grouping (_document_index_maps&#x27;s `reviewed` map); the `run_names` map and its upkeep (_run_name_map, _move_run_name, _drop_run_name) are removed so `git grep -nw run_names reckon/crew/review_records.py` finds nothing, and a new case writes one record after the index is built through record_written and finds its name by its run (fails with EXIT=1 when the grouping is left stale).</p></div>
 </div>
 </section>
 </main>
