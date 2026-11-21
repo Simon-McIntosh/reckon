@@ -117,6 +117,7 @@ def _seeded_claude_home(tmp_path: Path, operator_settings: dict | None) -> Path:
         dialect_name="claude",
         operator_home=operator,
         declaration=[{"path": "settings.json", "keys": ["hooks"]}],
+        settings_file="settings.json",
     )
     return home
 
@@ -303,6 +304,7 @@ def _seeded_run(tmp_path: Path, operator_settings: dict | None = None) -> tuple:
         dialect_name="claude",
         operator_home=operator,
         declaration=[{"path": "settings.json", "keys": ["hooks"]}],
+        settings_file="settings.json",
     )
     return run, manifest, run_home
 
@@ -501,7 +503,10 @@ def test_crew_tell_refuses_an_ended_run_naming_resume(tmp_path: Path, monkeypatc
     [
         ({"fenced": False}, "not fenced"),
         ({"fenced": None}, "not fenced"),
-        ({"dialect": "codex", "fenced": True}, "Claude-dialect run homes only"),
+        (
+            {"dialect": "codex", "fenced": True},
+            "neither the inbox hook override nor its trust override",
+        ),
     ],
 )
 def test_crew_tell_refuses_a_run_with_no_hook(
@@ -593,12 +598,14 @@ def test_a_home_already_seeded_without_the_entry_gains_exactly_one(tmp_path: Pat
         dialect_name="claude",
         operator_home=operator,
         declaration=[{"path": "settings.json", "keys": [".claude", "hooks"]}],
+        settings_file="settings.json",
     )
     _worker_fence.seed_harness_home(
         home,
         dialect_name="claude",
         operator_home=operator,
         declaration=[{"path": "settings.json", "keys": ["hooks"]}],
+        settings_file="settings.json",
     )
 
     settings = json.loads((home / "settings.json").read_text())
