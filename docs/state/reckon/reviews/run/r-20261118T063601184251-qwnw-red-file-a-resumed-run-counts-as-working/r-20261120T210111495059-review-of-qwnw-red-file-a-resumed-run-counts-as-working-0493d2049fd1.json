@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_fleet_counts",
+    "reckon/crew/recovery_watch.py:_session_fleet_counts",
+    "reckon/crew/recovery_watch.py:3554",
+    "reckon/crew/recovery.py:405",
+    "reckon/crew/admission/holds.py:527",
+    "reckon/crew/runs.py:5339"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T21:55:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html",
+      "line": 150,
+      "severity": "non-blocking",
+      "text": "the crash-seat cell quotes \"assert 3.100182317197323 < 3.0\" as the primary-extraction failure, and the bullet at :169 builds the \"crossed by 0.1 s\" reading on it, but no artefact under the run's verify/ carries that line: grep for 3.100182317197323 over the whole run directory finds nothing, and the one logged crash-seat failure is verify/imp-head-merge.log:769 assert 5.744472943246365 < 3.0. The claim that the id can fail is corroborated by that log, so the defect is the unbacked figure and the load reading derived from it, which a later reader cannot check."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html",
+      "line": 153,
+      "severity": "non-blocking",
+      "text": "the body of the gained commit 0493d2049f says \"the reload case fails intermittently in the base tree\" while the row this same commit writes at :154 records 3 passed in the base tree and the bullet at :172 states the case passes in every isolated run in both trees, so the landed commit message carries the reading its own content retracts and a reader of git show 0493d2049f is left with the withdrawn claim."
+    }
+  ],
+  "justifications": {
+    "durability": "the rule's guard tests/test_a_resumed_run_counts_as_working.py::test_a_live_worker_that_predates_its_manifest_keeps_todays_verdict fails at the base revision (verify/base-run.log, 1 failed 4 passed, EXIT=1) and passes at the head (verify/gate-head-srun.log, EXIT=0), but this delta adds no assertion and its table figures are unasserted prose.",
+    "evidence": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:150 still quotes assert 3.100182317197323 < 3.0 for a failure no log under verify/ carries, while verify/imp-head-merge.log:769 records the same id as assert 5.744472943246365 < 3.0.",
+    "fit": "the corrected rows and the rewritten bullets at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:135-174 follow the surrounding table, h3 and ul idiom of the sibling fragments in docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal_fidelity": "verify/gate-head-srun.log:1-8 records 63 passed with EXIT=0 at revision 0493d2049fd18d257b37205cc243477368c485cc, so the named test file passes in full at the reviewed head.",
+    "reuse": "git diff 028b6f343989..0493d2049f adds no function, class or module; the per-id measurement it reports is cited from the run's own verify/run-ids.sh rather than re-implemented in the repository.",
+    "scope_discipline": "git diff 028b6f343989..0493d2049f changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html (+9 -12), inside the fragment path prompt.txt:412 declares."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261120T210111495059-review-of-qwnw-red-file-a-resumed-run-counts-as-working-0493d2049fd1",
+  "review_text": "VERDICT goal: read the node goal \"Make tests/test_a_resumed_run_counts_as_working.py pass in full on the primary branch\" at prompt.txt:38; verify/gate-head-srun.log:1-8 records 63 passed with EXIT=0 at revision 0493d2049fd18d257b37205cc243477368c485cc as an all_debug job 1333955 with SLURM_JOB_ID unset, and the gained commit only corrects the evidence fragment.\nVERDICT done_when: read done_when from node.json; comm -13 of verify/imp-base-failed.txt (24 ids) against verify/imp-head-merge-failed.txt (17 ids) reproduces exactly the four ids docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:135-156 names, and the per-id cells reproduce from verify/ids-base-probe.log (base-b24fe95a78, base-tree HEAD b24fe95a78) and verify/ids-primary-probe.log (primary-ccbce51f79, main-tree HEAD ccbce51f7).\nVERDICT write_paths: read the declared scope at prompt.txt:411-412 (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, the figures path); git diff 028b6f343989..0493d2049f changes one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html, inside it; git diff f9517964..0493d2049f likewise changes that fragment alone (+78 -10).\nVERDICT manifest: read manifest.md; it records status complete, five commits, the head gate at 0493d2049f (63 passed EXIT=0), and baseline_suite and after_suite now name logs that exist (verify/suite-base-repair.log and verify/suite-head-repair.log, each 58 passed EXIT=0), so the prior review's finding that both fields pointed at no file is answered.\nVERDICT diff: read the single gained commit 0493d2049f against the prior review's head 028b6f3439; it rewrites the added-ids table caption (:129-132), changes the reload-deferral row from \"1 failed, 2 passed\" to 3 passed in both trees (:153-156) and replaces the three bullets with two at :163-174, touching no product or test file.\nCALL_SITES: reckon/crew/recovery_watch.py:_fleet_counts, reckon/crew/recovery_watch.py:_session_fleet_counts, reckon/crew/recovery_watch.py:3554, reckon/crew/recovery.py:405, reckon/crew/admission/holds.py:527, reckon/crew/runs.py:5339\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: verify/gate-head-srun.log:8 records 63 passed with EXIT=0 at revision 0493d2049f, so the named test file passes in full at the reviewed head.\nSCORE evidence: 15\nJUSTIFICATION evidence: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:150 still quotes assert 3.100182317197323 < 3.0 for a failure no log under verify/ carries, while verify/imp-head-merge.log:769 records the same id as assert 5.744472943246365 < 3.0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only path in git diff 028b6f343989736c9f3e9ad5aab3fc938e8d466f..0493d2049fd18d257b37205cc243477368c485cc is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html, inside the declared fragment path.\nSCORE durability: 15\nJUSTIFICATION durability: the guarded rule is shown red at base and green at head (verify/base-run.log EXIT=1 against verify/gate-head-srun.log EXIT=0), but the gained commit adds no assertion and the table figures it adds at :135-156 are prose no test reads.\nSCORE fit: 19\nJUSTIFICATION fit: the corrected rows keep the table, h3 id and ul structure the fragment already used at :128-175, matching the sibling fragments in docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE reuse: 20\nJUSTIFICATION reuse: git diff 028b6f343989..0493d2049f adds no definition to reckon/, and the per-id measurement is cited from the run's verify/run-ids.sh rather than re-implemented in the repository.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:150 non-blocking: the crash-seat cell quotes \"assert 3.100182317197323 < 3.0\", and the bullet at :169 builds a \"crossed by 0.1 s\" reading on it, but grep over the whole run directory finds that figure in no artefact and the only logged crash-seat failure is verify/imp-head-merge.log:769 assert 5.744472943246365 < 3.0.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:154 non-blocking: the body of commit 0493d2049f says \"the reload case fails intermittently in the base tree\" while the row that commit writes records 3 passed in the base tree and the bullet at :172 states the case passes in every isolated run in both trees, so the landed commit message carries the reading its own content retracts.\n",
+  "reviewed_base_sha": "028b6f343989736c9f3e9ad5aab3fc938e8d466f",
+  "reviewed_head_sha": "0493d2049fd18d257b37205cc243477368c485cc",
+  "reviewed_run_id": "r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working",
+  "reviewer_run_id": "r-20261120T210111495059-review-of-qwnw-red-file-a-resumed-run-counts-as-working-0493d2049fd1",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T22:12:48.199404+00:00",
+  "total": 108
+}

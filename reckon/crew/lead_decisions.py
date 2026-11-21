@@ -168,7 +168,55 @@ def record_decision(record: Mapping[str, Any]) -> dict[str, Any]:
     return data
 
 
-def _request_identity(pointer: Mapping[str, Any]) -> tuple[str, str]:
+def record_decision_at(
+    record: Mapping[str, Any],
+    *,
+    decision_id: str,
+    recorded_at: str | None = None,
+) -> dict[str, Any]:
+    """Record or replace a decision under an identity the caller owns.
+
+    A rule that raises one decision for a fixed subject and refreshes it as the
+    work it lists changes cannot take a fresh identity on every pass, so it
+    supplies its own. Validation, path resolution and the atomic write are the
+    store's own, exactly as for a uuid-recorded decision; the fields that rule
+    keeps beside the shared ones (its subject and the records it lists) travel
+    on the record and are preserved across validation. ``recorded_at``
+    preserves the first recording time across updates.
+    """
+    path = decision_path(decision_id)
+    data = {
+        **record,
+        **validate_decision(record),
+        "id": decision_id,
+        "recorded_at": recorded_at or datetime.now(UTC).isoformat(),
+    }
+    write_json_atomically(path, data, fsync_directory=True)
+    return data
+
+
+def close_decision_at(record: Mapping[str, Any], *, decision_id: str) -> dict[str, Any]:
+    """Persist a decision's recorded answer in the store.
+
+    Unlike :func:`record_decision_at`, this does not re-run the question's
+    validation: the record was validated when it was raised, and the answer it
+    now carries is outcome data — the per-record choices and who made them —
+    rather than a fresh question. The identity, path resolution and atomic
+    write are still the store's own, so a decision is never written beside it.
+    """
+    data = {**record, "id": decision_id}
+    write_json_atomically(decision_path(decision_id), data, fsync_directory=True)
+    return data
+
+
+def request_identity(pointer: Mapping[str, Any]) -> tuple[str, str]:
+    """The plan and section a request names.
+
+    The one statement of a request's identity: every reader that needs the
+    plan and section a pointer belongs to resolves them here, so a record's
+    identity cannot drift between the writer that raises it and the reader
+    that lists the work it holds.
+    """
     node = pointer.get("node") or {}
     options = pointer.get("dispatch_options") or {}
     return (
@@ -185,7 +233,7 @@ def _held_requests(
     for pointer in pointers:
         if pointer.get("project") != decision["project"]:
             continue
-        plan, section = _request_identity(pointer)
+        plan, section = request_identity(pointer)
         hold = pointer.get("queue_hold") or {}
         bound = (hold.get("decision_id") or pointer.get("decision_id")) == decision[
             "id"

@@ -1,0 +1,106 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "fails when the landing's receipt-agreement check refuses a per-file log that fails the same six ids across the first and third file, which is what the pre-routing reader did (confirmed: at 3ab436fe the case raises CrewError 'reaches no pytest summary').",
+      "independence": "the receipt the check compares against is the arm JSON the test writes, but the assertion is the absence of a refusal, and the pre-routing revision reddens it, so the guard is verified by reinstating the regression rather than by observing green.",
+      "limit": "it calls _text_the_receipt_describes indirectly through _require_gate_log_agrees; it does not assert the reader's returned text directly.",
+      "location": "tests/test_a_landing_reads_a_per_file_suite_log_whole.py:140 _require_gate_log_agrees must not raise"
+    },
+    {
+      "conditions_for_failure": "fails when the red-base admission admits a head id the base does not cover.",
+      "independence": "it does not raise, which is the positive half; the negative half is :148.",
+      "limit": "a green assertion alone would be weak, verified by the differential with the pre-routing arm.",
+      "location": "tests/test_a_landing_reads_a_per_file_suite_log_whole.py:143 _require_verdict_matches_exit_status must not raise"
+    },
+    {
+      "conditions_for_failure": "fails when a head log that adds one id in the middle file is refused without naming that id, or names a covered base id as added.",
+      "independence": "ADDED_ID and SIX_IDS are test constants written independently into the head log and the arm; the error text must contain ADDED_ID and exclude the six base ids, which the code cannot satisfy without reading the middle file.",
+      "limit": "substring checks on a message accept an id named anywhere in it, so a refusal that echoed all ids would pass the 'in' check only if it also dropped the six from its text.",
+      "location": "tests/test_a_landing_reads_a_per_file_suite_log_whole.py:164-166 ADDED_ID present and SIX_IDS absent from the refusal"
+    },
+    {
+      "conditions_for_failure": "fails if _text_the_receipt_describes transforms an unmarked single-run log rather than returning it whole.",
+      "independence": "not independent of the input: the assertion compares the call's output to the same constant it handed in.",
+      "limit": "it is an identity pin, not a guard for the per-file regression; both the pre- and post-routing readers return a single-run log whole, so it survives reverting the per-file route.",
+      "location": "tests/test_a_landing_reads_a_per_file_suite_log_whole.py:174-175 output == SINGLE_RUN_LOG"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:_require_gate_log_agrees",
+    "reckon/crew/promotion_evidence.py:_require_verdict_matches_exit_status",
+    "reckon/crew/promotion_evidence.py:_text_the_receipt_describes",
+    "reckon/crew/promotion_evidence.py:_head_arm_log_failure_ids"
+  ],
+  "completed_at": "2026-11-21T02:34:00Z",
+  "dispatched_at": "2026-11-21T02:12:30Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_reads_a_per_file_suite_log_whole.py",
+      "line": "174",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert _text_the_receipt_describes(SINGLE_RUN_LOG) == SINGLE_RUN_LOG` compares the function's output to the same constant the test handed it, so it is an identity pin rather than a guard for the per-file regression it sits beside; both the pre-routing and the landed readers return an unmarked single-run log whole, so the assertion survives reverting the per-file route. The per-file regression is genuinely guarded by :129 and :148, so this finding does not hold the node."
+    },
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-landing-reads-a-per-file-suite-log-whole.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node declared this fragment and docs/figures/work-of-a-lost-session-is-raised-not-left/wlsr-a-landing-reads-a-per-file-suite-log-whole as write paths, but the delivered diff touches only the test file; neither the evidence fragment nor a figure exists at the reviewed head (git cat-file confirms it absent at 26582d83). The manifest's `landing:` and `evidence_inputs:` carry what a coordinator needs to write the fragment, so the omission is recoverable rather than a lost record."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against ff3bb24bcf916047144aadb4c3fc0315e9687219: one commit, 26582d83f81960a3b5b62a288aefbde07f928905, adds only the 182-line test file tests/test_a_landing_reads_a_per_file_suite_log_whole.py and changes no product source.",
+    "done_when": "the done_when names three cases and a negative control; the manifest records 3 passed for the file, and I re-ran it at 26582d83 (3 passed, EXIT=0) and at 3ab436fe = 59e524393d^ (2 failed / 1 passed, EXIT=1). The literal control 'at the base revision the first case must be refused' is unsatisfiable at the node's base ff3bb24bcf because the routing already existed there (59e524393d is an ancestor of ff3bb24bcf); the worker took the control at 59e524393d^ and I reproduced that independently.",
+    "goal": "the plan \u00a718 deliverable is that the landing's reading of a suite receipt goes through the existing per-file union reader with no second reader; the landed change preserves that by pinning it at tests/test_a_landing_reads_a_per_file_suite_log_whole.py:129-182, because reckon/crew/promotion_evidence.py:1673 _text_the_receipt_describes already returns the whole log when review_module.per_file_gate_runs is not None.",
+    "manifest": "read; it records status complete, commit 26582d83f81960a3b5b62a288aefbde07f928905, a `tests:` line and `test_evidence` naming the file and the pre-routing negative control, changed_paths holding the one test file, and null baseline_suite/after_suite (an unarmed run).",
+    "write_paths": "declared: the fragment HTML, the figures directory, and tests/test_a_landing_reads_a_per_file_suite_log_whole.py; the diff touches only the test file, inside the declared set, and produces neither the fragment nor a figure."
+  },
+  "justifications": {
+    "durability": "tests/test_a_.._whole.py:140 and :161 redden on the pre-routing revision (I re-ran at 3ab436fe: 2 failed, 1 passed, EXIT=1), so the guard is verified by reinstating the regression, though :174 is an identity pin that survives that reversion.",
+    "evidence": "the head arm re-run at 26582d83 reads '3 passed in 0.32s' EXIT=0 and the negative control at 3ab436fe reads '2 failed, 1 passed in 1.46s' EXIT=1, both saved under the review run directory; the reviewed run was unarmed so added_failure_count is 0 over a null baseline_suite/after_suite pair rather than a measured zero of an armed suite.",
+    "fit": "tests/test_a_.._whole.py reuses the same promotion_evidence private-helper idiom as tests/test_a_per_file_gate_log_counts_every_failure.py:125 and names no plan, stage, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:1673 already routed a per-file log whole at the base (59e524393d is an ancestor of ff3bb24bcf), so the diff adds the regression guard rather than a reimplementation, which is what the node contract asks when behaviour is already correct.",
+    "reuse": "the diff adds no production definition; it drives the existing owner reckon/crew/review.py:2805 gate_log_failure_ids and its per_file_gate_runs at :2742, and no second reader is written.",
+    "scope_discipline": "git diff ff3bb24bcf..26582d83 --stat lists one path, tests/test_a_landing_reads_a_per_file_suite_log_whole.py, inside the declared write paths and changing no product or plan file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan \u00a718 deliverable is that the landing's reading of a suite receipt goes through the existing per-file union reader with no second reader; the landed change preserves that by pinning it at tests/test_a_landing_reads_a_per_file_suite_log_whole.py:129-182, because reckon/crew/promotion_evidence.py:1673 _text_the_receipt_describes already returns the whole log when review_module.per_file_gate_runs is not None.\nVERDICT done_when: the done_when names three cases and a negative control; the manifest records 3 passed and I re-ran at 26582d83 (3 passed, EXIT=0) and at 3ab436fe = 59e524393d^ (2 failed / 1 passed, EXIT=1); the literal control at the node base ff3bb24bcf is unsatisfiable because the routing already existed there (59e524393d is an ancestor of ff3bb24bcf), so the control was taken one commit earlier and that reproduction was confirmed independently.\nVERDICT write_paths: declared the fragment HTML, the figures directory and tests/test_a_landing_reads_a_per_file_suite_log_whole.py; the diff touches only the test file, inside the declared set, and produces neither the fragment nor a figure.\nVERDICT manifest: read; it records status complete, commit 26582d83f81960a3b5b62a288aefbde07f928905, a `tests:` line and `test_evidence` naming the file and the pre-routing negative control, changed_paths holding the one test file, and null baseline_suite/after_suite.\nVERDICT diff: read commit by commit against ff3bb24bcf916047144aadb4c3fc0315e9687219; one commit 26582d83 adds only the 182-line test file and changes no product source.\nCALL_SITES: reckon/crew/promotion_evidence.py:_require_gate_log_agrees, reckon/crew/promotion_evidence.py:_require_verdict_matches_exit_status, reckon/crew/promotion_evidence.py:_text_the_receipt_describes, reckon/crew/promotion_evidence.py:_head_arm_log_failure_ids\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:1673 already routed a per-file log whole at the base (59e524393d is an ancestor of ff3bb24bcf), so the diff adds the regression guard rather than a reimplementation, which is what the node contract asks when behaviour is already correct.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head arm re-run at 26582d83 reads '3 passed in 0.32s' EXIT=0 and the negative control at 3ab436fe reads '2 failed, 1 passed in 1.46s' EXIT=1, both saved under the review run directory; the reviewed run was unarmed so added_failure_count is 0 over a null baseline_suite/after_suite pair rather than a measured zero of an armed suite.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff ff3bb24bcf..26582d83 --stat lists one path, tests/test_a_landing_reads_a_per_file_suite_log_whole.py, inside the declared write paths and changing no product or plan file, though the declared fragment and figures path were not produced.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_reads_a_per_file_suite_log_whole.py:140 and :161 redden on the pre-routing revision (re-run at 3ab436fe: 2 failed, 1 passed, EXIT=1), so the guard is verified by reinstating the regression, though :174 is an identity pin that survives that reversion.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_landing_reads_a_per_file_suite_log_whole.py reuses the same promotion_evidence private-helper idiom as tests/test_a_per_file_gate_log_counts_every_failure.py:125 and names no plan, stage, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition; it drives the existing owner reckon/crew/review.py:2805 gate_log_failure_ids and its per_file_gate_runs at :2742, and no second reader is written.\nFINDING tests/test_a_landing_reads_a_per_file_suite_log_whole.py:174 non-blocking: `assert _text_the_receipt_describes(SINGLE_RUN_LOG) == SINGLE_RUN_LOG` compares the function's output to the same constant the test handed it, so it is an identity pin rather than a guard for the per-file regression it sits beside; both pre-routing and landed readers return an unmarked single-run log whole, so the assertion survives reverting the per-file route, though :129 and :148 guard the regression.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-landing-reads-a-per-file-suite-log-whole.html:1 non-blocking: the node declared this fragment and the figures directory as write paths but delivered only the test file; neither exists at the reviewed head, though the manifest's landing and evidence_inputs carry what the coordinator needs to write the fragment.\n",
+  "review_method": "Read-only review of the source node record, its manifest, the single landed commit, the production landing readers and the existing per-file union reader; re-ran only the named test at head and at the pre-routing revision to verify the negative control.",
+  "review_run_id": "r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "26582d83f81960a3b5b62a288aefbde07f928905",
+  "reviewed_run_id": "r-20261121T010318336399-wlsr-a-landing-reads-a-per-file-suite-log-whole",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "source_commits": [
+    "26582d83f81960a3b5b62a288aefbde07f928905"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": null,
+    "baseline_suite": null,
+    "negative_control": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819/negative-control-pre-59e524393d.log",
+      "observed_summary": "2 failed, 1 passed in 1.46s",
+      "revision": "3ab436fe38858d361bdd38ee97ab437d867b2043"
+    },
+    "scoped_gate": {
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T021157365565-review-of-wlsr-a-landing-reads-a-per-file-suite-log-whole-26582d83f819/gate-head-26582d83.log",
+      "observed_summary": "3 passed in 0.32s",
+      "revision": "26582d83f81960a3b5b62a288aefbde07f928905"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:34:00.000000+00:00",
+  "total": 108
+}

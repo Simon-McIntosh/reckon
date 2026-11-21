@@ -60,6 +60,7 @@ from reckon.crew.node import (
     _claim_commit_answer,
     _git_answer,
     _integration_ref_revision,
+    claim_repository,
     parse_duration,
 )
 from reckon.crew.open_run_index import operational_read
@@ -368,6 +369,19 @@ PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 # stalled row it holds a turn open: only the session can fix the ref or drop
 # the request.
 WAIT_UNRESOLVABLE_DUTY_KIND = "wait-unresolvable"
+
+# A request waiting on an upstream that is still open and that no run or request
+# is building. Unlike the unresolvable kind this wait can still resolve -- the
+# owner or a coordinator can queue the upstream -- so the row is a prompt rather
+# than a lost cause. It is reported on the pass that first sees it past the
+# threshold and not again.
+WAIT_IDLE_DUTY_KIND = "wait-idle"
+
+# A request the admission pass removed because an upstream it named can never
+# land -- the plan is gone, closed, or no longer carries the section. The row
+# carries the pass's own reason so the owner learns why the request went away
+# without reading the discard store.
+UPSTREAM_RETIRED_DUTY_KIND = "wait-retired-upstream"
 
 # A run the dispatcher placed on a default lane because its pick failed rather
 # than answered. The route is not the router's reading of the run, so the row
@@ -2119,6 +2133,31 @@ def admission_verdicts() -> dict[str, dict[str, Any]]:
     return verdicts
 
 
+def recent_upstream_retirements() -> list[dict[str, Any]]:
+    """The upstream retirements the most recent admission pass recorded.
+
+    A retired request has no pointer left to read, so the pass's own record is
+    the only account of it. Only the last record's list is returned: the pass
+    that retired the request carried it, and a later pass carrying none means
+    the retirement has already been read.
+    """
+    path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    for line in reversed(text.splitlines()):
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        retired = record.get("retired")
+        if not isinstance(retired, list):
+            return []
+        return [dict(row) for row in retired if isinstance(row, Mapping)]
+    return []
+
+
 def _stalled_item(
     row: Mapping[str, Any], *, stall: Mapping[str, Any], now: datetime
 ) -> dict[str, Any]:
@@ -2668,7 +2707,7 @@ def _selected_review(
         str(tree or ""),
         review_records.review_entries_signature(project, run_id),
     )
-    return file_memo.memoized_key(
+    return review_records.memoised_read(
         "obligation_review_selection",
         key,
         lambda: recovery.select_review_for_head(project, run_id, head, tree=tree),
@@ -2953,6 +2992,28 @@ def _review_duty_item(
     return item
 
 
+def _refused_head_is_landed(
+    pointer: Mapping[str, Any], head: str, *, now: datetime
+) -> bool:
+    """Whether a run's tree is carrying the head its landing was refused at.
+
+    The answer is the departure reader's own ancestry probe: a head the primary
+    branch reaches is a landing that has finished, whatever a refusal recorded
+    against it still says. A checkout that cannot be resolved, a head the branch
+    cannot be asked about, or an unreadable branch reads as unlanded, because a
+    refusal withdrawn on a broken probe would hide work a coordinator still owes.
+    """
+    if not head:
+        return False
+    checkout = claim_repository(pointer)
+    if checkout is None:
+        return False
+    return (
+        recovery_classification._head_on_primary_branch(checkout, head, now.timestamp())
+        is True
+    )
+
+
 def _review_duty_detail(
     project: str,
     row: Mapping[str, Any],
@@ -3086,6 +3147,11 @@ def _review_duty_detail(
         and recovery.same_revision(str(landing.get("head") or ""), resumed_head)
         and str(landing.get("guard") or "").strip()
     ):
+        if _refused_head_is_landed(pointer, resumed_head, now=now):
+            # The refusal describes a merge the primary branch has since taken.
+            # A duty left standing would spend a coordinator's repair on
+            # evidence for a revision nothing is waiting for.
+            return None
         item = _live_item(row, kind="landing-refused", now=now)
         item["head"] = resumed_head
         item["reason"] = f"automatic landing refused: {landing['guard']}"
@@ -4208,7 +4274,7 @@ def stored_review_for_run(
     """
     head, tree = recovery._review_head_and_tree(pointer)
     if not head:
-        return file_memo.memoized_key(
+        return review_records.memoised_read(
             "obligation_headless_review",
             (project, run_id, review_records.review_entries_signature(project, run_id)),
             lambda: (
@@ -4239,7 +4305,7 @@ def _review_is_hot(
     superseding this one, read from the store's own rows so a by-head selection
     cannot hide a later round.
     """
-    later = file_memo.memoized_key(
+    later = review_records.memoised_read(
         "obligation_review_rounds",
         (project, run_id, review_records.review_entries_signature(project, run_id)),
         lambda: [
@@ -4294,7 +4360,7 @@ def _sub_floor_items_by_session(
         if not run_id:
             continue
         signature = review_records.review_entries_signature(project, run_id)
-        newest = file_memo.memoized_key(
+        newest = review_records.memoised_read(
             "obligation_review_presence",
             (project, run_id, signature),
             lambda run_id=run_id: review_module.read_review(project, run_id),
@@ -4906,6 +4972,57 @@ def _obligations_view(
                     f"fix the wait or drop the request: no project holds the run "
                     f"this request waits on, so it can never be released while "
                     f"the ref stands (reckon crew discard --run {run_id})"
+                ),
+            }
+        )
+    # A request whose upstream is still open and that nobody is building waits
+    # for work no one has taken. The pass records the report on the request the
+    # first time it crosses the threshold, so the row exists for an owner who is
+    # looking and is never re-raised by a later pass.
+    for pointer in live_pointers:
+        if str(pointer.get("wait_class") or "") != "idle":
+            continue
+        if not pointer.get("idle_reported_at"):
+            continue
+        if str(pointer.get("session") or "") != session:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        started = parse_utc(pointer.get("waits_at") or pointer.get("created_at"))
+        items.append(
+            {
+                "kind": WAIT_IDLE_DUTY_KIND,
+                "run_id": run_id,
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "plan": str(
+                    pointer.get("plan") or (pointer.get("node") or {}).get("plan") or ""
+                ),
+                "age_seconds": (int((now - started).total_seconds()) if started else 0),
+                "reason": str(pointer.get("wait_detail") or ""),
+                "next_command": (
+                    f"queue the upstream this request waits on, or drop the "
+                    f"request (reckon crew discard --run {run_id})"
+                ),
+            }
+        )
+    # A request the pass removed because an upstream could never land. The
+    # departure is recorded, so the owner is told why it went rather than left
+    # to notice a request that is no longer there.
+    for row in recent_upstream_retirements():
+        if str(row.get("session") or "") != session:
+            continue
+        if str(row.get("project") or project) != project:
+            continue
+        items.append(
+            {
+                "kind": UPSTREAM_RETIRED_DUTY_KIND,
+                "run_id": str(row.get("run_id") or ""),
+                "node": str(row.get("node") or ""),
+                "plan": str(row.get("plan") or ""),
+                "age_seconds": 0,
+                "reason": str(row.get("reason") or ""),
+                "next_command": (
+                    "the request was retired because its upstream can never land; "
+                    "examine the discard record if the plan is expected to change"
                 ),
             }
         )

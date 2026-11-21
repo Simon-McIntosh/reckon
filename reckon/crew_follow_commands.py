@@ -2764,6 +2764,12 @@ def _follow_watch_lines(
 
     for printed in path.flush(now=float("inf")):
         yield printed
+    if subscriber is not None:
+        # The subscriber paints through a row path of its own, so the rows it
+        # is holding are not in the path flushed above. Every ending of this
+        # arming hands them over first: a settle, an elapsed lifetime and a
+        # stop all leave a pane that will read no later row.
+        yield from subscriber.drain()
 
     if settled:
         yield _follower_settle_event(project, session=session)

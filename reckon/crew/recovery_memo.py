@@ -676,26 +676,21 @@ def _read_review_once(
     then. Without them a later derivation of the same fleet reports no finding
     at all and its duties disagree with the ones a sweep of the same files
     publishes.
+
+    This key is the run's classification inputs rather than the store's current
+    entries, so an answer held here outlives a record being deleted. The replay
+    is what keeps that honest: a finding is noted only while the file it names
+    is still there. :func:`reckon.crew.review_records.memoised_read` is the
+    holder, shared with the callers whose keys do name the store's entries.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
         return reader()
     digest = _classification_key(_review_read_inputs(record, tree=tree))
-
-    def read_carrying_findings() -> tuple[Any, tuple[dict[str, str], ...]]:
-        with collect_read_failures() as read_failures:
-            answer = reader()
-        return answer, tuple(dict(entry) for entry in read_failures)
-
-    answer, findings = file_memo.memoized_key(
-        "stored_review_answer",
-        (project, run_id, *selector, digest),
-        read_carrying_findings,
+    return memoised_read(
+        "stored_review_answer", (project, run_id, *selector, digest), reader
     )
-    for finding in findings:
-        note_read_failure(finding)
-    return answer
 
 
 # Tokens a terminal message carries that belong to the run rather than to the
@@ -1014,8 +1009,7 @@ from .review_records import (  # noqa: E402
     _record_identity,
     _store_paths,
     _tick_store,
-    collect_read_failures,
-    note_read_failure,
+    memoised_read,
     review_run_record_names,
     review_store_tick,
 )

@@ -157,14 +157,22 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         ("new-node", "working", "blocked"),
         # A completed manifest without an independent review sits as
         # completed_unpromoted until the review lands, which is the state a
-        # departure then leaves.
+        # departure then leaves. The word a departure takes on is read from the
+        # ledger row its promotion wrote, and a row whose delivered head is not
+        # an ancestor of the primary branch reads as the delivered word rather
+        # than as landed — this fixture records a head no branch carries, so the
+        # departure reads "complete" and only a merged head reads "promoted".
         ("new-node", "blocked", "completed_unpromoted"),
-        ("new-node", "completed_unpromoted", "promoted"),
+        ("new-node", "completed_unpromoted", "complete"),
         ("existing-node", "dispatched", "withdrawn"),
     ]
-    # Each triple is the fleet after that transition, and the three buckets
-    # partition it — a blocked or delivered run leaves the working count, which
-    # is what a reader takes "working" to mean.
+    # Each triple is the fleet's work after that transition. A blocked or
+    # delivered run leaves the working count, which is what a reader takes
+    # "working" means. The unpromoted figure counts the state each row is drawn
+    # in — a completed run whose independent review is still owed sits as
+    # completed_unpromoted and is delivered work waiting on a gate, so it counts
+    # there — and a run that leaves the fleet is in none of the cells, which is
+    # why the departure one line later drops the figure again.
     assert [
         (event["working"], event["blocked"], event["unpromoted"])
         for event in transitions
@@ -228,20 +236,37 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)s")
+    # Every bucket the fleet can show takes a cell, so the promotion queue's
+    # cell sits between the parked-request cell and the stuck cell and carries
+    # the oldest request's position after its own ``@`` marker, right-aligned to
+    # the same fixed digit width and dimmed to the marker when nothing waits.
+    counters = re.compile(
+        r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)p@\s*\S+\s+(\d+)s"
+    )
 
     block_ends: set[int] = set()
     row_ends: set[int] = set()
+    # (working, in review, help, delivered, waiting, promotion queue, stuck,
+    # oldest promotion position). The last case carries a queued promotion so
+    # the promotion cell is read for its own count and position rather than
+    # only for the space it takes between the waiting and stuck cells.
     cases = (
-        (10, 12, 0, 0, 0, 0),
-        (99, 0, 99, 0, 0, 1),
-        (99, 99, 99, 99, 0, 12),
-        (1, 0, 0, 0, 0, 0),
-        (3, 4, 1, 0, 2, 99),
+        (10, 12, 0, 0, 0, 0, 0, None),
+        (99, 0, 99, 0, 0, 0, 1, None),
+        (99, 99, 99, 99, 0, 0, 12, None),
+        (1, 0, 0, 0, 0, 0, 0, None),
+        (3, 4, 1, 0, 2, 3, 99, 7),
     )
-    for index, (working, reviewing, blocked, unpromoted, queued, stuck) in enumerate(
-        cases
-    ):
+    for index, (
+        working,
+        reviewing,
+        blocked,
+        unpromoted,
+        queued,
+        promotion,
+        stuck,
+        position,
+    ) in enumerate(cases):
         # A grid per case: the renderer remembers the last destination state of
         # a run, so reusing one run id would suppress the rows after the first.
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -255,6 +280,8 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
                     blocked=blocked,
                     unpromoted=unpromoted,
                     waiting=queued,
+                    promotion_queued=promotion,
+                    oldest_promotion_position=position,
                     stuck=stuck,
                 )
             ),
@@ -266,6 +293,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
             blocked,
             unpromoted,
             queued,
+            promotion,
             row,
         )
         assert match.groups() == (
@@ -274,17 +302,20 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
             str(blocked),
             str(unpromoted),
             str(queued),
+            str(promotion),
             str(stuck),
         ), row
-        # Each count is its own whitespace-separated token, and no bucket's
-        # letter is followed straight away by the next count's digits.
-        assert len(match.group(0).split()) == 6, row
+        # Each count is its own whitespace-separated token, the promotion
+        # cell's position rides a token of its own, and no bucket's letter is
+        # followed straight away by the next count's digits.
+        assert len(match.group(0).split()) == 8, row
         for left, right, letter in (
             (working, reviewing, "w"),
             (reviewing, blocked, "r"),
             (blocked, unpromoted, "h"),
             (unpromoted, queued, "d"),
-            (queued, stuck, "q"),
+            (queued, promotion, "q"),
+            (promotion, stuck, "p"),
         ):
             assert f"{left}{letter}{right}" not in row, row
         # Both ends of the block come off the rendered row itself. The block's
@@ -308,10 +339,12 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     keeps one block width. A larger count is the case that forces a choice, and
     the renderer widens that one row instead of eliding the figure: a reader
     watching a queue pass a hundred needs the number, not a marker. The extra
-    column lengthens the row by one, and the counts stay six tokens.
+    column lengthens the row by one, and the counts stay seven tokens.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)s")
+    counters = re.compile(
+        r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)p@\s*\S+\s+(\d+)s"
+    )
 
     def render(index: int, **counts: int) -> str:
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -320,12 +353,12 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     kept = render(0, working=99, blocked=99, unpromoted=99, waiting=99)
     widened = render(1, working=100, blocked=9, unpromoted=0, waiting=0)
 
-    # The figure survives whole, as five tokens, with the wide count's own cell
-    # carrying the third digit.
+    # The figure survives whole, as seven counts, with the promotion queue's
+    # cell in its own place between the waiting and stuck cells.
     assert "100w" in widened, widened
     match = counters.search(widened)
     assert match is not None, widened
-    assert match.groups() == ("100", "0", "9", "0", "0", "0"), widened
+    assert match.groups() == ("100", "0", "9", "0", "0", "0", "0"), widened
 
     # The widening is the wide row's alone: it costs one column, and neither row
     # wraps — each ends within the pane's width.

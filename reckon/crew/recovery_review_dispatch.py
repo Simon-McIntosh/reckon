@@ -885,7 +885,12 @@ def _readable_standing_review(review_run_id: str) -> Mapping[str, Any] | None:
         return None
 
 
-def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
+def _discard_stranded_review(
+    review_run_id: str,
+    *,
+    reason: str,
+    fields: Mapping[str, Any] | None = None,
+) -> str:
     """Discard a review pointer whose launch never spawned a worker.
 
     Returns a sentence recording what happened, for the reviewed run's own
@@ -893,7 +898,10 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     run directory when the run has one, and in the shared discards spool when it
     does not — a review whose launch never spawned a worker has no run directory
     to hold it. The reason is written onto whichever marker was written, because
-    the marker is the durable place a later reader asks why the pointer went. A
+    the marker is the durable place a later reader asks why the pointer went.
+    ``fields`` adds a caller's own facts to that same marker, so a retirement
+    whose departure needs more than a sentence writes them here rather than
+    reading the marker back and rewriting it. A
     discard that refuses or fails is reported rather than raised: the reflex is
     a sweep that must reach the rest of the fleet, and a pointer already gone
     is a release as much as one removed.
@@ -920,6 +928,8 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     if isinstance(data, Mapping):
         data = dict(data)
         data["reason"] = reason
+        if fields:
+            data.update(fields)
         try:
             runs._write_json(marker, data)
         except OSError:

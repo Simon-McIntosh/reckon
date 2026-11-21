@@ -1078,12 +1078,9 @@ def _owning_session_host_fifo(session: str) -> Path | None:
     readings finds the host a session's runs belong to. A session whose
     process has no live host has none.
     """
-    from reckon.crew import session_host
-    from reckon.crew_run_commands import HARNESS_SESSIONS_DIR_ENV
+    from reckon.crew import harness_sessions, session_host
 
-    directory = Path(
-        os.environ.get(HARNESS_SESSIONS_DIR_ENV) or Path.home() / ".claude" / "sessions"
-    )
+    directory = harness_sessions.sessions_dir()
     for record in session_host.live_census():
         owner = record.get("owner")
         if not isinstance(owner, Mapping):

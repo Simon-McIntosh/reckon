@@ -10,6 +10,7 @@ from typing import Any
 import click
 
 from reckon.crew.gate_watch import SUITE_RUN, VERIFY_GATE
+from reckon.crew.harness_sessions import live_sessions as _harness_live_sessions
 from reckon.crew.tombstones import tombstone_command
 from reckon.crew_dispatch_commands import (
     _accept_a_matching_project,
@@ -597,6 +598,39 @@ def crew_decision_record(record_file, pretty):
     try:
         record = json.load(record_file)
         _emit({"ok": True, "decision": record_decision(record)}, pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
+@crew_decision.command(name="answer")
+@click.option("--id", "record_id", required=True, help="The decision to answer.")
+@click.option(
+    "--answers",
+    "answers_file",
+    required=True,
+    type=click.File("r"),
+    help=(
+        'JSON object keyed by run id: {"run": {"action": "adopt", '
+        '"session": "live-session"}} or '
+        '{"run": {"action": "retire"}}. Use - for stdin, or pass the '
+        "object inline."
+    ),
+)
+@click.option("--by", "answered_by", default="", help="Who answered the decision.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_answer(record_id, answers_file, answered_by, pretty):
+    """Answer a raised decision per record: adopt into a live session or retire."""
+    import json
+
+    from reckon.crew.lost_session_work import answer_decision
+
+    try:
+        answers = json.load(answers_file)
+        _emit(
+            answer_decision(record_id, answers, answered_by=answered_by),
+            pretty,
+        )
     except (OSError, ValueError, TypeError) as exc:
         _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
         raise click.exceptions.Exit(1) from exc
@@ -5336,43 +5370,9 @@ def _budget_reset_reach() -> dict[str, Any]:
     }
 
 
-#: Where the harness keeps one record per live session; a test points it at a
-#: directory of its own so nothing reads this host's real sessions.
-HARNESS_SESSIONS_DIR_ENV = "RECKON_HARNESS_SESSIONS_DIR"
-
-
 def _live_harness_sessions() -> list[tuple[str, str]]:
-    """Every live harness session as (session id, name), from its own records.
-
-    Each record names the session's process, and a record whose process has
-    ended is a session that has gone. Records this host cannot read are
-    skipped rather than guessed at.
-    """
-    import json
-
-    directory = Path(
-        os.environ.get(HARNESS_SESSIONS_DIR_ENV) or Path.home() / ".claude" / "sessions"
-    )
-    sessions: list[tuple[str, str]] = []
-    try:
-        records = sorted(directory.glob("*.json"))
-    except OSError:
-        return sessions
-    for path in records:
-        try:
-            record = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if not isinstance(record, dict):
-            continue
-        session_id = str(record.get("sessionId") or "")
-        pid = record.get("pid")
-        if not session_id or not isinstance(pid, int):
-            continue
-        if not Path(f"/proc/{pid}").exists():
-            continue
-        sessions.append((session_id, str(record.get("name") or session_id)))
-    return sessions
+    """Every live harness session as (session id, name), from its own records."""
+    return _harness_live_sessions()
 
 
 def _budget_reset_payload(

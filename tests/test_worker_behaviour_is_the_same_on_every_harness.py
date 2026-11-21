@@ -1,0 +1,253 @@
+"""One lane, several harnesses, one treatment for the worker launched on it."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from reckon import _backends
+from reckon._worker_fence import fence_program
+from reckon.crew import worker_behaviour as behaviour
+from reckon.crew.admission.selection import gate_admits_request
+
+LANE_DOCUMENT = "/srv/lanes/local.json"
+
+# The local lane is served by three harnesses in front of one model server:
+# a claude-shaped wrapper, a claude backend, and oh-my-pi. Each publishes the
+# same lane document, so each serves the one lane.
+LOCAL_BACKENDS = {
+    "clive": {"command": "clive", "launch": "cli", "lane_document": LANE_DOCUMENT},
+    "claude-local": {
+        "command": "claude",
+        "launch": "cli",
+        "lane_document": LANE_DOCUMENT,
+    },
+    "omp-local": {"command": "omp", "launch": "cli", "lane_document": LANE_DOCUMENT},
+}
+
+
+def _node(tmp_path: Path) -> dict[str, Path]:
+    """A node's run directory, worktree, delivery roots and home, laid out once."""
+    run_directory = tmp_path / "run"
+    worktree = tmp_path / "worktree"
+    delivery = tmp_path / "delivery"
+    home = tmp_path / "home"
+    extra = tmp_path / "extra"
+    for directory in (run_directory, worktree, delivery, home, extra):
+        directory.mkdir()
+    return {
+        "run": run_directory,
+        "worktree": worktree,
+        "delivery": delivery,
+        "home": home,
+        "extra": extra,
+    }
+
+
+def _compose(
+    node: dict[str, Path],
+    name: str,
+    backend,
+    *,
+    fence: bool = True,
+    extra_write_roots: tuple[Path, ...] = (),
+) -> _backends.LaunchPlan:
+    return _backends.launch_plan(
+        backend_name=name,
+        backend=backend,
+        prompt="one node, one brief",
+        worktree=node["worktree"],
+        manifest_path=node["run"] / "manifest.md",
+        writable_directories=(node["delivery"], *extra_write_roots),
+        fence=fence,
+        fence_home=node["home"],
+        behaviour_role=behaviour.IMPLEMENT_ROLE,
+        flight_config={"local_backend": name, "backends": dict(LOCAL_BACKENDS)},
+    )
+
+
+def _treatments(node: dict[str, Path], names) -> dict[str, dict]:
+    return {
+        name: _compose(node, name, LOCAL_BACKENDS[name]).worker_behaviour
+        for name in names
+    }
+
+
+def _require_fence_program() -> None:
+    """Skip where no composing launch can produce protections rather than compare
+    two sets that are empty by construction.
+
+    Without the fence program no launch composes a fence at all, so the fence
+    protections and write roots this case exists to compare are empty for every
+    backend and equal for the wrong reason.
+    """
+    if not fence_program():
+        pytest.skip(
+            "the fence program (bwrap) is not installed on this host, so no "
+            "composed launch can produce fence protections to compare"
+        )
+
+
+def _assert_one_treatment(treatments: dict[str, dict]) -> None:
+    """Every backend's treatment equals the first, naming any that differs."""
+    reference_name, reference = next(iter(treatments.items()))
+    for name, treatment in treatments.items():
+        differing = sorted(
+            dimension
+            for dimension in reference
+            if treatment.get(dimension) != reference[dimension]
+        )
+        assert not differing, (
+            f"backend {name!r} treats one node differently from "
+            f"{reference_name!r} on "
+            + "; ".join(
+                f"{dimension}: {reference[dimension]!r} -> {treatment[dimension]!r}"
+                for dimension in differing
+            )
+        )
+
+
+def test_every_local_backend_gives_one_node_the_same_treatment(tmp_path: Path) -> None:
+    _require_fence_program()
+    node = _node(tmp_path)
+    treatments = _treatments(node, tuple(LOCAL_BACKENDS))
+    _assert_one_treatment(treatments)
+    reference = next(iter(treatments.values()))
+    # The facts the lane owns, stated rather than implied: one inbox, one
+    # allowlist, one duty, one landing route, one lane identity, and a fence
+    # that actually composed something for each backend.
+    assert reference["lane"] == LANE_DOCUMENT
+    assert reference["inbox_directory"] == str(node["run"] / "inbox")
+    assert reference["mcp_server_allowlist"] is True
+    assert reference["review_duty"] is True
+    assert reference["landing_treatment"] == "promoted-under-its-lane"
+    for name, treatment in treatments.items():
+        assert treatment["fence_protections"], (
+            f"backend {name!r} composed no fence protections"
+        )
+        assert treatment["write_roots"], f"backend {name!r} composed no write roots"
+
+
+def test_a_backend_given_an_extra_write_root_differs_by_that_root(
+    tmp_path: Path,
+) -> None:
+    """Negative control: an extra write root on one backend is named."""
+    _require_fence_program()
+    node = _node(tmp_path)
+    treatments = _treatments(node, tuple(LOCAL_BACKENDS))
+    mutated = dict(treatments)
+    mutated["omp-local"] = _compose(
+        node,
+        "omp-local",
+        LOCAL_BACKENDS["omp-local"],
+        extra_write_roots=(node["extra"],),
+    ).worker_behaviour
+    with pytest.raises(AssertionError) as caught:
+        _assert_one_treatment(mutated)
+    assert str(node["extra"]) in str(caught.value)
+
+
+def test_a_launch_that_loses_its_inbox_is_not_the_same_treatment(
+    tmp_path: Path,
+) -> None:
+    """Negative control for the first case: drop one backend's inbox delivery."""
+    node = _node(tmp_path)
+    first = behaviour.compose_worker_behaviour(
+        backend_name="clive",
+        backend=LOCAL_BACKENDS["clive"],
+        run_directory=node["run"],
+        role=behaviour.IMPLEMENT_ROLE,
+    )
+    without_inbox = behaviour.compose_worker_behaviour(
+        backend_name="omp-local",
+        backend=LOCAL_BACKENDS["omp-local"],
+        run_directory=None,
+        role=behaviour.IMPLEMENT_ROLE,
+    )
+    assert behaviour.behave_identically(first, without_inbox) == ["inbox_directory"]
+
+
+def _one_lane(config: dict) -> bool:
+    """Whether every backend in the queue resolves to the drainer's one lane."""
+    identities = {
+        behaviour.lane_identity(name, None, config) for name in LOCAL_BACKENDS
+    }
+    return len(identities) == 1
+
+
+def _gated_identically(config: dict, drained: str) -> bool:
+    """Whether every queued backend is admitted by a drainer started for one."""
+    verdicts = {
+        name: gate_admits_request(name, drained, config) for name in LOCAL_BACKENDS
+    }
+    return all(verdicts.values())
+
+
+@pytest.mark.parametrize("configured", ["clive", "omp-local"])
+def test_the_gate_admits_either_backend_of_one_lane_identically(
+    configured: str,
+) -> None:
+    """A drainer started under one name serves a queue holding either name.
+
+    The drainer was started for whichever backend was current when it was
+    declared; the configuration's local backend then moved. The queue holds a
+    request under each name, and both are admitted and gated the same before
+    and after the move.
+    """
+    drained = next(name for name in LOCAL_BACKENDS if name != configured)
+    config = {"local_backend": configured, "backends": dict(LOCAL_BACKENDS)}
+    moved = {"local_backend": drained, "backends": dict(LOCAL_BACKENDS)}
+    assert _one_lane(config)
+    assert _gated_identically(config, drained)
+    assert _gated_identically(moved, drained) == _gated_identically(config, drained)
+
+
+def test_substituting_a_backend_name_for_the_lane_splits_it() -> None:
+    """Negative control for the second case: the gate then holds by name."""
+    name_only = {
+        "clive": {"command": "clive", "launch": "cli"},
+        "claude-local": {"command": "claude", "launch": "cli"},
+        "omp-local": {"command": "omp", "launch": "cli"},
+    }
+    config = {"local_backend": "clive", "backends": name_only}
+    assert not _one_lane(config)
+    drained = "omp-local"
+    assert not _gated_identically(config, drained)
+
+
+def test_a_shared_lane_document_is_one_lane_identity(tmp_path: Path) -> None:
+    resolved = str((tmp_path / "local.json").resolve())
+    declared = {**LOCAL_BACKENDS}
+    for settings in declared.values():
+        settings["lane_document"] = resolved
+    identities = {
+        behaviour.lane_identity(name, settings, {"backends": declared})
+        for name, settings in declared.items()
+    }
+    assert identities == {resolved}
+    assert json.dumps(sorted(identities)) == json.dumps([resolved])
+
+
+def test_a_wrapped_harness_gets_the_home_and_hook_it_wraps(tmp_path: Path) -> None:
+    """A claude-shaped wrapper is seeded claude's home, hook and files."""
+    from reckon._worker_fence import harness_home, seed_harness_home
+    from reckon.hooks import install
+
+    homes = {}
+    for dialect_name in ("clive", "claude"):
+        run_directory = tmp_path / dialect_name
+        run_directory.mkdir()
+        home = harness_home(dialect_name, run_directory)
+        assert home is not None
+        homes[dialect_name] = home.relative_to(run_directory)
+        seed_harness_home(
+            home,
+            dialect_name=dialect_name,
+            operator_home=tmp_path / "operator",
+            settings_file="settings.json",
+            mcp_config_file=".claude.json",
+        )
+        assert install.settings_carry_worker_inbox(home / "settings.json")
+    assert homes["clive"] == homes["claude"]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import fields
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from itertools import accumulate
 from pathlib import Path
 from types import SimpleNamespace
@@ -381,10 +381,51 @@ def test_token_count_without_rate_limits_marks_only_quota_fields(
     } == {Unmeasured.NO_RATE_LIMITS}
 
 
-def test_real_ledger_sessions_fit_the_reported_context_window() -> None:
-    ledger_path = (
-        Path(__file__).resolve().parents[1] / "docs" / "state" / "reckon" / "crew.json"
-    )
+def test_ledger_sessions_fit_the_reported_context_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Twelve ledger sessions each fit the context window their rollout carries.
+
+    The population is built here rather than read from a live checkout.  The
+    ledger at ``docs/state/reckon/crew.json`` is runtime state this repository
+    does not carry — it is untracked, so the test that read it failed with
+    ``FileNotFoundError`` on every clean checkout — and the client rollout home
+    sits outside the tree under test.  The records below reproduce the shapes
+    the invariant is about: one rollout per codex session, each carrying a
+    context window, a request input, and quota readings.
+    """
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    runs: list[dict[str, Any]] = []
+    for index in range(14):
+        session_id = f"ledger-session-{index:02d}"
+        context_window = 258_400 + index
+        request_input = context_window - 1_000 - index
+        _write_rollout(
+            tmp_path,
+            session_id,
+            [
+                _token_record(
+                    total_input=request_input * index,
+                    request_input=request_input,
+                    sequence=index + 1,
+                    context_window=context_window,
+                    used_percent=float(index),
+                ),
+                _token_record(
+                    total_input=request_input * (index + 1),
+                    request_input=request_input,
+                    sequence=index + 2,
+                    context_window=context_window,
+                    used_percent=float(index + 1),
+                ),
+            ],
+        )
+        runs.append({"agent": {"backend": "codex"}, "session_id": session_id})
+    runs.append({"agent": {"backend": "claude"}, "session_id": "claude-session"})
+    runs.extend(runs[:2])  # a run recorded twice is still one session
+    ledger_path = tmp_path / "crew.json"
+    ledger_path.write_text(json.dumps({"data": {"runs": runs}}))
+
     ledger = json.loads(ledger_path.read_text())
     session_ids: list[str] = []
     for run in reversed(ledger["data"]["runs"]):
@@ -424,9 +465,9 @@ def test_real_ledger_sessions_fit_the_reported_context_window() -> None:
                 if isinstance(reading.used_percent, (int, float)):
                     assert 0 <= reading.used_percent <= 100
 
-    print(f"real rollout retention: {files_found}/{len(session_ids)}")
-    print(f"real quota window lengths: {len(window_lengths)}")
-    print(f"real context windows: {len(context_windows)}")
+    print(f"rollout retention: {files_found}/{len(session_ids)}")
+    print(f"quota window lengths: {len(window_lengths)}")
+    print(f"context windows: {len(context_windows)}")
 
 
 # ── Cumulative across resets ───────────────────────────────────────────────
@@ -621,7 +662,7 @@ def test_rollout_without_bounded_tool_spans_is_explicitly_unmeasured(
     assert receipt.generation_seconds != 0
 
 
-# ── Real rollouts: the model share is in band, cumulative beats the naive ──
+# ── Fixture rollouts: the model share is in band, cumulative beats the naive ──
 
 
 def _session_id_from_path(path: Path) -> str:
@@ -629,21 +670,60 @@ def _session_id_from_path(path: Path) -> str:
     return re.sub(r"^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-", "", stem)
 
 
-def test_real_rollouts_report_in_band_model_share(
-    monkeypatch: pytest.MonkeyPatch,
+_TURN_SECONDS = 10.0
+_FIXTURE_DAY = datetime(2026, 9, 8, tzinfo=UTC)
+
+
+def _stamp(offset: float) -> str:
+    """An ISO timestamp offset seconds into the fixture day."""
+    moment = _FIXTURE_DAY + timedelta(seconds=offset)
+    return moment.isoformat()
+
+
+def _span_session(length: int, wait_seconds: float) -> list[dict[str, Any]]:
+    """One rollout of ``length`` ten-second turns, each waiting on a tool.
+
+    Every turn spends ``wait_seconds`` waiting on one bounded tool call, so the
+    fixture's wall, machine and model seconds follow from the fixture rather
+    than from what a client home happens to hold.
+    """
+    records: list[dict[str, Any]] = []
+    for index in range(length):
+        start = index * _TURN_SECONDS
+        records.append(_tool_call(f"call-{index}", _stamp(start)))
+        records.append(_tool_output(f"call-{index}", _stamp(start + wait_seconds)))
+    records.append(
+        {"timestamp": _stamp(length * _TURN_SECONDS), **_total_record(1_000 * length)}
+    )
+    return records
+
+
+POPULATIONS = (
+    ("short-session", 3, 3.0),
+    ("medium-session", 30, 4.0),
+    ("long-session", 300, 1.0),
+)
+
+
+def test_rollout_lengths_report_in_band_model_share(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Three real rollouts of differing length keep the model share in band.
+    """Three rollouts of differing length keep the model share in band.
 
     The falsifier: a rule whose share sat at either extreme (the 0.1-percent
     token-count-attribution baseline this replaces) would fail here rather than
-    be recorded as an unusual worker.  One file per size band is chosen so the
-    three lengths genuinely differ, and the asserted share is the documented
-    strict (1, 99) band.
+    be recorded as an unusual worker.  The population is written into the
+    client-session root the receipt reader is pointed at, rather than read from
+    the client home, which this tree's rules put out of a test's reach; each
+    rollout waits a different share of its turns on the machine.  One file per
+    size band is chosen so the three lengths genuinely differ, and the asserted
+    share is the documented strict (1, 99) band.
     """
-    if not rollout.CLIENT_SESSIONS_DIR.is_dir():
-        raise AssertionError("no real rollouts under ~/.codex/sessions to measure")
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    for session_id, length, wait in POPULATIONS:
+        _write_rollout(tmp_path, session_id, _span_session(length, wait))
 
-    bands = [(0, 1_000_000), (1_000_000, 10_000_000), (10_000_000, 10**12)]
+    bands = [(0, 5_000), (5_000, 50_000), (50_000, 10**12)]
     chosen: list[tuple[Path, float, float, float]] = []
     for low, high in bands:
         candidates = [
@@ -667,9 +747,9 @@ def test_real_rollouts_report_in_band_model_share(
                 chosen.append((path, generation, machine, share))
                 break
     if len(chosen) < 3:
-        band_names = ["<1MB", "1-10MB", ">10MB"]
+        band_names = ["<5kB", "5-50kB", ">50kB"]
         raise AssertionError(
-            "fewer than 3 differing-length real rollouts measured an in-band "
+            "fewer than 3 differing-length fixture rollouts measured an in-band "
             f"model share (bands {band_names}); this is the falsifier firing"
             f" — found only {[(p.name, round(s, 2)) for (p, _, _, s) in chosen]}"
         )
@@ -680,22 +760,28 @@ def test_real_rollouts_report_in_band_model_share(
         assert 1 < share < 99, f"{_path.name} model share {share:.2f}% out of band"
 
 
-def test_real_named_rollout_cumulative_beats_naive_single_readings() -> None:
+def test_compacted_rollout_cumulative_beats_naive_single_readings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The per-segment cumulative reproduces neither wrong single reading.
 
-    On the named rollout the last total under-reports by well over an order of
-    magnitude and the maximum misrepresents a counter that reset, so the
+    On a session that compacted once, the last total under-reports by an order
+    of magnitude and the maximum misrepresents a counter that reset, so the
     reconstructed cumulative must land on neither — and it must exceed the last
     single reading, which is how the under-report is beaten.
     """
-    receipt = read_rollout_receipt("01a0814b-d9d7-75c0-bc41-2a26538e188c")
+    readings = [24_495_394, 900_000, 1_644_077]
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    _write_rollout(tmp_path, "compacted-session", [_total_record(v) for v in readings])
+    receipt = read_rollout_receipt("compacted-session")
     cumulative = receipt.cumulative_input_tokens
     assert isinstance(cumulative, int)
-    last_value = 744_077
-    maximum_value = 24_495_394
+    last_value = readings[-1]
+    maximum_value = max(readings)
     assert cumulative != last_value
     assert cumulative != maximum_value
     assert cumulative > last_value
+    assert cumulative == readings[0] + (last_value - readings[1])
 
 
 # ── Notional spend beside the quota position ───────────────────────────────

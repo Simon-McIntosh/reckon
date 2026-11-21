@@ -1,0 +1,184 @@
+<section id="qwnw-red-file-a-resumed-run-counts-as-working-landing">
+  <h2>A delivered run awaiting its review counts as unpromoted</h2>
+
+  <p><strong>What changed.</strong> <code>_fleet_counts</code> in
+  <code>reckon/crew/recovery_watch.py</code> read the delivered figure from
+  promotion evidence alone. A run classified <code>scoring</code> — its manifest
+  reports completion and its independent review is missing or in flight, so
+  <code>_delivery_reading</code> returns no status at all — was therefore
+  reported as nothing waiting, although its fleet state is
+  <code>completed_unpromoted</code>, the state the state-based count had always
+  treated as unpromoted. The delivered-awaiting-review population is now counted
+  with the delivered one, so the figure keeps the meaning its docstring states:
+  delivered work waiting on a gate, the review included. No assertion in the
+  node's test file was deleted or weakened.</p>
+
+  <p><strong>The cause.</strong> The test file landed on 29 September
+  (<code>9bf9d9eb9e</code>) and the evidence-only count was introduced by
+  <code>130499dbb3</code> on 17 November, so the file predates the change that
+  broke it, and the state the failing run carries never disagreed with the test.
+  The defect is the product's: the commit that split delivered work from
+  requested promotions lost the population whose gate is still the review.
+  Verdict: <em>product wrong</em>.</p>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-arms">Arms</h3>
+
+  <p>Each arm is a log whose first lines name the revision, tree and command and
+  whose last line reads <code>EXIT=&lt;code&gt;</code>. The named-test arms ran
+  as <code>all_debug</code> batch jobs with <code>SLURM_JOB_ID</code> unset for
+  the pytest process (jobs 1329941 and 1329944); the importer and declared-suite
+  arms ran in place under this node's allocation after <code>all_debug</code> sat
+  <code>PENDING</code> for an hour. The base tree is a <code>git archive</code>
+  extraction of <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> under the
+  run directory.</p>
+
+  <table id="qwnw-red-file-a-resumed-run-counts-as-working-arm-table">
+    <caption>Every figure below is a log's own summary line.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>named test, head</td>
+        <td><code>46c40734ea</code>, worktree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>named test, base</td>
+        <td><code>b24fe95a789c</code>, extraction</td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importer arm, head (101 files importing the changed module)</td>
+        <td><code>46c40734ea</code>, worktree</td>
+        <td>21 failed, 797 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importer arm, base</td>
+        <td><code>b24fe95a789c</code>, extraction</td>
+        <td>24 failed, 794 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importer arm, delta</td><td>base failing ids against head</td>
+        <td>0 added failures, 3 base-only</td></tr>
+      <tr><td>declared suite, head</td>
+        <td><code>46c40734ea</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base</td>
+        <td><code>b24fe95a789c</code>, extraction</td>
+        <td>2 failed, 56 passed, <code>EXIT=1</code></td></tr>
+      <tr><td><code>ruff check</code> on the changed path</td>
+        <td>both revisions</td>
+        <td>3 findings at each, all pre-existing (UP017 line 784, B904 line 885,
+        F841 line 1533); <code>ruff format --check</code> clean</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-control">Negative control</h3>
+
+  <p>The base run of the node's own test file is red on exactly the case that
+  measures this rule:
+  <code>test_a_live_worker_that_predates_its_manifest_keeps_todays_verdict</code>
+  fails at <code>counts["unpromoted"] == 1</code> with <code>assert 0 == 1</code>,
+  <code>EXIT=1</code>; at head the same file is 5 passed, <code>EXIT=0</code>. The
+  importer arm's three base-only ids are
+  <code>test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing</code>,
+  <code>test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write</code>
+  and
+  <code>test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner</code>
+  — the two inventory ids the declared suite's base arm also fails, and a
+  producer-arm id no pre-merge head run fails. The pre-merge arm has no
+  head-only id; the merged arm's four added ids are each accounted for in
+  <cite>Every id the importer arm adds</cite> below.</p>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-evidence">Evidence inputs</h3>
+
+  <ul>
+    <li>logs:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working/verify/{base-run,head-run,imp-base,imp-head,suite-base,suite-head}.log</code></li>
+    <li>importer population: the 101 <code>tests/*.py</code> files naming
+    <code>recovery_watch</code>, recorded in <code>verify/importers.txt</code></li>
+    <li>instrument check: the same population still exits <code>EXIT=1</code>
+    after the change, so the exit status alone says nothing; the delta is read
+    from the failing ids, where the pre-merge head carries no id the base arm did not; the merged arms' four added ids are each accounted for below.</li>
+  </ul>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-repair">Repair round</h3>
+
+  <p>The landing merged primary main at <code>83c5ba60e2</code> and conflicted
+  on <code>reckon/crew/recovery_watch.py</code>. The primary's own
+  <code>67d2d6890d</code> counts a delivered row once, from the state the pane
+  draws it with, and lets the promotion fold supply only the queue figures; that
+  rule already counts the <code>scoring</code> row this node added. The conflict
+  therefore resolves to the primary's count and this node's override is dropped
+  rather than stacked, so no row is counted twice. The merge head
+  <code>0588a18c8a</code> differs from primary by this fragment alone.</p>
+
+  <p>At the merge head the node's gate reads 5 passed, <code>EXIT=0</code>; the
+  declared suite reads 58 passed, <code>EXIT=0</code>; the importer arm reads 17
+  failed, 801 passed, <code>EXIT=1</code>. The gate job was submitted
+  <code>all_debug</code> twice and sat <code>PENDING</code> for 18 and 25 minutes
+  without starting, so the merge-head gate figure is the in-place run with
+  <code>SLURM_JOB_ID</code> unset recorded in
+  <code>verify/merge-head-run.log</code>; a later job (1332127) did run and
+  recorded the same 5 passed in <code>verify/merge-head-slurm-job.log</code>.</p>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-added-ids">Every id the
+  importer arm adds, measured one at a time</h3>
+
+  <p>Comparing the two arms' failing ids — <code>comm -13</code> of
+  <code>verify/imp-base-failed.txt</code> (24 ids) against
+  <code>verify/imp-head-merge-failed.txt</code> (17 ids) — leaves four ids the
+  base arm does not fail. Each was then run alone, three times, in the base
+  tree and in a primary-branch extraction, so that what each arm's failure says
+  about this change can be read rather than assumed. The runs are
+  <code>verify/ids-base-probe.log</code> and
+  <code>verify/ids-primary-probe.log</code>; each names the tree, the host and
+  the command, and <code>SLURM_JOB_ID</code> is unset for the measured process.</p>
+
+  <table id="qwnw-red-file-a-resumed-run-counts-as-working-added-table">
+    <caption>Each id is one pytest selection on its own, run three times in each
+    tree with <code>SLURM_JOB_ID</code> unset. The base tree is at
+    <code>b24fe95a789c</code>; the primary extraction is the revision the merge
+    brought in, <code>ccbce51f79b3</code>.</caption>
+    <thead><tr><th>id</th><th>base tree</th><th>primary extraction</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_a_classification_reads_only_new_stream_lines.py::test_two_configured_ticks_over_an_unchanged_store_decode_no_document</code></td>
+        <td>3 passed</td>
+        <td><strong>3 failed</strong> — <code>a quiet tick decoded a document none
+        of it changed</code></td>
+      </tr>
+      <tr>
+        <td><code>test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count</code></td>
+        <td>3 passed</td>
+        <td>3 passed</td>
+      </tr>
+      <tr>
+        <td><code>test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]</code></td>
+        <td>3 passed</td>
+        <td>3 passed alone; observed failing on the primary extraction alone in
+        a wider run as <code>assert 3.100182317197323 &lt; 3.0</code></td>
+      </tr>
+      <tr>
+        <td><code>test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing</code></td>
+        <td>3 passed</td>
+        <td>3 passed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Read against the two trees, none of the four is this node's:</p>
+
+  <ul>
+    <li>the classification id fails in every run at the primary revision and
+    passes in every run at the base revision, so the difference is one the
+    primary branch carries between those two revisions and not a line this node
+    writes — the merge head's only delta from primary is this fragment.</li>
+    <li>the crash-seat case asserts a wall-clock restart delay,
+    <code>assert 0.3 &lt;= elapsed &lt; 3.0</code> over a subprocess's own
+    timestamps, and the failure quoted above is that bound crossed by 0.1 s on a
+    host at load average 35 on 8 cores. It is a timing assertion, not a
+    statement about the counter this node repaired.</li>
+    <li>the reload-deferral and steady-run cases pass in every isolated run in
+    both trees and failed only inside the 101-file arm, where the whole
+    population runs in one process under that load.</li>
+  </ul>
+
+  <p>The importer arm's measure is therefore met in the sense the done-when
+  states it: no id the head arm fails is caused by the change, and the one id
+  that separates the two revisions deterministically —
+  <code>test_two_configured_ticks_over_an_unchanged_store_decode_no_document</code>
+  — fails at the primary revision this node merged, not at the code it delivers.
+  The record states which of the four is deterministic and which is load- or
+  order-sensitive rather than reporting only the last, as the earlier text did.</p>
+</section>

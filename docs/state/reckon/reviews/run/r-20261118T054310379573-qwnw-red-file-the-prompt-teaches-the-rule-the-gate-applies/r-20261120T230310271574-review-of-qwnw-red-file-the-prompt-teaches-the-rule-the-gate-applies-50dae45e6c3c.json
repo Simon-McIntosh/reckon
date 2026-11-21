@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own arm logs read on disk: baseline_suite-1795120067778962136.log:7 records '58 passed in 43.20s' at 28fbf2bc2fe2b with zero FAILED lines and EXIT=0 at :18940, and after_suite-1795215420414288588.log records '58 passed in 50.20s' at dcdd6ab1cba4 with zero FAILED lines and EXIT=0, so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1400 crew_check_manifest -> audit_manifest",
+    "reckon/crew/reports.py:3125 audit_manifest -> _fragment_reconciliation_findings"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-20T23:03:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "15",
+      "severity": "blocking",
+      "text": "the scheduler paragraph says the named-file head run's own log prints 'host: 98dci4-clu-3026.iter.org slurm-job: 1319168 partition: sun' beside the module it imported and its working directory, but named-file-head-dcdd6ab1cba4fa93ebcf733c5a9bd30e431398e0.log:5 carries only '# host: 98dci4-clu-3026.iter.org' with no slurm-job, partition, module or cwd line; that header belongs to the superseded named-file-head-d7846c73e51c6845e1da7ba4341751c89744c7ea.log (6 passed in 1.06s), so the job/partition attribution the prior review found unbacked is repeated against the current head run"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html",
+      "line": "24",
+      "severity": "blocking",
+      "text": "cites negative-control-call-site.log, negative-control-record.log, negative-control-proximity.log and negative-control-summary.log as the logs of both directions and both guard falsifications, and none of the four exists in the run directory or anywhere under /home/ITER/mcintos (find returns no match); negative-control.sh writes them into the run directory, which the worker sandbox mounts read-only, so the claimed evidence was never produced, and the record names logs the run directory does not hold while line 15 asserts the opposite"
+    },
+    {
+      "file": "reckon/crew/fragment_reconcile.py",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "result_line reproduces the last-result-line scan the repository owns in review.pytest_summary_failure_count (reckon/crew/review.py:2596-2610): the same '::'/FAILED skip and the same last-match selection, differing only by returning the line rather than the count; no review.py helper returns the line, so the scan is now stated twice and the copies can drift"
+    },
+    {
+      "file": "reckon/crew/fragment_reconcile.py",
+      "line": "104",
+      "severity": "non-blocking",
+      "text": "manifest_field and arm_fields re-read the raw manifest text although audit_manifest already holds parse_manifest's typed baseline_suite and after_suite (reckon/crew/reports.py:886-887); the text reader matches only a line beginning exactly 'baseline_suite:', so a JSON-form manifest, which parse_manifest accepts at reports.py:350, yields no cited arms and the check silently reports nothing for it"
+    },
+    {
+      "file": "reckon/crew/fragment_reconcile.py",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "the module docstring names reckon.crew.review.recorded_log_revision as the revision reader, but log_record at :87 uses reports._first_recorded_line plus _GATE_LOG_REVISION; recorded_log_revision reads only line 0 (review.py:3117) and would report no revision for the fenced logs this module must handle, so the docstring names a function the module deliberately does not use"
+    },
+    {
+      "file": "tests/test_a_fragment_reconciles_with_its_cited_logs.py",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "all six cases call reconcile directly and none drives audit_manifest or _fragment_reconciliation_findings, so deleting the call added at reckon/crew/reports.py:3125 leaves the file green; the delivery-path guarantee the change exists for has no failing test, and the call-site negative control the fragment says proves it is one of the absent logs in the finding at line 24"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read dcdd6ab1cb and 50dae45e6c against 28fbf2bc2fe2; four files (fragment +25, fragment_reconcile.py +222, reports.py +49, test +157), all additions, all inside the declared paths",
+    "done_when": "the done_when requires the file green at head as a job on all_debug with SLURM_JOB_ID unset beside inline-JSON arms and a negative control; manifest.md:14 records a two-file pytest gate rather than that job, and the fragment at line 15 reports the all_debug clause unmet from a fence refusal, so the gate does not assert the measure as written",
+    "goal": "the node goal is to make tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pass in full on the primary branch; the reviewed diff 28fbf2bc2fe2..50dae45 touches neither that file nor reckon/crew/prompts.py, and the fragment at line 7 records it green at both base and head",
+    "manifest": "read; it records complete status, a six-case two-file gate and 40-character arms, but its checkpoint at manifest.md:6 cites negative-control-proximity.log and negative-control-summary.log, neither of which exists",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html, and docs/figures/...; all four paths in the diff are inside reckon, tests and the fragment directory"
+  },
+  "justifications": {
+    "durability": "tests/test_a_fragment_reconciles_with_its_cited_logs.py:75-157 holds the six unit branches but no case drives the reports.py:3125 call site, so removing the wiring leaves the suite green.",
+    "evidence": "manifest.md:14 records a local two-file pytest gate rather than the done_when's all_debug job, and the fragment at :15 and :24 cites a scheduler header and four logs the run directory does not hold.",
+    "fit": "reckon/crew/fragment_reconcile.py:1 follows the crew module idiom of a docstringed module with main(argv), but its docstring at :14 names a revision reader it does not call.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 records '6 passed in 0.33s' at base and '6 passed in 0.42s' at head, so the goal's file is green, though the gained work is a checker outside it.",
+    "reuse": "reckon/crew/fragment_reconcile.py:61 re-implements the scan owned by reckon/crew/review.py:2596 and :104 re-parses the manifest that reckon/crew/reports.py:319 already types.",
+    "scope_discipline": "every path in the diff sits inside the declared reckon, tests and fragment directories, but a 222-line reconciler plus hook is not implied by a goal naming one already-green test file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pass in full on the primary branch; the reviewed diff 28fbf2bc2fe2..50dae45 touches neither that file nor reckon/crew/prompts.py, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 records it green at both base and head.\nVERDICT done_when: the done_when requires the file green at head as a job on all_debug with SLURM_JOB_ID unset beside inline-JSON arms and a negative control; manifest.md:14 records a two-file pytest gate rather than that job, and the fragment at line 15 reports the all_debug clause unmet from a fence refusal, so the gate does not assert the measure as written.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its html, and docs/figures/...; all four paths in the diff are inside reckon, tests and the fragment directory.\nVERDICT manifest: read; it records complete status, a six-case two-file gate and 40-character arms, but its checkpoint at manifest.md:6 cites negative-control-proximity.log and negative-control-summary.log, neither of which exists.\nVERDICT diff: read dcdd6ab1cb and 50dae45e6c against 28fbf2bc2fe2; four files (fragment +25, fragment_reconcile.py +222, reports.py +49, test +157), all additions, all inside the declared paths.\nCALL_SITES: reckon/crew_run_commands.py:1400 crew_check_manifest -> audit_manifest, reckon/crew/reports.py:3125 audit_manifest -> _fragment_reconciliation_findings\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:7 records '6 passed in 0.33s' at base and '6 passed in 0.42s' at head, so the goal's file is green, though the gained work is a checker outside it.\nSCORE evidence: 8\nJUSTIFICATION evidence: manifest.md:14 records a local two-file pytest gate rather than the done_when's all_debug job, and the fragment at :15 and :24 cites a scheduler header and four logs the run directory does not hold.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: every path in the diff sits inside the declared reckon, tests and fragment directories, but a 222-line reconciler plus hook is not implied by a goal naming one already-green test file.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_a_fragment_reconciles_with_its_cited_logs.py:75-157 holds the six unit branches but no case drives the reports.py:3125 call site, so removing the wiring leaves the suite green.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/fragment_reconcile.py:1 follows the crew module idiom of a docstringed module with main(argv), but its docstring at :14 names a revision reader it does not call.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/fragment_reconcile.py:61 re-implements the scan owned by reckon/crew/review.py:2596 and :104 re-parses the manifest that reckon/crew/reports.py:319 already types.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:15 blocking: the scheduler paragraph says the named-file head run's own log prints 'host: 98dci4-clu-3026.iter.org slurm-job: 1319168 partition: sun' beside the module it imported and its working directory, but named-file-head-dcdd6ab1cba4fa93ebcf733c5a9bd30e431398e0.log:5 carries only '# host: 98dci4-clu-3026.iter.org' with no slurm-job, partition, module or cwd line; that header belongs to the superseded named-file-head-d7846c73e51c6845e1da7ba4341751c89744c7ea.log (6 passed in 1.06s), so the job/partition attribution the prior review found unbacked is repeated against the current head run.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies.html:24 blocking: it cites negative-control-call-site.log, negative-control-record.log, negative-control-proximity.log and negative-control-summary.log as the logs of both directions and both guard falsifications, and none of the four exists in the run directory or anywhere under /home/ITER/mcintos (find returns no match); negative-control.sh writes them into the run directory, which the worker sandbox mounts read-only, so the claimed evidence was never produced, and the record names logs the run directory does not hold while line 24 itself asserts the opposite.\nFINDING reckon/crew/fragment_reconcile.py:61 non-blocking: result_line reproduces the last-result-line scan the repository owns in review.pytest_summary_failure_count (reckon/crew/review.py:2596-2610): the same '::'/FAILED skip and last-match selection, differing only by returning the line rather than the count, so the scan is now stated twice and the copies can drift.\nFINDING reckon/crew/fragment_reconcile.py:104 non-blocking: manifest_field and arm_fields re-read the raw manifest text although audit_manifest already holds parse_manifest's typed baseline_suite and after_suite; the text reader matches only a line beginning exactly 'baseline_suite:', so a JSON-form manifest, which parse_manifest accepts at reckon/crew/reports.py:350, yields no cited arms and the check silently reports nothing for it.\nFINDING reckon/crew/fragment_reconcile.py:14 non-blocking: the module docstring names reckon.crew.review.recorded_log_revision as the revision reader, but log_record at :87 uses reports._first_recorded_line plus _GATE_LOG_REVISION; recorded_log_revision reads only line 0 and would report no revision for the fenced logs this module must handle, so the docstring names a function the module deliberately does not use.\nFINDING tests/test_a_fragment_reconciles_with_its_cited_logs.py:75 non-blocking: all six cases call reconcile directly and none drives audit_manifest or _fragment_reconciliation_findings, so deleting the call added at reckon/crew/reports.py:3125 leaves the file green; the delivery-path guarantee the change exists for has no failing test.",
+  "review_run_id": "r-20261120T230310271574-review-of-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-50dae45e6c3c",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "50dae45e6c3c09fb32708e6466333a27806f4baa",
+  "reviewed_run_id": "r-20261118T054310379573-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies",
+  "scores": {
+    "durability": 10,
+    "evidence": 8,
+    "fit": 15,
+    "goal_fidelity": 14,
+    "reuse": 12,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-20T23:14:40.778698+00:00",
+  "total": 72
+}

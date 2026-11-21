@@ -859,6 +859,24 @@ def _declares_derived(fields: dict[str, Any]) -> bool:
     return str(fields.get("derived") or "").strip().lower() in {"1", "true", "yes"}
 
 
+def _suite_arm_field_names(fields: Mapping[str, Any] | dict[str, Any]) -> list[str]:
+    """The suite-arm keys a manifest records, unlabelled pair first.
+
+    A run armed on more than one population reports each population's arms
+    apart, as ``baseline_suite_UNIT`` beside ``after_suite_UNIT`` and so on, so
+    neither population's failures are judged against the other's baseline. A
+    labelled arm is typed exactly as the unlabelled one is, so a reader of the
+    parsed mapping sees a decoded observation whether the arm is labelled or
+    not.
+    """
+    names = ["baseline_suite", "after_suite"]
+    for key in fields:
+        for prefix in ("baseline_suite_", "after_suite_"):
+            if key.startswith(prefix) and key != prefix and key not in names:
+                names.append(key)
+    return names
+
+
 def _normalise_manifest_fields(
     fields: dict[str, Any], *, path: str | None = None
 ) -> dict[str, Any]:
@@ -883,7 +901,7 @@ def _normalise_manifest_fields(
             coerced = _split_entry_tokens(coerced)
         fields[name] = coerced
     _refuse_changed_path_redirections(fields.get("changed_paths"), path=path)
-    for name in ("baseline_suite", "after_suite"):
+    for name in _suite_arm_field_names(fields):
         fields[name] = _typed_suite_observation(fields.get(name))
     fields["failure_attribution"] = _typed_failure_attribution(
         fields.get("failure_attribution")

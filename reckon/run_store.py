@@ -11,6 +11,7 @@ mutable state, imported once and independent of run-index rebuilds.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import logging
@@ -20,11 +21,12 @@ import sqlite3
 import subprocess
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
 
-from reckon import _store, run_record
+from reckon import _store, file_memo, run_record
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -404,6 +406,13 @@ def store_stamp(path: str | Path | None = None) -> tuple[int, ...] | None:
     )
 
 
+def change_token(path: str | Path | None = None) -> tuple[Any, ...]:
+    """Every store file a read may answer from, stamped as one token."""
+
+    target = store_path() if path is None else Path(path)
+    return (store_stamp(target), store_stamp(_archive_path(target)))
+
+
 def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
     """Prepare an existing store during a separate, one-time maintenance job.
 
@@ -443,6 +452,44 @@ def _archive_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}.archive{path.suffix}")
 
 
+def _plan_owned_identities(
+    connection: sqlite3.Connection,
+    schemas: Iterable[str],
+    *,
+    project: str | None,
+    plan: str,
+    run_ids: Iterable[str] | None,
+    node: str | None,
+) -> list[str]:
+    """The rows whose plan owner answers *plan*, in the store's order.
+
+    The owner is :func:`reckon.ledger.row_plan`, so the store asks it about the
+    three fields it reads — the row's own plan, the implementation move it
+    reported, the node definition it ran — rather than comparing the ``plan``
+    column, which is that answer at write time and can outlive the detail a
+    rotation washes out afterwards. The candidates arrive through
+    :func:`_plan_owner_sql` so a plan read decodes the rows that expression
+    admits rather than every row in the project; the owner then decides.
+    """
+    from reckon import ledger
+
+    owned = []
+    for run_id, payload, detail in _record_rows(
+        connection,
+        schemas=schemas,
+        project=project,
+        run_ids=run_ids,
+        node=node,
+        plan=plan,
+        fields=PLAN_OWNER_FIELDS,
+        narrowed=True,
+    ):
+        record = {**json.loads(payload), **(json.loads(detail) if detail else {})}
+        if ledger.row_plan(record) == plan:
+            owned.append(str(run_id))
+    return owned
+
+
 def _record_rows(
     connection: sqlite3.Connection,
     *,
@@ -453,15 +500,35 @@ def _record_rows(
     node: str | None = None,
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
+    narrowed: bool = False,
 ) -> Iterator[tuple[Any, ...]]:
     """Read selected records through the single durable/detail join.
 
-    Plan and activity selection search their indexed columns. Activity
-    predicates consume a buffered narrow projection after its cursor closes,
-    then only matching identities fetch the requested payload.
+    A plan filter resolves the identities :func:`reckon.ledger.row_plan` names
+    through a narrowed candidate query before any payload is fetched, and
+    activity predicates consume a buffered narrow projection after its cursor
+    closes, so only matching identities fetch the requested payload.
     Python selection, decoding and consumption therefore hold no read lock.
     Encoded rows are buffered per query; identity batches stay below driver limits.
     """
+    if plan is not None and not narrowed:
+        yield from _record_rows(
+            connection,
+            schemas=schemas,
+            project=project,
+            run_ids=_plan_owned_identities(
+                connection,
+                schemas,
+                project=project,
+                plan=plan,
+                run_ids=run_ids,
+                node=node,
+            ),
+            node=node,
+            fields=fields,
+            activity_since=activity_since,
+        )
+        return
     selected = None if run_ids is None else sorted(set(map(str, run_ids)))
     batches = (
         [None]
@@ -519,9 +586,7 @@ def _record_rows(
             query = (
                 f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
             )
-            if plan and batch is None and not node:
-                query += "INDEXED BY idx_runs_plan "
-            elif indexed_activity and batch is None and not node:
+            if indexed_activity and batch is None and not node:
                 # Force the range index rather than a project-only scan when
                 # the planner has no statistics for the recent population.
                 query += (
@@ -547,7 +612,7 @@ def _record_rows(
                 clauses.append("r.node = ?")
                 params.append(node)
             if plan:
-                clauses.append("r.plan = ?")
+                clauses.append(f"({_plan_owner_sql()}) = ?")
                 params.append(plan)
             if indexed_activity:
                 clauses.append("r.activity_seconds >= ?")
@@ -799,7 +864,7 @@ def stored_run_payloads(
     target = store_path() if path is None else Path(path)
     if not target.exists():
         return None
-    token = (store_stamp(target), store_stamp(_archive_path(target)))
+    token = change_token(target)
 
     def read() -> Iterator[tuple[Any, ...]]:
         connection = None
@@ -841,6 +906,96 @@ def stored_run_payloads(
     return token, read()
 
 
+#: Distinct answers held beside the token they were built from, and the rows one
+#: answer may hold. One reader asks a handful of questions per store revision,
+#: so the working set sits well under both bounds while a long-lived process
+#: stays bounded however often the token moves underneath it. An answer above
+#: the row bound is not kept at all.
+_ROW_ANSWER_LIMIT = 32
+_ROW_ANSWER_ROWS = 50_000
+
+#: Decoded answers keyed by the question and the token it was answered under.
+#: The token is part of the key, so a moved token makes an entry unreachable
+#: rather than wrong: an entry never answers from a store revision it was not
+#: built from. The container is :func:`reckon.file_memo.bounded_map`'s: the
+#: repository's own bounded map, which holds the memo's lock over a read or a
+#: replacement and is emptied by ``file_memo.clear()`` like every other memo in
+#: the process, so this module keeps no lock and no eviction loop of its own.
+_HELD_ANSWERS: file_memo.BoundedMap[list[dict[str, Any]]] = file_memo.bounded_map(
+    "stored-row-answers", limit=_ROW_ANSWER_LIMIT
+)
+
+#: The reader whose answers these are. An answer is a decoded object graph held
+#: for the reader that asked for it, so a second thread or task decodes for
+#: itself rather than being handed an answer it did not build. This is the same
+#: per-task scoping :func:`reckon.file_memo.read_only_region` uses, and it keeps
+#: a reader's own seam honest: a decoder paused to observe a read, or a
+#: selection a concurrent writer has since changed, is never answered from
+#: another reader's rows.
+_READ_CONTEXT: ContextVar[object | None] = ContextVar(
+    "run_store_read_context", default=None
+)
+
+
+def _read_context() -> object:
+    """This reader's own context, created the first time it reads."""
+    context = _READ_CONTEXT.get()
+    if context is None:
+        context = object()
+        _READ_CONTEXT.set(context)
+    return context
+
+
+def _answer_key(
+    context: object,
+    target: Path,
+    token: tuple[Any, ...],
+    project: str,
+    run_ids: tuple[str, ...] | None,
+    plan: str | None,
+    node: str | None,
+    fields: tuple[str, ...] | None,
+    activity_since: float | None,
+) -> tuple[Any, ...]:
+    return (
+        context,
+        str(target),
+        token,
+        project,
+        run_ids,
+        plan,
+        node,
+        fields,
+        activity_since,
+    )
+
+
+def _cached_answer(key: tuple[Any, ...]) -> list[dict[str, Any]] | None:
+    """The answer held for ``key``, as a copy the caller may change freely."""
+    held = _HELD_ANSWERS.get(key)
+    if held is None:
+        return None
+    return copy.deepcopy(held)
+
+
+def _remember_answer(key: tuple[Any, ...], records: list[Any]) -> None:
+    """Keep one answer, unless it is larger than the map may hold at all."""
+    if len(records) > _ROW_ANSWER_ROWS:
+        return
+    _HELD_ANSWERS.put(key, copy.deepcopy(records))
+
+
+def _decode_run_row(payload: str, detail: str | None) -> dict[str, Any]:
+    """Decode one stored row's durable and detail halves into one record.
+
+    The single point a stored row becomes Python, so a caller measuring what a
+    read cost counts rows here rather than inferring it from the query.
+    """
+    return run_record.normalize_outside_scope_paths(
+        {**json.loads(payload), **(json.loads(detail) if detail else {})}
+    )
+
+
 def stored_run_rows(
     project: str,
     *,
@@ -861,42 +1016,87 @@ def stored_run_rows(
     ``path`` names the store to read and falls back to the resolved location,
     so a caller comparing two stores — or a probe holding its own fixture —
     reads the one it named rather than whichever store this machine routes to.
+
+    A repeated question is answered from the previous answer while the store's
+    change token stands still; q.v. :func:`store_stamp`. The token is read
+    before and after the rows, and an answer is kept only when the two agree, so
+    a write that lands during the read cannot be cached under the token it
+    moved past. An answer is held for the reader context that asked for it, so
+    another thread or task decodes for itself. ``None`` is never kept: an absent
+    store has no answer to hold.
     """
     target = store_path() if path is None else Path(path)
     if not target.exists():
         return None
+    identities = None if run_ids is None else tuple(str(value) for value in run_ids)
+    token = change_token(target)
+    key = _answer_key(
+        _read_context(),
+        target,
+        token,
+        project,
+        identities,
+        plan,
+        node,
+        fields,
+        activity_since,
+    )
+    cached = _cached_answer(key)
+    if cached is not None:
+        return cached
     connection = _open_readonly(target)
     try:
-        if not _refuse_owed_migration(connection, target):
-            return []
-        schemas = _read_attached_tables(connection, target)
-        records = []
-        for run_id, payload, detail in _record_rows(
-            connection,
-            schemas=schemas,
-            project=project,
-            run_ids=run_ids,
-            plan=plan,
-            node=node,
-            fields=fields,
-            activity_since=activity_since,
-        ):
-            if fields == ("run_id",):
-                records.append({"run_id": str(run_id)})
-            else:
-                records.append(
-                    run_record.normalize_outside_scope_paths(
-                        {
-                            **json.loads(payload),
-                            **(json.loads(detail) if detail else {}),
-                        }
-                    )
-                )
-        return records
+        records: list[dict[str, Any]] = []
+        if _refuse_owed_migration(connection, target):
+            schemas = _read_attached_tables(connection, target)
+            for run_id, payload, detail in _record_rows(
+                connection,
+                schemas=schemas,
+                project=project,
+                run_ids=identities,
+                plan=plan,
+                node=node,
+                fields=fields,
+                activity_since=activity_since,
+            ):
+                if fields == ("run_id",):
+                    records.append({"run_id": str(run_id)})
+                else:
+                    records.append(_decode_run_row(payload, detail))
     except sqlite3.Error as error:
         raise _unreadable(target, f"{type(error).__name__}: {error}") from error
     finally:
         connection.close()
+    if change_token(target) == token:
+        _remember_answer(key, records)
+    return records
+
+
+#: The fields :func:`reckon.ledger.row_plan` reads to name a row's plan. A
+#: reader asking which stored rows a plan owns needs these three and no others.
+PLAN_OWNER_FIELDS = ("plan", "impl_move", "node_definition")
+
+
+def _plan_owner_sql() -> str:
+    """The owner precedence as a narrowing expression over both halves of a row.
+
+    :func:`reckon.ledger.row_plan` decides which plan a row belongs to; this
+    expression lets the store reach the rows that decision can keep without
+    decoding every row in the project first. It reads the three fields that
+    owner reads, in the same order, from the detail half over the durable half.
+    A row it lets through that the owner does not name is discarded by the
+    owner before any caller sees it, so an over-wide expression costs a decode
+    and never an answer; a row it drops that the owner names would be a wrong
+    answer, which is why ``tests/test_a_plan_read_asks_the_row_owner.py``
+    compares the narrowing against the owner over every combination of the
+    three fields.
+    """
+    merged = "json_patch(r.payload, COALESCE(d.detail, '{}'))"
+    fields = ("plan", "impl_move.plan", "node_definition.plan")
+    terms = [
+        f"NULLIF(trim(json_extract({merged}, '$.{field}')), '')" for field in fields
+    ]
+    return "COALESCE(" + ", ".join([*terms, "''"]) + ")"
 
 
 def stored_run_exists(project: str, *, path: str | Path | None = None) -> bool:

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import ledger
+from reckon.crew import harness_sessions
 from reckon.crew.query import _mounted_projects as mounted_projects
 from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery import classify_pointer
@@ -759,6 +760,9 @@ def directory(
         idle_owner_by_session[row["session"]] = row["plan_owner"]
 
     coordinators: list[dict[str, Any]] = []
+    session_addresses = harness_sessions.addresses(
+        session for session, _project, _repository in grouped
+    )
     for (session, project_name, repository), runs in sorted(grouped.items()):
         ordered_runs = sorted(runs, key=lambda row: (row["node"], row["run_id"]))
         transports = {
@@ -766,6 +770,15 @@ def directory(
             for run in ordered_runs
             if "transport" in run
         }
+        # The name a peer message addresses, and whether the harness process it
+        # names is still running, ride the entry that already carries the
+        # session's address rather than a second field beside it. A session the
+        # harness keeps no record for reads null for both, which is a fact of
+        # its own and not the absence of a reading.
+        address = session_addresses.get(session, harness_sessions.NO_ADDRESS)
+        for transport in transports.values():
+            transport["name"] = address["name"]
+            transport["reachable"] = address["reachable"]
         coordinator = {
             "session": session or None,
             "project": project_name or None,
@@ -837,6 +850,21 @@ def directory(
     transcripts = _session_transcripts(
         str(row.get("session") or "") for row in coordinators
     )
+    # Whether each listed session is lost, from the last instant it was heard.
+    # One reader answers for every row: it holds one answer per session and one
+    # process walk for the whole view, so a directory of thirty sessions costs
+    # thirty lease reads and not thirty walks.
+    from reckon.crew import lost_sessions as _lost_sessions
+
+    lost_reads = _lost_sessions.LostSessionReads(pointers=records)
+    for coordinator in coordinators:
+        answer = lost_reads.answer(
+            str(coordinator.get("session") or ""),
+            str(coordinator.get("project") or ""),
+        )
+        coordinator["last_heard_at"] = answer["last_heard_at"]
+        coordinator["lost"] = answer["lost"]
+        coordinator["lost_since"] = answer["lost_since"]
     windows = _context_windows(project)
     for coordinator in coordinators:
         session = str(coordinator.get("session") or "")

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": "derived from the reviewed run's own suite pair: baseline-suite.log 58 passed EXIT=0 at 5adc9f1c5b and after-suite.log 66 passed EXIT=0 at e653b0c984, so no failure is added; the repaired guard itself is exercised separately by flight-schema.log (3 passed, EXIT=0) and negative-control-round2.log (1 failed, EXIT=1 at f743b68f74).",
+  "base_log_revision": "5adc9f1c5ba84ba302ed4889cf20ee40b9463aed",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:1681 FlightConfig model validates the resolved layer including stranded_wait",
+    "reckon/flight.py:1859 FlightConfig model validates the resolved layer including stranded_wait",
+    "reckon/crew/admission/release.py:607 _stranded_wait.report_after_hours() reads the threshold from the resolved config"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T05:40:53Z",
+  "finding_dispositions": {},
+  "findings": [],
+  "head_log_revision": "e653b0c984c354f48e73ac09814ca7e1f075e424",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the two commits gained since the prior review at f743b68f74 (e653b0c984 fix(schema) and d3ec47714c docs(evidence)): 5 files, +74 lines, the LinkML declaration, one model_rebuild line, the regenerated JSON schema, the default block and the evidence paragraph.",
+    "done_when": "the node's done_when names tests/test_a_wait_that_cannot_resolve_is_removed.py and a declared negative control; the repair round runs that gate green in after-suite.log (66 passed, EXIT=0 at e653b0c984) and the repair's own check in flight-schema.log (3 passed, EXIT=0 at e653b0c984).",
+    "goal": "the node's gained commits are the repair of the prior review's blocking finding; reckon/schema/flight.yaml:1118-1150 now declares stranded_wait and its report_after_hours slot beside lost_session, with a StrandedWaitConfig class at reckon/schema/flight.yaml:1716-1726, and both generated artifacts carry it.",
+    "manifest": "the manifest at the reviewed run directory reads status complete and records the six scored dimensions, the suite pair and the two negative controls; its commits list ends at d3ec47714c and its landing names the e653b0c984 repair.",
+    "write_paths": "the delta touches docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-wait-that-cannot-resolve-is-removed.html, docs/_shared/flight.schema.json, reckon/_flight_schema.py, reckon/schema/flight.yaml and reckon/schema/flight-defaults.yaml \u2014 all five inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_flight.py:143 and :159 compare the committed artifacts against regen_flight_schema.generate_pydantic()/generate_json_schema() output, and the negative control shows the first reddens at f743b68f74 without the repair.",
+    "evidence": "flight-schema.log records tests/test_flight.py -k 'matches_linkml_source or shipped_defaults' as 3 passed EXIT=0 at e653b0c984, and negative-control-round2.log shows the same check failing at f743b68f74 with the missing stranded_wait field in the committed model.",
+    "fit": "reckon/schema/flight.yaml:1134-1150 mirrors the lost_session block and its after_hours slot immediately above it, and StrandedWaitConfig follows the LostSessionConfig class pattern.",
+    "goal_fidelity": "reckon/schema/flight.yaml:1134-1150 declares stranded_wait beside lost_session and both generated artifacts at docs/_shared/flight.schema.json:1343 and :3268 carry the block, so the prior review's blocking finding is answered in the source rather than in the generated file.",
+    "reuse": "the addition extends the existing LinkML owner (reckon/schema/flight.yaml plus scripts/regen_flight_schema.py) instead of introducing a second config mechanism; reckon/crew/stranded_wait.py:41 already reads the block through flight.resolve().",
+    "scope_discipline": "every path in the f743b68f74..d3ec47714c diff is one of the five declared write paths; no plan state, symbol rename or unrelated file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's gained commits are the repair of the prior review's blocking finding; reckon/schema/flight.yaml:1118-1150 now declares stranded_wait and its report_after_hours slot beside lost_session, with a StrandedWaitConfig class at reckon/schema/flight.yaml:1716-1726, and both generated artifacts carry it.\nVERDICT done_when: the node's done_when names tests/test_a_wait_that_cannot_resolve_is_removed.py and a declared negative control; the repair round runs that gate green in after-suite.log (66 passed, EXIT=0 at e653b0c984) and the repair's own check in flight-schema.log (3 passed, EXIT=0 at e653b0c984).\nVERDICT write_paths: the delta touches docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-wait-that-cannot-resolve-is-removed.html, docs/_shared/flight.schema.json, reckon/_flight_schema.py, reckon/schema/flight.yaml and reckon/schema/flight-defaults.yaml \u2014 all five inside the declared write paths.\nVERDICT manifest: the manifest at the reviewed run directory reads status complete and records the six scored dimensions, the suite pair and the two negative controls; its commits list ends at d3ec47714c and its landing names the e653b0c984 repair.\nVERDICT diff: read the two commits gained since the prior review at f743b68f74 (e653b0c984 fix(schema) and d3ec47714c docs(evidence)): 5 files, +74 lines, the LinkML declaration, one model_rebuild line, the regenerated JSON schema, the default block and the evidence paragraph.\nCALL_SITES: reckon/flight.py:1681, reckon/flight.py:1859, reckon/crew/admission/release.py:607\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/schema/flight.yaml:1134-1150 declares stranded_wait beside lost_session and both generated artifacts at docs/_shared/flight.schema.json:1343 and :3268 carry the block, so the prior review's blocking finding is answered in the source rather than in the generated file.\nSCORE evidence: 18\nJUSTIFICATION evidence: flight-schema.log records tests/test_flight.py -k 'matches_linkml_source or shipped_defaults' as 3 passed EXIT=0 at e653b0c984, and negative-control-round2.log shows the same check failing at f743b68f74 with the missing stranded_wait field in the committed model.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the f743b68f74..d3ec47714c diff is one of the five declared write paths; no plan state, symbol rename or unrelated file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_flight.py:143 and :159 compare the committed artifacts against regen_flight_schema.generate_pydantic()/generate_json_schema() output, and the negative control shows the first reddens at f743b68f74 without the repair.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/schema/flight.yaml:1134-1150 mirrors the lost_session block and its after_hours slot immediately above it, and StrandedWaitConfig follows the LostSessionConfig class pattern.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition extends the existing LinkML owner (reckon/schema/flight.yaml plus scripts/regen_flight_schema.py) instead of introducing a second config mechanism; reckon/crew/stranded_wait.py:41 already reads the block through flight.resolve().\n",
+  "review_run_id": "r-20261121T054018314813-review-of-wlsr-a-wait-that-cannot-resolve-is-removed-d3ec47714cfc",
+  "reviewed_base_sha": "f743b68f740f9d38ab9aeda8504494aa5680c4e7",
+  "reviewed_head_sha": "d3ec47714cfc58f83eda1f0fd600edeb8869461d",
+  "reviewed_run_id": "r-20261121T010257382729-wlsr-a-wait-that-cannot-resolve-is-removed",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261121T054018314813-review-of-wlsr-a-wait-that-cannot-resolve-is-removed-d3ec47714cfc"
+  },
+  "reviewer_run_id": "r-20261121T054018314813-review-of-wlsr-a-wait-that-cannot-resolve-is-removed-d3ec47714cfc",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T05:45:19.768908+00:00",
+  "total": 117
+}

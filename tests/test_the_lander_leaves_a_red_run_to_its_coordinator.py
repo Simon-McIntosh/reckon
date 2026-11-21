@@ -183,10 +183,16 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     _git(repo, "add", "docs", "tests", "reckon")
     _git(repo, "commit", "-q", "-m", "chore: seed fixture")
     base = _git(repo, "rev-parse", "HEAD")
-    (module / "queue_landing.py").write_text("VALUE = 2\n", encoding="utf-8")
-    _git(repo, "add", "reckon")
-    _git(repo, "commit", "-q", "-m", "feat: change the module")
-    head = _git(repo, "rev-parse", "HEAD")
+    # The run's head is a commit on its own worktree branch, so the delivery is
+    # unmerged: a refusal against it is a duty until the primary branch takes it.
+    worktree = tmp_path / "run-worktree"
+    _git(repo, "worktree", "add", "-q", "-b", "delivery", str(worktree))
+    (worktree / "reckon" / "crew" / "queue_landing.py").write_text(
+        "VALUE = 2\n", encoding="utf-8"
+    )
+    _git(worktree, "add", "reckon")
+    _git(worktree, "commit", "-q", "-m", "feat: change the module")
+    head = _git(worktree, "rev-parse", "HEAD")
     manifest = runs.run_dir(RUN) / runs.DEFAULT_MANIFEST_NAME
     manifest.parent.mkdir(parents=True)
     manifest.write_text(
@@ -200,7 +206,7 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "project": PROJECT,
             "session": SESSION,
             "repo": str(repo),
-            "worktree": str(repo),
+            "worktree": str(worktree),
             "process_alive": False,
             "launch": "in-harness",
             "role": "implement",
@@ -220,8 +226,10 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "suite_command": SUITE,
         },
     )
+    # A real checkout at the base revision: the scope derivation reads commit
+    # objects from the base tree, so a bare directory no longer answers it.
     base_tree = tmp_path / "base-tree"
-    base_tree.mkdir()
+    _git(repo, "worktree", "add", "-q", "--detach", str(base_tree), base)
     monkeypatch.setattr(
         landing_measure,
         "base_checkout",

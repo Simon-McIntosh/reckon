@@ -257,8 +257,20 @@ _CREATING_VERBS = frozenset({"init", "clone"})
 
 
 def worker_shim_directory() -> Path:
-    """The directory the worker shims live in, derived from this module."""
-    return Path(__file__).resolve().parent / "worker_shims"
+    """The directory this process's module reads its git shims from.
+
+    Derived from this module's location, except that a process running from a
+    published reload image names the git shims of the checkout the image was
+    published from: an image lives on the launching node's local disk, and a
+    worker placed on another node cannot read a shim that only exists there.
+    The image rule is stated once, in
+    :func:`reckon.nested_launch.shims_beside`, which the scheduler shims ask
+    as well, so the two families cannot come to different answers about where
+    a worker's node can read its shims.
+    """
+    from reckon.nested_launch import shims_beside
+
+    return shims_beside(Path(__file__), "worker_shims")
 
 
 def real_git(shim_dir: Path, path: str) -> str | None:

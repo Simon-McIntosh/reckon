@@ -70,6 +70,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from reckon import file_memo
 from reckon._observations import optional_number
 from reckon._timestamps import parse_iso, parse_utc
 from reckon._worker_fence import (  # noqa: F401
@@ -126,6 +127,7 @@ from reckon._worker_fence import (  # noqa: F401
     fence_writable_roots,
     harness_agent_store,
     harness_home,
+    harness_home_layout,
     observe_codex_login,
     protected_checkouts,
     protected_paths,
@@ -467,6 +469,10 @@ class LaunchPlan:
     # that may have moved since. An empty name means the node named no set.
     mcp_set: str = ""
     worker_mcp_servers: tuple[str, ...] = ()
+    # The treatment this launch gives the worker, stated once here so two
+    # backends of one lane can be compared fact by fact rather than by reading
+    # each harness's argv. See :mod:`reckon.crew.worker_behaviour`.
+    worker_behaviour: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -484,6 +490,7 @@ class LaunchPlan:
             "mcp_set": self.mcp_set,
             "resumed_session": self.resumed_session,
             "worker_mcp_servers": list(self.worker_mcp_servers),
+            "worker_behaviour": dict(self.worker_behaviour),
         }
 
 
@@ -1157,6 +1164,21 @@ class Dialect:
     """
 
     name = ""
+    # The run-home files this harness's interface reads for the treatment every
+    # worker of a lane shares: the settings group that carries the inbox hook
+    # and the MCP server list, and the JSON configuration that holds the server
+    # allowlist. They are properties of the interface — a claude-shaped wrapper
+    # reads the same files as the harness it wraps — which is why the seeding
+    # reads these rather than the dialect's name. A harness that reads neither
+    # declares neither, and reaches its inbox by reading the run directory.
+    settings_file: str | None = None
+    mcp_config_file: str | None = None
+    mcp_refusal_list: bool = False
+    # The dialect whose home layout this harness interface reads, for a wrapper
+    # that speaks another harness's interface rather than one of its own. A
+    # wrapper taking this value reads the wrapped harness's home, its seeded
+    # files and its delivery hook, and states nothing twice.
+    home_interface: str | None = None
     # Whether this dialect hands an attached image to its harness on a flag of
     # its own. A dialect that does not can still be handed one when its lane
     # declares image input: the paths go into the prompt the worker reads, and
@@ -2040,6 +2062,13 @@ class _OmpDialect(Dialect):
     """
 
     name = "omp"
+    # Its server allowlist lives in the agent store's MCP configuration, which
+    # is the file the run home mirrors; it declares no settings group, so a
+    # message reaches its run through the run directory rather than a hook.
+    mcp_config_file = "agent/mcp.json"
+    # Its configuration records refused servers in a list of its own beside the
+    # allowed ones, rather than by absence from the server table.
+    mcp_refusal_list = True
     # The brief rides on argv, so the process is handed an already-closed
     # stdin rather than prompt text — see the class docstring.
     stdin_prompt = False
@@ -2366,10 +2395,130 @@ def _refuse_foreign_stream(events: Iterable[Mapping[str, Any]]) -> None:
     )
 
 
+# ── The harness that wrote a stream ──────────────────────────────────────────
+# A pointer names the lane its run carries now. A run that changed harness
+# keeps the streams its earlier harnesses wrote, so a fold that trusts the
+# pointer reads one attempt's vocabulary with another's translation: omp
+# refuses the stream outright, and the other dialects fold a foreign-shaped
+# stream to a complete-looking run that spent nothing. Each stream is therefore
+# folded by the harness whose own event vocabulary it opens with, named from the
+# records the stream itself carries.
+
+# Every dialect's own event types, most specific vocabulary first. The event
+# types are what the harness writes; they are read only to name the writer and
+# never decide what a fold reports.
+_DIALECT_VOCABULARIES: tuple[tuple[str, frozenset[str]], ...] = (
+    ("omp", _OMP_EVENT_TYPES),
+    (
+        "codex",
+        frozenset(
+            {
+                "thread.started",
+                "turn.completed",
+                "turn.failed",
+                "item.completed",
+                "stream.error",
+            }
+        ),
+    ),
+    ("claude", frozenset({"system", "assistant", "result"})),
+)
+
+# How much of a stream's opening is read to name its writer: every harness
+# states its vocabulary in its first records, and the bound keeps an
+# unmeasurable or very large stream from being read whole for a name.
+_STREAM_WRITER_SAMPLE_BYTES = 64 * 1024
+
+# The writer named for each stream, keyed by path and the file identity it was
+# named from, so an unchanged attempt is named once however often it is folded.
+_STREAM_WRITERS: OrderedDict[str, tuple[tuple[int, int, int, int], str | None]] = (
+    OrderedDict()
+)
+_STREAM_WRITER_LIMIT = 2048
+_STREAM_WRITER_LOCK = threading.Lock()
+
+
+def _vocabulary_from_sample(chunk: bytes) -> str | None:
+    """Name the dialect whose event types a stream's opening records carry."""
+    kinds: set[str] = set()
+    for line in chunk.decode("utf-8", errors="replace").split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            record = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(record, Mapping):
+            kind = record.get("type")
+            if isinstance(kind, str) and kind:
+                kinds.add(kind)
+    for name, vocabulary in _DIALECT_VOCABULARIES:
+        if kinds & vocabulary:
+            return name
+    return None
+
+
+def stream_writer_dialect(log_path: str | Path) -> str | None:
+    """The dialect name of the harness that wrote this stream, or None.
+
+    None means the opening records name no known vocabulary, and the caller
+    keeps whatever dialect it already had — an unrecognised stream is read
+    exactly as it was before this question was asked.
+    """
+    path = Path(log_path)
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    key = str(path.resolve())
+    with _STREAM_WRITER_LOCK:
+        stored = _STREAM_WRITERS.get(key)
+        if stored is not None and stored[0] == identity:
+            return stored[1]
+    try:
+        with path.open("rb") as handle:
+            chunk = handle.read(_STREAM_WRITER_SAMPLE_BYTES)
+    except OSError:
+        return None
+    writer = _vocabulary_from_sample(chunk)
+    with _STREAM_WRITER_LOCK:
+        _STREAM_WRITERS[key] = (identity, writer)
+        _STREAM_WRITERS.move_to_end(key)
+        while len(_STREAM_WRITERS) > _STREAM_WRITER_LIMIT:
+            _STREAM_WRITERS.popitem(last=False)
+    return writer
+
+
+def _backend_for_stream(
+    backend: Mapping[str, Any], log_path: str | Path
+) -> Mapping[str, Any]:
+    """The settings a stream is folded with: those of the harness that wrote it.
+
+    The caller's dialect is kept whenever it is the stream's own, so a run that
+    never changed harness is read exactly as before. A stream written in another
+    harness's vocabulary is folded by that harness, which is the only
+    translation that can report the attempt's spend.
+    """
+    writer = stream_writer_dialect(log_path)
+    if writer is None:
+        return backend
+    try:
+        current = dialect_for(backend)
+    except BackendError:
+        current = None
+    if current is not None and current.name == writer:
+        return backend
+    return {**dict(backend), "command": writer, "dialect": writer}
+
+
 class _ClaudeDialect(Dialect):
     """Claude Code: `-p` stream-json, session ids, rate-limit headroom."""
 
     name = "claude"
+    settings_file = "settings.json"
+    mcp_config_file = ".claude.json"
     # A claude subscription lane reads the operator's stored login, so the
     # fence binds it writable into the run's harness home.
     subscription_login = True
@@ -2832,6 +2981,10 @@ class _CliveDialect(_ClaudeDialect):
     """
 
     subscription_login = False
+    # Its harness home, its seeded files and its delivery hook are claude's:
+    # the wrapper execs claude itself, so a clive worker gets the treatment a
+    # clive-shaped lane is entitled to without any of it being restated here.
+    home_interface = "claude"
 
 
 _DIALECTS: dict[str, Dialect] = {
@@ -3036,6 +3189,8 @@ def launch_plan(
     fence_waiver: str | None = None,
     masked_paths: Iterable[str | Path] = (),
     unmergeable_patterns: Iterable[str] = (),
+    behaviour_role: str = "implement",
+    flight_config: Mapping[str, Any] | None = None,
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
 
@@ -3184,15 +3339,19 @@ def launch_plan(
             worker_mcp_servers=(
                 resolved_mcp_servers if fence_config is not None else None
             ),
+            settings_file=dialect.settings_file,
+            mcp_config_file=dialect.mcp_config_file,
+            mcp_refusal_list=dialect.mcp_refusal_list,
         )
         # Only the claude arm's treatment is decided by the seeding step: it
         # does the work by editing the run home. A codex launch carries its
         # server on the argv, which this step neither writes nor removes, so
         # its recorded fact must not be replaced by the seeder's answer.
-        if dialect.name == "claude":
+        if dialect.settings_file is not None:
             anchored_edit = seeded_treatment
-        if adopts_harness_home:
-            environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        home_layout = harness_home_layout(dialect.name)
+        if adopts_harness_home and home_layout is not None:
+            environment[home_layout[0]] = str(harness)
         # A harness that keeps its agent store below its home needs the store
         # variable too: the seed mirrors the operator's files relative to the
         # home the run owns, and a harness resolving its store from the
@@ -3203,7 +3362,7 @@ def launch_plan(
         # commits would carry a name and address nobody configured. Naming the
         # global config explicitly restores it through one environment variable
         # the fence already mounts read-only, so no path is made writable.
-        if adopts_harness_home and _HARNESS_HOME[dialect.name][0] == "HOME":
+        if adopts_harness_home and home_layout is not None and home_layout[0] == "HOME":
             operator = Path(fence_home) if fence_home is not None else Path.home()
             operator_config = operator / ".gitconfig"
             if operator_config.is_file():
@@ -3344,6 +3503,20 @@ def launch_plan(
             masked_paths=masked_paths,
             unmergeable_paths=tuple(unmergeable.items()),
         )
+    from reckon.crew.worker_behaviour import compose_worker_behaviour
+
+    behaviour = compose_worker_behaviour(
+        backend_name=backend_name,
+        backend=backend,
+        run_directory=run_directory,
+        role=behaviour_role,
+        fence=fence,
+        write_roots=write_roots,
+        unmergeable_seals=unmergeable,
+        dialect_name=dialect.name,
+        settings_file=dialect.settings_file,
+        config=flight_config,
+    )
     return LaunchPlan(
         backend=backend_name,
         dialect=dialect.name,
@@ -3361,6 +3534,7 @@ def launch_plan(
         unmergeable_seals=unmergeable,
         mcp_set=resolved_mcp_set,
         worker_mcp_servers=tuple(resolved_mcp_servers or ()),
+        worker_behaviour=dict(behaviour.dimensions()),
     )
 
 
@@ -3823,6 +3997,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
             and (stored.whole or not whole)
         ):
             _PARSED_STREAMS.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return stored
         # The held entry carries the version the last read reached whether or
         # not it was asked for the whole stream, so a whole request extends it
@@ -3857,7 +4032,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
     else:
         with source.open("rb") as handle:
             data = handle.read()
-        _count_parsed_bytes(len(data))
+        _record_stream_read(file_memo.ANSWER_RECOMPUTED, len(data))
         added, malformed = parse_events(
             data.decode("utf-8", errors="replace").splitlines()
         )
@@ -3875,6 +4050,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
         live = _PARSED_STREAMS.get(key)
         if live is not None and live.identity == identity and (live.whole or not whole):
             _PARSED_STREAMS.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return live
         pending = (
             [*((stored.pending_events or ()) if joined and stored else ()), *added]
@@ -3942,6 +4118,11 @@ def cached_stream_events(
 # resume a read of an evicted stream starts from, which is why the events cache
 # keeps no second store of its own: this one is already per path and
 # count-bounded.
+# The memo kind this module's stream observation is counted under, so a pass
+# measuring what it recomputed reports the stream reader beside the file parses
+# rather than as an unnamed cost carried inside another kind.
+_STREAM_MEMO_KIND = "stream_observation"
+
 _STREAM_SUMMARY_LOCK = threading.RLock()
 _STREAM_SUMMARIES: OrderedDict[str, _StreamSummary] = OrderedDict()
 _STREAM_SUMMARY_LIMIT = 2048
@@ -4170,6 +4351,7 @@ def _stream_summary(
         stored = _STREAM_SUMMARIES.get(key)
         if stored is not None and stored.identity == identity:
             _STREAM_SUMMARIES.move_to_end(key)
+            file_memo.record_memo(_STREAM_MEMO_KIND, file_memo.ANSWER_CACHED)
             return stored, [], 0, False
     grows = stored is not None and stored.cursor.grows_from(path, info)
     if grows:
@@ -4712,9 +4894,18 @@ def stream_boundary_fingerprint(path: str | Path, *, offset: int) -> dict[str, A
 _PARSED_STREAM_BYTES = [0]
 
 
-def _count_parsed_bytes(count: int) -> None:
-    if count > 0:
-        _PARSED_STREAM_BYTES[0] += count
+def _record_stream_read(outcome: str, count: int) -> None:
+    """Record one stream read against both tallies the read belongs to.
+
+    The producer reports how much of the fleet's stream traffic a poll parsed,
+    and a measuring scope reports what the pass that made the read recomputed.
+    Both totals describe the same bytes, so they are written here, once, rather
+    than beside each other at the readers where they could drift apart.
+    """
+    if count <= 0:
+        return
+    _PARSED_STREAM_BYTES[0] += count
+    file_memo.record_memo(_STREAM_MEMO_KIND, outcome, count)
 
 
 def take_parsed_stream_bytes() -> int:
@@ -4777,7 +4968,7 @@ def _stream_lines_from(
         return [], offset
     text = data[: cut + 1].decode("utf-8", errors="replace")
     if count:
-        _count_parsed_bytes(cut + 1)
+        _record_stream_read(file_memo.ANSWER_EXTENDED, cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 
@@ -4848,6 +5039,10 @@ def _observe_run_stream(
             detail=f"event log not written yet: {path}",
         )
         return obs
+    # Each attempt is folded by the harness that wrote it. A run that changed
+    # lane keeps its earlier attempts' streams, and the pointer now names a
+    # dialect those streams are not written in.
+    backend = _backend_for_stream(backend, path)
     # The derived reading of this stream is held per file identity, so an
     # unchanged stream costs no decode and a grown one is folded from the
     # offset the last read reached. A caller's ``resume`` is the fallback for a

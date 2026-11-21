@@ -65,6 +65,16 @@ from reckon.shim_lookup import (
 # scheduler tools so a caller can tell a refusal from a launch failure.
 REFUSAL_STATUS = 97
 
+# The variables a launch's environment names its run and the coordinator
+# session that dispatched it in. Dispatch exports them into every worker it
+# starts, so a job a worker submits can be traced back to both.
+RUN_ID_ENV = "RECKON_RUN_ID"
+SESSION_ID_ENVS = ("RECKON_SESSION_ID", "RECKON_CREW_SESSION")
+
+# The prefix every comment this module adds carries, so a reader of `squeue`
+# or `scontrol show job` can tell a run's identity from any other.
+OWNER_COMMENT_PREFIX = "reckon"
+
 # The line a fenced launch writes to stderr before the task's own first output,
 # so a job log it captures opens with this notice rather than with the header
 # the measure writes. Named here because the manifest audit has to recognise it
@@ -449,26 +459,30 @@ def real_binary(
     return real_executable(tool, path, skipped=[shim_dir])
 
 
-def shim_directory() -> Path:
-    """The shim directory a launched worker can read, wherever it runs.
+def shims_beside(module_file: Path, directory: str) -> Path:
+    """The shims directory beside the module at ``module_file``.
 
-    The directory is derived from this module's location, with one exception.
+    The directory is derived from the module's location, with one exception.
     A service that reloads itself imports the package from a published reload
     image, and an image lives on the launching node's local disk and never
     travels between nodes. A worker placed on another node is handed this
     directory twice — on its search path, and as the source of the mounts that
-    put a shim in front of each scheduler binary — and a mount whose source the
-    worker's node does not hold refuses the launch outright. The shim also
-    looks for its interpreter in the environment beside its own checkout, which
-    an image does not carry.
+    put a shim in front of each tool — and a mount whose source the worker's
+    node does not hold refuses the launch outright. A shim also looks for its
+    interpreter in the environment beside its own checkout, which an image
+    does not carry.
 
     So a process running from an image names the shims of the checkout the
     image was published from: the root its launcher carried, or else the
     checkout that owns the running interpreter's environment. Either is on the
     storage every node shares. An image whose checkout cannot be found keeps
     its own directory, which is still right for a worker on the same node.
+
+    Both shim families a launch hands a worker ask here, so the rule is stated
+    once: the scheduler shims through :func:`shim_directory`, the git shims
+    through :func:`reckon.worker_git_shim.worker_shim_directory`.
     """
-    own = Path(__file__).resolve().parent / "host_shims"
+    own = module_file.resolve().parent / directory
     from reckon.checkout_trust import published_reload_image
 
     if not published_reload_image(own.parent.parent):
@@ -479,10 +493,15 @@ def shim_directory() -> Path:
     ):
         if not root:
             continue
-        candidate = (Path(root) / "reckon" / "host_shims").resolve()
+        candidate = (Path(root) / "reckon" / directory).resolve()
         if candidate != own and candidate.is_dir():
             return candidate
     return own
+
+
+def shim_directory() -> Path:
+    """The scheduler shims a launched worker can read, wherever it runs."""
+    return shims_beside(Path(__file__), "host_shims")
 
 
 # The bubblewrap options a composed fence is built from, grouped by what they
@@ -586,17 +605,10 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
     return fence_roots([str(word) for word in argv])
 
 
-# How long a submitted job's task waits for its node's mounts to hold before it
-# starts: the tries, and the pause between them. A job node's automounter makes
-# and removes mount points under the node tmp for about the first second of a
-# job, and the fence's setup fails on one that vanishes while it is being bound.
-MOUNT_SETTLE_TRIES = 10
-MOUNT_SETTLE_SECONDS = 1.0
-
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
-_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile, time
+_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile
 spec = json.loads(base64.urlsafe_b64decode(sys.argv[-1]))
 recipe = spec["fence"]
 # The recipe's own list, not a copy: a seal this node repairs to the ``-try``
@@ -706,6 +718,14 @@ if not spec.get("sources_prepared"):
             for child in sorted(parent.iterdir()):
                 if child.is_symlink():
                     prepare += ["--symlink", os.readlink(child), str(child)]
+                elif child.is_dir() and not os.access(child, os.R_OK | os.X_OK):
+                    # A directory this user cannot enter cannot be bound by
+                    # name either: a job node's tmp holds other accounts'
+                    # private directories and stale mounts of deleted ones,
+                    # and one such child refused the whole fence before the
+                    # task started. The task could never have read it, so it
+                    # is left out of the private copy of its parent.
+                    continue
                 else:
                     prepare += ["--dev-bind", str(child), str(child)]
         for path in missing:
@@ -727,20 +747,6 @@ try:
         command = [script, *command]
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
     prefix += ["--setenv", spec["env"], encoded]
-    # The fence binds the node's whole tree, submounts included. A job node's
-    # automounter makes short-lived mount points under the node tmp while a job
-    # starts, and one that is listed and then gone fails the fence's own setup
-    # before the task runs. That is the node settling, not a refusal, so the
-    # mounts are tried with a task that does nothing until they hold, for a
-    # bounded number of tries. Any other failure is left for the real start to
-    # report, and the task itself is started exactly once.
-    for _ in range(_MOUNT_SETTLE_TRIES):
-        probe = subprocess.run([*prefix, "--", "/bin/true"], check=False,
-                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.PIPE)
-        if probe.returncode == 0 or b"Can't bind mount" not in probe.stderr:
-            break
-        time.sleep(_MOUNT_SETTLE_SECONDS)
     result = subprocess.run([*prefix, "--", *command], check=False)
 finally:
     if script is not None:
@@ -751,10 +757,8 @@ raise SystemExit(result.returncode if result.returncode >= 0 else 128-result.ret
 # the parent cannot import from, and a constant a reader edits in one place is
 # how the status the parent documents and the status the child exits with stay
 # the same figure.
-_TASK_REENTRY = (
-    _TASK_REENTRY_TEMPLATE.replace("_FENCE_PROGRAM_STATUS", str(FENCE_PROGRAM_STATUS))
-    .replace("_MOUNT_SETTLE_TRIES", str(MOUNT_SETTLE_TRIES))
-    .replace("_MOUNT_SETTLE_SECONDS", str(MOUNT_SETTLE_SECONDS))
+_TASK_REENTRY = _TASK_REENTRY_TEMPLATE.replace(
+    "_FENCE_PROGRAM_STATUS", str(FENCE_PROGRAM_STATUS)
 )
 
 
@@ -875,6 +879,57 @@ def _scheduler_options(
         options.append((name, value, list(argv[start : index + 1])))
         index += 1
     return options, []
+
+
+def owner_comment(environ: Mapping[str, str]) -> str:
+    """The comment naming the run and session that submits a job, or ``""``.
+
+    A submission outside any run carries nothing: without ``RECKON_RUN_ID``
+    there is no owner to name, whatever a session variable says. The session
+    is the run's coordinator, so it is added when the launch states it and the
+    run id alone is still named when it is absent.
+    """
+    run_id = str(environ.get(RUN_ID_ENV) or "").strip()
+    if not run_id:
+        return ""
+    session = ""
+    for name in SESSION_ID_ENVS:
+        session = str(environ.get(name) or "").strip()
+        if session:
+            break
+    if session:
+        return f"{OWNER_COMMENT_PREFIX} session={session} run={run_id}"
+    return f"{OWNER_COMMENT_PREFIX} run={run_id}"
+
+
+def with_owner_comment(argv: Sequence[str], environ: Mapping[str, str]) -> list[str]:
+    """The argv with the submitting run's owner added to its comment field.
+
+    A comment the caller supplied is kept and the owner is appended to it, so
+    a site that names its own reason for the job does not lose it. The scan
+    stops at the first operand, because from there the words belong to the
+    launched command rather than to the scheduler.
+    """
+    owner = owner_comment(environ)
+    arguments = list(argv)
+    if not owner:
+        return arguments
+    for index, argument in enumerate(arguments):
+        if argument == "--":
+            break
+        if argument.startswith("--comment="):
+            arguments[index] = f"{argument} {owner}"
+            return arguments
+        if argument == "--comment":
+            following = index + 1
+            if following < len(arguments) and not arguments[following].startswith("-"):
+                arguments[following] = f"{arguments[following]} {owner}"
+            else:
+                arguments[index] = f"--comment={owner}"
+            return arguments
+        if not argument.startswith("-"):
+            break
+    return [f"--comment={owner}", *arguments]
 
 
 def _batch_directives(script: bytes) -> list[str]:
@@ -1000,5 +1055,6 @@ def main(
     except (ValueError, OSError) as exc:
         print(f"{tool}: refusing an unfenced scheduler task: {exc}", file=sys.stderr)
         return REFUSAL_STATUS
+    task_argv = with_owner_comment(task_argv, env)
     os.execve(found, [tool, *task_argv], deeper(env))  # noqa: S606
     raise AssertionError("os.execve returned; a forwarded launch cannot continue.")

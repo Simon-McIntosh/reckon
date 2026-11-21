@@ -81,6 +81,11 @@ from .recovery_vocabulary import (
     WAIT_PROBE_TIMEOUT_SECONDS as WAIT_PROBE_TIMEOUT_SECONDS,
 )
 from .recovery_classification import (
+    LAUNCH_STEP_GONE as LAUNCH_STEP_GONE,
+    LAUNCH_STEP_PRESENT as LAUNCH_STEP_PRESENT,
+    SETTLE_PHASES as SETTLE_PHASES,
+    _launch_step_state as _launch_step_state,
+    _settled_evidence as _settled_evidence,
     classify_pointer as classify_pointer,
 )
 from .recovery_liveness import (

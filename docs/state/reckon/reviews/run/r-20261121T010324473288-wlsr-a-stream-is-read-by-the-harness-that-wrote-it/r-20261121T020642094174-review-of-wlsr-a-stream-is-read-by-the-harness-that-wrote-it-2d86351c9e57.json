@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "The reviewed run's fence recorded its suite as unarmed and its manifest carries no baseline_suite or after_suite pair, so no added-failure set is derivable; the node's own gate.log (5 passed) and negative-control.log (4 failed at base) are not a base/head suite pair.",
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:179",
+    "reckon/crew/dispatch_sessions.py:269",
+    "reckon/crew/dispatch_sessions.py:949",
+    "reckon/crew/recovery_stream.py:739",
+    "reckon/crew/resumption.py:712",
+    "reckon/crew/resumption.py:982"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T02:07:48Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": 2381,
+      "severity": "non-blocking",
+      "text": "non-blocking: _DIALECT_VOCABULARIES restates the codex and claude event-type-to-dialect mapping already owned by _FOREIGN_EVENT_TYPES at reckon/_backends.py:1975, so the module now holds two copies of one table and a third dialect added to one will not reach the other."
+    },
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-stream-is-read-by-the-harness-that-wrote-it.html",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says all four base-arm failures are the omp dialect's refusal, but tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py:194 calls stream_writer_dialect, which does not exist at the base revision, so that case fails with an AttributeError rather than through _refuse_foreign_stream."
+    },
+    {
+      "file": "tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py",
+      "line": 154,
+      "severity": "non-blocking",
+      "text": "non-blocking: the spend assertions on measured_stream_count and the token sums read metering.accumulate_run_spend, which parses usage records itself and imports no _backends, so they pass at the base revision and do not guard the landed fold, while the fragment's claim at line 21 that the change made both attempts readable overstates what the change does for spend."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against ff3bb24bcf; d8d18132df adds the per-stream writer naming and 403 lines of test, 2d86351c9e adds the 26-line evidence fragment.",
+    "done_when": "the done_when names tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py and its five cases plus a base-revision refusal; gate.log records 5 passed and negative-control.log records the refusal.",
+    "goal": "the goal is to fold each attempt's stream by the dialect that wrote it; reckon/_backends.py:4972 substitutes the writer's dialect per stream before the fold.",
+    "manifest": "read; it states the gate command, its 5 passed result and 4 failed base control, names gate.log and negative-control.log, and lists all three changed paths.",
+    "write_paths": "the declared paths are the evidence fragment and figures directory; the diff also changes reckon/_backends.py and the test file the done_when names, which the worktree scope permits and the goal implies."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py:167 and :399 redden when the pointer fold is reinstated at the base revision, but the cache-invalidation path at reckon/_backends.py:2447 has no test.",
+    "evidence": "gate.log records 5 passed and negative-control.log records 4 failed at the base revision, but the control's stated cause is overstated for one case and three spend assertions measure metering code the change does not touch.",
+    "fit": "reckon/_backends.py:2405 follows the module's existing module-level table, lock and bounded-cache idiom beside _PARSED_STREAMS.",
+    "goal_fidelity": "reckon/_backends.py:4972 folds each attempt with the dialect its own stream names, which is what the node's goal states.",
+    "reuse": "reckon/_backends.py:2381 restates the codex and claude event-type mapping already owned by _FOREIGN_EVENT_TYPES at reckon/_backends.py:1975 rather than deriving from it.",
+    "scope_discipline": "the diff touches only reckon/_backends.py, the new test file and the declared evidence fragment, and the source and test edits are the ones the done_when names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to fold each attempt's stream by the dialect that wrote it; reckon/_backends.py:4972 substitutes the writer's dialect per stream before the fold.\nVERDICT done_when: the done_when names tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py and its five cases plus a base-revision refusal; gate.log records 5 passed and negative-control.log records the refusal.\nVERDICT write_paths: the declared paths are the evidence fragment and figures directory; the diff also changes reckon/_backends.py and the test file the done_when names, which the worktree scope permits and the goal implies.\nVERDICT manifest: read; it states the gate command, its 5 passed result and 4 failed base control, names gate.log and negative-control.log, and lists all three changed paths.\nVERDICT diff: read commit by commit against ff3bb24bcf; d8d18132df adds the per-stream writer naming and 403 lines of test, 2d86351c9e adds the 26-line evidence fragment.\nCALL_SITES: reckon/crew/promotion_checks.py:179, reckon/crew/dispatch_sessions.py:269, reckon/crew/dispatch_sessions.py:949, reckon/crew/recovery_stream.py:739, reckon/crew/resumption.py:712, reckon/crew/resumption.py:982\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:4972 folds each attempt with the dialect its own stream names, which is what the node's goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log records 5 passed and negative-control.log records 4 failed at the base revision, but the control's stated cause is overstated for one case and three spend assertions measure metering code the change does not touch.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff touches only reckon/_backends.py, the new test file and the declared evidence fragment, and the source and test edits are the ones the done_when names.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py:167 and :399 redden when the pointer fold is reinstated at the base revision, but the cache-invalidation path at reckon/_backends.py:2447 has no test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:2405 follows the module's existing module-level table, lock and bounded-cache idiom beside _PARSED_STREAMS.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/_backends.py:2381 restates the codex and claude event-type mapping already owned by _FOREIGN_EVENT_TYPES at reckon/_backends.py:1975 rather than deriving from it.\nFINDING reckon/_backends.py:2381 non-blocking: _DIALECT_VOCABULARIES restates what _FOREIGN_EVENT_TYPES at reckon/_backends.py:1975 already owns, so two copies of one table can drift.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-stream-is-read-by-the-harness-that-wrote-it.html:23 non-blocking: the fragment says all four base-arm failures are the omp refusal, but tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py:194 fails at base on the absent stream_writer_dialect.\nFINDING tests/test_a_stream_is_read_by_the_harness_that_wrote_it.py:154 non-blocking: the spend assertions read metering.accumulate_run_spend, which imports no _backends, so they pass at the base revision and do not guard the landed fold.\n",
+  "review_run_id": "r-20261121T020642094174-review-of-wlsr-a-stream-is-read-by-the-harness-that-wrote-it-2d86351c9e57",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "2d86351c9e571a307629a45cc0d3887cb8a2787d",
+  "reviewed_run_id": "r-20261121T010324473288-wlsr-a-stream-is-read-by-the-harness-that-wrote-it",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:31:05.444202+00:00",
+  "total": 99
+}

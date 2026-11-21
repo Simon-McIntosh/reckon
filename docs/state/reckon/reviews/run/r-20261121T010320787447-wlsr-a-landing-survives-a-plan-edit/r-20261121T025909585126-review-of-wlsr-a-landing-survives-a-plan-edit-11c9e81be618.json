@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:3080 (_complete_locked fresh-promotion path calls _record_comment_with_snapshot)",
+    "reckon/crew/promotion.py:3233 (_complete_locked fresh-promotion path calls _commit_with_plan_snapshot)",
+    "reckon/crew/promotion.py:2501 and :2517 (already-promoted path)",
+    "reckon/crew/promotion_requests.py:638 (crew complete -> promotion.complete -> _complete_locked)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T03:00:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2253",
+      "severity": "non-blocking",
+      "text": "non-blocking: when the plan changed in a way that is neither the recognised appended comment nor a removed section \u2014 for example a hand-edited document whose bytes re-render differently, or a landing whose narrative is empty so no comment is written \u2014 _adopt_a_plan_edited_after_the_snapshot returns None and require_owned_content re-raises after ledger.append_run at :3233 has already written the row, so a promotion is still recorded with the head unmerged; the plan's \"stops before the ledger row is written\" guarantee is enforced only by the section-removal guard at :2117 and the edge is untested."
+    },
+    {
+      "file": "docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-landing-survives-a-plan-edit.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Measured caption says every arm's log names the module that served the run, but the base arm's header records `<export>/reckon/crew/promotion.py` and `<export>` for module and cwd, and the manifest carries no measurement_module or measurement_cwd, so the base arm's revision attribution cannot be verified from the log the fragment cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against ff3bb24bcf \u2014 1627d4bf3a adds _declared_sections, _refuse_a_comment_the_plan_cannot_hold, _adopt_a_plan_edited_after_the_snapshot, the guard call at :2208 and the adoption branch at :2253, plus the 229-line test; 7d2b821ec4 adds the 53-line evidence fragment; 11c9e81be6 corrects the adoption docstring to describe the re-render check it actually performs.",
+    "done_when": "the done_when names tests/test_a_landing_survives_a_plan_edit.py with two cases; both are asserted end-to-end through the real `crew complete --land` CLI at :188-229, and the manifest records the file passing (evidence/gate.log: 2 passed, EXIT=0).",
+    "goal": "the node's goal is the \u00a720 deliverable \u2014 a landing whose plan moved after its snapshot writes its comment onto the current plan and merges the head, and one whose section the plan no longer declares stops before the ledger row; reckon/crew/promotion.py:2151 (_adopt_a_plan_edited_after_the_snapshot) and :2117 (_refuse_a_comment_the_plan_cannot_hold) implement both halves.",
+    "manifest": "read; status complete, commits 1627d4bf3a/7d2b821ec4/11c9e81be6, the gate command and logs recorded, the base arm named at evidence/base-arm.log, and an honest statement that no plan HTML or figure was touched.",
+    "write_paths": "the declared paths are the evidence fragment, the figures directory, reckon/crew/promotion.py and the new test; git diff --stat ff3bb24bcf..11c9e81be6 lists exactly the fragment, promotion.py and the test, so every delivered path is inside the declared set and no figure is created."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_survives_a_plan_edit.py:206 and :223-229 assert against independent git state (merge-base ancestry, HEAD's committed plan, the ledger path) and the base arm shows each reddening at ff3bb24bcf, so reverting either half reddens its case.",
+    "evidence": "evidence/gate.log records 2 passed EXIT=0 at 1627d4bf3a and evidence/base-arm.log records both cases failing EXIT=1 at ff3bb24bcf, so the gate measures the done_when and reproduces the defect; the base arm's module and cwd are placeholders rather than absolute paths.",
+    "fit": "the helpers at reckon/crew/promotion.py:2105-2200 are private module functions with mechanism docstrings beside the existing _PlanWriteSnapshot methods at :1957, and no added name carries a plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:2151 recognises HEAD's plan plus this run's appended comment by byte-identical re-render and commits it, and :2117 refuses a dropped section before the row; the residual non-adoptable edit still refuses after the row (see finding).",
+    "reuse": "a search over reckon/ found no owner for the union of a plan's declared section ids (_plan_html.open_sections at :1166 answers a different question and _store._undeclared_headings at :5362 is its inverse), so _declared_sections at :2105 is new, while section_anchor and _comment_append_onto_current are reused rather than re-implemented.",
+    "scope_discipline": "every path in git diff --stat ff3bb24bcf..11c9e81be6 is one of the four declared paths, and no plan HTML, plan state or figure was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the \u00a720 deliverable \u2014 a landing whose plan moved after its snapshot writes its comment onto the current plan and merges the head, and one whose section the plan no longer declares stops before the ledger row; reckon/crew/promotion.py:2151 (_adopt_a_plan_edited_after_the_snapshot) and :2117 (_refuse_a_comment_the_plan_cannot_hold) implement both halves.\nVERDICT done_when: the done_when names tests/test_a_landing_survives_a_plan_edit.py with two cases; both are asserted end-to-end through the real `crew complete --land` CLI at :188-229, and the manifest records the file passing (evidence/gate.log: 2 passed, EXIT=0).\nVERDICT write_paths: the declared paths are the evidence fragment, the figures directory, reckon/crew/promotion.py and the new test; git diff --stat ff3bb24bcf..11c9e81be6 lists exactly the fragment, promotion.py and the test, so every delivered path is inside the declared set and no figure is created.\nVERDICT manifest: read; status complete, commits 1627d4bf3a/7d2b821ec4/11c9e81be6, the gate command and logs recorded, the base arm named at evidence/base-arm.log, and an honest statement that no plan HTML or figure was touched.\nVERDICT diff: read commit by commit against ff3bb24bcf \u2014 1627d4bf3a adds _declared_sections, _refuse_a_comment_the_plan_cannot_hold, _adopt_a_plan_edited_after_the_snapshot, the guard call at :2208 and the adoption branch at :2253, plus the 229-line test; 7d2b821ec4 adds the 53-line evidence fragment; 11c9e81be6 corrects the adoption docstring to describe the re-render check it actually performs.\nCALL_SITES: reckon/crew/promotion.py:3080 (_complete_locked fresh-promotion path calls _record_comment_with_snapshot), reckon/crew/promotion.py:3233 (_complete_locked fresh-promotion path calls _commit_with_plan_snapshot), reckon/crew/promotion.py:2501 and :2517 (already-promoted path), reckon/crew/promotion_requests.py:638 (crew complete -> promotion.complete -> _complete_locked)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2151 recognises HEAD's plan plus this run's appended comment by byte-identical re-render and commits it, and :2117 refuses a dropped section before the row; the residual non-adoptable edit still refuses after the row (see finding).\nSCORE evidence: 17\nJUSTIFICATION evidence: evidence/gate.log records 2 passed EXIT=0 at 1627d4bf3a and evidence/base-arm.log records both cases failing EXIT=1 at ff3bb24bcf, so the gate measures the done_when and reproduces the defect; the base arm's module and cwd are placeholders rather than absolute paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat ff3bb24bcf..11c9e81be6 is one of the four declared paths, and no plan HTML, plan state or figure was written.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_landing_survives_a_plan_edit.py:206 and :223-229 assert against independent git state (merge-base ancestry, HEAD's committed plan, the ledger path) and the base arm shows each reddening at ff3bb24bcf, so reverting either half reddens its case.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at reckon/crew/promotion.py:2105-2200 are private module functions with mechanism docstrings beside the existing _PlanWriteSnapshot methods at :1957, and no added name carries a plan, stage or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search over reckon/ found no owner for the union of a plan's declared section ids (_plan_html.open_sections at :1166 answers a different question and _store._undeclared_headings at :5362 is its inverse), so _declared_sections at :2105 is new, while section_anchor and _comment_append_onto_current are reused rather than re-implemented.\nFINDING reckon/crew/promotion.py:2253 non-blocking: when the plan changed in a way that is neither the recognised appended comment nor a removed section \u2014 for example a hand-edited document whose bytes re-render differently, or a landing whose narrative is empty so no comment is written \u2014 _adopt_a_plan_edited_after_the_snapshot returns None and require_owned_content re-raises after ledger.append_run at :3233 has already written the row, so a promotion is still recorded with the head unmerged; the plan's \"stops before the ledger row is written\" guarantee is enforced only by the section-removal guard at :2117 and the edge is untested.\nFINDING docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-landing-survives-a-plan-edit.html:33 non-blocking: the Measured caption says every arm's log names the module that served the run, but the base arm's header records `<export>/reckon/crew/promotion.py` and `<export>` for module and cwd, and the manifest carries no measurement_module or measurement_cwd, so the base arm's revision attribution cannot be verified from the log the fragment cites.",
+  "review_run_id": "r-20261121T025909585126-review-of-wlsr-a-landing-survives-a-plan-edit-11c9e81be618",
+  "reviewed_base_sha": "ff3bb24bcf916047144aadb4c3fc0315e9687219",
+  "reviewed_head_sha": "11c9e81be6183ce4b35e7c95ce04f880b76808e7",
+  "reviewed_run_id": "r-20261121T010320787447-wlsr-a-landing-survives-a-plan-edit",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261121T025909585126-review-of-wlsr-a-landing-survives-a-plan-edit-11c9e81be618",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T03:45:00+00:00",
+  "total": 111
+}

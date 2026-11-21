@@ -103,10 +103,14 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
     _git(repo, "add", "marker.txt", "docs", "skills")
     _git(repo, "commit", "-q", "-m", "chore: seed fixture")
     base = _git(repo, "rev-parse", "HEAD")
-    (repo / "marker.txt").write_text("delivered\n", encoding="utf-8")
-    _git(repo, "add", "marker.txt")
-    _git(repo, "commit", "-q", "-m", "feat: deliver marker")
-    head = _git(repo, "rev-parse", "HEAD")
+    # The delivery is a commit on the run's own worktree branch, so the primary
+    # branch does not reach it until a landing merges it.
+    worktree = tmp_path / "run-worktree"
+    _git(repo, "worktree", "add", "-q", "-b", "delivery", str(worktree))
+    (worktree / "marker.txt").write_text("delivered\n", encoding="utf-8")
+    _git(worktree, "add", "marker.txt")
+    _git(worktree, "commit", "-q", "-m", "feat: deliver marker")
+    head = _git(worktree, "rev-parse", "HEAD")
     manifest = runs.run_dir(RUN) / runs.DEFAULT_MANIFEST_NAME
     manifest.parent.mkdir(parents=True)
     manifest.write_text(
@@ -120,7 +124,7 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
             "project": PROJECT,
             "session": SESSION,
             "repo": str(repo),
-            "worktree": str(repo),
+            "worktree": str(worktree),
             "base_sha": base,
             "suite_command": "true",
             "process_alive": False,
@@ -130,7 +134,7 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
             "node": {"id": "implementation", "write_paths": ["marker.txt"]},
         },
     )
-    return {"repo": repo, "base": base, "head": head}
+    return {"repo": repo, "worktree": worktree, "base": base, "head": head}
 
 
 def _review(*, base: str, head: str, score: int = 20, finding: str = "") -> None:
@@ -194,6 +198,15 @@ def test_accepted_delivery_lands_before_its_downstream_is_admitted(
         assert run_id == RUN
         events.append("land")
         revision = str(delivery["head"])
+        # A landing puts the run's head on the primary branch.
+        _git(
+            Path(delivery["repo"]),
+            "merge",
+            "--no-ff",
+            "-m",
+            "land the delivery",
+            "delivery",
+        )
         _git(Path(delivery["repo"]), "merge-base", "--is-ancestor", revision, "HEAD")
         row = ledger.run_path(PROJECT, run_id)
         row.parent.mkdir(parents=True, exist_ok=True)
@@ -349,7 +362,7 @@ def test_an_unchanged_head_is_not_reviewed_a_second_time(
 
 def test_land_records_the_shared_completion_command_as_a_request(delivery) -> None:
     measured = queue_landing._measure_delivery(
-        runs.read_pointer(RUN), RUN, str(delivery["head"]), str(delivery["repo"])
+        runs.read_pointer(RUN), RUN, str(delivery["head"]), str(delivery["worktree"])
     )
     assert queue_landing._measure_guard(measured) == ""
 

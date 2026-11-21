@@ -743,6 +743,103 @@ def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
     return None
 
 
+#: The run's launch step is listed by the scheduler that placed it.
+LAUNCH_STEP_PRESENT = "present"
+#: The scheduler answered, and lists no step for this run's launch.
+LAUNCH_STEP_GONE = "gone"
+
+
+def _launch_step_command(record: Mapping[str, Any]) -> list[str] | None:
+    """The step-list query for a run whose launch runs as a placed step.
+
+    A launch that is not a step — a worker a held allocation's own batch step
+    spawned, or a process this host forked — has no step of its own to look for,
+    so this answers None and the run is left to the liveness readings that can
+    describe it. The run's recorded argv is the step's one statement of itself,
+    and it lives in the run directory rather than on the pointer.
+
+    The query names the job and the step, because a reservation's job also
+    carries the steps of every other run placed in it. Both halves are needed
+    for a different reason. ``--jobs`` bounds the question to the allocation;
+    ``--name`` is what makes the answer about this run alone, since each launch
+    composes the run's id as its step's name and the stop path addresses the
+    same name. Naming the step in the query is not an optimisation: the shared
+    scheduler reader answers one line, the last, so an unfiltered listing of a
+    busy reservation would drop this run's step whenever another step printed
+    after it, and a step that is still listed would read as gone.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.crew.process_signal import _step_argv, argv_uses_step
+
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    try:
+        directory = runs_module.run_dir(run_id)
+    except (CrewError, OSError):
+        return None
+    argv = _step_argv(directory)
+    if not argv_uses_step(argv):
+        return None
+    job_ids = [
+        str(word).removeprefix("--jobid=")
+        for word in argv
+        if str(word).startswith("--jobid=")
+    ]
+    if len(job_ids) != 1 or not job_ids[0].isdigit():
+        return None
+    return [
+        "squeue",
+        "--steps",
+        "-h",
+        "--jobs",
+        job_ids[0],
+        f"--name={run_id}",
+        "--format=%i %j",
+    ]
+
+
+def _launch_step_state(record: Mapping[str, Any], *, runner=None) -> str | None:
+    """Whether the scheduler still lists the step a run's launch took.
+
+    ``None`` is "the question could not be put, or would mean nothing": a launch
+    that composes no step, a scheduler absent or refusing the query, and an
+    answer no reader can pair with a step name. None never settles a run, because
+    a question nobody answered is not evidence that anything ended.
+
+    The answers come from one instrument, the scheduler's own step listing, so a
+    step that finished, was cancelled with its allocation, or never started reads
+    the same way: the step list no longer names it. What this keeps apart is a
+    step the scheduler still holds, which is a worker that may write again.
+    """
+    from reckon.crew.process_liveness import _ask_scheduler
+
+    argv = _launch_step_command(record)
+    if argv is None:
+        return None
+    run_id = str(record.get("run_id") or "")
+    output = _ask_scheduler(argv, runner)
+    if output is None:
+        return None
+    steps: list[tuple[str, str]] = []
+    for line in str(output).splitlines():
+        parts = line.split(maxsplit=1)
+        if not parts:
+            continue
+        if len(parts) == 1:
+            # A listing this reader cannot pair with a name says nothing about
+            # which step is this run's; reading the id alone as an answer would
+            # call every run in a shared reservation settled at once.
+            return None
+        step_id, name = parts[0].strip(), parts[1].strip()
+        if step_id.endswith((".batch", ".extern")):
+            continue
+        steps.append((step_id, name))
+    if any(name == run_id or run_id.startswith(name) for _step, name in steps):
+        return LAUNCH_STEP_PRESENT
+    return LAUNCH_STEP_GONE
+
+
 def _producer_gone_verdict(
     record: Mapping[str, Any],
     *,
@@ -1379,6 +1476,73 @@ def _stuck_verdict_for(record: Mapping[str, Any]) -> dict[str, Any] | None:
     return runs_module.stuck_verdict(record)
 
 
+#: The phases a run holds before and while its worker writes. A pointer still in
+#: one of these with no launch step and a stream that stopped is the reading
+#: :func:`_settled_evidence` settles; every other phase already says what the
+#: run is, or is past the work this reading is about.
+SETTLE_PHASES = frozenset({"starting", "working"})
+
+
+def _settle_quiet_after_seconds(record: Mapping[str, Any]) -> float:
+    """The quiet bound this run's project is settled against, in seconds."""
+    from reckon.crew import runs as runs_module
+    from reckon import flight
+
+    project = str(record.get("project") or "")
+    config = (
+        runs_module.resolved_tick_config(project)
+        if project
+        else flight.resolve().config
+    )
+    return flight.settle_quiet_after_seconds(config)
+
+
+def _settled_evidence(
+    record: Mapping[str, Any],
+    *,
+    alive: bool | None,
+    worker_alive: bool | None,
+    descendant_alive: bool | None,
+    now_seconds: float,
+    step_runner=None,
+) -> dict[str, Any] | None:
+    """The evidence that a live-looking pointer has nothing behind it, or None.
+
+    A pointer reads live for two different reasons, and only one of them is a
+    worker. A run whose launch step has left the scheduler and whose stream has
+    stopped growing behind the recorded attempt clock is a run that ended without
+    delivering, whatever its phase says: the pointer's launch writer set the
+    phase and nothing will advance it, because the process that would have done
+    so is gone. The other reason is a worker that is alive and quiet, which is a
+    worker, so any positive liveness reading cancels this one.
+
+    The bound is measured from :func:`_run_stream_quiet_seconds`, which caps the
+    stream's silence at the attempt's own clock: a run resumed five minutes ago
+    is young however old its predecessor's stream is. Nothing here concludes an
+    end from age alone, which is why the step has to be gone, and why an
+    unreadable scheduler leaves the pointer alone.
+    """
+    if str(record.get("phase") or "") not in SETTLE_PHASES:
+        return None
+    if alive is True or worker_alive is True or descendant_alive is True:
+        return None
+    quiet = _run_stream_quiet_seconds(record, now_seconds=now_seconds)
+    bound = int(_settle_quiet_after_seconds(record))
+    if bound <= 0 or quiet <= bound:
+        return None
+    if _launch_step_state(record, runner=step_runner) != LAUNCH_STEP_GONE:
+        return None
+    found = _record_newest_stream(record)
+    return {
+        "step_state": LAUNCH_STEP_GONE,
+        "quiet_seconds": int(quiet),
+        "quiet_after_seconds": bound,
+        "stream": (
+            str(found[0]) if found is not None else str(record.get("log_path") or "")
+        ),
+    }
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -2013,6 +2177,10 @@ def classify_pointer(
     # so a turn that ended before the worker acted carries the premature end
     # rather than the abandoned word its dead process would otherwise give it.
     premature_end: tuple[str, str] | None = None
+    # Set only by the settle arm below: the evidence a pointer that read live
+    # with no worker behind it carried, so the row says what was measured
+    # rather than only that something was concluded.
+    settled: dict[str, Any] | None = None
     # The request phase vocabulary is owned by the admission module, which
     # imports the recovery readers at module level; naming it here at import
     # time would close that loop, so it is named where it is read.
@@ -2111,6 +2279,12 @@ def classify_pointer(
             working = [str(run) for run in record.get("upstream_live") or () if run]
             if working:
                 detail += f" ({', '.join(working)} live on it)"
+            # The admission pass classes the wait by what could release it, so
+            # the account a reader shows is derived from that class rather than
+            # parsed back out of the refs.
+            wait_detail = str(record.get("wait_detail") or "")
+            if wait_detail:
+                detail = wait_detail
             action = f"wait for {waiting_on} to land"
     elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
@@ -2954,8 +3128,9 @@ def classify_pointer(
         else:
             action = (
                 f"fix the command and PATH for backend "
-                f"{latest.get('backend') or record.get('backend')!r}, then resume "
-                f"{run_id} by hand — the lift loop stays stopped until then"
+                f"{latest.get('backend') or record.get('backend')!r}, then launch "
+                f"a fresh attempt with `reckon crew resume --run {run_id} "
+                f"--advice continue` — the lift loop stays stopped until then"
             )
     elif _stranded_launch(record, now_seconds=moment):
         # A launch cut off between composing its record and spawning a worker
@@ -2986,6 +3161,38 @@ def classify_pointer(
         action = (
             f"compose run {run_id} again; the pointer holds a claim no run "
             "backs, and a review it claimed is released by the reflex"
+        )
+    elif (
+        settled := _settled_evidence(
+            record,
+            alive=alive,
+            worker_alive=worker_alive,
+            descendant_alive=descendant_alive,
+            now_seconds=moment,
+        )
+    ) is not None:
+        # A pointer that reads live with nothing behind it keeps its reviewed
+        # run from being reviewed again and counts as a live run in the lane's
+        # own figures. The phase says starting or working because its launch
+        # writer said so, and nothing has written since: the step that worker
+        # ran in has left the scheduler, and the stream has not grown for longer
+        # than the settle bound. A worker that is alive and quiet is not this
+        # case — the launch step being gone is what separates it — so the run is
+        # read as the worker that ended without delivering, which is the phase
+        # that already exists for it, and its owner is told once.
+        classification = INTERRUPTED_RUN_PHASE
+        quiet_hours = settled["quiet_seconds"] / 3600.0
+        bound_hours = settled["quiet_after_seconds"] / 3600.0
+        detail = (
+            f"settled: the launch step is gone — the scheduler lists no step for "
+            f"run {run_id!r} in its job — and the stream at {settled['stream']} "
+            f"has not grown for {quiet_hours:.1f} h, past the {bound_hours:.1f} h "
+            "settle bound; the pointer reads live with no worker behind it, so "
+            "nothing will advance it"
+        )
+        action = (
+            f"reckon crew resume --run {run_id} --advice continue to carry the "
+            "settled run on, or dispatch its work fresh"
         )
     elif (
         alive is False
@@ -3315,6 +3522,7 @@ def classify_pointer(
             else observed_phase
         ),
         "interruption": interruption,
+        "settled": settled,
         # The run directory's own account of the worker's exit, when it was
         # consulted: carried whole so a reader sees the receipt — signal, exit
         # code, whether a model was reached, and when the supervisor wrote it —
@@ -3395,6 +3603,10 @@ def classify_pointer(
         # view or the hook text are told the same thing about the same request.
         "stuck": stuck is not None,
         "stuck_reason": str(stuck.get("reason") or "") if stuck else None,
+        # What could release a request held upstream, as the admission pass
+        # resolved it. The pass is the one place the wait is judged; this row
+        # carries its answer rather than deriving a second one.
+        "wait_class": record.get("wait_class") or None,
         # Set only for a blocked run: "?" when the escape-hatch question is
         # complete enough that `reckon crew resume --advice` can answer it,
         # "!" when the reader has to read the manifest itself. The fact behind

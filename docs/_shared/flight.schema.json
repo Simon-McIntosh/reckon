@@ -1208,6 +1208,17 @@
                         "null"
                     ]
                 },
+                "lost_session": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/LostSessionConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "When a coordinator session that nothing has heard from reads as lost. The block is declared here so a host or project layer retunes the threshold without a code change; the derivation reads it from the resolved config."
+                },
                 "model_catalogue": {
                     "anyOf": [
                         {
@@ -1328,6 +1339,17 @@
                         }
                     ],
                     "description": "Per-session scratch bound and aggregate share of the local disk."
+                },
+                "stranded_wait": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/StrandedWaitConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "How long a request waiting on an upstream that nobody is building may stand before its owner is told once. The block is declared here so a host or project layer retunes the threshold without a code change; the admission pass reads it from the resolved config."
                 },
                 "summary": {
                     "anyOf": [
@@ -2364,6 +2386,22 @@
             "title": "LiftConfig",
             "type": "object"
         },
+        "LostSessionConfig": {
+            "additionalProperties": false,
+            "description": "How long a coordinator session may go unheard before it is read as lost. Its reviews are retired and its implement work is raised once it is, so the threshold is a layer's decision rather than a constant of the code.",
+            "properties": {
+                "after_hours": {
+                    "description": "Hours a coordinator session may go unheard before it reads as lost. The derivation dates a session from the last instant the session was heard -- a follower lease, a session-host record, or a coordinator process carrying its id -- and never from the age of any one process. Defaults to 72.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "title": "LostSessionConfig",
+            "type": "object"
+        },
         "ModelAlias": {
             "additionalProperties": false,
             "description": "One old backend name and the lane-and-model pair it resolves to. The name is the map key; the pair is what a read-side resolver returns for a stored row, a review or a table, so an old vocabulary normalises to the same lane and model key a new declaration supplies.",
@@ -3235,6 +3273,22 @@
             "title": "SpecificationRouting",
             "type": "object"
         },
+        "StrandedWaitConfig": {
+            "additionalProperties": false,
+            "description": "How long an idle wait may stand before its owner is told. A wait whose upstream nobody is building is the owner's to know about, and telling them once is a layer's decision about work rather than a constant of the code.",
+            "properties": {
+                "report_after_hours": {
+                    "description": "Hours a request waiting on an upstream that no run or request is building may stand before it appears once in its owner's obligations. A wait whose upstream can never land is retired whatever this figure is, and a wait is never removed for its age alone. Defaults to 72.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "title": "StrandedWaitConfig",
+            "type": "object"
+        },
         "SummaryConfig": {
             "additionalProperties": false,
             "description": "When and how workers report.",
@@ -3484,6 +3538,17 @@
                 "null"
             ]
         },
+        "lost_session": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/LostSessionConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "When a coordinator session that nothing has heard from reads as lost. The block is declared here so a host or project layer retunes the threshold without a code change; the derivation reads it from the resolved config."
+        },
         "model_catalogue": {
             "anyOf": [
                 {
@@ -3604,6 +3669,17 @@
                 }
             ],
             "description": "Per-session scratch bound and aggregate share of the local disk."
+        },
+        "stranded_wait": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/StrandedWaitConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "How long a request waiting on an upstream that nobody is building may stand before its owner is told once. The block is declared here so a host or project layer retunes the threshold without a code change; the admission pass reads it from the resolved config."
         },
         "summary": {
             "anyOf": [

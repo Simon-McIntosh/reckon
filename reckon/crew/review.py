@@ -2610,6 +2610,32 @@ def pytest_summary_failure_count(log_text: str) -> int | None:
     return measured
 
 
+def pytest_summary_failure_total(log_text: str) -> int | None:
+    """The failure figure a gate log states, summed across a per-file gate.
+
+    A log of repeated attempts at one suite states its result on the last
+    attempt's summary, so that is the figure read. A per-file gate log states
+    one result per file, and every file belongs to the gate, so the figures are
+    summed across all of them — the same runs whose ids
+    :func:`gate_log_failure_ids` reports.
+
+    ``None`` means the log states no figure: its last attempt reached no
+    summary, or a marked per-file run did. A killed file is unmeasured rather
+    than clean, so a gate holding one has no count until that file's run is
+    finished.
+    """
+    runs = per_file_gate_runs(log_text)
+    if runs is None:
+        return pytest_summary_failure_count(last_run_text(log_text))
+    total = 0
+    for _name, text in runs:
+        figure = pytest_summary_failure_count(text)
+        if figure is None:
+            return None
+        total += figure
+    return total
+
+
 class FailureIdMatch(NamedTuple):
     """Matched and unmatched failure identities on each side of a comparison."""
 
@@ -2702,6 +2728,38 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
 
 _EXIT_RECORD_LINE_RE = re.compile(r"^\s*EXIT=-?\d+\s*$", re.MULTILINE)
 
+# The header a per-file gate runner writes before each file's own run, as
+# ``# file: tests/test_x.py``. The same header names the file a mutation is
+# applied to in a control log, so one spelling covers both. A gate log carrying
+# these headers holds several files of one gate rather than repeated attempts at
+# one suite, and the whole log is what its receipt describes: a file that
+# failed before one that passed is still a failure the gate reported.
+PER_FILE_MARKER_RE = re.compile(
+    r"^[ \t]*#[ \t]*file:[ \t]*(?P<file>\S[^\n]*?)[ \t]*$", re.MULTILINE
+)
+
+
+def per_file_gate_runs(log_text: str) -> list[tuple[str, str]] | None:
+    """The runs a per-file gate log marks, each cut at the next file header.
+
+    Each marked run is the text from its ``# file:`` header to the one before
+    the next header, so a run's own output — its runner summary and its
+    ``EXIT=<n>`` record — stays with the file it belongs to. Text before the
+    first header is the gate's own preamble rather than any file's run and is
+    not returned.
+
+    ``None`` means the log carries no per-file header, so its several runs are
+    successive attempts at one suite rather than separate files of one gate.
+    """
+    markers = list(PER_FILE_MARKER_RE.finditer(log_text))
+    if not markers:
+        return None
+    runs: list[tuple[str, str]] = []
+    for index, marker in enumerate(markers):
+        end = markers[index + 1].start() if index + 1 < len(markers) else len(log_text)
+        runs.append((marker.group("file").strip(), log_text[marker.end() : end]))
+    return runs
+
 
 def last_run_text(log_text: str) -> str:
     """The log's last run, read after its second-to-last ``EXIT=`` line.
@@ -2717,6 +2775,31 @@ def last_run_text(log_text: str) -> str:
     if len(records) < 2:
         return log_text
     return log_text[records[-2].end() :]
+
+
+def _per_file_failure_ids(
+    runs: list[tuple[str, str]], arm_directory: str | Path | None
+) -> set[str] | None:
+    """The failing ids of every file a per-file gate log marks.
+
+    Every marked run belongs to the gate, so the ids are summed across all of
+    them rather than read at the last. A run that reached no summary line —
+    a file killed or still running when the log was closed — states no result,
+    and the gate's count is then unmeasured rather than short by that file's
+    failures: ``None`` says the log cannot answer.
+    """
+    ids: set[str] | None = set()
+    for _name, text in runs:
+        log_format = _gate_log_format(text)
+        if log_format is None:
+            return None
+        if log_format == "pytest" and pytest_summary_failure_count(text) is None:
+            return None
+        if log_format == "ctest":
+            ids |= _ctest_failure_ids(text)
+        else:
+            ids |= _pytest_failure_ids(text, arm_directory)
+    return ids
 
 
 def gate_log_failure_ids(
@@ -2742,8 +2825,13 @@ def gate_log_failure_ids(
     ``last_run`` reads only the log's final run, cut by :func:`last_run_text`,
     so a log holding two commands reports the failures of the one whose exit
     status is also read from the tail. Reading the whole text would answer for
-    a run the receipt does not describe.
+    a run the receipt does not describe. A per-file log is the exception: its
+    marked runs are files of one gate rather than attempts at one suite, so
+    every one of them is read whatever ``last_run`` asks.
     """
+    per_file = per_file_gate_runs(log_text)
+    if per_file is not None:
+        return _per_file_failure_ids(per_file, arm_directory)
     read = last_run_text(log_text) if last_run else log_text
     log_format = _gate_log_format(read)
     if log_format is None:

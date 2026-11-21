@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "the reviewed run is suite_gate=unarmed: no test file lay in its write scope, so its manifest records no baseline_suite/after_suite pair and the suite delta is zero failures by construction; its gate runs doccheck and a row-resolution rebuild, both recorded EXIT=0 in gate.log",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-wlsr-where-behaviour-follows-a-backends-name-a24ae225e19d",
+      "recorded_at": "2026-11-21T03:54:01.567781+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T03:30:20Z",
+  "findings": [
+    {
+      "file": "docs/research/where-behaviour-follows-a-backends-name.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: section 2 says every row was returned by one of the greps, then line 76 says sixteen further rows were established by reading, so the opening sentence overstates the search's coverage and a reader quoting it as a reproduction guarantee would not get 111 rows."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010305854442-wlsr-where-behaviour-follows-a-backends-name/gate.sh",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: gate 1 compares rows.html to itself after regeneration in the same run directory and never asserts the committed record's table equals rows.html, so a record whose table diverged from the verified rows would still print rows_html_unchanged=yes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; the range holds one commit, a24ae225e1, adding 30 lines to the evidence fragment and 770 to the research record, no product source, no test and no figures.",
+    "done_when": "plan section 12's done-when has three clauses \u2014 the record exists and passes audit-doc (I re-ran reckon.doccheck on the delivered file: OK, exit 0), every row's path and line resolve at the named revision (I resolved all 111 rows against e689315bb7 with git show: 111/111 in range and non-blank), and the search is stated so it can be re-run (ten patterns in record section 2; I re-ran them at e689315bb7 and got 98 lines matching the stated 19/1/7/12/1/1/14/14/27/2 and 97 distinct).",
+    "goal": "the reviewed node's goal is a research record listing every place behaviour follows a backend's name; docs/research/where-behaviour-follows-a-backends-name.html delivers 111 rows with path, line, decision and permitted-difference class for each.",
+    "manifest": "read; it records status complete, one hex revision a24ae225e1, the gate command, gate.log with EXIT=0, and its own rubric lines; its landing line's counts (4/22/12/73, 97 distinct, 111 rows) agree with what I recomputed.",
+    "write_paths": "the reviewed node declared the evidence fragment, the research record and a figures directory; the diff changes the fragment and the record only, both inside that list."
+  },
+  "justifications": {
+    "durability": "no committed test or script fails if the record's table drifts \u2014 the resolution check lives only in the run directory (gate.sh), so a later edit to docs/research/where-behaviour-follows-a-backends-name.html would be caught by doccheck's structure but not by any row-vs-revision check.",
+    "evidence": "the gate in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010305854442-wlsr-where-behaviour-follows-a-backends-name/gate.sh:19 verifies rows.html is reproducible and doccheck passes, but never compares the committed record's table against rows.html, so the measured artefact is the builder's output rather than the delivered file \u2014 I closed that gap by resolving the delivered table directly.",
+    "fit": "docs/research/where-behaviour-follows-a-backends-name.html:24 follows the research-doc shape (plan-doc main, numbered sections, meta type research) and the delivered commit a24ae225e1 carries a conventional docs subject with a body and no attribution.",
+    "goal_fidelity": "docs/research/where-behaviour-follows-a-backends-name.html:104 opens the 111-row table and every row I checked carries a path, a decision and one of the four classes or none.",
+    "reuse": "a search of docs/research/ and reckon/ for an existing inventory of backend-name or dialect sites found none \u2014 reckon/_backends.py mentions the concept but owns no such list \u2014 so the record forks no capability the repository owns.",
+    "scope_discipline": "the delivered range e689315bb7..a24ae225e1 lists only docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-where-behaviour-follows-a-backends-name.html and docs/research/where-behaviour-follows-a-backends-name.html, both declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is a research record listing every place behaviour follows a backend's name; docs/research/where-behaviour-follows-a-backends-name.html delivers 111 rows with path, line, decision and permitted-difference class for each.\nVERDICT done_when: plan section 12's done-when has three clauses \u2014 the record exists and passes audit-doc (I re-ran reckon.doccheck on the delivered file: OK, exit 0), every row's path and line resolve at the named revision (I resolved all 111 rows against e689315bb7 with git show: 111/111 in range and non-blank), and the search is stated so it can be re-run (ten patterns in record section 2; I re-ran them at e689315bb7 and got 98 lines matching the stated 19/1/7/12/1/1/14/14/27/2 and 97 distinct).\nVERDICT write_paths: the reviewed node declared the evidence fragment, the research record and a figures directory; the diff changes the fragment and the record only, both inside that list.\nVERDICT manifest: read; it records status complete, one hex revision a24ae225e1, the gate command, gate.log with EXIT=0, and its own rubric lines; its landing line's counts (4/22/12/73, 97 distinct, 111 rows) agree with what I recomputed.\nVERDICT diff: read commit by commit; the range holds one commit, a24ae225e1, adding 30 lines to the evidence fragment and 770 to the research record, no product source, no test and no figures.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/research/where-behaviour-follows-a-backends-name.html:104 opens the 111-row table and every row I checked carries a path, a decision and one of the four classes or none.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010305854442-wlsr-where-behaviour-follows-a-backends-name/gate.sh:19 verifies rows.html is reproducible and doccheck passes, but never compares the committed record's table against rows.html, so the measured artefact is the builder's output rather than the delivered file \u2014 I closed that gap by resolving the delivered table directly.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delivered range e689315bb7..a24ae225e1 lists only docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-where-behaviour-follows-a-backends-name.html and docs/research/where-behaviour-follows-a-backends-name.html, both declared.\nSCORE durability: 9\nJUSTIFICATION durability: no committed test or script fails if the record's table drifts \u2014 the resolution check lives only in the run directory (gate.sh), so a later edit to docs/research/where-behaviour-follows-a-backends-name.html would be caught by doccheck's structure but not by any row-vs-revision check.\nSCORE fit: 18\nJUSTIFICATION fit: docs/research/where-behaviour-follows-a-backends-name.html:24 follows the research-doc shape (plan-doc main, numbered sections, meta type research) and the delivered commit a24ae225e1 carries a conventional docs subject with a body and no attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of docs/research/ and reckon/ for an existing inventory of backend-name or dialect sites found none \u2014 reckon/_backends.py mentions the concept but owns no such list \u2014 so the record forks no capability the repository owns.\nFINDING docs/research/where-behaviour-follows-a-backends-name.html:47 non-blocking: section 2 says every row was returned by one of the greps, then line 76 says sixteen further rows were established by reading, so the opening sentence overstates the search's coverage and a reader quoting it as a reproduction guarantee would not get 111 rows.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T010305854442-wlsr-where-behaviour-follows-a-backends-name/gate.sh:19 non-blocking: gate 1 compares rows.html to itself after regeneration in the same run directory and never asserts the committed record's table equals rows.html, so a record whose table diverged from the verified rows would still print rows_html_unchanged=yes.",
+  "review_run_id": "r-20261121T032230813892-review-of-wlsr-where-behaviour-follows-a-backends-name-a24ae225e19d",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "a24ae225e19d009a7e5df8a2e17e841655e62e7b",
+  "reviewed_run_id": "r-20261121T010305854442-wlsr-where-behaviour-follows-a-backends-name",
+  "scores": {
+    "durability": 9,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T04:02:23.959535+00:00",
+  "total": 103
+}

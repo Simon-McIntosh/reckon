@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's record carries no baseline_suite and no after_suite (its manifest declares the suite unarmed), so no added failure can be derived from a suite pair; its own gate log (gate.log) records 26 passed with EXIT=0 and its negative-control log records 8 failed with EXIT=1.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/host_shims/sbatch",
+    "reckon/host_shims/srun",
+    "reckon/host_shims/salloc",
+    "reckon/crew/dispatch_launch.py:4370",
+    "reckon/crew/dispatch_launch.py:3626",
+    "reckon/crew/dispatching/launch.py:886"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T01:52:51Z",
+  "findings": [
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "1049",
+      "severity": "non-blocking",
+      "text": "A comment the caller supplied as a `#SBATCH --comment=` directive in a submitted script is not kept: the wrapper built at reckon/nested_launch.py:940-942 carries the script's directive, but the `--comment=` prepended at :1049 is a command-line option and overrides it, so the evidence fragment's claim that a caller's comment is preserved holds only for an argv-supplied comment."
+    },
+    {
+      "file": "tests/test_a_scheduler_job_names_its_owner.py",
+      "line": "104",
+      "severity": "non-blocking",
+      "text": "Every comment case hands the shim RECKON_SESSION_ID itself (tests/test_a_scheduler_job_names_its_owner.py:103-104), so the suite passes whatever the dispatcher does; removing the export at reckon/crew/dispatch_launch.py:1211 leaves all twelve cases green and the shipped behaviour dead, and the export half needs its own assertion."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "884",
+      "severity": "non-blocking",
+      "text": "owner_comment returns nothing without a run id, so a scheduler job reckon submits on behalf of a coordinator with a session but no run (reckon/crew/placement.py:1199, reckon/crew/landing_measure.py:882) still names no owner, against the deliverable's \"or by reckon itself\" clause."
+    },
+    {
+      "file": "reckon/crew/fleet_node.py",
+      "line": "665",
+      "severity": "non-blocking",
+      "text": "find_allocations identifies a fleet allocation by exact comment equality, so an owner appended to a fleet submission's comment would make that allocation invisible to the fleet readers; no current caller both carries a run id and submits the fleet, so the append makes an unsafe combination reachable rather than breaking a live path."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/host_shims/sbatch, reckon/host_shims/srun, reckon/host_shims/salloc, reckon/crew/dispatch_launch.py:4370, reckon/crew/dispatch_launch.py:3626 and reckon/crew/dispatching/launch.py:886 were examined as the production entry points reaching the change.",
+    "diff": "Read commit fda33621ae against base e689315b commit by commit: four files, +296 lines, adding owner_comment and with_owner_comment, the RECKON_SESSION_ID export and its persisted-environment removal, the test module and the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_scheduler_job_names_its_owner.py; the file drives sbatch, srun and salloc through the real shim against a recording stand-in and asserts the ids, the preserved caller comment and the no-run silence, and gate.log records 26 passed with EXIT=0.",
+    "goal": "The node goal is that every scheduler job names the coordinator session and run that submitted it; reckon/crew/dispatch_launch.py:1211 exports RECKON_SESSION_ID into the worker and reckon/nested_launch.py:1049 appends the owner comment in front of all three shims, which covers the shim half only.",
+    "manifest": "Read the source manifest: status complete, changed_paths listing the four delivered files, the 26-passed gate command and the 8-failed negative control, with no suite pair declared.",
+    "write_paths": "Read the five declared paths and the single commit: the diff touches docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-scheduler-job-names-its-owner.html, reckon/crew/dispatch_launch.py, reckon/nested_launch.py and tests/test_a_scheduler_job_names_its_owner.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_scheduler_job_names_its_owner.py:150 and :167 read the stand-in scheduler's recorded bytes and fail when the comment loses the ids, but every test supplies RECKON_SESSION_ID itself so nothing fails if reckon/crew/dispatch_launch.py:1211 stops exporting it.",
+    "evidence": "The gate log records the literal three-file command, 26 passed and EXIT=0, and the negative control shows 8 failing test ids and EXIT=1, but the gate ran at e689 with worktree changes uncommitted rather than at the committed head.",
+    "fit": "The new constants and functions at reckon/nested_launch.py:71-76 and :875-923 follow the module's existing uppercase-env-constant and predicate idiom, and no plan, sprint or ticket label appears in them.",
+    "goal_fidelity": "The shim path is covered end to end (reckon/crew/dispatch_launch.py:1211 exports the session, reckon/nested_launch.py:1049 appends the owner), but reckon/nested_launch.py:884 returns no owner without a run id, so a coordinator's own reservation (reckon/crew/placement.py:1199) still carries no comment.",
+    "reuse": "No owner for a scheduler-comment capability exists (reckon/crew/fleet_node.py:84 owns a fixed fleet token, not an owner comment), but the session-env alias is now spelled twice, at reckon/nested_launch.py:72 and reckon/crew/census.py:138, with no shared owner.",
+    "scope_discipline": "The single commit fda33621ae changes four files and every path in it is inside the five declared write paths, with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every scheduler job names the coordinator session and run that submitted it; reckon/crew/dispatch_launch.py:1211 exports RECKON_SESSION_ID into the worker and reckon/nested_launch.py:1049 appends the owner comment in front of all three shims, which covers the shim half only.\nVERDICT done_when: the done_when names tests/test_a_scheduler_job_names_its_owner.py; the file drives sbatch, srun and salloc through the real shim against a recording stand-in and asserts the ids, the preserved caller comment and the no-run silence, and gate.log records 26 passed with EXIT=0.\nVERDICT write_paths: read the five declared paths and the single commit; the diff touches docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-a-scheduler-job-names-its-owner.html, reckon/crew/dispatch_launch.py, reckon/nested_launch.py and tests/test_a_scheduler_job_names_its_owner.py.\nVERDICT manifest: read the source manifest; status complete, changed_paths listing the four delivered files, the 26-passed gate command and the 8-failed negative control, with no suite pair declared.\nVERDICT diff: read commit fda33621ae against base e689315b commit by commit; four files, +296 lines, adding owner_comment and with_owner_comment, the RECKON_SESSION_ID export and its persisted-environment removal, the test module and the evidence fragment.\nCALL_SITES: reckon/host_shims/sbatch, reckon/host_shims/srun, reckon/host_shims/salloc, reckon/crew/dispatch_launch.py:4370, reckon/crew/dispatch_launch.py:3626, reckon/crew/dispatching/launch.py:886\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: The shim path is covered end to end (reckon/crew/dispatch_launch.py:1211 exports the session, reckon/nested_launch.py:1049 appends the owner), but reckon/nested_launch.py:884 returns no owner without a run id, so a coordinator's own reservation (reckon/crew/placement.py:1199) still carries no comment.\nSCORE evidence: 16\nJUSTIFICATION evidence: The gate log records the literal three-file command, 26 passed and EXIT=0, and the negative control shows 8 failing test ids and EXIT=1, but the gate ran at e689 with worktree changes uncommitted rather than at the committed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The single commit fda33621ae changes four files and every path in it is inside the five declared write paths, with no unrelated edit.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_scheduler_job_names_its_owner.py:150 and :167 read the stand-in scheduler's recorded bytes and fail when the comment loses the ids, but every test supplies RECKON_SESSION_ID itself so nothing fails if reckon/crew/dispatch_launch.py:1211 stops exporting it.\nSCORE fit: 18\nJUSTIFICATION fit: The new constants and functions at reckon/nested_launch.py:71-76 and :875-923 follow the module's existing uppercase-env-constant and predicate idiom, and no plan, sprint or ticket label appears in them.\nSCORE reuse: 17\nJUSTIFICATION reuse: No owner for a scheduler-comment capability exists (reckon/crew/fleet_node.py:84 owns a fixed fleet token, not an owner comment), but the session-env alias is now spelled twice, at reckon/nested_launch.py:72 and reckon/crew/census.py:138, with no shared owner.\nFINDING reckon/nested_launch.py:1049 non-blocking: a comment the caller supplied as a script's #SBATCH --comment= directive is overridden by the prepended command-line comment, so the evidence fragment's preservation claim holds only for an argv-supplied comment.\nFINDING tests/test_a_scheduler_job_names_its_owner.py:104 non-blocking: every case supplies RECKON_SESSION_ID itself, so removing the dispatcher's export leaves all twelve cases green and the shipped behaviour dead.\nFINDING reckon/nested_launch.py:884 non-blocking: no run id means no owner, so a coordinator's own submission (reckon/crew/placement.py:1199) still names nothing, against the deliverable's \"or by reckon itself\" clause.\nFINDING reckon/crew/fleet_node.py:665 non-blocking: fleet allocations are found by exact comment equality, so an appended owner on such a submission would make the allocation invisible to the fleet readers.",
+  "review_run_id": "r-20261121T015204971994-review-of-wlsr-a-scheduler-job-names-its-owner-fda33621ae89",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "fda33621ae89226e18e3739ab8d763c93935e107",
+  "reviewed_run_id": "r-20261121T010258718236-wlsr-a-scheduler-job-names-its-owner",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:22:53.802253+00:00",
+  "total": 99
+}

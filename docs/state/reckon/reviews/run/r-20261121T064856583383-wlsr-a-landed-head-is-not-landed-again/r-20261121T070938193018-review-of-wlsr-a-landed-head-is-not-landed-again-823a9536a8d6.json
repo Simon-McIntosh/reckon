@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:687",
+    "reckon/crew/promotion_requests.py:1083",
+    "reckon/crew/admission/service.py:446",
+    "reckon/crew/queue_landing.py:2565"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T07:10:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 653,
+      "severity": "non-blocking",
+      "summary": "the settlement requires a ledger row with a promoted_revision, which the node's goal does not name, so a run whose delivery the primary carries but which has no ledger row still replays its gate; the narrowing is deliberate and pinned by the no-row test, but it leaves the reported re-request case unsettled whenever no promotion ever wrote a row"
+    },
+    {
+      "file": "tests/test_a_landed_head_is_not_landed_again.py",
+      "line": 271,
+      "severity": "non-blocking",
+      "summary": "rows[0][\"gate\"] == \"passed\" compares the ledger value against the literal the fixture itself wrote at line 219 rather than an independent source, so it only catches a rewrite that changes the value; the zero-replay assertion at line 262 carries the guard"
+    },
+    {
+      "file": "tests/test_a_landed_head_is_not_landed_again.py",
+      "line": 192,
+      "severity": "non-blocking",
+      "summary": "the promotion_request_for_a_landed_delivery fixture repeats the worktree, pointer and monkeypatch setup of the existing settled_delivery fixture at line 59 in the same file instead of extending it, so the two setups can drift apart"
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 629,
+      "severity": "non-blocking",
+      "summary": "the base-revision negative control the done_when names (the first added case failing on a counted gate replay) is recorded only in the run's stream.jsonl; the negative_control_log the manifest files is the mutation of the third case, so the named control has no log a later reader can open"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single commit 823a9536 against its base; it adds _carried_delivery_settlement and SETTLEABLE_KINDS, adds settle_a_carried_delivery and refactors _land_deliveries onto it, and adds four test cases, with no other file changed.",
+    "done_when": "the node's done_when names tests/test_a_landed_head_is_not_landed_again.py; the manifest's scoped-gate log records 66 passed at 823a9536a8, and the three named cases plus a no-ledger-row case are present in the added 147 lines.",
+    "goal": "the node's goal is to settle a promotion request whose head and changed paths are already on the primary branch; reckon/crew/promotion_requests.py:629 settles such a request before executing it, but only when a ledger row with a promoted_revision is already written, so a carried run with no row still replays.",
+    "manifest": "read; it records status complete, the commit 823a9536a8, the gate command, both suite arms (62 then 66 passed, exit 0) and a negative-control log at the declared path.",
+    "write_paths": "read the manifest's five declared paths; the delivered diff touches only reckon/crew/promotion_requests.py, reckon/crew/queue_landing.py and tests/test_a_landed_head_is_not_landed_again.py, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landed_head_is_not_landed_again.py:262 counts gate replays through a monkeypatched promotion step, so removing the settlement makes the assertion red exactly as the recorded base-revision run shows.",
+    "evidence": "the gate and both suite arms are recorded green at 823a9536a8 (66 passed) and 65c0479b14 (62 passed) with zero added failures, and the base-revision red run of the first added case survives only in the observed run's stream.jsonl, not as a log.",
+    "fit": "reckon/crew/queue_landing.py:117 names its stage constants CARRIED_SETTLED/CARRIED_HELD and documents the helper the way the module's other stage vocabulary is documented.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:653 returns no settlement when the run has no ledger row, so a carried delivery without a row still takes the ordinary path and replays its gate.",
+    "reuse": "reckon/crew/queue_landing.py:124 wraps pending_landing._release_integrated_pointer and reuses _primary_carries_the_delivery, but the new fixture at tests/test_a_landed_head_is_not_landed_again.py:192 repeats the setup of the existing settled_delivery fixture at line 59.",
+    "scope_discipline": "every path in the commit is one of the three declared source/test paths; the declared evidence fragment and figure directory under docs/ are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to settle a promotion request whose head and changed paths are already on the primary branch; reckon/crew/promotion_requests.py:629 settles such a request before executing it, but only when a ledger row with a promoted_revision is already written, so a carried run with no row still replays.\nVERDICT done_when: the node's done_when names tests/test_a_landed_head_is_not_landed_again.py; the manifest's scoped-gate log records 66 passed at 823a9536a8, and the three named cases plus a no-ledger-row case are present in the added 147 lines.\nVERDICT write_paths: read the manifest's five declared paths; the delivered diff touches only reckon/crew/promotion_requests.py, reckon/crew/queue_landing.py and tests/test_a_landed_head_is_not_landed_again.py, all inside them.\nVERDICT manifest: read; it records status complete, the commit 823a9536a8, the gate command, both suite arms (62 then 66 passed, exit 0) and a negative-control log at the declared path.\nVERDICT diff: read the single commit 823a9536 against its base; it adds _carried_delivery_settlement and SETTLEABLE_KINDS, adds settle_a_carried_delivery and refactors _land_deliveries onto it, and adds four test cases, with no other file changed.\nCALL_SITES: reckon/crew/promotion_requests.py:687, reckon/crew/promotion_requests.py:1083, reckon/crew/admission/service.py:446, reckon/crew/queue_landing.py:2565\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:653 returns no settlement when the run has no ledger row, so a carried delivery without a row still takes the ordinary path and replays its gate.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and both suite arms are recorded green at 823a9536a8 (66 passed) and 65c0479b14 (62 passed) with zero added failures, and the base-revision red run of the first added case survives only in the observed run's stream.jsonl, not as a log.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the commit is one of the three declared source/test paths; the declared evidence fragment and figure directory under docs/ are untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landed_head_is_not_landed_again.py:262 counts gate replays through a monkeypatched promotion step, so removing the settlement makes the assertion red exactly as the recorded base-revision run shows.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:117 names its stage constants CARRIED_SETTLED/CARRIED_HELD and documents the helper the way the module's other stage vocabulary is documented.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:124 wraps pending_landing._release_integrated_pointer and reuses _primary_carries_the_delivery, but the new fixture at tests/test_a_landed_head_is_not_landed_again.py:192 repeats the setup of the existing settled_delivery fixture at line 59.\nFINDING reckon/crew/promotion_requests.py:653 non-blocking: the settlement requires a ledger row with a promoted_revision, which the node's goal does not name, so a run whose delivery the primary carries but which has no ledger row still replays its gate; the narrowing is deliberate and pinned by the no-row test, but it leaves the reported re-request case unsettled whenever no promotion ever wrote a row\nFINDING tests/test_a_landed_head_is_not_landed_again.py:271 non-blocking: rows[0][\"gate\"] == \"passed\" compares the ledger value against the literal the fixture itself wrote at line 219 rather than an independent source, so it only catches a rewrite that changes the value; the zero-replay assertion at line 262 carries the guard\nFINDING tests/test_a_landed_head_is_not_landed_again.py:192 non-blocking: the promotion_request_for_a_landed_delivery fixture repeats the worktree, pointer and monkeypatch setup of the existing settled_delivery fixture at line 59 in the same file instead of extending it, so the two setups can drift apart\nFINDING reckon/crew/promotion_requests.py:629 non-blocking: the base-revision negative control the done_when names (the first added case failing on a counted gate replay) is recorded only in the run's stream.jsonl; the negative_control_log the manifest files is the mutation of the third case, so the named control has no log a later reader can open\n",
+  "review_run_id": "r-20261121T070938193018-review-of-wlsr-a-landed-head-is-not-landed-again-823a9536a8d6",
+  "reviewed_base_sha": "65c0479b148ed98dc63a2d0a9a520931390f61b7",
+  "reviewed_head_sha": "823a9536a8d66de2b52f5d0f3874f82332adbe24",
+  "reviewed_run_id": "r-20261121T064856583383-wlsr-a-landed-head-is-not-landed-again",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T07:19:56.654166+00:00",
+  "total": 103
+}

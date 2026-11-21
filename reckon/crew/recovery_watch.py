@@ -4470,7 +4470,8 @@ def recover(
 
     reports = []
     scoring: list[dict[str, Any]] = []
-    for pointer in list_live():
+    listed = list(list_live())
+    for pointer in listed:
         if project and str(pointer.get("project") or "") != project:
             continue
         run_id = str(pointer.get("run_id") or "")
@@ -4512,9 +4513,38 @@ def recover(
             counts[name] = count
     reflex = []
     awaiting_coordinator = []
+    awaiting_lost_session = []
     if dispatch_reviews:
+        # A run whose owning session is lost owes a review nobody is left to
+        # read. Composing one creates a request that can only be refused, so it
+        # is not composed at all -- not by this sweep's ``any_session`` path and
+        # not by a coordinator's own. The duty is not dropped: the run is carried
+        # into the decision raised for its session, and it is reported here
+        # rather than left to reappear as a refusal every pass.
+        from reckon.crew import lost_sessions as _lost_sessions
+
+        # Every live pointer dates its session, not only the run that owes the
+        # review: a session with no lease or process is dated from its oldest
+        # record, and reading only the scoring run would date it younger than
+        # the admit pass does. A younger answer under-detects lostness, which
+        # is the behaviour this suppression exists to stop.
+        lost_reads = _lost_sessions.LostSessionReads(pointers=listed)
         for record in scoring:
             session = str(record.get("session") or "")
+            if session and lost_reads.answer(
+                session, str(record.get("project") or project or "")
+            ).get("lost"):
+                awaiting_lost_session.append(
+                    {
+                        "run_id": str(record.get("run_id") or ""),
+                        "status": "awaiting-lost-session",
+                        "reason": (
+                            f"session {session!r} is lost, so no review is "
+                            "composed under it"
+                        ),
+                    }
+                )
+                continue
             if not any_session and (
                 not session or not runs.follower_state(project, session).get("live")
             ):
@@ -4543,6 +4573,7 @@ def recover(
         ],
         "reviews_refused": [r for r in reflex if r.get("refused")],
         "reviews_awaiting_coordinator": awaiting_coordinator,
+        "reviews_awaiting_lost_session": awaiting_lost_session,
     }
 
 

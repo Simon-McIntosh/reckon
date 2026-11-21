@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import os
 from collections import deque
 
+from .. import lost_sessions as _lost_sessions
 from .. import queue_order
 from reckon.crew.open_run_index import operational_read
 
@@ -30,7 +30,6 @@ from .shared import (
     _dispatch_fleet_gate,
     datetime,
     nullcontext,
-    parse_utc,
     runs,
     time,
 )
@@ -150,10 +149,96 @@ def admit_once(
             _service._record_stage_reads(result, "wait", wait_reads)
             result["promoted_upstream"] = upstream["promoted"]
             result["blocked_upstream"] = upstream["blocked"]
+            result["retired"] = list(upstream.get("retired") or ())
             result["upstream_obligations"] = upstream["obligations"]
             queued = [
                 pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
             ]
+        # Whether each session this pass lists is lost, read once per session,
+        # from the pointers the pass already holds. A session's answer is what
+        # retires its reviews and raises its implement work; deriving it here,
+        # once, keeps that from becoming one derivation per pointer. The tally
+        # makes the pass's receipt carry the bound rather than leave it to a
+        # caller to measure from outside.
+        with _service._read_tally() as lost_tally:
+            lost_reads = _lost_sessions.LostSessionReads(pointers=live, now=moment)
+            result["lost_sessions"] = lost_reads.answers(
+                [
+                    (
+                        str(pointer.get("project") or ""),
+                        str(pointer.get("session") or ""),
+                    )
+                    for pointer in live
+                    if str(pointer.get("session") or "")
+                ]
+            )
+        _service._record_stage_reads(result, "lost sessions", lost_tally)
+        # A review request of a session nothing has heard for the threshold is
+        # retired here, before any ordering or lane question, so no pass ever
+        # attempts a launch for it. It is retired on this pass rather than held
+        # because no lane state, and no later answer, can make it admissible: the
+        # session that would read the review is gone. The pass re-reads its live
+        # pointers afterwards so a retired request costs no place in the ordering.
+        # A named admission decides only the request it was handed, so the
+        # retirement ranges over that one request and never the whole fleet: the
+        # caller's contract is that unrelated requests are left untouched, and a
+        # fleet-wide scope here would retire a stranger's review on a pass that
+        # was asked about one run.
+        retire_scope = [selected] if run_id else live
+        retired, refused = _holds._retire_lost_session_reviews(
+            retire_scope, lost_reads=lost_reads, moment=moment, result=result
+        )
+        result["retired_lost_session"] = retired
+        result["retirement_refused"] = refused
+        if retired or refused:
+            # Re-read without widening the pass: a named admission stays with
+            # its one request, which is gone from the queue once retired. A
+            # request whose discard refused is still queued but is left out of
+            # this pass too -- the retirement exists to stop it launching, and
+            # a refused discard does not make the session any less lost.
+            live = runs.list_live()
+            if run_id:
+                queued = [
+                    pointer
+                    for pointer in live
+                    if pointer.get("run_id") == run_id
+                    and pointer.get("phase") == QUEUED_PHASE
+                ]
+            else:
+                queued = [
+                    pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
+                ]
+            if refused:
+                queued = [
+                    pointer
+                    for pointer in queued
+                    if str(pointer.get("run_id") or "") not in refused
+                ]
+        # A lost session's implement work is raised here as one decision for the
+        # lead, and its requests launch nothing until that decision is answered.
+        # The raise reads no second source: it works from the pointers and the
+        # lost-session answers this pass already holds. An already-promoted
+        # pointer is retired by the raise, so the live list is re-read and the
+        # queue rebuilt only when that happened.
+        with _service._read_tally() as lost_work_tally:
+            from .. import lost_session_work as _lost_work
+
+            raised = _lost_work.raise_lost_session_work(
+                live,
+                answers=result.get("lost_sessions") or [],
+                moment=moment,
+            )
+            result["lost_session_decision"] = raised
+            if raised.get("retired"):
+                live = runs.list_live()
+                queued = [
+                    pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
+                ]
+            queued, suppressed = _lost_work.suppress_lost_session_requests(
+                queued, sessions=raised.get("sessions") or ()
+            )
+            result["held_by_lost_session_decision"] = suppressed
+        _service._record_stage_reads(result, "lost-session work", lost_work_tally)
         if lane:
 
             def included(pointer: Mapping[str, Any]) -> bool:
@@ -165,8 +250,7 @@ def admit_once(
                     if config_for is not None
                     else _launching._resolve_lane_config(pointer, select_local=False)
                 )
-                # The installed local drainer also admits every metered route.
-                return drainer_serves_the_local_lane(lane, config)
+                return gate_admits_request(backend, lane, config)
 
             excluded_by_lane = [pointer for pointer in queued if not included(pointer)]
             queued = [pointer for pointer in queued if included(pointer)]
@@ -711,6 +795,23 @@ def admit_once(
         return result
 
 
+def gate_admits_request(backend: str, lane: str, config: Mapping[str, Any]) -> bool:
+    """Whether a request queued under ``backend`` is served by a drainer started
+    for ``lane``.
+
+    A lane served by more than one backend is one lane: a request queued under
+    any of those names is served by a drainer started for another, because the
+    two publish one lane document. The gate holds on the lane, never on the
+    name, so moving the configured local backend from one name to another moves
+    no admission decision.
+    """
+    if backend == lane:
+        return True
+    # The drainer that serves the local lane reads the lane document, so two
+    # backends publishing one document are one lane whatever they are called.
+    return drainer_serves_the_local_lane(lane, config)
+
+
 def drainer_serves_the_local_lane(lane: str, config: Mapping[str, Any]) -> bool:
     """Whether a drainer started for ``lane`` is the installed local drainer.
 
@@ -725,8 +826,11 @@ def drainer_serves_the_local_lane(lane: str, config: Mapping[str, Any]) -> bool:
     backend, and nothing would report the queue as undrained.
 
     So the drainer serves the local lane when its name is the configured local
-    backend, or when its backend and the configured one declare the same lane
-    document.
+    backend, or when its backend and the configured one resolve to the same
+    lane. The resolution is the worker treatment's own
+    (:func:`reckon.crew.worker_behaviour.lane_identity`) rather than a second
+    reading of ``lane_document`` here: the drainer's decision and the lane a
+    launch records must agree, so they are one answer computed once.
     """
     local = str(config.get("local_backend") or "")
     if not lane or not local:
@@ -736,16 +840,18 @@ def drainer_serves_the_local_lane(lane: str, config: Mapping[str, Any]) -> bool:
     backends = config.get("backends")
     if not isinstance(backends, Mapping):
         return False
+    from reckon.crew.worker_behaviour import lane_identity
 
     def document(name: str) -> str:
         settings = backends.get(name)
-        if not isinstance(settings, Mapping):
-            return ""
-        declared = str(settings.get("lane_document") or "").strip()
-        return os.path.realpath(os.path.expanduser(declared)) if declared else ""
+        return lane_identity(
+            name, settings if isinstance(settings, Mapping) else None, config
+        )
 
     served = document(lane)
-    return bool(served) and served == document(local)
+    # A backend declaring no lane document resolves to its own name, which is
+    # not a shared lane: only a declared document makes two names one lane.
+    return served != lane and served == document(local)
 
 
 # How long one pass waits for a lane that granted no worker slot to publish room

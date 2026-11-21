@@ -409,6 +409,11 @@ STATION_TICK_STAGE_KEY = "tick_stage"
 STATION_TICK_STARTED_AT_KEY = "tick_started_at"
 STATION_TICK_FINISHED_AT_KEY = "tick_finished_at"
 STATION_LAST_TICK_KEY = "last_tick"
+# The last finished sweep pass, carrying what it recomputed beside the tick's
+# own counts. It is a station key like ``last_tick`` so a reader off the node
+# answers both passes from the one published reading rather than reaching the
+# sweep's per-project files.
+STATION_LAST_SWEEP_KEY = "last_sweep"
 STATION_TICK_STAGES = (
     "store-tick",
     "classify",
@@ -524,6 +529,20 @@ def _last_tick_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
     return {"last_tick": record} if isinstance(record, dict) else {}
 
 
+def _last_sweep_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
+    """The last finished sweep pass, with what it recomputed.
+
+    Present only once a pass has finished, so a station that has ticked but
+    never swept reports no sweep reading rather than an empty one a reader
+    would take for a pass that did no work.
+    """
+    try:
+        record = json.loads(markers.get(STATION_LAST_SWEEP_KEY) or "null")
+    except (TypeError, ValueError):
+        return {}
+    return {"last_sweep": record} if isinstance(record, dict) else {}
+
+
 def _running_tick_start(markers: Mapping[str, Any], tick_age: int | None) -> str:
     """The instant the running tick started, and "" when no tick is running.
 
@@ -585,7 +604,7 @@ def _station_markers(connection: Any) -> dict[str, str]:
     markers = {
         str(key): str(value)
         for key, value in connection.execute(
-            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?)",
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?, ?)",
             (
                 "heartbeat",
                 STATION_TICK_STAGE_KEY,
@@ -593,6 +612,7 @@ def _station_markers(connection: Any) -> dict[str, str]:
                 STATION_TICK_FINISHED_AT_KEY,
                 "store_identity",
                 STATION_LAST_TICK_KEY,
+                STATION_LAST_SWEEP_KEY,
             ),
         )
     }
@@ -702,6 +722,7 @@ def read_station_tick(
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": age > STATION_STALE_SECONDS,
         **_last_tick_reading(markers),
+        **_last_sweep_reading(markers),
     }
 
 
@@ -1331,6 +1352,12 @@ def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
             {
                 "kind": _UNREADABLE_RECORD_KIND,
                 "run_id": path,
+# The view projects every duty row through its own action form,
+                # which names the ids the row concerns; this duty's identity is
+                # the path it could not read, so the row states it here. A
+                # snapshot reader rebuilds the row from the stored finding with
+                # no derivation to project it with, so the builder both sides
+                # share is what makes the two rows equal.
                 "run_ids": [path],
                 "node": Path(path).name,
                 "age_seconds": 0,
@@ -2030,7 +2057,10 @@ def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetSta
         # reach the review store -- so what could not be read is collected here,
         # once, and travels with the state every session's slice is built from. A
         # read outside the region has nobody to name its skips to, so another
-        # reader in this process never reaches this sweep's findings.
+        # reader in this process never reaches this sweep's findings. A review
+        # read this view memoises replays the skips that read reported, so a
+        # derivation here names the same unreadable record a first one did
+        # rather than publishing fewer duties than the snapshot beside it.
         with module.review_module.collect_read_failures() as skipped_records:
             # The held-worktree pass reads the ledger's run history, and the
             # utilisation reader the classification below reaches needs a

@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T01:56:37Z",
+  "findings": [
+    {
+      "file": "docs/research/a-not-yours-row-against-a-runs-own-owner.html",
+      "line": "65",
+      "severity": "non-blocking",
+      "text": "the quoted stored record reads \"recorded_at\": \"2026-11-19T04:30:39Z\" while the live pointer at ~/.config/reckon/crew/live/r-20261118T185447788898-cached-point-program.json reads 2026-11-19T04:39:39Z; the landing fragment repeats the same value at docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-the-source-of-a-not-yours-row.html. A record whose evidentiary value rests on quoting the stored state verbatim should carry the value it read; the argument is unaffected, so this does not hold the node."
+    },
+    {
+      "file": "docs/research/a-not-yours-row-against-a-runs-own-owner.html",
+      "line": "175",
+      "severity": "non-blocking",
+      "text": "the node declared docs/figures/work-of-a-lost-session-is-raised-not-left/wlsr-the-source-of-a-not-yours-row as a write path and wrote no figure; the record reports a two-population comparison (seven rows for one run against one row for another) whose shape a small chart would carry at a glance, which is what the repository's figure mandate asks of a research record that makes a quantitative comparison. Recording it, not holding the node: the plan section asked for a record, not a figure."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan \u00a78 of work-of-a-lost-session-is-raised-not-left, a research record that names where the not-yours text is written, reproduces the repeated row and says whether a repair belongs here; docs/research/a-not-yours-row-against-a-runs-own-owner.html answers all three.\nVERDICT done_when: the done_when names `reckon audit-doc` plus a quoted stored record and a command output listing the run more than once; the manifest records the audit (gate-audit-doc.log, EXIT=0) and the reproduction-counts.log (CASE_COUNT=7 CONTROL_COUNT=1).\nVERDICT write_paths: the manifest declares the research record and the landing fragment, both inside the three paths the dispatch declared; the diff e689315..956185c changes only those two files.\nVERDICT manifest: read; it records tests `reckon audit-doc docs/research/a-not-yours-row-against-a-runs-own-owner.html`, test_logs gate-audit-doc.log, negative_control_log reproduction-counts.log, and rubric lines for done_when, negative_control, reasoning, anchors_resolve, single_goal and scope.\nVERDICT diff: read commit by commit against e689315bb74ca1efdd63eee69d7a55ed9b235a0e; three commits add the research record (279 lines) and the landing fragment (37 lines), both under docs/, and change no product source.\nCALL_SITES: reckon/evidence.py:_fragment_href, reckon/evidence.py:compose_landed_record, reckon/resources.py\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/a-not-yours-row-against-a-runs-own-owner.html names the stored acknowledgement, the emitter at reckon/crew/obligations.py:1899 and the writer at reckon/crew/runs.py:3065, and ends with the \u00a725 endpoint the plan section asked for.\nSCORE evidence: 15\nJUSTIFICATION evidence: the audit-doc log at gate-audit-doc.log records EXIT=0 and the reproduction-counts.log records CASE_COUNT=7 CONTROL_COUNT=1, an independent recount of obligations-own-session.json reproduces 7 case rows against 1 control row, and the quoted recorded_at differs from the stored value, so the recorded gate passes while one quoted field does not reconcile.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e689315bb74ca1efdd63eee69d7a55ed9b235a0e..956185c1709670b962e5cf8eeb3f4badf460765a changes exactly docs/research/a-not-yours-row-against-a-runs-own-owner.html and docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-the-source-of-a-not-yours-row.html, both declared, and leaves product source untouched as \u00a78 requires.\nSCORE durability: 8\nJUSTIFICATION durability: no test file lies in this node's write paths, so no assertion was added; the only guard is `reckon audit-doc` on docs/research/a-not-yours-row-against-a-runs-own-owner.html, which checks HTML structure and reports 0 errors but does not fail if a line anchor such as reckon/crew/resumption.py:3153 moves or the quoted record drifts.\nSCORE fit: 18\nJUSTIFICATION fit: the record follows the repository research-doc idiom (docs-project and plan-type metas, plan-doc main, foundation.css and dashboard.css) and the fragment is a bare section composed by reckon/evidence.py:_fragment_body_bytes, which returns a bare anchor unchanged.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no function, class or module; the capability it uses is the evidence-fragment and research-doc format the repository already owns at reckon/evidence.py:1660, and a search of docs/research for another record on obligations, acknowledgements or the sweep list found none.\nFINDING docs/research/a-not-yours-row-against-a-runs-own-owner.html:65 non-blocking: the quoted stored record reads \"recorded_at\": \"2026-11-19T04:30:39Z\" while the live pointer reads 2026-11-19T04:39:39Z, and the landing fragment repeats the same value at docs/evidence/fragments/work-of-a-lost-session-is-raised-not-left/wlsr-the-source-of-a-not-yours-row.html.\nFINDING docs/research/a-not-yours-row-against-a-runs-own-owner.html:146 non-blocking: the node declared a docs/figures path and wrote no figure for a seven-against-one row comparison that a small chart would carry at a glance.\n",
+  "review_run_id": "r-20261121T015554174666-review-of-wlsr-the-source-of-a-not-yours-row-956185c17096",
+  "reviewed_base_sha": "e689315bb74ca1efdd63eee69d7a55ed9b235a0e",
+  "reviewed_head_sha": "956185c1709670b962e5cf8eeb3f4badf460765a",
+  "reviewed_note": "the reviewed node ran no suite: its gate was `reckon audit-doc`, and its manifest carries no baseline_suite or after_suite. added_failure_count is therefore 0 with an empty id list because there is no suite pair to difference, not because a pair was measured clean.",
+  "reviewed_run_id": "r-20261121T010301059303-wlsr-the-source-of-a-not-yours-row",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 8,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T02:22:20.645259+00:00",
+  "total": 99
+}

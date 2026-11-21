@@ -281,6 +281,27 @@ def fence_capability_problem(
     return verdict
 
 
+def harness_home_layout(dialect_name: str) -> tuple[str, str, str] | None:
+    """Return the home layout a dialect reads, through the interface it speaks.
+
+    A wrapper in front of a harness — the local lane's ``clive`` entry point is
+    one — reads the same home layout as the harness it wraps, so it declares
+    that harness as its ``home_interface`` rather than being given a copy of
+    the layout here. Resolved lazily because :mod:`reckon._backends` imports
+    this module; the import is read-only and never runs during that import.
+    """
+    declared = _HARNESS_HOME.get(dialect_name)
+    if declared is not None:
+        return declared
+    from reckon._backends import _DIALECTS
+
+    dialect = _DIALECTS.get(dialect_name)
+    interface = getattr(dialect, "home_interface", None)
+    if not interface:
+        return None
+    return _HARNESS_HOME.get(interface)
+
+
 def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
     """Return the config home a run owns for its harness, or None.
 
@@ -300,7 +321,7 @@ def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
     run directory does not exist yet, rather than a home whose location is
     decided by a working directory.
     """
-    declared = _HARNESS_HOME.get(dialect_name)
+    declared = harness_home_layout(dialect_name)
     if declared is None:
         return None
     directory = Path(run_directory)
@@ -334,6 +355,9 @@ def seed_harness_home(
     worker_mcp_servers: Iterable[str] | None = None,
     anchored_edit: bool = False,
     anchored_edit_roots: Iterable[str | Path] = (),
+    settings_file: str | None = None,
+    mcp_config_file: str | None = None,
+    mcp_refusal_list: bool = False,
 ) -> bool:
     """Create a run's harness home carrying what its harness reads there.
 
@@ -382,7 +406,7 @@ def seed_harness_home(
     enable it; existing settings and resumed sessions keep their own state.
     """
     home.mkdir(parents=True, exist_ok=True)
-    declared = _HARNESS_HOME.get(dialect_name)
+    declared = harness_home_layout(dialect_name)
     if declared is None:
         return False
     # An existing settings.json belongs to the run that wrote it, so the MCP
@@ -390,7 +414,8 @@ def seed_harness_home(
     # its own file, which already carries the record written when the run home
     # was first seeded — the same home, so the record survives the resume, and a
     # run's own state is never overwritten.
-    settings_preexisting = (home / "settings.json").exists()
+    settings_path = None if settings_file is None else home / settings_file
+    settings_preexisting = settings_path is not None and settings_path.exists()
     allowed_servers = set(worker_mcp_servers or ())
     if anchored_edit:
         allowed_servers.add("reckon-anchored-edit")
@@ -413,17 +438,19 @@ def seed_harness_home(
         _merge_harness_entry(
             source, home / relative, entry.get("keys"), allowed_servers
         )
-    _seed_worker_mcp_exclusions(home, dialect_name, allowed_servers)
-    if dialect_name == "claude":
-        _seed_worker_inbox_hook(home)
+    _seed_worker_mcp_exclusions(
+        home, mcp_config_file, allowed_servers, refusal_list=mcp_refusal_list
+    )
+    if settings_path is not None:
+        _seed_worker_inbox_hook(settings_path)
     if resume_session:
         _seed_harness_session(home, source_home, str(resume_session))
     if (
-        dialect_name == "claude"
+        settings_path is not None
         and not settings_preexisting
         and worker_mcp_servers is not None
     ):
-        _seed_worker_mcp_settings(home, worker_mcp_servers)
+        _seed_worker_mcp_settings(settings_path, worker_mcp_servers)
         if anchored_edit and not resume_session:
             _seed_anchored_edit(home, anchored_edit_roots)
             return True
@@ -554,7 +581,7 @@ def worker_mcp_selection(
     return "", _declared_worker_mcp_servers(config)
 
 
-def _seed_worker_inbox_hook(home: Path) -> None:
+def _seed_worker_inbox_hook(settings_path: Path) -> None:
     """Register the inbox hook in a run home's settings, whatever it holds.
 
     A run's own settings file is otherwise never rewritten, because the harness
@@ -567,10 +594,12 @@ def _seed_worker_inbox_hook(home: Path) -> None:
     """
     from reckon.hooks import install
 
-    install.merge_worker_inbox_hook(home / "settings.json")
+    install.merge_worker_inbox_hook(settings_path)
 
 
-def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> None:
+def _seed_worker_mcp_settings(
+    settings_path: Path, worker_mcp_servers: Iterable[str]
+) -> None:
     """Record in the run home's settings which MCP servers its harness starts.
 
     A worker whose harness starts in a run home with no settings inherits every
@@ -584,7 +613,7 @@ def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> 
     own settings.json is never touched. The same allowlist filters user-scope
     MCP declarations when the run home is seeded.
     """
-    path = home / "settings.json"
+    path = settings_path
     settings = dict(_load_json_mapping(path) or {})
     settings[PROJECT_MCP_SERVERS_ENABLED_KEY] = False
     settings[ENABLED_PROJECT_MCP_SERVERS_KEY] = list(worker_mcp_servers)
@@ -594,15 +623,23 @@ def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> 
 
 
 def _seed_worker_mcp_exclusions(
-    home: Path, dialect_name: str, allowed_servers: Iterable[str] = ()
+    home: Path,
+    mcp_config_file: str | None,
+    allowed_servers: Iterable[str] = (),
+    refusal_list: bool = False,
 ) -> None:
-    """Keep only flight-declared servers in run-owned JSON configuration."""
-    if dialect_name not in ("claude", "omp"):
+    """Keep only flight-declared servers in run-owned JSON configuration.
+
+    The file is the one the harness interface declares. A harness that keeps no
+    JSON configuration excludes its servers on the argv instead, so a caller
+    naming no file has nothing to write here.
+    """
+    if mcp_config_file is None:
         return
-    path = home / (".claude.json" if dialect_name == "claude" else "agent/mcp.json")
+    path = home / mcp_config_file
     config = _load_json_mapping(path)
     if config is None:
-        if dialect_name == "claude":
+        if mcp_config_file == ".claude.json":
             return
         config = {}
     servers = config.get("mcpServers")
@@ -613,7 +650,7 @@ def _seed_worker_mcp_exclusions(
         config["mcpServers"] = {
             name: server for name, server in servers.items() if name in allowed
         }
-    if dialect_name == "omp":
+    if refusal_list:
         disabled = config.get("disabledServers", [])
         changed = changed or not path.exists()
         config["disabledServers"] = sorted(set(disabled) | removed)
