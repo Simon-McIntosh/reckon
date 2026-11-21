@@ -99,6 +99,12 @@ MISSING_BINARY_STATUS = 127
 # an unfenced success.
 FENCE_PROGRAM_STATUS = 127
 
+# The status a job's task exits with when a bind source the fence carries
+# cannot be supplied on the node the task landed on. Distinct from the fence
+# program's own status and never zero: a mount the job could not make is the
+# launch's refusal, not the command's outcome.
+FENCE_SOURCE_STATUS = 126
+
 # The one discharge from the refusal. Set to a truthy value and the launch is
 # forwarded unchanged.
 OVERRIDE_ENV = "RECKON_ALLOW_NESTED_LAUNCH"
@@ -875,6 +881,11 @@ if not (os.path.isabs(program) and os.access(program, os.X_OK)):
 # own fence both read prefix[0], so one substitution here is what stops either
 # from searching the job node's path.
 prefix[0] = program
+# The task's own temp directory and this node are named before the prepare
+# step, because both the refusal inside it and the source check after it read
+# them, and the re-entry the prepare step exec's skips that block entirely.
+overlay = str((recipe.get("temp_overlay") or {}).get("source") or "")
+node = socket.gethostname()
 if not spec.get("sources_prepared"):
     # Only sources known to be directory grants may be supplied empty. A
     # missing credential or executable must still refuse the task.
@@ -927,11 +938,43 @@ if not spec.get("sources_prepared"):
             prepare += ["--tmpfs", str(path)]
         for parent in sorted(ancestors, key=lambda p: -len(p.parts)):
             prepare += ["--remount-ro", str(parent)]
+        for path in missing:
+            if str(path) == overlay:
+                # Which temp directory stood in is recorded, so a gate log that
+                # measured the task's own temp says so rather than reading as if
+                # the worker's directory had been bound here.
+                sys.stderr.write(
+                    "fence: temp directory %s is absent on %s; the task's own "
+                    "empty temp directory stands in for it\\n" % (overlay, node))
         spec["sources_prepared"] = True
         encoded = base64.urlsafe_b64encode(json.dumps(spec).encode()).decode()
         os.execv(prepare[0], [*prepare, "--", sys.executable, "-I", "-c",
                               sys.argv[1], sys.argv[1], encoded])
 command = spec["command"]
+# Every source the inherited fence mounts must be here before the fence runs.
+# The prepare step above supplies the task's temp directory and the other
+# directories the fence grants, but a source that is not one of those — a file
+# grant, or a directory the composing host never classified as one — refuses
+# here, naming each absent path and this node, rather than surfacing as
+# bubblewrap's own message about the first one it reached.
+absent = []
+index = 1
+while index < len(prefix) and prefix[index] != "--":
+    option = prefix[index]
+    if option in ("--bind", "--dev-bind", "--bind-try", "--dev-bind-try"):
+        source = prefix[index + 1]
+        if not os.path.lexists(source) and source != overlay:
+            absent.append(source)
+        index += 3
+        continue
+    index += 1
+absent = sorted(set(absent))
+if absent:
+    sys.stderr.write(
+        "fence cannot bind %s on %s: absent on this node, so the task was not "
+        "started and the fence was not dropped\\n"
+        % (", ".join(absent), node))
+    raise SystemExit(_FENCE_SOURCE_STATUS)
 script = None
 try:
     if "script" in spec:
@@ -954,7 +997,7 @@ raise SystemExit(result.returncode if result.returncode >= 0 else 128-result.ret
 # the same figure.
 _TASK_REENTRY = _TASK_REENTRY_TEMPLATE.replace(
     "_FENCE_PROGRAM_STATUS", str(FENCE_PROGRAM_STATUS)
-)
+).replace("_FENCE_SOURCE_STATUS", str(FENCE_SOURCE_STATUS))
 
 
 def _task_command(

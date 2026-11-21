@@ -1,0 +1,47 @@
+<section class="r-evidence" id="qwnw-a-gate-run-starts-inside-the-sandbox-evidence">
+  <h2>A gate run starts inside the sandbox on a compute node</h2>
+
+  <h3>What the base revision does</h3>
+  <p id="qwnw-a-gate-run-starts-inside-the-sandbox-base">A gate submitted from this fenced worker to
+  <code>all_debug</code> already reaches a node and completes: the scoped gate at
+  <code>28fbf2bc2f</code> ran <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>
+  on node <code>98dci4-clu-3141.iter.org</code> and the log ended <code>EXIT=0</code>. The recorded
+  failure of 19 November is therefore not reproduced as a gate-start error at this revision.</p>
+
+  <p id="qwnw-a-gate-run-starts-inside-the-sandbox-base-quote">The same submission with a carried fence whose
+  temporary directory does not exist on the job node fails at base with bubblewrap's own message, which
+  names the path but not the node it failed on:</p>
+  <pre id="qwnw-a-gate-run-starts-inside-the-sandbox-base-log">bwrap: Can't find source path /tmp/reckon-crew-scratch/r-20261119T184740433049-qwnw-a-gate-run-starts-inside-the-sandbox/worker-only-temp-b: No such file or directory</pre>
+
+  <h3>What changed</h3>
+  <p id="qwnw-a-gate-run-starts-inside-the-sandbox-recipe">The fence's carried recipe now records the bind
+  over the node's own temp root as <code>temp_overlay</code>, apart from every other directory source. A
+  submitted task runs on whichever node the scheduler chose, so the worker's scratch — mounted over its
+  <code>/tmp</code> — is absent there by construction; that one source is supplied as the task's own empty
+  temp directory and the substitution is written to the log, naming the original path and the node.
+  Sources the composing host classified as directories are supplied empty the same way, which is what keeps
+  the run's private grants working on a node that never held them. A source it did not classify — a
+  temporary directory the fence would have to bind and no node can supply — now refuses before the task
+  starts, naming the path and the node, under a status distinct from the fence program's own; before this
+  change it reached bubblewrap, whose message carries no node.</p>
+
+  <h3>Measure</h3>
+  <ul>
+    <li id="qwnw-a-gate-run-starts-inside-the-sandbox-one-test">A one-test pytest file submitted from this fenced worker to
+    <code>all_debug</code> ran to completion on node <code>98dci4-clu-3141.iter.org</code> and its log ends
+    <code>EXIT=0</code>.</li>
+    <li id="qwnw-a-gate-run-starts-inside-the-sandbox-refusal">A carried fence with a temporary directory the
+    sandbox cannot bind fails the task with
+    <code>fence cannot bind &lt;path&gt; on &lt;node&gt;: absent on this node and not the task's temp
+    directory, so the task was not started and the fence was not dropped</code>.</li>
+    <li id="qwnw-a-gate-run-starts-inside-the-sandbox-negative">Negative control: with the temp-directory
+    bind restored to its base form — the recipe naming no <code>temp_overlay</code> — the test that starts a
+    sandboxed command against a node-local temp directory fails with that bind refusal, 1 failed of 2.</li>
+  </ul>
+
+  <h3>Test files against the base revision</h3>
+  <p id="qwnw-a-gate-run-starts-inside-the-sandbox-arms">Each suite arm ran on <code>all_debug</code>. The base
+  arm resolved the scoped suite: two files, <strong>0 failed</strong>, exit 0. The head arm added this node's
+  test file: three files, <strong>0 failed</strong>, exit 0. The new test collects and passes at the head, and
+  it is absent from the base tree by construction, where the arm names it as a file rather than a test.</p>
+</section>

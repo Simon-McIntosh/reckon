@@ -2432,6 +2432,17 @@ def fence_argv(
         "directories": [str(path) for path in directories],
         "directory_sources": sorted(set(directory_sources)),
         "scratch": str(scratch),
+        # The bind the fence makes over the node's own temp root, named apart
+        # from every other directory source. A submitted task runs on another
+        # node; this one directory is the job's own temp and a fresh empty one
+        # legitimately stands in for it, while any other source the job node
+        # cannot supply is a directory the fence could not bind and must name
+        # rather than invent. See :func:`worker_tmp_mount_source`.
+        "temp_overlay": (
+            {"source": str(tmp_mount), "destination": str(node_tmp)}
+            if tmp_mount is not None and node_tmp is not None
+            else None
+        ),
         # What this fence cannot guard, stated rather than implied. Every copy
         # of a scheduler tool on this node's path or in a directory the flight
         # layer declares is masked at the shim; what remains is a copy only
