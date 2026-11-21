@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:265 admit_once -> decision_answers.release_answered_holds, reached from reckon/crew/admission/service.py:472",
+    "reckon/crew/obligations.py:4908 _obligations_view -> decision_answers.answered_items, reached from reckon/hooks/coordinator_obligations.py:199"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T16:26:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "456",
+      "severity": "non-blocking",
+      "text": "release_answered_holds duplicates the capability reckon/crew/lead_decisions.py:420 release_withdrawn_holds owns -- walk the live held pointers, release the ones a settled decision bound, and write the released phase back into the pointer the pass read -- so a change to the release loop or its phase write-back now has two implementations to keep in step."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "472",
+      "severity": "non-blocking",
+      "text": "the release matches only the answer's recorded held_requests and never checks the pointer's own queue_hold.decision_id, which the owner at reckon/crew/lead_decisions.py:442 does check, so an answer releases a request a coordinator later re-held behind a different decision."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "397",
+      "severity": "non-blocking",
+      "text": "answered_items emits a duty for every answer ever recorded for the same project and session with no condition that retires it, so an owning session collects one permanent obligation row per answer on every read rather than a current duty."
+    },
+    {
+      "file": "tests/test_a_decision_answer_releases_what_it_held.py",
+      "line": "198",
+      "severity": "non-blocking",
+      "text": "assert saved[\"choice\"] == \"wait\" compares the record answer_decision returns against the choice this test itself passed in, so it stays green for a regression that echoes the input without persisting it; the independent guards here are the release assertions at lines 199-201."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": "191",
+      "severity": "non-blocking",
+      "text": "answer_decision reuses the name reckon/crew/lost_session_work.py:445 already carries for a different capability, and that owner is what the existing crew decision answer command at reckon/crew_run_commands.py:623 imports, so two unrelated answers to a decision now share one name in one package."
+    },
+    {
+      "file": "docs/evidence/fragments/lead-decisions-reach-one-place/s3.html",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "the fragment's head arm is quoted at 60983907ec and its probe called advance_waiting_requests, which no longer releases an answered hold since the release moved to reckon/crew/admission/selection.py:265, and the probe is absent from the tree at the delivered head, so the recorded head arm would not reproduce at 5af4c2caf1."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against base 5417b373: 60983907ec adds the 491-line module and the test file, 4372c6b8e2 routes the write through close_decision_at and the release through queue_edit.release, 9a372bc435 adds the fragment, 304ef727b6 and 00e4c25b6d replace 12 paths with main's own text plus the 11-line hook at reckon/crew/admission/selection.py:262 and the duty hook at obligations.py:4908, and 5af4c2caf1 adds the merged-tree section to s3.html.",
+    "done_when": "the done_when's four clauses map to tests/test_a_decision_answer_releases_what_it_held.py:124,167,191,241 and merged-gate.log records 7 passed EXIT=0 on the merged commit of the reviewed head, while the named fragment docs/evidence/fragments/lead-decisions-reach-one-place/s3.html:10 quotes the base arm failing with 'held' == 'queued' (negative-control-base.log EXIT=1).",
+    "goal": "the node's goal is section 3's deliverable, an answer that reaches its owner and releases what it held; reckon/crew/decision_answers.py:191 refuses every non-presenter and stores the choice, note and time through reckon/crew/lead_decisions.py:237 close_decision_at, :397 gives the owning session its duty, and :456 lifts the recorded holds inside the admission pass.",
+    "manifest": "read in full; it names six commits, the 7-test gate command with its merged-tree log, baseline and after suites at 58 passed EXIT=0 with empty failure_ids, five negative-control logs, and the merged-tree proof against merge commit 9ef5b2832124.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/lead-decisions-reach-one-place and s3.html; all 18 delivered paths lie inside them and the plan itself is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_decision_answer_releases_what_it_held.py:167-187 shows a refused answer leaving the record bytes, the monitor stream and the pointer untouched and :295-306 reads the released phase back from disk after admit_once, with the residual non-independent assertion at :198.",
+    "evidence": "merged-gate.log records 7 passed EXIT=0 at the merged commit of 5af4c2caf1 and both suite arms record 58 passed EXIT=0, but docs/evidence/fragments/lead-decisions-reach-one-place/s3.html:90 quotes its head arm at 60983907ec with a probe calling advance_waiting_requests, which releases no answered hold at the delivered head.",
+    "fit": "reckon/crew/decision_answers.py follows the surrounding lazy-import idiom and both authored files are ruff-clean, but :191 gives answer_decision a name reckon/crew/lost_session_work.py:445 already carries for a different answer.",
+    "goal_fidelity": "reckon/crew/decision_answers.py:191-247 stores the chosen option, the note and the time and refuses a session other than the presenter, :397 yields the owner's single duty row, and :456 lifts the holds the answer recorded.",
+    "reuse": "reckon/crew/decision_answers.py:456 repeats the settled-decision release loop that reckon/crew/lead_decisions.py:420 release_withdrawn_holds owns, including its in-memory phase write-back, without extending or wrapping the owner.",
+    "scope_discipline": "every delivered path is inside the declared reckon, tests and fragment scope, though 12 of the 18 paths such as reckon/crew/lost_session_work.py are byte-identical to main and carry none of this node's work."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is section 3's deliverable, an answer that reaches its owner and releases what it held; reckon/crew/decision_answers.py:191 refuses every non-presenter and stores the choice, note and time through reckon/crew/lead_decisions.py:237 close_decision_at, :397 gives the owning session its duty, and :456 lifts the recorded holds inside the admission pass.\nVERDICT done_when: the done_when's four clauses map to tests/test_a_decision_answer_releases_what_it_held.py:124,167,191,241 and merged-gate.log records 7 passed EXIT=0 on the merged commit of the reviewed head, while the named fragment docs/evidence/fragments/lead-decisions-reach-one-place/s3.html:10 quotes the base arm failing with 'held' == 'queued' (negative-control-base.log EXIT=1).\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/lead-decisions-reach-one-place and s3.html; all 18 delivered paths lie inside them and the plan itself is untouched.\nVERDICT manifest: read in full; it names six commits, the 7-test gate command with its merged-tree log, baseline and after suites at 58 passed EXIT=0 with empty failure_ids, five negative-control logs, and the merged-tree proof against merge commit 9ef5b2832124.\nVERDICT diff: read commit by commit against base 5417b373: 60983907ec adds the 491-line module and the test file, 4372c6b8e2 routes the write through close_decision_at and the release through queue_edit.release, 9a372bc435 adds the fragment, 304ef727b6 and 00e4c25b6d replace 12 paths with main's own text plus the 11-line hook at reckon/crew/admission/selection.py:262 and the duty hook at obligations.py:4908, and 5af4c2caf1 adds the merged-tree section to s3.html.\nCALL_SITES: reckon/crew/admission/selection.py:265 admit_once -> decision_answers.release_answered_holds, reached from reckon/crew/admission/service.py:472, reckon/crew/obligations.py:4908 _obligations_view -> decision_answers.answered_items, reached from reckon/hooks/coordinator_obligations.py:199\nSCORE goal_fidelity: 18\nSCORE evidence: 14\nSCORE scope_discipline: 16\nSCORE durability: 16\nSCORE fit: 15\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/crew/decision_answers.py:191-247 stores the chosen option, the note and the time and refuses a session other than the presenter, :397 yields the owner's single duty row, and :456 lifts the holds the answer recorded.\nJUSTIFICATION evidence: merged-gate.log records 7 passed EXIT=0 at the merged commit of 5af4c2caf1 and both suite arms record 58 passed EXIT=0, but docs/evidence/fragments/lead-decisions-reach-one-place/s3.html:90 quotes its head arm at 60983907ec with a probe calling advance_waiting_requests, which releases no answered hold at the delivered head.\nJUSTIFICATION scope_discipline: every delivered path is inside the declared reckon, tests and fragment scope, though 12 of the 18 paths such as reckon/crew/lost_session_work.py are byte-identical to main and carry none of this node's work.\nJUSTIFICATION durability: tests/test_a_decision_answer_releases_what_it_held.py:167-187 shows a refused answer leaving the record bytes, the monitor stream and the pointer untouched and :295-306 reads the released phase back from disk after admit_once, with the residual non-independent assertion at :198.\nJUSTIFICATION fit: reckon/crew/decision_answers.py follows the surrounding lazy-import idiom and both authored files are ruff-clean, but :191 gives answer_decision a name reckon/crew/lost_session_work.py:445 already carries for a different answer.\nJUSTIFICATION reuse: reckon/crew/decision_answers.py:456 repeats the settled-decision release loop that reckon/crew/lead_decisions.py:420 release_withdrawn_holds owns, including its in-memory phase write-back, without extending or wrapping the owner.\nFINDING reckon/crew/decision_answers.py:456 non-blocking: release_answered_holds duplicates the capability reckon/crew/lead_decisions.py:420 release_withdrawn_holds owns -- walk the live held pointers, release the ones a settled decision bound, and write the released phase back into the pointer the pass read -- so a change to the release loop or its phase write-back now has two implementations to keep in step.\nFINDING reckon/crew/decision_answers.py:472 non-blocking: the release matches only the answer's recorded held_requests and never checks the pointer's own queue_hold.decision_id, which the owner at reckon/crew/lead_decisions.py:442 does check, so an answer releases a request a coordinator later re-held behind a different decision.\nFINDING reckon/crew/decision_answers.py:397 non-blocking: answered_items emits a duty for every answer ever recorded for the same project and session with no condition that retires it, so an owning session collects one permanent obligation row per answer on every read rather than a current duty.\nFINDING tests/test_a_decision_answer_releases_what_it_held.py:198 non-blocking: assert saved[\"choice\"] == \"wait\" compares the record answer_decision returns against the choice this test itself passed in, so it stays green for a regression that echoes the input without persisting it; the independent guards here are the release assertions at lines 199-201.\nFINDING reckon/crew/decision_answers.py:191 non-blocking: answer_decision reuses the name reckon/crew/lost_session_work.py:445 already carries for a different capability, and that owner is what the existing crew decision answer command at reckon/crew_run_commands.py:623 imports, so two unrelated answers to a decision now share one name in one package.\nFINDING docs/evidence/fragments/lead-decisions-reach-one-place/s3.html:90 non-blocking: the fragment's head arm is quoted at 60983907ec and its probe called advance_waiting_requests, which no longer releases an answered hold since the release moved to reckon/crew/admission/selection.py:265, and the probe is absent from the tree at the delivered head, so the recorded head arm would not reproduce at 5af4c2caf1.\n",
+  "review_run_id": "r-20261121T162421121296-review-of-ldop-an-answer-reaches-its-owner-and-releases-what-it-held-5af4c2caf1b4",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "5af4c2caf1b4e4e832af19f5fdd9cad3e32e282c",
+  "reviewed_run_id": "r-20261115T205941989260-ldop-an-answer-reaches-its-owner-and-releases-what-it-held",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T16:44:51.907911+00:00",
+  "total": 84
+}
