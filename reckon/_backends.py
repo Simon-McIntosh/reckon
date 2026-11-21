@@ -3317,20 +3317,13 @@ def launch_plan(
     if harness is not None and (adopts_harness_home or dialect.name == "omp"):
         from reckon.flight import harness_home_adjacent_files, harness_home_files
 
-        seeded_treatment = seed_harness_home(
+        seed_harness_home(
             harness,
             dialect_name=dialect.name,
             operator_home=fence_home if fence_home is not None else Path.home(),
             declaration=harness_home_files(dialect.name, backend),
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
-            anchored_edit=(
-                backend.get("anchored_edit") is True and dialect.name == "claude"
-            ),
-            # The fence grants the worktree separately from delivery roots.
-            anchored_edit_roots=fence_writable_roots(
-                (*writable_directories, worktree_path)
-            ),
             # A resolved flight configuration states which project this run
             # belongs to and so which servers its harness should start; a bare
             # composition carries none, so it names no project and seeds no
@@ -3343,12 +3336,6 @@ def launch_plan(
             mcp_config_file=dialect.mcp_config_file,
             mcp_refusal_list=dialect.mcp_refusal_list,
         )
-        # Only the claude arm's treatment is decided by the seeding step: it
-        # does the work by editing the run home. A codex launch carries its
-        # server on the argv, which this step neither writes nor removes, so
-        # its recorded fact must not be replaced by the seeder's answer.
-        if dialect.settings_file is not None:
-            anchored_edit = seeded_treatment
         home_layout = harness_home_layout(dialect.name)
         if adopts_harness_home and home_layout is not None:
             environment[home_layout[0]] = str(harness)
@@ -3424,7 +3411,6 @@ def launch_plan(
             harness if harness is not None and adopts_harness_home else operator,
             Path(worktree_path),
             resolved_mcp_servers,
-            anchored_edit=backend.get("anchored_edit") is True,
         )
         # Server declarations can carry credentials: keep them off process argv.
         if run_directory is not None and run_directory.is_dir():
@@ -3435,17 +3421,6 @@ def launch_plan(
             launch_backend["worker_mcp_config"] = '{"mcpServers": {}}'
     if dialect.name in ("claude", "codex"):
         launch_backend["anchored_edit"] = anchored_edit
-    # A launch that seeded the anchored server names its tools in the worker's
-    # prompt. The launch step is the one place that knows what this launch
-    # actually seeded — an unfenced, resumed or operator-settings launch
-    # registers no server — so the instruction is composed here, from the
-    # resolved fact, rather than at dispatch where only the flight key is
-    # known. A prompt already carrying one keeps exactly one, and a launch that
-    # seeds none drops it: a lane change composes from the run's prompt file,
-    # which the anchored launch before it wrote.
-    from reckon.crew.prompts import with_anchored_edit_instruction
-
-    prompt = with_anchored_edit_instruction(prompt, launch_backend, at_launch=True)
     if anchored_edit and dialect.name == "codex":
         # The server confines every path to its own ``--root`` set, so it is
         # handed the same roots the worker is: the delivery roots that survive
