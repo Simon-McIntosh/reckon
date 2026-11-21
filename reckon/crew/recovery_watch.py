@@ -4470,7 +4470,8 @@ def recover(
 
     reports = []
     scoring: list[dict[str, Any]] = []
-    for pointer in list_live():
+    listed = list(list_live())
+    for pointer in listed:
         if project and str(pointer.get("project") or "") != project:
             continue
         run_id = str(pointer.get("run_id") or "")
@@ -4522,7 +4523,12 @@ def recover(
         # rather than left to reappear as a refusal every pass.
         from reckon.crew import lost_sessions as _lost_sessions
 
-        lost_reads = _lost_sessions.LostSessionReads(pointers=scoring)
+        # Every live pointer dates its session, not only the run that owes the
+        # review: a session with no lease or process is dated from its oldest
+        # record, and reading only the scoring run would date it younger than
+        # the admit pass does. A younger answer under-detects lostness, which
+        # is the behaviour this suppression exists to stop.
+        lost_reads = _lost_sessions.LostSessionReads(pointers=listed)
         for record in scoring:
             session = str(record.get("session") or "")
             if session and lost_reads.answer(

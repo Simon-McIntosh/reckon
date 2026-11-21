@@ -87,10 +87,12 @@ def _discard_marker(run_id: str) -> dict:
     raise AssertionError(f"no discard record was written for {run_id!r}")
 
 
-def _admit(config_for, launcher):
+def _admit(config_for, launcher, *, run_id: str = ""):
     from reckon.crew import queue_admission
 
-    return queue_admission.admit_once(config_for=config_for, launcher=launcher)
+    return queue_admission.admit_once(
+        config_for=config_for, launcher=launcher, run_id=run_id
+    )
 
 
 # --------------------------------------------------------------------------
@@ -241,6 +243,86 @@ def test_the_verdict_record_lists_each_retirement_under_its_key(
     assert [row["run_id"] for row in retired_rows] == [run_id]
 
 
+def test_a_named_admission_retires_only_the_request_it_was_handed(
+    admit_repo: Path,
+) -> None:
+    """A pass asked about one run leaves every other request alone.
+
+    A named admission decides only the request it was given. The lost-session
+    rule ranges over that same scope: a fleet-wide sweep here would retire a
+    stranger's review on a pass whose caller was promised the rest of the queue
+    would not be touched.
+    """
+
+    config, resolve = _config_for()
+    config["roles"]["review"] = {}
+    named = "r-lost-review-named"
+    other = "r-lost-review-unnamed"
+    _queued_review(admit_repo, run_id=named, session=LOST_SESSION)
+    _queued_review(admit_repo, run_id=other, session=LOST_SESSION)
+    _age_pointer(named, session=LOST_SESSION, age_hours=73)
+    _age_pointer(other, session=LOST_SESSION, age_hours=73)
+    recorded: list = []
+
+    named_pass = _admit(resolve, _launcher(recorded), run_id=named)
+
+    assert named_pass["retired_lost_session"] == [named]
+    assert not runs.pointer_path(named).exists()
+    assert runs.pointer_path(other).exists(), "the other request is untouched"
+    assert not promotion.discard_recorded(other)
+    assert recorded == [], "a retired request attempts no launch"
+
+    fleet_pass = _admit(resolve, _launcher([]))
+
+    assert fleet_pass["retired_lost_session"] == [other]
+
+
+def test_a_refused_discard_is_not_reported_as_a_retirement(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A discard that refuses leaves the request queued and says so.
+
+    The pass names the refusal in its obligation and stamps it on the pointer,
+    so the next pass retries; reporting the request retired would tell the
+    caller it left the fleet when it did not.
+    """
+
+    from reckon.crew import promotion as promotion_module
+    from reckon.crew.node import CrewError
+
+    config, resolve = _config_for()
+    config["roles"]["review"] = {}
+    run_id = "r-lost-review-refused"
+    _queued_review(admit_repo, run_id=run_id, session=LOST_SESSION)
+    _age_pointer(run_id, session=LOST_SESSION, age_hours=73)
+
+    def refuse(_run_id: str) -> None:
+        raise CrewError("the discard lock is held")
+
+    monkeypatch.setattr(promotion_module, "discard", refuse)
+
+    result = _admit(resolve, _launcher([]))
+
+    assert result["retired_lost_session"] == []
+    assert result["retirement_refused"] == [run_id]
+    retired_rows = [
+        row for row in result["verdicts"] if row["verdict"] == "retired-lost-session"
+    ]
+    assert retired_rows == [], "no verdict row claims a retirement that did not happen"
+    assert result["launched"] == [], (
+        "a request that could not be retired is not launched either"
+    )
+    assert runs.pointer_path(run_id).is_file(), "the request is still queued"
+    stamped = runs.read_pointer(run_id)
+    assert "pass_hold" in stamped, stamped
+    hold = stamped["pass_hold"]
+    assert hold["verdict"] == "retired-lost-session"
+    assert "refused" in hold["reason"]
+    assert any(run for run in result["obligations"] if run.get("run_id") == run_id), (
+        result["obligations"]
+    )
+
+
 # --------------------------------------------------------------------------
 # The reflex composes no review for a finished run of a lost session.
 # --------------------------------------------------------------------------
@@ -337,3 +419,44 @@ def test_a_finished_run_of_a_live_session_still_composes_its_review(
     for report in reports:
         assert report["reviews_dispatched"] == ["review-of-r-delivered"]
         assert report["reviews_awaiting_lost_session"] == []
+
+
+def test_a_sessions_lostness_is_read_from_its_oldest_record(
+    scoring_fleet, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A fresh run does not make its lost session look heard.
+
+    The run that owes the review may itself be young while its session has
+    another live record nothing has touched for longer than the threshold.
+    Dating the session from the scoring run alone reports it live, and the
+    review is composed only to be refused -- so every live record dates it.
+    """
+
+    pointers, launches = scoring_fleet
+    fresh = datetime.now(UTC) - timedelta(hours=1)
+    pointers[0]["created_at"] = fresh.timestamp()
+    pointers.append(
+        {
+            "run_id": "r-stale-sibling",
+            "project": "named",
+            "session": LOST_SESSION,
+            "created_at": (datetime.now(UTC) - timedelta(hours=73)).timestamp(),
+        }
+    )
+    monkeypatch.setattr(
+        recovery_watch,
+        "classify_pointer",
+        lambda p: {
+            "run_id": p["run_id"],
+            "classification": "scoring" if p["run_id"] == "r-delivered" else "held",
+        },
+    )
+
+    report = recovery_watch.recover(
+        project="named", dispatch_reviews=True, any_session=True
+    )
+
+    assert launches == [], "the session is lost; no review is composed"
+    assert [row["run_id"] for row in report["reviews_awaiting_lost_session"]] == [
+        "r-delivered"
+    ]
