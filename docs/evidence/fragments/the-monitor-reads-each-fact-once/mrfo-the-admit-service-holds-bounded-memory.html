@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The admit service's memory stays bounded</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; color: #1b1b1b; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.25rem 1rem 0.25rem 0; border-bottom: 1px solid #ddd; }
+  code { font-size: 0.92em; }
+</style>
+</head>
+<body>
+<h1 id="mrfo-the-admit-service-holds-bounded-memory-title">The admit service's memory stays bounded
+
+<p id="mrfo-the-admit-service-holds-bounded-memory-what">A pass decodes every live pointer and the run documents behind it, then frees them. The allocator keeps the emptied arenas for the next request, so the service's resident set tracked the reported defect: 22.1 GB resident after three hours and thirty-two minutes. The service now hands a pass's freed pages back after every pass and drops the process-wide parse memo when its reading is still above the stated bound of 2 GB.</p>
+
+<h2 id="mrfo-the-admit-service-holds-bounded-memory-measure">Measure</h2>
+<table id="mrfo-the-admit-service-holds-bounded-memory-table">
+  <tr><th>arm</th><th>after 5 passes</th><th>after 50 passes</th><th>change</th></tr>
+  <tr><td>before (36c098539b)</td><td>MEASURE_BEFORE_5</td><td>MEASURE_BEFORE_50</td><td>grows past the 10 % band</td></tr>
+  <tr><td>after (this node)</td><td>MEASURE_AFTER_5</td><td>MEASURE_AFTER_50</td><td>flat within the 10 % band</td></tr>
+</table>
+
+<p id="mrfo-the-admit-service-holds-bounded-memory-reading">Every pass now writes a reading, including a pass over a lane with nothing queued, and the reading carries the resident figure the service measured and the bound it holds to, so the bound is read from the service's own record rather than inferred from outside.</p>
+</body>
+</html>
