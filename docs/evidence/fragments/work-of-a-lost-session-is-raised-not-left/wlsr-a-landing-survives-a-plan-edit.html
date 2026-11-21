@@ -1,0 +1,53 @@
+<section id="wlsr-a-landing-survives-a-plan-edit-landing">
+  <h2>A landing survives a plan edited after its snapshot</h2>
+
+  <p><strong>What changed.</strong> A landing reads the plan as a preimage
+  before it promotes.  <code>reckon/crew/promotion.py</code> refused to commit
+  unless the document on disk still matched that preimage, so a plan edit
+  committed by anyone else in the window between the snapshot and the landing
+  write — the coordinator's own plan edit was the reported case — made the
+  landing refuse after the run record had already been written.  The landing
+  comment stayed uncommitted and the reviewed head stayed unmerged.</p>
+
+  <p>The landing now recognises the document on disk as the plan at
+  <code>HEAD</code> plus this run's own appended comment, because the landing
+  comment is an append onto whatever the plan now says.  It recognises that by
+  re-rendering <code>HEAD</code>'s plan with the state parsed from disk and
+  requiring the result to be byte-identical to the file; a writer who changed
+  anything else does not match and the original refusal stands.  On a match the
+  commit adopts <code>HEAD</code>'s plan as its rollback target instead of the
+  superseded preimage, so it commits the comment and goes on to merge the
+  reviewed head, and a later refusal — before or after the commit — leaves
+  nothing uncommitted behind.</p>
+
+  <p><strong>A section the plan no longer declares is the case the comment
+  cannot be placed at all.</strong> A landing cannot record where the work
+  landed when the plan has dropped the section it names. That case stops before
+  the run record is written and names the section, so the run keeps its
+  obligations instead of being recorded as promoted while its head sits
+  unmerged.</p>
+
+  <h3 id="wlsr-a-landing-survives-a-plan-edit-measured">Measured</h3>
+
+  <table id="wlsr-a-landing-survives-a-plan-edit-arms">
+    <caption>Every arm is a log whose first lines name its revision, tree,
+    command and the module that served the run, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>ff3bb24bcf</td>
+        <td>2 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>fixed</td><td>1627d4bf3a</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm reproduces the reported defect verbatim: the edited-plan case
+  exits 1 with <em>plan content changed after the snapshot; preserving the other
+  writer's plan</em> after the run record was written, and the section-removal
+  case exits 1 while naming neither the section nor a settled state.  The fixed
+  arm lands the edited plan — the comment, the peer's own edit and the authored
+  text all present in the committed plan, the plan path clean afterwards, and
+  the reviewed head an ancestor of the origin's main — and refuses the removed
+  section with <code>s7</code> named, the head unmerged and no run record.</p>
+</section>
