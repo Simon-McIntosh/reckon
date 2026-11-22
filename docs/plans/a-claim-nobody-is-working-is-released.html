@@ -25,6 +25,8 @@
   <title>A Claim Nobody Is Working Is Released | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
   <main class="plan-doc">
@@ -61,7 +63,7 @@
     <p><strong>Done when.</strong> A test builds a temporary repository and crew home with a three-member group and one request waiting on each member. With the group head merged, one pass leaves no member pointer and all three requests released. With the head unmerged, every pointer and every wait is kept. Negative control: at the base revision the merged case leaves at least one member pointer. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_landed_group_releases_every_member.py</code>.</p>
 
     <h2 id="s5">§5 — A resume that never started reads as not started, and a stop leaves no process</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> A resume was reported on 19 November whose scheduler step asked for 32 CPUs inside the fleet job and never started. The run read as alive for as long as the client process waited, so nothing resumed it again, and stopping it left that client and its children running.</p>
     <p><strong>Deliverable.</strong> A resumed run reads as working only once its worker has begun a turn. A resume whose worker has not begun a turn within a stated bound reads as a failed launch, naming what it was waiting for. Stopping any run ends every process the launch started, and reports each pid it signalled.</p>
     <p><strong>Done when.</strong> A test launches a resume through a stand-in launcher that blocks before starting the worker: within the bound the run's classification is the failed-launch one and carries the launcher's own waiting reason, and it is offered for resume again. A second stand-in starts a worker that begins a turn: the run reads as working. Stopping the blocked run leaves no process from its launch tree alive, checked by pid, and prints each pid signalled. Negative control: at the base revision the blocked run reads as working, and the stop leaves the stand-in launcher alive. Tests run on <code>all_debug</code> with at most <code>-n 4</code> and start no scheduler step. Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/process_liveness.py</code> and <code>tests/test_a_resume_that_never_started_reads_as_not_started.py</code>.</p>
@@ -81,7 +83,9 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<h2><span class="sec">§</span> Comments</h2>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T042404601447-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-125dc5f71995" data-who="reckon-build" data-when="2026-11-22T04:45:21.518Z">
+    <div class="r-comment-body"><p>Review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up at head 125dc5f71995a2b549a421154fffc64b87ba2dd4 (base d24fa090e52748cc3100cd54e60d68ad3e87fb1b): scores goal_fidelity 16, evidence 6, scope_discipline 17, durability 13, fit 16, reuse 5 (total 73); one blocking finding, that the proved-dead arm at reckon/crew/pending_landing.py:583 retires a promoted pointer without release_merged_promotions&#x27; uncommitted-work hold, which makes tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py fail at head (1 failed, 16 passed) while it passes at the base (1 passed); three non-blocking findings.</p></div>
+</div>
 </section>
   </main>
 </body>

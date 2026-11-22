@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:1497",
+    "reckon/crew/pending_landing.py:1840"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T04:25:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "583",
+      "severity": "blocking",
+      "text": "the proved-dead arm retires a promoted run's pointer on a dead pid alone, without the workspace and journal checks release_merged_promotions and retire_promoted_pointer apply, so a promoted run whose worker died leaving uncommitted work in its worktree loses the pointer that keeps that work held; tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py fails at head 125dc5f on the `dirty` case (assert runs.pointer_path('r-dirty').exists(), line 230) with 1 failed, 16 passed, where the same file passes at the base (1 passed)"
+    },
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "line": "586",
+      "severity": "non-blocking",
+      "text": "_short_host re-implements the host-shortening that reckon/crew/fleet_supervisor.py:299 _short_hostname owns, whose docstring states the one spelling of the split lives there, and that reckon/crew/watch_unit.py:408 _hosts_match already composes; the host comparison should extend that owner rather than fork a third spelling"
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "634",
+      "severity": "non-blocking",
+      "text": "the new call passes only only_run, dropping the project and session filters retire_promoted_pointers applies at reckon/crew/pending_landing.py:533-538, so a station tick scoped to one project retires live pointers belonging to every project and session on the workstation"
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "521",
+      "severity": "non-blocking",
+      "text": "_is_a_promoted_pointer treats the existence of a pending-landing journal as proof the run was promoted, but write_pending at line 325 writes that journal before the promotion completes, so a worker that died mid-promotion has its pointer retired under the same pass that finish_pending_landings at line 1563 uses the live pointer to drive its interrupted-landing retry"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "retire_promoted_pointers is reached from reckon/crew/station.py:461 on every station tick and from reckon/crew/pending_landing.py:1497 and :1840 inside finish_pending_landings",
+    "diff": "read all four commits against d24fa090 (83047227cc, 39bdbefcca, a62c88a164, 125dc5f719); they add one release pass, two liveness readings, one test file and one evidence fragment, and nothing else",
+    "done_when": "the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:49 requires three fixture runs, two further passes, a base-revision negative control and no added failures in the existing release tests; the gate recorded in the manifest covers all but the last, and that last check is false at the delivered head",
+    "goal": "plan section s2's deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:48 is a promoted run whose launcher host is not the fleet node and which shows no turn giving up its pointer; reckon/crew/pending_landing.py:543 does that and calls it from retire_promoted_pointers at line 634",
+    "manifest": "the reviewed manifest.md records tests, test_logs, both suite arms with completed true and 0 failure ids, and a negative-control.log with EXIT=1 and 2 failed ids; its changed_paths line lists three of the four delivered paths and omits the evidence fragment",
+    "write_paths": "the reviewed node declared reckon/crew/pending_landing.py, reckon/crew/process_liveness.py, reckon/crew/promotion_release.py, tests/test_a_run_from_a_previous_fleet_node_is_released.py and a plan evidence fragment and figure directory; the diff touches four paths, all at or inside those, and promotion_release.py was not needed"
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_from_a_previous_fleet_node_is_released.py:118 fails if release_pointers_of_a_previous_fleet_node is removed (the recorded negative control shows 2 failed at base), but no added assertion guards the dead-on-this-node arm's interaction with the existing uncommitted-work hold at reckon/crew/pending_landing.py:583.",
+    "evidence": "the gate recorded in the reviewed manifest runs tests/test_a_run_from_a_previous_fleet_node_is_released.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, but the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:49 also requires the existing release tests to add no failure, and the release test reckons/crew/pending_landing.py's change reaches was never run.",
+    "fit": "reckon/crew/process_liveness.py:552 and reckon/crew/pending_landing.py:543 follow the module's lazy-import, Mapping-typed, mechanism-named idiom and carry no plan or ticket labels.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:543 implements plan section s2's deliverable (docs/plans/a-claim-nobody-is-working-is-released.html:48): a promoted pointer whose launcher host is not the fleet record's node and whose stream shows no turn is retired.",
+    "reuse": "reckon/crew/process_liveness.py:586 adds _short_host, re-implementing the host shortening that reckon/crew/fleet_supervisor.py:299 _short_hostname owns and reckon/crew/watch_unit.py:408 _hosts_match composes, instead of reusing that owner.",
+    "scope_discipline": "every path in the four-commit diff (reckon/crew/pending_landing.py, reckon/crew/process_liveness.py, tests/test_a_run_from_a_previous_fleet_node_is_released.py, docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html) is inside the declared write paths."
+  },
+  "plan": "a-claim-nobody-is-working-is-released",
+  "plan_section": "s2",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan section s2's deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:48, and reckon/crew/pending_landing.py:543 implements it, called from retire_promoted_pointers at line 634.\nVERDICT done_when: the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:49 requires three fixture runs, two further passes, a base-revision negative control and no added failure in the existing release tests; the recorded gate covers the first four and records 0 failures, but the existing release test the change reaches was never run and fails at head.\nVERDICT write_paths: read the declared paths; the four committed paths (reckon/crew/promotion_release.py untouched) are all inside them.\nVERDICT manifest: read; it records the scoped gate, both suite arms with completed true and 0 failure ids, and a negative control with EXIT=1 and 2 failed ids, but its changed_paths line omits the evidence fragment it delivered.\nVERDICT diff: read commit by commit against d24fa090e52748cc3100cd54e60d68ad3e87fb1b; four paths, 358 insertions, nothing removed.\nCALL_SITES: reckon/crew/station.py:461, reckon/crew/pending_landing.py:1497, reckon/crew/pending_landing.py:1840\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:543 implements the deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:48.\nSCORE evidence: 6\nJUSTIFICATION evidence: the gate recorded in the manifest runs three test files that exclude the release tests the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:49 requires, and tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py fails at head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and promotion_release.py was left untouched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_run_from_a_previous_fleet_node_is_released.py:118 fails if the release pass is removed, but no assertion guards the dead-on-this-node arm's bypass of the uncommitted-work hold at reckon/crew/pending_landing.py:1324.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/process_liveness.py:552 follows the module's lazy-import and Mapping-typed idiom and carries no plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/process_liveness.py:586 re-implements the host shortening owned by reckon/crew/fleet_supervisor.py:299 _short_hostname.\nFINDING reckon/crew/pending_landing.py:583 blocking: the proved-dead arm retires a promoted pointer on a dead pid alone, bypassing the uncommitted-work hold, so tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py fails at head on the dirty case; the same file passes at base.\nFINDING reckon/crew/process_liveness.py:586 non-blocking: _short_host re-implements reckon/crew/fleet_supervisor.py:299 _short_hostname, which its docstring says is the one spelling of the split.\nFINDING reckon/crew/pending_landing.py:634 non-blocking: the new call drops the project and session filters retire_promoted_pointers applies, so a project-scoped sweep retires every project's pointers.\nFINDING reckon/crew/pending_landing.py:521 non-blocking: the pending-landing journal is written before promotion completes, so journal presence alone is not proof of promotion and a mid-promotion dead worker has its pointer retired ahead of the interrupted-landing retry at line 1840's sibling path.\n",
+  "review_run_id": "r-20261122T042404601447-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-125dc5f71995",
+  "reviewed_base_sha": "d24fa090e52748cc3100cd54e60d68ad3e87fb1b",
+  "reviewed_head_sha": "125dc5f71995a2b549a421154fffc64b87ba2dd4",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "scores": {
+    "durability": 13,
+    "evidence": 6,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:45:49.964660+00:00",
+  "total": 73
+}
