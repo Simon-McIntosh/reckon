@@ -58,21 +58,30 @@
 
   <p>Both suite arms were run by the project's own measuring path on
   <code>all_debug</code> at revision
-  <code>67b19df7a09f14adfe3b3790ac8e9df0a703a001</code>: the after arm logged
-  <em>65 passed in 42.38s</em> and the base arm at
+  <code>54220d000d2f20946cdeb0451208cd89bc8978eb</code>: the after arm logged
+  <em>65 passed in 44.40s</em> and the base arm at
   <code>dde7b001769544957d5ca63f50cbb48c26574553</code> <em>58 passed in
-  36.32s</em> — the base arm is narrower because the node's test file does not
-  exist there.</p>
+  35.72s</em> — the base arm is narrower because the node's test file does not
+  exist there. The population of every test file naming <code>promotion_gate</code>
+  runs <em>121 passed</em> at this head against <em>114 passed</em> at the pinned
+  base, eight of them this node's own cases.</p>
 
   <p>Two controls pin the repairs. Against the tree before the resolver was
-  consolidated, the file logs <em>1 failed, 3 passed</em>, the failure naming
-  <code>landing_measure</code> as the module that re-implements
-  <code>gate_program</code>. Against the tree before the shared helpers were
-  consolidated, the same file logs <em>4 failed, 3 passed</em>: the
-  single-resolver case, the count of <code>_is_executable_file</code> and
-  <code>_SHELL_ASSIGNMENT</code> definitions, the rewrite that must touch the
-  program token and no earlier word, and the refusal that must name the program
-  the resolver read rather than the <code>env</code> wrapper. Every case is
-  green at the head. The node's own control at the pinned base logged
-  <em>3 failed in 0.58s</em>.</p>
+  consolidated (<code>b0157b82c3</code>), the file logs <em>3 failed, 4
+  passed</em>: the single-resolver case, naming <code>landing_measure</code> as
+  the module that re-implements <code>gate_program</code>, and the two cases for
+  the guard's program and the rewriter's token. Against the tree before the
+  shared helpers were consolidated (<code>b55533df9c</code>), the same file logs
+  <em>4 failed, 3 passed</em>: those three and the count of
+  <code>_is_executable_file</code> and <code>_SHELL_ASSIGNMENT</code>
+  definitions. Every case is green at the head. The node's own control at the
+  pinned base logged <em>3 failed in 0.58s</em>.</p>
+
+  <p>The guard and the replay resolve over different seats, and both directions
+  are pinned. The replay resolves <code>.venv/bin/python</code> through the
+  measuring interpreter, so a gate runs at a merged head whose tree carries no
+  <code>.venv</code>. The guard does not, so a run whose own checkout lacks the
+  program it recorded is still refused naming that checkout — the case
+  <code>tests/test_deferred_promotion_resolves_relative_program.py</code> holds
+  and which an interpreter fallback at promotion broke.</p>
 </section>
