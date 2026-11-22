@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-node-stays-in-service">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-worker-or-its-job-cannot-overwrite-shared-files#s7&quot;],&quot;s8&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s9&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s11&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s2&quot;,&quot;the-fleet-node-stays-inside-its-memory#s3&quot;,&quot;the-fleet-node-stays-inside-its-memory#s4&quot;,&quot;the-fleet-node-stays-inside-its-memory#s5&quot;,&quot;the-fleet-node-stays-inside-its-memory#s6&quot;,&quot;the-fleet-node-stays-inside-its-memory#s8&quot;,&quot;the-fleet-node-stays-inside-its-memory#s9&quot;,&quot;the-fleet-node-stays-inside-its-memory#s10&quot;,&quot;the-fleet-node-stays-inside-its-memory#s12&quot;,&quot;the-fleet-node-stays-inside-its-memory#s13&quot;,&quot;the-fleet-node-stays-inside-its-memory#s14&quot;]}">
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
-<meta name="plan-modified" content="2026-11-18">
+<meta name="plan-version" content="40">
+<meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
   <main class="plan-doc">
@@ -150,12 +150,6 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s8" data-id="c-s8-discarded-and-rewritten" data-who="reckon-build" data-when="2026-11-19T04:50:00Z">
-    <div class="r-comment-body"><p>The first §8 run was discarded on the lead's decision of 19 November; its head <code>9b5c6d8b7f</code> measured 0.88 GiB above the base at forty entries and nothing from it landed. The section is rewritten around what the measurement showed: the peak is the population of decoded delivered-run records held at once, and the bound is stated against the measured base, not the unmeasured 4 GB.</p></div>
-</div>
-<div class="r-comment" data-section="s8" data-id="c-s8-measured-like-for-like" data-who="reckon-build" data-when="2026-11-18T06:05:00Z">
-    <div class="r-comment-body"><p>§8 is delivered and not landed. Both arms were measured on one prepared home, on the same partition at the same time, with identical batch input. Peak resident memory at the base <code>4b7aa8a071</code>: 10.15 GiB for eight entries and 11.65 GiB for forty. At the head <code>c934eb586f</code>: 11.52 GiB and 13.03 GiB. The head uses 0.88 GiB more than the base at forty entries, forty entries cost about 1.5 GiB more than eight at both revisions, and both revisions are about three times the 4 GB bound. Eight entries already cost 10 GiB, so the peak is set by the population of decoded delivered-run records the batch holds at once (58,836 store rows at eight entries), not by the batch width. The run is held for the lead's decision on the bound and the approach.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
@@ -300,11 +294,20 @@
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261117T081959314526-control-passes-profile-without-live-writes" data-who="reckon-build" data-when="2026-11-17T11:58:09Z">
     <div class="r-comment-body"><p>Added a copied-home profiler and repaired refused single-tick propagation while testing the existing positive finished marker. Four passes exit 0: one/eight-entry dispatch, admission and station peak at RSS 5.891/6.712/15.846/31.649 GB and traced 1.861/1.851/3.348/6.648 GB; JSON decoding is the largest sampled allocation site. Station completes in 2512.22s with its finished marker and equal copied-source inventory, exceeding the original 1800s target under the authorised longer replay. Repair gate passes 80 tests, importer delta adds zero failing IDs, and bypassing the real-home guard fails five controls; original-live-home equality is not required while peers write.</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-s8-discarded-and-rewritten" data-who="reckon-build" data-when="2026-11-19T04:50:00Z">
+    <div class="r-comment-body"><p>The first §8 run was discarded on the lead's decision of 19 November; its head <code>9b5c6d8b7f</code> measured 0.88 GiB above the base at forty entries and nothing from it landed. The section is rewritten around what the measurement showed: the peak is the population of decoded delivered-run records held at once, and the bound is stated against the measured base, not the unmeasured 4 GB.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-measured-like-for-like" data-who="reckon-build" data-when="2026-11-18T06:05:00Z">
+    <div class="r-comment-body"><p>§8 is delivered and not landed. Both arms were measured on one prepared home, on the same partition at the same time, with identical batch input. Peak resident memory at the base <code>4b7aa8a071</code>: 10.15 GiB for eight entries and 11.65 GiB for forty. At the head <code>c934eb586f</code>: 11.52 GiB and 13.03 GiB. The head uses 0.88 GiB more than the base at forty entries, forty entries cost about 1.5 GiB more than eight at both revisions, and both revisions are about three times the 4 GB bound. Eight entries already cost 10 GiB, so the peak is set by the population of decoded delivered-run records the batch holds at once (58,836 store rows at eight entries), not by the batch width. The run is held for the lead's decision on the bound and the approach.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261118T010152259555-review-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f" data-who="reckon-build" data-when="2026-11-18T01:02:49.200Z">
     <div class="r-comment-body"><p>Reviewed r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory at 4b7aa8a071ed10e619d95fdacdaa5e644d04b548..a876883a0c7f3796d592ba53cd201e4e1e56e898 and stored a parsed record scoring goal_fidelity 5, evidence 6, scope_discipline 16, durability 6, fit 15, reuse 11 (total 59), with one blocking finding: the batch's live-set trim drops every pointer's node mapping, so the held-node check no longer sees a live hold and queues a node another run holds.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261118T032304900420-review-of-a-batch-dispatch-holds-bounded-memory-13635ea8a9b6" data-who="reckon-build" data-when="2026-11-18T03:28:53.966Z">
     <div class="r-comment-body"><p>Reviewed a876883a0c7f3796d592ba53cd201e4e1e56e898..13635ea8a9b6a2d4931ce73efe449e6be9d37d3a, the two commits the run gained since its a876883a0c review: the blocking finding (the live-set trim dropping every pointer's node identity) is repaired and guarded by a test that reddens on the reverted trim, the held-row filter is now shared, pre-node-column rows are read again, and three non-blocking findings are recorded; scores 12/15/18/15/17/18, added failures 0.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261122T082558605980-review-of-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-ee7298959c16" data-who="reckon-build" data-when="2026-11-22T08:41:31.438Z">
+    <div class="r-comment-body"><p>reviewed ebad3fef..ee7298959c (2 commits over 2 files, +328/-49) with all six dimensions scored — goal_fidelity 10, evidence 15, scope_discipline 18, durability 15, fit 17, reuse 5 — and five findings, one blocking: the new _store_history_rows at reckon/crew/section_holds.py:185 no longer falls through to the committed ledger when the store holds no rows for the project, so a ledger-only project&#x27;s delivered nodes read free to held_section_blockers at reckon/roadmap.py:3812.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-17T15:44:00Z">
     <div class="r-comment-body"><p>§9 landed through the crew's own promotion after its review (landing commit <code>cda8859a2c</code>). The per-pass ledger read is bounded: resident memory held at 82 MB after the hundredth pass against 80 MB after the tenth on a copied home, with one decision digest across all passes equal to the base's; on a copy of the live stores the peak fell from 4.6 GB to 2.0 GB. The six-hour live-fleet reading the section asks for is still to be recorded.</p></div>
