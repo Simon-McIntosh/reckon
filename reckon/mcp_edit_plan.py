@@ -13,6 +13,7 @@ from reckon import metadata_index
 from reckon import (
     velocity as velocity_module,
 )
+from reckon._plan_html import shares_one_parse
 from reckon._schema import (
     TYPE_ENUM,
     IndexData,
@@ -2289,6 +2290,7 @@ def _uncovered_before_write(
     return uncovered
 
 
+@shares_one_parse
 def _edit_plan_tool(
     project: str,
     slug: str,
