@@ -2353,11 +2353,14 @@ def _orphaned_refusals_for_session(
     """
     if not items:
         return []
-    if _session_reachability([session]).get(session) is False:
-        return []
     live = set(project_live_sessions)
     if live:
         return [dict(item) for item in items if session in live]
+    # The lane fallback is the only reading that has to ask about this caller
+    # itself, so it is the only one that pays for the harness read: a project
+    # with a live session answers every session from the fleet reading.
+    if _session_reachability([session]).get(session) is False:
+        return []
     return [dict(item) for item in items]
 
 
