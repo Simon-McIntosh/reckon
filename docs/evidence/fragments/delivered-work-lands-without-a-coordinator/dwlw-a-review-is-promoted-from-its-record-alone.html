@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A review whose manifest cannot be read is promoted from its record</title>
+</head>
+<body>
+  <main class="evidence-fragment">
+    <h2 id="dwlw-a-review-is-promoted-from-its-record-alone--finding">A review whose manifest cannot be read is promoted from its record</h2>
+    <p>A review run's whole deliverable is the record it files for the run it read. Both readers on the promotion path asked the manifest first: the unattended sweep held a review in the waiting state while its manifest did not read complete, and the promotion command refused one whose manifest held a byte that does not parse. Either way a finished review sat unlanded behind a file that says nothing about it.</p>
+    <p>The reproduction is a review run with a complete, parsed record, an exited worker, and a one-byte manifest. On the base revision the promotion command refuses it with <code>cannot be promoted: cannot read manifest: the body is present but no 'key: value' field could be read</code>, and the sweep leaves the run waiting.</p>
+    <h3 id="dwlw-a-review-is-promoted-from-its-record-alone--change">What changed</h3>
+    <ul>
+      <li>A manifest that is present and cannot be parsed no longer withholds a review whose record delivers: the sweep treats such a run as ready, and the promotion command judges its record instead of refusing the file.</li>
+      <li>The ledger row carries <code>manifest_unreadable</code> — the manifest path and the reader's own refusal — so the promotion states what it could not read rather than leaving it to be discovered.</li>
+      <li>The tolerance is reached only where a reader actually refused the file. An unreadable manifest with no delivered record, an unreadable manifest on an implement run, and an absent manifest all behave as before, and each of those three is pinned by a case.</li>
+    </ul>
+    <h3 id="dwlw-a-review-is-promoted-from-its-record-alone--evidence">Evidence</h3>
+    <p>Five cases pass at the head: the promotion route and the sweep route both promote a complete record behind a one-byte manifest and record the unreadable manifest on the row; a review with no record stays refused with <code>record cannot be read</code> and keeps its pointer; an implement run stays refused naming the manifest; and the sweep leaves a record-less review as it found it.</p>
+    <p>Negative control: on the pinned base revision the first case fails with the cannot-read-manifest refusal, and the sweep route fails because the run is never promoted. Both figures are in the run's gate logs.</p>
+  </main>
+</body>
+</html>
