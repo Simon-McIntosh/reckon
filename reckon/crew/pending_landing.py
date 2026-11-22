@@ -496,9 +496,18 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
     existing workspaces finish through the integrated release path so its
     safety checks, receipts and section waiters precede pointer removal.
     """
+    from reckon.crew import process_liveness
+
     run_id = str(pointer.get("run_id") or "")
     project = str(pointer.get("project") or "")
     if not run_id or not project or pointer.get("landing_group"):
+        return POINTER_HELD
+    # A worker on a node the fleet has left cannot be read here at all, so its
+    # stream is the only evidence that a turn is in progress. The promotion
+    # row alone is not a licence to release a claim somebody is writing into.
+    if process_liveness.launched_on_another_fleet_node(
+        pointer
+    ) and process_liveness.turn_in_progress(pointer):
         return POINTER_HELD
 
     def promoted(current: Mapping[str, Any]) -> bool:
@@ -608,12 +617,17 @@ def release_pointers_of_a_previous_fleet_node(
             continue
         if _landing_still_owns_run(pointer):
             continue
-        if process_liveness.record_process_liveness(pointer).alive is True:
-            continue
-        dead = process_liveness.record_process_alive(pointer) is False
+        # The host is read before the process is: a pid recorded on another
+        # machine names whatever process happens to carry that number here, so
+        # asking this host's table about it answers a question about a stranger.
         moved = process_liveness.launched_on_another_fleet_node(pointer, node)
-        if not dead and not moved:
-            continue
+        dead = False
+        if not moved:
+            if process_liveness.record_process_liveness(pointer).alive is True:
+                continue
+            dead = process_liveness.record_process_alive(pointer) is False
+            if not dead:
+                continue
         if process_liveness.turn_in_progress(pointer):
             results.append(
                 {
