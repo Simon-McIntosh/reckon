@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="140">
+<meta name="plan-version" content="141">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -475,6 +475,9 @@
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261122T091750685780-review-of-arcwc-a-warm-read-stats-what-it-resolves-97afbae9353f" data-who="reckon-build" data-when="2026-11-22T09:38:16.905Z">
     <div class="r-comment-body"><p>Review of r-20261122T073629441164-arcwc-a-warm-read-stats-what-it-resolves stored at the declared review-records path and validated with `crew check --review` (ok true, no findings); reviewed base ae34dd6f..head 97afbae9, all six dimensions scored, added_failure_count 0, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261122T073629441164-arcwc-a-warm-read-stats-what-it-resolves" data-who="reckon-build" data-when="2026-11-22T08:16:07.585Z">
+    <div class="r-comment-body"><p>A warm named plan read takes its directory&#x27;s identity listing once per directory change rather than stamping every sibling on every resolve, so the os.stat calls it makes on the plans directory are bounded by the plans it resolves: 12 for a read of four plans in both a twenty-plan and a two-hundred-plan store, against 32 and 212 at the base revision through the same instrument, while a plan rewritten in place is still returned with its new content and two files claiming one canonical identity are still refused (97afbae9353f).</p></div>
 </div>
 </section>
 </main>
