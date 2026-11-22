@@ -60,6 +60,19 @@
         fence tests this node declared, ran
         <code>61 passed in 39.88s</code>, <code>EXIT=0</code>.
       </p>
+      <p id="dwlw-a-coordinator-landing-is-measured-unreadable">
+        A measurement that could not be taken refuses the landing as well. The
+        guard reads the measurement through the pass's own reading, which
+        states a refusal for one that is unreadable and a refusal for one that
+        adds a failure, and returns nothing only for a measurement it read and
+        found clean. A run whose head or worktree has gone, whose base cannot be
+        built, or whose stored record is unreadable therefore refuses with
+        <code>landing-measure-refused</code> and the reason, rather than merging
+        while the population went unmeasured. Against the revision that accepted
+        that landing the case reproducing it fails with
+        <code>assert 0 == 1</code>, the landing reported
+        <code>{"merged": true, "ok": true}</code>.
+      </p>
       <p id="dwlw-a-coordinator-landing-is-measured-control">
         Against the base revision <code>dde7b00176</code> the same first case
         runs the coordinator's command with the population measure absent and
