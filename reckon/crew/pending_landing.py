@@ -597,9 +597,9 @@ def release_pointers_of_a_previous_fleet_node(
     uncommitted or unintegrated, and a dead pid says nothing about whether that
     work has been delivered. Only a run with neither is retired here.
     """
-    from reckon.crew import process_liveness
+    from reckon.crew import process_liveness, watch_unit
 
-    node = process_liveness.fleet_node_name() if fleet_node is None else str(fleet_node)
+    node = watch_unit.fleet_record_node() if fleet_node is None else str(fleet_node)
     results: list[dict[str, Any]] = []
     for pointer in runs.list_live():
         run_id = str(pointer.get("run_id") or "")

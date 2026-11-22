@@ -567,22 +567,6 @@ def turn_in_progress(record: Mapping[str, Any] | None) -> bool:
     return _newest_stream_in_motion(record, from_stream_alone=True)
 
 
-def fleet_node_name() -> str:
-    """The node the published fleet record names, or "" when none is readable.
-
-    Read through the fleet record's existing owner so this reading and the
-    dispatch path that spawns workers agree about where the fleet lives. An
-    unreadable record names no node, and an absent name must never read as
-    another machine.
-    """
-    from reckon.crew import watch_unit
-
-    try:
-        return watch_unit.fleet_record_node()
-    except Exception:  # noqa: BLE001 - an unreadable record names no node
-        return ""
-
-
 def launched_on_another_fleet_node(
     record: Mapping[str, Any] | None, fleet_node: str | None = None
 ) -> bool:
@@ -601,7 +585,9 @@ def launched_on_another_fleet_node(
     host = record.get("launcher_host")
     if host is None:
         return False
-    node = fleet_node_name() if fleet_node is None else str(fleet_node)
+    node = watch_unit.fleet_record_node() if fleet_node is None else str(fleet_node)
+    # ``fleet_record_node`` names no node when the record is unreadable, which
+    # is the safe reading: an absent name must never pass for another machine.
     # One spelling of the host comparison, in the module that already owns it:
     # a second spelling disagrees the first time a name carries a domain.
     if not str(host).strip() or not node.strip():
