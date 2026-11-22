@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T05:39:26Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg",
+      "line": null,
+      "severity": "blocking",
+      "summary": "the PNG render (image-0.png, 1399x720) contains no text: all nine box interiors are a single uniform colour and a full pixel scan finds 18,556 opaque dark pixels, every one on a box border, an arrow shaft or the green feedback line, with no glyph cluster anywhere. A reader sees unlabelled rectangles and arrows and cannot tell what any gate tests, what each outcome means, or which node is the terminal release. The figure source changed at this head (43 insertions / 45 deletions against the previously reviewed render, whose PNG carried labels), so the labels were lost in the redraw rather than never present."
+    }
+  ],
+  "item_verdicts": {
+    "attachment_opened": "image-0.png (1399x720 RGBA) opened with the Read tool and inspected; the whole rendered figure was visible, so no part of this verdict rests on the SVG source.",
+    "caption": "the figcaption does not repeat a title; it explains why the first gate exists and why the host is read before the process, so the caption itself is adequate \u2014 but it now describes text the picture does not render.",
+    "figure_judged": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg, as rendered in the attached PNG.",
+    "text_absence_check": "read directly from the named PNG: every box interior sampled at a 10 px inset is exactly one colour (242/247/233-243-236/255) with zero non-fill pixels; the image carries 210 distinct colours in total, all attributable to shape anti-aliasing."
+  },
+  "plan": "a-claim-nobody-is-working-is-released",
+  "plan_section": "s2",
+  "project": "reckon",
+  "review_run_id": "r-20261122T053839322007-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-46e141da78b0-figure",
+  "reviewed_base_sha": "d24fa090e52748cc3100cd54e60d68ad3e87fb1b",
+  "reviewed_head_sha": "46e141da78b031d62bd9f86e87c663236ad5e23f",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "fails by omission \u2014 the figure contains no rendered text at all, so there is no text-to-background contrast that could clear a threshold; the labels the drawing depends on are absent rather than low-contrast.",
+    "data_ink": "pass \u2014 every mark that appears carries the decision structure: node outlines, connectors, and the green feedback loop. There is no gradient, wash or drop shadow, and no mark is present for decoration.",
+    "decoration": "pass \u2014 no gradient, background fill or decorative styling; the two pale tints that are visible (the green node fill and green outline) mark a distinct state rather than decorate the canvas.",
+    "label_collision": "fails by omission \u2014 no labels are rendered, so none overlap or are clipped; the defect is that the labels the figure needs are missing entirely, which is the same blocking defect recorded under legibility.",
+    "legibility": "fails \u2014 the rendered PNG draws nine empty rectangles (five in the main column, three to the right, one green terminal box), six downward/rightward connectors and one green feedback line, and renders no text anywhere; a reader can see a chain of gates but cannot tell what any gate tests or what any outcome is.",
+    "table_form": "pass \u2014 this is a directed decision chain with branches, not tabular information; the connectors carry order and effect, which a table would flatten."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:45:14.210626+00:00",
+  "total": null
+}
