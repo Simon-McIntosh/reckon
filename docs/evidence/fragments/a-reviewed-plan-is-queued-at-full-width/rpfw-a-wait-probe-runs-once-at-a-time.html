@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-reviewed-plan-is-queued-at-full-width">
+  <meta name="plan-title" content="A wait probe is evaluated by one reader at a time">
+  <meta name="plan-summary" content="Every reader of one waiting run goes through one probe gate: a result is shared for thirty seconds, a run in flight is not started again, and a run past its sixty-second bound is killed and raised to the coordinator.">
+  <meta name="plan-evidence-for" content="reckon:a-reviewed-plan-is-queued-at-full-width">
+  <meta name="plan-verifies" content="reckon:a-reviewed-plan-is-queued-at-full-width#s14">
+  <meta name="plan-commits" content="dd0d3bf3">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,recovery,wait,probe,lock">
+  <title>A wait probe is evaluated by one reader at a time — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="rpfw-a-wait-probe-runs-once-at-a-time" data-reckon="landed" data-when="2026-11-22">
+  <h2>A wait probe is evaluated by one reader at a time</h2>
+
+  <p id="rpfw-a-wait-probe-runs-once-at-a-time-why">A waiting run's probe was
+  run by whoever polled the wait, so a probe reading a large store ran once per
+  poller. On 22 November 2026 nine copies of one probe held a 1.16 GB store open
+  and every promotion on the node failed on its database lock. At the pinned base
+  <code>c37ee57</code>, ten readers of one wait started the probe ten times —
+  logged in the run directory's <code>negative-control-reproduction.log</code>,
+  reading <code>probe runs started by ten readers: 10</code>.</p>
+
+  <p id="rpfw-a-wait-probe-runs-once-at-a-time-what">Every reader now goes through
+  <code>reckon/crew/recovery_wait.py</code>'s <code>run_wait_probe</code>, which
+  holds one result per (run, probe) under the crew home behind the cross-node
+  record lock. A reader inside <code>WAIT_PROBE_INTERVAL_SECONDS</code> (30) is
+  handed the last result; a reader arriving while a run is in flight waits for it
+  instead of starting another; a run past
+  <code>WAIT_PROBE_RUN_BOUND_SECONDS</code> (60) is killed with its process group
+  and recorded as one duty of kind <code>run-wait-probe-stopped</code> naming the
+  run and the vector. The classifier's reader and the sweep's reader both use the
+  gate, and the obligations view surfaces the recorded duty.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li id="rpfw-a-wait-probe-runs-once-at-a-time-base"><strong>The declared
+    negative control, executed and logged.</strong> At the pinned base with this
+    node's test file copied into a scratch tree built from that revision, the
+    first case fails and closes <code>EXIT=1</code>
+    (<code>negative-control.log</code>). The same ten-reader scenario run through
+    the base reader starts the probe ten times; run through the head it starts it
+    once (<code>negative-control-reproduction.log</code> and
+    <code>-head.log</code>).</li>
+    <li id="rpfw-a-wait-probe-runs-once-at-a-time-interval"><strong>The interval
+    arm.</strong> Ten threads reading one wait inside a barrier start the probe
+    once and all ten are handed its line, and a probe still running when the
+    interval comes round is not started again.</li>
+    <li id="rpfw-a-wait-probe-runs-once-at-a-time-bound"><strong>The bound arm, at
+    the real sixty seconds.</strong> A probe sleeping ninety seconds is stopped
+    after the sixty-second bound, its pid is gone from the process table, and one
+    recorded duty names the run and the vector. The classifier's reader reports
+    the stopped probe, <code>answered=False</code>, from the same recorded result
+    without running it again.</li>
+    <li id="rpfw-a-wait-probe-runs-once-at-a-time-gate"><strong>The gate and its
+    arms.</strong> The scoped gate at <code>dd0d3bf3</code> ran
+    <code>63 passed in 102.73s</code> with <code>EXIT=0</code>. The baseline arm
+    at <code>c37ee57</code> reported <code>58 passed in 41.20s</code> and the
+    after arm at <code>dd0d3bf3</code> reported <code>63 passed in 99.44s</code>,
+    both <code>EXIT=0</code>: the five added passes are this node's cases and the
+    after arm adds no failure id.</li>
+  </ul>
+</article>
+</body>
+</html>
