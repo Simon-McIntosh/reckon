@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A coordinator can ask for the review of a named run</title>
+</head>
+<body>
+  <main class="evidence-fragment">
+    <h2 id="dwlw-a-coordinator-requests-a-run-review--finding">A coordinator can ask for the review of a named run</h2>
+    <p>The review reflex is the only composer of a delivered run's code review. When it declined — a head a resume left behind, or a previous round still owing an answer — the run sat unreviewed and there was no command a coordinator could run to compose the one review the reflex would not. The duty that reported the gap carried an overdue figure instead, which describes a wait rather than the decision the driver owes.</p>
+    <p>The reproduction is a delivered, unpromoted run whose worktree head is the head its manifest names, against a real review store. On the base revision <code>crew review --run &lt;run-id&gt;</code> exits 2 with <code>No such option: --run</code>, so no command composes that run's review.</p>
+    <h3 id="dwlw-a-coordinator-requests-a-run-review--change">What changed</h3>
+    <ul>
+      <li><code>crew review --run &lt;run-id&gt;</code> composes the review of the named run at the head the run carries now. It dispatches through the reflex's own entry point, so the review it composes is the review the reflex composes, and the reflex then finds it in flight.</li>
+      <li>The review node is keyed by the run and the head it read — <code>review-of-&lt;run-id&gt;-&lt;head[:12]&gt;</code> — so a run whose head moved after a resume is reviewed at the new head rather than refused as already reviewed.</li>
+      <li>A run whose newest open review still carries an undisposed blocking finding is refused naming the finding's location and both commands that lift it, rather than dispatching a second round that would repeat it.</li>
+      <li>The <code>review-missing</code> duty for such a run names the same undisposed cause, and the command that disposes it, in place of an overdue figure. The overdue prose remains for a run whose review the reflex simply has not reached yet.</li>
+    </ul>
+    <h3 id="dwlw-a-coordinator-requests-a-run-review--evidence">Evidence</h3>
+    <p>Three cases pass at the head, driven against real git history and a real review store. The command composes a review of the delivered run at its own head, and the reflex's next pass over the same record reports the review already in flight and dispatches nothing; the dry run previews that same head-keyed node id. A run whose previous round holds an undisposed blocking finding is refused with the finding's location, the dispose command and the exemption command named, and leaves no live review run behind. The <code>review-missing</code> duty for that run names the blocking finding and the dispose command and carries no overdue figure, while still reporting the head the run carries now.</p>
+    <p>Negative control: at the pinned base revision the first case fails with no such option, and the command's other two cases cannot be reached because the composition entry point does not exist there. All three gate logs open with their own revision, the literal command and the tree they ran in, and close with an <code>EXIT=</code> line.</p>
+    <p>Logs cited: the scoped gate and the after suite at revision 17fd58cd5b, and the baseline suite at revision 432b5ff1a1. The substituted suite ran 61 cases green in 40.43 s at that revision; the same suite without the new case ran green at the base.</p>
+  </main>
+</body>
+</html>
