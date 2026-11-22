@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="A plan-level dispatch reads delivered work from the run store, matched on the plan and section, so a section whose run has landed is skipped by name instead of queued a second time.">
   <meta name="plan-evidence-for" content="reckon:a-reviewed-plan-is-queued-at-full-width">
   <meta name="plan-verifies" content="reckon:a-reviewed-plan-is-queued-at-full-width#s12">
-  <meta name="plan-commits" content="83196da7">
+  <meta name="plan-commits" content="83196da7 21917e9a">
   <meta name="plan-recorded-at" content="2026-11-22">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="crew,dispatch,queue,ledger">
@@ -56,13 +56,26 @@
     arm.</strong> At <code>83196da7</code> both cases pass: the landed section is
     reported <code>skipped</code> with the landed run id in its reason, and a section
     whose only run was discarded is reported <code>queued</code>.</li>
+    <li id="rpfw-a-landed-section-is-not-queued-again-check"><strong>A run whose
+    own check failed.</strong> The stored row carries no phase, so the match reads
+    the gate and failure classification the row does carry: at
+    <code>21917e9a</code> a section whose run was promoted under a failed check
+    classified <code>work-rejected</code> is <code>queued</code> again, while one
+    whose failure is recorded as <code>pre-existing-failure</code> is
+    <code>skipped</code> naming its run. Without the repair the rejected case
+    reads <code>assert 'skipped' == 'queued'</code> and closes
+    <code>EXIT=1</code>.</li>
     <li id="rpfw-a-landed-section-is-not-queued-again-gate"><strong>The gate and its
     arms.</strong> The scoped gate ran <code>60 passed in 40.52s</code> with
     <code>EXIT=0</code> at <code>83196da7</code>. The baseline arm at
     <code>dde7b001</code> reported <code>58 passed in 37.30s</code> and the after arm at
     <code>83196da7</code> reported <code>60 passed in 40.78s</code>, both
     <code>EXIT=0</code>: the two added passes are this node's cases and the head adds
-    no failure id.</li>
+    no failure id. After the check repair the same command over
+    <code>21917e9a</code> reported <code>62 passed in 50.64s</code> at
+    <code>EXIT=0</code> against the same baseline arm's
+    <code>58 passed in 37.30s</code>: two more of this node's cases, still no
+    added failure id.</li>
   </ul>
 </article>
 </body>
