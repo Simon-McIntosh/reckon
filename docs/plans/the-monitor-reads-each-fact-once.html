@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="589">
+<meta name="plan-version" content="590">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -1257,7 +1257,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>none — a read-only figure review writes no repository change; the review record is the deliverable, and the coordinator lands it as the section comment.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261122T090847162707-review-of-the-monitor-reads-each-fact-once-s12-3a00a3e8d319" data-who="reckon-build" data-when="2026-11-22T11:04:31.633Z">
-    <div class="r-comment-body"><p>Review of r-20261122T072346716754-the-monitor-reads-each-fact-once-s12 (790a380eb7..3a00a3e8) scores goal_fidelity 16, evidence 15, scope_discipline 20, durability 6, fit 18, reuse 14, total 89, 0 added failures, with 4 non-blocking findings and 0 blocking; the node&#x27;s measurement stands and its retirement is correctly withheld, the evidence&#x27;s positive-control sentence misstates window 2 (300 against the log&#x27;s 294), the pane-replay clause is declared unmeasured, and the only guard is a run-directory test that never reads the fragment.</p></div>
+    <div class="r-comment-body"><p>Review of r-20261122T072346716754-the-monitor-reads-each-fact-once-s12 (790a380eb7..3a00a3e8) scores goal_fidelity 16, evidence 15, scope_discipline 20, durability 6, fit 18, reuse 14, total 89, 0 added failures, with 4 non-blocking findings and 0 blocking; the node's measurement stands and its retirement is correctly withheld, the evidence's positive-control sentence misstates window 2 (300 against the log's 294), the pane-replay clause is declared unmeasured, and the only guard is a run-directory test that never reads the fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261122T072346716754-the-monitor-reads-each-fact-once-s12" data-who="reckon-build" data-when="2026-11-22T11:14:06Z">
+    <div class="r-comment-body"><p>This node is a measurement of the cutover window, not the cutover: with the RCA&#x27;s per-process instruments over two 60 s windows on the fleet node, all crew monitor processes together read 22,646 and 20,889 MB/min and use 262 and 208 % of one core against a bound of 20 MB/min and 5 %; the station alone reads 11,645-13,622 MB/min and 90-105 % of one core, so the bound is not met, the retirement is withheld and the producers and followers stay, and the cutover now waits on the whole-store read the census and probe locate (one stored_run_signature call reads the whole 1.166 GB run store; 90 % of the station&#x27;s reads are the two run stores).</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261107T171647831487-review-of-obligations-recompute-only-what-changed-902372b94625" data-who="reckon-build" data-when="2026-11-07T17:35:01.610Z">
     <div class="r-comment-body"><p>Reviewed r-20261107T155222105164-obligations-recompute-only-what-changed at base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 and head 902372b946250b719af5df8a9f0a146625130397: the three memoisations landed and the base arm genuinely fails their zero-count assertions, but the done_when's live under-2-s bullet is unmet at 75.761 s and four non-blocking findings are recorded (stale held-record signature, a live timing log that ends in a NameError stamped EXIT=0, an after-arm recorded one revision behind head, and a hand-rolled memo beside file_memo).</p></div>
