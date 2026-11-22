@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Four kinds of run hold a live pointer or read as alive with no worker behind them; each is released or reported as it is, so waits lift and discards stick.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="9.5">
+  <meta name="plan-effort-hours" content="12.5">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="delivered-work-lands-without-a-coordinator">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-claim-nobody-is-working-is-released#s2&quot;,&quot;a-claim-nobody-is-working-is-released#s3&quot;,&quot;a-claim-nobody-is-working-is-released#s4&quot;,&quot;a-claim-nobody-is-working-is-released#s5&quot;,&quot;a-claim-nobody-is-working-is-released#s7&quot;,&quot;a-claim-nobody-is-working-is-released#s8&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-claim-nobody-is-working-is-released#s2&quot;,&quot;a-claim-nobody-is-working-is-released#s3&quot;,&quot;a-claim-nobody-is-working-is-released#s4&quot;,&quot;a-claim-nobody-is-working-is-released#s5&quot;,&quot;a-claim-nobody-is-working-is-released#s7&quot;,&quot;a-claim-nobody-is-working-is-released#s8&quot;,&quot;a-claim-nobody-is-working-is-released#s9&quot;]}">
   <title>A Claim Nobody Is Working Is Released | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -70,7 +70,7 @@
 
     <h2 id="s6">§6 — The fleet holds no claim without a worker</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A census of the live fleet after §2 to §5 and §7 have landed, read beside the cases §1 records as seen on 18 and 19 November 2026, which are the state before; no census was taken then and none can be reconstructed now.</p>
+    <p><strong>Deliverable.</strong> A census of the live fleet after §2 to §5 and §7 to §9 have landed, read beside the cases §1 records as seen on 18 and 19 November 2026, which are the state before; no census was taken then and none can be reconstructed now.</p>
     <p><strong>Done when.</strong> The evidence record holds two censuses of every live pointer on the workstation, each row giving the run, its kind, its recorded host, whether a turn is in progress and the pointer's age. The census taken at least six hours after the last landing lists no promoted, measurement-only or landed-group run older than one hour with no turn in progress, no delivered and unlanded run of an ended session holding a claim past §7's interval, and no run reading as working whose worker has begun no turn. A census that read fewer pointers than the live directory holds fails as unread. Write paths: <code>docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html</code>.</p>
 
     <h2 id="s7">§7 — A delivered run that is never landed gives up its claim</h2>
@@ -84,8 +84,16 @@
 <section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>§6's census on 22 November 2026 found that the two passes that retire a promoted pointer retire almost none. Both hand a slim listing record to the compare-under-lock retirement, which compares it against a read by id that re-hydrates the node body from the run's own file; the two shapes differ, so the comparison failed on 76 of 76 pointers at 09:38Z and 93 of 94 at 15:21Z, and a promoted pointer whose node body has been moved out is held whatever its liveness reads. <code>r-20261120T074437034953-cym-s5</code> in imas-efit, promoted 2.2 days earlier, with no workspace and liveness reading dead, was still held. The record is <code>docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html</code> and the run directory of <code>r-20261122T071220426634-a-claim-nobody-is-working-is-released-s6</code> (<code>census-a.json</code>, <code>census-b.json</code>).</p>
     <p><strong>Deliverable.</strong> A promoted pointer whose worker is dead is retired by the release passes whether it was listed slim or read whole, and a pointer that changed between the listing and the retirement is still kept. The comparison judges the fields that decide ownership, not the record's shape.</p>
-    <p><strong>Done when.</strong> <code>tests/test_a_release_pass_ignores_the_listing_shape.py</code> passes, covering: a promoted pointer with a dead worker, listed slim while its node body lives in the run's file, is retired by each of the two passes; the same pointer rewritten by another writer between listing and retirement is kept; and a pointer with a live worker is kept. The census instrument, rerun against the live pointer directory, reports the comparison accepting every promoted pointer it reads. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/runs.py</code> and the new test.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_release_pass_ignores_the_listing_shape.py</code> passes, covering: a promoted pointer with a dead worker, listed slim while its node body lives in the run's file, is retired by each of the two passes; the same pointer rewritten by another writer between listing and retirement is kept; and a pointer with a live worker is kept. The census instrument, run against a prepared pointer directory holding at least 20 promoted pointers with dead workers, half listed slim and half read whole, reports the comparison accepting all of them and the release passes retiring all of them. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/runs.py</code> and the new test.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case must fail, with the pointer held.</p>
+
+    <h2 id="s9">§9 — A promoted pointer whose placement names no job is judged, not held as unknown</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>§6's census record (<code>docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html</code>, "An own-node run was not proved dead at that census") reports a second reason pointers stay held: 47 of 76 live pointers carried a placement naming no readable job id, the scheduler arm answered nothing, and a liveness that reads unknown is held. A promoted run in that state keeps its claim however long its worker has been gone.</p>
+    <p><strong>Deliverable.</strong> A promoted run whose placement names no readable job id has its liveness decided from what the node can read, its process table and its worker's last write, and is released when both show the worker gone. A run whose liveness still cannot be decided is reported once as an obligation naming what is missing, rather than held without a word.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_placement_without_a_job_is_judged.py</code> passes, covering: a promoted pointer with no job id, no live process and a worker record untouched for more than an hour is released; the same pointer with a live process is kept; and a pointer whose node cannot be read is reported as an obligation naming the missing fact. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>.</p>
+    <p><strong>Negative control.</strong> At the base revision, the first case fails, with the pointer held as unknown.</p>
+
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
