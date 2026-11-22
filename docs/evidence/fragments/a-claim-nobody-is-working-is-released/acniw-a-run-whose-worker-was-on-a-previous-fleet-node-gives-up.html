@@ -24,13 +24,14 @@ release.
 </p>
 <figure>
 <img src="/reckon/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg"
-     alt="A decision chain over one promoted live pointer. A workspace on disk or an unfinished landing journal holds it, because the landing paths decide uncommitted and unintegrated work. A worker alive on the host that issued its pid holds it as working. A run neither proved dead nor launched on a foreign node is held, because nothing here can read its worker. A run proved dead or foreign is held while an assistant turn sits inside the silence window of its newest stream. Only a run that passes all four gates is retired, and retirement releases the claim only: the worktree, commits and run records stay on disk, and a later pass finds no pointer to restore.">
+     alt="A decision chain over one promoted live pointer. A workspace on disk or an unfinished landing journal holds it, because the landing paths decide uncommitted and unintegrated work. A run launched on a node the fleet has left bypasses the local process checks entirely, because its pid answers only there, and goes straight to the stream's silence; the local branch is asked whether the worker is alive or not proved dead, and holds the run if either. The last gate is an assistant turn inside the silence window of the newest stream, which holds the run; only a run that passes every gate is retired, and retirement releases the claim only: the worktree, commits and run records stay on disk, and a later pass finds no pointer to restore.">
 <figcaption>Every promoted live pointer the station tick selects walks these
 gates. The first one is why a dead pid alone cannot release a claim: the
 landing paths read the workspace for uncommitted and unintegrated work, and
-the journal names a landing that has not finished. The last one is the
-previous-node reading — the pid answers only on the machine the fleet left, so
-the stream's own silence is what stands in for it.</figcaption>
+the journal names a landing that has not finished. The second is why the host
+is read before the process: a number recorded on the machine the fleet left
+names an unrelated process here, so the foreign branch never asks this host's
+table and the stream's own silence is what stands in for the worker.</figcaption>
 </figure>
 <p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p3">
 Retiring a pointer releases a claim, never work: the worktree, commits and run
@@ -69,6 +70,30 @@ two files against the pre-repair tree: <code>3 failed, 2 passed in 2.54s</code>.
 The fence arms were re-measured at the repaired head: base
 d24fa090e52748cc3100cd54e60d68ad3e87fb1b <code>58 passed in 38.80s</code>, after arm
 <code>62 passed in 45.83s</code>.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p8">
+Repair at revision f77f50a4fc6cc268e3088184da0b3daa7f5487d0: the pass read the
+local process table before it read the host, so a previous-node run whose pid
+number happened to name a live process here was held for ever, and one whose
+number named nothing was reported proved dead. The host is now decided first
+and a foreign record never consults this host's table. The promotion-only pass
+that runs after it also released a previous-node run whose stream still carried
+a turn inside the window, undoing the held decision in the same call; it now
+holds such a run.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p9">
+Repair measure: every case now builds the pointer production builds — the
+promotion mark together with its ledger row, from a temporary run store. Against
+the reviewed head 52e55b67cc4be53cce5a120c02dd8aebe26620f8 the suite is
+<code>2 failed, 6 passed in 3.26s</code>: the quiet run is held (its pid names a
+live process here) and the working run is retired by the trailing pass. Against
+d24fa090e52748cc3100cd54e60d68ad3e87fb1b it is
+<code>3 failed, 5 passed in 1.74s</code>, the quiet run keeping its pointer.
+Against 125dc5f71995a2b549a421154fffc64b87ba2dd4 the journal, workspace and
+scope cases fail as well (<code>6 failed, 2 passed in 1.41s</code>). At this
+head the fence arms are base <code>58 passed in 35.87s</code> and after
+<code>66 passed in 37.69s</code>, with the scoped gate including the release
+test at <code>67 passed in 38.56s</code>.
 </p>
 </article>
 </body>
