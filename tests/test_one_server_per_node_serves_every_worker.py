@@ -193,6 +193,25 @@ def answer_text(result) -> str:
     )
 
 
+def test_a_composed_worker_config_serves_a_real_tool_call(node):
+    """The declaration a worker is handed reaches the live node server."""
+    directory, server = node
+    (directory / ".claude.json").write_text(
+        json.dumps({"mcpServers": {"reckon": {"command": "reckon-mcp"}}})
+    )
+    composed = json.loads(
+        _worker_fence.claude_worker_mcp_config(
+            directory, directory, ["reckon"], {"reckon": server.url}
+        )
+    )
+    declaration = composed["mcpServers"]["reckon"]
+    assert declaration == {"type": "http", "url": server.url}
+    result = asyncio.run(_answers(declaration["url"], 1))[0]
+    assert result.isError is False
+    assert answer_text(result).strip(), "the composed declaration must answer"
+    assert server_pids(directory) == [server.pid]
+
+
 def test_every_worker_tool_call_is_answered_by_one_server(node):
     directory, server = node
     results = asyncio.run(_answers(server.url, WORKERS))
