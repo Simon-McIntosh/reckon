@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="127">
+<meta name="plan-version" content="128">
 <meta name="plan-modified" content="2026-11-22">
 <meta name="plan-sprint" content="S28">
 </head>
@@ -279,6 +279,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261121T201937629427-anchored-flight-key-s18" data-who="reckon-build" data-when="2026-11-22T14:53:42.180Z">
     <div class="r-comment-body"><p>The anchored_edit key is removed from reckon/schema/flight.yaml (slot declaration and BackendConfig slot entry) and both committed artifacts are regenerated from it by scripts/regen_flight_schema.py, a config declaring anchored_edit now surfaces as backends.&lt;name&gt;.anchored_edit in flight_unknown_keys rather than being accepted.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261122T152939676218-review-of-anchored-module-s18-6406ed9c9dcd" data-who="reckon-build" data-when="2026-11-22T15:38:47.194Z">
+    <div class="r-comment-body"><p>Reviewed r-20261121T201951227166-anchored-module-s18 at base 2e639881e0 and head 6406ed9c: scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 8, fit 19, reuse 20 (total 102), 0 added failures, 2 non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261110T203544773136-review-of-anchored-edit-tool-27ed13983a3d" data-who="reckon-build" data-when="2026-11-10T20:58:16.138Z">
     <div class="r-comment-body"><p>Reviewed run r-20261110T192355232896-anchored-edit-tool at head 27ed13983a3d19b3a69b18e35b56b33e9f52b354 from base cb5dcf17a3be6c8a022f5c9391ec843c67adb509; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 19; total 110), zero added failures against the reviewed arms, and three non-blocking findings recorded — a self-referential assertion at tests/test_anchored_edit.py:54, a negative-control log whose header revision predates the module checksum it measured, and a ruff claim in the evidence fragment with no recorded log which re-ran clean.</p></div>
