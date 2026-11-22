@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:390",
+    "reckon/crew_run_commands.py:2409",
+    "reckon/crew_run_commands.py:3925",
+    "reckon/crew_run_commands.py:5367"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T03:27:31Z",
+  "findings": [
+    {
+      "file": "tests/test_a_gate_exit_status_is_read_or_refused_by_name.py",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "the new test file ends without a trailing newline; ruff check reports W292 at line 57, and W is in the project's declared lint selection, so this commit adds a lint finding the repo rule forbids \u2014 a one-character repair."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 111,
+      "severity": "non-blocking",
+      "text": "the new GateExitStatusType.convert signature is 95 columns and ruff format --check reports the file would be reformatted at line 111; formatting only, with no behaviour change."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit 9622538168 against base b5444d24: it adds the reader, the click type, applies them to two options and _gate_exit_status, and adds the three-case test; no other path changed.",
+    "done_when": "The done_when names three cases; tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:34-57 asserts them and the after arm records 61 passed at 9622538168.",
+    "goal": "The node's goal is that a gate exit status that opens with an integer is read as that integer and one that does not is refused naming the field; reckon/crew_run_commands.py:85-124 adds the reader and the refusing option type.",
+    "manifest": "The source manifest records status complete, the gate command, the three arm logs, EXIT=0 on the scoped gate and a red negative control.",
+    "write_paths": "The diff b5444d24..9622538168 changes only reckon/crew_run_commands.py and the new test file, both inside the four declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:34-47 fail when the product change is reverted to b5444d24, as negative-control.log shows (FFF, 3 failed); the stored-row non-integer path itself is not separately asserted.",
+    "evidence": "tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:34-57 asserts the three done_when cases, and the after arm log records '61 passed' at 9622538168 against a base arm of '58 passed'.",
+    "fit": "the refusals and comments follow the surrounding module, but ruff check reports W292 at tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:57 and ruff format --check would reformat reckon/crew_run_commands.py:111.",
+    "goal_fidelity": "reckon/crew_run_commands.py:85-124 adds the leading-integer reader and the refusing option type, and both --gate-exit-status options (reckon/crew_run_commands.py:390, :3925) plus _gate_exit_status (:3555) use it; the stored-row reader returns None for a non-integer rather than refusing by name.",
+    "reuse": "no owner for reading a leading integer exists (searched reckon/ for re.match/re.compile parsers and for click.ParamType subclasses and found none), so gate_exit_status_integer and GateExitStatusType are the first, and _gate_exit_status extends the existing reader rather than forking it.",
+    "scope_discipline": "the diff b5444d24..9622538168 changes only reckon/crew_run_commands.py and tests/test_a_gate_exit_status_is_read_or_refused_by_name.py, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a gate exit status that opens with an integer is read as that integer and one that does not is refused naming the field and the value found; reckon/crew_run_commands.py:85-124 adds gate_exit_status_integer and GateExitStatusType to do both.\nVERDICT done_when: The done_when names three cases; tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:34-57 asserts the passing, failing and refused cases, and the after arm log records 61 passed at 9622538168.\nVERDICT write_paths: The diff b5444d24..9622538168 changes only reckon/crew_run_commands.py and the new test file, both inside the four declared write paths.\nVERDICT manifest: The source manifest records status complete, the scoped gate command and EXIT=0, the baseline and after arms, and a red negative control (3 failed, EXIT=1).\nVERDICT diff: Read commit 9622538168 against base b5444d24: it adds the leading-integer reader, the refusing click type, applies them to both --gate-exit-status options and to _gate_exit_status, and adds the three-case test; no other path changed.\nCALL_SITES: reckon/crew_run_commands.py:390, reckon/crew_run_commands.py:2409, reckon/crew_run_commands.py:3925, reckon/crew_run_commands.py:5367\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:85-124 reads a leading integer and refuses a non-integer, applied at both options (:390, :3925) and in _gate_exit_status (:3555); the stored-row reader returns None for a non-integer rather than refusing by name.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:34-57 asserts the three done_when cases and after_suite-1795317560898949867.log records '61 passed' at 9622538168.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff b5444d24..9622538168 changes only reckon/crew_run_commands.py and the new test file, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows all three assertions red under base b5444d24 (FFF, EXIT=1), so a regression of the reader is caught.\nSCORE fit: 15\nJUSTIFICATION fit: ruff check reports W292 at tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:57 and ruff format --check would reformat reckon/crew_run_commands.py:111.\nSCORE reuse: 20\nJUSTIFICATION reuse: searched reckon/ for a leading-integer parser and for click.ParamType subclasses and found neither, so the added reader and option type are the first and _gate_exit_status extends rather than forks the existing reader.\nFINDING tests/test_a_gate_exit_status_is_read_or_refused_by_name.py:57 non-blocking: the new test file ends without a trailing newline; ruff check reports W292, adding a lint finding the repo rule forbids.\nFINDING reckon/crew_run_commands.py:111 non-blocking: the new convert signature is 95 columns and ruff format --check reports the file would be reformatted.\n",
+  "review_run_id": "r-20261122T032517806917-review-of-dwlw-a-gate-exit-status-is-read-or-refused-by-name-962253816883",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_head_sha": "962253816883e1790112618deb080d00a10cff7c",
+  "reviewed_run_id": "r-20261122T023722834108-dwlw-a-gate-exit-status-is-read-or-refused-by-name",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T03:43:34+00:00",
+  "total": 110
+}

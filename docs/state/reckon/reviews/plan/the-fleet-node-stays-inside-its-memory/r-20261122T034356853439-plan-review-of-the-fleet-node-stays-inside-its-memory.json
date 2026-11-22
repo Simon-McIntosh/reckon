@@ -1,0 +1,105 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T03:46:24Z",
+  "findings": [
+    {
+      "anchor": "reckon/ledger.py:2758",
+      "id": "reuse_search-1",
+      "reason": "the section's deliverable and its third arm (\"doubling the delivered-run rows raises the head's peak by <10 %\") are only met through the ledger's existing reuse, so the design as re-derived changes the deliverable text and the measure.",
+      "text": "`ledger.load(..., plan=..., run_ids=...)` already implements exactly \u00a78's deliverable (\"the delivered-run records of one node at a time\"): `plan=` narrows the store in SQL before any row is decoded and `run_ids=` names the rows outright, while the measured 10.15 GiB peak comes from the full-payload `run_rows_from_documents` call at `reckon/crew/dispatch_batch.py:809`; `picker_runs` (line 1919, via `stored_history(..., picker_only=True)`) already reads the store without decoding retained payloads",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_batch.py:809",
+      "id": "duplicate_owner-1",
+      "reason": "the node should extend the `reckon/ledger.py` projected reader with a plan filter (the owning file the brief must carry \u2014 \u00a78's write paths name only `dispatch_batch.py` and `section_holds.py`, which is the fork this finding warns against) rather than fork a read the ledger already bounds.",
+      "text": "`queue_plan` reads the run store through the unbounded full-payload `run_rows_from_documents(project, root=read.repo_root)`, a second store reader beside `reckon/ledger.py`'s projected owner, and the same unbounded form recurs across `reckon/crew/directory.py:562` and `reckon/crew/obligations.py:3512`, while `reckon/crew/section_holds.py:127` reads `ledger.picker_runs` (whole project) for the same question",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "32e87ad7ae4931351cf1fd0ece0ec13ada46a849",
+  "plan_fingerprint": "e5f6ce76ae899ce959dea7ada775e76e0ce880e10cf168351379c975a2033632",
+  "plan_slug": "the-fleet-node-stays-inside-its-memory",
+  "plan_version": 38,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "section": "s8",
+      "sections": [
+        "s8"
+      ],
+      "when": "2026-11-22T06:42:42.308751+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "section": "_document",
+      "sections": [
+        "_document"
+      ],
+      "when": "2026-11-22T06:42:48.569802+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "_document",
+      "sections": [
+        "_document"
+      ],
+      "when": "2026-11-22T06:42:48.569802+00:00"
+    },
+    "reuse_search-1": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "s8",
+      "sections": [
+        "s8"
+      ],
+      "when": "2026-11-22T06:42:42.308751+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-fleet-node-stays-inside-its-memory/r-20261122T034356853439-plan-review-of-the-fleet-node-stays-inside-its-memory.json",
+  "review_run_id": "r-20261122T034356853439-plan-review-of-the-fleet-node-stays-inside-its-memory",
+  "reviewed_blob_sha": "8396280038958dbf48c00021728c8de0488db88a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change sits behind `queue_batch`/`queue_plan`, one interface for the whole batch, and the bounded read is a single call into the ledger rather than a mechanism spread across the batch and section-holds readers.",
+    "duplicate_owner": "a finding \u2014 the batch reaches the plan's runs through two readers, the unbounded full-payload `run_rows_from_documents` (dispatch_batch.py:809) and the whole-project `picker_runs` (section_holds.py:127), neither of which is the plan-narrowed `ledger.load(..., plan=...)` owner at `reckon/ledger.py:2758`.",
+    "interface_budget": "pass \u2014 public_definitions 3145, cli_options 535, mcp_views 15, refusal_families 25; \u00a78 and \u00a711 add no public definition, CLI option, MCP view or refusal family (the only surface is internal), so there is nothing for the section to name as retired or merged, and nothing it adds.",
+    "reuse_search": "a finding \u2014 the endpoint already has an owner in `reckon/ledger.py`: `stored_history(..., picker_only=True)` behind `picker_runs` (line 1919) decodes no retained payload, and `load(..., plan=...)` / `load(..., run_ids=...)` (line 2758) narrow the store in SQL, so \u00a78's \"hold the delivered-run records of one node at a time\" rebuilds a bound the ledger already provides.",
+    "thin_wrapper": "pass \u2014 the design adds no wrapper over the existing reader; extending the ledger's projected/narrowed read is not a new layer and the section proposes no parallel one."
+  },
+  "section_digests": {
+    "_document": "a1cd9f88ae34d969d6522978fdc2f9e8317fb93be0ce0c1e89533abeaaec86b3",
+    "s1": "bd4e46820d70a6901e2d82e4fd6386ec7b4fa86f0a54637a0bb22960399f70df",
+    "s10": "4a13c11c1e14c10049882930c77d89def15230051f81a97593bb783a653df453",
+    "s11": "2cedcb676942cd7a60f31c28a745cde686b2b3a65e6cbd434cd29a2fd4e8d5b9",
+    "s12": "ddd6d97387a749dadcad375aaa0ea9769a572635102cc5afb2759e6be06f68ca",
+    "s13": "29e55a1e47ef0a2ca65ccd487bb35f8edbbe8321ce8f4ca134a585eb77032469",
+    "s2": "e099a2cd38a025736e9e56d3728e4dddd0af9c52fc9a6715bbe53227288061de",
+    "s3": "198ecdb48c79a8e9327ee799e8ae423ad669b99caf5958eb17c4847fcaf6e528",
+    "s4": "f42cb9988f1651a81cf2a1997f16268ade2b7f46d203317d149e6e78087c8290",
+    "s5": "67913abf218447de7e81d67433a233675314c3ed29e2230e27f332dd33e09425",
+    "s6": "ad9cca097874b1a2c042499a7c033b9ec7993c818128b94e9b0b3533a9639b17",
+    "s7": "6c2cc89d6c033f4fbe71d654feb65918a822615cf9d78209cb44ce8ea4632243",
+    "s8": "3cbfa830d773262697cdeff997fdf0db88e7a0f00b369b346a49e088bab77000",
+    "s9": "87b1728646dee5714df7f9c7b104c9bc9a01cdbf9f98244f0af5553ab8e7c5a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:16:39.726482+00:00",
+  "total": null
+}

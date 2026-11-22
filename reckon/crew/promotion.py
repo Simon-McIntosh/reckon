@@ -2851,6 +2851,9 @@ def _complete_locked(
             role=str(record.get("role") or ""),
             spec_level=str(node.get("spec_level") or ""),
             member_id=str(record.get("member") or ""),
+            # The width the request was dispatched at rides the committed row
+            # because promotion deletes the live pointer that carries it.
+            dispatch_width=str(record.get("dispatch_width") or ""),
             backend=str(
                 record.get("backend")
                 or (record.get("agent") or {}).get("backend")

@@ -1543,6 +1543,68 @@ def _settled_evidence(
     }
 
 
+def _wait_no_reader_will_run(
+    fields: Mapping[str, Any], qualified_status: str
+) -> dict[str, str] | None:
+    """The declared wait a manifest carries that nothing can probe.
+
+    A wait can be declared beside a working status rather than the declared
+    wait, with its probe written as prose naming a scheduler job instead of as
+    an argument vector. The waiting reader acts only on a manifest whose status
+    is the declared wait, and the reader that runs a probe refuses this shape,
+    so neither sweep nor resume lifts the run: nothing outside a coordinator
+    can act on the declaration at all. The status word and the probe text are
+    returned together, because they are the coordinator's whole repair.
+    """
+    declared_probe = str(fields.get("wait_probe") or "").strip()
+    declared_file = str(fields.get("wait_file") or "").strip()
+    condition = str(fields.get("wait_condition") or "").strip()
+    if not (declared_probe or declared_file or condition):
+        return None
+    refusal = _wait_probe_shape_refusal(fields.get("wait_probe")) or (
+        _wait_file_shape_refusal(fields.get("wait_file"))
+    )
+    if not refusal:
+        return None
+    declared = declared_probe or declared_file or condition
+    return {
+        "status": qualified_status,
+        "wait": declared,
+        "refusal": refusal,
+    }
+
+
+def first_reported_line(*texts: str) -> str:
+    """The first non-empty line of the launcher's own report, or ``""``.
+
+    A refusal announces itself on its first line and what follows is the
+    reporter's own retry or stack detail, so the first line is the cause a
+    reader acts on where the tail is only the tail's fate. One reader serves
+    every launch reading — a launch failure's recorded ``stderr_tail`` and a
+    resume's launcher log — so the two cannot come to disagree about which line
+    of the same log is the reason.
+    """
+    for text in texts:
+        for line in str(text or "").splitlines():
+            stripped = line.strip()
+            if stripped:
+                return stripped[:500]
+    return ""
+
+
+def _resume_without_a_started_turn(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> dict[str, Any] | None:
+    """A resumed attempt whose worker has begun no turn, or None.
+
+    Deferred: the resumption module imports this one for the wait producer
+    bound, so the read is taken where it is used rather than at load.
+    """
+    from reckon.crew.resumption import resume_without_a_started_turn
+
+    return resume_without_a_started_turn(record, now_seconds=now_seconds)
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -2446,6 +2508,35 @@ def classify_pointer(
             if completion_offer(record, repair=True)
             else f"reckon crew observe --run {shlex.quote(run_id)}"
         )
+    elif (
+        alive is False
+        and manifest_status not in TERMINAL_MANIFEST_STATUSES
+        and manifest_status != WAITING_STATUS
+        and (
+            unnameable_wait := _wait_no_reader_will_run(
+                manifest_data, manifest_reported_status or manifest_status
+            )
+        )
+        is not None
+    ):
+        # A worker that ended on a wait it declared but nothing can probe: the
+        # status is a working word rather than the declared wait, and the probe
+        # is a shape the reader refuses. No sweep will lift it and no resume can
+        # run it, so the run reads unreadable — the declaration is what is wrong
+        # — and the row carries both texts the coordinator has to repair,
+        # because "fix the wait" names nothing a session can act on alone.
+        classification = "unreadable"
+        detail = (
+            f"the worker ended with manifest status {unnameable_wait['status']!r} "
+            f"and a wait nothing can probe: {unnameable_wait['refusal']} "
+            f"(declared {unnameable_wait['wait']!r}); the run was left waiting on "
+            f"the manifest at {manifest} and no sweep or resume lifts it"
+        )
+        action = (
+            f"read {manifest}; replace the status with the verdict the worker "
+            "reached and re-declare the wait as "
+            f"{_WAIT_ACCEPTED_SHAPES} if it is still being awaited"
+        )
     elif manifest_unwritten:
         classification = "running"
         if _carries_orientation_write(manifest_text, manifest_data):
@@ -3103,17 +3194,10 @@ def classify_pointer(
         # is its own retry or stack detail. The last line is the tail's fate
         # rather than its reason, which is what a tail-quoting reader used to
         # report.
-        error_lines = [
-            line.strip()
-            for line in str(latest.get("stderr_tail") or "").splitlines()
-            if line.strip()
-        ]
-        if not error_lines:
-            recorded = str((ended_exit or {}).get("detail") or "").strip()
-            error_lines = [
-                line.strip() for line in recorded.splitlines() if line.strip()
-            ]
-        launch_error = error_lines[0] if error_lines else ""
+        launch_error = first_reported_line(
+            str(latest.get("stderr_tail") or ""),
+            str((ended_exit or {}).get("detail") or ""),
+        )
         cause = launch_error or "the process exited before any turn"
         classification = "launch-failed"
         ended_during_launch = True
@@ -3257,6 +3341,31 @@ def classify_pointer(
                 f"before the worker acted; it ended on {quote!r}"
             )
             action = f"reckon crew resume --run {run_id} --advice continue"
+    elif (
+        alive is not False
+        and (not_started := _resume_without_a_started_turn(record, now_seconds=moment))
+        is not None
+    ):
+        # A resume records its launcher's pid and the working phase as soon as
+        # it spawns, so a launcher that is merely waiting — an srun client on a
+        # step the scheduler never started — reads as a live worker for as long
+        # as it waits, and nothing resumes the run. A turn begun is what makes
+        # a resumed run working; absent one past the bound, this is the launch
+        # that never started, and the launcher's own words are the reason.
+        classification = "launch-failed"
+        waited = not_started["age_seconds"]
+        bound = not_started["bound_seconds"]
+        launch_error = str(not_started["waiting_reason"] or "").strip()
+        detail = (
+            "a resume that never started: the launch has begun no turn in "
+            f"{waited}s, past the {bound}s bound, while its launcher "
+            f"{not_started.get('launcher_pid')!r} was never observed to end; "
+            f"the launcher's own reason: {launch_error}"
+        )
+        # No end was recorded, so the remedy is the resume that carries the
+        # attempt on rather than a discard: a run whose launcher is still
+        # waiting has nothing to throw away, and its session survives.
+        action = f"reckon crew resume --run {run_id} --advice continue"
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
@@ -4099,6 +4208,7 @@ from .recovery_vocabulary import (  # noqa: E402
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402
+    _WAIT_ACCEPTED_SHAPES,
     _wait_probe_answered,
     _WAIT_HORIZON_FIELDS,
     _background_wait_signal,
@@ -4106,8 +4216,10 @@ from .recovery_wait import (  # noqa: E402
     _run_directory,
     _run_wait_condition_probe,
     _wait_condition_observation,
+    _wait_file_shape_refusal,
     _wait_probe_job_id,
     _wait_probe_job_ids,
+    _wait_probe_shape_refusal,
 )
 from .recovery_watch import (  # noqa: E402
     FLEET_SETTLED_STATES,

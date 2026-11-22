@@ -25,7 +25,7 @@ from __future__ import annotations
 import contextlib
 import json
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
@@ -657,6 +657,83 @@ def release_pointers_of_a_previous_fleet_node(
     return results
 
 
+def _finished_group_landings(group_id: str) -> dict[str, str]:
+    """The heads a finished landing group recorded for each of its members.
+
+    A group lands as one head, so a member carries no promotion of its own and
+    its ledger row proves nothing about it. The group's outcome is written as
+    the journal is unlinked, and it names every member beside the head it
+    landed, which is the same evidence :func:`retire_integrated_group_members`
+    reads from the journal while the journal still exists. A group whose
+    outcome is absent, unreadable or not a success names nothing: an unread
+    record is not evidence that a member was released.
+    """
+    try:
+        outcome = json.loads(
+            (runs.run_dir(group_id) / "landing-group.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(outcome, Mapping) or outcome.get("ok") is not True:
+        return {}
+    members = outcome.get("members")
+    commits = outcome.get("commits")
+    if not isinstance(members, list) or not isinstance(commits, list):
+        return {}
+    if len(members) != len(commits):
+        return {}
+    return {
+        str(run_id): str(head)
+        for run_id, head in zip(members, commits, strict=True)
+        if run_id and head
+    }
+
+
+def _retire_members_of_a_finished_group(
+    group_id: str, selected: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    """Release the surviving members of a group whose journal is gone."""
+    from reckon.crew import merge, queue_landing
+
+    landed = _finished_group_landings(group_id)
+    if not landed:
+        return []
+    results: list[dict[str, Any]] = []
+    for pointer in selected:
+        run_id = str(pointer.get("run_id") or "")
+        if str(pointer.get("landing_group") or "") != group_id or not landed.get(
+            run_id
+        ):
+            continue
+        repository_path = str(pointer.get("repo") or "")
+        if not repository_path:
+            results.append(
+                {
+                    "run_id": run_id,
+                    "status": "group-refused",
+                    "error": "the member pointer names no repository",
+                }
+            )
+            continue
+        try:
+            repository = Path(repository_path)
+            primary = queue_landing._primary_revision(pointer)
+            if not merge._is_ancestor(repository, landed[run_id], primary):
+                continue
+            _release_integrated_group_member(
+                run_id,
+                {"head": landed[run_id], "pointer": dict(pointer)},
+                primary,
+            )
+        except (runs.CrewError, merge.MergeError, OSError, ValueError) as exc:
+            results.append(
+                {"run_id": run_id, "status": "group-refused", "error": str(exc)}
+            )
+            continue
+        results.append({"run_id": run_id, "status": "retired-promoted-pointer"})
+    return results
+
+
 def retire_promoted_pointers(
     *,
     project: str | None = None,
@@ -695,6 +772,13 @@ def retire_promoted_pointers(
     }
     for group_id in sorted(groups):
         path = group_path(group_id)
+        if not path.exists():
+            # A finished group unlinks its journal and leaves its outcome
+            # behind. A member pointer that outlives the journal has no owner
+            # left to retire it, so the outcome's own record of where each
+            # member landed is the only evidence that can.
+            retired.extend(_retire_members_of_a_finished_group(group_id, selected))
+            continue
         try:
             with exclusive_lock(path.with_suffix(".lock"), blocking=False):
                 group = _read(path)
@@ -878,6 +962,33 @@ def _promotion_lease_held(run_id: str) -> bool:
         runs.crew_home(), promotion._promotion_lease_name(run_id), "", 0, ""
     )
     return lease.holder() is not None
+
+
+def land_attempt_in_progress(run_id: str) -> bool:
+    """Whether a coordinator's landing of this run has not been answered yet."""
+    return _land_attempt_unanswered(run_id)
+
+
+def clear_conflict(run_id: str) -> None:
+    """Drop a recorded landing conflict from the journal and the live pointer.
+
+    A conflict whose head the branch already contains is answered, so leaving
+    it on either record keeps the run naming an obligation nobody owes.
+    """
+    path = _record_path(run_id)
+    pending = _read(path)
+    if pending is not None and pending.get("merge_conflict"):
+        pending.pop("merge_conflict", None)
+        runs._write_json(path, pending)
+
+    def clear(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer.pop("merge_conflict", None)
+        return pointer
+
+    try:
+        runs._mutate_pointer(run_id, clear)
+    except runs.CrewError:
+        return
 
 
 def _land_attempt_unanswered(run_id: str) -> bool:
@@ -1517,15 +1628,20 @@ def release_merged_promotions(
             continue
         if not pointer.get("worktree") or pointer.get("landing_group"):
             continue
+        row = _promoted_row(run_project, run_id)
+        measured = bool(_measurement_reason(pointer) or _measurement_reason(row or {}))
         # A journaled landing already has an owner in the pending-record pass.
-        if _record_path(run_id).exists():
+        # A measurement run is the exception: its head is never merged, so it
+        # owes no landing for that owner to finish, and a journal left by a
+        # promotion that could not retire its pointer would otherwise keep the
+        # run's paths claimed for as long as the record survives.
+        if _record_path(run_id).exists() and not measured:
             continue
         if (
             COMMAND_REPLY.get() is None
             and read_promotion(run_id).get("phase") in PENDING
         ):
             continue
-        row = _promoted_row(run_project, run_id)
         head = _reviewed_head(row) if row else ""
         if not head or _promotion_lease_held(run_id):
             continue
@@ -1562,14 +1678,16 @@ def release_merged_promotions(
         # was, whether or not it names a process at all.
         try:
             repository = merge.project_repository(run_project)
-            if _measurement_reason(pointer) or _measurement_reason(row or {}):
+            if measured:
                 # A measurement run's head is never merged — not landing is what
                 # the run is for — so its promotion alone is the whole proof.
+                # The pending record is left exactly as written: it is the
+                # evidence that the run's measurement was recorded, and its
+                # owner is here rather than in the record pass.
                 retired, release, refusal = _release_measured_pointer(
                     pointer, repository, head, row
                 )
                 if retired == POINTER_RETIRED:
-                    clear_pending(run_id)
                     results.append(
                         {
                             "run_id": run_id,
@@ -1693,6 +1811,16 @@ def finish_pending_landings(
         settled = _settled_landing(run_id, head, project=project)
         if settled:
             results.append({"run_id": run_id, "status": settled, "head": head})
+            continue
+        from reckon.crew.promotion import _measurement_reason
+
+        if _measurement_reason(record.get("pointer") or {}) or _measurement_reason(
+            row or {}
+        ):
+            # A measurement run's head is never merged, so this record owns no
+            # landing for the pass to finish. Its release is the landing pass's,
+            # which reads the same record without consuming it; a refused
+            # release leaves both the pointer and this record claiming.
             continue
         from reckon.crew.resume import hold_reason
 

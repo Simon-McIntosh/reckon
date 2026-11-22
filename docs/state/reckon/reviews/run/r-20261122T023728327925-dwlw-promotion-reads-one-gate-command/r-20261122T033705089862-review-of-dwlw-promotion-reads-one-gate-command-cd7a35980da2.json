@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:1116 _default_gate_evidence_from_manifest (promotion gate path)",
+    "reckon/crew/promotion_checks.py:558 _require_recognised_manifest_status (pre-gate guard)",
+    "reckon/crew_run_commands.py:1481 audit_manifest (crew check --manifest)",
+    "reckon/crew_run_commands.py:1925 parse_manifest (delivered-manifest read)",
+    "reckon/crew/routing.py:2169 parse_manifest"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T03:39:16Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the promotion gate path, the pre-gate manifest-status guard, crew check --manifest and the delivered-manifest readers all reach parse_manifest/audit_manifest.",
+    "diff": "read all six commits against b5444d24ba: e05d326911 adds the text-form refusal and JSON repeated-key hook to reports.py; ba448721b3 and 4abcbb8d65 build the test file; 804b2ab1f3 formats it; 8d5035a8ca and cd7a35980d are docs-only.",
+    "done_when": "the done_when names tests/test_promotion_reads_one_gate_command.py covering two-lines-refused-with-no-command-run, one-line-replayed, and command-line-wins-for-one-or-none-while-two-is-still-refused; the manifest records that file plus two companion files at 65 passed EXIT=0 (gate-scoped.log, rev 804b2ab1f3) and the base arm at 58 passed EXIT=0.",
+    "goal": "the node's goal is to refuse a manifest that offers two gate commands; reckon/crew/reports.py:296 and :492 raise ManifestParseError on a second top-level tests: line before any command is read, and :795 refuses a repeated JSON key the same way.",
+    "manifest": "read; status complete, commits e05d326911, ba448721b3, 4abcbb8d65, 804b2ab1f3, 8d5035a8ca, cd7a35980d, changed_paths the three landed files, tests the three-file gate, test_logs naming gate-scoped.log, arm-baseline.log and arm-after.log, baseline_suite and after_suite with 0 failures, and negative_control_log at 3 failed / 4 passed.",
+    "write_paths": "declared reckon/crew/reports.py, tests/test_promotion_reads_one_gate_command.py, the evidence fragment and a figures directory; git diff b5444d24ba..cd7a35980d touches exactly reports.py, the test file and the fragment, each inside the fence."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows tests/test_promotion_reads_one_gate_command.py::test_two_gate_command_lines_are_refused_quoting_both_and_run_nothing reddening on the reverted reader with the sentinel written: True, plus two more cases, so reverting reports.py reddens three.",
+    "evidence": "gate-scoped.log records 65 passed in 36.53s with EXIT=0 at revision 804b2ab1f3, arm-baseline.log 58 passed EXIT=0 at b5444d24ba, arm-after.log 65 passed EXIT=0, and negative-control.log 3 failed, 4 passed EXIT=1.",
+    "fit": "the refusal mirrors the existing _two_keys_on_one_line_message idiom at reckon/crew/reports.py:296 and the added names describe the mechanism with no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/reports.py:492 raises on the second top-level tests: line and reports.py:795 raises when a repeated JSON key yields more than one value, refusing both manifest forms the goal names.",
+    "reuse": "no owner for refusing a repeated top-level manifest field exists; a search over reckon/ found only dispatch_picker.parse_orchestrator_assessments (intentional CLI last-wins) and the flight-config loader, neither of which parses manifests, so the refusal extends reports.py's own refusal idiom.",
+    "scope_discipline": "git diff --stat b5444d24ba..cd7a35980d lists only reckon/crew/reports.py, tests/test_promotion_reads_one_gate_command.py and the declared evidence fragment, and creates no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a manifest that offers two gate commands; reckon/crew/reports.py:296 and :492 raise ManifestParseError on a second top-level tests: line before any command is read, and :795 refuses a repeated JSON key the same way.\nVERDICT done_when: the done_when names tests/test_promotion_reads_one_gate_command.py covering two-lines-refused-with-no-command-run, one-line-replayed, and command-line-wins-for-one-or-none-while-two-is-still-refused; the manifest records that file plus two companion files at 65 passed EXIT=0 (gate-scoped.log, rev 804b2ab1f3) and the base arm at 58 passed EXIT=0, so the gate asserts the measure.\nVERDICT write_paths: declared reckon/crew/reports.py, tests/test_promotion_reads_one_gate_command.py, the evidence fragment and a figures directory; git diff b5444d24ba..cd7a35980d touches exactly reports.py, the test file and the fragment, each inside the fence, and creates no figure.\nVERDICT manifest: read; status complete, commits e05d326911, ba448721b3, 4abcbb8d65, 804b2ab1f3, 8d5035a8ca, cd7a35980d, changed_paths the three landed files, tests the three-file gate, test_logs naming gate-scoped.log, arm-baseline.log and arm-after.log, baseline_suite 0 failures at b5444d24ba and after_suite 0 failures at 804b2ab1f3, and negative_control_log EXIT=1 at 3 failed / 4 passed.\nVERDICT diff: read all six commits against b5444d24ba -- e05d326911 adds the text-form refusal and JSON repeated-key hook to reports.py; ba448721b3 and 4abcbb8d65 build the test file; 804b2ab1f3 formats it; 8d5035a8ca and cd7a35980d are docs-only.\nCALL_SITES: reckon/crew/promotion.py:1116 _default_gate_evidence_from_manifest (promotion gate path), reckon/crew/promotion_checks.py:558 _require_recognised_manifest_status (pre-gate guard), reckon/crew_run_commands.py:1481 audit_manifest (crew check --manifest), reckon/crew_run_commands.py:1925 parse_manifest (delivered-manifest read), reckon/crew/routing.py:2169 parse_manifest\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:492 raises on the second top-level tests: line and reports.py:795 raises when a repeated JSON key yields more than one value, refusing both manifest forms the goal names.\nSCORE evidence: 20\nJUSTIFICATION evidence: gate-scoped.log records 65 passed in 36.53s with EXIT=0 at revision 804b2ab1f3, arm-baseline.log 58 passed EXIT=0 at b5444d24ba, arm-after.log 65 passed EXIT=0, and negative-control.log 3 failed, 4 passed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b5444d24ba..cd7a35980d lists only reckon/crew/reports.py, tests/test_promotion_reads_one_gate_command.py and the declared evidence fragment, and creates no figure.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows test_two_gate_command_lines_are_refused_quoting_both_and_run_nothing reddening on the reverted reader with the sentinel written: True, plus two more cases, so reverting reports.py reddens three.\nSCORE fit: 20\nJUSTIFICATION fit: the refusal mirrors the existing _two_keys_on_one_line_message idiom at reckon/crew/reports.py:296 and the added names describe the mechanism with no plan, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for refusing a repeated top-level manifest field exists; a search over reckon/ found only dispatch_picker.parse_orchestrator_assessments (intentional CLI last-wins) and the flight-config loader, neither of which parses manifests, so the refusal extends reports.py's own refusal idiom.",
+  "review_run_id": "r-20261122T033705089862-review-of-dwlw-promotion-reads-one-gate-command-cd7a35980da2",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_head_sha": "cd7a35980da2a45f35d83ba78a43f3ff524995a6",
+  "reviewed_run_id": "r-20261122T023728327925-dwlw-promotion-reads-one-gate-command",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T033705089862-review-of-dwlw-promotion-reads-one-gate-command-cd7a35980da2"
+  },
+  "reviewer_run_id": "r-20261122T033705089862-review-of-dwlw-promotion-reads-one-gate-command-cd7a35980da2",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T03:59:37.145979+00:00",
+  "total": 119
+}

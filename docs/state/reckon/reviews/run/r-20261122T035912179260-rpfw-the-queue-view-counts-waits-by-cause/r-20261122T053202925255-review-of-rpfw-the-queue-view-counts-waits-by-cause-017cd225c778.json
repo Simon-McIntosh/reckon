@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "68413ae856fe7431aa22ecb0915e28081dde8195",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp_views.py:4893 serve_crew_view (view == \"queue\") -> queue_view_module.queue_view, which now calls ticker.queue_pane_row at reckon/crew/queue_view.py:430"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T05:33:23Z",
+  "findings": [
+    {
+      "file": "tests/test_the_queue_view_counts_waits_by_cause.py",
+      "line": "124",
+      "severity": "non-blocking",
+      "text": "assert row == ticker_module.queue_pane_row(document) compares the document's pane string against a second invocation of the same function on the same document; both sides move together, so it holds whatever the renderer does and would survive a regression that made queue_pane_row return an empty string, provided the view still assigns it. It guards only the assignment line, and the independent row content is asserted separately at lines 125-128."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": "179",
+      "severity": "non-blocking",
+      "text": "_running counts a pointer whose phase is in RUNNING_PHASES without consulting its classification, while reckon/crew/ticker.py:3216-3225 _in_flight_word reads classification first precisely because a stalled run's pointer phase is still 'working'. A stalled request therefore raises the running count and suppresses the 'nothing is running' fault, which is the state the fault exists to report."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": "126",
+      "severity": "non-blocking",
+      "text": "_upstream_plans re-implements the plan-slug-before-# transform that reckon/crew/plan_coordinator.py:83 _plan_token already performs (also reckon/doccheck.py:2405 and reckon/schedule.py:80); no module owns that capability publicly, so this is the fifth private copy rather than an extension of an owner."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": "430",
+      "severity": "non-blocking",
+      "text": "the rendered pane row is carried on the queue document, but no ticker or fleet-pane surface reads document['pane'] (git grep over reckon/ finds no consumer outside queue_view.py), so the deliverable's 'the pane renders the four parts' is met only for readers of the served queue document; the fleet pane's single waiting figure is still produced in reckon/crew/recovery_watch.py, which this node's write scope excludes and the manifest records under outside_scope."
+    }
+  ],
+  "head_log_revision": "017cd225c778687bdf0f2ff332908759b8f0c65c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified one production call path: reckon/mcp_views.py:4893 serve_crew_view serves the queue view document, and queue_view at reckon/crew/queue_view.py:430 now calls ticker.queue_pane_row, so the previously dead renderer has a production caller; no ticker or fleet-pane surface consumes document['pane'].",
+    "diff": "read both commits in 68413ae8..017cd225c7, with 017cd225c7 read separately as the repair: queue_view.py gains wait_part_of, _wait_summary, _running, the fault verdict and document['pane']; ticker.py gains queue_pane_row and now owns IN_FLIGHT_PHASES as the one phase set; the new test file adds six cases.",
+    "done_when": "the done_when names tests/test_the_queue_view_counts_waits_by_cause.py with five named cases; the file's six cases cover all five plus the held part and the shared vocabulary, and I re-ran that single file at 017cd225c7 in a scratch extraction (6 passed, EXIT=0), matching the manifest's after_suite of 64 passed EXIT=0.",
+    "goal": "the node goal is to count waiting requests in the queue view by what they wait for and to render the split and the no-work-running fault; reckon/crew/queue_view.py:102 wait_part_of reads the stamp the admission pass already sets, and queue_view at :394-430 publishes running, fault and the rendered pane row.",
+    "manifest": "read; status complete, commits 2001dd49d7fe and 017cd225c7, changed_paths the three landed files, baseline_suite 68413ae8 with 0 failures and after_suite 017cd225c7 with 0 failures, negative_control.log recorded with its note, and outside_scope naming the pre-existing failures it did not touch.",
+    "write_paths": "the node was fenced to five paths (reckon/crew/queue_view.py, reckon/crew/ticker.py, tests/test_the_queue_view_counts_waits_by_cause.py, one evidence fragment and one figure directory); git diff --stat 68413ae8..017cd225c7 lists only the first three, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_the_queue_view_counts_waits_by_cause.py:180-190 reddens if the held classification is reverted and the negative control records 3 failed, EXIT=1 with the two production files reverted at 017cd225c7, so the repair is guarded; tests/test_the_queue_view_counts_waits_by_cause.py:124 is a non-independent assertion and contributes no guard of its own.",
+    "evidence": "after_suite-1795325348048612375.log carries revision 017cd225c7, the literal command and a closing EXIT=0 (64 passed); baseline_suite-1795323662756073243.log carries 68413ae8 and EXIT=0; negative_control.log records 3 failed EXIT=1 at 017cd225c7 with the repair reverted, and I independently re-ran the named test file at 017cd225c7 (6 passed, EXIT=0).",
+    "fit": "reckon/crew/queue_view.py:31 imports ticker one way for the phase set and the row renderer with a comment naming both, and reckon/crew/ticker.py:3247 IN_FLIGHT_PHASES is now the single owner of the phase set, matching the module's existing single-vocabulary convention.",
+    "goal_fidelity": "reckon/crew/queue_view.py:102-124 splits a waiting request by its stamped class, including the held part, and :394-430 publishes the running count, the fault and the rendered row; the pane-rendering clause is met only as a row carried on the served document, since no ticker surface reads document['pane'].",
+    "reuse": "reckon/crew/queue_view.py:31 now reads ticker.IN_FLIGHT_PHASES instead of declaring a second set and reckon/crew/ticker.py:954 renders from the document's own part names and letters, so the prior duplications are gone; only :126 _upstream_plans repeats a slug-split idiom that has no public owner.",
+    "scope_discipline": "git diff --stat 68413ae8..017cd225c7 lists exactly reckon/crew/queue_view.py, reckon/crew/ticker.py and tests/test_the_queue_view_counts_waits_by_cause.py, every path inside the node's five declared write paths and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to count waiting requests in the queue view by what they wait for and render the split and the no-work-running fault; reckon/crew/queue_view.py:102 wait_part_of reads the class the admission pass already stamps, and queue_view at :394-430 publishes running, fault and the rendered pane row.\nVERDICT done_when: the done_when names tests/test_the_queue_view_counts_waits_by_cause.py with five named cases; the file's six cases cover all five plus the held part and the shared vocabulary, and I re-ran that single file at 017cd225c7 in a scratch extraction (6 passed, EXIT=0).\nVERDICT write_paths: the node was fenced to five paths; git diff --stat 68413ae8..017cd225c7 lists only reckon/crew/queue_view.py, reckon/crew/ticker.py and tests/test_the_queue_view_counts_waits_by_cause.py, all inside the fence.\nVERDICT manifest: read; status complete, commits 2001dd49d7fe and 017cd225c7, baseline_suite 68413ae8 with 0 failures and after_suite 017cd225c7 with 0 failures, negative_control.log recorded, outside_scope naming pre-existing failures left untouched.\nVERDICT diff: read both commits in 68413ae8..017cd225c7, with 017cd225c7 read separately as the repair; queue_view.py gains wait_part_of, _wait_summary, _running, the fault verdict and document['pane']; ticker.py gains queue_pane_row and owns IN_FLIGHT_PHASES; the new test file adds six cases.\nCALL_SITES: reckon/mcp_views.py:4893 serve_crew_view (view == \"queue\") -> queue_view_module.queue_view, which calls ticker.queue_pane_row at reckon/crew/queue_view.py:430\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_view.py:102-124 splits a waiting request by its stamped class and :394-430 publishes the running count, fault and rendered row, but no ticker surface reads document['pane'] so the pane clause is met only for served-document readers.\nSCORE evidence: 18\nJUSTIFICATION evidence: after_suite-1795325348048612375.log carries revision 017cd225c7, the literal command and EXIT=0 (64 passed), negative_control.log records 3 failed EXIT=1 with the repair reverted, and an independent scratch run of the named file at 017cd225c7 gave 6 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 68413ae8..017cd225c7 lists exactly queue_view.py, ticker.py and the new test file, all inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_queue_view_counts_waits_by_cause.py:180-190 reddens on the held regression and the negative control shows 3 failures at 017cd225c7 with the production files reverted, though line 124 compares the document row against the same renderer and guards nothing itself.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/queue_view.py:31 imports ticker one way with a comment naming both uses, and reckon/crew/ticker.py:3247 IN_FLIGHT_PHASES becomes the single owner of the phase set the surrounding pane code already uses.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/queue_view.py:31 reads ticker.IN_FLIGHT_PHASES rather than declaring a second set and reckon/crew/ticker.py:954 renders from the document's own names, so the prior duplications are fixed; :126 _upstream_plans repeats a slug-split idiom with no public owner.\nFINDING tests/test_the_queue_view_counts_waits_by_cause.py:124 non-blocking: assert row == ticker_module.queue_pane_row(document) compares the document against a second call of the same renderer on the same document, so both sides move together and it cannot fail for a regression inside the renderer.\nFINDING reckon/crew/queue_view.py:179 non-blocking: _running reads phase only, so a stalled run whose pointer phase is still 'working' counts as running and suppresses the nowhere-running fault that ticker.py:3222 explicitly derives stalled state to avoid.\nFINDING reckon/crew/queue_view.py:126 non-blocking: _upstream_plans re-implements the plan-slug-before-# transform already performed privately at reckon/crew/plan_coordinator.py:83.\nFINDING reckon/crew/queue_view.py:430 non-blocking: the rendered row is carried on the queue document, but no ticker or fleet-pane surface reads document['pane'], so the pane half of the deliverable reaches only served-document readers.",
+  "review_run_id": "r-20261122T053202925255-review-of-rpfw-the-queue-view-counts-waits-by-cause-017cd225c778",
+  "reviewed_base_sha": "68413ae856fe7431aa22ecb0915e28081dde8195",
+  "reviewed_head_sha": "017cd225c778687bdf0f2ff332908759b8f0c65c",
+  "reviewed_run_id": "r-20261122T035912179260-rpfw-the-queue-view-counts-waits-by-cause",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T053202925255-review-of-rpfw-the-queue-view-counts-waits-by-cause-017cd225c778"
+  },
+  "reviewer_run_id": "r-20261122T053202925255-review-of-rpfw-the-queue-view-counts-waits-by-cause-017cd225c778",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:41:08.211682+00:00",
+  "total": 106
+}

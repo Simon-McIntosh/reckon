@@ -293,6 +293,25 @@ def _two_keys_on_one_line_message(
     )
 
 
+def _two_gate_commands_message(path: str | None, lines: list[str]) -> str:
+    """The refusal for a manifest naming more than one gate command.
+
+    Which of several ``tests:`` lines is the command cannot be decided from the
+    file, and the reader that kept the last one ran a review answer as a shell
+    command. Only one line can be the gate, so the ambiguity is refused with
+    every line quoted rather than resolved by position.
+    """
+    quoted = "; ".join(repr(line) for line in lines)
+    where = f" at {path}" if path else ""
+    return (
+        f"cannot read manifest{where}: {len(lines)} 'tests:' lines each name a "
+        f"gate command — {quoted} — and a manifest names exactly one, because "
+        "nothing in the file says which of them is the command to run. Keep one "
+        "'tests:' line carrying the command and move every other line into the "
+        "field it belongs to, such as the outcome or a note"
+    )
+
+
 class ManifestParseError(CrewError, ValueError):
     """A manifest the reader can read as neither supported format.
 
@@ -399,6 +418,7 @@ def _parse_text_manifest(
     key: str | None = None
     body_lines: list[str] = []
     body_is_block = False
+    gate_command_lines: list[str] = []
     manifest_indent = min(
         (
             _line_indent(raw)
@@ -467,6 +487,12 @@ def _parse_text_manifest(
         flush()
         if match:
             key = match.group("key").lower().replace("-", "_")
+            if key == "tests":
+                gate_command_lines.append(line)
+                if len(gate_command_lines) > 1:
+                    raise ManifestParseError(
+                        _two_gate_commands_message(path, gate_command_lines)
+                    )
             raw_value = match.group("value").strip()
             embedded = _embedded_manifest_key(key, _strip_matching_quotes(raw_value))
             if embedded:
@@ -724,19 +750,52 @@ def _read_inline_value(
     return stripped
 
 
+class _RepeatedKeysObject(dict):
+    """A decoded JSON object that also carries the values of a repeated key.
+
+    ``dict`` semantics are kept — the last value written wins, as the decoder
+    does — so every reader seeing the mapping is unaffected. The repeated values
+    ride beside it only so a refusal can name what was dropped.
+    """
+
+    repeated_tests_values: tuple[str, ...] = ()
+
+
+def _object_keeping_repeated_keys(pairs: list[tuple[str, Any]]) -> _RepeatedKeysObject:
+    """Decode one JSON object, keeping every value written under ``tests``."""
+    value = _RepeatedKeysObject(pairs)
+    value.repeated_tests_values = tuple(
+        item_value if isinstance(item_value, str) else json.dumps(item_value)
+        for item_value in (v for k, v in pairs if k == "tests")
+    )
+    return value
+
+
 def _read_json_manifest(
     text: str,
     *,
     path: str | None,
     shape_findings: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Read a JSON manifest body, refusing anything that is not an object."""
+    """Read a JSON manifest body, refusing anything that is not an object.
+
+    A repeated key is legal JSON but has no defined meaning: the decoder keeps
+    the last value and drops the others, which is how a second ``tests`` key
+    became the gate command. The body is decoded through a hook that keeps every
+    value written under ``tests``, so the refusal can quote all of them rather
+    than the one the decoder happened to keep.
+    """
     try:
-        raw = json.loads(text)
+        raw = json.loads(text, object_pairs_hook=_object_keeping_repeated_keys)
     except (TypeError, json.JSONDecodeError) as exc:
         raise ManifestParseError(_unreadable_manifest_message(path)) from exc
     if not isinstance(raw, dict):
         raise ManifestParseError(_unreadable_manifest_message(path))
+    repeated = getattr(raw, "repeated_tests_values", ())
+    if len(repeated) > 1:
+        raise ManifestParseError(
+            _two_gate_commands_message(path, [f"tests: {value}" for value in repeated])
+        )
     for name, value in raw.items():
         allowed = _MANIFEST_SCHEMA.get(name)
         if not allowed:
@@ -813,7 +872,9 @@ def _refuse_undetermined_status(
         and not manifest_status_is_template(status)
         and str(status).strip().lower() not in MANIFEST_STATUSES
     ):
-        raise ManifestParseError(_unknown_status_word_manifest_message(path, status))
+        raise ManifestParseError(
+            _unknown_status_word_manifest_message(path, status, fields)
+        )
     return fields
 
 
@@ -827,15 +888,43 @@ def _incidental_prose_manifest_message(path: str | None, keys: list[str]) -> str
     )
 
 
-def _unknown_status_word_manifest_message(path: str | None, word: object) -> str:
+def _unknown_status_word_manifest_message(
+    path: str | None, word: object, fields: Mapping[str, Any] | None = None
+) -> str:
     where = f" at {path}" if path else ""
     recognised = ", ".join(sorted(MANIFEST_STATUSES))
-    return (
+    message = (
         f"refused manifest{where}: field 'status' rejected value {word!r} "
         f"because it is not a recognised manifest status (recognised: "
         f"{recognised}); the manifest structure and all remaining fields "
         "parsed successfully"
     )
+    # A body refused for its status word can also carry a wait declaration, and
+    # a declaration beside a status no reader accepts can never be probed.
+    # Quoting it here is the only place both are still in hand: the classifier
+    # reads a manifest the reader refused as an error text, which keeps the
+    # probe line out of everything downstream, and a coordinator otherwise
+    # repairs the status and leaves the wait still unrunnable.
+    declared_wait = _declared_wait_text(fields or {})
+    if declared_wait:
+        message += (
+            f"; the body also declares the wait {declared_wait}, which no reader "
+            "can probe while the status names no wait"
+        )
+    return message
+
+
+def _declared_wait_text(fields: Mapping[str, Any]) -> str:
+    """The wait a refused manifest declares, as the field and value a repair edits."""
+    for key in ("wait_probe", "wait_file"):
+        value = fields.get(key)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        if isinstance(value, list):
+            # The parsed array is quoted in the form a repair writes it back.
+            return f"{key} {json.dumps(value)!r}"
+        return f"{key} {str(value).strip()!r}"
+    return ""
 
 
 def _missing_status_manifest_message(path: str | None, keys: list[str]) -> str:
@@ -1548,9 +1637,22 @@ def _fence_notice_texts() -> tuple[str, ...]:
     return (current, *_RETIRED_FENCE_NOTICE_TEXTS)
 
 
+# The fence's second prologue line, written when the worker's temp directory is
+# absent on the job node: the task's own empty temp stands in for it, and the
+# line names which overlay did so a gate log states what it measured under.
+# A node-local temp directory is absent on every other node by construction, so
+# a fenced gate records this line on any measurement it takes.
+_FENCE_TEMP_NOTICE = re.compile(
+    r"temp directory \S+ is absent on \S+; the task's own empty temp directory "
+    r"stands in for it"
+)
+
+
 def _is_fence_prologue(line: str) -> bool:
     """Whether a log line is the launch fence's notice rather than a record."""
     tool, _, rest = line.partition(":")
+    if tool.strip() == "fence":
+        return _FENCE_TEMP_NOTICE.fullmatch(rest.strip()) is not None
     return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() in _fence_notice_texts()
 
 
@@ -1655,7 +1757,7 @@ def _test_log_command(text: str) -> str | None:
     seen = 0
     for raw_line in text.splitlines():
         line = raw_line.strip()
-        if not line:
+        if not line or _is_fence_prologue(line):
             continue
         seen += 1
         if seen > _TEST_LOG_HEAD_LINES:

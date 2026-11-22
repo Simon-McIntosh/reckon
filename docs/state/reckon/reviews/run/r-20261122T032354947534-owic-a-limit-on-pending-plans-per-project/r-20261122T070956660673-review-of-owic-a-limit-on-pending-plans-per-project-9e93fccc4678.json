@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_edit_plan",
+    "reckon/crew/reports.py:_composed_record_id_findings"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T07:18:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html",
+      "line": 78,
+      "severity": "non-blocking",
+      "text": "the done_when's second conjunct is unmet (W45 15 opened/4 closed, W46 15 opened/10 closed), so this node certifies only the creation clause and section 3 must not be closed on it."
+    },
+    {
+      "file": "docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the fragment carries a head <style> block that the SPA drops on composition, so its table renders unstyled; doccheck reports head-style-dropped."
+    },
+    {
+      "file": "docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html",
+      "line": 38,
+      "severity": "non-blocking",
+      "text": "the probe's 72 pending plans and the velocity read's 81 pending plans are both stated without reconciling which tree each counted, so a reader cannot check the warning arithmetic against the census."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit b95808d7..9e93fecc; five commits add one new evidence fragment (88 lines) and nothing else.",
+    "done_when": "the done_when has two conjuncts; tests/test_pending_plan_limit.py asserts the first (a create beyond the limit warns, tested), and the fragment at line 78 measures the second from velocity-w44-w46.json and records it unmet (W45 15/4, W46 15/10).",
+    "goal": "the goal is one sentence, \"make this hold: a limit on pending plans per project\"; reckon/mcp_edit_plan.py:1911 reads _pending_plan_limit at the create path and warn mode is locked at docs/plans/open-work-is-capped.html:74, and the landed fragment records the limit reached on a real-copy probe.",
+    "manifest": "read; it records status complete, the gate command and its log, both suite arms at 3 passed EXIT=0, and names the velocity clause as left open on the plan.",
+    "write_paths": "read from the dispatch; the diff touches only docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html, inside the declared evidence path, and the declared figures path is unused."
+  },
+  "justifications": {
+    "durability": "the fragment adds no assertion; tests/test_pending_plan_limit.py:108 asserts the warning text against literals and would redden if the warn behaviour regressed, but nothing guards the fragment's own figures.",
+    "evidence": "the gate log names tests/test_pending_plan_limit.py at b95808d7 with 3 passed EXIT=0, but the gate asserts only the done_when's first conjunct while the second is measured separately at fragment line 78 and shown unmet.",
+    "fit": "the fragment follows the plan-doc fragment convention of 577 siblings, with ids namespaced by node at fragment line 34, but its head <style> block at line 19 is dropped by the SPA.",
+    "goal_fidelity": "reckon/mcp_edit_plan.py:1911 attaches the _pending_limit_warning on a warn-mode create, and the fragment records the limit reached on a 72-pending copy.",
+    "reuse": "the diff adds no definition; it reuses the run-directory gate logs and the velocity view JSON rather than re-deriving either.",
+    "scope_discipline": "the single changed path is the declared evidence fragment; no plan, state, test or source file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one sentence, \"make this hold: a limit on pending plans per project\"; reckon/mcp_edit_plan.py:1911 reads _pending_plan_limit at the create path and warn mode is locked at docs/plans/open-work-is-capped.html:74, and the landed fragment records the limit reached on a real-copy probe.\nVERDICT done_when: the done_when has two conjuncts; tests/test_pending_plan_limit.py asserts the first (a create beyond the limit warns, tested), and the fragment at line 78 measures the second from velocity-w44-w46.json and records it unmet (W45 15/4, W46 15/10).\nVERDICT write_paths: read from the dispatch; the diff touches only docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html, inside the declared evidence path, and the declared figures path is unused.\nVERDICT manifest: read; it records status complete, the gate command and its log, both suite arms at 3 passed EXIT=0, and names the velocity clause as left open on the plan.\nVERDICT diff: read commit by commit b95808d7..9e93fecc; five commits add one new evidence fragment (88 lines) and nothing else.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan, reckon/crew/reports.py:_composed_record_id_findings\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1911 attaches the _pending_limit_warning on a warn-mode create, and the fragment records the limit reached on a 72-pending copy.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate log names tests/test_pending_plan_limit.py at b95808d7 with 3 passed EXIT=0, but the gate asserts only the done_when's first conjunct while the second is measured separately at fragment line 78 and shown unmet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single changed path is the declared evidence fragment; no plan, state, test or source file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: the fragment adds no assertion; tests/test_pending_plan_limit.py:108 asserts the warning text against literals and would redden if the warn behaviour regressed, but nothing guards the fragment's own figures.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the plan-doc fragment convention of 577 siblings, with ids namespaced by node at fragment line 34, but its head <style> block at line 19 is dropped by the SPA.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it reuses the run-directory gate logs and the velocity view JSON rather than re-deriving either.\nFINDING docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html:78 non-blocking: the done_when's second conjunct is unmet (W45 15 opened/4 closed, W46 15 opened/10 closed), so this node certifies only the creation clause and section 3 must not be closed on it.\nFINDING docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html:19 non-blocking: the fragment carries a head <style> block that the SPA drops on composition, so its table renders unstyled; doccheck reports head-style-dropped.\nFINDING docs/evidence/fragments/open-work-is-capped/owic-a-limit-on-pending-plans-per-project.html:38 non-blocking: the probe's 72 pending plans and the velocity read's 81 pending plans are both stated without reconciling which tree each counted, so a reader cannot check the warning arithmetic against the census.\n",
+  "review_run_id": "r-20261122T070956660673-review-of-owic-a-limit-on-pending-plans-per-project-9e93fccc4678",
+  "reviewed_base_sha": "b95808d7a48567307b30bfe9d091a8514e707297",
+  "reviewed_head_sha": "9e93fccc46780f9ec7f05de43bb0132f28cb678a",
+  "reviewed_run_id": "r-20261122T032354947534-owic-a-limit-on-pending-plans-per-project",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T07:29:06.615852+00:00",
+  "total": 102
+}

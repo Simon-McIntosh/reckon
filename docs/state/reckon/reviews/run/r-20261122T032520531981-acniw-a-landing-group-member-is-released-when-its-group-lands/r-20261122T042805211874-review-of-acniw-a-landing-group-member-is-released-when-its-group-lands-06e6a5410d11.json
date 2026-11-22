@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/queue_landing.py:2037",
+    "reckon/crew_run_commands.py:4261",
+    "reckon/crew/pending_landing.py:1581"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T04:30:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "531",
+      "severity": "non-blocking",
+      "summary": "outcome read duplicates the module's _read at pending_landing.py:739",
+      "text": "non-blocking: _finished_group_landings reads and parses the JSON object itself instead of calling the module's own _read at :739, which owns exactly that read; a later change to the shared read (encoding, error handling, logging) will not reach this path, so two readers of the same record shape can drift."
+    },
+    {
+      "file": "tests/test_a_landed_group_releases_every_member.py",
+      "line": "203",
+      "severity": "non-blocking",
+      "summary": "test builds the outcome record it reads, so a producer shape change is untested",
+      "text": "non-blocking: the fixture fabricates the landing-group outcome record that the new reader consumes, so the test proves the reader against a hand-written shape rather than against what the two production writers emit (pending_landing.py:236 and crew_run_commands.py:4842 keep members and commits as parallel ordered lists), and tests/test_a_landing_group_ends_when_its_members_land.py:176 pins only the members set, so a writer reordering the two lists would pair a member with another member's head and could release a pointer whose own head is not on the branch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from b8d76fea6133 to 06e6a5410d; 3155dd788a adds the finished-group reader, the release pass and three tests, 1c78c0639b and 06e6a5410d add and then refine the evidence fragment's quoted arms, and no other file changes.",
+    "done_when": "the done_when names a three-member group with one request waiting on each member, merged and unmerged; tests/test_a_landed_group_releases_every_member.py:222-232 asserts no member pointer survives and all three waiter pointers read phase queued for the merged case, :229-236 keeps every pointer and every wait for the unmerged case, and the negative-control log records 2 failed, 1 passed at the base revision.",
+    "goal": "the node's goal is that a group whose head is on the primary branch retires every member pointer and releases every section waiting on a member; reckon/crew/pending_landing.py:626-629 routes a journal-less group into _retire_members_of_a_finished_group, which at :579 checks each member's recorded head for that run with merge._is_ancestor before calling the existing _release_integrated_group_member, so the release uses the same workspace, receipt and waiter path a live-journal release uses.",
+    "manifest": "read; it records the scoped gate at 61 passed exit 0, the baseline arm at 58 passed exit 0, the after arm at 61 passed exit 0 and the negative control at 2 failed 1 passed exit 1, each with a log path whose header revision and closing EXIT= line I confirmed.",
+    "write_paths": "the manifest declares five write paths; the diff touches reckon/crew/pending_landing.py, tests/test_a_landed_group_releases_every_member.py and the evidence fragment, all inside the declared set, and leaves reckon/crew/promotion_release.py and the figures directory untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landed_group_releases_every_member.py:225 and :236 redden at the base revision as the negative control shows, but the test's outcome record at :203 is fabricated by the test itself, so no test would notice a production writer whose members and commits lists stopped agreeing.",
+    "evidence": "the merged and unmerged cases plus the base negative control are all recorded with their log paths, and the suite arms ran on 98dci4-clu-3141 rather than the dispatching worker's node, so the done_when's all_debug venue is met.",
+    "fit": "the addition follows the module's private-helper idiom and lazy imports at reckon/crew/pending_landing.py:550-585, and carries no plan, ticket or release identifier in its names, docstrings or comments.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:579 gates every member release on merge._is_ancestor, so a member whose head is not on the primary branch keeps its pointer, which is the deliverable's stated limit.",
+    "reuse": "the release itself extends the existing owner at reckon/crew/pending_landing.py:173 and reuses merge._is_ancestor and queue_landing._primary_revision, but _finished_group_landings re-implements the JSON-object read that this module already owns at :739.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, and the two declared paths the change does not need were left untouched."
+  },
+  "node": "review-of-acniw-a-landing-group-member-is-released-when-its-group-lands-06e6a5410d11",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a group whose head is on the primary branch retires every member pointer and releases every section waiting on a member; reckon/crew/pending_landing.py:626-629 routes a journal-less group into _retire_members_of_a_finished_group, which at :579 checks each member's recorded head for that run with merge._is_ancestor before calling the existing _release_integrated_group_member.\nVERDICT done_when: the done_when names a three-member group with one request waiting on each member, merged and unmerged; tests/test_a_landed_group_releases_every_member.py:222-232 asserts no member pointer survives and all three waiter pointers read phase queued for the merged case, :229-236 keeps every pointer and every wait for the unmerged case, and the negative-control log records 2 failed, 1 passed at the base revision.\nVERDICT write_paths: the manifest declares five write paths; the diff touches reckon/crew/pending_landing.py, tests/test_a_landed_group_releases_every_member.py and the evidence fragment, all inside the declared set, and leaves reckon/crew/promotion_release.py and the figures directory untouched.\nVERDICT manifest: read; it records the scoped gate at 61 passed exit 0, the manifest records the baseline arm at 58 passed exit 0, the after arm at 61 passed exit 0 and the negative control at 2 failed 1 passed exit 1, each with a log path whose header revision and closing EXIT= line I confirmed.\nVERDICT diff: read commit by commit from b8d76fea6133 to 06e6a5410d; 3155dd788a adds the finished-group reader, the release pass and three tests, 06e6a5410d refines the evidence fragment's quoted arms, and no other file changes.\nCALL_SITES: reckon/crew/station.py:461, reckon/crew/queue_landing.py:2037, reckon/crew_run_commands.py:4261, reckon/crew/pending_landing.py:1581\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:579 gates every member release on merge._is_ancestor, so a member whose head is not on the primary branch keeps its pointer, which is the deliverable's stated limit.\nSCORE evidence: 18\nJUSTIFICATION evidence: the merged and unmerged cases plus the base negative control are all recorded with their log paths, and the suite arms ran on 98dci4-clu-3141 rather than the dispatching worker's node, so the done_when's all_debug venue is met.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, and the two declared paths the change does not need were left untouched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_landed_group_releases_every_member.py:225 and :236 redden at the base revision as the negative control shows, but the test's outcome record at :203 is fabricated by the test itself, so no test would notice a production writer whose members and commits lists stopped agreeing.\nSCORE fit: 18\nJUSTIFICATION fit: the addition follows the module's private-helper idiom and lazy imports at reckon/crew/pending_landing.py:550-585, and carries no plan, ticket or release identifier in its names, docstrings or comments.\nSCORE reuse: 14\nJUSTIFICATION reuse: the release itself extends the existing owner at reckon/crew/pending_landing.py:173 and reuses merge._is_ancestor and queue_landing._primary_revision, but _finished_group_landings re-implements the JSON-object read that this module already owns at :739.\nFINDING reckon/crew/pending_landing.py:531 non-blocking: _finished_group_landings reads and parses the JSON object itself instead of calling the module's own _read at :739, which owns exactly that read; a later change to the shared read (encoding, error handling, logging) will not reach this path, so two readers of the same record shape can drift.\nFINDING tests/test_a_landed_group_releases_every_member.py:203 non-blocking: the fixture fabricates the landing-group outcome record that the new reader consumes, so the test proves the reader against a hand-written shape rather than against what the two production writers emit (pending_landing.py:236 and crew_run_commands.py:4842 keep members and commits as parallel ordered lists), and tests/test_a_landing_group_ends_when_its_members_land.py:176 pins only the members set, so a writer reordering the two lists would pair a member with another member's head and could release a pointer whose own head is not on the branch.\n",
+  "review_run_id": "r-20261122T042805211874-review-of-acniw-a-landing-group-member-is-released-when-its-group-lands-06e6a5410d11",
+  "reviewed_base_sha": "b8d76fea6133278752f383eb93dd69996f9facf9",
+  "reviewed_head_sha": "06e6a5410d1105f623bdaad0d6779f250f85f021",
+  "reviewed_node": "acniw-a-landing-group-member-is-released-when-its-group-lands",
+  "reviewed_run_id": "r-20261122T032520531981-acniw-a-landing-group-member-is-released-when-its-group-lands",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:48:00+00:00",
+  "total": 105
+}

@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:2246",
+    "reckon/crew/obligations.py:3293",
+    "reckon/crew/obligations.py:4944",
+    "reckon/crew/station_obligations.py:485",
+    "reckon/crew/station_obligations.py:490"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass-03d8f58b2e74",
+      "recorded_at": "2026-11-22T06:10:17.105172+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T05:47:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 103,
+      "severity": "non-blocking",
+      "summary": "a second once-per-pass roadmap mechanism duplicating reckon/crew/dispatch_batch.py:201 _built_once without extending it"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 130,
+      "severity": "non-blocking",
+      "summary": "memo keyed on repr(now) collides for now=None while ordering substitutes the live clock, serving a stale ordering to a default-now caller"
+    },
+    {
+      "file": "tests/test_an_obligations_sweep_builds_the_roadmap_once.py",
+      "line": 200,
+      "severity": "non-blocking",
+      "summary": "compares two head sweeps on one fixed fixture, so the equal-to-base-sweep requirement is tautological and unmeasured"
+    },
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass.html",
+      "line": 19,
+      "severity": "non-blocking",
+      "summary": "the arms show four builds per project (one per session), not forty (one per item), so the per-item premise is not reproduced"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that one obligations sweep builds each project's roadmap at most once; the landed change collapses identical ordering reads at reckon/crew/obligations.py:103-141 and the test at tests/test_an_obligations_sweep_builds_the_roadmap_once.py:186 measures one build per project where the base arm records four.\nVERDICT done_when: the done_when asks for a 40-item two-project sweep with at most one build per project, obligations equal to a base sweep, a negative control above two at base, ten staged sweeps under 30 s, and an all_debug run at -n 4; the manifest's after_suite.log records 61 passed EXIT=0 and negative_control.log records 2 failed/1 passed EXIT=1 with {'sweep-one': 4, 'sweep-two': 4}, but the base-equivalence clause, the ten-sweep stage timings and the all_debug placement are not recorded.\nVERDICT write_paths: the declared scope is the three crew modules, the test file, the evidence fragment and the figures dir; the delivered diff touches only reckon/crew/obligations.py, tests/test_an_obligations_sweep_builds_the_roadmap_once.py and the evidence fragment, all inside it.\nVERDICT manifest: read at the reviewed run directory; it reports status complete, four commits, after_suite 61 passed EXIT=0 over the new test plus two importer files, a negative control reverting f441b7f270 at EXIT=1, and artifacts quoting 4 builds per project at base against 1 at head.\nVERDICT diff: read commit by commit across 1f914072e1..03d8f58b2e (9 commits); three files, +313/-1, comprising the _QueueAdmissionViews ordering memo, three new tests, and the evidence fragment.\nCALL_SITES: reckon/crew/obligation_snapshot.py:2246, reckon/crew/obligations.py:3293, reckon/crew/obligations.py:4944, reckon/crew/station_obligations.py:485, reckon/crew/station_obligations.py:490\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:132-137 returns the identical ordering for a matching read, and tests/test_an_obligations_sweep_builds_the_roadmap_once.py:192 asserts at most one build per project against a base arm of four, so the deliverable's bound holds on the sweep's payload path.\nSCORE evidence: 13\nJUSTIFICATION evidence: after_suite.log records 61 passed EXIT=0 and negative_control.log records 2 failed/1 passed EXIT=1 with four builds per project, but the done_when's equal-to-base-sweep clause is measured only head-to-head at tests/test_an_obligations_sweep_builds_the_roadmap_once.py:200 and the ten-sweep stage timings and all_debug placement are unrecorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's three paths (reckon/crew/obligations.py, the test file and the evidence fragment) are all declared write paths and nothing outside them changed.\nSCORE durability: 17\nJUSTIFICATION durability: negative_control.log shows the guard firing at base and with f441b7f270 reverted (builds ['sweep-one' x4, 'sweep-two' x4], 2 failed EXIT=1), and the footfall assert at tests/test_an_obligations_sweep_builds_the_roadmap_once.py:181 catches a structural zero.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/obligations.py:103 follows the module-proxy idiom already present at reckon/crew/queue_admission.py:405 and names nothing the repository bans, though a class standing in for a module is heavier than a function wrapper.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligations.py:103 re-implements \"derive each project's roadmap at most once\" already owned by reckon/crew/dispatch_batch.py:201 _built_once and generic keyed memoisation owned by reckon/file_memo.py:562 memoized_key, without extending either.\nFINDING reckon/crew/obligations.py:103 non-blocking: _QueueAdmissionViews adds a second \"build each project's roadmap once per pass\" mechanism, duplicating reckon/crew/dispatch_batch.py:201 _built_once which already owns that capability; it neither extends nor wraps the owner, so a future reader has two sources of the bound and the sweep could have entered _built_once() instead.\nFINDING reckon/crew/obligations.py:130 non-blocking: _ordering_key keys the memo on repr(now), so now=None collides across real instants while reckon/crew/admission/ordering.py:419 substitutes the live clock for None; a caller using the default now is served a stale ordering, and no current production caller exercises that path so the tests cannot catch it.\nFINDING tests/test_an_obligations_sweep_builds_the_roadmap_once.py:200 non-blocking: test_a_second_sweep_reports_the_same_obligations compares two sweeps of the same code and the same fixed fixture, so both sides move together under the memo, and the done_when's requirement that obligations equal those of the base sweep is never measured.\nFINDING docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass.html:19 non-blocking: the fragment and the base arm record four builds per project (one per session) rather than forty (one per review item), so the section's per-item premise is not reproduced; the landed fix removes per-session reordering, which satisfies the at-most-one deliverable but is a narrower defect than the Why describes.\n",
+  "review_run_id": "r-20261122T054534863662-review-of-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass-03d8f58b2e74",
+  "reviewed_base_sha": "1f914072e1646e1a5cd3f591470859d2866c0093",
+  "reviewed_head_sha": "03d8f58b2e74f7798318a1cf31819f6e8b87de8a",
+  "reviewed_run_id": "r-20261122T032524701158-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:56:47.184148+00:00",
+  "total": 87
+}

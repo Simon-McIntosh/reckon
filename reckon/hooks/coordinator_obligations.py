@@ -1765,6 +1765,71 @@ def _recorded_tree(record: Mapping[str, Any]) -> str:
     return str(record.get("worktree") or "").strip()
 
 
+# A duty whose sentence quotes a fact read from another run's own pointer
+# carries that fact here, with the run it belongs to. The sentence is composed
+# once, when the snapshot is derived, and served for as long as that snapshot is
+# read; a review that has since completed would otherwise go on being quoted as
+# working for the length of a slow tick. The reader re-reads the run named and
+# quotes what it finds now.
+_QUOTED_RUN_FIELD = "quoted_run"
+
+# The parenthesised phase a sentence quotes, e.g. ``(phase: working)``.
+_QUOTED_PHASE = re.compile(r"\(phase: [^)]*\)")
+
+
+class _UnknownFact:
+    """A quoted fact the read could not answer, distinct from one it found.
+
+    A run whose pointer is gone and a run whose pointer cannot be parsed are
+    different readings: the first means the cause the sentence named has gone.
+    A sentinel keeps the two apart without a second return value.
+    """
+
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    def __repr__(self) -> str:
+        return self._name
+
+
+_ABSENT_RUN = _UnknownFact("absent")
+_UNREADABLE_RUN = _UnknownFact("unreadable")
+
+
+def _served_phase(run_id: str) -> str | _UnknownFact:
+    """The phase a run's own live pointer records now, read from its file.
+
+    This runs on the prompt path, so it reads the pointer file directly rather
+    than importing the crew facade: one small JSON read answers it. The pointer
+    is the one place a run's own progress is written, so re-reading it is what
+    makes a served sentence quote the fleet as it reads now.
+    """
+    path = snapshot_module().live_pointer_path(run_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return _ABSENT_RUN
+    except OSError:
+        return _UNREADABLE_RUN
+    try:
+        document = json.loads(text)
+    except ValueError:
+        return _UNREADABLE_RUN
+    if not isinstance(document, Mapping):
+        return _UNREADABLE_RUN
+    return str(document.get("phase") or "")
+
+
+def _requoted(
+    item: Mapping[str, Any], quoted: Mapping[str, Any], phase: str
+) -> dict[str, Any]:
+    """The row with its sentence quoting ``phase``, the value just read."""
+    reason = _QUOTED_PHASE.sub(
+        f"(phase: {phase or 'unknown'})", str(item.get("reason") or "")
+    )
+    return {**item, "reason": reason, _QUOTED_RUN_FIELD: {**quoted, "phase": phase}}
+
+
 def _worktree_row_is_stale(
     item: Mapping[str, Any], *, project: str, docs_dir: Path | None
 ) -> bool:
@@ -1804,9 +1869,11 @@ def _failed_step_row_is_stale(
 
 
 def _settlement_candidate(item: Any) -> bool:
-    """Whether one row is of a kind this read settles against the fleet."""
+    """Whether one row is one this read settles against the fleet."""
     if not isinstance(item, Mapping):
         return False
+    if isinstance(item.get(_QUOTED_RUN_FIELD), Mapping):
+        return True
     return str(item.get("kind") or "") in (
         {_WORKTREE_HELD_KIND} | _FAILED_STEP_DUTY_KINDS
     )
@@ -1829,7 +1896,17 @@ def recheck_worktree_held_rows(
       after the manifest the row was built from;
     * it is a worktree-held row whose tree the fleet has released;
     * it is a failed step's row whose run has released its live pointer and
-      already has a written ledger record.
+      already has a written ledger record;
+    * it quotes a fact read from another run's pointer and that run's pointer
+      has gone -- the cause the sentence named has gone with it.
+
+    A row whose sentence quotes another run's phase is left listed, but its
+    sentence is rewritten to the phase read now: a review that has completed
+    since the snapshot was taken then reads complete rather than the phase it
+    held when the row was composed, and one still working keeps reading as it
+    is. A run whose pointer exists but cannot be parsed is kept as the
+    snapshot carried it, because an unreadable file is not evidence that the
+    cause has gone.
 
     A row whose run still holds its tree is left exactly as the snapshot
     carried it; only a row whose record shows the tree released, or whose
@@ -1846,9 +1923,28 @@ def recheck_worktree_held_rows(
     docs_dir = _mounts().get(project)
     kept: list[Any] = []
     dropped = False
+    changed = False
     for item in items:
         if isinstance(item, Mapping):
             kind = str(item.get("kind") or "")
+            quoted = item.get(_QUOTED_RUN_FIELD)
+            if isinstance(quoted, Mapping):
+                run_id = str(quoted.get("run_id") or "")
+                phase = _served_phase(run_id) if run_id else _ABSENT_RUN
+                if phase is _ABSENT_RUN:
+                    # The run the sentence named has gone: the cause the row was
+                    # raised for is gone with it, so a row kept would name a run
+                    # no reader can act on.
+                    dropped = True
+                    continue
+                if phase is not _UNREADABLE_RUN and phase != str(
+                    quoted.get("phase") or ""
+                ):
+                    kept.append(_requoted(item, quoted, str(phase)))
+                    changed = True
+                    continue
+                kept.append(item)
+                continue
             if kind == _WORKTREE_HELD_KIND and _worktree_row_is_stale(
                 item, project=project, docs_dir=docs_dir
             ):
@@ -1860,7 +1956,7 @@ def recheck_worktree_held_rows(
                 dropped = True
                 continue
         kept.append(item)
-    if not dropped:
+    if not dropped and not changed:
         return payload
     summary = payload.get("summary")
     summary = dict(summary) if isinstance(summary, Mapping) else {}
