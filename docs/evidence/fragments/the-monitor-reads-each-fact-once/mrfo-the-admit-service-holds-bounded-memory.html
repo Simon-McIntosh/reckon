@@ -24,6 +24,17 @@
 
 <p id="mrfo-the-admit-service-holds-bounded-memory-gap">The band is not met. The fixture's population grows from 236 to 2,000 runs across the fifty passes, because a constant population plateaus by the fifth pass on the base revision as well and cannot show the defect at all. Even with a pass's freed pages handed back, its parse memo dropped and a collection run before each reading, the service still ends the fiftieth pass 20 % above its fifth, so a later pass is still paying for an earlier one. The bound on the code path is recorded, but this node does not close the band.</p>
 
+<h2 id="mrfo-the-admit-service-holds-bounded-memory-retainer">What still retains it</h2>
+<p>Two tracemalloc snapshots of the same fixture, one after the tenth pass and one after the fiftieth, compared by allocation traceback. The live population grew by 1,440 runs between the two, and every line below holds one allocation per run added, so what remains is retained per live run rather than per pass. All five sit in <code>reckon/crew/runs.py</code>, outside this node's write paths.</p>
+<table id="mrfo-the-admit-service-holds-bounded-memory-retainers">
+  <tr><th>growth</th><th>blocks</th><th>allocation site</th><th>what it is</th></tr>
+  <tr><td>+6,334 KiB</td><td>+1,440</td><td><code>runs.py:1676</code> <code>_pointer_text_without_omitted_members</code>, kept in <code>_POINTER_TEXT</code> at <code>runs.py:1683</code></td><td>the reduced text of every live pointer</td></tr>
+  <tr><td>+6,334 KiB</td><td>+1,440</td><td><code>runs.py:1711</code> <code>path.read_text()</code> inside <code>_pointer_node_body</code></td><td>each pointer's node body text, read again per pass</td></tr>
+  <tr><td>+263 KiB</td><td>+1,440</td><td><code>runs.py:1995</code> <code>sorted(directory.glob("*.json"))</code></td><td>a <code>Path</code> per pointer, held by the listing</td></tr>
+  <tr><td>+263 KiB</td><td>+1,440</td><td><code>pathlib.py:191</code> <code>str(self)</code></td><td>each listing path's string form</td></tr>
+  <tr><td>+248 KiB</td><td>+7,200</td><td><code>runs.py:1758</code> <code>_pointer_text</code> → <code>runs.py:1665</code> <code>path.stat()</code></td><td>stat identities for the pointer cache</td></tr>
+</table>
+
 <pre id="mrfo-the-admit-service-holds-bounded-memory-arms">before  36c098539b  2 failed in 115.19s (0:01:55)
 after   636ec2c010  1 failed, 1 passed in 109.66s (0:01:49)</pre>
 
