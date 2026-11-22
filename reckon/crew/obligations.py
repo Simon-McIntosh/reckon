@@ -5103,6 +5103,42 @@ def _obligations_view(
                 ),
             }
         )
+    # A wait whose probe exceeded its run bound. The gate stopped the probe and
+    # recorded one duty naming the run and the vector, so the owner is told
+    # which probe to repair rather than left watching a wait that cannot lift.
+    from reckon.crew import recovery_wait
+
+    stopped_probes = {
+        str(duty.get("run_id") or ""): duty
+        for duty in recovery_wait.wait_probe_stopped_duties()
+    }
+    for pointer in live_pointers:
+        run_id = str(pointer.get("run_id") or "")
+        duty = stopped_probes.get(run_id)
+        if duty is None or str(pointer.get("session") or "") != session:
+            continue
+        raised = duty.get("raised_at")
+        items.append(
+            {
+                "kind": recovery_wait.WAIT_PROBE_STOPPED_DUTY_KIND,
+                "run_id": run_id,
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "plan": str(
+                    pointer.get("plan") or (pointer.get("node") or {}).get("plan") or ""
+                ),
+                "age_seconds": (
+                    int(max(0.0, now.timestamp() - float(raised)))
+                    if isinstance(raised, (int, float))
+                    else 0
+                ),
+                "reason": str(duty.get("detail") or ""),
+                "probe": str(duty.get("probe") or ""),
+                "next_command": (
+                    f"repair the probe the wait declares, or carry the wait past "
+                    f"it: reckon crew resume --run {run_id} --advice '<advice>'"
+                ),
+            }
+        )
     # A request the pass removed because an upstream could never land. The
     # departure is recorded, so the owner is told why it went rather than left
     # to notice a request that is no longer there.
