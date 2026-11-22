@@ -24,7 +24,7 @@
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-11-22">
 <meta name="plan-sprint" content="S28">
 </head>
@@ -85,6 +85,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261122T063540653482-review-of-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-27ecc8df6746" data-who="reckon-build" data-when="2026-11-22T06:46:44.654Z">
+    <div class="r-comment-body"><p>An independent review of r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot at bfacff713 (base) .. 27ecc8df6 (head) scores goal_fidelity 17, evidence 15, scope_discipline 20, durability 19, fit 18, reuse 19, with added_failure_count 0, two non-blocking findings (the one-hour full-lane fleet limb of the done_when is unrun and the reviewed manifest carries no baseline/after suite pair), and is stored parsed at both declared review-record paths.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs" data-who="reckon-build" data-when="2026-11-15T20:15:38.181Z">
     <div class="r-comment-body"><p>A flight declares named MCP sets and a node names one with mcp_set, resolved before any harness home is seeded and refused by name when the flight does not hold it; claude, codex and omp each start exactly that set and the run records worker_mcp {set, servers} — 20 passed at head against 20 failed at the base revision.</p></div>
 </div>
@@ -121,8 +124,8 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261117T163320010872-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-b290e023ef9f" data-who="reckon-build" data-when="2026-11-17T16:36:10.411Z">
     <div class="r-comment-body"><p>Reviewed r-20261115T200323420839 over 0f519315992f429fae018708f84eba960b99fb15..b290e023ef9fb78d2d34d0e2f42bab5827d3f27f: the 230-run tick bound holds at both arms (base max 15.410 s, head 6.856 s, 83-94 MB, 2 GiB bound), but the section's base-revision time control did not reproduce and the record correctly declares itself qualified; the change's own quiet-tick guard no longer reddens at the merged head when its file_memo memo is removed, because main's _StreamScan answers the same fact, so three non-blocking findings are recorded and the reviewed change is sound but its durability evidence measures a pre-merge tree.</p></div>
 </div>
-<div class="r-comment" data-section="s1" data-id="c-run-r-20261122T063540653482-review-of-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-27ecc8df6746" data-who="reckon-build" data-when="2026-11-22T06:46:44.654Z">
-    <div class="r-comment-body"><p>An independent review of r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot at bfacff713 (base) .. 27ecc8df6 (head) scores goal_fidelity 17, evidence 15, scope_discipline 20, durability 19, fit 18, reuse 19, with added_failure_count 0, two non-blocking findings (the one-hour full-lane fleet limb of the done_when is unrun and the reviewed manifest carries no baseline/after suite pair), and is stored parsed at both declared review-record paths.</p></div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T063940154365-review-of-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-1b72aa3966dc" data-who="reckon-build" data-when="2026-11-22T06:52:17.577Z">
+    <div class="r-comment-body"><p>Review of r-20261122T032400625016-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it at head 1b72aa3966 scores goal_fidelity 17, evidence 9, scope_discipline 12, durability 13, fit 15, reuse 5, with two blocking findings (the gate leaks a detached MCP server per test run; the recorded resident-memory measure is ten-second windows where the done_when requires one hour at ten-minute sampling) and eight non-blocking findings, the largest being three capabilities forked from reckon/_store.py:636, reckon/node_runtime.py:24 and reckon/crew/process_liveness.py:11.</p></div>
 </div>
 </section>
 </main>
