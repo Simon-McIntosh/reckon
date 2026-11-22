@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline-arm.log:11 records 58 passed in 38.20s with EXIT=0 and no FAILED line, and after-arm.log:6 records 61 passed in 48.78s with EXIT=0 and no FAILED line, so the set difference is empty.",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1862",
+    "reckon/crew/queue_landing.py:1897",
+    "reckon/crew/queue_landing.py:2203",
+    "reckon/crew/queue_landing.py:2646",
+    "reckon/crew/pending_landing.py:261",
+    "reckon/crew/pending_landing.py:1709",
+    "reckon/crew/pending_landing.py:1743",
+    "reckon/crew/pending_landing.py:1820",
+    "reckon/crew_run_commands.py:5031"
+  ],
+  "completed_at": "2026-11-22T04:11:58.611775+00:00",
+  "dispatched_at": "2026-11-22T03:55:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "732",
+      "severity": "non-blocking",
+      "text": "non-blocking: head_on_primary_branch re-implements the capability recovery_classification._head_on_primary_branch (reckon/crew/recovery_classification.py:1191) already owns, which resolves merge._current_branch and walks the same ancestry, so the repository now has two answers to one question and a change to one will not reach the other."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit against the base; 58297dd327 adds the two refusals, the status-preserving resume argument and the new test file, and 75248b99f6 and 653c7aad41 add and then re-quote the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when requires tests/test_a_repair_does_not_start_on_a_landed_run.py to pass for the landed head, the in-flight landing and the live conflict, with each arm's log under the run directory carrying its revision, its literal command and a closing EXIT= line, plus a negative control; after-arm.log:6 records 61 passed in 48.78s EXIT=0, baseline-arm.log:11 records 58 passed in 38.20s EXIT=0, and negative-control.log:97 records 3 failed in 1.72s EXIT=1.",
+    "goal": "the node's goal is to withhold a conflict repair from a run already landed or being landed; reckon/crew/recovery_repair_dispatch.py:79 and :93 add an already-landed refusal and an in-progress-landing hold ahead of every resume path.",
+    "manifest": "the manifest's changed_paths, commits, tests, test_logs and negative_control_log fields are filled and its status is complete; its quoted numbers (61 passed, 58 passed, 3 failed) are the summaries at after-arm.log:6, baseline-arm.log:11 and negative-control.log:97.",
+    "write_paths": "the manifest declares five paths and docs/figures/delivered-work-lands-without-a-coordinator; every path in b5444d24ba..653c7aad41 is inside that set, and the figure directory carries no file."
+  },
+  "justifications": {
+    "durability": "tests/test_a_repair_does_not_start_on_a_landed_run.py:169 and :190 assert the resume spy stayed empty, which the negative control at b5444d24ba reddens because the base returns a resumed receipt, and :244 asserts the manifest still opens status: complete, which reddens against the base's in-progress rewrite.",
+    "evidence": "the done_when's three cases run in tests/test_a_repair_does_not_start_on_a_landed_run.py and the manifest's 61 passed and 3 failed figures are the summaries at after-arm.log:6 and negative-control.log:97.",
+    "fit": "the new code follows reckon/crew/pending_landing.py:829's journal-plus-pointer idiom, but line 750's land_attempt_in_progress is a bare alias of the private _land_attempt_unanswered at line 777 in the same module, adding a second spelling of one predicate.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:79 refuses a head the local primary branch contains and calls pending_landing.clear_conflict, and line 93 holds the repair while a recorded land attempt is unanswered.",
+    "reuse": "reckon/crew/recovery_classification.py:1191 already owns \"is this head reachable from the primary branch\" and resolves the same merge._current_branch, which queue_landing.py:87 reuses, while the new function re-derives it instead of calling it.",
+    "scope_discipline": "every path in the diff against b5444d24ba is listed in the manifest's changed_paths, and no file outside the declared five appears in any of the three commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to withhold a conflict repair from a run already landed or being landed; reckon/crew/recovery_repair_dispatch.py:79 and :93 add an already-landed refusal and an in-progress-landing hold ahead of every resume path.\nVERDICT done_when: the done_when requires tests/test_a_repair_does_not_start_on_a_landed_run.py to pass for the landed head, the in-flight landing and the live conflict, with each arm's log under the run directory carrying its revision, its literal command and a closing EXIT= line, plus a negative control; after-arm.log:6 records 61 passed in 48.78s EXIT=0, baseline-arm.log:11 records 58 passed in 38.20s EXIT=0, and negative-control.log:97 records 3 failed in 1.72s EXIT=1.\nVERDICT write_paths: the manifest declares five paths and docs/figures/delivered-work-lands-without-a-coordinator; every path in b5444d24ba..653c7aad41 is inside that set, and the figure directory carries no file.\nVERDICT manifest: read; it states status complete, the three commits 58297dd327 75248b99f6 653c7aad41 and the gate command, and its quoted figures reconcile against the three arm logs it cites.\nVERDICT manifest: the manifest's changed_paths, commits, tests, test_logs and negative_control_log fields are filled and its status is complete; its quoted numbers (61 passed, 58 passed, 3 failed) are the summaries at after-arm.log:6, baseline-arm.log:11 and negative-control.log:97.\nVERDICT diff: read commit by commit against the base; 58297dd327 adds the two refusals, the status-preserving resume argument and the new test file, and 75248b99f6 and 653c7aad41 add and then re-quote the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/queue_landing.py:1862, reckon/crew/queue_landing.py:1897, reckon/crew/queue_landing.py:2203, reckon/crew/queue_landing.py:2646, reckon/crew/pending_landing.py:261, reckon/crew/pending_landing.py:1709, reckon/crew/pending_landing.py:1743, reckon/crew/pending_landing.py:1820, reckon/crew_run_commands.py:5031\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:79 refuses a head the local primary branch contains and calls pending_landing.clear_conflict, and line 93 holds the repair while a recorded land attempt is unanswered.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's three cases run in tests/test_a_repair_does_not_start_on_a_landed_run.py and the manifest's 61 passed and 3 failed figures are the summaries at after-arm.log:6 and negative-control.log:97.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff against b5444d24ba is listed in the manifest's changed_paths, and no file outside the declared five appears in any of the three commits.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_repair_does_not_start_on_a_landed_run.py:169 and :190 assert the resume spy stayed empty, which the negative control at b5444d24ba reddens because the base returns a resumed receipt, and :244 asserts the manifest still opens status: complete, which reddens against the base's in-progress rewrite.\nSCORE fit: 16\nJUSTIFICATION fit: the new code follows reckon/crew/pending_landing.py:829's journal-plus-pointer idiom, but line 750's land_attempt_in_progress is a bare alias of the private _land_attempt_unanswered at line 777 in the same module, adding a second spelling of one predicate.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_classification.py:1191 already owns \"is this head reachable from the primary branch\" and resolves the same merge._current_branch, which queue_landing.py:87 reuses, while the new function re-derives it instead of calling it.\nFINDING reckon/crew/pending_landing.py:732 non-blocking: head_on_primary_branch re-implements the capability recovery_classification._head_on_primary_branch (reckon/crew/recovery_classification.py:1191) already owns, which resolves merge._current_branch and walks the same ancestry, so the repository now has two answers to one question and a change to one will not reach the other.\n",
+  "review_node": "review-of-dwlw-a-repair-does-not-start-on-a-landed-run-653c7aad4191",
+  "review_run_id": "r-20261122T035343752171-review-of-dwlw-a-repair-does-not-start-on-a-landed-run-653c7aad4191",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_head_sha": "653c7aad41916085cac32e8f283328fe164bf136",
+  "reviewed_run_id": "r-20261122T023726710070-dwlw-a-repair-does-not-start-on-a-landed-run",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T035343752171-review-of-dwlw-a-repair-does-not-start-on-a-landed-run-653c7aad4191"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:11:58.611775+00:00",
+  "total": 97
+}
