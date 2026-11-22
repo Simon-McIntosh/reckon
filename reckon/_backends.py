@@ -55,6 +55,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import logging
 import os
 import queue
 import re
@@ -469,6 +470,10 @@ class LaunchPlan:
     # that may have moved since. An empty name means the node named no set.
     mcp_set: str = ""
     worker_mcp_servers: tuple[str, ...] = ()
+    # The servers this node runs once for every worker, keyed by name, each
+    # mapped to the endpoint the worker connects to. A server whose entry is
+    # absent fell back to the declaration the set resolved.
+    shared_mcp_endpoints: dict[str, str] = field(default_factory=dict)
     # The treatment this launch gives the worker, stated once here so two
     # backends of one lane can be compared fact by fact rather than by reading
     # each harness's argv. See :mod:`reckon.crew.worker_behaviour`.
@@ -490,6 +495,7 @@ class LaunchPlan:
             "mcp_set": self.mcp_set,
             "resumed_session": self.resumed_session,
             "worker_mcp_servers": list(self.worker_mcp_servers),
+            "shared_mcp_endpoints": dict(sorted(self.shared_mcp_endpoints.items())),
             "worker_behaviour": dict(self.worker_behaviour),
         }
 
@@ -3171,6 +3177,35 @@ def _resolve_worker_mcp(
         raise BackendError(str(exc)) from exc
 
 
+def _shared_mcp_endpoints(
+    servers: Sequence[str] | None,
+    fence_config: Mapping[str, Any] | None,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Return the endpoints this node shares, and the servers that failed.
+
+    A flight declaring no shared server returns nothing, so a launch is
+    unchanged on every node that has not opted in. A shared server that cannot
+    be brought up is reported rather than refusing the launch: the worker then
+    keeps the declaration its set resolved, so a node-side fault degrades one
+    worker's isolation instead of removing its tools.
+    """
+    if not servers or fence_config is None:
+        return {}, {}
+    from reckon import mcp_shared
+    from reckon._worker_fence import (
+        WorkerMcpSharedError,
+        _declared_shared_mcp_servers,
+    )
+
+    try:
+        declarations = _declared_shared_mcp_servers(fence_config)
+    except WorkerMcpSharedError as exc:
+        raise BackendError(str(exc)) from exc
+    if not declarations:
+        return {}, {}
+    return mcp_shared.shared_server_urls(servers, declarations)
+
+
 def launch_plan(
     *,
     backend_name: str,
@@ -3215,6 +3250,14 @@ def launch_plan(
     resolved_mcp_set, resolved_mcp_servers = _resolve_worker_mcp(
         fence_config, worker_mcp_set
     )
+    shared_endpoints, shared_failures = _shared_mcp_endpoints(
+        resolved_mcp_servers, fence_config
+    )
+    if shared_failures:
+        logging.getLogger(__name__).warning(
+            "shared MCP servers unavailable on this node: %s",
+            ", ".join(sorted(shared_failures)),
+        )
     from reckon.flight import expand_backend_environment
 
     environment = expand_backend_environment(backend_name, backend)
@@ -3332,6 +3375,7 @@ def launch_plan(
             worker_mcp_servers=(
                 resolved_mcp_servers if fence_config is not None else None
             ),
+            shared_endpoints=shared_endpoints or None,
             settings_file=dialect.settings_file,
             mcp_config_file=dialect.mcp_config_file,
             mcp_refusal_list=dialect.mcp_refusal_list,
@@ -3404,6 +3448,7 @@ def launch_plan(
                     else []
                 ),
             ],
+            shared_endpoints,
         )
     if dialect.name == "claude":
         operator = Path(fence_home) if fence_home is not None else Path.home()
@@ -3411,6 +3456,7 @@ def launch_plan(
             harness if harness is not None and adopts_harness_home else operator,
             Path(worktree_path),
             resolved_mcp_servers,
+            shared_endpoints,
         )
         # Server declarations can carry credentials: keep them off process argv.
         if run_directory is not None and run_directory.is_dir():
@@ -3509,6 +3555,7 @@ def launch_plan(
         unmergeable_seals=unmergeable,
         mcp_set=resolved_mcp_set,
         worker_mcp_servers=tuple(resolved_mcp_servers or ()),
+        shared_mcp_endpoints=dict(shared_endpoints),
         worker_behaviour=dict(behaviour.dimensions()),
     )
 

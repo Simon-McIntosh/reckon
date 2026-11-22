@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -3957,7 +3958,21 @@ if mcp is not None:
 # ── Entrypoint ────────────────────────────────────────────────────────────
 
 
-def main() -> None:
+def main(
+    transport: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    name: str | None = None,
+) -> None:
+    """Run the server on stdio, or as this node's one shared network server.
+
+    The network form is what lets ten workers on a node share one server
+    instead of starting ten. It runs through :mod:`reckon.mcp_shared`, which
+    holds this node's single-instance lock: a second invocation on the same
+    node finds the first server serving and returns rather than binding a
+    second endpoint. The stdio form stays the default, so an operator-declared
+    per-worker server is unchanged.
+    """
     if not _HAS_MCP or mcp is None:
         msg = (
             "mcp package not found. Install with:\n"
@@ -3966,7 +3981,33 @@ def main() -> None:
             "  uv pip install -e ~/Code/reckon\n"
         )
         raise SystemExit(msg)
-    mcp.run(transport="stdio")
+    from reckon import mcp_shared
+
+    transport = transport or os.environ.get(mcp_shared.TRANSPORT_ENV) or "stdio"
+    if transport == "stdio":
+        mcp.run(transport="stdio")
+        return
+    if transport != "streamable-http":
+        raise SystemExit(f"unknown MCP transport: {transport}")
+    host = host or os.environ.get(mcp_shared.HOST_ENV) or mcp_shared.DEFAULT_HOST
+    port = port if port is not None else int(os.environ.get(mcp_shared.PORT_ENV) or 0)
+    name = name or os.environ.get(mcp_shared.NAME_ENV) or mcp_shared.DEFAULT_NAME
+
+    def run_shared(bound_host: str, bound_port: str | int) -> None:
+        # One process serves every client, and an HTTP request carries no
+        # session state the tools depend on, so no per-client session is kept
+        # resident and the footprint does not grow with the worker count.
+        mcp.settings.host = bound_host
+        mcp.settings.port = int(bound_port)
+        mcp.settings.stateless_http = True
+        mcp.run(transport="streamable-http")
+
+    record = mcp_shared.serve(name, run_shared, host=host, port=port)
+    if record.pid != os.getpid():
+        # Another process already serves this node; leave it serving.
+        logging.getLogger(__name__).info(
+            "shared MCP server %r already serving at %s", name, record.url
+        )
 
 
 if __name__ == "__main__":

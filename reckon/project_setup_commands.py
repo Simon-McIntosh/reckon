@@ -16,7 +16,6 @@ def agent_context():
     """Inspect the effective agent instructions and skill metadata."""
 
 
-
 @agent_context.command(name="doctor")
 @click.option(
     "--target",
@@ -115,7 +114,6 @@ def agent_context_doctor(
         raise click.exceptions.Exit(1)
 
 
-
 @main.command()
 @click.option("--port", default=8765, show_default=True, help="Port to listen on.")
 @click.option(
@@ -137,14 +135,23 @@ def serve(port, host, mounts_file):
     serve_main(port=port, host=host, mounts_file=mounts_file)
 
 
-
 @main.command()
-def mcp():
-    """Start the reckon MCP server (stdio transport)."""
+@click.option(
+    "--transport",
+    type=click.Choice(["stdio", "streamable-http"]),
+    default="stdio",
+    show_default=True,
+    help="stdio starts one server for this process; streamable-http serves "
+    "every worker on this node from a single process.",
+)
+@click.option("--host", default=None, help="Bind address for the network transport.")
+@click.option("--port", type=int, default=None)
+@click.option("--name", default=None, help="Name this node's shared server.")
+def mcp(transport, host, port, name):
+    """Start the reckon MCP server (stdio, or this node's shared server)."""
     from reckon.mcp import main as mcp_main
 
-    mcp_main()
-
+    mcp_main(transport=transport, host=host, port=port, name=name)
 
 
 @main.command(name="fleet")
@@ -168,11 +175,9 @@ def fleet(pretty):
     _emit({"ok": True, "view": "fleet", "projects": rows}, pretty)
 
 
-
 @main.group(name="fleet-node")
 def fleet_node_group():
     """Hold, read and place work on the fleet node's whole-node allocation."""
-
 
 
 @fleet_node_group.command(name="hold")
@@ -211,7 +216,6 @@ def fleet_node_hold(submit, fleet):
     except fleet_node.FleetNodeError as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(f"Submitted fleet allocation job {job_id}.")
-
 
 
 @fleet_node_group.command(name="status")
@@ -268,7 +272,6 @@ def fleet_node_status(fleet):
         )
 
 
-
 @fleet_node_group.command(name="reserve")
 @click.option(
     "--fleet", required=True, help="The named fleet whose projects to reserve."
@@ -306,7 +309,6 @@ def fleet_node_reserve(fleet):
         click.echo(f"{project}: {result['detail']}")
 
 
-
 @fleet_node_group.command(
     name="place",
     context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
@@ -342,7 +344,6 @@ def fleet_node_place(command):
         raise SystemExit(result.returncode)
 
 
-
 @main.command(name="paste")
 @click.option(
     "--no-fleet",
@@ -360,7 +361,6 @@ def paste_command(no_fleet):
     from reckon.paste import paste
 
     sys.exit(paste(fleet=not no_fleet))
-
 
 
 @main.command(name="badge")
@@ -384,7 +384,6 @@ def badge_command(project, checkout_path, write_badge):
     except pages.PagesError as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(markdown)
-
 
 
 @main.command()
@@ -450,7 +449,6 @@ def flight(project, checkout_path, overrides, probe_auth, pretty, check):
     click.echo(json.dumps(report, indent=2 if pretty else None, sort_keys=True))
 
 
-
 @main.command(name="capabilities")
 @click.option(
     "--rebuild",
@@ -483,7 +481,6 @@ def capabilities_command(rebuild, pretty, project):
     _emit({"rebuilt": bool(rebuild), **payload}, pretty)
 
 
-
 @main.command(name="probe-held-blocker")
 @click.option("--project", required=True, help="Project owning the blocker.")
 @click.option(
@@ -505,11 +502,9 @@ def probe_held_blocker(project, checkout_path, blocker_id):
     _emit(report, pretty=False)
 
 
-
 @main.group(name="tag")
 def tag():
     """Commands for resource tag operations."""
-
 
 
 @tag.command(name="rename")
@@ -541,7 +536,6 @@ def tag_rename(project, checkout_path, dry_run, source, target):
         dry_run=dry_run,
     )
     _emit(report, pretty=False)
-
 
 
 @tag.command(name="backfill")
@@ -610,4 +604,3 @@ def tag_backfill(project, checkout_path, preimage, dry_run):
         }
     )
     _emit(report, pretty=False)
-

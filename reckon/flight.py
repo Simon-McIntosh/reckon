@@ -103,6 +103,7 @@ WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
 # schema validates, because a set is what a launch reads to decide which
 # servers a worker may start.
 MCP_SETS_KEY = "mcp_sets"
+SHARED_MCP_SERVERS_KEY = "shared_mcp_servers"
 
 # The per-project report store. A project persists a report item into a root it
 # names itself. Reckon ships no default: a project that has not declared one
@@ -503,6 +504,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
     cleaned.pop(WORKER_MCP_SERVERS_KEY, None)
     cleaned.pop(MCP_SETS_KEY, None)
+    cleaned.pop(SHARED_MCP_SERVERS_KEY, None)
     cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
     cleaned.pop(REPORTS_KEY, None)
     cleaned.pop("landing", None)
@@ -976,6 +978,27 @@ def _validate_mcp_sets(data: Mapping[str, Any], source: str | Path) -> None:
         _declared_mcp_sets(data)
     except WorkerMcpSetsError as exc:
         raise FlightConfigError(source, MCP_SETS_KEY, exc.constraint) from exc
+
+
+def _validate_shared_mcp_servers(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the servers a flight declares this node shares once.
+
+    Absence is the shipped default: a flight that shares nothing starts a
+    server per worker as it always did. A present value must be a mapping from
+    server name to a declaration, and a declaration's ``command``, when given,
+    is the argv the node runs, a non-empty list of strings.
+    """
+    if SHARED_MCP_SERVERS_KEY not in data:
+        return
+    from reckon._worker_fence import (
+        WorkerMcpSharedError,
+        _declared_shared_mcp_servers,
+    )
+
+    try:
+        _declared_shared_mcp_servers(data)
+    except WorkerMcpSharedError as exc:
+        raise FlightConfigError(source, SHARED_MCP_SERVERS_KEY, exc.constraint) from exc
 
 
 def _validate_picker_reserved_lanes(
@@ -1759,6 +1782,7 @@ def validate_layer(
     _validate_sprint_recent_days(data, source)
     _validate_worker_mcp_servers(data, source)
     _validate_mcp_sets(data, source)
+    _validate_shared_mcp_servers(data, source)
     _validate_picker_reserved_lanes(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
