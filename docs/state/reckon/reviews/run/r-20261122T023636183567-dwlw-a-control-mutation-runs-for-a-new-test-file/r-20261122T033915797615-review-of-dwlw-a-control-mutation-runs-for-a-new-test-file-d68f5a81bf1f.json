@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "test_a_run_editing_only_existing_tests_is_measured_as_before": "Carrying the head's copy over an existing path would make the base arm read the passing edited copy and lose tests/test_existing.py::test_value; the assertion at line 162 fails, and the log header at :165 keeps the arm at the base revision.",
+    "test_a_tree_that_cannot_be_built_names_the_path_and_revision": "Removing the named refusal restores the bare git pathspec failure, so the reason at :176-177 and the EXIT=4 at :184 both fail.",
+    "test_an_added_test_files_mutation_is_measured_and_reads_red": "Reinstating the base-revision carry makes the added file stale: the measure returns {'unreadable': 'the control mutation did not run'}, which negative-control.log records.",
+    "test_an_added_test_files_mutation_is_measured_and_reads_red[revision echo]": "Line 132 cannot fail: suite['revision'] is base_sha passed by the test and echoed by arm_observation. Line 139 is the independent check of the same fact."
+  },
+  "assertion_independence": "Every assertion above that names a failing regression is checked against output the production code produced (the arm log's header, EXIT receipt and failure ids, and the returned unreadable reason). The revision-echo assertions at tests/test_a_control_mutation_runs_for_a_new_test_file.py:132 and :160 are not independent and no durability credit is taken for them.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:_measured_control"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T03:42:03Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023636183567-dwlw-a-control-mutation-runs-for-a-new-test-file/after_suite-1795318388238715854.log",
+      "revision": "24c282881d10a5270e3ad256fb921c5546f0c914",
+      "summary": "61 passed in 38.94s"
+    },
+    "baseline_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023636183567-dwlw-a-control-mutation-runs-for-a-new-test-file/baseline_suite-1795318312042520105.log",
+      "revision": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+      "summary": "58 passed in 36.24s"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_control_mutation_runs_for_a_new_test_file.py",
+      "line": "132",
+      "severity": "non-blocking",
+      "text": "non-blocking: `suite[\"revision\"] == base_sha` compares the value the test itself handed to control_mutation_observation against the same value echoed by landing_measure.py:1321, so it holds under any regression; the independent check of that fact is the log-header assertion at :139, and line 160 repeats the echo shape."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "928",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_delivered_head` duplicates the repository's shared commit resolver at reckon/crew/recovery_review_subject.py:259 rather than wrapping it, so a later fix to the resolver's bounds and revision validation will not reach this new reader."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the four commits b5444d24..d68f5a81; the source change is the carry revision and a named refusal, the test file adds three cases, and the last three commits are docs-only.",
+    "done_when": "tests/test_a_control_mutation_runs_for_a_new_test_file.py is named by the done_when and scoped-gate-1795318478155684166.log records 61 passed in 37.37s at 24c282881d with EXIT=0.",
+    "goal": "the goal is a control-mutation measure that builds its tree for a run whose test file its base lacks; landing_measure.py:1498 supplies the delivered head as the carry revision while :996 keeps the built tree at base_sha.",
+    "manifest": "read at the reviewed run's manifest.md; status complete, 3 commits, gate 61 passed, baseline 58 passed, after 61 passed, negative control EXIT=1.",
+    "write_paths": "applied manifest lists 4 declared paths and the diff touches only reckon/crew/landing_measure.py, the new test file and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the added carry refusal is proven red at the base by negative-control.log, but tests/test_a_control_mutation_runs_for_a_new_test_file.py:132 and :160 compare suite[\"revision\"] against the same base_sha the test passed in and echoed by landing_measure.py:1321, so neither can fail.",
+    "evidence": "scoped-gate-1795318478155684166.log ends EXIT=0 with 61 passed at 24c282881d, baseline_suite-1795318312042520105.log records 58 passed and after_suite-1795318388238715854.log 61 passed, and review-independent-run.log shows my own 3 passed at d68f5a81.",
+    "fit": "reckon/crew/landing_measure.py:928 and :946 follow the module's `_git`-and-docstring idiom, and no added name carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1498 reads the delivered head for the carry while :996 keeps the arm's build at base_sha, and :1080 turns the carry failure into a refusal naming the path and revision.",
+    "reuse": "reckon/crew/landing_measure.py:928 adds a second HEAD reader beside the shared resolver at reckon/crew/recovery_review_subject.py:259 that merge.py:273 calls the one resolver every citation reader uses.",
+    "scope_discipline": "the diff b5444d24..d68f5a81 touches only reckon/crew/landing_measure.py, tests/test_a_control_mutation_runs_for_a_new_test_file.py and the evidence fragment, each a declared write path."
+  },
+  "notes": "Review read the delivered head d68f5a81 from the review worktree at b8d76fea using git show and git diff; the last two commits after 24c28288 are docs-only (verified: 1 html file changed), so the suite arms recorded at 24c28288 apply to the delivered head. I re-ran the single named test file against a scratch tree extracted from d68f5a81 and it reported 3 passed in 2.27s (EXIT=0), logged at review-independent-run.log; the base arm's red control is negative-control.log. No blocking finding: the landed change meets its goal and its measure.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a control-mutation measure that builds its tree for a run whose test file its base lacks, and reckon/crew/landing_measure.py:1498 supplies the delivered head as the carry revision while :996 keeps the built tree at base_sha.\nVERDICT done_when: the done_when names tests/test_a_control_mutation_runs_for_a_new_test_file.py, and scoped-gate-1795318478155684166.log records 61 passed in 37.37s at 24c282881d with EXIT=0 over that file plus the two neighbour files.\nVERDICT write_paths: applied manifest lists 4 declared paths and the diff touches only reckon/crew/landing_measure.py, tests/test_a_control_mutation_runs_for_a_new_test_file.py and the evidence fragment, all inside them.\nVERDICT manifest: read at r-20261122T023636183567/manifest.md; it states status complete, 3 commits, scoped gate 61 passed, baseline 58 passed, after 61 passed, and a negative control EXIT=1 on the added head, and I re-ran the named test file at the delivered head for 3 passed.\nVERDICT diff: read the four commits b5444d24..d68f5a81 commit by commit; the source change is the carry revision and a named refusal, the test file adds three cases, and the last three commits are docs-only.\nCALL_SITES: reckon/crew/promotion_evidence.py:_measured_control\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1498 reads the delivered head for the carry while :996 keeps the arm's build at base_sha, and :1080 turns the carry failure into a refusal naming the path and revision.\nSCORE evidence: 20\nJUSTIFICATION evidence: scoped-gate-1795318478155684166.log ends EXIT=0 with 61 passed at 24c282881d, baseline_suite-1795318312042520105.log records 58 passed and after_suite-1795318388238715854.log 61 passed, and review-independent-run.log shows my own 3 passed at d68f5a81.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff b5444d24..d68f5a81 touches only reckon/crew/landing_measure.py, tests/test_a_control_mutation_runs_for_a_new_test_file.py and the evidence fragment, each a declared write path.\nSCORE durability: 16\nJUSTIFICATION durability: the added carry refusal is proven red at the base by negative-control.log, but tests/test_a_control_mutation_runs_for_a_new_test_file.py:132 and :160 compare suite[\"revision\"] against the same base_sha the test passed in and echoed by landing_measure.py:1321, so neither can fail.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/landing_measure.py:928 and :946 follow the module's `_git`-and-docstring idiom, and no added name carries a plan, stage or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:928 adds a second HEAD reader beside the shared resolver at reckon/crew/recovery_review_subject.py:259 that merge.py:273 calls the one resolver every citation reader uses.\nFINDING tests/test_a_control_mutation_runs_for_a_new_test_file.py:132 non-blocking: `suite[\"revision\"] == base_sha` compares the value the test itself handed to control_mutation_observation against the same value echoed by landing_measure.py:1321, so it holds under any regression; the independent check of that fact is the log-header assertion at :139, and line 160 repeats the echo shape.\nFINDING reckon/crew/landing_measure.py:928 non-blocking: `_delivered_head` duplicates the repository's shared commit resolver at reckon/crew/recovery_review_subject.py:259 rather than wrapping it, so a later fix to the resolver's bounds and revision validation will not reach this new reader.\n",
+  "reuse_search": "Searched the repository for an existing HEAD-revision reader by capability: found reckon/crew/recovery_review_subject.py:259 _resolve_commit (the shared resolver merge.py:273 names), reckon/crew/promotion_scope.py:2390 _head_revision and reckon/crew/merge.py:273 _rev_parse, and opened all three; the addition duplicates them rather than wrapping them.",
+  "review_run_id": "r-20261122T033915797615-review-of-dwlw-a-control-mutation-runs-for-a-new-test-file-d68f5a81bf1f",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_commits": [
+    "c69b5d25216ae2c3fbb7493c362a8913cce27648",
+    "24c282881d10a5270e3ad256fb921c5546f0c914",
+    "ddfa58f5a3db9dc3a09d12c759371769212285b9",
+    "d68f5a81bf1fb4208f9c1b14dec9b3c4c8f7f5c2"
+  ],
+  "reviewed_head_sha": "d68f5a81bf1fb4208f9c1b14dec9b3c4c8f7f5c2",
+  "reviewed_run_id": "r-20261122T023636183567-dwlw-a-control-mutation-runs-for-a-new-test-file",
+  "scores": {
+    "durability": 16,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:17:35.450743+00:00",
+  "total": 100
+}
