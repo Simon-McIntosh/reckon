@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:1615",
+    "reckon/crew/pending_landing.py:1968",
+    "reckon/crew/queue_landing.py:2302"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-22T07:33:51Z",
+  "finding_dispositions": {},
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read the one commit gained since the prior review, ad40298e2a66e00108f2b23bd6964716caa3c9a8..a2f8ccc7710fe6a356df8e2474d29603a94a471d: 9 inserted lines adding paragraph p12 to the evidence fragment and nothing else; the earlier non-blocking findings recorded at ad40298e (the 9bc7839 sentence at p10 and the unguarded figure save at release_gates.py:210) are outside this delta and remain as recorded there.",
+    "done_when": "the done_when at docs/plans/a-claim-nobody-is-working-is-released.html s2 asks for three promoted runs, one pass, two further passes, a base negative control and no added failure in the existing release tests; the added paragraph at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html:120 records the base arm 58 passed in 40.70s and after arm 66 passed in 37.30s, both logs ending EXIT=0, and the declared mutation 2 failed, 6 passed in 1.67s ending EXIT=1.",
+    "goal": "the node goal at node.json is to make a run whose worker was on a previous fleet node give up its claim; the commit gained since the prior review, a2f8ccc7710fe6a356df8e2474d29603a94a471d, is the evidence paragraph at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html:120, and the release behaviour itself landed earlier at reckon/crew/pending_landing.py:535.",
+    "manifest": "read at manifest.md; it lists the final commits through a2f8ccc7710f, records baseline_suite and after_suite completed with failure_count 0 and empty failure_ids, names negative-control-mutated.log as the certificate, and reckon crew check --manifest on this run returns ok:true with no findings.",
+    "write_paths": "read the seven declared paths; the single path the delta touches, docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html, is inside them, and the commit changes no other file."
+  },
+  "justifications": {
+    "durability": "the release behaviour stays guarded by tests/test_a_run_from_a_previous_fleet_node_is_released.py:136 and :155, which the recorded mutation reddens (2 failed on negative-control-mutated.log), but the added prose at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html:120 is verified by no committed test, so a drift between the fragment and the logs would redden nothing.",
+    "evidence": "the paragraph's three figures reconcile exactly with the logs it cites: baseline_suite-1795330216214459633.log and after_suite-1795330290925787702.log each report their pass count and end EXIT=0, and negative-control-mutated.log reports 2 failed, 6 passed in 1.67s and ends EXIT=1, so both arms completed and the added failure count is 0.",
+    "fit": "the added paragraph follows the fragment's existing numbered p-element idiom and cites revisions and code spans the way p9-p11 do, and the commit uses a conventional docs(evidence) subject with a body and carries no AI attribution or plan identifier.",
+    "goal_fidelity": "docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html:120 records the measured base arm (58 passed in 40.70s) and after arm (66 passed in 37.30s) at the reviewed head, which is the evidence the done_when asks the node to carry.",
+    "reuse": "the commit adds one prose paragraph and no definition, so it neither extends nor duplicates any capability the repository owns.",
+    "scope_discipline": "the commit ad40298e..a2f8ccc touches exactly one file, docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html, which is one of the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261122T073111059088-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-a2f8ccc7710f",
+  "reviewed_base_sha": "ad40298e2a66e00108f2b23bd6964716caa3c9a8",
+  "reviewed_head_sha": "a2f8ccc7710fe6a356df8e2474d29603a94a471d",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T07:42:07.913522+00:00",
+  "total": 112
+}
