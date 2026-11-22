@@ -24,7 +24,7 @@
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-11-22">
 <meta name="plan-sprint" content="S28">
 </head>
@@ -87,6 +87,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261122T063540653482-review-of-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-27ecc8df6746" data-who="reckon-build" data-when="2026-11-22T06:46:44.654Z">
     <div class="r-comment-body"><p>An independent review of r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot at bfacff713 (base) .. 27ecc8df6 (head) scores goal_fidelity 17, evidence 15, scope_discipline 20, durability 19, fit 18, reuse 19, with added_failure_count 0, two non-blocking findings (the one-hour full-lane fleet limb of the done_when is unrun and the reviewed manifest carries no baseline/after suite pair), and is stored parsed at both declared review-record paths.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot" data-who="reckon-build" data-when="2026-11-22T04:25:06.114Z">
+    <div class="r-comment-body"><p>A queued request holds no process until the router grants it a slot, now pinned by a test: the gate test drives the real admission pass over a temporary crew home against a stand-in router of width 4 with 20 queued requests and reads `1 passed` (EXIT=0) with live workers at most the width plus two and every queued request carrying no pid; the base-revision census reads 0 of 19 queued/held requests holding a process, and a mutation that reads no lane allowance turns the test red at 20 live workers.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs" data-who="reckon-build" data-when="2026-11-15T20:15:38.181Z">
     <div class="r-comment-body"><p>A flight declares named MCP sets and a node names one with mcp_set, resolved before any harness home is seeded and refused by name when the flight does not hold it; claude, codex and omp each start exactly that set and the run records worker_mcp {set, servers} — 20 passed at head against 20 failed at the base revision.</p></div>
