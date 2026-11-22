@@ -22,9 +22,10 @@ busy shared filesystem turns into latency.
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Iterator
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import pytest
 
@@ -57,11 +58,10 @@ def _write_plan(checkout: Path, *, records_for: set[str] | None = None) -> Path:
     a write removes a heading from, where the heading guard's coverage half is
     the check that fires rather than its record half.
     """
-    declared = {section: "implementable" for section in _section_ids()}
+    declared = dict.fromkeys(_section_ids(), "implementable")
     recorded = set(declared) if records_for is None else records_for
     body = "".join(
-        f'<h2 id="{section}">Section {index}</h2>'
-        f"<p>Body of section {index}.</p>"
+        f'<h2 id="{section}">Section {index}</h2><p>Body of section {index}.</p>'
         for index, section in enumerate(_section_ids(), start=1)
     )
     authored = (
@@ -96,6 +96,8 @@ def _write_plan(checkout: Path, *, records_for: set[str] | None = None) -> Path:
     }
     path.write_text(_plan_html.write_state(authored, state), encoding="utf-8")
     return path
+
+
 @contextlib.contextmanager
 def counted() -> Iterator[dict[str, dict[str, int]]]:
     """Count whole-document parses, keyed by document text then parser kind."""
@@ -154,9 +156,7 @@ def _cold() -> None:
     _plan_html._plan_headings_of.cache_clear()
 
 
-def _two_documents_parsed_once(
-    counts: dict[str, dict[str, int]], stored: str
-) -> None:
+def _two_documents_parsed_once(counts: dict[str, dict[str, int]], stored: str) -> None:
     """The write parsed the stored document and the one it rendered, once each."""
     assert len(counts) == 2, (
         "expected the stored document and the document the write renders, got "
@@ -164,10 +164,10 @@ def _two_documents_parsed_once(
     )
     assert stored in counts, "the write never parsed the document it read"
     for kind in ("soup", "structural"):
-        for text in counts:
-            assert counts[text].get(kind, 0) == 1, (
+        for text, seen in counts.items():
+            assert seen.get(kind, 0) == 1, (
                 f"{kind} parse of a {len(text)}-character document ran "
-                f"{counts[text].get(kind, 0)} times: {counts}"
+                f"{seen.get(kind, 0)} times: {counts}"
             )
 
 
