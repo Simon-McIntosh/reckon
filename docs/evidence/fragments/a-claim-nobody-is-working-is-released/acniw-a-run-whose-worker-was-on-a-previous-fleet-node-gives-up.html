@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A run from a previous fleet node gives up its claim</title>
+</head>
+<body>
+<article class="r-fragment" id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up">
+<h2 id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-h">A run from a previous fleet node gives up its claim</h2>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p1">
+A promoted run's pointer written on the node the fleet has since left records a
+pid that answers only on that machine. Its liveness reads unknown, and unknown
+is kept, so the pointer held its claim for ever.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p2">
+<code>pending_landing.release_pointers_of_a_previous_fleet_node</code>, called
+from <code>retire_promoted_pointers</code>, retires the pointer of a promoted
+run whose launcher host is not the node the fleet record names and whose newest
+stream carries no assistant turn inside the silence window the stall clock
+already applies. A run proved dead on the host that issued its pid is released
+by the same pass. A stream carrying a turn inside the window keeps its pointer
+in either case, because unknown with a turn in progress is never a licence to
+release.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p3">
+Retiring a pointer releases a claim, never work: the worktree, commits and run
+records are untouched, and the paths that reclaim workspaces still see them.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p4">
+Measure: the new test builds three promoted runs in a temporary crew home; after
+one pass the previous-node quiet run and the fleet-node dead run have no pointer
+and the previous-node working run keeps its own (2 passed). At the base revision
+both cases fail on the first run keeping its pointer (2 failed).
+</p>
+</article>
+</body>
+</html>
