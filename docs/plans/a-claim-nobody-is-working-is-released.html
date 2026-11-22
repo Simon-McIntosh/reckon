@@ -20,11 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="delivered-work-lands-without-a-coordinator">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-claim-nobody-is-working-is-released#s2&quot;,&quot;a-claim-nobody-is-working-is-released#s3&quot;,&quot;a-claim-nobody-is-working-is-released#s4&quot;,&quot;a-claim-nobody-is-working-is-released#s5&quot;]}">
   <title>A Claim Nobody Is Working Is Released | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="19">
+<meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
   <main class="plan-doc">
@@ -43,25 +45,25 @@
     <p>The rule each section keeps from the landed work: a run showing a turn in progress is never released on an unknown reading. Only a run with no turn in progress may be released without proof that its worker is dead.</p>
 
     <h2 id="s2">§2 — A run whose worker was on a previous fleet node gives up its claim</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> The fleet moves node every few days. Every promoted run launched before the move then reads as liveness unknown for ever, and its pointer is never retired.</p>
     <p><strong>Deliverable.</strong> A promoted run whose recorded launcher host is not the node the fleet record names, and which shows no turn in progress, gives up its pointer on the next pass. A discard of such a run is not undone.</p>
     <p><strong>Done when.</strong> A test builds a temporary crew home holding three promoted runs recorded on a host other than the current fleet node: one with no turn in progress, one whose stream grew inside the turn window, and one recorded on the current node with a dead process. After one pass the first and third have no pointer and the second keeps its pointer. A discarded run of the first kind has no pointer after two further passes. Negative control: at the base revision the first run keeps its pointer. The existing release tests add no failure against the base. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/process_liveness.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_run_from_a_previous_fleet_node_is_released.py</code>.</p>
 
     <h2 id="s3">§3 — A measurement run gives up its claim when its measurement is recorded</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> A measurement-only run is journaled, not promoted. Nothing retires its pointer, so its paths stay claimed after its record is written.</p>
     <p><strong>Deliverable.</strong> A measurement-only run whose record is stored and which has no live worker has no pointer after the next pass. One whose record is not yet stored keeps it.</p>
     <p><strong>Done when.</strong> A test builds a temporary crew home with two measurement-only runs, one with its record stored and no live worker, one without a record. After one pass the first has no pointer and its record is unchanged byte for byte; the second keeps its pointer. Negative control: at the base revision the first keeps its pointer. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/landing_measure.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_recorded_measurement_run_is_released.py</code>.</p>
 
     <h2 id="s4">§4 — A landing-group member is released when its group lands</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> Sections that wait on a group member wait on its pointer. When the group lands as one head and one member's pointer survives, those sections never start.</p>
     <p><strong>Deliverable.</strong> When a landing group's head is on the primary branch, every member's pointer is retired and every section waiting on a member is released. A group whose head is not on the primary branch keeps every member.</p>
     <p><strong>Done when.</strong> A test builds a temporary repository and crew home with a three-member group and one request waiting on each member. With the group head merged, one pass leaves no member pointer and all three requests released. With the head unmerged, every pointer and every wait is kept. Negative control: at the base revision the merged case leaves at least one member pointer. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_landed_group_releases_every_member.py</code>.</p>
 
     <h2 id="s5">§5 — A resume that never started reads as not started, and a stop leaves no process</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> A resume was reported on 19 November whose scheduler step asked for 32 CPUs inside the fleet job and never started. The run read as alive for as long as the client process waited, so nothing resumed it again, and stopping it left that client and its children running.</p>
     <p><strong>Deliverable.</strong> A resumed run reads as working only once its worker has begun a turn. A resume whose worker has not begun a turn within a stated bound reads as a failed launch, naming what it was waiting for. Stopping any run ends every process the launch started, and reports each pid it signalled.</p>
     <p><strong>Done when.</strong> A test launches a resume through a stand-in launcher that blocks before starting the worker: within the bound the run's classification is the failed-launch one and carries the launcher's own waiting reason, and it is offered for resume again. A second stand-in starts a worker that begins a turn: the run reads as working. Stopping the blocked run leaves no process from its launch tree alive, checked by pid, and prints each pid signalled. Negative control: at the base revision the blocked run reads as working, and the stop leaves the stand-in launcher alive. Tests run on <code>all_debug</code> with at most <code>-n 4</code> and start no scheduler step. Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/process_liveness.py</code> and <code>tests/test_a_resume_that_never_started_reads_as_not_started.py</code>.</p>
@@ -81,7 +83,63 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<h2><span class="sec">§</span> Comments</h2>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T042404601447-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-125dc5f71995" data-who="reckon-build" data-when="2026-11-22T04:45:21.518Z">
+    <div class="r-comment-body"><p>Review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up at head 125dc5f71995a2b549a421154fffc64b87ba2dd4 (base d24fa090e52748cc3100cd54e60d68ad3e87fb1b): scores goal_fidelity 16, evidence 6, scope_discipline 17, durability 13, fit 16, reuse 5 (total 73); one blocking finding, that the proved-dead arm at reckon/crew/pending_landing.py:583 retires a promoted pointer without release_merged_promotions' uncommitted-work hold, which makes tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py fail at head (1 failed, 16 passed) while it passes at the base (1 passed); three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T051051957533-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-52e55b67cc4b" data-who="reckon-build" data-when="2026-11-22T05:22:08.931Z">
+    <div class="r-comment-body"><p>review of d24fa090..52e55b67 parsed, total 70/120; blocking: the alive/dead reads probe the local process table for a foreign-host pid (pending_landing.py:611-613), and the trailing legacy retire_promoted_pointer loop at line 708 retires the same promoted class regardless of host or turn, undoing the hold at line 617 and making the new pass a no-op with a fixture that omits the ledger row the promotion mark asserts.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T051143493706-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-52e55b67cc4b-figure" data-who="reckon-build" data-when="2026-11-22T05:22:57.825Z">
+    <div class="r-comment-body"><p>figure review of release-gates.svg at head 52e55b67 — 6 rubric items recorded in a parsed record (legibility, data_ink, decoration, table_form, label_collision pass; contrast below bar), 3 non-blocking findings, no blocking finding, no figure edits.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T053839322007-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-46e141da78b0-figure" data-who="reckon-build" data-when="2026-11-22T05:43:49.598Z">
+    <div class="r-comment-body"><p>figure review delivered read-only to the reviewed run's review-records directory; no plan edit, no repository change</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T053756786090-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-46e141da78b0" data-who="reckon-build" data-when="2026-11-22T05:46:00.473Z">
+    <div class="r-comment-body"><p>review stored read-only in the reviewed run's review-records directory; no plan edit, no repository change</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T060417181136-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-ad40298e2a66-figure" data-who="reckon-build" data-when="2026-11-22T06:10:07.825Z">
+    <div class="r-comment-body"><p>figure review of r-20261122T032430660077 parses: all 6 rubric items answered from the rendered 1399x720 PNG, 2 non-blocking findings, 0 blocking, so the figure does not hold the node</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T060310139225-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-ad40298e2a66" data-who="reckon-build" data-when="2026-11-22T06:12:34.707Z">
+    <div class="r-comment-body"><p>An independent review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up over the commits it gained since the review at 46e141da (46e141da..ad40298e) scores all six dimensions — goal_fidelity 18, evidence 10, scope_discipline 20, durability 13, fit 18, reuse 20 — with one blocking finding: the delivered manifest's negative_control_log names a log ending EXIT=0, so the repository's own manifest check returns ok:false and the run cannot be admitted until that line names a red control such as negative-control-before-both.log; two non-blocking findings record a misattributed revision in the evidence fragment and the figure having no committed guard.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T073256199883-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-a2f8ccc7710f-figure" data-who="reckon-build" data-when="2026-11-22T07:41:30.825Z">
+    <div class="r-comment-body"><p>figure review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up at base d24fa090e52748cc3100cd54e60d68ad3e87fb1b and head a2f8ccc7710fe6a356df8e2474d29603a94a471d: parsed figure rubric, 6/6 items answered, 2 non-blocking findings, 0 blocking</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T073111059088-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-a2f8ccc7710f" data-who="reckon-build" data-when="2026-11-22T07:41:43.764Z">
+    <div class="r-comment-body"><p>Review of ad40298e2a66e00108f2b23bd6964716caa3c9a8..a2f8ccc7710fe6a356df8e2474d29603a94a471d stored parsed with all six dimensions scored; the single commit added paragraph p12 to the evidence fragment and its three quoted figures reconcile exactly with baseline_suite-1795330216214459633.log, after_suite-1795330290925787702.log and negative-control-mutated.log.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T080233894680-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-cc8e541a9e5c-figure" data-who="reckon-build" data-when="2026-11-22T08:16:08.614Z">
+    <div class="r-comment-body"><p>figure review of release-gates.svg at head cc8e541a9e5c — 6 rubric items answered in a parsed read-only record, 2 non-blocking findings, 0 blocking, no figure edits</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T080059295633-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-cc8e541a9e5c" data-who="reckon-build" data-when="2026-11-22T08:24:07.991Z">
+    <div class="r-comment-body"><p>review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up at cc8e541a9e5ce92b982ed3c705919e99bac15557 (base a2f8ccc7710fe6a356df8e2474d29603a94a471d) scored goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 20, with added_failure_count 0 and one non-blocking finding on the evidence fragment's arm pair.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up" data-who="reckon-build" data-when="2026-11-22T08:00:47Z">
+    <div class="r-comment-body"><p>A promoted run whose recorded launcher host is the node the fleet has left, and whose newest stream shows no turn inside the silence window, gives up its pointer on the next pass, while a stream carrying a turn inside the window keeps it. The pass reads the host before the pid, so a foreign record never consults this host&#x27;s process table: a quiet run whose pid number names a live process here is released, and a run still writing keeps its pointer even though the promotion row alone would retire it. A workspace on disk, an unfinished landing journal, a pointer with no promotion evidence, and a run outside the caller&#x27;s project or session are each left alone.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261122T063715152464-review-of-acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen-96b9787d6806" data-who="reckon-build" data-when="2026-11-22T06:50:36.975Z">
+    <div class="r-comment-body"><p>Reviewed r-20261122T032518975799-acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen at base d24fa090 and head 96b9787d: the release of a recorded measurement run is landed in reckon/crew/pending_landing.py:1370,1376,1419-1428 and 1553-1562, the fence-prologue reader in reckon/crew/reports.py:1556-1566,1671, with the test at tests/test_a_recorded_measurement_run_is_released.py and evidence at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen.html; scores 19/19/15/18/16/16, no blocking finding, no added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261122T032518975799-acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen" data-who="reckon-build" data-when="2026-11-22T04:42:29.361Z">
+    <div class="r-comment-body"><p>A measurement-only run left a pending-landing journal when its promotion could not retire its pointer, and every pass read that journal as another owner's job: the record pass merged the replayed head onto the branch and cleared the journal while the live pointer kept the run's paths claimed. The landing pass now releases such a run on its stored record before it reads the journal, and the record pass finishes no landing for a measurement run; the journal is left byte-identical. Measure: two measurement-only runs with a reaped worker in one temporary crew home, one pass: the recorded run loses its pointer and worktree with its journal bytes unchanged and its head not on the branch, the recordless run keeps its pointer and worktree across two passes. At d24fa090 the recorded run keeps its pointer (EXIT=1, negative control); at 9678c464 the three-file suite passes 60, EXIT=0. The node also taught the gate-log reader to skip the fence's temp-directory notice, which a fenced job-node log carries before its header.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261122T042805211874-review-of-acniw-a-landing-group-member-is-released-when-its-group-lands-06e6a5410d11" data-who="reckon-build" data-when="2026-11-22T04:50:54.175Z">
+    <div class="r-comment-body"><p>Review of r-20261122T032520531981 at base b8d76fea6133 and head 06e6a5410d: all six dimensions scored (19/18/20/16/18/14, total 105), added_failure_count 0 from the reviewed run's baseline_suite (58 passed) and after_suite (61 passed) logs, two non-blocking findings, status parsed; stored at both declared record paths under the reviewed run's review-records directory.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261122T032520531981-acniw-a-landing-group-member-is-released-when-its-group-lands" data-who="reckon-build" data-when="2026-11-22T04:27:55.466Z">
+    <div class="r-comment-body"><p>A landing-group member is released when its group's journal is gone but its own outcome proves the head landed: one pass over a landed three-member group leaves 0 member pointers and moves all 3 waiting requests to queued, while a partially landed group releases only the members whose recorded head is on the primary branch; at the base revision the landed case keeps all 3 member pointers and holds all 3 waits.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261122T063850603141-review-of-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s-9143fee4f2a5" data-who="reckon-build" data-when="2026-11-22T06:52:28.015Z">
+    <div class="r-comment-body"><p>review stored for r-20261122T032522825423-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s at reviewed_head_sha 9143fee4f2a5ad956444b947090c8973cf8a5973 against reviewed_base_sha b8d76fea6133278752f383eb93dd69996f9facf9; scores goal_fidelity 18 evidence 18 scope_discipline 19 durability 16 fit 19 reuse 5; 3 non-blocking findings; added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261122T071153392917-review-of-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s-dae0b78d2231" data-who="reckon-build" data-when="2026-11-22T07:24:54.763Z">
+    <div class="r-comment-body"><p>reckon:a-claim-nobody-is-working-is-released#s5 — independent review of dae0b78 stored; verdict parsed, six dimensions scored, no blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261122T032522825423-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s" data-who="reckon-build" data-when="2026-11-22T07:11:03Z">
+    <div class="r-comment-body"><p>reckon:a-claim-nobody-is-working-is-released#s5</p></div>
+</div>
 </section>
   </main>
 </body>

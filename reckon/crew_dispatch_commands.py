@@ -1220,6 +1220,10 @@ def _queue_dispatch_batch(
     with ledger.index_reuse():
         queue = queue_plan if plan else queue_batch
         arguments = (project, plan) if plan else (entries,)
+        # A call naming a plan's whole width records that width on every request
+        # it stores, and one naming a batch file records the batch. A whole-plan
+        # call is that width by construction, so only the batch names it here.
+        width_options = {} if plan else {"dispatch_width": "batch"}
         result = queue(
             *arguments,
             session=str(session or ""),
@@ -1230,6 +1234,7 @@ def _queue_dispatch_batch(
             comment=comment,
             local=local,
             dry_run=dry_run,
+            **width_options,
         )
     _emit_crew_result(result, pretty)
 

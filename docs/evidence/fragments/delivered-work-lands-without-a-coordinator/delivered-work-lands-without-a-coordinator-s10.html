@@ -1,0 +1,65 @@
+<section id="dwlw-s10-a-day-of-landings">
+  <h2>A day of landings, measured against the baseline week</h2>
+
+  <p><strong>What this measures.</strong> A read-only census of the live crew
+  home reads every run's first transition into <code>complete</code> or
+  <code>completed_unpromoted</code> inside the window, follows its recorded
+  <code>promoted_revision</code> to the first commit on the primary branch's
+  first-parent chain, and reports the wait between the two. It also counts the
+  delivered backlog each session held, the promotion queue's waits, the runs
+  whose orientation check records a repaired echo, the delivered run-hours no
+  handoff receipt accounts for, and the landings with no promotion request
+  behind them. Nothing is written to the crew home, and no run, request, hold
+  or service is acted on.</p>
+
+  <p><strong>The instrument reproduces the baseline week.</strong> Over
+  2026-11-09T22:19:01Z to 2026-11-16T22:19:01Z it reads 3206 delivered runs and
+  845 commit-bearing landings, with a median of 1.863 h and a 90th percentile
+  of 8.606 h. The research record's own table reads 845, 1.863 h and 8.606 h,
+  so the re-run agrees to 0.00 % on all three. The record was a census taken at
+  one instant (2026-11-16T22:31:36Z); re-read today the same week shows 957
+  landings, 112 of them after that instant, and those are cut from the
+  reproduction because the record could not have seen them.</p>
+
+  <p><strong>The measured day</strong> is 2026-11-21T07:40:00Z to
+  2026-11-22T07:40:00Z: 113 delivered runs read, 88 commit-bearing, 86 landed
+  with a median of 2.17 h and a 90th percentile of 9.43 h.</p>
+
+  <table id="dwlw-s10-bounds">
+    <thead><tr><th>bound</th><th>measured</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr><td>median delivery &rarr; primary under 30 min</td>
+        <td>2.17 h</td><td>miss</td></tr>
+      <tr><td>no session holds more than five delivered runs for longer
+        than an hour</td>
+        <td>582.1 min at 6 runs (largest backlog 27 runs for 1.4 min)</td>
+        <td>miss</td></tr>
+      <tr><td>no promotion request waits more than 30 min</td>
+        <td>198.05 min; 5 requests over the bound, every other request started
+        within 25.34 min</td><td>miss</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The stage that carries the misses</strong> is the one the baseline
+  week points at: time no handoff receipt accounts for. Of the day's delivered
+  run-hours, 40.0 % (174 h) name no stage receipt; delivery to the first
+  promotion request accounts for 213.59 h across the cohort, the wait from a
+  finished promotion to the landing for 43.37 h, and the queue and the
+  promotion service are small (2.65 h and 1.87 h). The five long queue waits
+  all belong to review-self promotions requested in one afternoon cluster.</p>
+
+  <figure>
+    <img src="/reckon/figures/delivered-work-lands/wait-by-stage.svg" alt="Hours waited by stage per delivered run, baseline week against the measured day, on one axis" width="1400">
+    <figcaption>Hours waited by stage per delivered run, the baseline week
+    against the measured day on one axis. The baseline's larger no-stage-receipt
+    share is the runs that stayed delivered for days before the record was
+    taken. Totals for the day are 174 h, 214 h, 43 h, 2.6 h and 1.9 h in the
+    order shown.</figcaption>
+  </figure>
+
+  <p><strong>Also recorded.</strong> The largest delivered backlog in one
+  session was 27 runs for 1.4 minutes at 2026-11-22T06:43:32Z; 8 runs carry a
+  repaired echo in their orientation check; 19 landings had no promotion
+  request behind them; and no coordinator-issued promotion settled during the
+  day (9 service promotions settled, 0.38 an hour).</p>
+</section>

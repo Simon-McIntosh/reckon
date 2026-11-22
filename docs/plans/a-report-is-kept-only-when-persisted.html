@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Crew reports expire by default; a figure, and optionally its data, survives only when someone persists it to the project&#x27;s own store.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-effort-hours" content="21.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s9&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
@@ -188,6 +188,27 @@
     <p class="r-dec-rat">Slow plans keep their working evidence for a month, and the 30-day ceiling stops a long-lived plan from growing without bound. The lead asked in the same answer for an SPA filter for retained images, which is §5.</p>
     </div>
 </section>
+
+    <h2 id="s7">§7 — A node whose result can be drawn leaves a figure, and no prose report</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The lead's direction of 22 November 2026: a worker's reflex is a graphical evidence trail of figures, plots and animations wherever the work supports one, and written evidence reports are composed only when a plan or a sprint closes. The fleet does the opposite. In the week to 21 November reckon recorded 746 landings, 965 commits whose subject begins <code>docs(evidence)</code>, and 37 figure files. The composed worker contract explains it: one clause tells a node it "writes no figure and no evidence prose outside the landing fragment" unless its done-when names that artifact, and a later clause tells the same node to "use a figure wherever a spatial, plotted or sequential relationship is clearer" (both in <code>reckon/crew/prompts.py</code>). Workers obey the first and write a fragment of prose.</p>
+    <p><strong>Deliverable.</strong> The contract a worker is launched with says one thing about evidence. A node whose result is a measurement across cases or over time, a comparison of arms, a geometry or a sequence saves one figure of it in its figure topic directory, or an animation where the result is a sequence in time, through the repository's checked save function, and names it in its manifest. A node whose result is none of these saves no figure. In both cases the node's prose is its landing line, and it writes an evidence fragment only for a negative result. The contract never carries a clause that withholds a figure beside one that asks for it.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_drawable_result_leaves_a_figure.py</code> passes, covering: the contract composed for a node whose done-when states a measure asks for the figure and names the topic directory; the contract composed for a node whose done-when is a rename asks for none; no composed contract contains both a clause withholding a figure and a clause asking for one; and the worker protocol reference states the same rule in the same words. The node also commits a script that counts, for a named seven-day window, landed implement runs, <code>docs(evidence)</code> commits and figure files, and records the window before this node as the baseline. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/crew/prompts.py</code>, <code>skills/reckon-build/references/worker-protocol.md</code>, <code>scripts/measure_evidence_trail.py</code> and the new test.</p>
+    <p><strong>Negative control.</strong> At the base revision, the third case must fail, with both clauses present in one composed contract.</p>
+
+    <h2 id="s8">§8 — A plan's evidence report is written once, at closure, and names its plan and sprint</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>A plan's landed record is the one written account of what its nodes delivered. A reader who opens one has to know which plan it records and which sprint that plan ran in, and should see the figures the nodes drew rather than a paragraph about each. Of the 226 landed records under <code>docs/evidence/archive/</code> on 22 November 2026, all 226 name their plan in metadata, 9 name a sprint, and 59 embed a figure.</p>
+    <p><strong>Deliverable.</strong> Closing a plan composes one evidence report for it. The report states the plan it records and the sprint that plan belonged to, each as a link, in its first visible block and in its metadata; it has one row per landed node carrying that node's landing line; and it embeds, under the node's row, every figure the node saved. No evidence report is composed for a plan while it is open.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py</code> passes, covering: closing a plan in sprint S9 with three landed nodes, two of which saved figures, yields one record whose metadata names the plan and the sprint, whose first block links both, which embeds both figures by project-absolute path beneath their nodes' rows, and which <code>reckon audit-doc</code> accepts; a landing on a plan that stays open composes no record; and closing a plan that belongs to no sprint is reported naming the plan, not composed with an empty sprint. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/evidence.py</code> and the new test.</p>
+    <p><strong>Negative control.</strong> At the base revision, the first case must fail, with the sprint absent from the record.</p>
+
+    <h2 id="s9">§9 — A sprint's closing report names its sprint and links each plan's report</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>A sprint closes with no account of itself. The one that exists for S27, <code>docs/evidence/archive/S27-closing.html</code>, was written by hand and is not committed. The lead reads a sprint as a whole: which plans it held, what each delivered, and the figure that shows it.</p>
+    <p><strong>Deliverable.</strong> Closing a sprint composes one report for it. The report names the sprint and its theme, lists every member plan with its status at closure and a link to that plan's evidence report where one exists, and embeds one figure per plan that has one. A member plan still open is listed as carried, with the sprint it moves to when it has one.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_closed_sprint_has_a_report_naming_its_plans.py</code> passes, covering: closing a sprint of three plans, two closed with reports and one still open, yields one report that names the sprint, links the two reports, embeds a figure from each, and lists the third as carried; the report's metadata names the sprint; and closing a sprint twice leaves one report. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/evidence.py</code> and the new test.</p>
+    <p><strong>Negative control.</strong> At the base revision, the first case must fail, with no report composed.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>

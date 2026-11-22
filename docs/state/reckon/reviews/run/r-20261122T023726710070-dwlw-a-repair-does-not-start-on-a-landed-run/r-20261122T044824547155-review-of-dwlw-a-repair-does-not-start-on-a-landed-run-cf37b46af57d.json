@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1862",
+    "reckon/crew/queue_landing.py:1897",
+    "reckon/crew/queue_landing.py:2203",
+    "reckon/crew/queue_landing.py:2646",
+    "reckon/crew/pending_landing.py:261",
+    "reckon/crew/pending_landing.py:1691",
+    "reckon/crew/pending_landing.py:1725",
+    "reckon/crew/pending_landing.py:1802",
+    "reckon/crew_run_commands.py:5031"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T04:50:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023726710070-dwlw-a-repair-does-not-start-on-a-landed-run/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "the after_suite line is truncated mid-JSON (its command carries the literal text ': placeholder' and its log_path ends 'after_suite-179532258_placeholder'), and the artifacts and rubric lines are likewise literal 'placeholder' values with no rubric.<dimension> self-check present; a promotion reading the after_suite field gets no usable command or log path, though the readable evidence survives in the tests:/test_logs fields and the logs those name."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023726710070-dwlw-a-repair-does-not-start-on-a-landed-run/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "changed_paths names the new test file as tests/test_a_repair_does-not-start-on-a-landed-run.py, a hyphenated path that does not exist, while the delivered file is tests/test_a_repair_does_not_start_on_a_*_landed_run.py, so a declared-versus-delivered path audit shows a mismatch that is only typographical."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all four commits against b5444d24ba; 58297dd327 adds the two refusals, the preserve_manifest_status argument and the new test file, 75248b99f6 and 653c7aad41 write and re-quote the evidence fragment, and cf37b46a removes the duplicate ancestry helper and reads recovery_classification._head_on_primary_branch instead.",
+    "done_when": "the done_when requires tests/test_a_repair_does_not_start_on_a_landed_run.py to pass its landed-head, in-flight-landing and live-conflict cases with each arm's log under the run directory carrying its revision, literal command and closing EXIT= line, plus a negative control; baseline_suite-1795322511424132926.log:8 reads 58 passed in 43.31s EXIT=0, after_suite-1795322586710641149.log:8 reads 61 passed in 44.39s EXIT=0, and negative-control.log reads 3 failed in 1.72s EXIT=1.",
+    "goal": "the node's goal is to withhold a conflict repair from a run already landed or being landed; reckon/crew/recovery_repair_dispatch.py:85 refuses a head the primary branch already contains and :101 holds the repair while a coordinator's land attempt is unanswered, ahead of every resume path in dispatch_merge_repair.",
+    "manifest": "read the reviewed manifest.md; it records status complete, the four commits ending at cf37b46a, the literal gate command and both suite arms with 0 failure ids, but its after_suite line is truncated mid-JSON with a literal placeholder and no rubric.<dimension> lines are present.",
+    "write_paths": "the reviewed node declared six paths (reckon/crew/recovery_repair_dispatch.py, reckon/crew/pending_landing.py, tests/test_a_repair_does_not_start_on_a_landed_run.py, the evidence fragment, the figure directory and reckon/crew/resumption.py); all five paths in b5444d24ba..cf37b46a are inside that set and the figure directory is unused."
+  },
+  "justifications": {
+    "durability": "negative-control.log reddens all three added assertions at b5444d24ba with genuine failures: :169 and :190 catch a resume that launches for an already-landed head or for a landing in progress, and :244 catches the base's rewrite of the manifest status from complete to in-progress, so reinstating the base behaviour reddens each test.",
+    "evidence": "the done_when's three cases are asserted in tests/test_a_repair_does_not_start_on_a_landed_run.py:169, :190 and :244, and the manifest's quoted 61 passed, 58 passed and 3 failed figures reconcile against after_suite-1795322586710641149.log:8, baseline_suite-1795322511424132926.log:8 and negative-control.log:97.",
+    "fit": "the new code follows the surrounding private-predicate and lazy-import idiom of reckon/crew/recovery_repair_dispatch.py, but reckon/crew/pending_landing.py:732 land_attempt_in_progress is a bare public alias of the same module's private _land_attempt_unanswered at :745, adding a second spelling of one predicate.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:85 and :101 implement the deliverable: an already-landed head is refused with its conflict cleared and an in-progress landing holds the repair, while :218 passes preserve_manifest_status=True so a started repair leaves the manifest status as it found it.",
+    "reuse": "reckon/crew/pending_landing.py no longer defines an ancestry helper and reckon/crew/recovery_repair_dispatch.py:85 calls recovery_classification._head_on_primary_branch, the owner at reckon/crew/recovery_classification.py:1191 that queue_landing.py:87 and obligations.py:3033 already reuse, so the added definition extends the existing owner.",
+    "scope_discipline": "every path in the four-commit diff is inside the declared write paths, and no file outside them appears in any commit."
+  },
+  "plan": "delivered-work-lands-without-a-coordinator",
+  "plan_section": "s35",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to withhold a conflict repair from a run already landed or being landed; reckon/crew/recovery_repair_dispatch.py:85 refuses a head the primary branch already contains and :101 holds the repair while a coordinator's land attempt is unanswered, ahead of every resume path in dispatch_merge_repair.\nVERDICT done_when: the done_when requires tests/test_a_repair_does_not_start_on_a_landed_run.py to pass its landed-head, in-flight-landing and live-conflict cases with each arm's log under the run directory carrying its revision, literal command and closing EXIT= line, plus a negative control; baseline_suite-1795322511424132926.log:8 reads 58 passed in 43.31s EXIT=0, after_suite-1795322586710641149.log:8 reads 61 passed in 44.39s EXIT=0, and negative-control.log reads 3 failed in 1.72s EXIT=1.\nVERDICT write_paths: the reviewed node declared six paths (reckon/crew/recovery_repair_dispatch.py, reckon/crew/pending_landing.py, tests/test_a_repair_does_not_start_on_a_landed_run.py, the evidence fragment, the figure directory and reckon/crew/resumption.py); all five paths in b5444d24ba..cf37b46a are inside that set and the figure directory is unused.\nVERDICT manifest: read the reviewed manifest.md; it records status complete, the four commits ending at cf37b46a, the literal gate command and both suite arms with 0 failure ids, but its after_suite line is truncated mid-JSON with a literal placeholder and no rubric.<dimension> lines are present.\nVERDICT diff: read all four commits against b5444d24ba; 58297dd327 adds the two refusals, the preserve_manifest_status argument and the new test file, 75248b99f6 and 653c7aad41 write and re-quote the evidence fragment, and cf37b46a removes the duplicate ancestry helper and reads recovery_classification._head_on_primary_branch instead.\nCALL_SITES: reckon/crew/queue_landing.py:1862, reckon/crew/queue_landing.py:1897, reckon/crew/queue_landing.py:2203, reckon/crew/queue_landing.py:2646, reckon/crew/pending_landing.py:261, reckon/crew/pending_landing.py:1691, reckon/crew/pending_landing.py:1725, reckon/crew/pending_landing.py:1802, reckon/crew_run_commands.py:5031\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:85 and :101 implement the deliverable: an already-landed head is refused with its conflict cleared and an in-progress landing holds the repair, while :218 passes preserve_manifest_status=True so a started repair leaves the manifest status as it found it.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's three cases are asserted in tests/test_a_repair_does_not_start_on_a_landed_run.py:169, :190 and :244, and the manifest's quoted 61 passed, 58 passed and 3 failed figures reconcile against after_suite-1795322586710641149.log:8, baseline_suite-1795322511424132926.log:8 and negative_control.log:97.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the four-commit diff is inside the declared write paths, and no file outside them appears in any commit.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reddens all three added assertions at b5444d24ba with genuine failures: :169 and :190 catch a resume that launches for an already-landed head or for a landing in progress, and :244 catches the base's rewrite of the manifest status from complete to in-progress, so reinstating the base behaviour reddens each test.\nSCORE fit: 17\nJUSTIFICATION fit: the new code follows the private-predicate and lazy-import idiom of reckon/crew/recovery_repair_dispatch.py, but reckon/crew/pending_landing.py:732 land_attempt_in_progress is a bare public alias of the same module's private _land_attempt_unanswered at :745, adding a second spelling of one predicate.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/pending_landing.py no longer defines an ancestry helper and reckon/crew/recovery_repair_dispatch.py:85 calls recovery_classification._head_on_primary_branch, the owner at reckon/crew/recovery_classification.py:1191 that queue_landing.py:87 and obligations.py:3033 already reuse, so the added definition extends the existing owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023726710070-dwlw-a-repair-does-not-start-on-a-landed-run/manifest.md:20 non-blocking: the after_suite line is truncated mid-JSON (': placeholder' in its command, log_path ending 'after_suite-179532258_placeholder'), and the artifacts and rubric lines are literal placeholders with no rubric.<dimension> self-check, so a promotion reading after_suite gets no usable command or log path though tests:/test_logs and the logs themselves remain readable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023726710070-dwlw-a-repair-does-not-start-on-a-landed-run/manifest.md:12 non-blocking: changed_paths names the new test file as tests/test_a_repair_does-not-start-on-a-landed-run.py, a hyphenated path that does not exist, so a declared-versus-delivered audit shows a typographical mismatch.\n",
+  "review_run_id": "r-20261122T044824547155-review-of-dwlw-a-repair-does-not-start-on-a-landed-run-cf37b46af57d",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_head_sha": "cf37b46af57d45e24deb3b3a7621f4234df10c3d",
+  "reviewed_run_id": "r-20261122T023726710070-dwlw-a-repair-does-not-start-on-a-landed-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:00:17.739470+00:00",
+  "total": 113
+}

@@ -133,6 +133,16 @@ def test_declared_project_server_is_available(tmp_path, worker_setup, command):
     assert active_servers(plan, worker_setup) == {"project-extra"}
 
 
+@pytest.mark.parametrize("command", ["claude", "clive", "codex"])
+def test_no_launch_withholds_the_editing_tools(tmp_path, worker_setup, command):
+    """Every dialect keeps its own editing tools; no launch is denied one."""
+    plan = launch(tmp_path, worker_setup, command)
+    assert active_servers(plan, worker_setup) == set()
+    assert "--disallowedTools" not in plan.argv
+    assert "Edit" not in plan.argv
+    assert "MultiEdit" not in plan.argv
+
+
 def test_profile_only_servers_do_not_create_incomplete_root_transports(tmp_path):
     from reckon._worker_fence import codex_worker_mcp_flags
 

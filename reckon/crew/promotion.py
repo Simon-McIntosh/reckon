@@ -1297,6 +1297,29 @@ def complete(
                 waiver_reason=domain_waiver,
             )
 
+        def _manifest_status_or_record() -> dict[str, Any] | None:
+            """The manifest's status, or the fact that it could not be read.
+
+            A review run's deliverable is the record it files, so a manifest
+            that does not parse withholds nothing the promotion needs: the
+            record is judged on its own, and the value returned here is written
+            on the row so a reader can see the promotion ran without one, and
+            why. Every other run keeps the reader's refusal unchanged.
+            """
+            try:
+                return _require_recognised_manifest_status(run_id, record)
+            except ManifestParseError as refusal:
+                from reckon.crew.recovery_review_delivery import (
+                    review_record_delivered,
+                )
+
+                if not review_record_delivered(record):
+                    raise
+                return {
+                    "path": str(record.get("manifest_path") or ""),
+                    "reason": str(refusal),
+                }
+
         # The landing checks read the ledger several times and the locked
         # promotion reads it again a moment later. One region serves them
         # all one index decode per read key, and _complete_locked closes it
@@ -1330,7 +1353,7 @@ def complete(
                     lambda: _require_commit_for_changed_manifest(
                         run_id, record, no_commit_reason=no_commit
                     ),
-                    lambda: _require_recognised_manifest_status(run_id, record),
+                    _manifest_status_or_record,
                     # The rest of the manifest's own faults, refused with the
                     # reason the worker's check emits while the run still holds
                     # a turn. Judged from the file rather than the repository, so
@@ -1454,6 +1477,7 @@ def complete(
                 require_gate_check=require_gate_check,
                 suite_delta=suite_delta,
                 boundary_waiver=boundary_waiver,
+                manifest_unreadable=_manifest_status,
                 domain_waiver_record=_domain_checks,
                 resume_remedy=resolved.get("resume_remedy"),
                 resume_waived=resume_waived,
@@ -2404,6 +2428,7 @@ def _complete_locked(
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
     boundary_waiver: str = "",
+    manifest_unreadable: Mapping[str, Any] | None = None,
     domain_waiver_record: Mapping[str, Any] | None = None,
     resume_remedy: Mapping[str, str] | None = None,
     resume_waived: Mapping[str, str] | None = None,
@@ -2851,6 +2876,9 @@ def _complete_locked(
             role=str(record.get("role") or ""),
             spec_level=str(node.get("spec_level") or ""),
             member_id=str(record.get("member") or ""),
+            # The width the request was dispatched at rides the committed row
+            # because promotion deletes the live pointer that carries it.
+            dispatch_width=str(record.get("dispatch_width") or ""),
             backend=str(
                 record.get("backend")
                 or (record.get("agent") or {}).get("backend")
@@ -2924,6 +2952,12 @@ def _complete_locked(
         if overridden_hold(run.get("picker_selection")):
             run["route_mode"] = OVERRIDDEN_HOLD_ROUTE_MODE
         run["attempt"] = int(record.get("attempt") or 1)
+        # A review promoted from its record while its manifest could not be
+        # parsed carries both facts on the row: what was promoted from, and the
+        # refusal the manifest's own reader gave, so no later reader has to
+        # re-open the file to learn why the manifest is not quoted here.
+        if manifest_unreadable:
+            run["manifest_unreadable"] = dict(manifest_unreadable)
         run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
         # The worker's exit record rides the row verbatim, and the key is written
         # only when the run directory held one: a present-but-empty key would read

@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:1657 compose_landed_record",
+    "reckon/evidence.py:854 _fragment_href"
+  ],
+  "completed_at": "2026-11-22T04:47:32.000Z",
+  "dispatched_at": "2026-11-22T04:37:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/arcwc-find-where-a-plan-read-spends-ten-times-its-parse.html",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "No figure was delivered although the dispatch declared the plan's figures directory as a write path, and the cold-versus-warm scaling result (27.7 s against 0.77 s cold, flat warm) is the comparison a figure exists to show; the record carries it as prose and inline numbers only."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/logs/12-parse-baseline.log",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "The command header carries the placeholder 'docs/plans/<slug>.html  (monitor, then small)' rather than the literal command that ran, so the done-when's literal-command clause is not met for the baseline run; both resolved paths do appear on the log's two BASELINE lines."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/logs/08-read-small-cold.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "A failed 'git -n' invocation's usage output is captured ahead of the headed record, so this log opens with a command that carries no revision header and no EXIT= line before the correctly headed read begins at line 9."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/where-a-plan-read-spends-its-time.md",
+      "line": 108,
+      "severity": "non-blocking",
+      "text": "The note says the parse count sits 'against 249 plan files', but git ls-tree -r 319b74cb95 docs/plans lists 252 plan documents (all carrying plan-slug meta), so the supporting count does not reconcile; the load-bearing 548-parse figure comes from the profile and the conclusion is unaffected."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The fragment is reached by reckon/evidence.py:1657 compose_landed_record, which appends docs/evidence/fragments/<plan>/<node>.html into the plan's cumulative landed record, and by reckon/evidence.py:854 _fragment_href, which links it only when the file exists.",
+    "diff": "Read commit 2a6107549b against base 319b74cb95: one new 83-line HTML evidence section, with no code, plan-state or plan-file change, and every cited line anchor still resolves to the named function at that revision.",
+    "done_when": "The done_when asks for a note with top cumulative frames, call counts, a one-sentence dominant cost, the repair as a plan section and a 29 KB scaling control, all five of which are present, and logs/17-note-path-attempt.log:5 records the declared note path refused with 'Read-only file system' so the note sits under the run directory instead.",
+    "goal": "The goal is 'Find where a plan read spends ten times its parse'; the note at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/where-a-plan-read-spends-its-time.md profiles the served read_plan(view=\"version\") and a no-op edit_plan on the monitor plan and the 29 KB control and names where the CPU goes with call counts.",
+    "manifest": "Read; it records commit 2a6107549b, the one changed path, the per-call figures with their log names, tests: none with the investigation reason, and the read-only note-path refusal under outside_scope.",
+    "write_paths": "The declared paths are docs/figures/a-read-costs-what-changed/arcwc-find-where-a-plan-read-spends-ten-times-its-parse and docs/evidence/fragments/a-read-costs-what-changed/arcwc-find-where-a-plan-read-spends-ten-times-its-parse.html; the diff's single path is the fragment and sits inside them, and the declared figures path was left unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Find where a plan read spends ten times its parse'; the note at .../where-a-plan-read-spends-its-time.md profiles the served read_plan(view=\"version\") and a no-op edit_plan on the monitor plan and the 29 KB control and names where the CPU goes with call counts.\nVERDICT done_when: the done_when asks for top cumulative frames, call counts, a one-sentence dominant cost, the repair as a plan section and a 29 KB control, all five present, and logs/17-note-path-attempt.log:5 records the declared note path refused with 'Read-only file system'.\nVERDICT write_paths: the diff's one path docs/evidence/fragments/a-read-costs-what-changed/arcwc-find-where-a-plan-read-spends-ten-times-its-parse.html is inside the declared fragment and figures paths; the figures path was left unused.\nVERDICT manifest: read; it records commit 2a6107549b, the changed path, the per-call figures with log names, tests: none with its reason, and the note-path refusal under outside_scope.\nVERDICT diff: read commit 2a6107549b against 319b74cb95: one new 83-line HTML evidence section, no code or plan change, and every cited anchor resolves at that revision.\nCALL_SITES: reckon/evidence.py:1657 compose_landed_record, reckon/evidence.py:854 _fragment_href\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the note at where-a-plan-read-spends-its-time.md:80-143 gives the cold and warm profiles with top cumulative frames and call counts and names the dominant cost, which is exactly what the goal asks.\nSCORE evidence: 17\nJUSTIFICATION evidence: each load-bearing figure reconciles with a headed log (logs/02 wall 27.732 s, logs/04 66.5 of 69.5 s in build_index, logs/05 5,297 posix.stat, logs/12 0.332 s parse) and every cited line resolves, but logs/12-parse-baseline.log:2 carries a placeholder command and the note's supporting plan count is 3 short.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff adds only the one fragment file, which is the declared evidence path, and no plan state, plan file or production module is touched.\nSCORE durability: 14\nJUSTIFICATION durability: the diff adds no assertion and this node adds no executable code, so nothing reddens if the fragment's numbers go stale, and the note it cites lives outside git under the run directory.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the sibling sections' shape (docs/evidence/fragments/a-read-costs-what-changed/a-one-plan-read-composes-one-plan.html:1-5) with an id, an h2 and What/Result/Dominant/Repair paragraphs, and introduces no plan-stage symbol name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so no capability is forked; the fragment mechanism it uses is the one reckon/evidence.py:1657 already owns.\nFINDING docs/evidence/fragments/a-read-costs-what-changed/arcwc-find-where-a-plan-read-spends-ten-times-its-parse.html:17 non-blocking: no figure was delivered although the figures directory was a declared write path, so the cold-versus-warm scaling result is prose only.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/logs/12-parse-baseline.log:2 non-blocking: the command header uses the placeholder 'docs/plans/<slug>.html' instead of the literal command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/logs/08-read-small-cold.log:1 non-blocking: a failed git invocation's usage text precedes the headed record, so the log opens with an unheaded command carrying no EXIT= line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/where-a-plan-read-spends-its-time.md:108 non-blocking: the note says 249 plan files where revision 319b74cb95 holds 252, an unreconciled supporting count that the profile-derived 548-parse figure does not depend on.",
+  "review_run_id": "r-20261122T043600769941-review-of-arcwc-find-where-a-plan-read-spends-ten-times-its-parse-2a6107549b1c",
+  "reviewed_base_sha": "319b74cb954b1b0199295b0752a4344883911636",
+  "reviewed_head_sha": "2a6107549b1ca610b903e56729c20c6d1aca9ddb",
+  "reviewed_run_id": "r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:47:32.000000+00:00",
+  "total": 107
+}

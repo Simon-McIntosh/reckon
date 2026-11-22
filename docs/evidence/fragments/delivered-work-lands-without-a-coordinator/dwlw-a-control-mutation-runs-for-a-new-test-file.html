@@ -1,0 +1,70 @@
+<section id="dwlw-a-control-mutation-runs-for-a-new-test-file" class="evidence-fragment">
+  <h2>§30 — A run that adds a test file can still have its control mutation measured</h2>
+  <p>
+    The control mutation is a node's own tests run over the tree its repair is
+    absent from. Where the measurement goes to a partition, that tree is built
+    from a revision inside the submitted job, so a test file the node adds —
+    absent from the run's base revision — has to be carried in from a revision
+    that holds it. The partitioned builder carried from the revision it was
+    asked to build, and the control measure asked it for the base revision
+    (its own arm's revision), so an added test file produced
+    <code>fatal: pathspec 'tests/test_iron_field_source.py' did not match any
+    files</code>, then <code>tar: This does not look like a tar archive</code>,
+    and <code>EXIT=2</code> — read as "the control mutation did not run".
+  </p>
+  <p>
+    Reproduced before the change against a temporary repository whose head adds
+    <code>tests/test_added.py</code> and whose base does not hold it: the
+    submitted script's log held exactly those three lines and
+    <code>control_mutation_observation</code> returned
+    <code>{'unreadable': 'the control mutation did not run'}</code>.
+  </p>
+  <p>
+    The control now carries the node's test files from the head the delivered
+    tree is at — the revision that holds them — while still building the tree
+    at the run's base revision. The carry step is named: a path the revision
+    does not hold stops the arm with
+    <code>cannot build the measurement tree: &lt;path&gt; is not present at
+    revision &lt;rev&gt;</code> rather than two runner fragments, and that
+    sentence is the arm's unreadable reason, so the refusal names the path and
+    the revision it asked.
+  </p>
+  <p>
+    The delivered head is read through the repository's shared commit resolver
+    rather than by a second <code>rev-parse</code> of its own, so a bound or a
+    revision validation fixed in that resolver reaches this reader too. The
+    case that holds it replaces the resolver and asserts the delivered head
+    came from it, which a private <code>rev-parse</code> call cannot satisfy.
+  </p>
+  <p id="dwlw-a-control-mutation-runs-for-a-new-test-file-measure">
+    Measure: the focused gate at <code>8f68df5e4e</code> runs the new test
+    file together with the neighbouring partition and control tests —
+    <code>tests/test_a_gate_creates_its_log.py</code>,
+    <code>tests/test_negative_control_log_is_a_path.py</code>,
+    <code>tests/test_a_landing_measures_a_mismatched_arm.py</code>,
+    <code>tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py</code>
+    — and reports <code>43 passed in 8.23s</code>. The four cases in that file
+    are: the added test file carried from the head reads red over the base as
+    declared (<code>tests/test_added.py::test_mutated</code>, a
+    <code>FAILED</code> id and <code>EXIT=1</code>); a run editing only an
+    existing test is measured from the base revision's own copy; a path
+    neither revision holds is refused naming the path and the revision; and
+    the delivered head is answered by the shared commit resolver while the
+    arm's own log header records the revision it ran at.
+    The baseline arm at
+    <code>b5444d24baca</code> reports <code>58 passed in 36.68s</code> and the
+    after arm at <code>8fa3985e4e</code> reports
+    <code>62 passed in 38.45s</code>, each arm resolving its declared suite
+    over its own tree.
+  </p>
+  <p>
+    Negative control: on the base revision the first case fails with
+    <code>{'unreadable': 'the control mutation did not run'}</code>, red with a
+    <code>FAILED</code> id and <code>EXIT=1</code>. Reverting the delegation so
+    the delivered head is read by a private <code>rev-parse</code> makes the
+    resolver case fail on its own assertion, with <code>EXIT=1</code> and
+    <code>FAILED</code> naming that case. Each arm's log sits under the run
+    directory and carries its revision, its literal command and a closing
+    <code>EXIT=</code> line.
+  </p>
+</section>

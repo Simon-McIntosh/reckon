@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline-arm.log reads '# revision: 4a5ec5081e', runs three files, ends '62 passed in 50.53s' and 'EXIT=0' with no FAILED line, so its failure set is empty; after-arm.log reads '# revision: 249c54e8e6', runs four files including tests/test_the_admit_service_holds_bounded_memory.py, ends '69 passed in 324.90s (0:05:24)' and 'EXIT=0' with no FAILED line. Neither arm failed, so the added-failure set is empty.",
+  "call_sites": [
+    "reckon/crew/admission/service.py:485 (calls _verdicts._record_pass_verdicts on a completed pass)",
+    "reckon/crew/admission/service.py:552 (calls _verdicts._record_pass_verdicts on the loop's pass result)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T05:39:39Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read 3325edc4d8..249c54e8e6 commit by commit (two paths, +6/-9): the gap paragraph is corrected from 20 % to 22 %, the base growing-fixture row is corrected to the measured 120 MiB and 175 MiB and the arm's 133.68 s summary, the negative-control sentence now names the fixture on which each arm meets or fails the band, and the lander case drops the equality against the value the test handed in at line 116 for a key-presence check at line 127.",
+    "done_when": "the done_when asks for 100 passes over 30 live pointers under 2 GiB agreeing with the pass reading within 10 %, a 50-pass band within 10 %, an idle-pass reading, and arm logs carrying revision, literal command and a closing EXIT=; tests/test_the_admit_service_holds_bounded_memory.py:105, :89 and :146 assert the first three, and after-arm.log now carries the fourth.",
+    "goal": "the reviewed node's goal is that the admit service's resident memory stays bounded however long it runs and that every pass, including an idle one, writes a reading carrying that memory; the gained commit serves the node's evidence deliverable by making the landed record state the figure its own table gives rather than a different one (docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html:33).",
+    "manifest": "read; its after_suite names after-arm.log at 249c54e8e671e0e8ed4a42e92b1e2135e85d8ad0 with completed true, exit_status 0 and failure_count 0, and that log carries the revision header, the literal command, '69 passed in 324.90s' and a bare EXIT=0; baseline_suite names baseline-arm.log at 4a5ec5081e with 62 passed and EXIT=0.",
+    "write_paths": "the gained diff 3325edc4d8..249c54e8e6 touches only the evidence fragment and tests/test_the_lander_skips_a_run_landed_elsewhere.py, both declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_admit_service_holds_bounded_memory.py:155 fails if the pass record's resident figure stops agreeing with this process's own /proc reading, and tests/test_the_lander_skips_a_run_landed_elsewhere.py:124 fails at the base revision, which returns no record for an idle pass; the retained key-presence check at :127 catches only a dropped key, as the withdrawn equality did.",
+    "evidence": "after-arm.log now opens with '# revision: 249c54e8e6' and the literal four-file command and ends '69 passed in 324.90s' then 'EXIT=0', so the manifest's after_suite result is read from the artefact it names; the fragment's 45 % and 133.68 s figures match growing-base-arm.log.",
+    "fit": "the fragment keeps its table-then-paragraph shape at docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html:27-33, and the test edit at tests/test_the_lander_skips_a_run_landed_elsewhere.py:112-145 introduces no new symbol or name.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html:33 now states 22 %, matching the table row at line 30 and the head figures the manifest records (103,755,776 to 127,389,696 bytes).",
+    "reuse": "the gained diff adds no function, class or module to match against an owner; it deletes one assertion and edits prose, so no capability is re-implemented.",
+    "scope_discipline": "the two paths in 3325edc4d8..249c54e8e6 (the evidence fragment and tests/test_the_lander_skips_a_run_landed_elsewhere.py) are both in the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that the admit service's resident memory stays bounded and it writes a reading every pass; the gained commit serves that node's evidence deliverable by making the landed record at docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html:33 state the figure its own table and measurement give.\nVERDICT done_when: the done_when asks for 100 passes over 30 live pointers under 2 GiB agreeing with the pass reading within 10 %, the 50-pass band and the idle-pass reading, and that each arm's log carries its revision, literal command and a closing EXIT= line; tests/test_the_admit_service_holds_bounded_memory.py:105, :89 and :146 assert those, and after-arm.log now carries the revision, command, '69 passed in 324.90s' summary and a bare EXIT=0.\nVERDICT write_paths: the gained diff 3325edc4d8..249c54e8e6 touches only docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html and tests/test_the_lander_skips_a_run_landed_elsewhere.py, both inside the declared write paths.\nVERDICT manifest: read; its after_suite names after-arm.log at revision 249c54e8e671e0e8ed4a42e92b1e2135e85d8ad0 with completed true, exit_status 0 and no failure ids, and that log now reads the revision header, the literal command, '69 passed in 324.90s' and a bare EXIT=0 line; baseline_suite names baseline-arm.log at 4a5ec5081e with 62 passed and EXIT=0.\nVERDICT diff: read 3325edc4d8..249c54e8e6 commit by commit (two paths, +6/-9): the gap paragraph now says this revision ends 22 % above its fifth pass where the table row at line 30 records +22 %, the base growing-fixture row's 120 MiB and 175 MiB match growing-base-arm.log's 126263296 and 183402496 bytes and so do its 45 % and the arm's 133.68 s summary, the paragraph now states which fixture meets the section's negative control rather than claiming it for both, and the lander case at tests/test_the_lander_skips_a_run_landed_elsewhere.py:127 replaces the equality against the value the test handed in at line 116 with a key-presence check.\nCALL_SITES: reckon/crew/admission/service.py:485, reckon/crew/admission/service.py:552\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html:33 now states 22 %, matching the table row at line 30 and the head figures the manifest records (103,755,776 to 127,389,696 bytes).\nSCORE evidence: 18\nJUSTIFICATION evidence: after-arm.log now opens with '# revision: 249c54e8e6' and the literal four-file command and ends '69 passed in 324.90s' then 'EXIT=0', so the manifest's after_suite result is read from the artefact it names; the fragment's 45 % and 133.68 s figures match growing-base-arm.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two paths in 3325edc4d8..249c54e8e6 (the evidence fragment and tests/test_the_lander_skips_a_run_landed_elsewhere.py) are both in the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_admit_service_holds_bounded_memory.py:155 fails if the pass record's resident figure stops agreeing with this process's own /proc reading, and tests/test_the_lander_skips_a_run_landed_elsewhere.py:124 fails at the base revision, which returns no record for an idle pass; the retained key-presence check at :127 catches only a dropped key, as the withdrawn equality did.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment keeps its table-then-paragraph shape at docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html:27-33, and the test edit at tests/test_the_lander_skips_a_run_landed_elsewhere.py:112-145 introduces no new symbol or name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained diff adds no function, class or module to match against an owner; it deletes one assertion and edits prose, so no capability is re-implemented.\n",
+  "review_node": "review-of-mrfo-the-admit-service-holds-bounded-memory-249c54e8e671",
+  "review_run_id": "r-20261122T053816450788-review-of-mrfo-the-admit-service-holds-bounded-memory-249c54e8e671",
+  "reviewed_base_sha": "3325edc4d8892b41e5a89fac3a82a7a36df23156",
+  "reviewed_head_sha": "249c54e8e671e0e8ed4a42e92b1e2135e85d8ad0",
+  "reviewed_run_id": "r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T053816450788-review-of-mrfo-the-admit-service-holds-bounded-memory-249c54e8e671"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:46:38.485539+00:00",
+  "total": 113
+}

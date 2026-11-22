@@ -386,6 +386,7 @@ def build_record(
     spec_level: str = "",
     member_id: str = "",
     backend: str = "",
+    dispatch_width: str = "",
     agent: Mapping[str, Any] | None = None,
     brief: Mapping[str, Any] | None = None,
     plan_link: str = "",
@@ -537,6 +538,10 @@ def build_record(
         "lane": stored_identity.get("lane"),
         "model_key": stored_identity.get("model_key"),
         "local": bool(stored_agent.get("local")),
+        # The width the request was dispatched at, read from the pointer before
+        # promotion deletes it. Null rather than absent on a row whose request
+        # recorded no width, like the row's other declared-but-unset fields.
+        "dispatch_width": str(dispatch_width).strip() or None,
         "agent": stored_agent,
         "dispatched_at": str(dispatched_at),
         "completed_at": str(completed_at) or _utc_now(),

@@ -456,6 +456,10 @@ def _launch_dispatch(
             # session's budget keeps nothing, because the points return the
             # moment the request leaves the waiting phases.
             "priority": _dispatch_priority(dispatch_options),
+            # The width the caller asked for, carried on the pointer a promotion
+            # reads so the committed row can say whether the run came from a
+            # whole-plan call, a batch file or one section.
+            "dispatch_width": str(dispatch_options.get("dispatch_width") or ""),
             "due": due,
             "urgency": urgency,
             "brief": brief,

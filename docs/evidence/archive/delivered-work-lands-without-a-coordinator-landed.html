@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="delivered-work-lands-without-a-coordinator-landed">
+  <meta name="plan-title" content="Delivered Work Lands Without A Coordinator — landed record">
+  <meta name="plan-summary" content="Landing record for Delivered Work Lands Without A Coordinator: evidence appended by section.">
+  <meta name="plan-evidence-for" content="delivered-work-lands-without-a-coordinator">
+  <title>Delivered Work Lands Without A Coordinator — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Delivered Work Lands Without A Coordinator — landed record</h1>
+  <p>Landing record for Delivered Work Lands Without A Coordinator: evidence appended by section.</p>
+
+
+   <section id="dwlw-a-gate-exit-status-is-read-or-refused-by-name" data-evidence-origin="append">
+    <h2>s31 landed</h2>
+    <p>Run <code>r-20261122T023722834108-dwlw-a-gate-exit-status-is-read-or-refused-by-name</code> landed after the landing pass measured its suite at base and head.</p>
+  </section>
+
+  
+
+  <section id="s10-day-of-landings" data-node="delivered-work-lands-without-a-coordinator-s10">
+    <h2>&sect;10 &mdash; Shown on the fleet: a day of landings</h2>
+    <p>A read-only census of the live crew home, run on <code>rigel</code>. It reads the watch transition streams, the run store, the promotion-request records and each run's orientation check. Nothing was written to the crew home, and no run, request, hold or service was acted on.</p>
+    <p><strong>Measured window</strong> 2026-11-21T07:40:00+00:00 to 2026-11-22T07:40:00+00:00. <strong>Baseline window</strong> 2026-11-09T22:19:01+00:00 to 2026-11-16T22:19:01+00:00.</p>
+    <p>Delivery is the first watch transition of a run into <code>complete</code> or <code>completed_unpromoted</code> inside the window. A commit-bearing run has landed when its recorded <code>promoted_revision</code> is an ancestor of a commit on the primary branch's first-parent chain; the landing instant is that commit's committer time, found by ancestry checks. A head already on the primary at delivery contributes a zero delay. No file mtime is used as a timestamp.</p>
+    <h3>The instrument reproduces the baseline week</h3>
+    <p>The research record was a census taken at one instant, 2026-11-16T22:31:36+00:00, so a run it saw land has a delay and a run still in flight does not. Re-read today, the same week shows 957 commit-bearing landings, 112 of them after the record's instant. Those are cut from the reproduction and shown on their own row, because the record could not have seen them.</p>
+    <table>
+      <thead><tr><th>Delivery &rarr; primary</th><th>n</th><th>median [h]</th><th>p90 [h]</th><th>worst [h]</th></tr></thead>
+      <tbody>
+        <tr><td>Research record, as written</td><td>845</td><td>1.863</td><td>8.606</td><td>80.291</td></tr>
+        <tr><td>Census re-run, cut at the record's instant</td><td>845</td><td>1.863</td><td>8.606</td><td>80.291</td></tr>
+        <tr><td>Same week, at today's level of landings</td><td>957</td><td>2.350</td><td>14.635</td><td>83.313</td></tr>
+      </tbody>
+    </table>
+    <p>The re-run agrees with the record to 0.00&nbsp;% on cohort size, median and 90th percentile: reproduced inside the 2&nbsp;% bound. Of the 845 landings the record counted, 844 compare equal to the second.</p>
+    <h3>The measured day</h3>
+    <table>
+      <thead><tr><th>Measure</th><th>Baseline week</th><th>Measured 24&nbsp;h</th><th>Bound</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Delivered runs read</td><td>3206</td><td>113</td><td>&ge;&nbsp;100, else unread</td><td>pass</td></tr>
+        <tr><td>Commit-bearing runs that landed</td><td>845 of 984</td><td>86 of 88</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Median delivery &rarr; primary</td><td>1.86 h</td><td>2.17 h</td><td>&lt;&nbsp;0.5 h</td><td>miss</td></tr>
+        <tr><td>90th percentile delivery &rarr; primary</td><td>8.61 h</td><td>9.43 h</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Largest delivered backlog in one session</td><td>278 runs, 193.1 min</td><td>27 runs, 1.4 min</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Longest a session held more than five delivered runs</td><td>2329.9 min at 60 runs</td><td>582.1 min at 6 runs</td><td>&le;&nbsp;60&nbsp;min</td><td>miss</td></tr>
+        <tr><td>Promotion queue: longest request &rarr; start wait</td><td>2437.25 min</td><td>198.05 min</td><td>&le;&nbsp;30&nbsp;min</td><td>miss</td></tr>
+        <tr><td>Successful promotions per hour</td><td>8.79</td><td>0.38</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Runs whose orientation check records a repaired echo</td><td>1</td><td>8</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Run-hours no promotion-request record accounts for</td><td>14,896 h</td><td>174 h</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Share of the partitioned wait that is unattributed</td><td>87.3&nbsp;%</td><td>40.0&nbsp;%</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Stage journal: runs with an absent or incomplete journal</td><td>3195 of 3206</td><td>29 of 113</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Stage journal: hours with no receipt</td><td>unreadable</td><td>108.59 h of 1022.33 h observed</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Landings with no promotion request behind them</td><td>606</td><td>19</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>Coordinator-issued promotions settled</td><td>32</td><td>0</td><td>&mdash;</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/delivered-work-lands/wait-by-stage.svg" alt="Hours waited by stage, baseline week against the measured day, on one axis" width="1400">
+      <figcaption>Hours waited by stage, the baseline week against the measured 24&nbsp;h, on one axis. The same partition produces both series: delivery to the first promotion request, each request's wait for a start, each promotion's service time, the wait from a finished promotion to the landing, and a remainder no promotion record accounts for. The remainder dominates both because most of a delivered run's wait names no promotion record.</figcaption>
+    </figure>
+    <h3>Verdict, and the stage that carries each miss</h3>
+    <p><strong>Median.</strong> miss: 2.17 hours against the half-hour bound. The stages that carry it are <strong>unattributed</strong> time, which no promotion-request record accounts for: 174 run-hours (40.0&nbsp;% of the partitioned wait), then <strong>delivery to the request</strong> at 213.59 h and <strong>promoted to landed</strong> at 43.37 h. The queue and service stages are small by comparison: 2.65 h of queue wait and 1.87 h of promotion service across the delivered cohort.</p>
+    <p><strong>Backlog.</strong> miss: the largest backlog in one session was 27 delivered runs held 1.4 minutes, and the longest spell above five delivered runs in one session was 582.1 minutes at 6 runs, against a bound of one hour.</p>
+    <p><strong>Promotion queue.</strong> miss: the longest wait from request to start was 198.05 minutes. 5 requests waited more than 30 minutes and every other request started within 25.34 minutes. Every wait over the bound belongs to a review-self promotion that was requested in one afternoon cluster. The promotion service itself is fast: 1.87 h of service time across 98 requests. The queue bucket in the figure counts only the waits of runs delivered in the window, so it is smaller than this day-wide maximum.</p>
+    <p><strong>The stage journal.</strong> The crew's own receipt journal gives a second reading of the same question. Of 1022.33 h of observed delivered time in the day, 108.59 h (10.6&nbsp;%) is unknown, because the handoff between two receipts was never recorded. The baseline week cannot be read this way: 3195 of 3206 runs carry no journal at all, because the journal is newer than that week.</p>
+    <p>The numbers are the live fleet's, not a temporary crew home's. A miss names the stage that caused it and is a complete result. The stage named above, unattributed time no handoff record accounts for, is the promotion-request reading of the same gap the receipt journal reports.</p>
+  </section>
+
+</main>
+</body>
+</html>

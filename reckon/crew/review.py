@@ -2321,10 +2321,47 @@ _CTEST_ENTRY_RE = re.compile(r"^\s*\d+\s*-\s*(.+?)\s+\(([^)]*)\)\s*$")
 # opens this way and is left untouched.
 _CTEST_INDEX_RE = re.compile(r"^\d+\s+-\s+")
 
+# A ctest progress line, ``1/1 Test #1155: unit/imas/iron_limb_outline ......   Passed``.
+# ctest writes one per test as it runs, so a log that was cut down to an extract
+# (a truncated log, or one whose summary header fell outside the captured range)
+# still records which tests it ran and how each ended. The status is the
+# ``***``-prefixed token ctest writes on a failure, ``***Failed``, ``***Not
+# Run``, ``***Timeout`` and ``***Exception: <detail>`` among them. The name is
+# the label the project gave the test, taken verbatim like the block's entries.
+_CTEST_PROGRESS_LINE_RE = re.compile(
+    r"^[ \t]*\d+/\d+[ \t]+Test[ \t]+#\d+:", re.MULTILINE
+)
+_CTEST_PROGRESS_FAILURE_RE = re.compile(
+    r"^[ \t]*\d+/\d+[ \t]+Test[ \t]+#\d+:[ \t]+(?P<name>.+?)[ \t]+\.+[ \t]*\*\*\*",
+    re.MULTILINE,
+)
+
+# The reasons ctest attaches to a test it reports as failed. Inside a failure
+# block every entry is a failure whatever its reason; an entry-shaped line
+# outside a block is only a failure when its reason is one of these, so a test's
+# own output that happens to print ``<n> - <text> (<detail>)`` is not read as a
+# ctest entry. ``Subprocess aborted`` and ``SEGFAULT`` are reasons ctest prints
+# verbatim.
+_CTEST_FAILURE_REASON_RE = re.compile(
+    r"Failed|Not Run|Timeout|Exception|aborted|SEGFAULT|Killed", re.IGNORECASE
+)
+
+# An entry line carrying one of those reasons, as an extract whose failure
+# header fell outside the capture still prints it. It is a ctest marker in its
+# own right: no pytest log reports a failure in this shape, and a pytest gate
+# whose tests print such a line reports its own failures as ``FAILED`` node ids
+# first, which are read before this.
+_CTEST_FAILED_ENTRY_RE = re.compile(
+    r"^[ \t]*\d+[ \t]*-[ \t]*.+?[ \t]+"
+    r"\([^)]*(?:Failed|Not Run|Timeout|Exception|aborted|SEGFAULT|Killed)[^)]*\)[ \t]*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 # The lines a log carries when it is a ctest run, with or without failures. A
 # green ctest log has no failure block, so its format is recognised from the
 # run summary ctest always prints; without one the extractor cannot tell a
-# green ctest log from a log that records nothing.
+# green ctest log from a log that records nothing. An extract cut below the
+# summary is recognised from its progress lines instead.
 _CTEST_SUMMARY_RE = re.compile(r"tests passed,|tests failed out of|Total Test time")
 
 # The lines a log carries when it is a pytest run, with or without failures. A
@@ -2768,34 +2805,73 @@ def _pytest_failure_ids(
 
 
 def _ctest_failure_ids(log_text: str) -> set[str]:
-    """Return the test names a ctest gate log reports in its FAILED block.
+    """Return the test names a ctest gate log reports as failed.
 
-    A ctest run writes every failing test, and every test it could not run,
-    as one ``<index> - <name> (<reason>)`` entry beneath the line ``The
-    following tests FAILED:``. Each entry is a failure whatever its reason, so
-    a test reported ``Not Run`` behind a build break is read the same as one
-    that ran and failed. A block ends at the first line that is not an entry,
-    and the scan resumes rather than stopping: a multi-label gate runs ctest
-    once per label, so its log carries one ``The following tests FAILED:``
-    block per label and every one of them belongs to the gate's failure set. The name is taken verbatim: a
-    ctest name is the label the project gave the test, not a path relative to a
-    working directory, so it needs no reduction against the arm that printed it.
+    The block ctest writes beneath ``The following tests FAILED:`` is
+    authoritative wherever it is present, so a full-summary log reads exactly as
+    it did: its entries are the run's failures, and the progress lines ctest
+    printed while those same tests ran name the same tests, so reading both
+    would count one failure twice when the two spellings differ.
+
+    A log whose block header fell outside the captured range — an extract — is
+    read from what it does carry. ctest writes one progress line per test,
+    ``N/M Test #<index>: <name> ...***<reason>``, so a line ending in a
+    ``***`` status names a failure whatever its reason. It also repeats the
+    failing test as an entry line ``<index> - <name> (<reason>)``, which is the
+    block's own entry shape without the header; an entry line is read only when
+    its reason is one of ctest's failure statuses, so a test's own output that
+    happens to print the shape is not read as a failure.
+
+    The name is taken verbatim: a ctest name is the label the project gave the
+    test, not a path relative to a working directory, so it needs no reduction
+    against the arm that printed it.
     """
+    blocks = _ctest_block_failure_ids(log_text)
+    if blocks is not None:
+        return blocks
     ids: set[str] = set()
+    for raw in log_text.splitlines():
+        progress = _CTEST_PROGRESS_FAILURE_RE.match(raw)
+        if progress:
+            ids.add(progress.group("name").strip())
+            continue
+        match = _CTEST_ENTRY_RE.match(raw)
+        if match and _CTEST_FAILURE_REASON_RE.search(match.group(2)):
+            ids.add(match.group(1))
+    return ids
+
+
+def _ctest_block_failure_ids(log_text: str) -> set[str] | None:
+    """The names ctest lists beneath its ``The following tests FAILED:`` blocks.
+
+    Each entry under the header is a failure whatever its reason, so a test
+    reported ``Not Run`` behind a build break reads the same as one that ran and
+    failed. A block ends at the first line that is not an entry, and the scan
+    resumes rather than stopping: a multi-label gate runs ctest once per label,
+    so its log carries one block per label and every one of them belongs to the
+    gate's failure set.
+
+    ``None`` means the log carries no block header, so this reader has nothing
+    to report and the caller reads the extract's own lines instead. A set that
+    is present and empty means the blocks were found and listed no entry.
+    """
+    blocks: set[str] = set()
+    found = False
     in_block = False
     for raw in log_text.splitlines():
         if _CTEST_FAILED_HEADER_RE.match(raw.strip()):
             in_block = True
+            found = True
             continue
         if not in_block:
             continue
         match = _CTEST_ENTRY_RE.match(raw)
         if match:
-            ids.add(match.group(1))
+            blocks.add(match.group(1))
             continue
         if raw.strip():
             in_block = False
-    return ids
+    return blocks if found else None
 
 
 _EXIT_RECORD_LINE_RE = re.compile(r"^\s*EXIT=-?\d+\s*$", re.MULTILINE)
@@ -2887,7 +2963,9 @@ def gate_log_failure_ids(
     A pytest log's failures are its ``FAILED``/``ERROR`` node ids, canonicalised
     against the arm's own recorded directory; a ctest log's are the entries of
     its ``The following tests FAILED:`` block, including those marked ``Not
-    Run``, keyed by test name verbatim.
+    Run``, keyed by test name verbatim — or, in an extract whose block header
+    fell outside the capture, the tests its progress and entry lines report as
+    failed.
 
     ``None`` means the log is in neither format, so the reader cannot tell
     whether it recorded failures: the caller reads that as unmeasured rather
@@ -2923,13 +3001,29 @@ def _gate_log_format(log_text: str) -> str | None:
     ctest run with output-on-failure can carry a captured subprocess's own
     pytest-shaped text, which belongs to the test rather than to the gate.
 
+    A ctest log cut down to an extract carries no run summary, so its progress
+    lines are read as a marker too. A progress line ending in a ``***`` status
+    is ctest's own vocabulary and outranks a pytest summary, because a ctest
+    entry line's presence is a stronger statement about the runner than the
+    summary alone; a mere ``Passed`` progress line is weaker than a pytest
+    ``FAILED`` node id, so a pytest gate whose captured output happens to print
+    a ctest-shaped line is still read as pytest.
+
     ``None`` means the log carries no marker of either format, so the extractor
     cannot tell whether it recorded failures; the caller reads that as
     unmeasured rather than as a zero.
     """
     if _CTEST_FAILED_HEADER_RE.search(log_text) or _CTEST_SUMMARY_RE.search(log_text):
         return "ctest"
-    if _GATE_FAILURE_RE.search(log_text) or _PYTEST_SUMMARY_RE.search(log_text):
+    if _CTEST_PROGRESS_FAILURE_RE.search(log_text):
+        return "ctest"
+    if _GATE_FAILURE_RE.search(log_text):
+        return "pytest"
+    if _CTEST_PROGRESS_LINE_RE.search(log_text):
+        return "ctest"
+    if _CTEST_FAILED_ENTRY_RE.search(log_text):
+        return "ctest"
+    if _PYTEST_SUMMARY_RE.search(log_text):
         return "pytest"
     return None
 

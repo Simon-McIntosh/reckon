@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-admission-and-landing-take-seconds-landed">
+  <meta name="plan-title" content="Dispatch, Admission And Landing Take Seconds — landed record">
+  <meta name="plan-summary" content="Landing record for Dispatch, Admission And Landing Take Seconds: evidence appended by section.">
+  <meta name="plan-evidence-for" content="dispatch-admission-and-landing-take-seconds">
+  <title>Dispatch, Admission And Landing Take Seconds — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Dispatch, Admission And Landing Take Seconds — landed record</h1>
+  <p>Landing record for Dispatch, Admission And Landing Take Seconds: evidence appended by section.</p>
+
+
+   <section id="review-of-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass-03d8f58b2e74" data-evidence-origin="append">
+    <h2>s11 landed</h2>
+    <p>Run <code>r-20261122T054534863662-review-of-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass-03d8f58b2e74</code> landed after the landing pass measured its suite at base and head.</p>
+  </section>
+
+<section id="dispatch-admission-and-landing-take-seconds-s9" data-evidence-origin="append">
+    <h2>s9 measured — the control loop on the fleet, 22 November</h2>
+    <p>Five operations were measured on the live fleet on 22 November 2026 between 07:07 and 08:16 UTC, at revision <code>3a0f33d362</code>, by run <code>r-20261122T071812299226-dispatch-admission-and-landing-take-seconds-s9</code>. Every measure is the one the research record took on 16 November, taken the same way. One met its bound comfortably, and three of the four bounds are missed, each in a named stage. The fifth operation, the plan-selected store read, carries no bound in this section.</p>
+    <table>
+      <thead><tr><th>Operation</th><th>16 November</th><th>22 November</th><th>Bound</th><th>Verdict</th><th>The stage that decided it</th></tr></thead>
+      <tbody>
+        <tr><td>One dispatch preview, median of three</td><td>86.4 s</td><td>13.863 s</td><td>under 30 s</td><td>met</td><td>the narrowed scope check now runs over the candidate's paths</td></tr>
+        <tr><td>One admission pass, median of ten receipts</td><td>81.6 s</td><td>205.4 s</td><td>under 20 s</td><td>missed</td><td>the launch stage: the real dispatch it starts took 101.3 to 260.7 s</td></tr>
+        <tr><td>A declaration write's readiness read</td><td>406.6 s</td><td>39.6 s</td><td>under 30 s</td><td>missed</td><td>176 pointer classifications over the live store: <code>classify_pointer</code> 92.0 s, and 207 store reads paying <code>_refuse_owed_migration</code> 77.5 s. The landing audit made 0 probe</td></tr>
+        <tr><td>One plan's rows from the run store</td><td>1.31 s, 196 rows</td><td>9.22 s, 1,055 rows</td><td>none in §9</td><td>recorded</td><td>the plan-selected read returns the same rows as the exhaustive filter</td></tr>
+        <tr><td>Review launch after delivery, 90th percentile</td><td>96.9 min = 5,814 s</td><td>1,421.9 s</td><td>under 600 s</td><td>missed</td><td>the request, not the launch: request lag p90 1,037 s against launch lag p90 189 s</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/dispatch-admission-and-landing-take-seconds/dispatch-admission-and-landing-take-seconds-s9/stage-costs-after.svg" alt="Five control-loop operations measured before and after the work landed, on one logarithmic time axis, with the bound each one is held to">
+      <figcaption>Each operation's cost before the work landed and after, on one axis. The baseline figures are the research record's of 16 November; the after figures are this run's. The dotted mark on each row is the bound §9 sets for it. A row without a mark is not bounded by this section. The store read compares different populations — 196 rows then, 1,055 now — so it is a cost, not a regression claim.</figcaption>
+    </figure>
+
+    <h3>An admission pass takes three minutes, and its launches are why</h3>
+    <p>Ten consecutive receipts were read from the service's own verdict log, accumulated because that log trims itself at 1 MiB and never holds ten at once. The pass duration is the receipt's own <code>ended_at - started_at</code>, the definition the baseline used for its 81.6 s. The median is 205.4 s against a bound of 20 s; the fastest pass in the sample, 29.0 s, is still 9 s over it.</p>
+    <table>
+      <thead><tr><th>Pass started (UTC)</th><th>Pass</th><th>release</th><th>waits</th><th>launch</th><th>Slowest launch step</th></tr></thead>
+      <tbody>
+        <tr><td>07:07:18</td><td>36.2 s</td><td>15.4 s</td><td>0.9 s</td><td>7.2 s</td><td>none recorded</td></tr>
+        <tr><td>07:08:03</td><td>29.0 s</td><td>17.9 s</td><td>1.6 s</td><td>8.9 s</td><td>none recorded</td></tr>
+        <tr><td>07:08:40</td><td>434.1 s</td><td>31.8 s</td><td>25.8 s</td><td>372.1 s</td><td>none recorded</td></tr>
+        <tr><td>07:16:12</td><td>174.5 s</td><td>45.2 s</td><td>2.3 s</td><td>125.1 s</td><td>dispatch, 101.3 s and 122.7 s on two runs</td></tr>
+        <tr><td>07:19:24</td><td>206.3 s</td><td>55.7 s</td><td>41.6 s</td><td>107.9 s</td><td>none recorded</td></tr>
+        <tr><td>07:23:07</td><td>204.5 s</td><td>38.8 s</td><td>25.1 s</td><td>139.6 s</td><td>dispatch, 126.7 s and 131.7 s</td></tr>
+        <tr><td>07:26:44</td><td>376.0 s</td><td>93.9 s</td><td>68.2 s</td><td>204.0 s</td><td>dispatch, 185.2 s and 176.2 s</td></tr>
+        <tr><td>07:33:13</td><td>107.4 s</td><td>57.0 s</td><td>35.3 s</td><td>14.1 s</td><td>none recorded</td></tr>
+        <tr><td>07:35:17</td><td>218.8 s</td><td>50.5 s</td><td>39.5 s</td><td>127.3 s</td><td>none recorded</td></tr>
+        <tr><td>07:39:03</td><td>431.4 s</td><td>53.7 s</td><td>5.8 s</td><td>371.5 s</td><td>dispatch, 180.9, 260.7, 180.3 and 180.2 s on four runs</td></tr>
+      </tbody>
+    </table>
+    <p>Two facts locate the cost. First, the pass's own decision work — release and wait together — has a median of 61.7 s, so even a pass that launched nothing stays three times over the bound. Second, the launch stage is dominated by the dispatch call the pass makes, not by its own decision: the receipts that name a slowest step name <code>dispatch</code> at 101 to 261 s, while a dry-run preview of the same plans took 13.9 s. Six receipts carry code stamp <code>e7e521ff2e4e</code>, all before 07:24, and four carry <code>aae028fc3465</code>, all after; the stamp changed mid-sample and both miss the bound, so the miss is not an artefact of either version. Third, the passes ran against real work rather than an idle service: each named two to six live pointers, and the queue held two implement requests waiting, the oldest for 35,616 s.</p>
+
+    <h3>The per-read times do not account for the release stage</h3>
+    <p>The per-read instrument §7 landed is present in every receipt: release names eleven to thirteen reads and wait twelve to fourteen, each with its count and time. Every receipt also reports more memory resident than the threshold it declares for itself: <code>resident_bytes</code> 2.33 GiB to 7.99 GiB against <code>memory_bound_bytes</code> of 2 GiB, read after the pass had already shed its caches in answer to that threshold. On a node every coordinator shares, that is 2 to 8 GB held by a service that sheds at 2.</p>
+    <p>Those named reads do not account for the release stage. Its named reads sum to between 0.86 s and 9.05 s of a release stage that took 15.4 s to 93.9 s, and every named read together — release, wait and the lost-session reads — sums to 1.06 s to 10.41 s of a pass that took 29.0 s to 434.1 s. The largest single named read in the whole sample is 5.561 s, a discard-records read in the 07:26:44 pass. So the release stage's time is not in the reads the receipt names, and the receipt that names its reads still does not say where its own minutes go.</p>
+
+    <h3>The review is requested late; the launch is not slow</h3>
+    <p>The census covers the 24 hours to 07:44 UTC on 22 November: 419 candidate runs read from the store, of which 82 recorded a delivery. Seventy-five were requested and launched, seven were never requested, and no receipt was unreadable.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>p50</th><th>p90</th><th>max</th></tr></thead>
+      <tbody>
+        <tr><td>delivery → request</td><td>44.9 s</td><td>1,037.3 s</td><td>36,580.2 s</td></tr>
+        <tr><td>request → launch</td><td>76.0 s</td><td>189.2 s</td><td>6,298.3 s</td></tr>
+        <tr><td>delivery → launch</td><td>160.1 s</td><td>1,421.9 s</td><td>36,681.6 s</td></tr>
+      </tbody>
+    </table>
+    <p>§8 asked for that split so the two could be told apart, and it separates cleanly: the request is the late half at the 90th percentile, and the launch follows a request within 189 s. The worst case is a run delivered on 20 November at 21:35 whose review was requested the next morning at 07:45. All seven unrequested runs carry the same obligation reason: <em>the run has no live pointer, so no sweep reaches it to ask for its review</em>.</p>
+
+    <h3>The readiness read, and the store it reads</h3>
+    <p>The post-write readiness helper — the call the baseline's 406.6 s measured — took <strong>28.9 s</strong>, <strong>39.6 s</strong> and <strong>99.4 s</strong> on three runs against the live checkout: median 39.6 s, against a bound of 30 s. The first read ran against a snapshot of the store pair in a temporary config home; the other two ran against the live store itself, named through <code>RECKON_RUN_STORE</code>, which is the store the coordinator's own server answers from. <strong>The bound is missed</strong>, and the reason is visible in the profile rather than inferred.</p>
+    <p>The landing audit is not the cost. In the live-store run the audit's population was eleven plans holding runs, of which one declared a done section holding runs, and <strong>zero</strong> of those rows was in the <code>promoted</code> state the audit compares ancestry for, so it made <strong>zero</strong> git probes: <code>git merge-base</code> contributed nothing. What the read spends its time on is discovery over the live pointers. A profiled call of 108.9 s — its plain sibling in the same run took 99.4 s — breaks down as <code>classify_pointer</code> (<code>recovery_classification.py:1577</code>) at <strong>92.0 s over 176 calls</strong>, reached through <code>_discover_project</code> → <code>discover_plans</code> → <code>_discover_plans_uncached</code> → <code>_attach_ready_set</code> (85.6, 84.2, 83.1 and 78.7 s) → <code>build_roadmap</code> (78.7 s). Each classification reads the run store, and those reads are not free: <code>stored_run_rows</code> is <strong>80.8 s over 207 calls</strong>, of which <code>_refuse_owed_migration</code> is <strong>77.5 s over 177 calls</strong> — about 0.44 s per call, on a 1.6 GB store that the fleet is writing to while the read runs.</p>
+    <p>That accounts for the spread between the three reads: the same code against a quieter snapshot is 28.9 s and against the contended live store is 39.6 to 99.4 s. So the miss is not a fixed cost of the readiness helper. It is 176 pointer classifications each paying a store read whose migration check dominates, and the number moves with the store's write load. The bound as written — one readiness read under 30 s against the live fleet — is missed on two of the three reads and met on the one that read a snapshot.</p>
+    <p>Two further reads sit beside these and are not the same operation. A declaration write plus readiness on a clone of the documentation root, with the fleet's git caches cold, cost <strong>42.9 s</strong> and repeated at <strong>14.7 s</strong>; the same write on a copied docs root with no git repository cost <strong>53.3 s</strong> and then <strong>32.0 s</strong>. Both are dominated by the first git object read, not by the store, and neither is comparable to the three above.</p>
+
+    <h3>How each number was taken</h3>
+    <ul>
+      <li><strong>Previews.</strong> Three <code>crew dispatch --dry-run</code> calls against three sections of this plan's project, each timed at the process boundary. The worker fence makes the live crew home read-only, so they ran with <code>RECKON_HOME</code> at a temporary config home whose crew subdirectories are symlinks to the live ones and whose writable dirs are real; <code>--local</code> was passed so the picker's routing latency was not inside a preview-cost measure. No worktree and no live pointer was created: two worktrees and two pointers before, the same after. The first attempt failed three times in a row at about 8.8 s with <code>OSError: Read-only file system</code> on a watch lock, which is the reading, not a measurement.</li>
+      <li><strong>Receipts.</strong> Sampled from the verdict log every 15 s until ten distinct passes were held. The log trims at 1,048,576 bytes, roughly six passes, so a single read cannot supply ten.</li>
+      <li><strong>Store read.</strong> <code>stored_run_rows('reckon', plan=...)</code> against a node-local SQLite backup of the hot store and archive, three times; each returned 1,055 rows, equal to the exhaustive filter over the same rows. The full read of the same store is 33.3 s for 12,925 rows.</li>
+      <li><strong>Census.</strong> Candidates enumerated from the run store, never by walking the crew home; a run counts as delivered when its stage receipts hold a <code>delivery_recorded</code> stage; the split comes from <code>review_request_census</code>.</li>
+      <li><strong>Readiness.</strong> Three reads, each in its own <code>rigel</code> job: the first with the store pair snapshotted into a temporary config home, the second and third with <code>RECKON_RUN_STORE</code> naming the live store and every other file the read writes — roadmap snapshot, state and runtime directories — in a temporary home, so the live config home was only read. All three used the live mounts and the fleet's git caches. The profile wraps the same helper call; the landing audit's population and its ancestor probes are counted by wrapping <code>_unlanded_run_findings</code> and <code>merge._is_ancestor</code>, and the 176 classifications are the profile's own call count for <code>classify_pointer</code>.</li>
+    </ul>
+    <p><strong>What could have failed.</strong> The population this pass works from is small: the receipts name two to six live pointers, not the 240 the sections reason about. An empty or unknown census population reports null lags rather than zeros (checked), a nine-receipt set is below the section's read floor (the sampler's target enforces ten), and the three previews that failed under the fence were counted as failures before the writable home was built. One observation is recorded without an explanation: asked through <code>RECKON_RUN_STORE</code>, <code>stored_run_rows('reckon')</code> answered <strong>14</strong> rows for both the config-home path and the explicitly named path, while the same store pair copied into a node-local SQLite backup minutes earlier answered <strong>12,925</strong>. Something between the two reads — a retirement pass moving rows into the archive is the untested candidate — changed the figure, and this pass did not chase it. The plan-selected store read above stands on the backup that answered 12,925 and equals its exhaustive filter; the readiness reads stand on the live store and their cost is measured at the call boundary; if anything, that row count makes the miss larger, since 39.6 to 99.4 s was spent on a read that saw fewer rows than the snapshot that took 28.9 s.</p>
+
+    <h3>What this leaves open</h3>
+    <p>Three of the four bounds are missed; the preview meets its bound at 13.9 s against 30 s. The admission miss is in the launch stage and, underneath it, in the dispatch call each launch makes: the pass waits on that call (101 to 261 s per launched run), which no dry-run preview predicts (13.9 s). The review miss is in the request, not the launch. The readiness miss is discovery: 176 pointer classifications, each reading the run store, with the migration check 78 s of it. None of the three is repaired by this measurement, and §9 stays open until each is met.</p>
+    <p>The readiness result also tells the next section where to look. The landing audit the sections spent their effort on is cheap here because it is asked nothing — zero promoted rows in zero done sections that hold runs — so it is neither exonerated nor implicated. What is expensive is the pointer classification and the store read under it, which no section in this plan was aimed at.</p>
+   </section>
+</main>
+</body>
+</html>

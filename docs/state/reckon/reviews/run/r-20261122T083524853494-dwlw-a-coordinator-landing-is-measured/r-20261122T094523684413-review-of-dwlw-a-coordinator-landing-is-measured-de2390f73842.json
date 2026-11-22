@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_complete"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:45:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 4948,
+      "severity": "blocking",
+      "text": "blocking: `if not measured.real: return` treats an unreadable measurement as a clean one, so a coordinator landing whose population measure could not be taken (no resolvable head, a missing worktree, no base revision, an unbuildable base checkout, or a stored unreadable record) merges with nothing reported; the sibling caller at reckon/crew/queue_landing.py:1421 routes the same measurement through _measure_guard and raises on unreadable, and _measure_delivery's own contract says an unreadable measurement exists so the caller refuses rather than inferring a verdict from nothing."
+    },
+    {
+      "file": "tests/test_a_coordinator_landing_is_measured.py",
+      "line": 209,
+      "severity": "non-blocking",
+      "text": "non-blocking: the three cases cover a reddening head, a clean head and a base-carried failure but none covers the unreadable measurement arm, so the fail-open at reckon/crew_run_commands.py:4948 is unguarded and a regression that makes every measure unreadable would leave all three green."
+    }
+  ],
+  "item_verdicts": {
+    "done_when": "The done_when names three cases and a negative control; tests/test_a_coordinator_landing_is_measured.py:209,233,249 implement them and the manifest records the gate and both arms.",
+    "goal": "The goal is to measure a coordinator's landing over the lander's own population; reckon/crew_run_commands.py:4911 and reckon/crew/queue_landing.py:1280 implement it, with the unreadable arm at :4948 left permissive.",
+    "write_paths": "The declared paths are reckon/crew_run_commands.py, reckon/crew/queue_landing.py, the new test file and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "The recorded negative control reddens test_a_head_that_reddens_an_importer_test_is_refused_naming_it when the call is absent, but the unreadable arm at reckon/crew_run_commands.py:4948 has no case in tests/test_a_coordinator_landing_is_measured.py.",
+    "evidence": "The three cases the done_when names are in tests/test_a_coordinator_landing_is_measured.py:209,233,249 and pass, and the after arm records 61 passed / EXIT=0 at reckon/crew/queue_landing.py:1280's revision.",
+    "fit": "measure_a_coordinator_landing at reckon/crew/queue_landing.py:1280 follows the sibling _promoted_candidate's use of _stored_measurement, but unlike that caller (queue_landing.py:1421) it does not route the measure through _measure_guard's unreadable refusal.",
+    "goal_fidelity": "reckon/crew_run_commands.py:4942 takes the lander's population measure on `crew complete --land`, but reckon/crew_run_commands.py:4948 lets an unreadable measurement through, so part of the goal's guard is fail-open.",
+    "reuse": "The new function reuses _measure_delivery, _stored_measurement, _primary_revision and _measure_guard rather than adding a second measurement mechanism; the capability owner is reckon/crew/queue_landing.py:1126.",
+    "scope_discipline": "All four changed paths sit inside the declared write paths; the figures directory was declared and correctly left untouched."
+  },
+  "project": "reckon",
+  "review_rubric": "six-dimension",
+  "review_run_id": "r-20261122T094523684413-review-of-dwlw-a-coordinator-landing-is-measured-de2390f73842",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "de2390f738422bfb687cfd6bbe53c63404a19761",
+  "reviewed_run_id": "r-20261122T083524853494-dwlw-a-coordinator-landing-is-measured",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:52:03.621343+00:00",
+  "total": 105,
+  "verdict_lines": [
+    "VERDICT goal: the goal is to measure a coordinator's landing over the lander's population; reckon/crew/queue_landing.py:1280 adds measure_a_coordinator_landing and reckon/crew_run_commands.py:4942 calls it from `crew complete --land`.",
+    "VERDICT done_when: the done_when names three cases plus a base-revision control; tests/test_a_coordinator_landing_is_measured.py:209,233,249 cover them and the manifest records the after arm as 61 passed / EXIT=0.",
+    "VERDICT write_paths: the declared paths are reckon/crew_run_commands.py, reckon/crew/queue_landing.py, the new test and the evidence fragment; all four changed paths are inside them.",
+    "VERDICT manifest: read; it states tests/test_a_coordinator_landing_is_measured.py passed with the two fence tests, reports baseline 58 passed and after 61 passed, and points at the negative-control log whose first case fails with the landing accepted.",
+    "VERDICT diff: read commit by commit against dde7b00176; e2ba7955cc adds the measure and its call site plus the test, f73047375e and de2390f738 add the evidence fragment, all inside scope.",
+    "VERDICT call_sites: the only production caller is crew_complete in reckon/crew_run_commands.py at the `--land` branch; no other runtime path reaches the new function."
+  ]
+}

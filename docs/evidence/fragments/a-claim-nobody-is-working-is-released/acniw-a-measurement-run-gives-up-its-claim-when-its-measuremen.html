@@ -1,0 +1,55 @@
+<section id="acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen-landing">
+  <h2>A measurement run gives up its claim once its record is stored</h2>
+
+  <p><strong>What changed.</strong> A measurement-only run is journaled rather
+  than landed: its promotion writes the run's record, its head is never merged,
+  and a promotion that could not retire the pointer leaves a pending-landing
+  journal beside it. Every later pass read that journal as proof another pass
+  owned the job, so the pending-record pass merged the run's replayed head onto
+  the primary branch and cleared the journal while the live pointer kept the
+  run's paths claimed. <code>release_merged_promotions</code> now recognises a
+  measurement run before it consults the journal and releases it on its record
+  alone, and the record pass finishes no landing for one, so a refused release
+  keeps the pointer and the record claiming together.</p>
+
+  <p><strong>The journal is left exactly as written.</strong> It is the evidence
+  that the run's measurement was recorded, so the pass that releases the run
+  does not consume it &mdash; the test compares its bytes before and after.</p>
+
+  <p><strong>A fence notice is the launch's line, not the log's first record.</strong> A
+  gate launched on a job node whose temp directory is absent opens with the
+  fence saying so, then writing the measure's header after it. The gate-log
+  reader now skips that notice the same way it skips the scheduler's, so the
+  header stays the log's first record and the measurement's revision and
+  summary are read.</p>
+
+  <h3 id="acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen-measured">Measured</h3>
+
+  <p>Two measurement-only runs with a reaped worker in one temporary crew home:
+  one with its record and journal stored, one with neither. After a single
+  <code>finish_pending_landings()</code> pass the recorded run has no pointer
+  and no worktree, its journal is byte-identical, and its replay head is not an
+  ancestor of the branch; the recordless run keeps its pointer and worktree, and
+  does again on a second pass.</p>
+
+  <table id="acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control (base, new test file copied in)</td>
+        <td><code>d24fa090</code></td>
+        <td>1 failed &mdash; the recorded run keeps its pointer with status
+        <code>finished</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>baseline suite (node's test file absent at base)</td>
+        <td><code>d24fa090</code></td>
+        <td>58 passed in 37.55s, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (node's three files)</td>
+        <td><code>9678c464</code></td>
+        <td>60 passed in 36.77s, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate</td>
+        <td><code>9678c464</code></td>
+        <td>60 passed in 37.18s, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+</section>

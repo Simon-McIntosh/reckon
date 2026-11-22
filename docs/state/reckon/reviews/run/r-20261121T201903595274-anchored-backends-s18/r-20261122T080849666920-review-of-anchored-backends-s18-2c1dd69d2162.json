@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1475 launch_plan",
+    "reckon/crew/dispatch_sessions.py:2104 launch_plan",
+    "reckon/crew/dispatching/launch.py:746 launch_plan",
+    "reckon/crew/resumption.py:702 launch_plan",
+    "reckon/capabilities.py:504 _event_write_targets"
+  ],
+  "completed_at": "2026-11-21T20:52:56.103Z",
+  "dispatched_at": "2026-11-22T08:09:21Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_mcp_allowlist.py",
+      "line": "139",
+      "severity": "non-blocking",
+      "text": "the replacement test launches with no anchored_edit key, so a re-added branch gated on backend.get(\"anchored_edit\") leaves all four assertions true; the only arm that exercises the retired key is tests/test_a_retired_flag_changes_nothing.py in the negative-control scratch tree, which is committed nowhere, so the removal's key-ignoring behaviour has no committed guard."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-backends-s18.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "the fragment reports the head arm at 78fa4487cc while the landed tree is the merged head 2c1dd69d21, whose arms the manifest records at that revision; the merge did not refresh the fragment, so its evidence names a revision that is no longer the delivered head."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the delta since the prior review: read the delta the run gained since its prior review, 201447f399..2c1dd69d21, commit by commit; it is the merge 2c1dd69d21, whose resolution keeps this branch's removal at both conflicted files so git diff 201447f399 2c1dd69d21 over the six paths is empty, leaves no conflict marker, drops every removed symbol (_count_anchored_tool_items, ANCHORED_EDIT_SERVER, _anchored_edit_flags, _anchored_edit_target, seeded_treatment) with no dangling sys use, and whose other 83 paths are primary main's own landings.",
+    "done_when": "the done_when names a five-file pytest gate adding no failure against a base arm on all_debug, a grep receipt and a ruff check; the manifest records 103 passed EXIT=0 at 1666d19f77 and 103 passed EXIT=0 at 2c1dd69d21 from baseline_suite-1795312949925264009.log and after_suite-1795313028001554290.log, whose headers name their revision and whose tails read EXIT=0, and flag-grep.log carries grep-exit=1 at head against 46 matches at base, but no ruff receipt is recorded.",
+    "goal": "the goal is to stop reckon/_backends.py and reckon/capabilities.py reading, resolving or forwarding the anchored_edit flag; at the reviewed head 2c1dd69d21 a grep for anchored_edit and anchored-edit over the node's five code and test paths returns no line while the same pattern matches 46 lines at base 1666d19f77, and the only surviving occurrences under reckon/ are the flight-schema field the done_when keeps for a later node.",
+    "manifest": "read; status complete, commits 78fa4487cc, 201447f399 and 2c1dd69d21, changed_paths matches the six declared paths, baseline_suite and after_suite both record failure_count 0 against the log paths opened here, and outside_scope states the dispatch_launch coupling cleared because the launch-record sibling landed at 9b8baaa6dc.",
+    "write_paths": "the declared write paths are reckon/_backends.py, reckon/capabilities.py, tests/test_picker_local_backend.py, tests/test_queue_edit_keeps_the_named_backend.py, tests/test_worker_mcp_allowlist.py, the evidence fragment and a figures directory that is unused; the node's own commits change only the first six."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_mcp_allowlist.py:139 launches with no anchored_edit key, so its four assertions fail only on an unconditional reintroduction and pass a re-added branch gated on backend.get(\"anchored_edit\"), while the only arm that exercises the key is the uncommitted scratch test named in negative-control.log:2.",
+    "evidence": "baseline_suite-1795312949925264009.log reads 103 passed in 50.60s at 1666d19f77 and after_suite-1795313028001554290.log reads 103 passed in 50.71s at 2c1dd69d21, both EXIT=0, and flag-grep.log carries a 46-match positive control at base, but the done-when's ruff check has no logged receipt.",
+    "fit": "the rewritten comments at reckon/_backends.py:379 and :1861 state the mechanism without a plan, sprint or ticket identifier, and the replacement test name test_no_launch_withholds_the_editing_tools and fixture names clive-spare/codex-spare describe what they are.",
+    "goal_fidelity": "reckon/_backends.py at 2c1dd69d21 carries no anchored_edit read, LaunchPlan field, codex override or --disallowedTools branch, and reckon/capabilities.py lost _anchored_edit_target at the line 416 where it used to sit, so both modules named by the goal no longer resolve or forward the flag.",
+    "reuse": "the change only deletes, and folds the removed _count_anchored_tool_items file_change arm inline at reckon/_backends.py:1617 rather than adding a second counter, so it introduces no definition duplicating an existing owner.",
+    "scope_discipline": "the node's own commits 78fa4487cc and 201447f399 touch only the six declared write paths, and the other 83 paths in the delivered diff are primary main's landings that the merge carried rather than the node's own edits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to stop reckon/_backends.py and reckon/capabilities.py reading, resolving or forwarding the anchored_edit flag; at the reviewed head 2c1dd69d21 a grep for anchored_edit and anchored-edit over the node's five code and test paths returns no line while the same pattern matches 46 lines at base 1666d19f77, and the only surviving occurrences under reckon/ are the flight-schema field the done_when keeps for a later node.\nVERDICT done_when: the done_when names a five-file pytest gate adding no failure against a base arm on all_debug, a grep receipt and a ruff check; the manifest records 103 passed EXIT=0 at 1666d19f77 and 103 passed EXIT=0 at 2c1dd69d21 from baseline_suite-1795312949925264009.log and after_suite-1795313028001554290.log, whose headers name their revision and whose tails read EXIT=0, and flag-grep.log carries grep-exit=1 at head against 46 matches at base, but no ruff receipt is recorded.\nVERDICT write_paths: the declared write paths are reckon/_backends.py, reckon/capabilities.py, tests/test_picker_local_backend.py, tests/test_queue_edit_keeps_the_named_backend.py, tests/test_worker_mcp_allowlist.py, the evidence fragment and a figures directory that is unused; the node's own commits change only the first six.\nVERDICT manifest: read; status complete, commits 78fa4487cc, 201447f399 and 2c1dd69d21, changed_paths matches the six declared paths, baseline_suite and after_suite both record failure_count 0 against the log paths opened here, and outside_scope states the dispatch_launch coupling cleared because the launch-record sibling landed at 9b8baaa6dc.\nVERDICT diff: read the delta the run gained since its prior review, 201447f399..2c1dd69d21, commit by commit; it is the merge 2c1dd69d21, whose resolution keeps this branch's removal at both conflicted files so git diff 201447f399 2c1dd69d21 over the six paths is empty, leaves no conflict marker, drops every removed symbol (_count_anchored_tool_items, ANCHORED_EDIT_SERVER, _anchored_edit_flags, _anchored_edit_target, seeded_treatment) with no dangling sys use, and whose other 83 paths are primary main's own landings.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1475 launch_plan, reckon/crew/dispatch_sessions.py:2104 launch_plan, reckon/crew/dispatching/launch.py:746 launch_plan, reckon/crew/resumption.py:702 launch_plan, reckon/capabilities.py:504 _event_write_targets\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py at 2c1dd69d21 carries no anchored_edit read, LaunchPlan field, codex override or --disallowedTools branch, and reckon/capabilities.py lost _anchored_edit_target at the line 416 where it used to sit, so both modules named by the goal no longer resolve or forward the flag.\nSCORE evidence: 16\nJUSTIFICATION evidence: baseline_suite-1795312949925264009.log reads 103 passed in 50.60s at 1666d19f77 and after_suite-1795313028001554290.log reads 103 passed in 50.71s at 2c1dd69d21, both EXIT=0, and flag-grep.log carries a 46-match positive control at base, but the done-when's ruff check has no logged receipt.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node's own commits 78fa4487cc and 201447f399 touch only the six declared write paths, and the other 83 paths in the delivered diff are primary main's landings that the merge carried rather than the node's own edits.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_worker_mcp_allowlist.py:139 launches with no anchored_edit key, so its four assertions fail only on an unconditional reintroduction and pass a re-added branch gated on backend.get(\"anchored_edit\"), while the only arm that exercises the key is the uncommitted scratch test named in negative-control.log:2.\nSCORE fit: 19\nJUSTIFICATION fit: the rewritten comments at reckon/_backends.py:379 and :1861 state the mechanism without a plan, sprint or ticket identifier, and the replacement test name test_no_launch_withholds_the_editing_tools and fixture names clive-spare/codex-spare describe what they are.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change only deletes, and folds the removed _count_anchored_tool_items file_change arm inline at reckon/_backends.py:1617 rather than adding a second counter, so it introduces no definition duplicating an existing owner.\nFINDING tests/test_worker_mcp_allowlist.py:139 non-blocking: the replacement test launches with no anchored_edit key, so a re-added branch gated on backend.get(\"anchored_edit\") leaves all four assertions true; the only arm that exercises the retired key is tests/test_a_retired_flag_changes_nothing.py in the negative-control scratch tree, which is committed nowhere, so the removal's key-ignoring behaviour has no committed guard.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-backends-s18.html:44 non-blocking: the fragment reports the head arm at 78fa4487cc while the landed tree is the merged head 2c1dd69d21, whose arms the manifest records at that revision; the merge did not refresh the fragment, so its evidence names a revision that is no longer the delivered head.",
+  "review_run_id": "r-20261122T080849666920-review-of-anchored-backends-s18-2c1dd69d2162",
+  "reviewed_base_sha": "201447f399770adcb67027a006e31a0c6b935974",
+  "reviewed_head_sha": "2c1dd69d21626d150ee4713f48da56e5ea4ceab6",
+  "reviewed_run_id": "r-20261121T201903595274-anchored-backends-s18",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T080849666920-review-of-anchored-backends-s18-2c1dd69d2162"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:33:31.185354+00:00",
+  "total": 106
+}

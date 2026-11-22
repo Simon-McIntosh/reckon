@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/service.py:494",
+    "reckon/crew/obligations.py:5415",
+    "reckon/crew/obligation_snapshot.py:2340"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:34:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 1686,
+      "severity": "non-blocking",
+      "text": "The retry-owed promotion-failed obligation still carries next_command 'reckon crew complete --run ...', so a coordinator reading the duty is told to act even though the reason says no coordinator action is owed; obligations.measured_remedy_items keeps that command for a live complete run, so the manual landing the section removes is still offered."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Three commits against dde7b001 change promotion_requests.py (+69/-1), add tests/test_a_locked_run_store_is_retried.py (+125) and add the evidence fragment (+25), with no path outside the declared scope.",
+    "done_when": "The done_when names tests/test_a_locked_run_store_is_retried.py for the three required cases; the new file asserts each and the scoped gate log records 61 passed with EXIT=0.",
+    "goal": "The node's goal is to retry a promotion whose run-store write was locked past its bound with no coordinator action; reckon/crew/promotion_requests.py:1467-1477 records the debt and :1278-1287 re-queues it.",
+    "manifest": "The manifest records status complete, three commits, the literal gate command, and baseline/after arms of 58 and 61 passed with zero failures each.",
+    "write_paths": "The declared paths are reckon/crew/promotion_requests.py, reckon/crew/queue_landing.py, the new test and the evidence fragment/figure dirs; the diff changes promotion_requests.py, the test and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_locked_run_store_is_retried.py:74-98 fails at the pinned base for the retry and obligation cases, so removing the retry_owed stamp at promotion_requests.py:1471-1477 or the tick retry at :1278-1287 reddens it.",
+    "evidence": "The scoped gate log scoped-gate-1795339610029914956.log opens with revision 7e0cea7fef and its literal command and closes EXIT=0 with '61 passed in 36.76s', and negative-control.log shows 2 failed, 1 passed with EXIT=1 at the pinned base.",
+    "fit": "reckon/crew/promotion_requests.py:167 and :187 follow the style and naming of the neighbouring _refusal_uses_replaced_code branch and carry no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:1467-1477 records the store-locked debt and :1278-1287 re-queues it on the next pass, while failure_obligation wording at :1683 names the lock and the service's retry, matching the section's three required behaviours.",
+    "reuse": "The change reuses run_store._locked at reckon/crew/promotion_requests.py:181 and the existing request_promotion seam rather than forking a lock detector or a scheduler.",
+    "scope_discipline": "Every path in the diff against dde7b001 is inside the declared write paths; reckon/crew/queue_landing.py and the figure directory are declared but unchanged, which declared scope permits."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261122T093432021794-review-of-dwlw-a-locked-run-store-is-retried-9a69d1b7851b",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "9a69d1b7851b536176af1d1d6b98123311a0d1bb",
+  "reviewed_run_id": "r-20261122T083517834491-dwlw-a-locked-run-store-is-retried",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:48:10.105310+00:00",
+  "total": 114
+}

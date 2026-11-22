@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:1766",
+    "reckon/crew/pending_landing.py:2119"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-22T08:03:04Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html",
+      "line": 142,
+      "severity": "non-blocking",
+      "summary": "The paragraph states the merged-head measure as a base arm and an after arm, but the arms run different test files: baseline_suite-1795334083891654488.log runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py only, while after_suite-1795334159062607594.log adds tests/test_a_run_from_a_previous_fleet_node_is_released.py. The plan's clause that the existing release tests add no failure against the base is therefore not measured by this pair; tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py exists at d24fa090 and is in neither arm, appearing only in the scoped gate at the after head."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read a2f8ccc7710fe6a356df8e2474d29603a94a471d..cc8e541a9e5ce92b982ed3c705919e99bac15557 commit by commit: 2de2827ba9418d3934039300f36b9b7b740ac5d2 is the merge whose second parent is c74e56e3ee, and cc8e541a9e5ce92b982ed3c705919e99bac15557 adds paragraph p13 to the evidence fragment; the 138 lines pending_landing.py gained in that range are all present on the primary branch's tip and are another node's work, not this node's, while the merge resolution itself is proven additive by the zero-deletion diff against ff86dbe2fbc804760312b94816352c0873b042ec.",
+    "done_when": "The done_when at docs/plans/a-claim-nobody-is-working-is-released.html s2 names three promoted runs, one pass, a discard surviving two further passes, a base negative control and no added failure in the existing release tests; the round's scoped gate at the merged head runs tests/test_a_run_from_a_previous_fleet_node_is_released.py at reckon/crew/pending_landing.py:567 and reports 67 passed in 38.71s, EXIT=0.",
+    "goal": "The node goal is that a promoted run whose recorded launcher host is not the fleet's current node, and which shows no turn in progress, gives up its pointer; the round's commits are the merge 2de2827ba9418d3934039300f36b9b7b740ac5d2 and its evidence record cc8e541a9e5ce92b982ed3c705919e99bac15557, and reckon/crew/pending_landing.py:567 still carries the release pass at the merged head, byte-identical to its a2f8ccc7710fe6a356df8e2474d29603a94a471d form.",
+    "manifest": "Read the reviewed run's manifest.md; it records status complete, the commits through cc8e541a9e5ce92b982ed3c705919e99bac15557, baseline_suite and after_suite both completed with failure_count 0 and empty failure_ids, and negative-control-mutated.log as the certificate.",
+    "write_paths": "The round's delta touches only docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html and reckon/crew/pending_landing.py, both declared and inside the node's declared write paths; the 151 added lines in pending_landing.py against the primary branch's tip are additive only (0 deletions against ff86dbe2fbc804760312b94816352c0873b042ec), so the merge carried main's work in without removing any of it and removed none of this node's."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_from_a_previous_fleet_node_is_released.py:139 reddens if the previous-node pass stops releasing a quiet foreign run, which is exactly what a future merge taking only the primary branch's side would produce.",
+    "evidence": "The paragraph's three figures reconcile exactly with the logs it cites in time and count (58 passed in 38.24s, 66 passed in 38.67s, 67 passed in 38.71s at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html:142), but the base arm omits the node's own release tests, so the pair does not isolate the delta.",
+    "fit": "The added paragraph follows the fragment's p1-p12 idiom with the next id in sequence at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html:129, and both commit messages carry a conventional subject, a body, and no attribution or plan identifier.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:623 reads the launcher host before any process-table read and :631 holds a run whose stream shows a turn in progress, so the merged head still releases exactly the runs the goal names.",
+    "reuse": "The round adds no new definition on this node's side; reckon/crew/process_liveness.py:588 still resolves the fleet-node through watch_unit.fleet_record_node rather than a second reader, and fleet_node_name remains absent at the merged head.",
+    "scope_discipline": "The only files the round touches are reckon/crew/pending_landing.py and the evidence fragment; the merge's second-parent content is main's and the diff against main is 151 insertions with no deletions."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261122T080059295633-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-cc8e541a9e5c",
+  "reviewed_base_sha": "a2f8ccc7710fe6a356df8e2474d29603a94a471d",
+  "reviewed_head_sha": "cc8e541a9e5ce92b982ed3c705919e99bac15557",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:27:04.573398+00:00",
+  "total": 112
+}

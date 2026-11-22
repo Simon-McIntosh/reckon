@@ -58,7 +58,7 @@ CONFIG: dict = {
             "lane": "codex",
             "model_key": "sol",
         },
-        "codex-anchored": {
+        "codex-spare": {
             "launch": "cli",
             "model": "gpt-6-sol",
             "effort": "high",
@@ -66,7 +66,6 @@ CONFIG: dict = {
             "time_budget": "25m",
             "lane": "codex",
             "model_key": "sol",
-            "anchored_edit": True,
         },
         "claude": {
             "launch": "cli",
@@ -183,7 +182,7 @@ def test_an_edit_keeps_the_backend_it_names(home: Path) -> None:
             "--run",
             "r-queued",
             "--backend",
-            "codex-anchored",
+            "codex-spare",
             "--model",
             "sol",
         ],
@@ -192,12 +191,12 @@ def test_an_edit_keeps_the_backend_it_names(home: Path) -> None:
     assert result.exit_code == 0, result.output
     payload = _answer(result)
     record = _pointer(home)
-    assert record["backend"] == "codex-anchored"
-    assert record["requested_backend"] == "codex-anchored"
+    assert record["backend"] == "codex-spare"
+    assert record["requested_backend"] == "codex-spare"
     assert record["lane"] == "codex"
     assert record["model_key"] == "sol"
-    assert record["named_route"]["backend"] == "codex-anchored"
-    assert payload["route"]["backend"] == "codex-anchored"
+    assert record["named_route"]["backend"] == "codex-spare"
+    assert payload["route"]["backend"] == "codex-spare"
 
 
 def test_a_model_the_named_backend_does_not_serve_is_refused(home: Path) -> None:
@@ -213,13 +212,13 @@ def test_a_model_the_named_backend_does_not_serve_is_refused(home: Path) -> None
             "--run",
             "r-queued",
             "--backend",
-            "codex-anchored",
+            "codex-spare",
             "--model",
             "sonnet",
         ],
     )
 
     assert result.exit_code != 0, result.output
-    assert "codex-anchored" in result.output
+    assert "codex-spare" in result.output
     assert "sonnet" in result.output
     assert pointer.read_bytes() == before

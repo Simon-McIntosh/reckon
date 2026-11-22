@@ -951,6 +951,40 @@ def _elapsed(seconds: float) -> str:
     return f"{hours}h{rest:02d}m"
 
 
+def queue_pane_row(document: Mapping[str, Any]) -> str:
+    """The queue view's waiting split as one pane row.
+
+    Each part is its count, the letter the view gave it and the age of its
+    oldest member, read from the document's own entries rather than recomputed
+    here, so the row cannot name a part or a letter the view does not publish.
+    A part holding nobody prints its count and no age. The fault is the view's
+    verdict, published on the document beside the counts: when it stands, the
+    row names how many requests wait and the upstream plans nobody is building,
+    so a reader knows which work that is.
+    """
+    counts = document.get("counts") or {}
+    cells: list[str] = []
+    for entry in counts.get("waiting_by_cause") or ():
+        if not isinstance(entry, Mapping):
+            continue
+        count = int(entry.get("count") or 0)
+        letter = str(entry.get("letter") or "")
+        oldest = entry.get("oldest_waited_seconds")
+        age = f"@{_elapsed(float(oldest))}" if isinstance(oldest, Real) else ""
+        cells.append(f"{count}{letter}{age}")
+    row = "waiting " + " ".join(cells)
+    fault = document.get("fault") or {}
+    if isinstance(fault, Mapping) and fault:
+        waits = int(fault.get("waits") or 0)
+        plans = ", ".join(str(name) for name in fault.get("upstream_plans") or ())
+        row += (
+            f" | FAULT nothing is running and {waits} "
+            f"wait{'s' if waits == 1 else ''} on work nobody is building: "
+            f"{plans or 'no upstream plan recorded'}"
+        )
+    return row
+
+
 def _stream_age(seconds: Any) -> str:
     """A stream's silence, at the precision that separates live from quiet.
 
@@ -3210,6 +3244,9 @@ IN_FLIGHT_STAGE = "in flight"
 # arrival row already prints a launch, and a run that has not begun working has
 # nothing for the line to report. A run the fleet counters call blocked or
 # waiting is not here either, because its stop is a transition the pane draws.
+# The phases a launched run holds while it is working. The set is the queue
+# view's own, so the pane's working rows and the view's running count cannot
+# drift apart when a phase is added.
 IN_FLIGHT_PHASES = frozenset({"starting", "working", "running"})
 
 

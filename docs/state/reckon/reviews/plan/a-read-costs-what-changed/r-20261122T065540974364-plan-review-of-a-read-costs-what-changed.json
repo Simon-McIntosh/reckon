@@ -1,0 +1,211 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T06:59:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/resources.py:816",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a737 must extend `_ENTRY_NAMES` or be descoped as \u00a74 was, and its 5,297-stat premise has to be re-measured before it can name a remaining defect.",
+      "text": "\u00a737 (\"Resolving a resource lists its directory once per directory change\") asks for exactly the mechanism that already shipped: `_ENTRY_NAMES` holds a directory's entry names against `metadata_index._dir_identity`, `_identity_listing` (`reckon/resources.py:819`) globs only when that identity moves, and `tests/test_plan_resolution_reads_the_directory_once_per_change.py` already asserts \u00a737's three done-when cases (two passes over 200 plans cost one glob, an add+rename costs exactly one more, a rewritten sibling claiming a resolved slug is refused with `ResourceCollision`) \u2014 so a node dispatched on \u00a737 would either write a second memo over the same glob or rewrite that committed test.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/resources.py:838",
+      "id": "thin_wrapper-1",
+      "reason": "the section has to name which call it counts and either drop the stat ambition or justify a listing key that still moves on an in-place write.",
+      "text": "\u00a737's stated cost is 5,297 `stat` calls in the identity index, but the held memo deliberately keeps stamping every sibling on each resolve (`reckon/resources.py:836\u2013856`, and the docstring at `:807`) because a held stamp survives an in-place sibling rewrite that changes no directory entry; \u00a737's deliverable (\"lists that directory once\") therefore either measures globs (already fixed) or asks to hold stamps, which would lose the refusal `tests/test_plan_resolution_reads_the_directory_once_per_change.py::test_a_sibling_rewritten_in_place_is_seen` protects.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:1640",
+      "id": "reuse_search-1",
+      "reason": "\u00a736 should say the per-entry reader is `current_discovery` and either add `reckon/_store.py` to its write paths or state why that second site keeps paying the whole-store validation.",
+      "text": "\u00a736 (\"A section ref resolves its target plan without building the project index\") proposes a per-target resolution but `metadata_index.persisted_discovery_entries` (`reckon/metadata_index.py:1627`) plus `current_discovery` (`:1640`) already read the store once and validate one entry on demand, and `reckon/crew/admission/readiness.py:282\u2013285` already uses that pair for exactly this purpose; the census of the same whole-index read on a few-plan need is `reckon/mcp.py:1976` (`_indexed_plan_states`, the site \u00a736 targets) and `reckon/_store.py:909`, which calls `discovery_state(..., build=False)` and then `.get(relative)` \u2014 the hottest instance, running on every plan read's \u00a73 seed \u2014 and `_store.py` is outside \u00a736's declared write paths.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:1803",
+      "id": "reuse_search-2",
+      "reason": "the brief should say the write parses the written bytes once and seeds `reuse_parsed_state`, so the change is a seed at one point rather than a new cache.",
+      "text": "\u00a738 (\"A plan write parses the written document once\") proposes a single parse of the written document but does not name the mechanism that already makes that possible: `_plan_html.reuse_parsed_state` (`reckon/_plan_html.py:1803`), added by \u00a73, records a known parse under the file's own stat identity so every later reader (`read_state_file` \u2192 `read_state_and_text_file`, `reckon/_plan_html.py:1756`, `:1784`) takes it; the write's five parses are direct `read_state(text)` calls on raw strings (`reckon/_store.py:2194`, `:2197`, `:2324`, `:2442`), which bypass that seed.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:2197",
+      "id": "deep_module-1",
+      "reason": "the done-when's instrument and the deliverable's shape both need to name all the parsers, and a signature change on `section_coverage_gaps` would need `serve.py` and `doccheck.py` in the write paths.",
+      "text": "\u00a738's done-when counts \"the written document \u2026 through a patch on the document parser\", but the write reaches the document through three entry points \u2014 `_plan_html.read_state` (`reckon/_store.py:2194`, `:2197`, `:2324`, `:2442`), `_plan_html.plan_headings` (`:2400`, `:2423` \u2014 five calls in the file), and `section_coverage_gaps`/`new_section_coverage_gaps` (`:2294`, `:2333`, `:2363`, `:2420`), the latter called also from `reckon/serve.py:3981` and `reckon/doccheck.py:1579` outside \u00a738's write paths; a counter on `read_state` alone can read 1 while the write still builds five soups, so the design must hide the parse behind one private write-scoped helper that returns state, headings and coverage together, keeping the public helpers' signatures intact.",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+  "plan_fingerprint": "74476c242b890506e6037c901b6a1b263009ed5fb0e8b7b0617e28269ab1db8e",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 133,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "section 37 no longer asks for a second listing memo; the existing entry-name reuse is named as the base it measures against",
+      "reason": "",
+      "when": "2026-11-22T07:32:43.044958+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "finding": "thin_wrapper-1",
+      "note": "section 37 names the call it counts, os.stat on entries of the plans directory, and keeps the in-place-write case as a required refusal",
+      "reason": "",
+      "when": "2026-11-22T07:32:48.661637+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "section 36 adds reckon/_store.py to its write paths so the second resolution site is in scope",
+      "reason": "",
+      "when": "2026-11-22T07:32:56.321396+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "section": "s38",
+      "sections": [
+        "s38",
+        "s3"
+      ],
+      "when": "2026-11-22T07:33:02.086194+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "section 38 counts parses through every parser entry point and adds reckon/_plan_html.py, reckon/serve.py and reckon/doccheck.py to its write paths",
+      "reason": "",
+      "when": "2026-11-22T07:33:07.586655+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "note": "section 38 counts parses through every parser entry point and adds reckon/_plan_html.py, reckon/serve.py and reckon/doccheck.py to its write paths",
+      "reason": "",
+      "when": "2026-11-22T07:33:07.586655+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "note": "section 37 no longer asks for a second listing memo; the existing entry-name reuse is named as the base it measures against",
+      "reason": "",
+      "when": "2026-11-22T07:32:43.044958+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "note": "section 36 adds reckon/_store.py to its write paths so the second resolution site is in scope",
+      "reason": "",
+      "when": "2026-11-22T07:32:56.321396+00:00"
+    },
+    "reuse_search-2": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "s38",
+      "sections": [
+        "s38",
+        "s3"
+      ],
+      "when": "2026-11-22T07:33:02.086194+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "f7cacd4a00496a26737cfc83cff8f6ac468fb3e9",
+      "commit_basis": "edit",
+      "note": "section 37 names the call it counts, os.stat on entries of the plans directory, and keeps the in-place-write case as a required refusal",
+      "reason": "",
+      "when": "2026-11-22T07:32:48.661637+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-costs-what-changed/r-20261122T065540974364-plan-review-of-a-read-costs-what-changed.json",
+  "review_run_id": "r-20261122T065540974364-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "cd38adea72a28b8c23221de4e644fad3acd75e6f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a738's design as written spreads a per-parse parameter across the write's call sites (`reckon/_store.py:2194`, `:2197`, `:2324`, `:2442`, `:2420`, `:2423`), instead of one private write helper that holds the parsed document and hands it to the version check, the heading guard and the coverage check.",
+    "duplicate_owner": "a finding \u2014 \u00a737 duplicates `resources._ENTRY_NAMES` with `_identity_listing` (`reckon/resources.py:816`, `:819`) is the owning mechanism, already covered by `tests/test_plan_resolution_reads_the_directory_once_per_change.py`.",
+    "interface_budget": "pass \u2014 public_definitions 3154, cli_options 535, mcp_views 15, refusal_families 25; none of \u00a735 to \u00a738 adds a public definition, a CLI option, an MCP view or a refusal family, so no section owes a retirement or merge (the counters they add are test-local patches).",
+    "reuse_search": "a finding \u2014 \u00a736 and \u00a738 each propose a mechanism their codebase already owns: `metadata_index.persisted_discovery_entries`/`current_discovery` (`reckon/metadata_index.py:1627`, `:1640`) already resolve one entry without a project build, and `_plan_html.reuse_parsed_state` (`reckon/_plan_html.py:1803`) already lets a writer seed the one parse a write must make.",
+    "thin_wrapper": "a finding \u2014 \u00a737 proposes a listing memo beside the one that exists (`reckon/resources.py:816` `_ENTRY_NAMES`, landed 2026-11-19) and does not say why that memo cannot be extended, nor that its stated stat cost is the per-sibling stamping that memo deliberately keeps."
+  },
+  "section_digests": {
+    "_document": "46ff5783bfd4b6c506a047a80c57aebdaa247f79f2eb4254040ac1b4024120ac",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "961c662c2ad9983efdef372ae1d8050c1bc2ad2d5eb48187e5a1460a866750d7",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "017dacf94ae980a1743060b70b94c6310d932d5242464e9503625aad656aeddc",
+    "s19": "7627296ee16bd9037416c990cebedbf14e5920992ee92443ee041d007a4f86b5",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s20": "13f50ad158e680404f34a74f292834eb01df268bb398d42bd113140aa56a5533",
+    "s21": "c9999579889f86ad547fb804ec54f122a0f8554343ddcc9075ae15c3cd37c4f0",
+    "s22": "0f5b52699cf0cfaae609fa09396bb9b43cae6fb15b3274facd659db2c83bbf41",
+    "s23": "de347de3b8ef82e610d47c0deefc48f874813c55f95f01fcf8007725a84a72a9",
+    "s24": "9536a307365097387461ff484f1478c4d4070650cb95f224824cb31a4c5eca4e",
+    "s25": "696da611106fdc41b6b4c6235e13e7d4c5e06fca1e0d61c0feb5fe7f845988e7",
+    "s26": "e3ab9ebdabe7b5fd0e2bdfacb1da3c843841e0690c6cf173fc6e33c2e9c5172e",
+    "s27": "85a3a2bff1f1ea91bb4b50bd219a44c228bf04c18c13624f7b6148c50e6056e0",
+    "s28": "8f585e5dce72b988c605201d24b885035814d658123526590b533e76b24eacc2",
+    "s29": "d46f6c1e184efb2e57713d044147d56c3a9be9724557882af7ab33ea9a488986",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s30": "011d08f060f94a6e55cd486001e6353abf9d670c885a435bb47f9c5cbac81633",
+    "s31": "9a4d5011f655b9be1290ac07e9efa41547e798f4de1154f92c1d261f6e607ad0",
+    "s32": "1ee74bda9fb6e5ca1dfe4d14705f36d2eeb1051329943228b8896b28cd125413",
+    "s33": "9ee279f83688139946450ef3e2d04f5fce2ae51015b84df45a75c86d7a0ffc6a",
+    "s34": "9ecb3976518801cc1334acbe66a097df4c4cb4542f2e9e6a1ca0d40a5d586056",
+    "s35": "2c38d59c8506aaec1166a99aa15e56da59d69af4c2c8fad89ca8b16fcafb2ea2",
+    "s36": "4ce0201b063da51e3d89e4e6f842d9d6a7519c3e8f8ef3c3d2688d3881e4a2d0",
+    "s37": "042732b32a44666edae3c593a9e40ec013851d115d714908ad8984eb1a4a99f2",
+    "s38": "eec8a88dca6cdd0bcb50c3b620e0650320a64e9bcdcde07e6b29e8b514e1d828",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T07:08:16.071792+00:00",
+  "total": null
+}

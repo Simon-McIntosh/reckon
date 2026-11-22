@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="open-work-is-capped">
+  <meta name="plan-title" content="Open Work Is Capped">
+  <meta name="plan-evidence-for" content="open-work-is-capped">
+  <meta name="plan-verifies" content="open-work-is-capped#s3">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="delivered">
+  <meta name="plan-tags" content="crew,reckon-tooling,pending-plan,limit">
+  <title>Open Work Is Capped — the pending-plan limit holds at creation</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+  <style>
+    main.plan-doc table{width:100%;border-collapse:collapse;font-size:0.86rem}
+    main.plan-doc th,main.plan-doc td{text-align:left;vertical-align:top;padding:.32rem .45rem;border-bottom:1px solid #2a2a2a}
+    main.plan-doc td.n{white-space:nowrap;font-variant-numeric:tabular-nums}
+    main.plan-doc td.cite{font-size:0.78rem}
+    main.plan-doc code{word-break:break-word}
+  </style>
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="owic-a-limit-on-pending-plans-per-project-limit">The limit is declared and reached at creation</h2>
+    <p id="owic-a-limit-on-pending-plans-per-project-limit-declared">Reckon declares its limit in project
+      configuration: <code>"pending_plan_limit": 25</code> in <code>docs/state/reckon/project.json</code> line 35,
+      committed at <code>dca923fb10</code> and read through the project manifest at head <code>b95808d7</code>.
+      The create path (<code>reckon/mcp_edit_plan.py</code>) reads it with <code>_pending_plan_limit</code>, counts
+      pending plans by the velocity census's own closed definition, and at or beyond the limit attaches the
+      warning built by <code>_pending_limit_warning</code> to the successful create response. The lead locked
+      <code>warn</code> in <code>wip-limit-mode</code>: creation always succeeds, and the reply carries the limit,
+      the pending count and the three pending plans nearest to closing by implementation.</p>
+
+    <h2 id="owic-a-limit-on-pending-plans-per-project-probe">Creating a plan beyond the limit, on the real project</h2>
+    <p id="owic-a-limit-on-pending-plans-per-project-probe-result">A full-state copy of reckon's docs tree
+      (plans, distributed project state and its marker) holding <strong>72 pending plans</strong> was asked to
+      create <code>zz-probe-limit-check</code> through the same create path. The create <code>ok</code> and
+      <code>created</code> were true, the plan file was written, and the response carried this warning:</p>
+    <pre id="owic-a-limit-on-pending-plans-per-project-probe-warning">plan created: project 'reckon' already holds 72 pending plans, at its limit of 25.
+Nearest to closing, by impl (highest first):
+a-dispatch-returns-without-its-worker (impl 1.0);
+a-plan-is-reviewed-before-it-is-built (impl 1.0);
+a-read-answers-inside-its-deadline (impl 1.0).</pre>
+    <p id="owic-a-limit-on-pending-plans-per-project-probe-instrument">The first run of this probe read the
+      copied project's limit as <code>None</code> and emitted no warning. That reading was an instrument fault,
+      not the guard switching off: the copy lacked the distributed project-state marker, so the project manifest
+      composed from the legacy index row, which carries no limit key. With the marker and its seven resources
+      copied, the same instrument reads the limit as <strong>25</strong> beside the schedule horizon of 3 —
+      a positive control that it sees a key known to be present — and the warning above follows.</p>
+
+    <h2 id="owic-a-limit-on-pending-plans-per-project-test">The locked behaviour in a test</h2>
+    <p id="owic-a-limit-on-pending-plans-per-project-test-result"><code>tests/test_pending_plan_limit.py</code>
+      reports 3 passed in 4.92s at b95808d7a485, exit 0: a create beyond a declared limit succeeds and warns naming the limit, the pending
+      count and exactly the three nearest plans ranked by impl; a create under the limit carries no warning; and a
+      project declaring no limit carries none. The gate log names the revision, tree and command and ends in
+      <code>EXIT</code>.</p>
+
+    <p id="owic-a-limit-on-pending-plans-per-project-arms">The base arm runs at <code>b95808d7a485</code> and the
+      head arm at <code>31a2cd366a4f</code>. The scoped command
+      <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_pending_plan_limit.py</code> reports 3 passed in 1.10s at base <code>b95808d7a485</code> and
+      3 passed in 1.81s at head <code>31a2cd366a4f</code>, both at <code>EXIT=0</code>, so the change adds no
+      failure.</p>
+
+    <h2 id="owic-a-limit-on-pending-plans-per-project-velocity">Velocity figures</h2>
+    <p id="owic-a-limit-on-pending-plans-per-project-velocity-figures">The velocity view (<code>velocity.report</code>,
+      the computation behind <code>crew(view="velocity")</code>) was read on 2026-11-22 over 2026-10-26..2026-11-16,
+      the complete weeks through 2026-W46. <code>plans.by_project_week</code> reports:</p>
+    <table id="owic-a-limit-on-pending-plans-per-project-velocity-table">
+      <tr><th>ISO week</th><th>opened</th><th>closed</th><th>closes at least what it opens</th></tr>
+      <tr><td class="n">2026-W44</td><td class="n">1</td><td class="n">1</td><td>yes</td></tr>
+      <tr><td class="n">2026-W45</td><td class="n">15</td><td class="n">4</td><td>no</td></tr>
+      <tr><td class="n">2026-W46</td><td class="n">15</td><td class="n">10</td><td>no</td></tr>
+    </table>
+    <p id="owic-a-limit-on-pending-plans-per-project-velocity-verdict">No two consecutive complete weeks close at
+      least as many plans as they open: 2026-W44 holds (1 opened, 1 closed) but 2026-W45 fails (15 opened,
+      4 closed), and 2026-W46 also fails (15 opened, 10 closed). The view reports <strong>81 pending</strong>
+      plans for reckon in this window, against the declared limit of 25. The same census read over a longer
+      window agrees on the weeks that matter: 2026-W40 held (8/27) and 2026-W41 failed (19/9); 2026-W42 held
+      (20/25) and 2026-W43 failed (20/11). The section's second clause is therefore not met at this reading,
+      and the plan stays open on these figures.</p>
+  </main>
+</body>
+</html>
