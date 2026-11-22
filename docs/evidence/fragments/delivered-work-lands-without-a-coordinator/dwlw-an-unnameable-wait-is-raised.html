@@ -1,0 +1,70 @@
+<section id="dwlw-an-unnameable-wait-is-raised-landing">
+  <h2>A run that ends on a wait nothing can probe reaches its coordinator</h2>
+
+  <p><strong>What changed.</strong> A worker can write a wait block and end
+  while its status still reads a working word, with the probe written as prose
+  naming scheduler jobs rather than as the shell-free argument vector the
+  reader accepts. The waiting reader acts only on a manifest whose status is
+  <code>waiting</code>, and the reader that runs a probe refuses that shape, so
+  nothing swept, resumed or promoted the run. Read as still working it reached
+  no duty at all: <code>classification: running</code>, recovery verb
+  <code>observe</code>, and no next action, so the coordinator found the run
+  only by opening its manifest.</p>
+
+  <p>The classifier now reads that state as <code>unreadable</code> — the
+  declaration is what is wrong, and the remedy is a repair only its coordinator
+  can make. The row carries the manifest status word and the declared probe
+  text together, because a repair edits exactly those two lines; the existing
+  <code>unreadable</code> duty already reaches the <code>repair</code> verb, so
+  the run appears as one obligation of its session whose <code>reason</code> is
+  that account. A manifest refused for a status word outside the vocabulary
+  names a declared wait beside that word too, since the refusal is the last
+  place both are still in hand.</p>
+
+  <p><strong>What did not change.</strong> A run whose status is
+  <code>waiting</code> and whose probe can be run is still lifted by the sweep
+  when the probe reports a terminal state, and a manifest carrying
+  <code>complete</code> still keeps its terminal word: the new reading fires
+  only for a dead worker whose declared wait cannot be probed.</p>
+
+  <h3 id="dwlw-an-unnameable-wait-is-raised-measured">Measured</h3>
+
+  <p>The gate is <code>tests/test_an_unnameable_wait_is_raised.py</code>, four
+  cases: the prose-probe run; a liftable file-condition wait that the sweep
+  still resumes; a <code>complete</code> run that keeps its word; and an
+  out-of-vocabulary status word whose refusal now names the declared wait.
+  Against the pinned base the first case fails, because the base reads the run
+  as <code>running</code> with no next action — the run that reaches nobody.</p>
+
+  <table id="dwlw-an-unnameable-wait-is-raised-arms">
+    <caption>Every arm is a log whose first line names its revision and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>new cases, worktree</td>
+        <td><code>ddb95a0dd</code></td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>baseline suite</td>
+        <td><code>b5444d24</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite</td>
+        <td><code>ddb95a0dd</code></td>
+        <td>62 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control (first case, pinned base)</td>
+        <td><code>b5444d24</code></td>
+        <td>1 failed: <code>assert 'running' == 'unreadable'</code>,
+          <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="dwlw-an-unnameable-wait-is-raised-remedy">The remedy the row names</h3>
+
+  <p>The row's account reads, for the reported manifest: <em>the worker ended
+  with manifest status 'in-progress' and a wait nothing can probe: wait_probe
+  is a single value the reader cannot parse as a JSON array … (declared 'sbatch
+  jobs 1335599 and 1335600 finish and their logs land'); the run was left
+  waiting on the manifest at … and no sweep or resume lifts it</em>. The next
+  action tells the coordinator to replace the status with the verdict the
+  worker reached and to re-declare the wait as an argument vector if it is
+  still awaited.</p>
+</section>
