@@ -1129,9 +1129,19 @@ def _refusal_speaks_for_revision(recorded: Mapping[str, Any], *, head: str) -> b
 
 
 def _cli_review_rubric(record: Mapping[str, Any]) -> str | None:
-    """Text review records use the CLI's default rubric selector."""
+    """The rubric flag the dispose verb accepts for this record, if any.
+
+    A stored record names its family, and older records carry names the verb
+    never accepted: a code review states the health rubric. The verb selects a
+    figure record by ``--rubric figure`` and answers the run's text review when
+    no rubric is named, so any other family is rendered by omitting the flag. A
+    hint carrying a family the verb refuses is one a coordinator cannot paste,
+    which is worse than naming the default the verb already applies.
+    """
     rubric = review_module._review_record_rubric(record)
-    return None if rubric == "node" else rubric or None
+    if rubric == review_module.FIGURE_REVIEW_RUBRIC:
+        return rubric
+    return None
 
 
 def _finding_disposition_commands(

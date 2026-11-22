@@ -1,0 +1,55 @@
+<section id="dwlw-a-dispose-hint-is-accepted-as-printed-landing">
+  <h2>A dispose hint prints only the rubric the dispose verb accepts</h2>
+
+  <p>An obligation's dispose hint is composed from the stored review record,
+  and the record names its own family. A code review's record states the health
+  rubric, so the hint composed for its blocking finding printed
+  <code>--rubric health</code>; a reader pasting it met <em>unknown review
+  rubric 'health'; the one rubric a disposition may name is 'figure', and
+  omitting --rubric answers the run's text review</em>. The dispose verb selects
+  a figure record by <code>--rubric figure</code> and answers the run's text
+  review when no rubric is named, so the hint named a family the verb refuses
+  and sent its reader to edit the store by hand or to abandon the disposition.</p>
+
+  <p><strong>What changed.</strong> One normaliser,
+  <code>_cli_review_rubric</code> in <code>reckon/crew/obligations.py</code>,
+  renders the flag only for the family the verb accepts. A figure review keeps
+  <code>--rubric figure</code>, because the verb needs it to select that record
+  beside the text one; every other stored family — the health rubric a code
+  review carries, and the older <code>run</code>, <code>code</code> and
+  <code>node</code> spellings — renders by omitting the flag, which is exactly
+  the selection the verb applies to the run's text review. Both composition
+  sites already route through this normaliser: the sub-floor dimension duty and
+  the blocking-finding duty, the latter through
+  <code>_finding_disposition_commands</code>, so the two spaces cannot print
+  one command two ways.</p>
+
+  <p><strong>What does not change.</strong> A figure review's finding still
+  prints <code>--rubric figure</code> with its <code>--review</code> identity.
+  A text-review disposition remains the unrubriced default, so the command a
+  coordinator runs selects the same record it selected before. Nothing about
+  the disposition writer, the store or the promote path moves.</p>
+
+  <h3 id="dwlw-a-dispose-hint-is-accepted-as-printed-measured">Measured</h3>
+
+  <p>The negative control runs the node's own test file against the pinned base
+  <code>a2bf0d8d5a65bfab8a9e3d6db922bbab1984f67b</code>: the code-review case
+  fails with the hint the obligation printed,
+  <code>reckon crew dispose … --rubric health --finding 0 --kind folded
+  --node '…'</code>, refused by the verb with <em>unknown review rubric
+  'health'</em>; the figure-review case passes there, because the family it
+  prints is the one the verb accepts. Both cases pass at the head.</p>
+
+  <p>The gate runs the node's test file with the two tests the project's suite
+  resolves beside it: <code>60 passed in 37.94s</code>, exit <code>0</code>, at
+  <code>efd8834a673d86939759a3bb4780dea9bfac5205</code> on
+  <code>all_debug</code>. The base arm resolves the same template over its own
+  tree, which holds no new test file, and reports <code>58 passed in 37.23s</code> at the pinned base
+  <code>a2bf0d8d5a65bfab8a9e3d6db922bbab1984f67b</code>; the after arm resolves
+  it over the head <code>efd8834a673d</code> and reports
+  <code>60 passed in 38.67s</code>, both exit <code>0</code>. Each case reads
+  the hint an overdue obligation prints for a stored record, parses it with the
+  dispose verb's own argument parser, and runs it through the verb: the failure
+  that remains is the store's absence of a review for the fixture run, never the
+  rubric.</p>
+</section>
