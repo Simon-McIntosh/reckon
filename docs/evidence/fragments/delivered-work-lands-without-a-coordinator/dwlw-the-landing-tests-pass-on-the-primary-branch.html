@@ -32,22 +32,34 @@
         obligation snapshot reads. All five cases were rewritten to the
         behaviour the code holds; no case was skipped, deleted or marked xfail.
       </p>
+      <p id="dwlw-the-landing-tests-pass-on-the-primary-branch-merge">
+        Merging the primary branch brought a sixth case,
+        <code>test_a_pending_landing_is_not_finished_beside_its_requested_promotion</code>,
+        that passed on the node's own head and failed at the merged head. The
+        branch had taught the merged-promotion release to settle a run's owner
+        from its pointer before reading the ledger, and a later pass that
+        releases a promoted claim whose fleet node moved still asked whether a
+        run was promoted before asking whether anything owned it. The ordering
+        is now the same in both: a run whose promotion is requested is settled
+        from its own run directory and costs no ledger read, so the pass never
+        inspects a landing the promotion service is finishing.
+      </p>
       <p id="dwlw-the-landing-tests-pass-on-the-primary-branch-measure">
         The scoped gate over the node's write scope ran at
-        <code>a5b0e929c1f5</code>:
-        <code>107 passed in 183.63s (0:03:03)</code>, <code>EXIT=0</code>. The
-        promotion suite's after arm at <code>a5b0e929c1f5</code> gave
-        <code>107 passed in 178.03s (0:02:58)</code>, <code>EXIT=0</code>, and
+        <code>0224baa7b202</code>:
+        <code>107 passed in 187.72s (0:03:07)</code>, <code>EXIT=0</code>. The
+        promotion suite's after arm at <code>0224baa7b202</code> gave
+        <code>107 passed in 186.03s (0:03:06)</code>, <code>EXIT=0</code>, and
         its baseline arm at <code>dde7b00176</code> gave
-        <code>5 failed, 102 passed in 183.13s (0:03:03)</code>,
+        <code>5 failed, 102 passed in 209.93s (0:03:29)</code>,
         <code>EXIT=1</code>.
       </p>
       <p id="dwlw-the-landing-tests-pass-on-the-primary-branch-population">
-        The population <code>grep -l pending_landing tests/*.py</code> — 34
-        files, 260 tests — ran on <code>all_debug</code> at the node's head
-        <code>bb5180ce79</code>: <code>260 passed in 393.01s</code>,
-        <code>EXIT=0</code>. The same population at the base revision
-        <code>dde7b00176</code> gave <code>5 failed, 255 passed in 348.85s</code>,
+        The population <code>grep -l pending_landing tests/*.py</code> ran on
+        <code>all_debug</code> at the merged head <code>0224baa7b2</code>:
+        <code>268 passed in 337.54s (0:05:37)</code>, <code>EXIT=0</code>. The
+        same population at the base revision <code>dde7b00176</code> gave
+        <code>5 failed, 255 passed in 333.25s (0:05:33)</code>,
         <code>EXIT=1</code>, with exactly the five named ids failing and no
         other: the two conflicted-promotion cases and the later-attempt case in
         <code>test_a_finished_pending_landing_retires_its_run.py</code>, the
@@ -66,7 +78,7 @@
         delivery the primary branch already carries. The obligation snapshot's
         added fields arrived with <code>b217b010d6</code>, which publishes
         section accounting duties in snapshots. The
-        scoped gate over the node's write scope ran at <code>a5b0e929c1f5</code>
+        scoped gate over the node's write scope ran at <code>0224baa7b2</code>
         with <code>exit_status: 0</code> and no failing id.
       </p>
     </section>
