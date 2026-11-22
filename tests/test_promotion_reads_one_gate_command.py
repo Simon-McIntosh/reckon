@@ -121,8 +121,8 @@ def test_two_gate_command_lines_are_refused_quoting_both_and_run_nothing(
             record, verdict="passed", gate_check={}, commits=()
         )
         promotion_gate.rerun_gate_at_integrated_revision(
-            repository,
-            gate_check,
+            repository=repository,
+            gate_check=gate_check,
             integrated_revision=git(repository, "rev-parse", "HEAD"),
             replay_log_path=tmp_path / "replay.log",
         )
