@@ -25,7 +25,7 @@
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -160,7 +160,7 @@
     <div class="r-comment-body"><p>Independent parsed review of 1f914072e1646e1a5cd3f591470859d2866c0093..f18ce9add8f6770ad825e0916d1857b2f256635d, scoped to the three commits gained since the prior review at 03d8f58b2e74f7798318a1cf31819f6e8b87de8a (a67ef5821d, dc49bab286, f18ce9add8), stored with six scores 18/14/20/17/18/19, two non-blocking findings, and zero added failures derived from the source run's completed baseline_suite and after_suite logs; no source changed.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261122T032524701158-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass" data-who="reckon-build" data-when="2026-11-22T06:09:15Z">
-    <div class="r-comment-body"><p>A sweep asks the admission ordering where each queued request stands once per session payload, and ordering a payload derives the queued plans&#x27; section priorities, which composes the project roadmap. Over two projects with twenty queued items each and four sessions the base revision composed each project roadmap four times, eight in one sweep; answering an identical ordering read from the one before it, keyed on the pointers, the instant and the lane, makes it one per project, with the reported obligations unchanged. The answer is held by reckon.file_memo, the bounded and locked memo the repository already owns and this module already reads a delivered review and a review tier through, keyed on a digest of the pointers, the instant and the lane; the module&#x27;s own cache of it was removed in this round. Reverting the answering commits returns the count, and a footfall assertion keeps the counter honest.</p></div>
+    <div class="r-comment-body"><p>A sweep asks the admission ordering where each queued request stands once per session payload, and ordering a payload derives the queued plans' section priorities, which composes the project roadmap. Over two projects with twenty queued items each and four sessions the base revision composed each project roadmap four times, eight in one sweep; answering an identical ordering read from the one before it, keyed on the pointers, the instant and the lane, makes it one per project, with the reported obligations unchanged. The answer is held by reckon.file_memo, the bounded and locked memo the repository already owns and this module already reads a delivered review and a review tier through, keyed on a digest of the pointers, the instant and the lane; the module's own cache of it was removed in this round. Reverting the answering commits returns the count, and a footfall assertion keeps the counter honest.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T00:58:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>adcc599978</code>), on the lead's instruction. A dispatch preview's scope report reads only the claims the candidate's paths and repositories can meet: 243 git calls fall under 20 in the 240-pointer case, and three live previews took 23, 10 and 7 seconds, a median of 10 s against 86 s before. Review 120 of 120, 41 importer files with no added failure, merged candidate gate 4 of 4.</p></div>
@@ -266,6 +266,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes" data-who="reckon-build" data-when="2026-11-17T21:04:19Z">
     <div class="r-comment-body"><p>The review request now has an instant, a reason, and a reader: review_request_census reads each delivered non-review run's stage receipts, reports the delivery-to-request and request-to-launch intervals apart, and raises an obligation past 600 s naming the reason the run's own record gives; that obligation is written into the review pass's owed rows so the station's duty rows show it. The census artifact live-census-20261117T2145Z.log, of the fleet before this change lands, records {"counts": {"delivered": 23, "launched": 4, "request_unrecorded": 9, "requested": 5, "unrequested": 9}, "deadline_seconds": 600, "launch_lag_seconds": {"max": 147.50823, "p50": 124.142871, "p90": 147.50823}, "obligations": 8, "request_lag_seconds": {"max": 917.087791, "p50": 96.674459, "p90": 917.087791}, "request_unrecorded": 9}. The request's priority is inherited from the run it reviews by the pointer the dispatch builds from it, now asserted in `test_the_review_requests_the_priority_of_the_run_it_reviews`.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261122T091628070449-review-of-dispatch-admission-and-landing-take-seconds-s9-5ee880fd4c4b" data-who="reckon-build" data-when="2026-11-22T09:32:25.735Z">
+    <div class="r-comment-body"><p>Review of r-20261122T071812299226-dispatch-admission-and-landing-take-seconds-s9 at base 3a0f33d3620466b129202c886269037fcdd018fc and head 5ee880fd4c4b37ce0f901375b179b4b56ae51b76 stored parsed with scores goal_fidelity 19, evidence 17, scope_discipline 16, durability 12, fit 18, reuse 20 (total 112), three non-blocking findings, and zero added failures.</p></div>
 </div>
 </section>
   </main>
