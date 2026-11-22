@@ -1548,9 +1548,23 @@ def _fence_notice_texts() -> tuple[str, ...]:
     return (current, *_RETIRED_FENCE_NOTICE_TEXTS)
 
 
+# The fence also records which temp directory stood in for the task's own. Its
+# paths and host vary with every launch, so its wording is matched rather than
+# its whole text; a log that carries it above the measure's header is a log
+# whose header is still the first line the measure wrote. Both notices are
+# written by one launch, so a log may open with both.
+_FENCE_STANDIN_TOOL = "fence"
+_FENCE_STANDIN_NOTICE = re.compile(
+    r"temp directory .+ is absent on .+; the task's own empty temp directory "
+    r"stands in for it"
+)
+
+
 def _is_fence_prologue(line: str) -> bool:
     """Whether a log line is the launch fence's notice rather than a record."""
     tool, _, rest = line.partition(":")
+    if tool.strip() == _FENCE_STANDIN_TOOL:
+        return _FENCE_STANDIN_NOTICE.fullmatch(rest.strip()) is not None
     return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() in _fence_notice_texts()
 
 

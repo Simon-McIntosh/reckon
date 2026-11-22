@@ -191,3 +191,33 @@ def test_the_unattended_sweep_does_not_promote_without_a_record(
     assert report["self_promoted"] == [], json.dumps(report, indent=2)
     assert pointer_path(REVIEW_RUN_ID).is_file()
     assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_a_log_opening_with_both_fence_notices_states_its_revision(
+    tmp_path: Path,
+) -> None:
+    """A measure's header reads as the first recorded line past both notices.
+
+    A fenced launch writes two notices before the task runs: the fence's own,
+    and the record of which temp directory stood in for the absent one. A log
+    carrying both must still be read as the measure's own: its revision is what
+    a gate log is judged against.
+    """
+    from reckon.crew.fragment_reconcile import log_record
+
+    log = tmp_path / "gate.log"
+    log.write_text(
+        "srun: task re-enters the worker fence; this is the shim, reached by "
+        "name or by absolute path.\n"
+        "fence: temp directory /tmp/scratch/unused is absent on node.example; "
+        "the task's own empty temp directory stands in for it\n"
+        "# revision: 0123456789abcdef0123456789abcdef01234567\n"
+        "# tree: /tmp/tree\n"
+        "63 passed in 37.76s\n",
+        encoding="utf-8",
+    )
+
+    record = log_record(log)
+
+    assert record.revision == "0123456789abcdef0123456789abcdef01234567"
+    assert record.summary == "63 passed in 37.76s"
