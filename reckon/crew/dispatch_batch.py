@@ -831,6 +831,47 @@ def _stamp_section_derived(run_id: str, derived: Mapping[str, str]) -> None:
     runs_module._mutate_pointer(run_id, stamp)
 
 
+def _wait_verdict(
+    waits: Sequence[str],
+    *,
+    project: str,
+    plan: str,
+    section: str,
+    docs_dir: Path,
+    live: Sequence[Mapping[str, Any]],
+) -> tuple[str, list[str]]:
+    """The phase a request's waits justify and the findings the read produced."""
+    from reckon.crew.admission import readiness as _readiness
+
+    return _readiness.preview_wait_phase(
+        waits,
+        project=project,
+        plan=plan,
+        section=section,
+        docs_dir=docs_dir,
+        live=live,
+    )
+
+
+def _record_wait_findings(run_id: str, findings: Sequence[str]) -> None:
+    """Write what a wait's read found onto the stored request.
+
+    The admission pass records the same values when it next resolves the
+    request; writing them here means the coordinator reading the dispatch
+    answer finds it on the request it stored, without waiting for a pass.
+    """
+    from reckon.crew import runs as runs_module
+
+    def record(current: dict[str, Any]) -> dict[str, Any]:
+        merged = list(
+            dict.fromkeys([*current.get("upstream_obligations", ()), *findings])
+        )
+        current["upstream_obligations"] = merged
+        return current
+
+    runs_module._mutate_pointer(run_id, record)
+
+
 def _require_stored(stored: Mapping[str, Any], project: str, node: TaskNode) -> None:
     """Refuse an entry whose request the queue did not store."""
     if not stored:
@@ -1249,6 +1290,24 @@ def _queue_batch(
             phase = str(row.get("phase") or "")
             stored_by_node[node.id] = actual_id
             already = actual_id != run_id
+            waits = list(row.get("waits") or ())
+            # What the waits resolve to, read through the same derivation the
+            # admission pass uses. A real dispatch has already applied it to the
+            # pointer; a preview needs it to answer with the row the dispatch
+            # would report, which is what makes a dry run worth reading.
+            would_phase = ""
+            findings: list[str] = []
+            if dry_run or phase in WAITING_UPSTREAM_PHASES:
+                would_phase, findings = _wait_verdict(
+                    waits,
+                    project=project,
+                    plan=node.plan,
+                    section=node.section,
+                    docs_dir=Path(work_repository) / "docs",
+                    live=live_pointers,
+                )
+            if findings and not dry_run:
+                _record_wait_findings(actual_id, findings)
             if dry_run:
                 # A preview names what the entry resolved to and stores nothing.
                 status = "would-queue"
@@ -1268,7 +1327,13 @@ def _queue_batch(
                     "status": status or "queued",
                     "run_id": actual_id,
                     "position": row.get("position"),
-                    "waits": list(row.get("waits") or ()),
+                    "waits": waits,
+                    # The phase the waits justify, reported beside a preview's
+                    # ``would-queue`` status so the preview names the same
+                    # decision the dispatch records rather than a bare promise
+                    # to queue.
+                    "would_phase": would_phase,
+                    "wait_holds": findings,
                 }
             )
         except (BatchEntryRefusedError, CrewError) as exc:
