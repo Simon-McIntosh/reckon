@@ -19,8 +19,10 @@ instrument was never connected would otherwise report a perfect week.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any, Iterable, Mapping, Sequence
+from itertools import pairwise
+from typing import Any
 
 from reckon._plan_html import section_record_id
 from reckon._timestamps import parse_utc
@@ -60,6 +62,7 @@ def measure_drain(
     weights: Mapping[str, ...] | Sequence[float] | None = None,
     ready_by_project: Mapping[str, int] | None = None,
     unloaded_by_project: Mapping[str, Sequence[str]] | None = None,
+    live_pointers: Sequence[Mapping[str, Any]] = (),
     passes: Sequence[Mapping[str, Any]] = (),
     now: datetime | None = None,
     window_days: int = 7,
@@ -75,8 +78,9 @@ def measure_drain(
     load. ``passes`` are admission pass records, oldest first.
     """
     moment = now or datetime.now(UTC)
+    runs = list(runs)
     window_start = moment - timedelta(days=window_days)
-    windowed = [run for run in runs if _in_window(run, window_start, moment)]
+    windowed = [run for run in runs if in_window(run, window_start, moment)]
     report: dict[str, Any] = {
         "window": {
             "start": window_start.isoformat(),
@@ -85,7 +89,9 @@ def measure_drain(
         },
         "runs_in_window": len(windowed),
     }
-    report["dag_order"] = measure_dag_order(windowed, depends_on or {})
+    report["dag_order"] = measure_dag_order(
+        windowed, depends_on or {}, history=runs
+    )
     report["fair_share"] = measure_fair_share(
         windowed, weights=weights, ready_by_project=ready_by_project
     )
@@ -94,6 +100,7 @@ def measure_drain(
     )
     report["landed_without_a_turn"] = measure_landed_without_a_turn(windowed)
     report["unloaded_sections"] = measure_unloaded(unloaded_by_project or {})
+    report["live_queue_interventions"] = measure_live_interventions(live_pointers)
     report["metered_routing"] = measure_metered_routing(windowed)
     report["coordinator_turns"] = _unmeasured(
         "an authoring turn is recorded as token counts with no turn identity, so "
@@ -118,6 +125,8 @@ def measure_drain(
 def measure_dag_order(
     runs: Iterable[Mapping[str, Any]],
     depends_on: Mapping[tuple[str, str], Mapping[str, Sequence[str]]],
+    *,
+    history: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Count launches that preceded the landing of a section they wait on.
 
@@ -125,9 +134,14 @@ def measure_dag_order(
     section. That is the earliest moment the work could have landed, so a launch
     is reported only when it preceded even that: the count is a lower bound on
     the violations, never an artefact of a landing recorded late.
+
+    ``history`` is every run the landing moments may be read from. It defaults
+    to ``runs``, and a caller measuring a window must pass the whole ledger:
+    an upstream that landed before the window opened is landed, and reading
+    only the window would report it as never having landed at all.
     """
     runs = list(runs)
-    landed = landed_moments(runs)
+    landed = landed_moments(history if history is not None else runs)
     checked = 0
     blocked_edges = 0
     violations: list[dict[str, Any]] = []
@@ -227,6 +241,8 @@ def measure_fair_share(
         "status": "measured",
         "basis": "each comparable project's share of launches against its share "
         "of the declared weights, while it held an executable remainder",
+        "readiness_observed": "at measurement time; no snapshot records which "
+        "projects were loaded earlier in the window",
         "tolerance": FAIR_SHARE_TOLERANCE,
         "within_tolerance": within,
         "projects_without_ready_work": {
@@ -277,7 +293,7 @@ def measure_verdict_gap(
     widest = 0.0
     for run_id, verdicts in rows.items():
         verdicts.sort()
-        for (earlier_at, _), (later_at, _) in zip(verdicts, verdicts[1:]):
+        for (earlier_at, _), (later_at, _) in pairwise(verdicts):
             gap = (later_at - earlier_at).total_seconds()
             widest = max(widest, gap)
             if gap > limit_seconds:
@@ -303,9 +319,9 @@ def measure_verdict_gap(
     if uncovered > limit_seconds:
         result["status"] = "unmeasured"
         result["reason"] = (
-            "the pass log opens {}s after the window does, so a request that "
+            f"the pass log opens {round(uncovered, 3)}s after the window does, so a request that "
             "waited across the start of the window has no rows to read; the "
-            "figures below describe only the covered span".format(round(uncovered, 3))
+            "figures below describe only the covered span"
         )
     return result
 
@@ -326,6 +342,32 @@ def measure_landed_without_a_turn(runs: Iterable[Mapping[str, Any]]) -> dict[str
         "landed_without_a_coordinator_turn": self_landed,
         "share": round(self_landed / len(rows), 4),
         "by_promoter": {key or "(none)": value for key, value in by_promoter.items()},
+    }
+
+
+def measure_live_interventions(
+    pointers: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Report the interventions the live queue is carrying right now.
+
+    A priority override, a queue hold and a steering digest are each recorded on
+    the request pointer and nowhere else, so the queue at this moment is the only
+    place they can be observed. Their presence here is evidence the queue carries
+    them; their disappearance at launch is why the launch cannot be checked
+    against them afterwards.
+    """
+    rows = list(pointers)
+    if not rows:
+        return _unmeasured("no live request pointer was read")
+    return {
+        "status": "measured",
+        "basis": "the live request pointers, which are removed when a run launches",
+        "requests": len(rows),
+        "with_a_priority_override": sum(
+            1 for row in rows if row.get("priority_override") is not None
+        ),
+        "held": sum(1 for row in rows if row.get("queue_hold")),
+        "edited": sum(1 for row in rows if row.get("steering_sha256")),
     }
 
 
@@ -393,12 +435,16 @@ def measure_metered_routing(runs: Iterable[Mapping[str, Any]]) -> dict[str, Any]
         "local_launches": sum(local.values()),
         "recorded_fallbacks": len(fallbacks),
         "fallbacks": fallbacks[:50],
-        "unmeasured": [
-            "the moment a request became ready is not recorded, so how long a "
-            "metered request waited for a slot cannot be measured"
-        ]
-        if rows
-        else [],
+        "unmeasured": (
+            [
+                (
+                    "the moment a request became ready is not recorded, so how "
+                    "long a metered request waited for a slot cannot be measured"
+                )
+            ]
+            if rows
+            else []
+        ),
     }
 
 
@@ -468,7 +514,7 @@ def _run_section(run: Mapping[str, Any]) -> str:
     return section_record_id(raw)
 
 
-def _in_window(run: Mapping[str, Any], start: datetime, end: datetime) -> bool:
+def in_window(run: Mapping[str, Any], start: datetime, end: datetime) -> bool:
     moment = launch_moments(run) or parse_utc(run.get("completed_at"))
     return moment is not None and start <= moment <= end
 

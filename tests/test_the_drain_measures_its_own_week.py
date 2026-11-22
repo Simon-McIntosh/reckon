@@ -75,6 +75,28 @@ def test_a_wait_on_a_section_that_never_landed_is_a_violation():
     assert result["rows"][0]["reason"] == "the waited-on section never landed"
 
 
+def test_an_upstream_that_landed_before_the_window_is_not_a_violation():
+    upstream = _run(
+        "r-upstream", section="§2",
+        launched="2026-10-01T08:00:00Z", completed="2026-10-01T09:00:00Z",
+    )
+    window = [
+        _run("r-dependent", section="§3",
+             launched="2026-11-20T09:00:00Z",
+             completed="2026-11-20T10:00:00Z"),
+    ]
+    depends_on = {("reckon", "some-plan"): {"s3": ["some-plan#s2"]}}
+
+    without_history = drain_measure.measure_dag_order(window, depends_on)
+    with_history = drain_measure.measure_dag_order(
+        window, depends_on, history=[*window, upstream]
+    )
+
+    assert without_history["violations"] == 1
+    assert with_history["violations"] == 0
+    assert with_history["launches_with_declared_waits"] == 1
+
+
 def test_a_cross_project_wait_resolves_to_the_other_project():
     runs = [
         _run("r-far", project="reckon", plan="other-plan", section="§2",
@@ -196,6 +218,19 @@ def test_landed_without_a_turn_counts_only_self_landed_runs():
     result = drain_measure.measure_landed_without_a_turn(runs)
     assert result["landed_without_a_coordinator_turn"] == 2
     assert result["share"] == 0.6667
+
+
+def test_live_interventions_are_counted_where_they_are_kept():
+    pointers = [
+        {"run_id": "r-1", "priority_override": 5, "queue_hold": {"reason": "x"},
+         "steering_sha256": "abc"},
+        {"run_id": "r-2", "priority_override": None, "queue_hold": None},
+    ]
+    result = drain_measure.measure_live_interventions(pointers)
+    assert result["requests"] == 2
+    assert result["with_a_priority_override"] == 1
+    assert result["held"] == 1
+    assert result["edited"] == 1
 
 
 def test_unloaded_sections_are_counted_per_project():
