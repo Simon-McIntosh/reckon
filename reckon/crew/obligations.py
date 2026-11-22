@@ -290,6 +290,9 @@ DUTY_ROW_FIELDS = (
     "holder_session",
     "holder_phase",
     "held_path",
+    # The session that dispatched a request no live process carries, so an
+    # orphaned refusal names the dispatcher whose end stranded it.
+    "ended_session",
     # A producer-gone duty's own evidence: the probe, the value it is stuck on,
     # the terminal states it is waiting for and how long the value has stood
     # still, so a coordinator sees why nothing will lift the wait.
@@ -417,6 +420,15 @@ _CONTRACT_PROPERTY = re.compile(r"(?:(?<=; )|(?<=— ))([a-z][a-z_-]*): ")
 # either — that names a condition only the session can clear, where this names
 # a wait the lane's own admission pass ends.
 QUEUED_RUN_DUTY_KIND = "run-queued"
+
+# A refused queued request whose dispatching session has ended. The refusal is
+# charged to the session that dispatched the request, and an obligations view is
+# built for one session, so an ended dispatcher leaves the refusal in a view
+# nobody reads. This row carries the refusal to a live session that can answer
+# it and names the ended session, so the request is not lost with its
+# dispatcher. It is distinct from the session-refusal kind, which is the same
+# refusal listed to the session that can still clear it.
+ORPHANED_REFUSAL_DUTY_KIND = "orphaned-refusal"
 
 # A queued request the admission pass recorded a stall verdict for: the lane
 # could launch it and did not, so the wait is one the lane has already declared
@@ -2223,6 +2235,130 @@ def _live_item(
         if launch_error and launch_error not in item.get("reason", ""):
             item["reason"] = f"{item.get('reason') or ''} ({launch_error})".strip()
     return item
+
+
+def _session_reachability(sessions: Iterable[str]) -> dict[str, bool | None]:
+    """Whether a live harness process still carries each session.
+
+    ``True`` and ``False`` are the harness's own answers. A session it keeps no
+    record for is absent from the map and reads as unknown, never as ended:
+    nothing observed that session, and an end is a fact that has to be seen to
+    be reported. The harness reads its records once for every id named here.
+    """
+    wanted = {str(session) for session in sessions if str(session or "").strip()}
+    if not wanted:
+        return {}
+    from reckon.crew import harness_sessions
+
+    return {
+        session: address.get("reachable")
+        for session, address in harness_sessions.addresses(wanted).items()
+    }
+
+
+def orphaned_refusal_readings(
+    project: str,
+    *,
+    classified: Sequence[Mapping[str, Any]],
+    pointers: Iterable[Mapping[str, Any]],
+    now: datetime,
+) -> tuple[list[dict[str, Any]], set[str]]:
+    """The refusals an ended dispatcher left behind, and the project's live sessions.
+
+    A refused queued request is charged to the session that dispatched it. When
+    no live process carries that session the refusal sits in an obligations view
+    nobody reads, and nothing on the lane ends it. Each such request is built
+    into an orphaned-refusal row here, naming the ended session, and paired with
+    the set of the project's sessions a live process still carries so a caller
+    can tell whether it is the session that should be told.
+
+    Only a session observed ended is orphaned. A session the harness keeps no
+    record for is unknown rather than gone, so its refusals stay with it and are
+    reported exactly as they were before.
+    """
+    candidates = [
+        row
+        for row in classified
+        if str(row.get("classification") or "") == "queued"
+        and (row.get("session_refusal") or row.get("contract_refusal"))
+    ]
+    if not candidates:
+        return [], set()
+    reachability = _session_reachability(
+        str(row.get("session") or "") for row in candidates
+    )
+    items = [
+        _orphaned_refusal_item(row, now=now)
+        for row in candidates
+        if reachability.get(str(row.get("session") or "")) is False
+    ]
+    if not items:
+        return [], set()
+    ended = {str(row.get("session") or "") for row in candidates}
+    ended = {session for session in ended if reachability.get(session) is False}
+    project_sessions = {
+        str(pointer.get("session") or "")
+        for pointer in pointers
+        if str(pointer.get("session") or "")
+    }
+    project_reachability = _session_reachability(project_sessions)
+    live_sessions = {
+        session
+        for session in project_sessions
+        if session not in ended and project_reachability.get(session) is not False
+    }
+    return items, live_sessions
+
+
+def _orphaned_refusal_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
+    """One refused request whose dispatching session has ended, as a duty row.
+
+    The row keeps the refusal's own remedy, because that is the command that
+    clears it whoever runs it, and adds the one fact the session that reads it
+    cannot otherwise know: which session ended and left the request behind.
+    """
+    refusal = row.get("session_refusal") or row.get("contract_refusal") or {}
+    ended_session = str(row.get("session") or "")
+    run_id = str(row.get("run_id") or "")
+    item = _live_item(row, kind=ORPHANED_REFUSAL_DUTY_KIND, now=now)
+    detail = str(refusal.get("detail") or row.get("detail") or "").strip()
+    item["reason"] = (
+        f"the session that dispatched this request ({ended_session!r}) has ended, "
+        f"so no live coordinator was told of its refusal: {detail}"
+    ).strip()
+    item["next_command"] = (
+        str(refusal.get("next_command") or "") or f"reckon crew discard --run {run_id}"
+    )
+    item["ended_session"] = ended_session
+    recorded_at = str(refusal.get("recorded_at") or "").strip()
+    if recorded_at:
+        item["age_seconds"] = _seconds_since(recorded_at, now=now)
+    return item
+
+
+def _orphaned_refusals_for_session(
+    items: Sequence[Mapping[str, Any]],
+    *,
+    project_live_sessions: Iterable[str],
+    session: str,
+) -> list[dict[str, Any]]:
+    """The orphaned refusals one session's view should list.
+
+    A live session of the project answers the request, so every such session is
+    told. When the project has no live session at all, the request is told to
+    any live session on the lane rather than left in the ended session's view,
+    which is the whole loss this row exists to end. The ended dispatcher's own
+    session is never told: no process carries it, and reporting to it repeats
+    the loss rather than closing it.
+    """
+    if not items:
+        return []
+    if _session_reachability([session]).get(session) is False:
+        return []
+    live = set(project_live_sessions)
+    if live:
+        return [dict(item) for item in items if session in live]
+    return [dict(item) for item in items]
 
 
 def _route_defaulted_items(
@@ -5291,6 +5427,18 @@ def _obligations_view(
     # pass wrote, rather than re-deriving the claim.
     classified = _classified_rows(project)
     classified_by_run = {str(row.get("run_id") or ""): row for row in classified}
+    # A refused request charged to a session no live process carries reaches a
+    # session that can answer it, rather than staying in a view nobody reads.
+    orphaned, orphan_live_sessions = orphaned_refusal_readings(
+        project, classified=classified, pointers=live_pointers, now=now
+    )
+    items.extend(
+        _orphaned_refusals_for_session(
+            orphaned,
+            project_live_sessions=orphan_live_sessions,
+            session=session,
+        )
+    )
     for pointer in live_pointers:
         if str(pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
             continue
