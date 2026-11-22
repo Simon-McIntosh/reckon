@@ -293,6 +293,42 @@ def test_doubling_the_store_does_not_change_what_the_batch_decodes(
     )
 
 
+def test_the_history_index_keeps_a_bounded_number_of_answers() -> None:
+    """A process that asks about many plan sets holds the last few, not all.
+
+    The index is keyed by the plans it was asked about, and the plan set comes
+    from the caller: a coordinator that dispatches for several projects, or
+    queues batches naming different plans, would otherwise keep one entry per
+    question for the life of the process, each holding the delivered nodes of
+    its plans. Dropping an answer costs a store read and never an answer, so the
+    map is capped; this holds the cap and the eviction order.
+
+    The cap is read from the module rather than written here so the case does
+    not restate a constant the code owns.
+    """
+
+    section_holds._HISTORY_READS.clear()
+    cap = section_holds._HISTORY_READ_ENTRIES
+    stamp = (1, 2)
+    questions = [
+        (PROJECT, "/store.db", None, None, (f"plan-{index}",))
+        for index in range(cap * 3)
+    ]
+    for index, key in enumerate(questions):
+        section_holds._remember_history_index(
+            key, stamp, {(f"plan-{index}", SECTION): {}}
+        )
+
+    assert len(section_holds._HISTORY_READS) == cap
+    assert questions[-1] in section_holds._HISTORY_READS
+    assert questions[0] not in section_holds._HISTORY_READS
+    # Re-asking an old question moves it to the newest position rather than
+    # adding a second entry for it.
+    section_holds._remember_history_index(questions[-1], stamp, {})
+    assert len(section_holds._HISTORY_READS) == cap
+    section_holds._HISTORY_READS.clear()
+
+
 def test_a_node_with_no_delivery_costs_no_row_decode(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

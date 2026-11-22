@@ -157,6 +157,27 @@ _HISTORY_READS: dict[
     tuple[tuple[int, ...], dict[tuple[str, str], dict[str, dict[str, Any]]]],
 ] = {}
 
+#: How many distinct questions the index answers from memory. A process that
+#: dispatches for many projects, or over many plan sets, would otherwise keep one
+#: entry per question for its whole life, and each entry holds the delivered
+#: nodes of every plan it was asked about. The index is rebuilt from the store in
+#: one read, so an answer dropped here costs a read and never an answer; the cap
+#: is what keeps a long-lived reader's memory flat rather than growing with the
+#: number of distinct plan sets it has ever seen.
+_HISTORY_READ_ENTRIES = 4
+
+
+def _remember_history_index(
+    key: tuple[str, str, str | None, str | None, tuple[str, ...] | None],
+    stamp: tuple[int, ...],
+    index: dict[tuple[str, str], dict[str, dict[str, Any]]],
+) -> None:
+    """Hold one answer, dropping the oldest when the map is full."""
+    _HISTORY_READS.pop(key, None)
+    _HISTORY_READS[key] = (stamp, index)
+    while len(_HISTORY_READS) > _HISTORY_READ_ENTRIES:
+        del _HISTORY_READS[next(iter(_HISTORY_READS))]
+
 
 def _store_history_rows(
     project: str,
@@ -299,7 +320,7 @@ def _history_index(
         }
     result = dict(index)
     if stamp is not None and run_store.store_stamp() == stamp:
-        _HISTORY_READS[key] = (stamp, result)
+        _remember_history_index(key, stamp, result)
     return result
 
 
