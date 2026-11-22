@@ -11,6 +11,7 @@ mutable state, imported once and independent of run-index rebuilds.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import hashlib
 import json
@@ -558,22 +559,65 @@ def _signature_counts_agree(
     answering a project's history without the rows that process wrote.
     """
     stored = 0
-    for schema in schemas:
-        try:
+    try:
+        # One transaction over both counts: a write landing between the two
+        # statements would otherwise read as a difference that is not there,
+        # and every such read would try to repair a mirror that already agrees.
+        connection.execute("BEGIN")
+        for schema in schemas:
             stored += connection.execute(
                 f"SELECT COUNT(*) FROM {schema}.runs WHERE project = ?",  # noqa: S608 - fixed schema names
                 (project,),
             ).fetchone()[0]
-        except sqlite3.Error:
-            return False
-    try:
         present = connection.execute(
             f'SELECT COUNT(*) FROM "{SIGNATURE_TABLE}" WHERE project = ? AND present = 1',  # noqa: S608
             (project,),
         ).fetchone()[0]
     except sqlite3.Error:
+        with contextlib.suppress(sqlite3.Error):
+            connection.rollback()
         return False
+    else:
+        connection.commit()
     return int(stored) == int(present)
+
+
+def _signature_ids_agree(
+    connection: sqlite3.Connection, project: str, schemas: Iterable[str]
+) -> bool:
+    """True when the mirror's present rows name exactly the store's runs.
+
+    A count comparison cannot make this judgement: one stale mirror row beside
+    one stored row no signature describes leaves both counts equal, which is
+    the state a refused landing's discard and a writer older than this table
+    produce together. Both sides are read from indexes and no payload is
+    touched; this runs on a cold read, not on the incremental one.
+    """
+    stored: set[str] = set()
+    try:
+        connection.execute("BEGIN")
+        for schema in schemas:
+            stored |= {
+                str(row[0])
+                for row in connection.execute(
+                    f'SELECT "run_id" FROM {schema}.runs WHERE "project" = ?',  # noqa: S608 - fixed schema names
+                    (project,),
+                )
+            }
+        present = {
+            str(row[0])
+            for row in connection.execute(
+                f'SELECT "run_id" FROM "{SIGNATURE_TABLE}" WHERE "project" = ? AND "present" = 1',  # noqa: S608
+                (project,),
+            )
+        }
+    except sqlite3.Error:
+        with contextlib.suppress(sqlite3.Error):
+            connection.rollback()
+        return False
+    else:
+        connection.commit()
+    return stored == present
 
 
 def _legacy_run_signature(
@@ -1328,6 +1372,23 @@ def stored_run_exists(project: str, *, path: str | Path | None = None) -> bool:
         connection.close()
 
 
+def _reconcile_mirror(target: Path, project: str) -> bool:
+    """Repair one project's mirror once, or report that it could not be.
+
+    The signature read is otherwise read-only; this is the one repair it
+    attempts, and only when the counts already disagree. A short busy timeout
+    keeps a read that meets a writer's lock from stalling: the caller falls
+    back to the query the mirror replaced and the next read tries again. A
+    copy held read-only refuses here for the same reason.
+    """
+    try:
+        with RunStore(target, busy_timeout=INDEX_BUSY_TIMEOUT_SECONDS) as store:
+            store.reconcile_signatures(project)
+    except (OSError, sqlite3.Error):
+        return False
+    return True
+
+
 def stored_run_signature(
     project: str,
     *,
@@ -1363,6 +1424,12 @@ def stored_run_signature(
     process running code older than this table — is answered by the query the
     table replaced, so its rows are never missing from an answer.
 
+    A mirror the store disagrees with — a row that left by a path that did not
+    write the table, or a stored row no signature describes — is repaired once
+    here, at a cost bounded by the runs that differ, and the answer is then
+    read from the mirror. A store this process cannot write keeps the fallback
+    query rather than failing the read.
+
     None distinguishes an absent store from one holding no runs for this
     project, matching :func:`stored_run_rows`.
     """
@@ -1376,9 +1443,21 @@ def stored_run_signature(
         schemas = _read_attached_tables(connection, target)
         if not _signature_ready(connection):
             return _counted(_legacy_run_signature(connection, project, schemas))
-        if since is None:
-            if not _signature_counts_agree(connection, project, schemas):
+        if since is None and not _signature_ids_agree(connection, project, schemas):
+            # A mirror the store disagrees with is repaired once here, so a
+            # project whose rows left by a path that did not write the table
+            # comes back to answering from it rather than scanning its whole
+            # payload on every read. A store this process cannot write leaves
+            # the read on the query the mirror replaced.
+            connection.close()
+            _reconcile_mirror(target, project)
+            connection = _open_readonly(target)
+            schemas = _read_attached_tables(connection, target)
+            if not _signature_ready(connection) or not _signature_ids_agree(
+                connection, project, schemas
+            ):
                 return _counted(_legacy_run_signature(connection, project, schemas))
+        if since is None:
             query = (
                 f'SELECT {_SIGNATURE_SELECT} FROM "{SIGNATURE_TABLE}" '  # noqa: S608 - fixed column names
                 'WHERE "project" = ? AND "present" = 1 ORDER BY "ordinal"'
@@ -1970,6 +2049,24 @@ class RunStore:
             ),
         )
 
+    def _row_project(self, run_id: str, schema_name: str) -> str:
+        """The project a stored row is filed under, empty when it has no row.
+
+        A missing mirror row must be created carrying the project from the row
+        itself: a caller that names the row by id alone would otherwise leave
+        the new signature answering under no project, and the mirror would
+        read one row short of the store for as long as it stood.
+        """
+        table = "runs" if schema_name in ("", "main") else f"{schema_name}.runs"
+        try:
+            row = self._conn.execute(
+                f'SELECT "project" FROM {table} WHERE "run_id" = ?',  # noqa: S608 - fixed table names
+                (str(run_id),),
+            ).fetchone()
+        except sqlite3.Error:
+            return ""
+        return str(row[0] or "") if row is not None else ""
+
     def _retire_signature(
         self,
         run_id: str,
@@ -1983,7 +2080,8 @@ class RunStore:
 
         A deleted row keeps its metadata with ``present`` clear so a reader
         asking for what moved sees the deletion as a row rather than having to
-        compare the whole table to notice an absence.
+        compare the whole table to notice an absence. A row that had no
+        signature row takes its project from the row.
         """
         version = self._next_signature_version()
         cursor = self._conn.execute(
@@ -1998,7 +2096,7 @@ class RunStore:
                 '"payload_bytes", "detail_bytes") VALUES (?, ?, ?, ?, ?, ?, 0, NULL)',
                 (
                     str(run_id),
-                    str(project or ""),
+                    self._row_project(run_id, schema_name) or str(project or ""),
                     version,
                     1 if present else 0,
                     schema_name,
@@ -2060,6 +2158,111 @@ class RunStore:
                 'ON CONFLICT("key") DO UPDATE SET "value" = excluded."value"',
                 (_SIGNATURE_RECORD_KEY, "1"),
             )
+
+    def _signature_row_schemas(self) -> list[str]:
+        """The schemas a project's signature rows are compared against."""
+        schemas = ["main"]
+        if self.archive_path.is_file() and self._attach_archive():
+            schemas.append("archive")
+        return schemas
+
+    def _signature_from_row(
+        self,
+        project: str,
+        run_id: str,
+        schema_name: str,
+        ordinal: int | None,
+    ) -> None:
+        """Measure one stored row and write its signature.
+
+        This reads one row's payload, which is what a signature needs and
+        cannot derive: the row is one the mirror does not describe, and only
+        that row is read, so the cost is the rows that differ.
+        """
+        table = "runs" if schema_name in ("", "main") else f"{schema_name}.runs"
+        details = (
+            "run_details"
+            if schema_name in ("", "main")
+            else f"{schema_name}.run_details"
+        )
+        wanted = ", ".join(f'r."{name}"' for name in (*QUERY_KEYS, ROW_REVISION))
+        row = self._conn.execute(
+            f'SELECT LENGTH(r."payload"), LENGTH(COALESCE(d."detail", \'\')), '  # noqa: S608 - fixed columns
+            f'{wanted}, r."activity_seconds" FROM {table} r '
+            f'LEFT JOIN {details} d ON d."run_id" = r."run_id" '
+            'WHERE r."run_id" = ?',
+            (str(run_id),),
+        ).fetchone()
+        if row is None:
+            return
+        self._conn.execute(
+            _SIGNATURE_WRITE,
+            (
+                str(run_id),
+                str(project or ""),
+                self._next_signature_version(),
+                1,
+                schema_name,
+                ordinal,
+                row[0],
+                row[1],
+                *row[2:9],
+                row[9],
+            ),
+        )
+
+    def reconcile_signatures(self, project: str) -> dict[str, int]:
+        """Bring one project's mirror back into agreement with its rows.
+
+        The mirror falls behind when a row leaves the store through a path
+        that does not write this table, which is what a refused landing's
+        discard does. The difference is found from the ids alone, both sides
+        index-only, and repaired by reading only the rows one side names and
+        the other does not: a stored row with no present signature is measured
+        once, and a present signature the store no longer holds is retired to
+        a tombstone. Nothing that already agrees is read or rewritten.
+        """
+        with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            stored: dict[str, tuple[str, int | None]] = {}
+            for schema in self._signature_row_schemas():
+                table = "runs" if schema == "main" else f"{schema}.runs"
+                try:
+                    found = self._conn.execute(
+                        f'SELECT "run_id", rowid FROM {table} WHERE "project" = ?',  # noqa: S608 - fixed table names
+                        (project,),
+                    ).fetchall()
+                except sqlite3.Error:
+                    continue
+                for run_id, ordinal in found:
+                    stored[str(run_id)] = (schema, ordinal)
+            present = {
+                str(row[0]): (str(row[1]), row[2])
+                for row in self._conn.execute(
+                    f'SELECT "run_id", "schema_name", "ordinal" FROM "{SIGNATURE_TABLE}" '  # noqa: S608
+                    'WHERE "project" = ? AND "present" = 1',
+                    (project,),
+                )
+            }
+            added = 0
+            for run_id, (schema, ordinal) in sorted(stored.items()):
+                if run_id in present:
+                    continue
+                self._signature_from_row(project, run_id, schema, ordinal)
+                added += 1
+            retired = 0
+            for run_id, (schema, ordinal) in sorted(present.items()):
+                if run_id in stored:
+                    continue
+                self._retire_signature(
+                    run_id,
+                    project=project,
+                    schema_name=schema,
+                    ordinal=ordinal,
+                    present=False,
+                )
+                retired += 1
+        return {"added": added, "retired": retired}
 
     def _signature_built(self) -> bool:
         """True when the signature table is known to hold every stored run."""
