@@ -46,9 +46,15 @@ PER_PROCESS = re.compile(r"^per_process=(?P<rows>\[.*\])$")
 
 def _words(count: int) -> str:
     """A small count as the prose spells it, so a phrase can be derived."""
-    return {0: "no", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}.get(
-        count, str(count)
-    )
+    return {
+        0: "no",
+        1: "one",
+        2: "two",
+        3: "three",
+        4: "four",
+        5: "five",
+        6: "six",
+    }.get(count, str(count))
 
 
 def window(path: Path) -> dict:
@@ -74,7 +80,9 @@ def window(path: Path) -> dict:
         elif match := CONTROL.match(line):
             figures["control_delta"] = int(match["delta"])
         elif match := DSTATE.match(line):
-            samples.append([str(hit.split(":")[0]) for hit in ast.literal_eval(match["hits"])])
+            samples.append(
+                [str(hit.split(":")[0]) for hit in ast.literal_eval(match["hits"])]
+            )
         elif match := PER_PROCESS.match(line):
             for row in ast.literal_eval(match["rows"]):
                 if row.get("kind") == "station":
