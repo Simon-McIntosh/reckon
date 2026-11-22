@@ -232,6 +232,7 @@ def test_a_landed_run_with_a_sub_floor_dimension_is_carried_not_repaired(world):
     assert world["resumed"] == [], "a repair resume was launched for a landed run"
     assert report["dispatched"] is False, report
     assert report["landed"] is True, report
+    assert report["integrated"] is True, report
     assert world["dispatched"] == []
     assert report["carried_to"] == {"plan": PLAN_SLUG, "section": SECTION}
     carried_ids = [row["id"] for row in report["carried_findings"]]

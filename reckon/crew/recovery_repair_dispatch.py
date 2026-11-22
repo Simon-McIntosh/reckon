@@ -1531,6 +1531,7 @@ def _carry_a_landed_round(
         "run_id": run_id,
         "dispatched": False,
         "landed": True,
+        "integrated": True,
         "round_id": round_id,
         "carried_to": {"plan": plan, "section": section},
         "carried_findings": carried,
