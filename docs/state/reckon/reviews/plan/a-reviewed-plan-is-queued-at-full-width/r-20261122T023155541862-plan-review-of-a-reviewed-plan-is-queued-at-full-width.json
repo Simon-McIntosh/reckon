@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T02:34:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:63",
+      "id": "reasoning-1",
+      "reason": "as written, one of the plan's three consumers (\u00a78) cannot execute in the state the plan defines, and a manual dispatch is disabled by a setting that is not about it; the author must decide whether the setting is a property of the plan or only of the service and say so in \u00a74's reason list.",
+      "text": "\u00a74 lists \"its project has switched service queueing off\" as one of the fixed reasons a plan may not be queued and says \"the whole-plan dispatch refuses \u2026 by that same answer\", while \u00a77 describes that setting as switching off the *service* and \u00a78 says it queues an idle wait's upstream \"whatever the project's service setting\" \u2014 under the setting off, \u00a74 must answer \"may not\", so \u00a78's precondition fails and its arm is unreachable, and a coordinator's own whole-plan dispatch is refused by a setting meant to govern the automated service",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:75",
+      "id": "reasoning-2",
+      "reason": "the plan asserts an existing mechanism performs a job it cannot, so \u00a77 as built would let the service queue a plan a coordinator believes it has held; either a plan-level hold must be named as something this section adds, or the exemption must be restated.",
+      "text": "\u00a77 says \"a coordinator keeps a plan out of it with the queue hold that already exists\", but `crew queue hold --plan` selects only *already filed* waiting requests (`reckon/crew/queue_edit.py:1003` \u2192 `_selected_requests`, which raises \"no waiting requests found for \u2026\" when the plan has none) and writes each pointer in place; a plan with no request cannot be held, and requests the service files afterwards are not covered",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:61",
+      "id": "single_goal-1",
+      "reason": "splitting the obligation out (or dropping it to a consumer of the read) lets each deliverable be dispatched, gated and reviewed on one measure.",
+      "text": "\u00a74 delivers both the single per-plan queueability read (with its fixed reason list and its two dispatch call-sites) and a new obligation kind on a session, and its own title names the two, so one gate has to prove a read function and an obligation surface and a reviewer cannot close the section on one verdict",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:71",
+      "id": "reasoning-3",
+      "reason": "the counting rule has no defined answer for the population the lane document actually counts, so the implementer would have to invent one; the plan should scope the count to upstream waits or name what an unclassified request counts as.",
+      "text": "\u00a76 opens \"The admit pass already stamps every waiting request with a class\", but every write of `wait_class` lives in the upstream-resolution path of `reckon/crew/admission/release.py` (lines 270, 655, 684, 692, 752, 799), so a request waiting for a lane slot carries no class; \u00a76 then requires the lane document \u2014 whose `waiting` figure is the gate's queued population \u2014 to give its count by the recorded class while forbidding it from recomputing one, leaving no value for the unclassified requests",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e0a46dc3bd58575c2b54d9de2f033964d603b5df",
+  "plan_fingerprint": "ab14c222617c39fdd822f9691627ef6721fdd41f0ea737bb2b1cdef590b46da3",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T023155541862-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "28b625732c85a0d038cdf7320849c9a146289072",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/plans/building-a-plan-queues-all-of-it.html`, `tests/test_a_plan_dispatch_queues_every_section.py`, commits `b3d730c8e1` and `74fd70f0e7` all resolve; the plan carries no href needing extension resolution.",
+    "done_when": "pass \u2014 each implementable section's done-when names concrete arms and a declared negative control against `b3d730c8e1` (which resolves and is an ancestor of `main`), and the two timing bounds name their comparator, sample and source.",
+    "evidence_paths": "pass \u2014 each arm's log is written under the run directory, and \u00a77's timing arm reads the service's own pass readings, both durable.",
+    "naming": "pass \u2014 the new test filenames and section prose name the mechanism, and the only bare identifiers are cited commit shas used as evidence.",
+    "reasoning": "a finding \u2014 \u00a74 makes the project's service setting a reason a plan \"may not be queued\" and says the whole-plan dispatch refuses by that same answer, which contradicts \u00a78's \"whatever the project's service setting\" and would also refuse a coordinator's manual dispatch; and \u00a77 leans on a queue hold that cannot hold a plan with no requests.",
+    "single_goal": "a finding \u2014 \u00a74 carries two deliverables, the per-plan queueability read and a new obligation kind.",
+    "wiring": "pass \u2014 `plan-section-depends-on` resolves s7\u2192s3,s4, s8\u2192s7, s9\u2192s4, and every cited node exists; s6 legitimately declares no wait because it only re-presents a class the admit pass already stamps."
+  },
+  "section_digests": {
+    "_document": "8aaf3f21828f072ee203581f29857fbb72a3a70499cc9bc7664265f28a360c6a",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "7bf7f9b92e4bbc6a9d86f2d20aacc04cdaa9e3a0c27be56c9f1eccb8cea9efee",
+    "s4": "eed3787cdf4a0517be978759c27ba4674748a3373b7f79bee0d8352f21c0c821",
+    "s5": "a0356c829de2dc9d9549641fb3dbdff1b2e2904914c61bc70b9f36213272e8ab",
+    "s6": "1fb789f65eeb1672448e630a9aeffb305e97e28a1609a0b57bbcf14791880f60",
+    "s7": "ae2d1943cb5e359bc18d88b1ebae9cf0fee2bc50f0a789d64da537ac8fcf8610",
+    "s8": "4bc00e950ee6cf043d0f6db60ac05b62f95abb7bc09d7a16c50d140d5e3942e5",
+    "s9": "80d733bc1159dc0bffbcd3cf399309bfea87f50f4e699b1eeb02bdeb8753ea3c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T02:44:48.723592+00:00",
+  "total": null
+}
