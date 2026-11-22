@@ -43,25 +43,23 @@ server it started.</p>
 <section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-measure">
 <h2>Resident memory</h2>
 <p><code>scripts/measure_shared_mcp_memory.py</code> holds 5 then 40 client
-sessions open against one server and samples its resident set over equal
-windows. Recorded on 2026-11-22: 5 workers median 683,932 kB; 40 workers median
-684,972 kB; delta 1,040 kB, against a limit of 500,000 kB. The node ran one
-server process (pid 1872) throughout.</p>
-<p><strong>Scope note.</strong> The plan's measure asks for ten-minute
-sampling over one hour per arm. The recorded run is the same instrument over
-shorter equal windows, so it measures the same quantity for a shorter span. The
-one-hour per-arm soak runs on a compute partition at this record's review head
-(scheduler job 1336647, logs under
-<code>~/.cache/reckon-portfolio/shared-mcp-soak/</code>); its result attaches the
-plan's own duration to this record.</p>
+sessions open against one server and samples its resident set every ten minutes
+for one hour per arm. Recorded on 2026-11-22 at revision <code>1b72aa3966</code>
+on a compute partition (scheduler job 1336647, <code>EXIT=0</code>; log
+<code>~/.cache/reckon-portfolio/shared-mcp-soak/soak-1336647.log</code>, data
+<code>measure-shared-mcp-hour.json</code> beside it): 5 workers, all answered,
+seven samples ten minutes apart, median 666,784 kB; 40 workers, all answered,
+median 670,968 kB; delta 4,184 kB, against a limit of 500,000 kB. The node ran
+one server process (pid 1742420) throughout, and the set stayed flat within
+each arm.</p>
 
 <section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-figure">
 <h2>Resident set at both worker counts</h2>
 <figure>
-<img src="/reckon/figures/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it/resident-set-two-arms.svg" alt="Two flat traces of the shared server's resident set over six samples: 668 MB while five workers held sessions and 669 MB while forty did, a difference of 1.0 MB against an allowance of 488 MB" width="1200">
+<img src="/reckon/figures/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it/resident-set-two-arms.svg" alt="Two near-flat traces of the shared server's resident set over seven samples taken ten minutes apart: 651 MB while five workers held sessions and 655 MB while forty did, a difference of 4.1 MB against an allowance of 488 MB" width="1200">
 <figcaption>The two arms of the resident-set measure, drawn from the measure's
 own samples. The node served every worker from one process in both arms: forty
-workers raise the server's footprint by 1.0 MB against the 488 MB the measure
+workers raise the server's footprint by 4.1 MB against the 488 MB the measure
 allows.</figcaption>
 </figure>
 </section>
