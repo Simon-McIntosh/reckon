@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;work-scales-to-eighty-across-nodes#s3&quot;],&quot;s3&quot;:[&quot;work-flows-to-the-lane#s71&quot;],&quot;s6&quot;:[&quot;work-scales-to-eighty-across-nodes#s1&quot;,&quot;work-scales-to-eighty-across-nodes#s2&quot;,&quot;work-scales-to-eighty-across-nodes#s3&quot;,&quot;work-scales-to-eighty-across-nodes#s4&quot;,&quot;work-scales-to-eighty-across-nodes#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-11-22">
 <meta name="plan-sprint" content="S28">
 </head>
@@ -45,7 +45,7 @@
     <p>About 230 omp-local workers at 0.4 GB is about 90 GB, which does not fit on one fleet node beside the coordinators, so workers have to run on more than one node. The reckon MCP server today speaks stdio only, so each worker that uses it starts its own copy. The installed MCP library (1.28) also offers a network transport that one server can serve many clients through. Workers can already be placed as scheduler steps on a reservation. This plan sets the endpoints that let the lane run at 80 without the fleet node failing, and keeps MCP use open to workers that need it.</p>
 
     <h2 id="s1">§1 — A queued request holds no process until it holds a slot</h2>
-    <section data-reckon="section" data-id="s1" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s1" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A request starts its worker's harness only when the router has a slot for it, and admission never launches past the router's published worker slots. A request waiting for a slot holds no process and no memory. The number of live workers at a full lane stays within the router's published worker slots plus two. Whether a queued or held request holds a process today has not been measured; the node's first record is that census at the base revision.</p>
     <p><strong>Done when.</strong> A test with a temporary crew home and a stand-in router of width 4 queues 20 requests and reads, at every admission pass, no more live workers than the router's worker slots plus two, and no process for any request still queued. A measure on the fleet node over one hour at a full lane reads the live worker count against the published worker slots every five minutes, and every reading is at most the slots plus two. A census at the base revision records, for every queued and held request, whether a process exists for it. Negative control: a mutation that starts a queued request's worker before it holds a slot turns the test red; the failing run, the census and the measure are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s1.html</code>.</p>
 
@@ -90,6 +90,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot" data-who="reckon-build" data-when="2026-11-22T04:25:06.114Z">
     <div class="r-comment-body"><p>A queued request holds no process until the router grants it a slot, now pinned by a test: the gate test drives the real admission pass over a temporary crew home against a stand-in router of width 4 with 20 queued requests and reads `1 passed` (EXIT=0) with live workers at most the width plus two and every queued request carrying no pid; the base-revision census reads 0 of 19 queued/held requests holding a process, and a mutation that reads no lane allowance turns the test red at 20 live workers.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-11-22T07:24:47.097975+00:00">
+    <div class="r-comment-body"><p>Landed r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot on the measured suite pair; <a href="/reckon/evidence/archive/work-scales-to-eighty-across-nodes-landed.html#wstea-a-queued-request-holds-no-process-until-it-holds-a-slot">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs" data-who="reckon-build" data-when="2026-11-15T20:15:38.181Z">
     <div class="r-comment-body"><p>A flight declares named MCP sets and a node names one with mcp_set, resolved before any harness home is seeded and refused by name when the flight does not hold it; claude, codex and omp each start exactly that set and the run records worker_mcp {set, servers} — 20 passed at head against 20 failed at the base revision.</p></div>
