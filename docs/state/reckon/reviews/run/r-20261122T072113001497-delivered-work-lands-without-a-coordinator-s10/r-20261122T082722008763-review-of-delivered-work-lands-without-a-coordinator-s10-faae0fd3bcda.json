@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:27:47Z",
+  "findings": [
+    {
+      "id": "f7ba605616f",
+      "line": 29,
+      "path": "docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html",
+      "severity": "non-blocking",
+      "text": "The new cumulative-archive section omits data-evidence-origin=\"append\", which the sibling section at line 22 carries; reckon/evidence.py treats an unmarked section as one it cannot tell from its own and reports it as 'carried' for an operator to remove on the next synthesis, so this measurement can be flagged as stale rather than recognised as an append."
+    },
+    {
+      "id": "fa0e9eaa9eb",
+      "line": 31,
+      "path": "docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html",
+      "severity": "non-blocking",
+      "text": "Every number in the section is produced by census.py, census/make_figure.py and census/receipt_census.py, instruments that survive only in the run directory under the worker's crew home and are not committed, so the record cannot be re-derived from the repository alone; the worker's own outside_scope records this, and the baseline reproduction is the control that makes the one-off instrument trustworthy."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the commit faae0fd3b against base 0d58fbb2 commit by commit: archive (+51, 0 deletions), fragment (+65), figure (+1286)",
+    "done_when": "read the done_when and compared each clause against census/gate.log; the baseline reproduction (845 runs, 1.863 h median, 8.606 h p90, 0.00 % delta) and the 113-run measured day are recorded, and the three bounds are each reported as a miss with the stage that carries it",
+    "goal": "read the node goal and the plan's \u00a710 deliverable; the landed change measures a 24-hour window of the live fleet against the seven-day baseline and reports every named figure",
+    "manifest": "read the source manifest; status complete, three changed paths, gate log at census/gate.log, suite fence unarmed",
+    "write_paths": "read the four declared write paths and the three paths the commit stages; every staged path is inside them"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a 24-hour live-fleet measurement against the seven-day baseline; docs/plans/delivered-work-lands-without-a-coordinator.html:111 states it and the landed section carries it.\nVERDICT done_when: every clause of docs/plans/delivered-work-lands-without-a-coordinator.html:111 is answered in census/gate.log and the archive section, including the baseline reproduction at 0.00 % and each bound reported as a miss with its stage.\nVERDICT write_paths: the manifest declares the archive, the figures directory and the fragment; the commit stages exactly docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html, docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s10.html and docs/figures/delivered-work-lands/wait-by-stage.svg, all inside them.\nVERDICT manifest: read; it records status complete, the three changed paths, the census gate at census/gate.log, and the suite fence as unarmed with baseline_suite and after_suite null.\nVERDICT diff: read commit faae0fd3b against base 0d58fbb2; it adds one archive section with 0 deletions to the cumulative record, one fragment, and one 14x7.2 in figure, all additive.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html:41-52 carries every measure the done_when names, beside the baseline column.\nSCORE evidence: 18\nJUSTIFICATION evidence: every headline number in the archive matches census/gate.log and census/census-measured.json, and baseline-compare.json records the 0.00 % reproduction against the research TSV written before the instrument existed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat shows three paths, each inside the manifest's declared write paths, and the archive change is +51 with 0 deleted lines.\nSCORE durability: 15\nJUSTIFICATION durability: no test guards the landed files; the only control is the census reproducing the independent baseline record (census/baseline-compare.json), and the instrument itself is uncommitted under the run directory.\nSCORE fit: 17\nJUSTIFICATION fit: docs/figures/delivered-work-lands/wait-by-stage.svg renders on one despined axis with direct labels and no overlap, but docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html:29 omits the data-evidence-origin=\"append\" its sibling at line 22 carries.\nSCORE reuse: 18\nJUSTIFICATION reuse: census/receipt_census.py:21 reuses reckon/crew/stage_receipts.py:198 stage_census rather than re-deriving receipt intervals, and no committed owner exists for the landing census after the research run directory was removed.\nFINDING docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html:29 non-blocking: the appended section omits data-evidence-origin=\"append\", so reckon/evidence.py reads it as an unmarked section and reports it for removal on the next synthesis.\nFINDING docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html:31 non-blocking: the census instrument that produced every number lives only in the run directory and is not committed, so the record cannot be re-derived from the repository alone.",
+  "review_run_id": "r-20261122T082722008763-review-of-delivered-work-lands-without-a-coordinator-s10-faae0fd3bcda",
+  "reviewed_base_sha": "0d58fbb2e293091c50fe3e4f789059c088640304",
+  "reviewed_head_sha": "faae0fd3bcda26495ae35345f0acd8cbc77658a0",
+  "reviewed_run_id": "r-20261122T072113001497-delivered-work-lands-without-a-coordinator-s10",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:40:10.816838+00:00",
+  "total": 107
+}
