@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-node-stays-inside-its-memory">
+  <meta name="plan-title" content="A batch dispatch's store read follows the batch, not the run store">
+  <meta name="plan-summary" content="A batch dispatch no longer reads the project's promoted history while it queues: the roadmap builds inside the batch run with an empty history scope, so the section-history read is skipped and the attempts aggregate is not computed, while the duplicate check stays the per-node hold read. The batch's store read falls from 6,247 rows and 117 decodes to 2,086 and 30 at eight entries, and from 24,105 and 117 to 5,608 and 30 at forty. The section's peak criteria are not met on this prepared home: the peak is set by parsing the project's plan documents, not by the store.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-inside-its-memory">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-inside-its-memory#s14">
+  <meta name="plan-commits" content="98cd937f10,89bf51e109">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="partial">
+  <meta name="plan-tags" content="crew,dispatch,batch,memory,run-store,roadmap">
+  <title>A batch dispatch's store read follows the batch, not the run store — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="tfnsim-a-batch-dispatch-memory-ignores-store-size-record" data-node="tfnsim-a-batch-dispatch-memory-ignores-store-size" data-reckon="landed" data-when="2026-11-22">
+  <h2>A batch dispatch's store read follows the batch, not the run store</h2>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-what">§8 bounded the section-hold read and left the roadmap's section-history read covering the project's whole plan set on every batch pass. §8's own text put the remaining driver at about 19,500 main-store and 15,500 archive rows per pass. A batch builds each project's roadmap once and serves every reader inside it from that derivation, but queueing writes a run row, which bumps the store's stamp, which invalidates the hold index the roadmap was built from — so a batch of forty entries rebuilt the project's history several times over, and the read grew with the batch's own width as well as with the store.</p>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-read">A batch now builds its roadmap inside <code>roadmap_history_scope(())</code>. The scope empties the set of plans whose promoted history a roadmap build consults, so the section-history read is skipped and the attempts aggregate is not computed, while the duplicate check the batch needs is untouched: that is the per-entry <code>held_node_rows</code> read, which the store answers from its own node index. The scope is a context variable and is restored on exit, so no other reader of the roadmap sees it. Nothing the batch decides changes: its only roadmap reader is the wait check, which reads gate and decision blockers and never a section's run holds.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size/dispatch-peaks.svg" alt="Peak resident memory of one prepared home's batch dispatch at the base revision and at this change: eight entries, and forty entries over an as-prepared inventory, a store whose delivered-run rows are doubled, and a project whose plan documents are doubled.">
+    <figcaption>One prepared home on <code>rigel</code>, both revisions measured with the same instrument in one job on the same input. The dashed line in the left panel is half the base revision's eight-entry peak, the bound the section asked for.</figcaption>
+  </figure>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-rows">The store read is what the change was for, and it moves in both dimensions. At eight entries the batch reads 6,247 store rows and decodes 117 of them at the base revision, against 2,086 rows and 30 decodes here. At forty entries the base reads 24,105 rows and 117 decodes against 5,608 rows and 30 decodes. The base's forty-entry read is 3.9 times its eight-entry read, which is the stamp-invalidated rebuild; here the ratio is 2.7 and every row read is a node the batch names or a read that answers one of its entries.</p>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-peaks">The section's peak criteria are not met on this prepared home. The eight-entry peak moves from 1.33 GiB at the base revision to 1.47 GiB here, a ratio of 1.10 against the 0.5 the section asked for. Doubling the store's delivered-run rows, from 5,851 to 11,702 hot rows and 8,412 to 16,824 retired rows, takes this change's forty-entry peak from 1.51 to 1.68 GiB, a rise of +11.4 % against the 10 % allowed — missing it by a little. The negative control is met: at the base revision the same doubling takes the forty-entry peak from 1.47 to 1.75 GiB, a rise of +19.4 %.</p>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-decomposition">Holding the batch and the store fixed and doubling the project's plan documents, 249 to 498, takes this change's forty-entry peak from 1.51 to 1.80 GiB, a rise of +19.0 % — larger than the store's. That is the decomposition the criteria needed: on this home the peak is set by the batch's parse of the project's plan documents, not by the store. Each arm's own allocation sample agrees: about 460 MiB traced at the head, of which the largest sites are the plan-document parse (HTML and JSON), while the store's whole contribution is the 5,608 projected rows it returns.</p>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-unreproduced">§14's peaks at this base revision were measured on a home prepared by §8's node, which its run directory no longer holds, and that home is not reproduced here: §8 recorded 11.71 GiB at this base revision for eight entries against 1.33 GiB on the home built here. Two homes were prepared for this measure — one with the home's mount table emptied, one with the live mount table kept — and both give the same order, so the difference is not in what the batch resolves its plans from. Until a home reproducing that magnitude is prepared, the section's peak criteria can be neither met nor refuted: they are a statement about a home where the store read dominates the peak, and on either home built here the plan-document parse does.</p>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-test"><code>tests/test_a_batch_dispatch_memory_ignores_store_size.py</code> counts the rows the store decodes, through its one decode point, for a batch queueing one node over a store and over that store with its delivered-run rows doubled: the counts are equal, and a second case requires zero rows decoded for a node with no delivered row. A control arm names the node that was delivered and requires exactly one row decoded, so a zero is a measurement rather than a dead counter. Both cases fail against the revision before this change, in a log that ends <code>EXIT=1</code>.</p>
+
+  <p id="tfnsim-a-batch-dispatch-memory-ignores-store-size-gate">The gate is the node's own file plus the two that cover the batch's home handling: 60 passed, <code>EXIT</code> 0, at head on <code>rigel</code>. The suite arms run 58 passed at the base revision and the same three files at head, both with no failure.</p>
+</article>
+</body>
+</html>
