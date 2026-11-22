@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="delivered-work-lands-without-a-coordinator">
+  <meta name="plan-evidence-for" content="reckon:delivered-work-lands-without-a-coordinator">
+  <meta name="plan-verifies" content="reckon:delivered-work-lands-without-a-coordinator#s37">
+  <meta name="plan-verdict" content="pass">
+  <title>A cut-down ctest control log reads red from its progress line | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="dwlw-a-negative-control-reads-a-ctest-summary-landing" data-node="dwlw-a-negative-control-reads-a-ctest-summary" data-reckon="landed" data-when="2026-11-22">
+  <h2>A cut-down ctest control log reads red from its progress line</h2>
+  <p>A negative-control log is sometimes an extract of a longer ctest run. The capture opens below the run summary, so the log carries ctest's progress lines, the test's own colourised output and the entry line ctest repeats, but no <code>The following tests FAILED:</code> block and no percentage line. The shared gate-log reader recognised a ctest run only from the failure block or from the run summary, so such an extract fell through to the pytest reader — its <code>1 failed, 0 passed</code> line matches the pytest summary — and a pytest log with no <code>FAILED</code> node id names no failure at all. The control was then refused as one never shown to fail, and the run was landed with the control waived.</p>
+  <p>The reader in <code>reckon/crew/review.py</code> now recognises ctest from two further markers. A progress line ending in a <code>***</code> status, <code>1/1 Test #1155: unit/imas/iron_limb_outline ......***Failed</code>, names a failed test whatever its status; a bare <code>Passed</code>-style progress line marks the runner without naming a failure, so it is read only after a pytest <code>FAILED</code> node id has had its chance. An entry line outside a block, <code>1155 - unit/imas/iron_limb_outline (Failed)</code>, names a failure only when its reason is one of ctest's failure statuses, so a test's own output printing that shape with a harmless reason is not read as one.</p>
+  <p>Where a failure block is present it stays authoritative: a full-summary log reads exactly as it did, and a log carrying both the block and the progress lines of the same tests does not count one failure twice under two spellings. The block's entries, the progress line's name and the entry line's name are all taken verbatim, so a ctest name needs no reduction against the reader's working directory.</p>
+  <p>Gate: <code>tests/test_a_negative_control_reads_a_ctest_summary.py</code>, with nothing else in the scoped selection, passes 6 cases at exit 0 on the head <code>646ca9dd1f</code> (<code>scoped-gate-1795317727716157108.log</code>). The arms over the node's suite selection pass 3 cases at head and 2 at the base revision <code>b5444d24ba</code>, both exit 0, the base arm dropping the test file the change adds (<code>baseline_suite-1795317812458904548.log</code>, <code>after_suite-1795317888040702280.log</code>).</p>
+  <p>The declared mutation is the fix absent, applied by running the new test file against an extraction of the pinned base tree. <code>negative-control.log</code> records what it shows: <code>2 failed, 4 passed</code>, exit 1, the extract's first case reading the log as naming no failed test (<code>the reader returned set()</code>) and the entry-line case likewise. At the head the same six cases pass, so the check fails exactly where the reader does not know the extract's own markers.</p>
+</article>
+</body>
+</html>
