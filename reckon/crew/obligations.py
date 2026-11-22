@@ -80,35 +80,37 @@ from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon.node_exclusive_lock import exclusive_lock
 from reckon.velocity import run_git
 
-#: The last queue ordering this thread answered, and the read it answered.
-#:
-#: A sweep asks for the queue's order once for every session's payload, and
-#: each of those asks carries the same pointers at the same instant. Ordering
-#: them again derives the same project roadmap again, which is what makes a
-#: sweep's answers arrive stale. The order is a function of the pointers, the
-#: instant and the lane, so an identical read is answered from the one before
-#: it. The instant is part of the key, so a later tick is never answered with
-#: an earlier ordering.
-_ORDERING_MEMO: ContextVar[Any] = ContextVar("obligations_ordering_memo", default=None)
-
 
 def _ordering_key(
     pointers: Sequence[Mapping[str, Any]], now: Any, lane: str
-) -> tuple[str, str, str]:
-    """The identity of one ordering read, so an identical one is reused."""
-    material = json.dumps(list(pointers), sort_keys=True, default=str)
-    return (material, repr(now), str(lane or ""))
+) -> tuple[str, str]:
+    """The change key of one ordering read: what the order is a function of.
+
+    The order is derived from the pointers, the instant and the lane, and from
+    nothing else, so those three are the key a memo can answer on. The
+    pointers are digested rather than carried, because the memo keeps an entry
+    per distinct read and a fleet's pointers are large.
+    """
+    material = json.dumps(
+        list(pointers), sort_keys=True, default=str, separators=(",", ":")
+    )
+    return (hashlib.sha256(material.encode("utf-8")).hexdigest(), f"{now!r}|{lane or ''}")
 
 
 class _QueueAdmissionViews:
-    """``queue_admission``, with one ordering per identical read.
+    """``queue_admission``, answering one ordering per identical read.
 
     Every other name on the module is reached through this object unchanged.
-    ``queued_placements`` is answered from the previous ordering when the
-    pointers, the instant and the lane are the same, so a sweep over many
-    sessions derives each project's roadmap once. A caller that hands its own
-    ``config_for`` is answered directly: the ordering then depends on a
-    callable this layer cannot compare, so it is not memoised.
+    A sweep asks where each queued request stands once for every session's
+    payload, and each ask carries the same pointers at the same instant;
+    ordering them again re-derives the queued plans' section priorities, which
+    composes the project's roadmap again. The answer is memoised on the inputs
+    the order is derived from, so a sweep over many sessions derives each
+    project's roadmap once while a read at a later instant is answered fresh.
+
+    A caller that hands its own ``config_for`` is answered directly: the order
+    then depends on a callable this layer cannot compare, so it is not
+    memoised.
     """
 
     def __getattr__(self, name: str) -> Any:
@@ -127,15 +129,13 @@ class _QueueAdmissionViews:
                 pointers, now=now, lane=lane, config_for=config_for
             )
         material = list(pointers)
-        key = _ordering_key(material, now, lane)
-        memo = _ORDERING_MEMO.get()
-        if memo is not None and memo[0] == key:
-            return memo[1]
-        value = _queue_admission_module.queued_placements(
-            material, now=now, lane=lane
+        return file_memo.memoized_key(
+            "obligation_queue_ordering",
+            _ordering_key(material, now, lane),
+            lambda: _queue_admission_module.queued_placements(
+                material, now=now, lane=lane
+            ),
         )
-        _ORDERING_MEMO.set((key, value))
-        return value
 
 
 queue_admission = _QueueAdmissionViews()
