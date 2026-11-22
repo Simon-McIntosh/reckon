@@ -25,7 +25,7 @@
   <title>A Claim Nobody Is Working Is Released | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -124,7 +124,7 @@
     <div class="r-comment-body"><p>review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up at cc8e541a9e5ce92b982ed3c705919e99bac15557 (base a2f8ccc7710fe6a356df8e2474d29603a94a471d) scored goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 20, with added_failure_count 0 and one non-blocking finding on the evidence fragment's arm pair.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up" data-who="reckon-build" data-when="2026-11-22T08:00:47Z">
-    <div class="r-comment-body"><p>A promoted run whose recorded launcher host is the node the fleet has left, and whose newest stream shows no turn inside the silence window, gives up its pointer on the next pass, while a stream carrying a turn inside the window keeps it. The pass reads the host before the pid, so a foreign record never consults this host&#x27;s process table: a quiet run whose pid number names a live process here is released, and a run still writing keeps its pointer even though the promotion row alone would retire it. A workspace on disk, an unfinished landing journal, a pointer with no promotion evidence, and a run outside the caller&#x27;s project or session are each left alone.</p></div>
+    <div class="r-comment-body"><p>A promoted run whose recorded launcher host is the node the fleet has left, and whose newest stream shows no turn inside the silence window, gives up its pointer on the next pass, while a stream carrying a turn inside the window keeps it. The pass reads the host before the pid, so a foreign record never consults this host's process table: a quiet run whose pid number names a live process here is released, and a run still writing keeps its pointer even though the promotion row alone would retire it. A workspace on disk, an unfinished landing journal, a pointer with no promotion evidence, and a run outside the caller's project or session are each left alone.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261122T063715152464-review-of-acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen-96b9787d6806" data-who="reckon-build" data-when="2026-11-22T06:50:36.975Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T032518975799-acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen at base d24fa090 and head 96b9787d: the release of a recorded measurement run is landed in reckon/crew/pending_landing.py:1370,1376,1419-1428 and 1553-1562, the fence-prologue reader in reckon/crew/reports.py:1556-1566,1671, with the test at tests/test_a_recorded_measurement_run_is_released.py and evidence at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen.html; scores 19/19/15/18/16/16, no blocking finding, no added failures.</p></div>
@@ -146,6 +146,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261122T032522825423-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s" data-who="reckon-build" data-when="2026-11-22T07:11:03Z">
     <div class="r-comment-body"><p>reckon:a-claim-nobody-is-working-is-released#s5</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261122T152618845095-review-of-a-claim-nobody-is-working-is-released-s6-03deeb8f0dea" data-who="reckon-build" data-when="2026-11-22T15:33:24.215Z">
+    <div class="r-comment-body"><p>Reviewed r-20261122T071220426634-a-claim-nobody-is-working-is-released-s6 at head 03deeb8f0d against base c595c6da6; the landed record honestly reports section 6&#x27;s criterion unmet (one promoted claim, r-20261120T074437034953-cym-s5, 2.2 d old with no turn in progress, held because the compare-under-lock equality rejects 93 of 94 pointers), and the review scores goal_fidelity 15, evidence 11, scope_discipline 18, durability 5, fit 16, reuse 20 with four non-blocking findings.</p></div>
 </div>
 </section>
   </main>
