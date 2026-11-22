@@ -25,7 +25,7 @@
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -272,6 +272,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261122T091701241240-review-of-dispatch-admission-and-landing-take-seconds-s9-5ee880fd4c4b-figure" data-who="reckon-build" data-when="2026-11-22T09:40:57.977Z">
     <div class="r-comment-body"><p>figure review of r-20261122T071812299226-dispatch-admission-and-landing-take-seconds-s9 at head 5ee880fd4c4b: one attached figure judged from its rendered PNG, all six rubric items pass, one non-blocking finding on the image alt text, zero blocking findings, no change to any figure.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261122T071812299226-dispatch-admission-and-landing-take-seconds-s9" data-who="reckon-build" data-when="2026-11-22T09:15:56.377Z">
+    <div class="r-comment-body"><p>Measured the five operations again on the live fleet at revision 3a0f33d362, recorded in the evidence record with the figure redrawn over both sets. A dispatch preview is 13.9 s against 30 s, so that bound is met. An admission pass is 205.4 s at the median of ten receipts against 20 s, the wait being the dispatch call each launch makes (101-261 s per run). A review launch is 1,421.9 s at the 90th percentile against 600 s, with the wait in the request (p90 1,037.3 s) rather than the launch (189.2 s). A readiness read is 39.6 s at the median of three against 30 s, spent in 176 pointer classifications over the run store (classify_pointer 92.0 s; 207 store reads paying _refuse_owed_migration 77.5 s) while the landing audit was asked nothing and made no ancestry probe. The plan-selected store read is 9.22 s for 1,055 of 12,925 rows, which carries no bound in this section. Three of the four bounds are missed and each is recorded against the stage that caused it, so the section stays open.</p></div>
 </div>
 </section>
   </main>
