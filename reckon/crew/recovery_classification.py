@@ -1543,6 +1543,19 @@ def _settled_evidence(
     }
 
 
+def _resume_without_a_started_turn(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> dict[str, Any] | None:
+    """A resumed attempt whose worker has begun no turn, or None.
+
+    Deferred: the resumption module imports this one for the wait producer
+    bound, so the read is taken where it is used rather than at load.
+    """
+    from reckon.crew.resumption import resume_without_a_started_turn
+
+    return resume_without_a_started_turn(record, now_seconds=now_seconds)
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -3257,6 +3270,31 @@ def classify_pointer(
                 f"before the worker acted; it ended on {quote!r}"
             )
             action = f"reckon crew resume --run {run_id} --advice continue"
+    elif (
+        alive is not False
+        and (not_started := _resume_without_a_started_turn(record, now_seconds=moment))
+        is not None
+    ):
+        # A resume records its launcher's pid and the working phase as soon as
+        # it spawns, so a launcher that is merely waiting — an srun client on a
+        # step the scheduler never started — reads as a live worker for as long
+        # as it waits, and nothing resumes the run. A turn begun is what makes
+        # a resumed run working; absent one past the bound, this is the launch
+        # that never started, and the launcher's own words are the reason.
+        classification = "launch-failed"
+        waited = not_started["age_seconds"]
+        bound = not_started["bound_seconds"]
+        launch_error = str(not_started["waiting_reason"] or "").strip()
+        detail = (
+            "a resume that never started: the launch has begun no turn in "
+            f"{waited}s, past the {bound}s bound, while its launcher "
+            f"{not_started.get('launcher_pid')!r} was never observed to end; "
+            f"the launcher's own reason: {launch_error}"
+        )
+        # No end was recorded, so the remedy is the resume that carries the
+        # attempt on rather than a discard: a run whose launcher is still
+        # waiting has nothing to throw away, and its session survives.
+        action = f"reckon crew resume --run {run_id} --advice continue"
     elif alive is True:
         classification = "running"
         detail = "the process is alive"

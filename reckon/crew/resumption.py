@@ -151,6 +151,122 @@ REFUSED_ADVICE_NAME = "resume-refused-advice.txt"
 # outlive the attempt it guarded.
 RESUME_LAUNCH_IN_FLIGHT = "resume_launch_in_flight"
 
+#: How long a resumed attempt may hold its claim while its worker has begun no
+#: turn. A resume records the launcher's pid and the working phase the moment
+#: it spawns, so the pointer says "working" for a launcher that is merely
+#: waiting: an srun client waiting on a step the scheduler never started holds
+#: the run, and the sections waiting on it, for as long as it waits. The bound
+#: is the stranded-launch clock, because it answers the same question — a
+#: launch that produced nothing of its own — and one clock keeps the two
+#: readings from disagreeing about when "never started" begins.
+RESUME_TURN_BOUND_SECONDS = 900
+
+
+def launcher_waiting_reason(record: Mapping[str, Any]) -> str:
+    """The launcher's own words about what it is waiting for, or empty.
+
+    A launcher blocked before its worker starts states why in its own log —
+    a scheduler client names the queue, the partition or the request it is
+    waiting on. The first non-empty line is the reason rather than the tail's
+    fate, the same convention the launch-failure reading uses: what follows a
+    scheduler's first line is its retry or stack detail.
+    """
+    for name in ("stderr_path", "log_path"):
+        path = str(record.get(name) or "").strip()
+        if not path:
+            continue
+        try:
+            lines = (
+                Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
+            )
+        except OSError:
+            continue
+        for line in lines:
+            stripped = line.strip()
+            if stripped:
+                return stripped[:500]
+    return "the launcher began no turn for its worker"
+
+
+def _resumed_attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
+    """When the run's current resumed attempt began, or None when undated."""
+    started = parse_utc(str(record.get("attempt_started_at") or ""))
+    return started.timestamp() if started is not None else None
+
+
+def _attempt_stream_began_a_turn(record: Mapping[str, Any], started: float) -> bool:
+    """Whether a stream written since the attempt began holds an assistant turn.
+
+    The attempt's own output is the only stream that answers for it: the run
+    directory of a resume still holds the streams of the attempts before it,
+    and an earlier worker's assistant record says nothing about this one. So
+    the newest stream is read only where it was written at or after the attempt
+    started, which is exactly the resume's own stream once the worker writes
+    anything to it.
+    """
+    from reckon.crew.recovery_wait import (
+        _record_newest_stream,
+        _stream_holds_assistant_record,
+    )
+
+    found = _record_newest_stream(record)
+    if found is None or found[1] < started:
+        return False
+    return _stream_holds_assistant_record(found[0])
+
+
+def resume_without_a_started_turn(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> dict[str, Any] | None:
+    """The reading of a resume whose worker has not begun a turn, or None.
+
+    A resumed run reads as working from the instant its launcher returns,
+    whatever the launcher is doing: the pointer's pid is the launcher's, so a
+    process table answering "alive" answers about the launcher rather than
+    about any work. The question a reader needs is whether a turn has begun,
+    and that is answered by the attempt's own stream, not by the process the
+    pointer names.
+
+    Returns the facts the classification states when the attempt is a resume,
+    is past the bound, and its own stream holds no assistant record: the
+    launcher's pid, the bound, the age, and the launcher's own reason. A
+    launcher that returned from its spawn but started no worker is the case
+    this names, so the reading says the launch that never started is a failed
+    launch rather than a working run.
+
+    Three readings answer None and keep the arms that own them: an attempt
+    that is not a resume, an attempt with no readable start (nothing dates the
+    bound), and one whose exit record names the attempt (the supervisor's
+    account of an end is a different reading from a launch that has not
+    reported at all).
+    """
+    if str(record.get("attempt_kind") or "") != "resume":
+        return None
+    run_id = str(record.get("run_id") or "")
+    started = _resumed_attempt_started_seconds(record)
+    if started is None:
+        return None
+    attempt = record.get("attempt")
+    if isinstance(attempt, int):
+        from reckon.crew.recovery_liveness import _exit_record_names_attempt
+
+        if _exit_record_names_attempt(record, attempt):
+            return None
+    if _attempt_stream_began_a_turn(record, started):
+        return None
+    started_at = float(now_seconds) - started
+    if started_at <= RESUME_TURN_BOUND_SECONDS:
+        return None
+    return {
+        "run_id": run_id,
+        "attempt": attempt,
+        "bound_seconds": RESUME_TURN_BOUND_SECONDS,
+        "age_seconds": int(started_at),
+        "started_at": str(record.get("attempt_started_at") or ""),
+        "waiting_reason": launcher_waiting_reason(record),
+        "launcher_pid": record.get("pid"),
+    }
+
 
 def refused_advice_path(run_id: str) -> Path:
     """The path a refused resume leaves its advice at, beside the run records."""
