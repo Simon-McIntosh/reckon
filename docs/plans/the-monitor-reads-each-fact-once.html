@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="577">
+<meta name="plan-version" content="578">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -2087,7 +2087,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>Reviewed 841bd8cd8e..3325edc4d8 as a second opinion on the admit-service memory node: 6 dimensions scored (goal_fidelity 18, evidence 8, scope_discipline 19, durability 16, fit 17, reuse 15; total 93), 1 blocking and 4 non-blocking findings recorded in the record.</p></div>
 </div>
 <div class="r-comment" data-section="s112" data-id="c-run-r-20261122T053816450788-review-of-mrfo-the-admit-service-holds-bounded-memory-249c54e8e671" data-who="reckon-build" data-when="2026-11-22T05:45:30.211Z">
-    <div class="r-comment-body"><p>Independent review of 3325edc4d8..249c54e8e6 stored for run r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory: parsed record scoring the six dimensions 19/18/20/17/19/20 with added_failure_count 0 and no findings; the prior review&#x27;s two non-blocking findings are answered (the gap paragraph now states 22 % as its table row does, and the lander case no longer compares the record against the value the test handed in), and the previously header-only after-arm.log now carries &#x27;# revision: 249c54e8e6&#x27;, its literal four-file command, &#x27;69 passed in 324.90s (0:05:24)&#x27; and a bare EXIT=0.</p></div>
+    <div class="r-comment-body"><p>Independent review of 3325edc4d8..249c54e8e6 stored for run r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory: parsed record scoring the six dimensions 19/18/20/17/19/20 with added_failure_count 0 and no findings; the prior review's two non-blocking findings are answered (the gap paragraph now states 22 % as its table row does, and the lander case no longer compares the record against the value the test handed in), and the previously header-only after-arm.log now carries '# revision: 249c54e8e6', its literal four-file command, '69 passed in 324.90s (0:05:24)' and a bare EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s112" data-id="c-run-r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory" data-who="reckon-build" data-when="2026-11-22T05:37:28Z">
+    <div class="r-comment-body"><p>The service hands a pass&#x27;s freed pages back after every pass, drops the process-wide parse memo only when its reading is still above the 2 GiB bound, writes a reading on every pass including a pass over a lane with nothing queued — and writes no reading rather than a measured zero when /proc cannot be read — and the obligations reader returns the newest non-empty retirement list so an idle pass does not hide one.</p></div>
 </div>
 </section>
 </main>
