@@ -1,0 +1,70 @@
+<section id="a-section-ref-resolves-without-a-project-build-landing">
+  <h2>A section ref resolves its target without building the project index</h2>
+
+  <p><strong>What changed.</strong> A dependency-serving plan read answered every
+  section ref through <code>_indexed_plan_states</code>, which called
+  <code>metadata_index.discovery_state</code>. On a warm store that is a digest
+  check per covered document; on a cold one it builds the project's index and
+  parses every covered document, so the first read after a restart paid for the
+  whole project however few plans the refs named.</p>
+
+  <p><code>reckon/mcp.py</code> now resolves each ref one at a time from the
+  persisted index. <code>_indexed_plan_states</code> returns a
+  <code>_PersistedPlanStates</code> mapping that answers a slug when it is asked
+  for: it reads the store's entries once per read, validates that one
+  document's entry against its own file through
+  <code>metadata_index.current_discovery</code>, and returns the entry's parsed
+  state. A target the store does not cover — no store at all, or one written
+  before the document existed — is parsed from its own document through
+  <code>_parsed_plan_state</code>, so one ref costs at most one parse rather
+  than a project index. Each slug is resolved at most once per read, and the
+  <code>state_cache</code> shares the mapping across every ref a read resolves.</p>
+
+  <p>The list-level inventory a plan read assembles for its holds still comes
+  from the index. A <code>summary</code> read is the read whose subject is that
+  inventory, so it assembles it as before. A <code>detail</code> read on a cold
+  store serves the plan and its refs alone and therefore carries no list-derived
+  blocker state until the store is warm; its dependency rows are the rows a full
+  build returns, which is what the deliverable requires.</p>
+
+  <h3 id="a-section-ref-resolves-without-a-project-build-measured">Measured</h3>
+
+  <p><code>tests/test_a_section_ref_resolves_without_a_project_build.py</code>
+  builds a temporary project of twenty plans and points <code>RECKON_HOME</code>
+  at an empty directory, so the persisted index starts absent. A patch on
+  <code>reckon._plan_html.read_state</code> counts the distinct documents parsed
+  — the document parser every plan read passes through, and distinct documents
+  rather than calls because a document reached twice is memoised. The plan being
+  read names three other plans in three sections.</p>
+
+  <table id="a-section-ref-resolves-without-a-project-build-counts">
+    <caption>One <code>detail</code> read of a plan whose three sections wait on
+    three other plans, in a twenty-plan store with a cold index, plus the
+    dependency rows it returns.</caption>
+    <thead>
+      <tr><th>arm</th><th>documents parsed</th><th>dependency rows</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>cold store, this revision</td><td>4 (the plan and its three targets)</td><td>3, statuses <code>done</code>/<code>implementable</code></td></tr>
+      <tr><td>cold store, refs routed through the full discovery pass</td><td>20 (every plan in the store)</td><td>3, identical</td></tr>
+      <tr><td>the same read after a full index build</td><td>not counted; the rows are compared</td><td>3, identical to the cold arm</td></tr>
+    </tbody>
+  </table>
+
+  <p>A plan absent from the persisted index resolves by exactly one parse: the
+  store covers the twenty plans, a twenty-first is written after it, and the
+  ref into it parses that document and nothing else, returning its status and
+  its section declarations. A plan the store does cover, asked for the same way,
+  parses nothing. The three arms' dependency rows are compared rather than
+  asserted separately, so a saving that changed an answer fails the same test.</p>
+
+  <p>Before routing the refs back through the full discovery pass, the test
+  first proves the switch still does what it claims: with it thrown, the same
+  cold read parses all twenty documents. A negative control that silently
+  stopped reproducing would let the bound pass for the wrong reason.</p>
+
+  <p>The document parser counts distinct documents; the cold arm's
+  <code>read_state</code> is reached by the plan's own read and by the three
+  refs, and no document is parsed twice because
+  <code>read_state_and_text_file</code> memoises on the file's stat identity.</p>
+</section>
