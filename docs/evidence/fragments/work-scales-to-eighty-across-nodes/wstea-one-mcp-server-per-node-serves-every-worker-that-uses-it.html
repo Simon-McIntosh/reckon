@@ -29,14 +29,15 @@ reckon server shared.</p>
 
 <section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-gate">
 <h2>Gate</h2>
-<p><code>tests/test_one_server_per_node_serves_every_worker.py</code> at revision
-<code>80d609fc6ef832179ca74e2b905dd3011875997a</code> — logged in
-<code>gate-shared-mcp.log</code>, whose header carries that revision and whose
-summary line reads <code>5 passed, 40 warnings in 27.34s</code> with
-<code>EXIT=0</code>. Forty real client sessions each call <code>read_plan</code>
-against the node's server; all forty answers arrive with no error, and the
-<code>/proc</code> census by the server's own node directory reads exactly one
-server process. A second ensure call on the same node returns the same pid.</p>
+<p><code>tests/test_one_server_per_node_serves_every_worker.py</code> with the two
+shared-home guards beside it, at the revision its log's header records. The
+summary line of <code>gate-after.log</code> reads
+<code>67 passed, 41 warnings in 67.00s</code> with <code>EXIT=0</code>. Forty
+real client sessions each call <code>read_plan</code> against the node's server;
+every answer must carry text and no error, and the <code>/proc</code> census by
+the server's own node directory reads exactly one server process. A second
+ensure call on the same node returns the same pid, and every case stops the
+server it started.</p>
 </section>
 
 <section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-measure">
@@ -46,11 +47,24 @@ sessions open against one server and samples its resident set over equal
 windows. Recorded on 2026-11-22: 5 workers median 683,932 kB; 40 workers median
 684,972 kB; delta 1,040 kB, against a limit of 500,000 kB. The node ran one
 server process (pid 1872) throughout.</p>
-<p><strong>Scope note.</strong> The plan's measure asks for ten-minute sampling
-over one hour per arm. This node's 75-minute fence could not carry a two-hour
-soak, so the recorded run is the same instrument over ten-second windows with
-two-second sampling. The script defaults to the plan's interval and duration;
-the full soak remains to be run.</p>
+<p><strong>Scope note.</strong> The plan's measure asks for ten-minute
+sampling over one hour per arm. The recorded run is the same instrument over
+shorter equal windows, so it measures the same quantity for a shorter span. The
+one-hour per-arm soak runs on a compute partition at this record's review head
+(scheduler job 1336647, logs under
+<code>~/.cache/reckon-portfolio/shared-mcp-soak/</code>); its result attaches the
+plan's own duration to this record.</p>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-figure">
+<h2>Resident set at both worker counts</h2>
+<figure>
+<img src="/reckon/figures/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it/resident-set-two-arms.svg" alt="Two flat traces of the shared server's resident set over six samples: 668 MB while five workers held sessions and 669 MB while forty did, a difference of 1.0 MB against an allowance of 488 MB" width="1200">
+<figcaption>The two arms of the resident-set measure, drawn from the measure's
+own samples. The node served every worker from one process in both arms: forty
+workers raise the server's footprint by 1.0 MB against the 488 MB the measure
+allows.</figcaption>
+</figure>
+</section>
 </section>
 
 <section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-negative">
