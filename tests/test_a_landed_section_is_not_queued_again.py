@@ -158,7 +158,14 @@ def _gate_check(log: Path) -> dict:
     return {"command": "true", "exit_status": 0, "log_path": str(log)}
 
 
-def _complete(repository: Path, run_id: str, outcome: str) -> None:
+def _complete(
+    repository: Path,
+    run_id: str,
+    outcome: str,
+    *,
+    gate: str = "passed",
+    failure_classification: str = "",
+) -> None:
     """Take a stored request through the completion its worker reports."""
     pointer = runs.read_pointer(run_id)
     pointer.update({"phase": "complete", "argv": ["codex", "exec"]})
@@ -175,7 +182,8 @@ def _complete(repository: Path, run_id: str, outcome: str) -> None:
     )
     crew.complete(
         run_id,
-        gate="passed",
+        gate=gate,
+        failure_classification=failure_classification,
         outcome=outcome,
         root=repository,
         gate_check=_gate_check(Path(manifest.parent) / "gate.log"),
@@ -233,6 +241,49 @@ def test_a_section_whose_run_was_discarded_is_queued(repository: Path) -> None:
 
     second = _whole_plan(repository)
     rows = {row["section"]: row for row in second["results"]}
+    assert rows["s2"]["status"] == "queued", second
+
+
+def test_a_section_whose_run_failed_its_check_is_queued(repository: Path) -> None:
+    """A run whose work was rejected delivered nothing, so its section is work.
+
+    A promoted row carries no phase, so the store row itself is the only place
+    the run's check is recorded. A failure the run's own work caused means the
+    section was not built, and the row must not count as an existing run.
+    """
+    rejected = _queue_section(repository, "s2")
+    _complete(
+        repository,
+        rejected,
+        "the check rejected the work",
+        gate="failed",
+        failure_classification="work-rejected",
+    )
+    _retire_documents(repository)
+
+    second = _whole_plan(repository)
+    rows = {row["section"]: row for row in second["results"]}
+    assert rows["s2"]["status"] == "queued", second
+
+
+def test_a_section_whose_run_landed_under_a_failed_check_is_skipped(
+    repository: Path,
+) -> None:
+    """A failure the node's work did not cause leaves the section delivered."""
+    landed_run = _queue_section(repository, "s1")
+    _complete(
+        repository,
+        landed_run,
+        "the work landed; the check failed for a failure already on main",
+        gate="failed",
+        failure_classification="pre-existing-failure",
+    )
+    _retire_documents(repository)
+
+    second = _whole_plan(repository)
+    rows = {row["section"]: row for row in second["results"]}
+    assert rows["s1"]["status"] == "skipped", second
+    assert landed_run in str(rows["s1"].get("reason") or ""), second
     assert rows["s2"]["status"] == "queued", second
 
 
