@@ -1578,9 +1578,22 @@ def _fence_notice_texts() -> tuple[str, ...]:
     return (current, *_RETIRED_FENCE_NOTICE_TEXTS)
 
 
+# The fence's second prologue line, written when the worker's temp directory is
+# absent on the job node: the task's own empty temp stands in for it, and the
+# line names which overlay did so a gate log states what it measured under.
+# A node-local temp directory is absent on every other node by construction, so
+# a fenced gate records this line on any measurement it takes.
+_FENCE_TEMP_NOTICE = re.compile(
+    r"temp directory \S+ is absent on \S+; the task's own empty temp directory "
+    r"stands in for it"
+)
+
+
 def _is_fence_prologue(line: str) -> bool:
     """Whether a log line is the launch fence's notice rather than a record."""
     tool, _, rest = line.partition(":")
+    if tool.strip() == "fence":
+        return _FENCE_TEMP_NOTICE.fullmatch(rest.strip()) is not None
     return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() in _fence_notice_texts()
 
 
@@ -1685,7 +1698,7 @@ def _test_log_command(text: str) -> str | None:
     seen = 0
     for raw_line in text.splitlines():
         line = raw_line.strip()
-        if not line:
+        if not line or _is_fence_prologue(line):
             continue
         seen += 1
         if seen > _TEST_LOG_HEAD_LINES:
