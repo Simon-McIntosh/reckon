@@ -16,6 +16,13 @@
   that the run's measurement was recorded, so the pass that releases the run
   does not consume it &mdash; the test compares its bytes before and after.</p>
 
+  <p><strong>A fence notice is the launch's line, not the log's first record.</strong> A
+  gate launched on a job node whose temp directory is absent opens with the
+  fence saying so, then writing the measure's header after it. The gate-log
+  reader now skips that notice the same way it skips the scheduler's, so the
+  header stays the log's first record and the measurement's revision and
+  summary are read.</p>
+
   <h3 id="acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen-measured">Measured</h3>
 
   <p>Two measurement-only runs with a reaped worker in one temporary crew home:
@@ -38,11 +45,11 @@
         <td><code>d24fa090</code></td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>after suite (node's three files)</td>
-        <td><code>44d00cad</code></td>
-        <td>59 passed, <code>EXIT=0</code></td></tr>
+        <td><code>7c660877</code></td>
+        <td>60 passed, <code>EXIT=0</code></td></tr>
       <tr><td>scoped gate</td>
-        <td><code>44d00cad</code></td>
-        <td>59 passed, <code>EXIT=0</code></td></tr></tr>
+        <td><code>7c660877</code></td>
+        <td>60 passed, <code>EXIT=0</code></td></tr>
     </tbody>
   </table>
 </section>
