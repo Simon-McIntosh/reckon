@@ -659,7 +659,55 @@
     30 live runs, with the census instrument s13 recorded — is not measured here: the station must
     reload onto this node's code before a window would describe it, and that window is the
     coordinator's. Both figures are therefore recorded as unmeasured at this revision rather than as
-    met.</p>
+    met. That window was taken on 2026-11-22 and is recorded in the next section: the bound is still unmet,
+    with the station alone at 11,645&ndash;13,622&nbsp;MB/min.</p>
+    <h2 id="fleet-node-window-the-run-stores-are-the-volume">The fleet-node window: the run stores are the volume</h2>
+    <p>The live window was taken twice on the fleet node (<code>98dci4-clu-3026</code>, job
+    <code>1319168</code>) on 2026-11-22, with §2's instruments unchanged and the station running a reload
+    image whose copies of <code>ledger.py</code>, <code>run_store.py</code>, <code>station.py</code>,
+    <code>station_store.py</code>, <code>_backends.py</code> and <code>recovery_watch.py</code> are
+    byte-identical to revision <code>790a380eb7</code>, which carries every reader repair above:
+    per-process <code>/proc/&lt;pid&gt;/io</code>
+    <code>rchar</code> deltas and <code>utime+stime</code> deltas from <code>/proc/&lt;pid&gt;/stat</code>
+    over 60&nbsp;s, and six process-state samples 10&nbsp;s apart. The process set is selected on adjacent
+    argv tokens — <code>crew station</code>, <code>crew watch</code>, <code>crew follow</code> — so the
+    station, twelve producers and twelve followers are counted and nothing else is. Every reader repair in
+    this document says the steady read is incremental; the window shows what the station still pays while
+    a live fleet writes to the store.</p>
+    <table>
+      <thead><tr><th>Window</th><th>Station</th><th>Producers</th><th>Followers</th><th>All three</th><th>CPU, all three</th></tr></thead>
+      <tbody>
+        <tr><td>1, 07:40:12Z, 71 live pointers</td><td>11,645&nbsp;MB/min</td><td>10,702&nbsp;MB/min</td><td>299&nbsp;MB/min</td><td>22,646&nbsp;MB/min</td><td>262&nbsp;% of one core</td></tr>
+        <tr><td>2, 07:45:57Z, 68 live pointers</td><td>13,622&nbsp;MB/min</td><td>6,469&nbsp;MB/min</td><td>799&nbsp;MB/min</td><td>20,889&nbsp;MB/min</td><td>208&nbsp;% of one core</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/cutover-window-against-the-bound.svg" alt="Read volume and CPU of the station, the producers and the followers against the cutover bound, in two 60 s windows on the fleet node">
+      <figcaption>Two 60&nbsp;s windows on the fleet node with 71 and 68 live
+      pointers, measured 2026-11-22. Read volume is
+      <code>rchar</code>; <code>read_bytes</code> was 0.000&nbsp;MB in every arm, so nothing was refetched from
+      the file server. The bound of 20&nbsp;MB/min and 5&nbsp;% of one core over all monitor processes together is
+      drawn dotted. Read volume is on a log axis because the measurement is three decades above the
+      bound.</figcaption>
+    </figure>
+    <p>The two windows agree to about a tenth on the total and on the station's share, so neither is a
+    transient, and both are far outside the bound: about a thousand times the read volume and forty times
+    the CPU. Window 2 has a monitor process in state D in four of its six samples, the station among them at
+    <code>cxiWaitEventWait</code>; window 1 had one of six, so the D-state clause is intermittent here as it
+    was in §11.</p>
+    <p>A <code>strace -f -ff -yy</code> census over 10&nbsp;s puts 90&nbsp;% of the station's reads in two
+    files: <code>run_store.db</code> (47.6&nbsp;%, 1.16&nbsp;GB on disk) and
+    <code>run_store.archive.db</code> (42.3&nbsp;%, 504&nbsp;MB). A timed probe of the read path gives the
+    per-call cost the tick pays. One
+    <code>run_store.stored_run_signature("reckon")</code> — 12,929 rows — reads
+    <strong>1,165,905,463</strong>&nbsp;B, the whole store, in 2.2&nbsp;s, and a repeat call reads it again;
+    <code>ledger.picker_runs("reckon")</code> reads 2,319,775,486&nbsp;B, two whole scans. The mechanism is
+    that <code>ledger.stored_history</code> calls <code>stored_run_signature</code> whenever the store's
+    change stamp moves, the stamp moves on every write, and the signature query selects
+    <code>LENGTH</code> for every row of the project across the live table and the attached archive — so
+    the store's own size, not the streams, is the volume while the fleet is writing. The census, the probe
+    and the instrument are in the run directory of
+    <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>.</p>
   </main>
 </body>
 </html>
