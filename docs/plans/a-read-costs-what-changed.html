@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="142">
+<meta name="plan-version" content="143">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -451,6 +451,9 @@
 </div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261122T091412504150-review-of-arcwc-a-plan-write-parses-its-document-once-8dd038135890" data-who="reckon-build" data-when="2026-11-22T09:36:09.566Z">
     <div class="r-comment-body"><p>Reviewed 50e7ad1022..8dd03813 and stored a parsed record scoring all six dimensions (goal_fidelity 18, evidence 17, scope_discipline 18, durability 19, fit 17, reuse 17) with 0 added failures and two non-blocking findings; no blocking defect.</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261122T105536866354-review-of-arcwc-a-plan-write-parses-its-document-once-1e65b2868cbc" data-who="reckon-build" data-when="2026-11-22T11:05:26.340Z">
+    <div class="r-comment-body"><p>Reviewed the increment 8dd0381358..1e65b28 that moves the parse scope&#x27;s import off the store&#x27;s module scope: the goal&#x27;s one-parse measure is unchanged and still guarded, scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 18, fit 14, reuse 12 (total 98, 0 added failures), with one non-blocking finding that the added `shares_one_parse` duplicates `reckon/_plan_html.py:469` and could instead enter the scope inline as `reckon/_store.py:2089` already does.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261105T103332065056-review-of-a-one-plan-read-composes-one-plan-874cc0925004" data-who="reckon-build" data-when="2026-11-05T10:49:44.033Z">
     <div class="r-comment-body"><p>review of r-20261103T022604894618-a-one-plan-read-composes-one-plan at 874cc09250 scores goal_fidelity 16, evidence 14, scope_discipline 19, durability 16, fit 18, reuse 20 (total 103); added_failure_count 0 from the reviewed run's own base arm (44 passed, 2 failed at 87ec84d706, both the node's new count case) and head arm (46 passed, 0 failed); the north-star read no longer composes the project in either layout, but a distributed summary read still composes once through reckon/mcp_views.py:1275 for its inventory, so the plan's distributed zero is unasserted and recorded as a non-blocking finding</p></div>
