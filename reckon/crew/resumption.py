@@ -2145,6 +2145,7 @@ def _resume(
     launcher: Callable[..., int] | None = None,
     advice: str = CONTINUE_ADVICE,
     coordinator: bool = False,
+    preserve_manifest_status: bool = False,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does.
 
@@ -2241,8 +2242,11 @@ def _resume(
             _require_fleet_gate_open()
             # The previous attempt may have left a done manifest on disk; clear
             # its verdict so the supervisor does not read the new worker's first
-            # edit as that delivery.
-            _reset_delivered_manifest_status(run_id, record)
+            # edit as that delivery. A repair resume keeps the word it found:
+            # the delivery it resumes already reported its status, and a repair
+            # rewrites that manifest with its own verdict once it is done.
+            if not preserve_manifest_status:
+                _reset_delivered_manifest_status(run_id, record)
             if failure is not None:
                 # A hand-typed resume is the repair the launch-failure refusal
                 # names, so it retires the failure and its phase here, at the

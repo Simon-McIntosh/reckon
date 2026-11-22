@@ -72,6 +72,32 @@ def dispatch_merge_repair(
         )
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
+    # A head the primary branch already contains is answered: the coordinator
+    # resolved the conflict and landed it by hand, so a resume would restart
+    # work the branch holds and leave the run naming a conflict nobody owes.
+    # The local branch answers this even when the remote cannot be read.
+    if pending_landing.head_on_primary_branch(
+        Path(str(record.get("repo") or "")), head
+    ):
+        receipt.update(
+            status="refused",
+            reason="already-landed: the head is on the primary branch",
+            advice="The head is already on the primary branch; do not resume this delivery.",
+        )
+        runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
+        pending_landing.clear_conflict(run_id)
+        return receipt
+    # A coordinator's landing of this run is in progress: a resume now would
+    # race it, so the conflict waits for that landing to end and is retried by
+    # the next pass. The conflict is kept, because it is still owed.
+    if pending_landing.land_attempt_in_progress(run_id):
+        receipt.update(
+            status="held",
+            reason="a coordinator's landing of this run is in progress",
+            advice="The landing is in progress; the repair starts once it ends.",
+        )
+        runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
+        return receipt
     refusal = pending_landing.promoted_pointer_write_refusal(run_id, record)
     # A round already open on the live pointer is reported as it stands: the
     # pass reads it every sweep, and re-deciding it here either resumes a worker
@@ -176,7 +202,13 @@ def dispatch_merge_repair(
             receipt["status"], receipt["reason"] = "held", busy
         else:
             try:
-                resumption._resume(run_id, fresh, config=None, advice=advice)
+                resumption._resume(
+                    run_id,
+                    fresh,
+                    config=None,
+                    advice=advice,
+                    preserve_manifest_status=True,
+                )
             except (BudgetHold, LanePaused, CrewError, OSError) as exc:
                 receipt["status"], receipt["reason"] = "refused", str(exc)
             else:
