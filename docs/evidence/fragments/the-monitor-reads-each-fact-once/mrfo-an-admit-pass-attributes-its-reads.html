@@ -1,0 +1,80 @@
+<section id="mrfo-an-admit-pass-attributes-its-reads-landing">
+  <h2>An admit pass attributes its reads to the store they came from</h2>
+
+  <p><strong>What changed.</strong> A pass reading carried a total and a
+  per-reader count and duration, so a pass that re-read the review store and one
+  that read a handful of pointers reported the same volume. Each pass now runs
+  inside one accounting scope and publishes <code>reads_by_source</code> on the
+  same reading: the bytes it read under each store it reads — the live and queued
+  pointers, the run store, the ledger, the review store and the plan documents —
+  plus <code>attributed_bytes</code>, <code>process_bytes</code> and
+  <code>unattributed_bytes</code>. A source the accounting misses therefore shows
+  up as a gap rather than vanishing from the total.</p>
+
+  <p><strong>Files are charged the bytes they were decoded from.</strong> A text
+  read is charged its encoded length, not its character count, through the
+  encoding the opened file carries, so a document of multibyte characters is not
+  reported at a fraction of what the process read. The scope patches
+  <code>builtins.open</code>, <code>io.open</code> and <code>io.open_code</code>,
+  because <code>pathlib</code> reaches the interpreter's opener by module
+  attribute and a patch of <code>builtins</code> alone leaves every
+  <code>read_text</code> unaccounted.</p>
+
+  <p><strong>The review store is charged by its sharded layout.</strong> Records
+  sit one directory below the store root, one shard per project, so a rule that
+  matched the store root alone charged nothing on the fleet: the first sample
+  reported the store as zero bytes while it holds 178 MB. The rule now matches
+  the sharded prefix, and a fixture store in that layout is a test case.</p>
+
+  <p><strong>The process figure comes from the kernel, not the accounting, and
+  the remainder is named.</strong> <code>process_bytes</code> is
+  <code>rchar</code> read from <code>/proc/self/io</code>;
+  <code>unattributed_bytes</code> is the difference between it and the attributed
+  sum. The run store is a SQLite database read through C pages, which no
+  Python-level accounting sees, so its bytes land in the remainder instead of
+  being charged to a source the bytes did not come from.</p>
+
+  <h3 id="mrfo-an-admit-pass-attributes-its-reads-measured">Measured on the live crew home</h3>
+
+  <p>Readings were taken from revision <code>e1b0a89cc6</code> over the live
+  stores under the pass's own rules, at a 30-second cadence for 16 minutes
+  (21 samples, 75–77 live pointers). The figures below are the last sample; each
+  source's share moves by less than 0.1 percentage points across the record.</p>
+
+  <table>
+    <thead>
+      <tr><th>source</th><th>bytes read</th><th>share</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>review store</td><td>177,885,166</td><td>73.3 %</td></tr>
+      <tr><td>ledger</td><td>61,370,778</td><td>25.3 %</td></tr>
+      <tr><td>plan documents</td><td>2,184,754</td><td>0.9 %</td></tr>
+      <tr><td>live and queued pointers</td><td>1,306,508</td><td>0.5 %</td></tr>
+      <tr><td>run store</td><td>0 (unattributed remainder)</td><td>—</td></tr>
+      <tr><td>unattributed (all sources)</td><td>107</td><td>0.00004 %</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Two stores hold 98.6 % of the volume</strong> — the review store and
+  the ledger. The review store alone is 73.3 %, so a reading that does not charge
+  the sharded layout cannot see three quarters of the volume. Two stores are the
+  whole optimisation surface: the run store's pages, which the accounting cannot
+  see, are the only large term neither source accounts for.</p>
+
+  <p><strong>Gate.</strong> The baseline arm ran at revision
+  <code>08338737e698</code> — the three-file command's two pre-existing files
+  only, since the node's own test did not exist there — and reported
+  <code>58 passed in 36.28s</code>. The after arm ran at revision
+  <code>e1b0a89cc6</code> over the node's test plus those two and reported
+  <code>63 passed in 37.64s</code>; the scoped gate at the same revision
+  reported <code>63 passed in 37.52s</code>. Both arms and the gate exited
+  zero, so the node's five cases add no failure to the base.</p>
+
+  <p><strong>The check that the sum holds.</strong> A pass over a fixture crew
+  home writes a reading whose attributed sum is within five percent of what the
+  process read, taken from its own record. Removing one source from the product's
+  source rules — the declared negative control — makes the sum shortfall exceed
+  the band: 16.7 % at the fixture, against a five-percent band. The control
+  mutates <code>service.admit_read_sources</code> and the account's own record
+  path, so it removes the wiring, not a test hook.</p>
+</section>
