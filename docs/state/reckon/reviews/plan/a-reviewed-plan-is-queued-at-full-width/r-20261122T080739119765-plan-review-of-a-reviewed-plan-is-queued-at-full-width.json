@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:08:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-reviewed-plan-is-queued-at-full-width.html:23",
+      "id": "wiring-1",
+      "reason": "adding s11 to s7's declared waits is what holds the admit service's node until the dispatch can read a section's control.",
+      "text": "\u00a711 closes with \"A section the queue cannot read this from is a section no unattended pass can queue, which is what \u00a77 needs\", but `plan-section-depends-on` gives s7 only s3 and s4, so s7 may be dispatched before s11 lands and its pass will meet the same queue-time refusal s11 exists to remove",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-reviewed-plan-is-queued-at-full-width.html:93",
+      "id": "done_when-1",
+      "reason": "the half of the endpoint a reader needs in order to fix the section is unmeasured, so the node can close with the weaker behaviour.",
+      "text": "\u00a711's deliverable requires the refusing case to name \"the section and what is missing from it\", while the second arm asserts only that it is \"refused naming the section\", so a refusal that names the section and says nothing about the missing control passes the gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-reviewed-plan-is-queued-at-full-width.html:100",
+      "id": "done_when-2",
+      "reason": "a worker must either invent a partial marker, which measures its invention, or drop the arm, which changes what the node's gate covers; the plan should name a condition the records can express or withdraw the arm.",
+      "text": "\u00a712's third arm queues \"a section whose run landed a partial node the plan names as partial\", but no record carries a partial node: a run's manifest status is `complete`, `blocked` or `failed`, and no landing record distinguishes a landed node as partial (grep over `reckon/crew/` for `partial` returns only log-truncation and atomic-write senses), so the fixture cannot be built from the system the plan describes",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-reviewed-plan-is-queued-at-full-width.html:93",
+      "id": "reasoning-1",
+      "reason": "the reuse map belongs to the node brief composed from this review, not the plan; fixing the modules in plan text makes a wrong path a plan defect and every other section of this plan names only its evidence path, so the clause is also inconsistent with the plan's own shape.",
+      "text": "\u00a711 prescribes the implementation: \"Write paths: `reckon/crew/dispatch_batch.py`, `reckon/crew/dispatching/requests.py` and the new test\" names the modules to extend, and \u00a712 line 100 repeats the form with \"`reckon/crew/dispatch_batch.py` and the new test",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ee81ed54a0ccf376fdb4366e4be0729fe91b6dac",
+  "plan_fingerprint": "dabef8530aeb6f1e30fda778fff5d824634effa834afb515f7d599a16f812dec",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T080739119765-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "e1ade98108ab951cb76697d41c2b726fc68eee51",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/dispatch_batch.py` and `reckon/crew/dispatching/requests.py` exist, the cited head `27ecc8df67` resolves as a commit and is an ancestor of `main`, and `work-scales-to-eighty-across-nodes` with its \u00a71, plus `building-a-plan-queues-all-of-it` \u00a73, all resolve.",
+    "done_when": "a finding \u2014 \u00a711 requires a refusal naming what is missing from the section but its gate asserts only the section name; \u00a712's third arm rests on a \"partial node\" no record carries.",
+    "evidence_paths": "pass \u2014 both new sections write each arm's log under the run directory, which is durable and re-openable, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the deliverable text; the run ids in \u00a712's evidence are recorded incident data, not symbol names.",
+    "reasoning": "a finding \u2014 \u00a711 and \u00a712 each carry a \"Write paths:\" clause naming the source modules to change, which is a method the plan fixes rather than an endpoint.",
+    "single_goal": "pass \u2014 \u00a711 delivers one read (the section's stated control carried onto the request) and \u00a712 one skip rule, and each gate proves that single deliverable.",
+    "wiring": "a finding \u2014 `_document` line 23 declares s7's waits as s3 and s4 only, while \u00a711's own closing sentence states \u00a77 needs what \u00a711 delivers."
+  },
+  "section_digests": {
+    "_document": "f5d53c21be55000d69166d2a2e67278254b14aad458ab341f10abde8550553d1",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s10": "19cac31f7625580415ae589ef5632a42fa084f147d415318997b99ce31d1e5a6",
+    "s11": "e22d92d295b1856dd196f32eca6b86a3734e745dab85271a723b1e457c8b3122",
+    "s12": "8f1a49148c47d028a690e0830f4275c7c9e0ec6aa7de4b14808e8d034ade3ca9",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "7bf7f9b92e4bbc6a9d86f2d20aacc04cdaa9e3a0c27be56c9f1eccb8cea9efee",
+    "s4": "9728c2bdd6e0a20b020fe517e7b4b28259c17b6a31fb630c24213261ae299736",
+    "s5": "a0356c829de2dc9d9549641fb3dbdff1b2e2904914c61bc70b9f36213272e8ab",
+    "s6": "322422e335f3f8d278ca86100a57410fa7524921c9bda5e38840490a1fd1dd52",
+    "s7": "46ed5e587a3ccf200df8d9e3c23a84e8b5238c86449f9a30e4bcd07c28cc3b76",
+    "s8": "ab8adf6dcfeab65b717343054ca1c1fbd76bfa295179fc83776e83a5d2ae8606",
+    "s9": "6e84f853b79600df1fd05c11705c314262c11808dbcbb043660311f640c0474d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:17:00.562399+00:00",
+  "total": null
+}
