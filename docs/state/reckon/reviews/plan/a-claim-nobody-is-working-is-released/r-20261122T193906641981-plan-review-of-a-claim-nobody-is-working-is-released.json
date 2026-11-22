@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T19:46:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-claim-nobody-is-working-is-released.html:24",
+      "id": "wiring-1",
+      "reason": "a worker reading \u00a76 would see no reason to wait for \u00a78, and the coordinator's own partial comment already says the census is re-taken after sections 7 and 8.",
+      "text": "the changed `plan-section-depends-on` now gives s6 s8 as a prerequisite (correctly, since the criterion needs the equality repaired) but \u00a76's deliverable at line 73 still reads \"after \u00a72 to \u00a75 and \u00a77 have landed\", so the section text states a prerequisite set that contradicts its own wiring and omits the repair that makes its measure attainable",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-claim-nobody-is-working-is-released.html:13",
+      "id": "wiring-2",
+      "reason": "the authored effort is what a coordinator budgets from, and it understates the plan by exactly the added section.",
+      "text": "`plan-effort-hours` is 9.5 while the section hours sum to 11.0 (0.25+1.5+1.5+1.5+2.0+0.75+2.0+1.5), so the plan's stated cost omits \u00a78's 1.5 h",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-claim-nobody-is-working-is-released.html:87",
+      "id": "done_when-1",
+      "reason": "without a floor (or a constructed promoted pointer) the arm cannot show the guard fires on the rerun the section requires.",
+      "text": "the arm \"the census instrument, rerun against the live pointer directory, reports the comparison accepting every promoted pointer it reads\" has no minimum population, so a census reading zero promoted pointers passes however the equality behaves \u2014 and after a successful fix the one held pointer is retired, which is exactly the state that makes the arm vacuous",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-claim-nobody-is-working-is-released.html:85",
+      "id": "reasoning-1",
+      "reason": "a later census can fail \u00a76 for a reason the plan neither repairs nor rules out, and the coordinator's plan currently assumes \u00a78 alone restores the criterion.",
+      "text": "\u00a78 presents the compare-under-lock equality as the reason the census criterion was unmet, but the record it cites (`docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html`, \"An own-node run was not proved dead at that census\") reports a second reading: 47 of 76 pointers carried a placement naming no readable job id, the scheduler arm answered None, and unknown liveness is held; no section adopts that case, and \u00a78's write paths do not reach the liveness reader",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "286bf327abfc4d4f5812cc7cf90c9c5946d66db1",
+  "plan_fingerprint": "f0308606dd0528acf039da12dd6c0c5d8df2156df4604f21fb9a61ee9bb6d98e",
+  "plan_slug": "a-claim-nobody-is-working-is-released",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T193906641981-plan-review-of-a-claim-nobody-is-working-is-released",
+  "reviewed_blob_sha": "cc88152088c7161a65208c3b3492b7ada3ecdf1a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html` exists, and the cited s6 run directory exists under `crew/archive/runs/` holding `census-a.json` (48881 bytes) and `census-b.json` (93095 bytes) beside the `census.py` instrument.",
+    "done_when": "a finding \u2014 \u00a78's census arm (\"the comparison accepting every promoted pointer it reads\") has no floor on how many promoted pointers it read, so it passes vacuously once the one held pointer is retired.",
+    "evidence_paths": "pass \u2014 \u00a78's arm logs sit under the run directory, and completed run directories are retained under `~/.config/reckon/crew/archive/runs/<run>/` (verified for the s6 run and for the four landed sections), so a later reader can open them.",
+    "naming": "pass \u2014 \u00a78 names no plan labels, ticket numbers or version tags in its test filename or prose; the heading's \u00a78 is plan structure, not a symbol.",
+    "reasoning": "a finding \u2014 the plan's own cited census records a second cause it leaves unowned: an own-node promoted pointer whose pid the liveness reader may not consult reads unknown and is held whatever the equality fix, so \u00a76's criterion can fail for a mechanism no section repairs.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, that the two release passes retire a proved-dead promoted pointer whatever shape it was listed in, with the changed-pointer arm a preservation invariant of the same change.",
+    "wiring": "a finding \u2014 the declaration block now makes \u00a76 wait on s8 while \u00a76's own text still names only \u00a72\u2013\u00a75 and \u00a77 as its prerequisites, and the authored `plan-effort-hours` stays at 9.5 though \u00a71\u2013\u00a78 now sum to 11.0."
+  },
+  "section_digests": {
+    "_document": "d34201a021b99e946935b956c6ebd1e49b90bf1c7f918144506e0bb65504844a",
+    "s1": "05d19cd8311964ff3f39edcb6f6001983d854f54efe21e6fab628d2bf2d700be",
+    "s2": "31c170be4951db63af1611f315ea98f170521c6fa5d29d94f4de2266b76647fb",
+    "s3": "e1ab157cd4a1eae9aa12b1663c5b99dcd8436fed8b54c5252e0d9340bb82a93d",
+    "s4": "ec03acc9d9512d7a14042d8168f168a03f069190fef0cbc3e69139a2d33f3b79",
+    "s5": "dfd5788c2eb7c77b78075346068509e49b441c81c20632665e0f9e42a4780f0e",
+    "s6": "9f4f108dadd36eccb3a05d57b0c8bbd042f1a9000ba71bda6452dc69ce19cc3f",
+    "s7": "a05c1c4839bcd05b746a6d188db104e184c64e8cc7469fe0ada2abdb19796709",
+    "s8": "fedf62ee711e089c774567b5d62918c47551dc20531fa1e4b1e1dc246c65738b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T20:16:39.553903+00:00",
+  "total": null
+}
