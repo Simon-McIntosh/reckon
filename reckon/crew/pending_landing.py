@@ -76,6 +76,11 @@ def save_group(group: Mapping[str, Any]) -> None:
 #: forms of one unchanged pointer differ there and nowhere else.
 _NODE_IDENTITY_FIELDS = ("id", "plan", "section", "role")
 
+#: Fields an observer stamps on a pointer each time it looks at the run. They
+#: record when the run was last seen, not what it is, so a sweep that passes
+#: between a caller's judgement and its release has not changed the run.
+_OBSERVATION_FIELDS = frozenset({"observed_at"})
+
 
 def _changed_pointer_fields(
     current: Mapping[str, Any], pointer: Mapping[str, Any]
@@ -96,7 +101,9 @@ def _changed_pointer_fields(
     changed = sorted(
         key
         for key in set(current) | set(pointer)
-        if key != "node" and current.get(key) != pointer.get(key)
+        if key != "node"
+        and key not in _OBSERVATION_FIELDS
+        and current.get(key) != pointer.get(key)
     )
     if node_identity(current) != node_identity(pointer):
         changed.append("node")
