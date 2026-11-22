@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="One answer says whether a plan may be queued; the admit service queues those that may, owners are told, and idle waits queue their upstream.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="10.5">
+  <meta name="plan-effort-hours" content="13.5">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="building-a-plan-queues-all-of-it">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;building-a-plan-queues-all-of-it#s3&quot;],&quot;s7&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s3&quot;,&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;],&quot;s8&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s7&quot;],&quot;s9&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;descoped&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;descoped&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;descoped&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;descoped&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -85,6 +85,20 @@
     <h2 id="s10">§10 — Withdrawn: telling an owner about unqueued work</h2>
 <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="descoped" data-descope-reason="Once the admit service queues every section that may be queued, nothing is left unqueued to tell an owner about, and the directory already lists each coordinator&#x27;s sections with no live run." data-links=""></section>
     <p>This section is not built. It asked for an obligation on a plan's coordinator when a section of theirs may be queued and has no request. The design review of 22 November 2026 showed that §7 empties that set on every admit pass, so the obligation could exist only between a section becoming queueable and the next pass; and that the crew directory already lists, for each coordinator, the sections of their plans with no live run. A project that switches §7's queueing off reads that listing.</p>
+
+    <h2 id="s11">§11 — A plan-level dispatch reads a section's negative control from the section</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>On 22 November 2026 a plan-level dispatch refused three sections at queue time, §8 and §9 of this plan and §13 of <code>a-worker-or-its-job-cannot-overwrite-shared-files</code>, each with "its negative_control field declares no mutation that check must fail against". Every one of those sections states its negative control in its own text. They were queued only by writing a batch entry by hand that repeated the sentence. A section the queue cannot read this from is a section no unattended pass can queue, which is what §7 needs.</p>
+    <p><strong>Deliverable.</strong> A section that states its negative control in its text is queued by a plan-level dispatch with that control on the request, and a section that states none is refused naming the section and what is missing from it.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_plan_dispatch_reads_the_sections_control.py</code> passes, covering: a section with a negative-control paragraph and a test file in its done-when is queued by a plan-level dispatch, and the queued request carries the paragraph's sentence; a section with a test file and no such paragraph is refused naming the section; and a batch entry that names its own control still overrides the section's. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/crew/dispatch_batch.py</code>, <code>reckon/crew/dispatching/requests.py</code> and the new test.</p>
+    <p><strong>Negative control.</strong> At the base revision, the first case must fail with the queue-time refusal.</p>
+
+    <h2 id="s12">§12 — A section whose run has landed is not queued again</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>On 22 November 2026 at 07:25Z a plan-level dispatch of <code>work-scales-to-eighty-across-nodes</code> queued a second request for its §1 as <code>r-20261122T072555279326-work-scales-to-eighty-across-nodes-s1</code>. The first run's head <code>27ecc8df67</code> was already on the primary branch; its pointer had been retired and its section was still declared implementable for the minute before the landing's closing write. The duplicate was discarded by hand before it launched. The same window opens for every section between its landing and its declaration.</p>
+    <p><strong>Deliverable.</strong> A plan-level dispatch does not queue a section for which a run has landed on the primary branch, whatever the section's declaration reads at that moment, and its result names the landed run as the reason.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_landed_section_is_not_queued_again.py</code> passes, covering: a section still declared implementable whose run is recorded as landed is skipped by a plan-level dispatch, naming that run; a section whose only run was discarded is queued; and a section whose run landed a partial node the plan names as partial is queued. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/crew/dispatch_batch.py</code> and the new test.</p>
+    <p><strong>Negative control.</strong> At the base revision, the first case must fail with a second request queued.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
