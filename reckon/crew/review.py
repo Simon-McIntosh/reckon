@@ -4978,6 +4978,49 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     note_review_record(record)
 
 
+def compose_run_review(
+    run_id: str,
+    *,
+    dry_run: bool = False,
+    prefer_local: bool = False,
+    config: Mapping[str, Any] | None = None,
+    launcher: Any = None,
+) -> dict[str, Any]:
+    """Compose the code review of one named delivered run at its current head.
+
+    ``crew review`` takes a plan, a code neighbourhood or a portfolio, so a
+    coordinator had no command to compose the review of a single delivered run
+    when the reflex would not. The run's own live record is resolved here and
+    the dispatch is composed exactly as the reflex composes it, so the head
+    reviewed is the head the run carries now, and the standing review the
+    dispatch leaves is the one the reflex finds in flight: it composes no
+    second review for that head.
+
+    A run whose newest open review still carries a blocking finding is refused
+    by the same predicate the reflex applies, naming the finding and the
+    command that lifts it, so a coordinator cannot spend a round repeating a
+    finding already known.
+    """
+    from reckon.crew.node import CrewError
+    from reckon.crew.recovery_review_dispatch import dispatch_review_for_run
+    from reckon.crew.runs import read_pointer
+
+    name = str(run_id or "").strip()
+    if not name:
+        raise CrewError("--run requires a run id")
+    try:
+        pointer = read_pointer(name)
+    except (CrewError, OSError, ValueError) as exc:
+        raise CrewError(f"no live run {name!r} to review: {exc}") from exc
+    return dispatch_review_for_run(
+        pointer,
+        config=config,
+        launcher=launcher,
+        prefer_local=prefer_local,
+        dry_run=dry_run,
+    )
+
+
 # ── The review-record store family, owned by review_records ──
 # The store's readers, writers and index moved to
 # :mod:`reckon.crew.review_records`. They are re-exported here,

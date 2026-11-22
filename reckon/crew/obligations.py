@@ -1159,6 +1159,53 @@ def _finding_disposition_commands(
     )
 
 
+def _open_review_finding(
+    project: str, run_id: str
+) -> tuple[Mapping[str, Any], list[Any], str, str] | None:
+    """The first undisposed blocking finding on a run's newest open review.
+
+    The findings are read from the run's stored records under the same lifecycle
+    derivation and the same disposition reader the dispatch applies, so a duty
+    that explains the wait cannot describe a state the dispatch would not act
+    on. The two duties that report this state — a recorded refusal, and a review
+    the reflex has not reached — share this reader rather than each carrying its
+    own copy of the selection.
+
+    Returns the review record, the undisposed findings in index order, and the
+    two commands that dispose or exempt the first of them. None means no stored
+    review of this run is open with a blocking finding still owed an answer.
+    """
+    try:
+        stored = [
+            record
+            for _path, record in review_module.stored_records_for_run(project, run_id)
+        ]
+    except (OSError, ValueError):
+        return None
+    if not stored:
+        return None
+    from reckon.crew.open_run_index import has_row
+
+    closed = has_row(project, run_id)
+    for record in stored:
+        if (
+            review_lifecycle.lifecycle(
+                record, run_closed=closed, later_records=tuple(stored)
+            )
+            != review_lifecycle.OPEN
+        ):
+            continue
+        undisposed = recovery_review_dispatch._undisposed_blocking_findings(record)
+        if not undisposed:
+            continue
+        index, _finding = undisposed[0]
+        fold, exempt = _finding_disposition_commands(
+            project, run_id, index, review=record
+        )
+        return record, undisposed, fold, exempt
+    return None
+
+
 def _review_dispatch_refusal(
     project: str,
     pointer: Mapping[str, Any],
@@ -1217,31 +1264,9 @@ def _review_dispatch_refusal(
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
-    try:
-        stored = [
-            record
-            for _path, record in review_module.stored_records_for_run(project, run_id)
-        ]
-    except (OSError, ValueError):
-        return None
-    from reckon.crew.open_run_index import has_row
-
-    closed = has_row(project, run_id)
-    for record in stored:
-        if (
-            review_lifecycle.lifecycle(
-                record, run_closed=closed, later_records=tuple(stored)
-            )
-            != review_lifecycle.OPEN
-        ):
-            continue
-        undisposed = recovery_review_dispatch._undisposed_blocking_findings(record)
-        if not undisposed:
-            continue
-        index, _finding = undisposed[0]
-        fold, exempt = _finding_disposition_commands(
-            project, run_id, index, review=record
-        )
+    open_finding = _open_review_finding(project, run_id)
+    if open_finding is not None:
+        _record, _undisposed, fold, exempt = open_finding
         return {
             "reason": str(recorded.get("reason") or "")
             or "the review reflex refused this review's dispatch",
@@ -1261,6 +1286,44 @@ def _review_dispatch_refusal(
             ),
         }
     return None
+
+
+def _undisposed_review_cause(
+    project: str, pointer: Mapping[str, Any]
+) -> dict[str, str] | None:
+    """The cause that makes a run's review the coordinator's to unblock now.
+
+    The reflex refuses to compose a review while the run's newest open review
+    still carries a blocking finding with no disposition. That state does not
+    clear with time, so a review-missing duty that printed an overdue figure
+    would send the coordinator to inspect a follower that is behaving
+    correctly. The state is read through :func:`_open_review_finding`, the same
+    reader the recorded-refusal duty uses, so the dispatch and both duties agree
+    on when a round is still owed an answer.
+
+    None means no stored review of this run has an undisposed blocking finding,
+    so the reflex's own window is the only thing between the run and its
+    review.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    open_finding = _open_review_finding(project, run_id)
+    if open_finding is None:
+        return None
+    _record, undisposed, fold, exempt = open_finding
+    from reckon.crew import repair as repair_module
+
+    place = repair_module._finding_location(undisposed[0][1]) or "the review's findings"
+    return {
+        "reason": (
+            f"the newest review carries {len(undisposed)} blocking "
+            f"finding(s) with no disposition, so a review dispatched now "
+            f"would repeat them: {place} — dispose it with `{fold}` or "
+            f"`{exempt}`"
+        ),
+        "next_command": f"dispose the blocking finding with `{fold}` or `{exempt}`",
+    }
 
 
 def _reflex_owns_review(project: str, pointer: Mapping[str, Any]) -> bool:
@@ -3417,6 +3480,14 @@ def _review_duty_detail(
             item["kind"] = REVIEW_DISPATCH_REFUSED_DUTY_KIND
             item["reason"] = refusal["reason"]
             item["next_command"] = refusal["next_command"]
+        elif (undisposed := _undisposed_review_cause(project, pointer)) is not None:
+            # The reflex will not compose this run's review while the previous
+            # round's blocking finding stands, so the wait is a decision rather
+            # than a delay: naming the cause and the command that lifts it is
+            # what lets the coordinator act, where an overdue figure would send
+            # it to inspect a follower with nothing wrong with it.
+            item["reason"] = undisposed["reason"]
+            item["next_command"] = undisposed["next_command"]
         elif _reflex_owns_review(project, pointer):
             # One actor owns review dispatch. While an armed follower will
             # compose this review, the duty names that reflex and the window
