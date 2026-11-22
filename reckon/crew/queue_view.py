@@ -6,6 +6,11 @@ it holds in the order admission launches by, the reason for that place, how long
 it has waited and the hold that stops it, beside each session's priority budget
 and the points in use and free. Places come from the reader the admission pass
 itself orders by, so this document and the next pass cannot disagree.
+
+The waiting count is given in four parts: waiting for a lane slot, waiting on an
+upstream that is advancing, waiting on an upstream nothing is building toward,
+and waiting on an upstream that can never land. The last three are the class the
+admission pass already stamped on each request; this read never recomputes it.
 """
 
 from __future__ import annotations
@@ -22,10 +27,34 @@ from reckon.crew.admission.shared import (
     QUEUED_PHASE,
     WAITING_UPSTREAM_PHASES,
 )
+from reckon.crew.stranded_wait import IDLE as IDLE_CLASS
+from reckon.crew.stranded_wait import PROGRESSING, STRANDED
 
-__all__ = ["queue_view"]
+__all__ = ["QUEUE_WAIT_PARTS", "queue_view", "wait_part_of"]
 
 WAITING_PHASES: tuple[str, ...] = (QUEUED_PHASE, HELD_PHASE, *WAITING_UPSTREAM_PHASES)
+
+# The four causes a waiting request waits for. A request waiting only for a lane
+# slot carries no class; the other three are the class its own record already
+# holds, stamped by the admission pass that resolved its refs. The split is read
+# here rather than derived, so this view and that pass cannot disagree.
+SLOT = "slot"
+ADVANCING = "advancing"
+IDLE = "idle"
+STRANDED_PART = "stranded"
+
+QUEUE_WAIT_PARTS: tuple[str, ...] = (SLOT, ADVANCING, IDLE, STRANDED_PART)
+
+# The class the pass stamps to the part this view counts it under.
+_PART_OF_CLASS: dict[str, str] = {
+    PROGRESSING: ADVANCING,
+    IDLE_CLASS: IDLE,
+    STRANDED: STRANDED_PART,
+}
+
+# The phases a launched run carries while it is working. A lane is running work
+# when any live request in the same scope holds one of them.
+RUNNING_PHASES: frozenset[str] = frozenset({"starting", "working", "running"})
 
 
 def _since(stamp: Any, moment: datetime) -> float | None:
@@ -39,6 +68,80 @@ def _since(stamp: Any, moment: datetime) -> float | None:
 def _waited_seconds(pointer: Mapping[str, Any], moment: datetime) -> float | None:
     """The wait so far, measured from the request's own arrival stamp."""
     return _since(pointer.get("queued_at"), moment)
+
+
+def wait_part_of(pointer: Mapping[str, Any]) -> str:
+    """The cause one waiting request waits for, from its own recorded class.
+
+    A request waiting only for a lane slot carries no upstream class, so it is
+    counted as a slot wait. A request waiting on refs is counted under the class
+    the admission pass already stamped on it; the class is never recomputed
+    here. A request whose refs wait but whose class has not yet been stamped
+    falls back to its phase, where a blocked upstream can never land.
+    """
+    phase = str(pointer.get("phase") or "")
+    if phase not in WAITING_UPSTREAM_PHASES:
+        return SLOT
+    stamped = str(pointer.get("wait_class") or "")
+    part = _PART_OF_CLASS.get(stamped)
+    if part is not None:
+        return part
+    return STRANDED_PART if phase == BLOCKED_UPSTREAM_PHASE else ADVANCING
+
+
+def _upstream_plans(waits: Sequence[str]) -> list[str]:
+    """The plan a request's upstream refs belong to, one per waiting ref."""
+    plans: list[str] = []
+    for ref in waits:
+        name = str(ref).split("#", 1)[0].strip()
+        if name:
+            plans.append(name)
+    return plans
+
+
+def _wait_summary(
+    rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """The waiting count in its four parts, with each part's oldest wait.
+
+    Each part is read from the rows' own recorded class, so a request that
+    moves between classes moves between parts with no other input. The idle
+    part also names the upstream plans nothing is building toward, which is what
+    the pane draws a fault from.
+    """
+    summary: list[dict[str, Any]] = []
+    for part in QUEUE_WAIT_PARTS:
+        members = [row for row in rows if row.get("wait_part") == part]
+        ages = [
+            row["waited_seconds"]
+            for row in members
+            if isinstance(row.get("waited_seconds"), int | float)
+        ]
+        entry: dict[str, Any] = {
+            "part": part,
+            "count": len(members),
+            "oldest_waited_seconds": max(ages) if ages else None,
+        }
+        if part == IDLE:
+            entry["upstream_plans"] = sorted(
+                {
+                    plan
+                    for row in members
+                    for plan in _upstream_plans(row.get("waits") or ())
+                }
+            )
+        summary.append(entry)
+    return summary
+
+
+def _running(pointers: Sequence[Mapping[str, Any]], project: str) -> int:
+    """The live requests in this scope that a lane is working right now."""
+    return sum(
+        1
+        for pointer in pointers
+        if (not project or str(pointer.get("project") or "") == project)
+        and str(pointer.get("phase") or "") in RUNNING_PHASES
+    )
 
 
 def _wait_reason(phase: str, waits: Sequence[str]) -> str:
@@ -110,6 +213,7 @@ def _row(
         "phase": phase,
         "priority": _priority(pointer),
     }
+    row["wait_part"] = wait_part_of(pointer)
     position = placement.get("position")
     if position is not None:
         row["position"] = int(position)
@@ -259,9 +363,12 @@ def queue_view(
         "reviews": reviews,
         "sessions": _sessions(named, pointers=pointers, budget=budget),
         "promotions": promotions,
+        "running": _running(pointers, project),
         "counts": {
             "requests": len(requests),
             "reviews": len(reviews),
             "promotions": promotions["waiting"],
+            "waiting": len(requests),
+            "waiting_by_cause": _wait_summary(requests),
         },
     }
