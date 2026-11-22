@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import promotion_gate
+from reckon.crew.node import CrewError
 
 PROGRAM_THAT_EXISTS_NOWHERE = "./no-such-gate-program-6f1c"
 
@@ -145,3 +146,45 @@ def test_a_gate_that_starts_and_fails_is_still_reported_with_its_failure_ids(
     assert report["finding"] is not None
     assert report["finding"]["integrated_verdict"] == "failed"
     assert report["finding"]["failure_ids"] == ["tests/test_sample.py::test_broken"]
+
+
+def test_one_resolver_serves_both_the_promotion_guard_and_the_replay(
+    merged_tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The guard that admits a command and the replay that runs it share one resolver.
+
+    A second tokenisation, PATH lookup and executable test is a second answer to
+    "can this program start", and with two answers the promotion service can
+    admit a command the replay cannot start, or refuse one it can. The resolver
+    therefore lives in one module and the guard asks it, which this pins by
+    making the resolver answer for both.
+    """
+    from reckon.crew import landing_measure
+
+    for name in ("gate_program", "resolve_gate_program", "rewrite_gate_program"):
+        assert not hasattr(landing_measure, name), (
+            f"landing_measure re-implements {name}; the resolver belongs to "
+            "promotion_gate and the guard must ask it"
+        )
+
+    answers: list[dict] = []
+
+    def recording(command: str, **options) -> dict:
+        answers.append({"command": command, "options": options})
+        return {
+            "program": PROGRAM_THAT_EXISTS_NOWHERE,
+            "seats": [str(merged_tree.resolve())],
+            "resolved": None,
+            "source": None,
+        }
+
+    monkeypatch.setattr(promotion_gate, "resolve_gate_program", recording)
+    with pytest.raises(CrewError) as refused:
+        promotion_gate._require_executable_gate_command(
+            "r-20261122T120000000000-resolver",
+            {"command": f"{PROGRAM_THAT_EXISTS_NOWHERE} --version", "exit_status": 0},
+        )
+
+    assert answers, "the guard did not ask the shared resolver"
+    assert answers[0]["command"] == f"{PROGRAM_THAT_EXISTS_NOWHERE} --version"
+    assert PROGRAM_THAT_EXISTS_NOWHERE in str(refused.value)

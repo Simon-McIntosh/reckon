@@ -9,7 +9,12 @@
   proves</em>. Nothing was measured at the merged head, and the refusal sent a
   r-20261122T032524701158 coordinator into the merge for a missing program.</p>
 
-  <p><strong>What changed.</strong> The replay resolves the command's program
+  <p><strong>What changed.</strong> One resolver — <code>gate_program</code>,
+  <code>resolve_gate_program</code> and <code>rewrite_gate_program</code> in
+  <code>reckon/crew/promotion_gate.py</code> — now serves both the promotion
+  guard that admits a recorded command and the replay that executes it, so the
+  command a promotion accepts is exactly the command the re-run can start.
+  The replay resolves the command's program
   before the shell receives it. A relative spelling — <code>.venv/bin/python</code>
   — is looked for under the tree being measured, then under each recorded worker
   root, then through any resolved <code>.venv</code>, then through the
