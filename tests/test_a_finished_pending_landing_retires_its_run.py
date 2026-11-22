@@ -1,10 +1,12 @@
 """A pending landing retires its run only after the remote accepts it.
 
 A promotion that has not merged yet is finished by the landing pass at the head
-it cited. A promotion whose merge meets a conflict is different: the run is
-promoted, so its live pointer is never written back and the pending record —
-which the refusal names and which carries the conflict — is the obligation a
-coordinator reads.
+it cited. A promotion whose merge meets a conflict is sent back to its own
+worker: the repair round rebuilds the pointer it resumes, and the pending
+record keeps the conflict so a later pass can find the round rather than open a
+second one. The refusal to rebuild the pointer belongs to a record replay —
+a record naming a conflict that already has an owner — not to the round that
+first reports the conflict.
 """
 
 from __future__ import annotations
@@ -34,10 +36,9 @@ def _promoted_conflict(deliver):
     """Deliver two runs whose changes meet in a real merge conflict.
 
     The second delivery is promoted before its merge runs, so the conflict is
-    met with a promoted row behind it. Promotion removed the live pointer, and
-    the repair that would resume the delivery's worker is refused because a
-    promoted run's pointer is never written back. What survives is the pending
-    record, which the refusal receipt names and which carries the conflict.
+    met with a promoted row behind it. The record has not named a conflict yet,
+    so this round owns it: the repair rebuilds the pointer its resumed worker
+    needs and records the conflict on the pending record.
     """
     first = deliver("first", "first original", "first delivered")
     result = _complete_land(first)
@@ -50,10 +51,9 @@ def _promoted_conflict(deliver):
     assert receipt["steps"]["land"]["outcome"] == "merge-conflict", receipt
     repair = receipt["steps"]["land"]["repair"]
     record_path = pending_landing._record_path(repaired["run_id"])
-    assert repair["status"] == "refused", repair
-    assert "is promoted" in repair["reason"], repair
-    assert repair["record"] == str(record_path)
-    assert not runs.pointer_path(repaired["run_id"]).exists()
+    assert repair["status"] == "resumed", repair
+    assert SOURCE in repair["paths"], repair
+    assert runs.pointer_path(repaired["run_id"]).is_file()
     assert record_path.is_file()
     record = pending_landing._read(record_path)
     assert record["merge_conflict"]["head"] == repaired["head"]
@@ -108,7 +108,7 @@ def _assert_remote_carries(run):
     )
 
 
-def test_a_conflicted_promotion_owes_its_record_and_lands_nothing(deliveries):
+def test_a_conflicted_promotion_is_sent_back_to_its_worker(deliveries):
     deliver, _resumed = deliveries
     run = _promoted_conflict(deliver)
     record_path = pending_landing._record_path(run["run_id"])
@@ -116,41 +116,36 @@ def test_a_conflicted_promotion_owes_its_record_and_lands_nothing(deliveries):
 
     results = pending_landing.finish_pending_landings(only_run=run["run_id"])
 
-    assert results[0]["status"] == "record-obligation", results
-    assert results[0]["record"] == str(record_path)
-    assert "is promoted" in results[0]["error"], results
+    # The receipt's round is already on the live pointer, so the pass reports
+    # the delivery as awaiting its repair rather than opening a second round.
+    assert results[0]["status"] == "awaiting-merge-repair", results
     assert git(run["origin"], "rev-parse", "main") == remote_before
-    assert not runs.pointer_path(run["run_id"]).exists()
+    assert runs.pointer_path(run["run_id"]).is_file()
     assert record_path.is_file()
     assert run["worktree"].is_dir()
     assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
-    # The obligation is durable: a later pass reports the same record rather
-    # than retrying a merge nothing can finish.
+    # The open round is durable: a later pass names the same one rather than
+    # resuming the same delivery again.
     again = pending_landing.finish_pending_landings(only_run=run["run_id"])
-    assert again[0]["status"] == "record-obligation", again
-    assert again[0]["record"] == str(record_path)
-    assert not runs.pointer_path(run["run_id"]).exists()
+    assert again[0]["status"] == "awaiting-merge-repair", again
+    assert runs.pointer_path(run["run_id"]).is_file()
 
 
-def test_a_delivered_repair_keeps_the_record_and_the_worktree(deliveries):
+def test_a_delivered_repair_lands_the_promoted_run(deliveries):
     deliver, _resumed = deliveries
     run = _promoted_conflict(deliver)
     _conflict_resolution(run)
     record_path = pending_landing._record_path(run["run_id"])
     record = pending_landing._read(record_path)
     assert record["merge_conflict"]["head"] == run["conflict_head"]
-    remote_before = git(run["origin"], "rev-parse", "main")
 
     results = pending_landing.finish_pending_landings(only_run=run["run_id"])
 
-    assert results[0]["status"] == "record-obligation", results
-    assert results[0]["record"] == str(record_path)
-    assert "is promoted" in results[0]["error"], results
+    assert results[0]["status"] == "finished", results
+    assert results[0]["head"] == run["head"]
+    _assert_remote_carries(run)
     assert not runs.pointer_path(run["run_id"]).exists()
-    assert pending_landing._record_path(run["run_id"]).is_file()
-    assert run["worktree"].is_dir()
-    assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
-    assert git(run["origin"], "rev-parse", "main") == remote_before
+    assert not record_path.exists()
 
 
 def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monkeypatch):

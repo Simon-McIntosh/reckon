@@ -251,10 +251,20 @@ def test_one_pass_judges_a_mixed_cohort(delivery, tmp_path) -> None:
         directory.mkdir(parents=True)
         member_manifest = directory / "manifest.md"
         member_manifest.write_text(manifest.read_text())
+        member_tree = tmp_path / f"{name}-tree"
+        git(
+            delivery["repo"],
+            "worktree",
+            "add",
+            "--detach",
+            str(member_tree),
+            delivery["head"],
+        )
         pointer = {
             **original,
             "run_id": run_id,
             "manifest_path": str(member_manifest),
+            "worktree": str(member_tree),
             "node": {**original["node"], "id": name},
         }
         if running:
@@ -317,8 +327,16 @@ def test_one_pass_judges_a_mixed_cohort(delivery, tmp_path) -> None:
     finally:
         git(repository, "worktree", "remove", str(base_tree))
 
-    assert result["landed"] == [RUN], result
-    assert resume.delivery_hold(runs.read_pointer(RUN)) is None
+    assert result["landed"] == [], result
+    # The delivery's head reached the primary branch on the integrated
+    # member's release receipt, so the pass settles it as already carried
+    # rather than landing it a second time.
+    assert not runs.pointer_path(RUN).exists(), result
+    assert _recorded_hold(RUN)["released_at"], result
+    assert any(
+        row["run_id"] == RUN and row["status"] == "resume-hold-released"
+        for row in result["interrupted_landings"]
+    ), result
     for name in ("running", "explicit"):
         assert resume.delivery_hold(runs.read_pointer(f"r-cohort-{name}")) is not None
     assert not runs.pointer_path(promoted_id).exists(), result

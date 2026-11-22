@@ -598,6 +598,7 @@ def release_pointers_of_a_previous_fleet_node(
     work has been delivered. Only a run with neither is retired here.
     """
     from reckon.crew import process_liveness, watch_unit
+    from reckon.crew.promotion_requests import COMMAND_REPLY, PENDING, read_promotion
 
     node = watch_unit.fleet_record_node() if fleet_node is None else str(fleet_node)
     results: list[dict[str, Any]] = []
@@ -608,6 +609,16 @@ def release_pointers_of_a_previous_fleet_node(
         if project is not None and pointer.get("project") != project:
             continue
         if session is not None and pointer.get("session") != session:
+            continue
+        # The owner checks before the ledger read, as everywhere else: a run
+        # whose promotion is requested belongs to the service that will act on
+        # it, and that service reads the ledger when it does. Settling the
+        # request from the pointer's own run directory keeps a run with an owner
+        # off the ledger, which is the read that costs a merge decode.
+        if (
+            COMMAND_REPLY.get() is None
+            and read_promotion(run_id).get("phase") in PENDING
+        ):
             continue
         # The cheap gates first: a pointer carrying no promotion evidence at all
         # is not this pass's, and a run whose worker this host can still see
