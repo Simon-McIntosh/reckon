@@ -212,12 +212,23 @@
     pairs read as stale section waits.</li>
   </ol>
 
-  <p><strong>The evidence.</strong> The gate ran at revision
-  <code>d2676070f0</code>. The test file is
-  <code>tests/test_the_drain_measures_its_own_week.py</code>, whose run at that revision records
-  <code>17 passed in 0.80s</code>, covering the seeded violation, the
-  pre-window upstream, the cross-project wait, the healthy verdict control, the
-  log that opens inside its window, and the unmeasured arm of every measure. The report and the run log
+  <p><strong>The evidence.</strong> The test file is
+  <code>tests/test_the_drain_measures_its_own_week.py</code>, and it was run at
+  four revisions. The baseline arm at
+  <code>3a0f33d3620466b129202c886269037fcdd018fc</code>, resolved over a tree
+  extracted from that same revision, records
+  <code>ERROR: file or directory not found: tests/test_the_drain_measures_its_own_week.py</code>
+  and <code>no tests ran in 0.00s</code> with <code>EXIT=4</code>: the file this
+  node adds does not exist at the baseline, so that arm measures the tree rather
+  than a regression. The arm after the change, at
+  <code>2970ca4aead44cd4ee7305474f21afcc73c1108e</code> in its own extracted
+  tree, records <code>17 passed in 0.48s</code>, <code>EXIT=0</code>. The gate
+  at <code>d2676070f0</code> records <code>17 passed in 0.80s</code> with
+  <code>EXIT=0</code>, and the delivered head at <code>30ba11acc1</code>
+  records the same <code>17 passed in 0.80s</code> with <code>EXIT=0</code>.
+  The seventeen tests cover the seeded violation, the pre-window upstream, the
+  cross-project wait, the healthy verdict control, the log that opens inside its
+  window, and the unmeasured arm of every measure. The report and the run log
   live beside the run's other records, and the figure is drawn by the same
   script so it cannot drift from the numbers it illustrates.</p>
 </section>
