@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-claim-nobody-is-working-is-released">
+  <meta name="plan-title" content="A Claim Nobody Is Working Is Released">
+  <meta name="plan-evidence-for" content="reckon:a-claim-nobody-is-working-is-released">
+  <meta name="plan-verifies" content="reckon:a-claim-nobody-is-working-is-released#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-22">
+  <meta name="evidence-run" content="r-20261122T032522825423-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s">
+  <title>A resume that never started reads as not started | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="acniw-a-resume-that-never-started-reads-as-not-started-and-a-s" data-reckon="pass" data-when="2026-11-22">
+  <h2>A resume that never started reads as not started</h2>
+
+  <p><strong>The claim.</strong> A run reads as working only once its worker has
+  begun a turn. A resume records its launcher's pid and the working phase the moment the
+  spawn returns, so a launcher that blocks before starting any worker — an srun
+  client waiting for an allocation its step never receives — left the run
+  reading as working for as long as it waited. Nothing released it.</p>
+
+  <p><strong>The reading.</strong> The one fact that answers for a resumed
+  attempt is a turn in the attempt's own stream. Past the bound, the stranded-launch clock, with no
+  assistant record written at or after the attempt started, the run is
+  classified launch-failed, the launcher's own waiting reason is carried on
+  detail and launch_error, and the offered remedy is crew resume: no end was
+  recorded, so nothing is offered as discardable and the session survives. An attempt whose stream does hold an assistant record
+  still reads as working.</p>
+
+  <p><strong>The stop.</strong> A placed run's client tree was held to be the
+  scheduler's to end. That holds only once the step has started, and a step
+  writes step-task.txt on the node that runs it. Absent that record the client
+  and the processes under it are the launch's own local tree, so the stop
+  signals them individually, never by process group, and reports every pid it
+  signalled.</p>
+
+  <p><strong>Measure — the declared negative control, observed.</strong> At the
+  base revision the same test module reports 2 failed, 2 passed: the blocked run
+  reads running where the case requires launch-failed, and the stop leaves the
+  stand-in launcher alive. At this head the module reports 4 passed. The log is
+  negative-control.log beside this run's manifest.</p>
+
+  <p><strong>Measure — scoped gate and both suite arms.</strong> The scoped gate
+  passed at b6f64a60268ecae71b7b76b349d6db4857e230c5 on all_debug: exit 0, 0
+  failures. The base arm at b8d76fea6 and the head arm both passed with 0
+  failures. No failure is added.</p>
+
+  <p><strong>Where the change is.</strong> reckon/crew/resumption.py carries the
+  reading; reckon/crew/recovery_classification.py consults it before the
+  liveness arm; reckon/crew/process_signal.py stops a client tree whose step
+  never started. The test module name is the claim.</p>
+</article>
+</body>
+</html>
