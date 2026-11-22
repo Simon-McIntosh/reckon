@@ -2209,6 +2209,54 @@ def _state_without_the_comment_ledger(state: Mapping[str, Any]) -> dict[str, Any
     }
 
 
+def _landing_comments_appended_to_head(
+    checkout: Path, path: Path, current_text: str
+) -> tuple[str, Mapping[str, Any], Mapping[str, Any]] | None:
+    """HEAD's plan text and both states, when the file is HEAD plus comments.
+
+    A landing comment is an append, so a plan file carrying another writer's
+    landing comments is HEAD's document re-rendered with those comments. That
+    is recognised by re-rendering HEAD with the state parsed from the file and
+    requiring the result to be byte-identical to the file: the state read
+    cannot see every edit a file may carry — a heading's own prose is not one
+    of its keys — so a writer that changed anything else does not match and no
+    caller may read it as an append.
+
+    Only the comment ledger may differ between the two states. A comment append
+    also rewrites the version and modified stamps and may move a draft plan to
+    in-progress, so those keys are excluded by
+    `_state_without_the_comment_ledger`.
+
+    Returns HEAD's text, HEAD's state and the state parsed from the file, or
+    None when the file is not such an append.
+    """
+    from reckon import _plan_html
+
+    relative = path.relative_to(checkout).as_posix()
+    shown = _git(checkout, "show", f"HEAD:{relative}", check=False)
+    if shown.returncode:
+        return None
+    head_text = shown.stdout
+    try:
+        head_state = _plan_html.read_state(head_text)
+        current_state = _plan_html.read_state(current_text)
+    except (TypeError, ValueError):
+        return None
+    if _state_without_the_comment_ledger(
+        head_state
+    ) != _state_without_the_comment_ledger(current_state):
+        return None
+    try:
+        rendered = _plan_html.write_state(
+            head_text, current_state, drop_authored_impl_meta=True
+        )
+    except (TypeError, ValueError):
+        return None
+    if rendered != current_text:
+        return None
+    return head_text, head_state, current_state
+
+
 def _commit_landing_comments_left_in(
     checkout: Path, path: Path, run_id: str
 ) -> list[str] | None:
@@ -2229,40 +2277,16 @@ def _commit_landing_comments_left_in(
     whose parsed state changed in any key but the comment ledger — is
     another writer's content, and the caller keeps its refusal.
     """
-    from reckon import _plan_html
-
     try:
         current = path.read_bytes().decode("utf-8")
     except (OSError, UnicodeDecodeError):
         return None
-    relative = path.relative_to(checkout).as_posix()
-    shown = _git(checkout, "show", f"HEAD:{relative}", check=False)
-    if shown.returncode:
+    recognised = _landing_comments_appended_to_head(checkout, path, current)
+    if recognised is None:
         return None
-    head_text = shown.stdout
+    head_text, head_state, current_state = recognised
     if current == head_text:
         return []
-    try:
-        head_state = _plan_html.read_state(head_text)
-        current_state = _plan_html.read_state(current)
-    except (TypeError, ValueError):
-        return None
-    if _state_without_the_comment_ledger(
-        head_state
-    ) != _state_without_the_comment_ledger(current_state):
-        return None
-    # The state read cannot see every edit a file may carry — a heading's own
-    # prose is not one of its keys — so the file must also be what the writer
-    # would render from the state it parsed. Any other byte in it is another
-    # writer's content.
-    try:
-        rendered = _plan_html.write_state(
-            head_text, current_state, drop_authored_impl_meta=True
-        )
-    except (TypeError, ValueError):
-        return None
-    if rendered != current:
-        return None
     held = {
         anchor: [str(entry.get("id") or "") for entry in entries]
         for anchor, entries in (head_state.get("comments") or {}).items()
@@ -2369,28 +2393,20 @@ def _adopt_a_plan_edited_after_the_snapshot(
     leave behind — rather than the preimage this run snapshotted before the
     other writer's edit existed.
     """
-    from reckon import _plan_html
-
     if not snapshot.comment_id:
         return None
-    relative = snapshot.path.relative_to(snapshot.checkout).as_posix()
-    shown = _git(snapshot.checkout, "show", f"HEAD:{relative}", check=False)
-    if shown.returncode:
-        return None
-    head_text = shown.stdout
     try:
-        actual = _plan_html.read_state(current.decode("utf-8"))
-    except (ValueError, TypeError):
+        current_text = current.decode("utf-8")
+    except UnicodeDecodeError:
         return None
+    recognised = _landing_comments_appended_to_head(
+        snapshot.checkout, snapshot.path, current_text
+    )
+    if recognised is None:
+        return None
+    head_text, _head_state, actual = recognised
     entries = (actual.get("comments") or {}).get(snapshot.comment_anchor or "", [])
     if not any(str(item.get("id") or "") == snapshot.comment_id for item in entries):
-        return None
-    rendered = _plan_html.write_state(
-        head_text,
-        actual,
-        drop_authored_impl_meta=True,
-    )
-    if rendered.encode("utf-8") != current:
         return None
     head_bytes = head_text.encode("utf-8")
     return replace(
@@ -2577,25 +2593,35 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
                 # plan here would add an index change reversing a landed commit.
                 if snapshot.committed_entry() != snapshot.head_entry:
                     raise
+                restore_error: CrewError | OSError | None = None
                 try:
                     snapshot.restore(plan_locked=True)
-                except (CrewError, OSError) as restore_error:
-                    adopted = snapshot.settle_landing_comments()
-                    if adopted:
-                        message = (
-                            f"{exc}; committed the landing comment of "
-                            f"{', '.join(adopted)} that another promotion left "
-                            f"uncommitted in {path}, so the plan matches its "
-                            "committed revision"
-                        )
-                    elif adopted == []:
-                        message = (
-                            f"{exc}; the plan already matches its committed revision"
-                        )
-                    else:
-                        message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
-                else:
+                except (CrewError, OSError) as error:
+                    restore_error = error
+                # A restore can succeed and still leave bytes that were never
+                # this run's: the preimage it went back to may itself carry a
+                # landing comment another promotion wrote and did not commit.
+                # Settling after either outcome is what leaves the plan equal
+                # to its committed revision, whatever the restore did.
+                adopted = snapshot.settle_landing_comments()
+                if adopted:
+                    message = (
+                        f"{exc}; committed the landing comment of "
+                        f"{', '.join(adopted)} that another promotion left "
+                        f"uncommitted in {path}, so the plan matches its "
+                        "committed revision"
+                    )
+                    if restore_error is not None:
+                        message += f" ({restore_error})"
+                elif restore_error is None:
                     message = f"{exc}; restored plan document, version and index entry {path} to their pre-promotion state"
+                elif adopted == []:
+                    message = (
+                        f"{exc}; the plan already matches its committed "
+                        f"revision, but the restore reported: {restore_error}"
+                    )
+                else:
+                    message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
                 exc.args = (message,)
                 raise
 

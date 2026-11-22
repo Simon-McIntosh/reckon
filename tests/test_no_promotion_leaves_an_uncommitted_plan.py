@@ -15,7 +15,6 @@ attributed to the run that wrote them.
 from __future__ import annotations
 
 import json
-import threading
 from pathlib import Path
 
 import pytest
@@ -37,7 +36,8 @@ REVIEW_WAIVER = "the landing write is the subject; this synthetic run stores no 
 LANDING_ONE = "the first promotion records its landing comment"
 LANDING_TWO = "the second promotion records its landing comment"
 LANDING_THREE = "the later landing records its own comment"
-PAUSE_SECONDS = 120.0
+AUTHOR = "reckon-build"
+WHEN_ONE = "2026-11-22T09:00:00Z"
 
 REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
@@ -163,10 +163,11 @@ def test_a_gate_refused_promotion_commits_the_comment_it_met(
         section="§3",
         run_id=RUN_ONE,
         narrative=LANDING_ONE,
-        author="reckon-build",
-        when="2026-11-22T09:00:00Z",
+        author=AUTHOR,
+        when=WHEN_ONE,
         root=repository,
     )
+    met_before = _comments(repository)["c-run-" + RUN_ONE]
     before = _plan_state(repository)
     assert "equal=False" in before, before
     assert "c-run-" + RUN_ONE in _comments(repository)
@@ -189,44 +190,50 @@ def test_a_gate_refused_promotion_commits_the_comment_it_met(
     assert "status=''" in after, after
     met = _comments(repository)
     assert "c-run-" + RUN_ONE in met, sorted(met)
-    assert met["c-run-" + RUN_ONE]["who"] == "reckon-build", met["c-run-" + RUN_ONE]
+    assert met["c-run-" + RUN_ONE] == met_before, met["c-run-" + RUN_ONE]
 
 
-def test_two_promotions_started_together_commit_both_comments(
-    repository: Path, tmp_path: Path
+def test_a_refusal_after_the_plan_write_commits_the_comment_it_met(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Both writers record their comment and the branch is left clean."""
+    """A refusal raised inside the promotion settles the plan it found dirty.
+
+    The gate-check refusal stops before the promotion's own write, so its
+    restore target is the file as it stands. A refusal raised after the write
+    began restores to a preimage that already carried the other promotion's
+    uncommitted comment, and restoring is not enough: those bytes are still
+    uncommitted when the restore succeeds.
+    """
     _dispatch(repository, RUN_ONE, tmp_path, LANDING_ONE)
-    _dispatch(repository, RUN_TWO, tmp_path, LANDING_TWO)
-    start = threading.Barrier(2, timeout=PAUSE_SECONDS)
-    errors: list[BaseException] = []
-
-    def promote(run_id: str) -> None:
-        try:
-            start.wait()
-            _promote(run_id, repository)
-        except BaseException as exc:  # noqa: BLE001 - reported below
-            errors.append(exc)
-
-    threads = [
-        threading.Thread(target=promote, args=(run_id,), name=run_id, daemon=True)
-        for run_id in (RUN_ONE, RUN_TWO)
-    ]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join(PAUSE_SECONDS)
-    assert not any(thread.is_alive() for thread in threads), (
-        "a promotion never returned"
+    promotion._record_landing_comment(
+        project=PROJECT,
+        plan=PLAN,
+        section="§3",
+        run_id=RUN_ONE,
+        narrative=LANDING_ONE,
+        author=AUTHOR,
+        when=WHEN_ONE,
+        root=repository,
     )
-    assert not errors, [repr(exc) for exc in errors]
+    met_before = _comments(repository)["c-run-" + RUN_ONE]
+    assert "equal=False" in _plan_state(repository)
 
-    comments = _comments(repository)
-    assert "c-run-" + RUN_ONE in comments, sorted(comments)
-    assert "c-run-" + RUN_TWO in comments, sorted(comments)
+    def refuse(*args: object, **kwargs: object) -> dict:
+        raise promotion.CrewError("the ledger row could not be written")
+
+    monkeypatch.setattr(promotion, "_record_landing_comment", refuse)
+    _dispatch(repository, RUN_TWO, tmp_path, LANDING_TWO)
+    with pytest.raises(Exception) as refused:  # noqa: PT011 - the text is checked
+        _promote(RUN_TWO, repository)
+    assert "the ledger row could not be written" in str(refused.value)
+    assert "committed the landing comment of" in str(refused.value), str(refused.value)
+
     state = _plan_state(repository)
     assert state.endswith("equal=True"), state
     assert "status=''" in state, state
+    met = _comments(repository)
+    assert met["c-run-" + RUN_ONE] == met_before, met["c-run-" + RUN_ONE]
+    assert "c-run-" + RUN_TWO not in met, sorted(met)
 
 
 def test_a_landing_over_an_uncommitted_comment_commits_it(
@@ -240,10 +247,11 @@ def test_a_landing_over_an_uncommitted_comment_commits_it(
         section="§3",
         run_id=RUN_ONE,
         narrative=LANDING_ONE,
-        author="reckon-build",
-        when="2026-11-22T09:00:00Z",
+        author=AUTHOR,
+        when=WHEN_ONE,
         root=repository,
     )
+    met_before = _comments(repository)["c-run-" + RUN_ONE]
     assert "equal=False" in _plan_state(repository)
 
     _dispatch(repository, RUN_TWO, tmp_path, LANDING_TWO)
@@ -255,4 +263,4 @@ def test_a_landing_over_an_uncommitted_comment_commits_it(
     state = _plan_state(repository)
     assert state.endswith("equal=True"), state
     assert "status=''" in state, state
-    assert comments["c-run-" + RUN_ONE]["who"] == "reckon-build"
+    assert comments["c-run-" + RUN_ONE] == met_before, comments["c-run-" + RUN_ONE]
