@@ -25,7 +25,7 @@
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -205,6 +205,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-11-22T20:28:41.980844+00:00">
     <div class="r-comment-body"><p>Landed r-20261122T192535920834-review-of-rpfw-a-landed-run-keeps-its-store-row-d708f62da920 on the measured suite pair; <a href="/reckon/evidence/archive/a-reviewed-plan-is-queued-at-full-width-landed.html#review-of-rpfw-a-landed-run-keeps-its-store-row-d708f62da920">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261122T131056068049-rpfw-a-landed-run-keeps-its-store-row" data-who="reckon-build" data-when="2026-11-22T21:09:54Z">
+    <div class="r-comment-body"><p>The run store keeps the commit a promoted run landed at in a landed_runs index written on append, sync, archive retirement and just before a membership rebuild, so a run whose row and document every retention pass removes is still answered as landed by run_store.promoted_revision, which the admission promotion record asks before its store rows and document and the batch wait validator reaches through that record; a discarded run writes no landing, and a request held on the landed run is released and launched.</p></div>
 </div>
 </section>
   </main>
