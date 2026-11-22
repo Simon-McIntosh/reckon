@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T12:29:35Z",
+  "findings": [
+    {
+      "file": "docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py",
+      "line": 28,
+      "severity": "non-blocking",
+      "text": "texts() and check() (working-workers.py:28, :58) re-implement the figure text-clipping, label-overlap and label-over-data guard that docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py:74 and docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py:96 already carry; this addition duplicates rather than extends either, so a repair to the guard reaches one figure of three."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/work-flows-to-the-lane-s67.html",
+      "line": 92,
+      "severity": "non-blocking",
+      "text": "the claims table reports the held claim as '451 of 496' passes while the committed census output the record cites beside it (work-flows-to-the-lane-s67.census.json:44) records \"passes\": 878 for that path, because scripts/lane_window_census.py:505-507 increments the per-path passes field once per claim pointer; a reader reconciling the record with its artifact sees 878 passes in a 496-pass window. The gate figure itself (0 of 496 shared-root holds) is unaffected."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \u00a767 \u2014 a four-hour window record of the lane's four landing figures; docs/evidence/fragments/work-flows-to-the-lane/work-flows-to-the-lane-s67.html:1 records the window 2026-11-22T08:00Z-12:00Z, all four figures, their populations and a per-figure verdict.\nVERDICT done_when: the done_when names four figures plus a \u00a79-window negative control; work-flows-to-the-lane-s67.census.json records mean 1.03 (bound 12, unmet), median 1183.0 s over 4 of 4 implement runs (bound 20 min, met), 0 of 496 passes holding a shared-root claim with the one held path and its root named (met) and 1 identity file (bound 100, met), and census-s9window.json records all three latter figures unmet (92.5 min, 5 of 8 passes, 27,854 identities at that window's close).\nVERDICT write_paths: the declared set is the record fragment, its five census outputs and the figure directory; the diff's eight paths all lie inside that set and nothing else is touched.\nVERDICT manifest: read; it reports both commits, the four figures with their populations, the spool coverage check, and states that no test file lies in the write scope so no suite arm was run.\nVERDICT diff: read both commits against 790a380eb; 6f0be62e56 adds the figure generator (121 lines), 96c047cda5 adds the record and its five JSON outputs and the drawn SVG, +1525/-0 across 8 files.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/work-flows-to-the-lane/work-flows-to-the-lane-s67.html:30-70 reports all four figures with their bounds and populations, and three of the four hold while the mean is reported unmet with its cause rather than folded into the figure.\nSCORE evidence: 16\nJUSTIFICATION evidence: work-flows-to-the-lane-s67.census.json and census-s9window.json record every figure the done_when names, the zero on shared-root holds is controlled by the \u00a79 window's 5 of 8 and the identity zero-class by 150 synthetic identities, but the record's '451 of 496' does not reconcile with the committed census output's per-path \"passes\": 878 (finding below).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the diff's eight paths is inside the seven declared write paths, and the plan, docs/state and scripts/lane_window_census.py are untouched (git show --stat 96c047cda5 6f0be62e56).\nSCORE durability: 13\nJUSTIFICATION durability: the fence declares no test file in the write scope, so no test asserts the record's figures against the committed census outputs; the only durable guard the change adds is check() at docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py:58, which refuses a figure whose text is clipped, overlapping or over data.\nSCORE fit: 18\nJUSTIFICATION fit: docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py:95-108 uses the repository's data-ink style, a 14x7.2 canvas, 14 pt labels, a 1.2 pt dotted grey bound and a near-black dashed mean, and the fragment carries the standard evidence meta tags at work-flows-to-the-lane-s67.html:5-11.\nSCORE reuse: 5\nJUSTIFICATION reuse: docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py:28 duplicates the label-collision guard already implemented at docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py:74 rather than extending it, though the trace's data comes correctly from the existing scripts/lane_window_census.py rather than a second instrument.\nFINDING docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py:28 non-blocking: texts() and check() re-implement the figure text-clipping, overlap and over-data guard already carried by section_row_readers.py:74 and plot_compaction_drops.py:96; a third copy means a repair to the guard reaches one figure of three.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/work-flows-to-the-lane-s67.html:92 non-blocking: the claims table reports '451 of 496' passes while its committed census output records per-path \"passes\": 878, the census field counting pointers rather than passes, so the record and the artifact it cites cannot be reconciled without reading scripts/lane_window_census.py; the 0-of-496 shared-root figure is unaffected.",
+  "review_run_id": "r-20261122T122916056175-review-of-work-flows-to-the-lane-s67-96c047cda5db",
+  "reviewed_base_sha": "790a380eb77a2f01baaeed15ba1d793954be2acb",
+  "reviewed_head_sha": "96c047cda5dbc45062c4d5752388f07d4183a5d3",
+  "reviewed_run_id": "r-20261122T072450492220-work-flows-to-the-lane-s67",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T12:37:04.150497+00:00",
+  "total": 87
+}
