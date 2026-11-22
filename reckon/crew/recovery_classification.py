@@ -2177,6 +2177,16 @@ def classify_pointer(
     # so a turn that ended before the worker acted carries the premature end
     # rather than the abandoned word its dead process would otherwise give it.
     premature_end: tuple[str, str] | None = None
+    # Set only by the launch-failure arm below: the first line of the launch
+    # error, so a reader of an obligation sees the cause without opening the
+    # launch log it was recorded in. None means the launch recorded no error to
+    # quote, which is a different reading from an error whose text is empty.
+    launch_error: str | None = None
+    # Set only by that same arm: the launch recorded an end before a model was
+    # reached, which is the fact a remedy turns on. A stranded launch also reads
+    # ``launch-failed`` but recorded no end at all, so the two are not the same
+    # reading and the duty must not treat them alike.
+    ended_during_launch = False
     # Set only by the settle arm below: the evidence a pointer that read live
     # with no worker behind it carried, so the row says what was measured
     # rather than only that something was concluded.
@@ -3088,9 +3098,25 @@ def classify_pointer(
         # phase is read the same way as one the launcher labelled.
         failures = list(record.get("launch_failures") or ())
         latest = failures[-1] if failures else {}
-        tail = str(latest.get("stderr_tail") or "").strip().splitlines()
-        cause = tail[-1] if tail else "the process exited before any turn"
+        # The first line of the launch error is the cause a reader acts on: a
+        # scheduler refusal announces itself on the first line and what follows
+        # is its own retry or stack detail. The last line is the tail's fate
+        # rather than its reason, which is what a tail-quoting reader used to
+        # report.
+        error_lines = [
+            line.strip()
+            for line in str(latest.get("stderr_tail") or "").splitlines()
+            if line.strip()
+        ]
+        if not error_lines:
+            recorded = str((ended_exit or {}).get("detail") or "").strip()
+            error_lines = [
+                line.strip() for line in recorded.splitlines() if line.strip()
+            ]
+        launch_error = error_lines[0] if error_lines else ""
+        cause = launch_error or "the process exited before any turn"
         classification = "launch-failed"
+        ended_during_launch = True
         if failures:
             detail = (
                 f"the launch for backend "
@@ -3597,6 +3623,11 @@ def classify_pointer(
         **timing,
         "worktree": record.get("worktree"),
         "detail": detail,
+        # The first line of the launch error, when the launch recorded one. A
+        # surface that quotes the cause in an obligation reads it here instead
+        # of re-deriving it from the launch log.
+        "launch_error": launch_error or None,
+        "ended_during_launch": ended_during_launch,
         "next_action": action,
         # The reason the one stuck verdict gives, carried beside the
         # classifier's own, so a reader of this row and a reader of the drain

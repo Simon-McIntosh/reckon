@@ -42,6 +42,8 @@ file is then removed. It is applied by running with
 
 from __future__ import annotations
 
+import base64
+import json
 import os
 import shutil
 import subprocess
@@ -50,6 +52,11 @@ from pathlib import Path
 import pytest
 
 from reckon import _worker_fence
+from reckon.nested_launch import (
+    SHIM_HOME_ENV,
+    SHIM_REAL_DIRECTORY_ENV,
+    shim_directory,
+)
 
 NEGATIVE_CONTROL_MUTATION = (
     "drop the /tmp seal, and the outside file must be removed — patch the "
@@ -555,7 +562,100 @@ def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
         "--bind",
         str(resolve(node.codex)),
         str(resolve(node.codex)),
-        "--",
-        str(node.stub),
     ]
-    assert argv == expected
+    assert argv[: len(expected)] == expected
+    # After every mount comes the scheduler guard: each copy of a scheduler verb
+    # this node's path holds is overlaid read-only with that verb's shim, and
+    # the first copy of each is bound read-only under the run's relay directory
+    # as the shim's forwarding target. An absolute path to a verb is what the
+    # guard exists for, so its copies are this host's, not the fixture's: the
+    # guard section is asserted by the rule it keeps rather than as a literal.
+    tail = argv[len(expected) :]
+    # The carried recipe ends the argv: its name, the encoded recipe, then the
+    # separator and the program that re-enters the fence.
+    carried_at = len(tail) - 5
+    assert tail[carried_at] == "--setenv", tail[carried_at:]
+    assert tail[carried_at + 1] == "RECKON_WORKER_FENCE", tail[carried_at:]
+    assert tail[-2:] == ["--", str(node.stub)], tail[-2:]
+    shims = resolve(shim_directory())
+    relay_root = resolve(node.run / _worker_fence.SCHEDULER_RELAY_DIRECTORY)
+    # The shim's own environment closes the guard, and names the directory of
+    # shims and the relay root the two halves of the guard were composed from.
+    assert tail[carried_at - 6 : carried_at] == [
+        "--setenv",
+        SHIM_HOME_ENV,
+        str(shims),
+        "--setenv",
+        SHIM_REAL_DIRECTORY_ENV,
+        str(relay_root),
+    ], tail[carried_at - 6 : carried_at]
+    guard = tail[: carried_at - 6]
+    masks: list[list[str]] = []
+    relays: list[list[str]] = []
+    index = 0
+    while index < len(guard) and guard[index] == "--ro-bind":
+        masks.append(guard[index : index + 3])
+        index += 3
+    while index < len(guard) and guard[index] == "--ro-bind-try":
+        relays.append(guard[index : index + 3])
+        index += 3
+    # Positive control: a guard that masks nothing would leave every absolute
+    # path to a scheduler verb running the real tool, and the assertions below
+    # would then be about a fence this test never built.
+    assert masks, f"no scheduler copy was masked: {guard}"
+    assert relays, f"no scheduler copy was relayed: {guard}"
+    masked: list[str] = []
+    for _flag, source, destination in masks:
+        assert Path(source) == shims / Path(destination).name, (source, destination)
+        assert Path(destination).is_file(), destination
+        masked.append(destination)
+    relayed: list[str] = []
+    for _flag, source, destination in relays:
+        assert Path(destination).parent == relay_root, destination
+        assert Path(source).name == Path(destination).name, (source, destination)
+        # The relay forwards to the first copy of its verb, which is that
+        # verb's first mask in search order.
+        assert source in masked, (source, destination)
+        relayed.append(Path(destination).name)
+    assert len(relayed) == len(set(relayed)), f"one relay per verb: {relayed}"
+    assert index == len(guard), f"unexpected guard element: {guard[index:]}"
+    # Then, appended after the guard, the fence carries what it composed into a
+    # scheduler task that re-enters it: the recipe names the mounts and the
+    # guard as its own argv, so a task replays this exact boundary rather than
+    # rediscovering protection from job-local environment.
+    recipe = json.loads(base64.urlsafe_b64decode(tail[carried_at + 2]))
+    assert recipe == {
+        # The mounts, the guard and the shim's environment are the
+        # composition's own argv, so the recipe and this list cannot disagree
+        # about what the fence seals, grants or masks.
+        "argv": [*expected, *tail[:carried_at]],
+        # The location resolved here, because a job's task starts the fence on
+        # another node whose search path need not name it.
+        "program": _worker_fence.fence_program(),
+        # No flight layer named a copy to carry, so this composition carries
+        # none.
+        "carried_program": None,
+        # The runtime paths, the run's own scratch, then the scratch root: the
+        # directories a task prepares before it composes the mounts again.
+        "directories": [
+            str(resolve(node.fleet)),
+            str(resolve(node.codex)),
+            str(resolve(node.own)),
+            str(resolve(node.scratch_root)),
+        ],
+        # Every bind whose source is a directory, sorted by path.
+        "directory_sources": [
+            str(resolve(node.run)),
+            str(resolve(node.codex)),
+            str(resolve(node.fleet)),
+            str(resolve(node.own)),
+        ],
+        # The scratch a task runs in when the fence names no tmp mount.
+        "scratch": str(resolve(node.own)),
+        "limit": (
+            "A scheduler binary only the job node's path holds, or one a "
+            "worker's path gains after this composition, is not masked there; "
+            "every copy this node resolves is, and a masked call whose shim "
+            "finds no tool refuses rather than starting unfenced."
+        ),
+    }

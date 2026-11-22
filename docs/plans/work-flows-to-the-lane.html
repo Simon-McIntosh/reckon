@@ -16,7 +16,7 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="elevated">
-  <meta name="plan-sprint" content="S27">
+  <meta name="plan-sprint" content="S28">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-gate-halts-only-on-substance#s7&quot;],&quot;s9&quot;:[&quot;work-flows-to-the-lane#s2&quot;,&quot;work-flows-to-the-lane#s3&quot;,&quot;work-flows-to-the-lane#s4&quot;,&quot;work-flows-to-the-lane#s5&quot;,&quot;work-flows-to-the-lane#s6&quot;],&quot;s22&quot;:[&quot;work-flows-to-the-lane#s23&quot;,&quot;work-flows-to-the-lane#s24&quot;],&quot;s46&quot;:[&quot;work-flows-to-the-lane#s44&quot;],&quot;s67&quot;:[&quot;work-flows-to-the-lane#s9&quot;,&quot;work-flows-to-the-lane#s68&quot;,&quot;work-flows-to-the-lane#s69&quot;,&quot;work-flows-to-the-lane#s70&quot;],&quot;s70&quot;:[&quot;work-flows-to-the-lane#s9&quot;],&quot;s72&quot;:[&quot;the-monitor-reads-each-fact-once#s61&quot;,&quot;the-monitor-reads-each-fact-once#s62&quot;,&quot;work-flows-to-the-lane#s71&quot;]}">
@@ -24,8 +24,8 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="376">
-<meta name="plan-modified" content="2026-11-18">
+<meta name="plan-version" content="377">
+<meta name="plan-modified" content="2026-11-21">
 </head>
 <body>
   <main class="plan-doc">
@@ -1227,7 +1227,7 @@
     <div class="r-comment-body"><p>Measured the four-hour window 2026-11-17 00:00-04:00 UTC — the last hour-aligned four-hour stretch that had closed before dispatch and that starts 23 minutes after the last of the three repairs merged (92ab0ba2cf, 2026-11-16T23:36:43Z; §69 and §70 recorded done in plan revision 3e656c526d) — with §9's census over the run ledger, landing records and admission verdict log: one of the gate's four figures holds. The mean was 4.31 working workers against a bound of 12 (peak 19; 100 worker spans; 2 unfinished runs counted to the window's end give 6.23), the median completion to promotion for implement runs was 176.4 minutes against a bound of 20 (cohort 14, p90 213.4, none missing a landing record), 1 of the window's 17 admit passes held a request on a claim under the crew home — the path is a file inside one live run's own directory, `/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T001815749369-pulse-categories-and-pulses-in-graph/review-records/r-20261117T001815749369-pulse-categories-and-pulses-in-graph.json`, which §69's rule permits and §67's wording counts, and no hold named a crew-home directory — and the claims directory held 1 exec-*.identity file against a bound of 100. The record names every claim path that held a request, and the same script over §9's window reproduces its recorded 23.55 mean and 92.5 minute median to the digit, so the low mean is a reading of the lane rather than a counter that stopped.</p></div>
 </div>
 <div class="r-comment" data-section="s67" data-id="c-run-r-20261117T215504268639-wftl-a-second-nights-window-meets-the-landing-targets" data-who="reckon-build" data-when="2026-11-17T22:10:50.887Z">
-    <div class="r-comment-body"><p>Extended §9&#x27;s census to read passes from any named source, to spool a window&#x27;s passes while the window is open, and to name every claim that held a request beside the root it lies under, then measured 2026-11-17T23:00Z to 2026-11-18T03:00Z: a time-weighted mean of 2.42 working workers (bound 12, not met), a median completion-to-promotion of 49.1 minutes over 4 of 7 implement runs (bound 20, not met), 0 of 618 admit passes holding a request on a shared-root claim with no claim path holding anything (met), and 0 worker identity files at the window&#x27;s close (bound under 100, met); the same script over §9&#x27;s window still reads 23.55 mean, 92.5 minute median and 5 of 8 passes holding a claim, so the low mean is the lane&#x27;s load and not a stopped counter.</p></div>
+    <div class="r-comment-body"><p>Extended §9's census to read passes from any named source, to spool a window's passes while the window is open, and to name every claim that held a request beside the root it lies under, then measured 2026-11-17T23:00Z to 2026-11-18T03:00Z: a time-weighted mean of 2.42 working workers (bound 12, not met), a median completion-to-promotion of 49.1 minutes over 4 of 7 implement runs (bound 20, not met), 0 of 618 admit passes holding a request on a shared-root claim with no claim path holding anything (met), and 0 worker identity files at the window's close (bound under 100, met); the same script over §9's window still reads 23.55 mean, 92.5 minute median and 5 of 8 passes holding a claim, so the low mean is the lane's load and not a stopped counter.</p></div>
 </div>
 <div class="r-comment" data-section="s68" data-id="c-run-r-20261116T081152488558-review-of-wftl-ended-run-identities-are-removed-739a9f3a0fbf" data-who="reckon-build" data-when="2026-11-16T08:52:37.312Z">
     <div class="r-comment-body"><p>review of run r-20261116T040255665307-wftl-ended-run-identities-are-removed at head 739a9f3a0fbfe1e877aa4faa2f2b20b7ce637bdf against base c6f9f10f23da2cf7def2808528252eaffa0ea4dd, stored parsed with goal_fidelity 19, evidence 17, scope_discipline 13, durability 17, fit 18, reuse 20 and three non-blocking findings</p></div>

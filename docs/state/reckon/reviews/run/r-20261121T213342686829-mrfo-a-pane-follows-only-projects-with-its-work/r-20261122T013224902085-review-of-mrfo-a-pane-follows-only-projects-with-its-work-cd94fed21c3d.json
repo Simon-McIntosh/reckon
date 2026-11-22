@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2a3bf52e35d7158acaadb24634be5db1606853c3",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3409 crew_follow (the crew follow CLI command)",
+    "reckon/crew_follow_commands.py:3647 the call into _follow_watch_lines",
+    "reckon/crew/session_host.py:376 default_follower_argv (the session host runs crew follow per request)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T01:35:14Z",
+  "findings": [
+    {
+      "file": "tests/test_a_producer_loss_reaches_the_pane.py",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: the diff edits this file's fixture, yet neither recorded arm runs it (the base and after arm commands name only the new test file plus test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py), and the only evidence it is green at head is head-regression.log, which carries no revision header, no command line and no EXIT= line, so a broken fixture edit would reach promotion unmeasured; the 43-passed run including it exists in stream.jsonl but is not a recorded arm."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "2055",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate drops the polled rows after reckon/crew/watch_unit.py:1237-1238 has already set lost and reported_at, so a session that acquires work in that project inside the freshness window is not told until the next repeat window; the dispatch guard names an absent producer, so the exposure is bounded, but the pane's first notice can be delayed by up to the bound."
+    }
+  ],
+  "head_log_revision": "cd94fed21c3de9acb297c7622f318612f8f6a4f2",
+  "item_aggregate": {},
+  "item_verdicts": {
+    "diff": "read the single commit cd94fed21c against base 2a3bf52e35; reckon/crew_follow_commands.py gains a 19-line `_pane_holds_work_here`, a three-line drop in the poll return of `_tick`, a conditional re-arm clause on the reload row, and a new five-case 196-line test file, plus a 16-line live-run precondition in the existing producer-loss fixture.",
+    "done_when": "the done_when names tests/test_a_pane_follows_only_projects_with_its_work.py for three cases and that file lands five cases covering them; the recorded head arm reads \"63 passed in 39.70s\" EXIT=0 at cd94fed21c and the base arm \"58 passed in 37.95s\" EXIT=0 at 2a3bf52e35, and negative-control.log reproduces the declared first-case failure with \"3 failed, 2 passed\" EXIT=1 at the base.",
+    "goal": "the goal is that a project's producer rows reach only sessions holding work there; reckon/crew_follow_commands.py:1763-1781 adds `_pane_holds_work_here` and :2054-2062 drops the polled ProducerSnapshotNotices rows when it reads false, while the stop and reload rows at :2413-2440 were already gated by the same judgement through the row's `pane_line`.",
+    "manifest": "read; status complete, commits cd94fed21c, changed_paths the three landed files, tests the three-file scoped gate at 63 passed, baseline_suite 2a3bf52e35 with 0 failures and after_suite cd94fed21c with 0 failures, negative_control_log recorded at the run's negative-control.log, and every rubric line states answered.",
+    "write_paths": "the declared paths are the eight-entry list in this dispatch; the landed diff 2a3bf52e35..cd94fed21c changes reckon/crew_follow_commands.py, tests/test_a_pane_follows_only_projects_with_its_work.py and tests/test_a_producer_loss_reaches_the_pane.py, all inside it, the last being the fixture update the manifest records as unplanned but inside the declared list."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pane_follows_only_projects_with_its_work.py:139 asserts an empty producer-row list and fails at negative-control.log:21 with the second project's row delivered, so reinstating the ungated poll reddens it.",
+    "evidence": "the base arm, head arm and negative control are recorded with revision, command and EXIT= lines under /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T213342686829-mrfo-a-pane-follows-only-projects-with-its-work/baseline_suite.log, after_suite.log and negative-control.log, though the after arm excludes the one pre-existing test file the diff edits.",
+    "fit": "the helper at reckon/crew_follow_commands.py:1763-1781 follows the enclosing module's nested-helper and docstring idiom, and neither it nor its test file carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:2055-2062 drops the project's producer-health rows for a pane that holds no live run or queued request there, and the unowned-pane branch at :1779 keeps delivering them as before.",
+    "reuse": "reckon/crew_follow_commands.py:1781 composes `_is_live` at :1731, the module's existing per-population live-work judgement, rather than forking a second reader, though it does repeat the any(...) expression of :1798 in the same function.",
+    "scope_discipline": "every path in git diff --stat 2a3bf52e35..cd94fed21c is inside the declared write paths, and the diff carries no evidence fragment or figure the done-when did not ask for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a project's producer rows reach only sessions holding work there; reckon/crew_follow_commands.py:1763-1781 adds `_pane_holds_work_here` and :2054-2062 drops the polled ProducerSnapshotNotices rows when it reads false, while the stop and reload rows at :2413-2440 were already gated by the same judgement through the row's `pane_line`.\nVERDICT done_when: the done_when names tests/test_a_pane_follows_only_projects_with_its_work.py for three cases and that file lands five cases covering them; the recorded head arm reads \"63 passed in 39.70s\" EXIT=0 at cd94fed21c and the base arm \"58 passed in 37.95s\" EXIT=0 at 2a3bf52e35, and negative-control.log reproduces the declared first-case failure with \"3 failed, 2 passed\" EXIT=1 at the base.\nVERDICT write_paths: the declared paths are the eight-entry list in this dispatch; the landed diff 2a3bf52e35..cd94fed21c changes reckon/crew_follow_commands.py, tests/test_a_pane_follows_only_projects_with_its_work.py and tests/test_a_producer_loss_reaches_the_pane.py, all inside it, the last being the fixture update the manifest records as unplanned but inside the declared list.\nVERDICT manifest: read; status complete, commits cd94fed21c, changed_paths the three landed files, tests the three-file scoped gate at 63 passed, baseline_suite 2a3bf52e35 with 0 failures and after_suite cd94fed21c with 0 failures, negative_control_log recorded at the run's negative-control.log, and every rubric line states answered.\nVERDICT diff: read the single commit cd94fed21c against base 2a3bf52e35; reckon/crew_follow_commands.py gains a 19-line `_pane_holds_work_here`, a three-line drop in the poll return of `_tick`, a conditional re-arm clause on the reload row, and a new five-case 196-line test file, plus a 16-line live-run precondition in the existing producer-loss fixture.\nCALL_SITES: reckon/crew_follow_commands.py:3409 crew_follow (the crew follow CLI command), reckon/crew_follow_commands.py:3647 the call into _follow_watch_lines, reckon/crew/session_host.py:376 default_follower_argv (the session host runs crew follow per request)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:2055-2062 drops the project's producer-health rows for a pane that holds no live run or queued request there, and the unowned-pane branch at :1779 keeps delivering them as before.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base arm, head arm and negative control are recorded with revision, command and EXIT= lines under /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T213342686829-mrfo-a-pane-follows-only-projects-with-its-work/baseline_suite.log, after_suite.log and negative-control.log, though the after arm excludes the one pre-existing test file the diff edits.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 2a3bf52e35..cd94fed21c is inside the declared write paths, and the diff carries no evidence fragment or figure the done-when did not ask for.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_pane_follows_only_projects_with_its_work.py:139 asserts an empty producer-row list and fails at negative-control.log:21 with the second project's row delivered, so reinstating the ungated poll reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at reckon/crew_follow_commands.py:1763-1781 follows the enclosing module's nested-helper and docstring idiom, and neither it nor its test file carries a plan, sprint or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:1781 composes `_is_live` at :1731, the module's existing per-population live-work judgement, rather than forking a second reader, though it does repeat the any(...) expression of :1798 in the same function.\nFINDING tests/test_a_producer_loss_reaches_the_pane.py:43 non-blocking: the diff edits this file's fixture, yet neither recorded arm runs it (the base and after arm commands name only the new test file plus test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py), and the only evidence it is green at head is head-regression.log, which carries no revision header, no command line and no EXIT= line, so a broken fixture edit would reach promotion unmeasured; the 43-passed run including it exists in stream.jsonl but is not a recorded arm.\nFINDING reckon/crew_follow_commands.py:2055 non-blocking: the gate drops the polled rows after reckon/crew/watch_unit.py:1237-1238 has already set lost and reported_at, so a session that acquires work in that project inside the freshness window is not told until the next repeat window; the dispatch guard names an absent producer, so the exposure is bounded, but the pane's first notice can be delayed by up to the bound.\n",
+  "review_run_id": "r-20261122T013224902085-review-of-mrfo-a-pane-follows-only-projects-with-its-work-cd94fed21c3d",
+  "reviewed_base_sha": "2a3bf52e35d7158acaadb24634be5db1606853c3",
+  "reviewed_head_sha": "cd94fed21c3de9acb297c7622f318612f8f6a4f2",
+  "reviewed_run_id": "r-20261121T213342686829-mrfo-a-pane-follows-only-projects-with-its-work",
+  "reviewer": "review worker",
+  "reviewer_run_id": "r-20261122T013224902085-review-of-mrfo-a-pane-follows-only-projects-with-its-work-cd94fed21c3d",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T01:48:01.736221+00:00",
+  "total": 112
+}

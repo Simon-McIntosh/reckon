@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3901",
+    "reckon/crew/dispatch_launch.py:4287",
+    "reckon/crew/dispatch_launch.py:4704",
+    "reckon/crew/dispatch_launch.py:5752",
+    "reckon/crew/dispatch_launch.py:5760",
+    "reckon/crew/dispatch_launch.py:5774",
+    "reckon/crew/dispatch_launch.py:5835",
+    "reckon/crew/dispatching/launch.py:1000"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T01:35:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the file 'had read 41 passed in 2.01s before the removal', but the only 41-passed 2.01s log is claude-arm-head.log, whose header names revision 978c8afe \u2014 the commit that turned the receipt assertions into absence assertions. No pre-removal run of tests/test_anchored_edit_claude_arm.py is recorded; the worker's own reasoning in resume-1.jsonl calls the base 41-passed a conjecture ('at base (1666d19), these tests assert presence and pass (41 passed)'). The answering commit 040070e41e therefore strengthens the unmeasured claim the prior review flagged rather than measuring it."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment attributes all 23 head failures to 'the worker fence's scheduler shim, which answers sbatch, srun and salloc', but only 6 FAILED lines in importers-run.log carry that text (srun 2, sbatch 2, salloc 2); the rest carry worker-spawn FileNotFoundError, PATH assertions, 'reckon/crew/promotion.py: 50991 estimated tokens exceeds the 50000 bound', an AttributeError on merged_sections and a ValueError. The set comparison establishes the operative claim (head failures are a strict subset of base), so the conclusion stands, but the single-cause explanation is not what the log says."
+    },
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's tests line still names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and neither file mentions dispatch_launch (grep count 0 in both at 040070e41e), so the gate the record names cannot see a regression of this change; the module-exercising sweep is recorded only under test_logs. This is the prior review's third finding, still unanswered."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "3901",
+      "severity": "non-blocking",
+      "text": "non-blocking: at the reviewed head no test fails if the anchored_edit field returns \u2014 tests/test_anchored_edit_claude_arm.py, which held the absence assertions, was deleted by the sibling node and the merge took the deletion, and git grep 'anchored_edit' 040070e41e -- tests/ finds only tests/test_anchored_edit.py, tests/test_picker_local_backend.py and tests/test_queue_edit_keeps_the_named_backend.py, none of which asserts the launch record's shape. The fragment states this honestly; the removal is nevertheless unguarded and a regression would land silently."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both increment commits and the merge against 08b86e8ab6: b65e2f3b79 rewrites the fragment's guard paragraph to name tests/test_anchored_edit_claude_arm.py, its three assertion sites and the sibling's deletion, and adds the measure paragraph over the merged head; 040070e41e changes three fragment lines to pair the 13-failed 4.29s figure with the 41-passed 2.01s figure.",
+    "done_when": "The done_when asks for a grep over reckon/ and pyproject.toml plus importing-test arms against a base arm; the grep passes on the changed module, and the manifest records the base and merged-head arms as 99 passed and 58 passed with EXIT=0, but the tests line it names (manifest.md:13) is the two-file pair that does not import dispatch_launch.",
+    "goal": "The reviewed run's goal is that reckon/crew/dispatch_launch.py writes no anchored_edit field on the supervisor spec, the worker record or the live pointer; the two commits gained since the prior review are documentation of that removal, and `git show 040070e41e:reckon/crew/dispatch_launch.py | grep anchored` exits 1 against 7 matches at 1666d19f7744.",
+    "manifest": "Read at status complete; it records the merge-arm figures, the 91-file importer sweep, the negative controls and the sibling's deletion, and its baseline_suite/after_suite JSON carries revision, literal command, exit_status 0, completed true and empty failure_ids for both arms.",
+    "write_paths": "The node declared reckon/crew/dispatch_launch.py, the anchored-launch-record-s18 fragment, its figure directory and tests/test_anchored_edit_claude_arm.py; the two increment commits b65e2f3b79 and 040070e41e touch only the fragment, and the 33-line dispatch_launch.py and 517-line test deletions in the head diff come from the merge 573d3ceb28 with primary, where the sibling node anchored-fence-prompt-s18 had deleted the file."
+  },
+  "justifications": {
+    "durability": "No assertion at 040070e41e reddens if reckon/crew/dispatch_launch.py:3901 writes the field again, because the only such guard lived in tests/test_anchored_edit_claude_arm.py, deleted at head (git grep 'anchored_edit' 040070e41e -- tests/ returns three files, none of them this test).",
+    "evidence": "The fragment's measure figures reconcile with their logs (merge-arm-base.log 99 passed, merge-arm-head.log 58 passed, importers-run.log 23 failed/986 passed, importers-run-base.log 25 failed/983 passed), but the 41-passed provenance is misattributed and the failure-cause sentence at line 48-52 covers 6 of the 23 failures the log shows.",
+    "fit": "The fragment follows the surrounding landings in docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/ (article.r-note with plan-verifies/data-node meta), and no path, symbol or comment in the increment carries a plan, stage, ticket or version label.",
+    "goal_fidelity": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html:25-38 names the reader correctly \u2014 the cited lines 145-146, 150-151 and 440-441 do assert both keys at 4f58c503 \u2014 but line 30-31 attaches the 2.01s figure to a pre-removal state the logs do not record.",
+    "reuse": "The increment adds no function, class or module, so nothing can fork an owner; the repository does own reckon/crew/fragment_reconcile.py, added on primary and present at 573d3ceb, which reconciles a fragment's figures with the logs its manifest cites, and the misattributed 2.01s figure is exactly the class it names.",
+    "scope_discipline": "Both increment commits touch only docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html, a declared write path, and add no other file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed run's goal is that reckon/crew/dispatch_launch.py writes no anchored_edit field on the supervisor spec, the worker record or the live pointer; the two commits gained since the prior review are documentation of that removal, and `git show 040070e41e:reckon/crew/dispatch_launch.py | grep anchored` exits 1 against 7 matches at 1666d19f7744.\nVERDICT done_when: The done_when asks for a grep over reckon/ and pyproject.toml plus importing-test arms against a base arm; the grep passes on the changed module, and the manifest records the base and merged-head arms as 99 passed and 58 passed with EXIT=0, but the tests line it names (manifest.md:13) is the two-file pair that does not import dispatch_launch.\nVERDICT write_paths: The node declared reckon/crew/dispatch_launch.py, the anchored-launch-record-s18 fragment, its figure directory and tests/test_anchored_edit_claude_arm.py; the two increment commits b65e2f3b79 and 040070e41e touch only the fragment, and the 33-line dispatch_launch.py and 517-line test deletions in the head diff come from the merge 573d3ceb28 with primary, where the sibling node anchored-fence-prompt-s18 had deleted the file.\nVERDICT manifest: Read at status complete; it records the merge-arm figures, the 91-file importer sweep, the negative controls and the sibling's deletion, and its baseline_suite/after_suite JSON carries revision, literal command, exit_status 0, completed true and empty failure_ids for both arms.\nVERDICT diff: Read both increment commits and the merge against 08b86e8ab6: b65e2f3b79 rewrites the fragment's guard paragraph to name tests/test_anchored_edit_claude_arm.py, its three assertion sites and the sibling's deletion, and adds the measure paragraph over the merged head; 040070e41e changes three fragment lines to pair the 13-failed 4.29s figure with the 41-passed 2.01s figure.\nCALL_SITES: reckon/crew/dispatch_launch.py:3901, reckon/crew/dispatch_launch.py:4287, reckon/crew/dispatch_launch.py:4704, reckon/crew/dispatch_launch.py:5752, reckon/crew/dispatch_launch.py:5760, reckon/crew/dispatch_launch.py:5774, reckon/crew/dispatch_launch.py:5835, reckon/crew/dispatching/launch.py:1000\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html:25-38 names the reader correctly \u2014 the cited lines 145-146, 150-151 and 440-441 do assert both keys at 4f58c503 \u2014 but line 30-31 attaches the 2.01s figure to a pre-removal state the logs do not record.\nSCORE evidence: 12\nJUSTIFICATION evidence: The fragment's measure figures reconcile with their logs (merge-arm-base.log 99 passed, merge-arm-head.log 58 passed, importers-run.log 23 failed/986 passed, importers-run-base.log 25 failed/983 passed), but the 41-passed provenance is misattributed and the failure-cause sentence at line 48-52 covers 6 of the 23 failures the log shows.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both increment commits touch only docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html, a declared write path, and add no other file.\nSCORE durability: 5\nJUSTIFICATION durability: No assertion at 040070e41e reddens if reckon/crew/dispatch_launch.py:3901 writes the field again, because the only such guard lived in tests/test_anchored_edit_claude_arm.py, deleted at head (git grep 'anchored_edit' 040070e41e -- tests/ returns three files, none of them this test).\nSCORE fit: 18\nJUSTIFICATION fit: The fragment follows the surrounding landings in docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/ (article.r-note with plan-verifies/data-node meta), and no path, symbol or comment in the increment carries a plan, stage, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: The increment adds no function, class or module, so nothing can fork an owner; the repository does own reckon/crew/fragment_reconcile.py, added on primary and present at 573d3ceb, which reconciles a fragment's figures with the logs its manifest cites, and the misattributed 2.01s figure is exactly the class it names.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html:30 non-blocking: the fragment says the file 'had read 41 passed in 2.01s before the removal', but the only 41-passed 2.01s log is claude-arm-head.log, whose header names revision 978c8afe \u2014 the commit that turned the receipt assertions into absence assertions. No pre-removal run of tests/test_anchored_edit_claude_arm.py is recorded; the worker's own reasoning in resume-1.jsonl calls the base 41-passed a conjecture ('at base (1666d19), these tests assert presence and pass (41 passed)'). The answering commit 040070e41e therefore strengthens the unmeasured claim the prior review flagged rather than measuring it.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html:48 non-blocking: the fragment attributes all 23 head failures to 'the worker fence's scheduler shim, which answers sbatch, srun and salloc', but only 6 FAILED lines in importers-run.log carry that text (srun 2, sbatch 2, salloc 2); the rest carry worker-spawn FileNotFoundError, PATH assertions, 'reckon/crew/promotion.py: 50991 estimated tokens exceeds the 50000 bound', an AttributeError on merged_sections and a ValueError. The set comparison establishes the operative claim (head failures are a strict subset of base), so the conclusion stands, but the single-cause explanation is not what the log says.\nFINDING manifest.md:13 non-blocking: the manifest's tests line still names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and neither file mentions dispatch_launch (grep count 0 in both at 040070e41e), so the gate the record names cannot see a regression of this change; the module-exercising sweep is recorded only under test_logs. This is the prior review's third finding, still unanswered.\nFINDING reckon/crew/dispatch_launch.py:3901 non-blocking: at the reviewed head no test fails if the anchored_edit field returns \u2014 tests/test_anchored_edit_claude_arm.py, which held the absence assertions, was deleted by the sibling node and the merge took the deletion, and git grep 'anchored_edit' 040070e41e -- tests/ finds only tests/test_anchored_edit.py, tests/test_picker_local_backend.py and tests/test_queue_edit_keeps_the_named_backend.py, none of which asserts the launch record's shape. The fragment states this honestly; the removal is nevertheless unguarded and a regression would land silently.",
+  "review_run_id": "r-20261122T013246053454-review-of-anchored-launch-record-s18-040070e41ed2",
+  "reviewed_base_sha": "08b86e8ab6bfd346c19d768a3269e584d87be579",
+  "reviewed_head_sha": "040070e41ed249c5a59234f99bedc9f9db843de2",
+  "reviewed_run_id": "r-20261121T201934910206-anchored-launch-record-s18",
+  "scores": {
+    "durability": 5,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T01:52:00.000000+00:00",
+  "total": 90
+}

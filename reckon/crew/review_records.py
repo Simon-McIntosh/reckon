@@ -2900,6 +2900,46 @@ def review_run_record_rubrics(
     return families
 
 
+def filed_unpromoted_review_record(
+    reviewed_run_id: str, review_run_id: str
+) -> tuple[Path, dict[str, Any]] | None:
+    """The record a review run delivered into the reviewed run's own directory.
+
+    A run review writes its record inside the run it reviews, in the
+    ``review-records`` subdirectory, and a promotion files that copy into the
+    project's review store. Between those two moments the record is on disk and
+    no store reader can find it: a lookup that answers ``None`` because it
+    reads only the store cannot tell a review that produced no record from one
+    whose record is waiting to be landed.
+
+    Both identities must agree before a record is returned, so a sibling
+    review's record for the same run is never handed back as the named one.
+    """
+    reviewed = str(reviewed_run_id or "").strip()
+    named = str(review_run_id or "").strip()
+    if not reviewed or not named:
+        return None
+    from reckon.crew import review as review_module
+    from reckon.crew import runs as runs_module
+
+    directory = review_module.run_review_record_directory(runs_module.run_dir(reviewed))
+    if not directory.is_dir():
+        return None
+    for path in sorted(directory.glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        if str(record.get("reviewed_run_id") or "").strip() != reviewed:
+            continue
+        if str(record.get("review_run_id") or "").strip() != named:
+            continue
+        return path, dict(record)
+    return None
+
+
 def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
     """Whether an indexed record file can answer a lookup for head ``named``.
 

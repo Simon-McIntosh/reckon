@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3901",
+    "reckon/crew/dispatch_launch.py:4287",
+    "reckon/crew/dispatch_launch.py:4679",
+    "reckon/crew/dispatch_launch.py:5727",
+    "reckon/crew/dispatch_launch.py:5735",
+    "reckon/crew/dispatch_launch.py:5749",
+    "reckon/crew/dispatch_launch.py:5810",
+    "reckon/crew/dispatching/launch.py:1006"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-21T22:28:23Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the claude-arm suite read 13 failed against 41 passed at base, but no base run of tests/test_anchored_edit_claude_arm.py is recorded in the run directory; the only 41-passed log (claude-arm-head.log:5) is the head at 978c8afe, so the base figure is asserted rather than measured."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line cites base 58 passed in 43.05s and head 37.95s at c5311836 from arm-base.log and arm-head.log, but those logs record 44.66s and 46.50s and arm-head.log's header names revision 978c8afe, so the record's own evidence line cannot be reconciled with the logs it cites."
+    },
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests gate names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/crew/dispatch_launch.py, so the named gate cannot see a regression of this change; the module-exercising suite is recorded only as a test_log."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the three record sites' production callers still behave with the field absent: they read only spec and plan keys that remain, and reckon/crew/prompts.py:807 reads the launch backend rather than the spec, so nothing dereferences a removed key.",
+    "diff": "Read both increment commits from 4f58c5039955, and the whole 1666d19f7744..08b86e8ab6 diff for context: 978c8afe changes 14 test lines to assert absence at three record sites and rewrites the attempt guard on the stored phase, and 08b86e8 rewrites the fragment to name the broken guard, its reproduction and its repair.",
+    "done_when": "The done_when asks for the grep plus importing-test arms against a base arm; the grep passes at 08b86e8ab6, but the manifest's named gate (manifest.md:13) runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports dispatch_launch, and no base arm of tests/test_anchored_edit_claude_arm.py is recorded.",
+    "goal": "The node goal is that reckon/crew/dispatch_launch.py writes no anchored_edit field on the supervisor spec, the worker record or the live pointer; `git show 08b86e8ab6:reckon/crew/dispatch_launch.py | grep anchored` exits 1 at this head, and no crew-namespace reader of the removed key remains in reckon/crew/.",
+    "manifest": "Read at status complete: it records 58 passed in each arm, 41 passed for the repaired guard, the negative control and ruff delta 0, but its artifacts line (manifest.md:21) cites timings (43.05s, 37.95s at c5311836) that differ from the arms' own logs (44.66s, 46.50s at 978c8afe).",
+    "write_paths": "The node declared reckon/crew/dispatch_launch.py, the anchored-launch-record-s18 fragment and a figure directory; this increment (4f58c503..08b86e8) touches the fragment and tests/test_anchored_edit_claude_arm.py, the two files the coordinator's review goal names."
+  },
+  "justifications": {
+    "durability": "tests/test_anchored_edit_claude_arm.py:147 and :152 assert the keys are absent from the spec and the worker record, and negative-control-guard.log's 13 failed, 28 passed in 2.07s against the base module proves those lines redden when the field returns.",
+    "evidence": "The named gate at manifest.md:13 exercises two files that do not import dispatch_launch, and the module-exercising run (claude-arm-head.log:5, 41 passed) has no base arm, so the done_when's base-arm comparison is recorded only for the non-importing pair.",
+    "fit": "tests/test_anchored_edit_claude_arm.py:145-146 keeps a two-line mechanism comment, the fragment follows the neighbouring evidence pages' structure, and no name in the increment carries a plan, stage or ticket label.",
+    "goal_fidelity": "The increment's own change is a guard and its record; the node goal still holds at 08b86e8ab6, where `git show 08b86e8ab6:reckon/crew/dispatch_launch.py | grep anchored` returns nothing and nothing in reckon/crew/ reads the removed record key.",
+    "reuse": "The increment adds no function, class or module, and a search of reckon/ for another writer of the launch-record field found no second owner to reuse because the only writer was the site the node removed.",
+    "scope_discipline": "The two changed paths, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html and tests/test_anchored_edit_claude_arm.py, are exactly the files the review goal names, though the test file sits outside the node's original declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that reckon/crew/dispatch_launch.py writes no anchored_edit field on the supervisor spec, the worker record or the live pointer; `git show 08b86e8ab6:reckon/crew/dispatch_launch.py | grep anchored` exits 1 at this head, and no crew-namespace reader of the removed key remains in reckon/crew/.\nVERDICT done_when: The done_when asks for the grep plus importing-test arms against a base arm; the grep passes at 08b86e8ab6, but the manifest's named gate (manifest.md:13) runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports dispatch_launch, and no base arm of tests/test_anchored_edit_claude_arm.py is recorded.\nVERDICT write_paths: The node declared reckon/crew/dispatch_launch.py, the anchored-launch-record-s18 fragment and a figure directory; this increment (4f58c503..08b86e8) touches the fragment and tests/test_anchored_edit_claude_arm.py, the two files the coordinator's review goal names.\nVERDICT manifest: Read at status complete: it records 58 passed in each arm, 41 passed for the repaired guard, the negative control and ruff delta 0, but its artifacts line (manifest.md:21) cites timings (43.05s, 37.95s at c5311836) that differ from the arms' own logs (44.66s, 46.50s at 978c8afe).\nVERDICT diff: Read both increment commits from 4f58c5039955, and the whole 1666d19f7744..08b86e8ab6 diff for context: 978c8afe changes 14 test lines to assert absence at three record sites and rewrites the attempt guard on the stored phase, and 08b86e8 rewrites the fragment to name the broken guard, its reproduction and its repair.\nCALL_SITES: reckon/crew/dispatch_launch.py:3901, reckon/crew/dispatch_launch.py:4287, reckon/crew/dispatch_launch.py:4679, reckon/crew/dispatch_launch.py:5727, reckon/crew/dispatch_launch.py:5735, reckon/crew/dispatch_launch.py:5749, reckon/crew/dispatch_launch.py:5810, reckon/crew/dispatching/launch.py:1006\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The increment's own change is a guard and its record; the node goal still holds at 08b86e8ab6, where `git show 08b86e8ab6:reckon/crew/dispatch_launch.py | grep anchored` returns nothing and nothing in reckon/crew/ reads the removed record key.\nSCORE evidence: 11\nJUSTIFICATION evidence: The named gate at manifest.md:13 exercises two files that do not import dispatch_launch, and the module-exercising run (claude-arm-head.log:5, 41 passed) has no base arm, so the done_when's base-arm comparison is recorded only for the non-importing pair.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: The two changed paths, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html and tests/test_anchored_edit_claude_arm.py, are exactly the files the review goal names, though the test file sits outside the node's original declared paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_anchored_edit_claude_arm.py:147 and :152 assert the keys are absent from the spec and the worker record, and negative-control-guard.log's 13 failed, 28 passed in 2.07s against the base module proves those lines redden when the field returns.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_anchored_edit_claude_arm.py:145-146 keeps a two-line mechanism comment, the fragment follows the neighbouring evidence pages' structure, and no name in the increment carries a plan, stage or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: The increment adds no function, class or module, and a search of reckon/ for another writer of the launch-record field found no second owner to reuse because the only writer was the site the node removed.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html:28 non-blocking: the fragment says the claude-arm suite read 13 failed against 41 passed at base, but no base run of tests/test_anchored_edit_claude_arm.py is recorded in the run directory; the only 41-passed log (claude-arm-head.log:5) is the head at 978c8afe, so the base figure is asserted rather than measured.\nFINDING manifest.md:21 non-blocking: the artifacts line cites base 58 passed in 43.05s and head 37.95s at c5311836 from arm-base.log and arm-head.log, but those logs record 44.66s and 46.50s and arm-head.log's header names revision 978c8afe, so the record's own evidence line cannot be reconciled with the logs it cites.\nFINDING manifest.md:13 non-blocking: the tests gate names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/crew/dispatch_launch.py, so the named gate cannot see a regression of this change; the module-exercising suite is recorded only as a test_log.",
+  "review_run_id": "r-20261121T222652831778-review-of-anchored-launch-record-s18-08b86e8ab6bf",
+  "reviewed_base_sha": "4f58c5039955ce0b92857a963ebd8849fc46eab0",
+  "reviewed_head_sha": "08b86e8ab6bfd346c19d768a3269e584d87be579",
+  "reviewed_run_id": "r-20261121T201934910206-anchored-launch-record-s18",
+  "scores": {
+    "durability": 19,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T22:45:00.000000+00:00",
+  "total": 101
+}

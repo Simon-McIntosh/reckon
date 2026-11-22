@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:614 crew_decision_present",
+    "reckon/crew_run_commands.py:644 crew_decision_choose",
+    "reckon/crew_run_commands.py:671 crew_decision_release",
+    "reckon/crew/lead_presentation.py:213 present calls decision_answers.claim_presentation",
+    "reckon/crew/lead_presentation.py:328 ask_path calls readably_named"
+  ],
+  "completed_at": "2026-11-21T23:59:00Z",
+  "dispatched_at": "2026-11-21T23:14:29Z",
+  "findings": [
+    {
+      "file": "tests/test_select_skill_contract.py",
+      "line": 80,
+      "severity": "non-blocking",
+      "text": "The two equality assertions compare ask_path's and presentation_path's names against calls to readably_named with the same identity, and both sides resolve through that one rule, so they hold whatever the rule says (the previous copy at lead_presentation.py:325 produced exactly this string for this 26-character identity). Only the hasattr check at line 87 distinguishes the copy, and a copy taking `from hashlib import sha256` or importing hash the local way would pass it, so the naming rule's single-owner claim rests on a structural check rather than on behaviour."
+    },
+    {
+      "file": "reckon/crew/decision_answers.py",
+      "line": 49,
+      "severity": "non-blocking",
+      "text": "readably_named is a third variant of the readable-stem-plus-digest naming rule the repository already owns: reckon/crew/obligation_snapshot.py:245 `_lock_stem` pairs `_token` with 12 hex digits and reckon/ledger.py:3272 builds the same shape trimmed to 48 characters. The new public helper neither extends nor wraps either owner, so the rule now has three implementations that must be kept in step; the commit fixed the two copies inside the answer store but did not search outside it."
+    },
+    {
+      "file": "docs/evidence/fragments/lead-decisions-reach-one-place/s4.html",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "The record's \"The same tests pass at the head\" block quotes the pre-repair run \u2014 revision 81b39dc9bb, 10 passed \u2014 while the head it is committed at is d09ba36a with 13 passed in measure/head-tests.log, so a reader of the plan-linked record sees a gate that predates the five repairs and does not show them holding together."
+    }
+  ],
+  "item_verdicts": {},
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's job is lead-decisions-reach-one-place \u00a74, one session presenting the lead's open decisions as choices; docs/plans/lead-decisions-reach-one-place.html:64-66 states it and the landed change adds reckon/crew/lead_presentation.py plus the three verbs at reckon/crew_run_commands.py:606-690, with the repair commits 7896be7387 and d09ba36a70 answering the prior review's five findings.\nVERDICT done_when: the done_when at docs/plans/lead-decisions-reach-one-place.html:67 asks for the skill's contract tests with every cited command resolving, a live-fleet rehearsal of at least three decisions from two projects at docs/evidence/fragments/lead-decisions-reach-one-place/s4.html, an exactly-once two-presenter test, a ready-before-plan-block test, and a base negative control; the gate the worker ran is `pytest -q tests/test_one_session_presents_the_decisions_as_choices.py tests/test_select_skill_contract.py` whose log measure/head-tests.log records 13 passed, EXIT=0 at d09ba36a, and the fragment now sits at the path the done_when links.\nVERDICT write_paths: the declared paths are reckon, tests, skills, the fragment directory and the figure directory; all six paths the two new commits touch are inside them and the full ten-path diff is inside them too.\nVERDICT manifest: read at .../r-20261115T205947452128-.../manifest.md; it declares status complete, records the 13-passed gate log, the 58-passed suite arms on both sides of the change (baseline_suite-1795302458418072541.log at 130892970e, after_suite-1795302533732260896.log at d09ba36a, both EXIT=0), and the five per-finding controls under measure/controls/controls.json.\nVERDICT diff: read commit by commit; a5687144..d09ba36a adds 7896be7387 (one naming rule via decision_answers.readably_named, the claim under exclusive_lock, question/context and exit-0 assertions, a barrier race test, s4.html moved to the path the plan links) and d09ba36a (the five control runs appended to s4.html), six files, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:614 crew_decision_present, reckon/crew_run_commands.py:644 crew_decision_choose, reckon/crew_run_commands.py:671 crew_decision_release, reckon/crew/lead_presentation.py:213 present calls decision_answers.claim_presentation, reckon/crew/lead_presentation.py:328 ask_path calls readably_named\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/lead_presentation.py:195 present claims each choice before returning it and the report carries claimed_elsewhere and unreached, which is the presentation \u00a74 asks for.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is tests/test_one_session_presents_the_decisions_as_choices.py and tests/test_select_skill_contract.py at 13 passed EXIT=0 in measure/head-tests.log, and each of the five repairs has a reverted-tree control that exits 1 in measure/controls/controls.json, though s4.html:33 still quotes the pre-repair 10-passed run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in a5687144..d09ba36a is one of the six the goal names, and both new commits sit inside the declared reckon, tests and fragment write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_one_session_presents_the_decisions_as_choices.py:153 (the barrier race) fails when the lock at reckon/crew/decision_answers.py:168 is dropped and the control showed it red 12 of 12, but tests/test_select_skill_contract.py:80 compares ask_path against the same rule it calls, so only the hasattr check at :87 would notice a restored copy.\nSCORE fit: 18\nJUSTIFICATION fit: the repair follows the module's existing shape \u2014 a local import of exclusive_lock as at reckon/crew/queue_landing.py:2025 \u2014 and names no forbidden identifier, though the lock path is built inline at reckon/crew/decision_answers.py:163-167 rather than through a path helper like reckon/crew/runs.py:677.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/decision_answers.py:49 consolidates the two in-module copies and lead_presentation.py:30 imports it, but the capability is already owned by reckon/crew/obligation_snapshot.py:245 _lock_stem shape and reckon/ledger.py:3272, so the rule now exists a third time with a different digest width.\nFINDING tests/test_select_skill_contract.py:80 non-blocking: the equality assertions compare ask_path and presentation_path against readably_named called with the same identity, so both sides move together and the copied rule at the old lead_presentation.py:325 would satisfy them; only the hasattr check at :87 can fail, and a copy using a function-local or renamed hash import would pass it.\nFINDING reckon/crew/decision_answers.py:49 non-blocking: readably_named re-implements the readable-stem-plus-digest naming rule already owned by reckon/crew/obligation_snapshot.py:245 (_lock_stem, 12 hex) and reckon/ledger.py:3272 without extending or wrapping either, leaving three variants to keep in step.\nFINDING docs/evidence/fragments/lead-decisions-reach-one-place/s4.html:33 non-blocking: the \"pass at the head\" block quotes revision 81b39dc9bb with 10 passed while the reviewed head is d09ba36a at 13 passed, so the plan-linked record's own head claim predates the five repairs it then describes.",
+  "review_run_id": "r-20261121T231309461663-review-of-ldop-one-session-presents-the-decisions-as-choices-d09ba36a7085",
+  "reviewed_base_sha": "130892970e904f7352b96ab87d17c83fcee24aff",
+  "reviewed_head_sha": "d09ba36a7085b488640680f9b0fb6b4ecd3e120c",
+  "reviewed_run_id": "r-20261115T205947452128-ldop-one-session-presents-the-decisions-as-choices",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T23:22:05.987771+00:00",
+  "total": 103
+}
