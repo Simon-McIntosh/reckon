@@ -1302,6 +1302,11 @@ def measure_a_coordinator_landing(
     The measurement is recorded beside the run's gate evidence in the run's own
     directory, so a later reader sees both what the coordinator checked and what
     the population found.
+
+    A head or tree that cannot be read returns a measurement carrying its
+    ``unreadable`` reason rather than an empty one, so the caller refuses a
+    landing it could not measure instead of reading the absent reading as a
+    clean result.
     """
     pointer = _pointer_or_read(run_id, pointer)
     command = str(pointer.get("suite_command") or "").strip()

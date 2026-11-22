@@ -4926,6 +4926,11 @@ def _refuse_a_landing_its_population_measure_refuses(
     reported. The same measurement is taken here, and a failure it adds refuses
     the landing and names the ids.
 
+    A measurement that could not be read refuses the landing too. A run whose
+    head or worktree has gone, whose base cannot be built, or whose stored
+    record is unreadable has no population reading at all, and accepting it
+    would report the absence of a measurement as a clean one.
+
     A candidate names a member the pass already measured, and a landing group
     measures its members' heads together, so both are left to those measures
     rather than measured a second time. The coordinator's gate evidence is kept
@@ -4945,15 +4950,22 @@ def _refuse_a_landing_its_population_measure_refuses(
     directory = runs.run_dir(run_id) / "landing-measure"
     directory.mkdir(parents=True, exist_ok=True)
     runs._write_json(directory / "coordinator-gate.json", dict(gate_check))
-    if not measured.real:
+    # The guard is the pass's own reading of a measurement: it refuses one that
+    # cannot be read as well as one that adds a failure, so a landing whose
+    # population could not be measured is never taken for a clean one. Only an
+    # empty guard, which means the measurement was readable and added nothing,
+    # lets the landing proceed.
+    refusal = queue_landing._measure_guard(measured)
+    if not refusal:
         return
     _emit_completion_reply(
         {
             "ok": False,
             "run_id": run_id,
             "error": "landing-measure-refused",
-            "detail": queue_landing._measure_guard(measured),
+            "detail": refusal,
             "added_failure_ids": list(measured.real),
+            "unreadable": measured.unreadable,
         },
         pretty,
     )

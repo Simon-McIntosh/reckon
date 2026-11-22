@@ -23,6 +23,7 @@ with the importer test red, so that case fails.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -244,6 +245,25 @@ def test_a_head_that_adds_no_failure_lands(
         _git(run["repository"], "show", f"{landed}:reckon/example.py").find(MARKER) >= 0
     )
     assert _record()["real"] == []
+
+
+def test_a_landing_the_population_cannot_measure_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A measurement that could not be taken is not one that added nothing."""
+    run = _landing_run(tmp_path, monkeypatch)
+    shutil.rmtree(run["worktree"])
+
+    result = _land(run)
+
+    assert result.exit_code == 1, result.output
+    payload = _outcome(result)
+    assert payload["error"] == "landing-measure-refused"
+    assert payload["added_failure_ids"] == []
+    assert "unreadable" in payload["detail"]
+    assert payload["unreadable"]
+    # Nothing was merged while the population went unmeasured.
+    assert _git(run["repository"], "rev-parse", "main") == run["base"]
 
 
 def test_a_failure_the_base_carries_is_not_charged_to_the_population(
