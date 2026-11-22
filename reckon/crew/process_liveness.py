@@ -540,3 +540,56 @@ def _process_start_time(pid: Any) -> str | None:
     """Read the kernel start tick that distinguishes reused process ids."""
     fields = _process_stat_fields(pid)
     return fields[19] if len(fields) > 19 else None
+
+
+def turn_in_progress(record: Mapping[str, Any] | None) -> bool:
+    """Whether the run's own stream shows a turn being produced right now.
+
+    The reading a worker launched on another machine gets in place of a
+    process-table answer: the newest stream carries an assistant record and was
+    written inside the same silence window the stall clock applies. A stream too
+    old, a stream holding no assistant turn, or no stream at all answers false,
+    so an absent answer is never read as work.
+
+    The attempt bound is dropped: a launch writes its own attempt clock before
+    its worker starts, so a reader asking whether the *previous* worker is still
+    writing must ask the stream about its own silence rather than about a record
+    the new attempt just wrote.
+
+    ``record`` may be a live pointer read on a host that never issued its pid,
+    which is exactly why this reading is the stream's rather than the process
+    table's.
+    """
+    if not record:
+        return False
+    from reckon.crew.recovery_liveness import _newest_stream_in_motion
+
+    return _newest_stream_in_motion(record, from_stream_alone=True)
+
+
+def launched_on_another_fleet_node(
+    record: Mapping[str, Any] | None, fleet_node: str | None = None
+) -> bool:
+    """Whether the record's launcher host is a machine other than the fleet's.
+
+    The fleet moves node every few days. A pointer written on the node the fleet
+    has since left keeps a pid that answers only on that machine, so its worker
+    can never be proved dead or alive from here. This names that shape and
+    nothing more: a pointer that records no launcher host cannot be shown to be
+    foreign, and a fleet record that names no node cannot either.
+    """
+    if not record:
+        return False
+    from reckon.crew import watch_unit
+
+    host = record.get("launcher_host")
+    if host is None:
+        return False
+    node = watch_unit.fleet_record_node() if fleet_node is None else str(fleet_node)
+    # ``fleet_record_node`` names no node when the record is unreadable, which
+    # is the safe reading: an absent name must never pass for another machine.
+    # One spelling of the host comparison, in the module that already owns it:
+    # a second spelling disagrees the first time a name carries a domain.
+    if not str(host).strip() or not node.strip():
+        return False
+    return not watch_unit._hosts_match(str(host), node)

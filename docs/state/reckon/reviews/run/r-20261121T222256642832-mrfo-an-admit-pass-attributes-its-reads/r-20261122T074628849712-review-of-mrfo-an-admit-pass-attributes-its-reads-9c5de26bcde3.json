@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T07:49:07Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "mrfo-an-admit-pass-attributes-its-reads",
+      "recorded_at": "2026-11-22T09:06:39.711788+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T222256642832-mrfo-an-admit-pass-attributes-its-reads/collect_admit_reads.py",
+      "line": "35",
+      "text": "blocking: the ten-minute record reports the review store as 0 bytes because the sweep globs reviews/*.json non-recursively, while the review store is sharded per project (reviews/imas-codex alone holds 2101 json, 30 MB); the landed per-source table therefore reports an unmeasured bucket as zero, and the review store is exactly the alternative source the section was dispatched to rule in or out"
+    },
+    {
+      "file": "reckon/crew/admission/service.py",
+      "line": "560",
+      "text": "non-blocking: no test covers the two accounting blocks added to admit_until_stopped, so reverting the file_memo.attributing wrap leaves every assertion in tests/test_an_admit_pass_attributes_its_reads.py green \u2014 the helpers are guarded, the wiring is not"
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "759",
+      "text": "non-blocking: _CountedTextFile.read charges len(data) characters rather than encoded bytes, so a multibyte text file is attributed less than the bytes it consumed and the shortfall lands in unattributed_bytes, which the 5% band is meant to police"
+    },
+    {
+      "file": "tests/test_an_admit_pass_attributes_its_reads.py",
+      "line": "124",
+      "text": "non-blocking: test_a_source_left_out_shortens_the_sum_beyond_the_band drives the mutation through the test's own MRFO_OMIT_SOURCE hook, so it asserts that the test harness removes a bucket, not that the accounting behaves; it stays green under any accounting defect"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The section's deliverable (docs/plans/the-monitor-reads-each-fact-once.html \u00a7113) is a per-source breakdown on every pass reading plus a ten-minute record naming the sources holding 90 % of the volume; reckon/crew/admission/service.py:407 admits six buckets and reckon/crew/admission/verdicts.py:522 rides the breakdown on the pass row, so the code does what the goal states, but the landed record reports the review store as 0 against a store holding 2101 files in one project shard.\nVERDICT done_when: The done_when names tests/test_an_admit_pass_attributes_its_reads.py with a 5 % sum band, per-source file identity, per-arm logs carrying revision/cmd/EXIT=, and a ten-minute >30-pointer record; the test file implements all four arms (lines 97, 108, 124, 159), the scoped-gate and both suite logs carry their revision and a bare EXIT=0, but the ten-minute record was produced by a sweep script rather than by service passes and its review-store bucket is a glob artefact.\nVERDICT write_paths: The declared paths are reckon/crew/admission/service.py, reckon/crew/admission/verdicts.py, reckon/file_memo.py, tests/test_an_admit_pass_attributes_its_reads.py, one evidence fragment and one figure directory; git diff --stat 0833873..9c5de26 shows exactly four changed paths and all four are inside that set.\nVERDICT manifest: Read; it records both suite arms at 0 added failures (58 passed baseline, 62 after), the scoped gate at 62 passed EXIT=0, a negative control log EXIT=1 at a 16.7 % shortfall against the 5 % band, and the ten-minute record at ~/.cache/reckon-landing/admit-reads/9c5de26bcd-readings.jsonl with its collector command on line 1.\nVERDICT diff: Read commit by commit \u2014 one commit 9c5de26bcd adds ReadAccount and attributing (reckon/file_memo.py:665-856), admit_read_sources and _reads_by_source plus two accounting scopes in the pass loop (reckon/crew/admission/service.py:407-450, 560-573, 631-645), one reads_by_source field (reckon/crew/admission/verdicts.py:522), and 170 lines of tests.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped (reached from reckon/crew/queue_admission.py:admit_until_stopped and reckon/crew_run_commands.py:6328), reckon/crew/admission/verdicts.py:_pass_verdict_record (reached from reckon/crew/admission/verdicts.py:570)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/admission/service.py:407-430 defines the six named buckets and the pass loop at service.py:560 charges every open inside a pass, which is the stated deliverable, with the live record's review-store zero as its weak half.\nSCORE evidence: 9\nJUSTIFICATION evidence: The fixture arms and the negative control are real (logs/negative-control.log EXIT=1, 0.1669 > 0.05), but the record's review store 0 at collect_admit_reads.py:35 is an unexamined glob artefact for a bucket the section was dispatched to settle.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat over 0833873..9c5de26 touches only reckon/crew/admission/service.py, reckon/crew/admission/verdicts.py, reckon/file_memo.py and tests/test_an_admit_pass_attributes_its_reads.py, all declared.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_an_admit_pass_attributes_its_reads.py:118-121 reddens if a source rule is dropped, but nothing reddens if the accounting scope at reckon/crew/admission/service.py:560 is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/file_memo.py:665-745 follows the module's existing documented idiom and introduces no plan label, version or ticket name.\nSCORE reuse: 18\nJUSTIFICATION reuse: No byte-per-source accounting existed \u2014 the nearest owner, the read tally at reckon/crew/admission/service.py:400, counts reads and seconds per reader (not bytes per path) \u2014 so ReadAccount is a new mechanism rather than a fork of one; it takes the run store's path from reckon/crew/run_store.py:350 rather than re-deriving it, and only overlooks the RECKON_RUN_STORE override.\n",
+  "review_run_id": "r-20261122T074628849712-review-of-mrfo-an-admit-pass-attributes-its-reads-9c5de26bcde3",
+  "reviewed_base_sha": "08338737e698ae1855f48d25560408e03a01a23c",
+  "reviewed_head_sha": "9c5de26bcde383f6b89ccea6366abf366e0e29df",
+  "reviewed_run_id": "r-20261121T222256642832-mrfo-an-admit-pass-attributes-its-reads",
+  "scores": {
+    "durability": 13,
+    "evidence": 9,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:04:25.325179+00:00",
+  "total": 94
+}

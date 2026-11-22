@@ -519,6 +519,7 @@ def _pass_verdict_record(
         "launch_budget_exhausted": bool(result.get("launch_budget_exhausted")),
         "land_seconds": result.get("land_seconds"),
         "reads": result.get("reads"),
+        "reads_by_source": result.get("reads_by_source"),
         "resident_bytes": result.get("resident_bytes"),
         "memory_bound_bytes": ADMIT_MEMORY_BOUND_BYTES,
         "lane": lane,

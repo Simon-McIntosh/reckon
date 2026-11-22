@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1221"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T10:08:19Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read commit by commit over the gained range 85435d242654..791d6d5080 (21917e9ac8 fix, 582f8001e7 fragment, 791d6d50 docs): the fix replaces the phase-only delivered test with a gate+classification read (reckon/crew/dispatch_batch.py:131-143, 863-867), the test gains two cases and a gate/failure_classification parameter on _complete, and the fragment records the repair's revisions; the full node diff against dde7b001 is the same three files.",
+    "done_when": "The done_when names tests/test_a_landed_section_is_not_queued_again.py with a landed-and-retired case skipped, a discarded-only case queued, and a negative control at the base; the file holds four cases (landed skip, discarded queued, failed-check queued, pre-existing-failure skip), scoped-gate-1795340146325948711.log records 60 passed in 40.52s / EXIT=0 at 83196da7 and after_suite-repair.log records 62 passed in 54.01s / EXIT=0 at 582f8001e7, and negative-control.log records `assert 'queued' == 'skipped'` / EXIT=1 at dde7b001.",
+    "goal": "The node goal is that a plan-level dispatch does not queue a section whose run has landed, naming that run; at the reviewed head reckon/crew/dispatch_batch.py:860-874 skips a delivered section by plan+section match and writes `existing run <run_id>` into the row, and tests/test_a_landed_section_is_not_queued_again.py:216-233 shows the landed section skipped by name.",
+    "manifest": "Read; it records status complete, baseline_suite 58 passed / EXIT=0 at dde7b001 and after_suite 62 passed / EXIT=0 at 582f8001e7, negative_control_log negative-control.log (EXIT=1 at dde7b001) and negative_control_note naming the repair control negative-control-repair.log (1 failed, 3 passed, EXIT=1 at 85435d24); all six rubric lines answered.",
+    "write_paths": "The manifest declares reckon/crew/dispatch_batch.py, tests/test_a_landed_section_is_not_queued_again.py, docs/evidence/fragments/a-reviewed-plan-is-queued-at-full-width/rpfw-a-landed-section-is-not-queued-again.html and a figures directory; the diff dde7b001..791d6d50 touches exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landed_section_is_not_queued_again.py:247-266 reddens when the gate leg is removed (`assert 'skipped' == 'queued'`, recorded in negative-control-repair.log) and :270-289 guards the opposite direction, so neither the skip nor the re-queue can regress unnoticed; no assertion compares the output against a value the test handed to the code under test.",
+    "evidence": "The done_when's measure is executed and logged at scoped-gate-1795340146325948711.log:8 (60 passed / EXIT=0), with both suite arms recorded and two negative controls at negative-control.log and negative-control-repair.log closing EXIT=1 with the failing assertion quoted.",
+    "fit": "The two added constants at reckon/crew/dispatch_batch.py:132-143 are named by the condition they encode and sit beside the existing WAITING_UPSTREAM_PHASES frozenset, with no plan, ticket or version label in any name or comment.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:865-867 computes `delivered` from the stored row's gate and failure_classification, so a landed section is skipped by name while a section whose run was rejected or discarded is queued, and the live store's rows carry both keys (measured: payload gate 'passed'/'not-run' present, phase None).",
+    "reuse": "No function or class is added; `_UNDELIVERED_PHASES` extracts the single inline literal the module already held, and `_LANDED_DESPITE_FAILED_GATE` names a judgement no owner expresses \u2014 searched reckon/capabilities.py:_outcome_exclusion_reason, reckon/crew/promotion_checks.py:_IMPL_MOVE_EXEMPT_CLASSIFICATIONS and reckon/ledger.py:FAILURE_CLASSIFICATIONS, all of which answer different questions (picker eligibility, impl-move exemption, the vocabulary) rather than delivered-work.",
+    "scope_discipline": "The gained diff 85435d24..791d6d50 touches only reckon/crew/dispatch_batch.py, tests/test_a_landed_section_is_not_queued_again.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a plan-level dispatch does not queue a section whose run has landed, naming that run; at the reviewed head reckon/crew/dispatch_batch.py:860-874 skips a delivered section by plan+section match and writes `existing run <run_id>` into the row, and tests/test_a_landed_section_is_not_queued_again.py:216-233 shows the landed section skipped by name.\nVERDICT done_when: the done_when names tests/test_a_landed_section_is_not_queued_again.py with a landed-and-retired case skipped, a discarded-only case queued, and a negative control at the base; the file holds four cases, scoped-gate-1795340146325948711.log records 60 passed in 40.52s / EXIT=0 at 83196da7 and after_suite-repair.log records 62 passed in 54.01s / EXIT=0 at 582f8001e7, and negative-control.log records `assert 'queued' == 'skipped'` / EXIT=1 at dde7b001.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_batch.py, tests/test_a_landed_section_is_not_queued_again.py, the evidence fragment and a figures directory; the diff dde7b001..791d6d50 touches exactly the first three and nothing else.\nVERDICT manifest: read; it records status complete, baseline_suite 58 passed / EXIT=0 at dde7b001 and after_suite 62 passed / EXIT=0 at 582f8001e7, negative_control_log negative-control.log (EXIT=1 at dde7b001) and negative_control_note naming the repair control negative-control-repair.log (1 failed, 3 passed, EXIT=1 at 85435d24).\nVERDICT diff: read commit by commit over the gained range 85435d242654..791d6d5080 (21917e9ac8 fix, 582f8001e7 fragment, 791d6d50 docs): the fix replaces the phase-only delivered test with a gate+classification read (reckon/crew/dispatch_batch.py:131-143, 863-867), the test gains two cases and a gate/failure_classification parameter on _complete, and the fragment records the repair's revisions.\nCALL_SITES: reckon/crew_dispatch_commands.py:1221\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:865-867 computes `delivered` from the stored row's gate and failure_classification, so a landed section is skipped by name while a section whose run was rejected or discarded is queued, and the live store's rows carry both keys.\nSCORE evidence: 20\nJUSTIFICATION evidence: the done_when's measure is executed and logged at scoped-gate-1795340146325948711.log:8 (60 passed / EXIT=0), with both suite arms and two negative controls at negative-control.log and negative-control-repair.log closing EXIT=1 with the failing assertion quoted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff 85435d24..791d6d50 touches only reckon/crew/dispatch_batch.py, tests/test_a_landed_section_is_not_queued_again.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_landed_section_is_not_queued_again.py:247-266 reddens when the gate leg is removed (recorded in negative-control-repair.log) and :270-289 guards the opposite direction, so neither the skip nor the re-queue can regress unnoticed.\nSCORE fit: 20\nJUSTIFICATION fit: the two added constants at reckon/crew/dispatch_batch.py:132-143 are named by the condition they encode and sit beside the existing WAITING_UPSTREAM_PHASES frozenset, with no plan, ticket or version label in any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: no function or class is added; `_UNDELIVERED_PHASES` extracts the single inline literal the module already held, and `_LANDED_DESPITE_FAILED_GATE` names a judgement no owner expresses after searching reckon/capabilities.py:_outcome_exclusion_reason, reckon/crew/promotion_checks.py:_IMPL_MOVE_EXEMPT_CLASSIFICATIONS and reckon/ledger.py:FAILURE_CLASSIFICATIONS.\n",
+  "review_run_id": "r-20261122T100726612147-review-of-rpfw-a-landed-section-is-not-queued-again-791d6d5080eb",
+  "reviewed_base_sha": "85435d24265456eddeeefda823f1bd5a0e414ff4",
+  "reviewed_head_sha": "791d6d5080ebb60d2dab506c3f5bd38bd895ce7f",
+  "reviewed_run_id": "r-20261122T083611402933-rpfw-a-landed-section-is-not-queued-again",
+  "reviewer_run_id": "r-20261122T100726612147-review-of-rpfw-a-landed-section-is-not-queued-again-791d6d5080eb",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T10:17:23.513691+00:00",
+  "total": 120
+}

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A run from a previous fleet node gives up its claim</title>
+</head>
+<body>
+<article class="r-fragment" id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up">
+<h2 id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-h">A run from a previous fleet node gives up its claim</h2>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p1">
+A promoted run's pointer written on the node the fleet has since left records a
+pid that answers only on that machine. Its liveness reads unknown, and unknown
+is kept, so the pointer held its claim for ever.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p2">
+<code>pending_landing.release_pointers_of_a_previous_fleet_node</code>, called
+from <code>retire_promoted_pointers</code>, retires the pointer of a promoted
+run whose launcher host is not the node the fleet record names and whose newest
+stream carries no assistant turn inside the silence window the stall clock
+already applies. A run proved dead on the host that issued its pid is released
+by the same pass. A stream carrying a turn inside the window keeps its pointer
+in either case, because unknown with a turn in progress is never a licence to
+release.
+</p>
+<figure>
+<img src="/reckon/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg"
+     alt="A decision chain over one promoted live pointer. A workspace on disk or an unfinished landing journal holds it, because the landing paths decide uncommitted and unintegrated work. A run launched on a node the fleet has left bypasses the local process checks entirely, because its pid answers only there, and goes straight to the stream's silence; the local branch is asked whether the worker is alive or not proved dead, and holds the run if either. The last gate is an assistant turn inside the silence window of the newest stream, which holds the run; only a run that passes every gate is retired, and retirement releases the claim only: the worktree, commits and run records stay on disk, and a later pass finds no pointer to restore.">
+<figcaption>Every promoted live pointer the station tick selects walks these
+gates. The first one is why a dead pid alone cannot release a claim: the
+landing paths read the workspace for uncommitted and unintegrated work, and
+the journal names a landing that has not finished. The second is why the host
+is read before the process: a number recorded on the machine the fleet left
+names an unrelated process here, so the foreign branch never asks this host's
+table and the stream's own silence is what stands in for the worker.</figcaption>
+</figure>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p3">
+Retiring a pointer releases a claim, never work: the worktree, commits and run
+records are untouched, and the paths that reclaim workspaces still see them.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p4">
+Measure: the new test builds three promoted runs in a temporary crew home; after
+one pass the previous-node quiet run and the fleet-node dead run have no pointer
+and the previous-node working run keeps its own (2 passed), measured at revision
+83047227cc766499cf33db16d43a0f75fd13ac44. At base revision
+d24fa090e52748cc3100cd54e60d68ad3e87fb1b both cases fail on the first run keeping
+its pointer (2 failed).
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p5">
+Gate summaries, verbatim: scoped gate and after arm both <code>60 passed in 36.88s</code>
+<code>60 passed in 38.04s</code>, base arm <code>58 passed in 38.11s</code>.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p6">
+Repair at revision 41ba34fc8d0583649eb391f5b3b5040e364fd1e1: releasing on a
+dead pid alone could drop the pointer that holds a run's uncommitted or
+unintegrated work, and the pending-landing journal was read as proof of
+promotion although it is written before the promotion completes. The pass now
+keeps the pointer of any run with a workspace on disk or an unfinished landing
+journal, reads promotion from the pointer mark or the ledger row alone, applies
+the project and session scope its caller was given, and compares host names
+through the one owner of that comparison.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p7">
+Repair measure: the third run in the control is now the release test the change
+reaches, <code>tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py</code>,
+which passes at 41ba34fc8d0583649eb391f5b3b5040e364fd1e1 (<code>63 passed in 38.30s</code> including it) and fails
+on its uncommitted-workspace case at 125dc5f71995a2b549a421154fffc64b87ba2dd4 (<code>1 failed in 2.63s</code>).
+Two cases added for the journal and scope gates fail against that revision and
+pass here. All three failing checks are recorded in one control run of the same
+two files against the pre-repair tree: <code>3 failed, 2 passed in 2.54s</code>.
+The fence arms were re-measured at the repaired head: base
+d24fa090e52748cc3100cd54e60d68ad3e87fb1b <code>58 passed in 38.80s</code>, after arm
+<code>62 passed in 45.83s</code>.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p8">
+Repair at revision f77f50a4fc6cc268e3088184da0b3daa7f5487d0: the pass read the
+local process table before it read the host, so a previous-node run whose pid
+number happened to name a live process here was held for ever, and one whose
+number named nothing was reported proved dead. The host is now decided first
+and a foreign record never consults this host's table. The promotion-only pass
+that runs after it also released a previous-node run whose stream still carried
+a turn inside the window, undoing the held decision in the same call; it now
+holds such a run.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p9">
+Repair measure: every case now builds the pointer production builds — the
+promotion mark together with its ledger row, from a temporary run store. Against
+the reviewed head 52e55b67cc4be53cce5a120c02dd8aebe26620f8 the suite is
+<code>2 failed, 6 passed in 3.26s</code>: the quiet run is held (its pid names a
+live process here) and the working run is retired by the trailing pass. Against
+d24fa090e52748cc3100cd54e60d68ad3e87fb1b it is
+<code>3 failed, 5 passed in 1.74s</code>, the quiet run keeping its pointer.
+Against 125dc5f71995a2b549a421154fffc64b87ba2dd4 the journal, workspace and
+scope cases fail as well (<code>6 failed, 2 passed in 1.41s</code>). At this
+head the fence arms are base <code>58 passed in 35.87s</code> and after
+<code>66 passed in 37.69s</code>, with the scoped gate including the release
+test at <code>67 passed in 38.56s</code>.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p10">
+Repair at revision e5aef21c4002885668573e5e95d0aaabb1e556e7: two things. The
+gate figure was hand-written text, so a rasteriser with no font family of its
+own drew the boxes and arrows and every label went missing, leaving a reader
+with unlabelled rectangles. It is now generated by <code>release_gates.py</code>
+with its lettering emitted as path outlines, so the labels are geometry in the
+document and no renderer can drop them. At revision
+9bc78390533d12bc67a270aeafbc71de78eab58d the release pass read the fleet's node
+through a one-line wrapper in <code>process_liveness</code> that only forwarded
+to the reader <code>watch_unit</code> owns; both it and the pass now call
+<code>watch_unit.fleet_record_node</code>, and the wrapper is gone.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p11">
+Repair measure: at 46e141da78b031d62bd9f86e87c663236ad5e23f, with neither answer
+present, the reuse check fails and the figure carries 30 <code>text</code>
+elements against 3 paths; at 9bc78390 the reuse check passes and the figure
+still fails; at e5aef21c both pass, with no <code>text</code> element and 57
+paths. A 1399 by 720 render of the figure at this head shows every label. Fence
+arms at e5aef21c: base d24fa090e52748cc3100cd54e60d68ad3e87fb1b
+<code>58 passed in 36.23s</code>, after arm <code>66 passed in 42.28s</code>, and
+the scoped gate including the release test <code>67 passed in 41.51s</code>.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p12">
+Measure at the reviewed head ad40298e2a66e00108f2b23bd6964716caa3c9a8: the
+fence arms re-run there give base d24fa090e52748cc3100cd54e60d68ad3e87fb1b
+<code>58 passed in 40.70s</code> and after arm <code>66 passed in 37.30s</code>.
+The declared mutation applied to the product code, in which the pass reads this
+host's process table for a previous-node run, fails the quiet and the working
+previous-node cases: <code>2 failed, 6 passed in 1.67s</code>, logged with its
+non-zero exit, after which the tree was returned to this revision.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p13">
+Merge at 2de2827ba9418d3934039300f36b9b7b740ac5d2: primary main was merged into
+this node's worktree against a conflict in <code>pending_landing.py</code>. Both
+sides had added a pass over the live pointers at the same insertion point, this
+node's previous-fleet-node release and the primary branch's release of a landing
+group's members once the group's outcome record outlives the journal.
+
+The resolution keeps both: the group pass reads
+<code>landing-group.json</code> for the head each member landed at and releases
+only a member proved integrated, while the previous-node pass still reads the
+host before the pid and skips any run with a workspace or an unfinished landing.
+<code>retire_promoted_pointers</code> calls each in turn.
+
+Measure at the merge head: base d24fa090e52748cc3100cd54e60d68ad3e87fb1b
+<code>58 passed in 38.24s</code>, after arm <code>66 passed in 38.67s</code>, and
+the scoped gate including both release tests
+<code>67 passed in 38.71s</code>.
+</p>
+</article>
+</body>
+</html>

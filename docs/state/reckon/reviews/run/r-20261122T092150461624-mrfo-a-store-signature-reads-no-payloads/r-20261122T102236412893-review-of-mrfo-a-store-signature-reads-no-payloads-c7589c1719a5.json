@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/ledger.py:1852 stored_history",
+    "reckon/ledger.py:1950 picker_runs",
+    "reckon/budget.py:715"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T10:23:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 2769,
+      "severity": "non-blocking",
+      "text": "non-blocking: _discard_run_store_row deletes from runs/run_details directly and never moves the run_signatures mirror, so after any refused landing the mirror keeps a present=1 row; _signature_counts_agree then fails forever and every cold signature read falls back to _legacy_run_signature, which reads every payload again, defeating this node's cost goal for that project until a forced rebuild. Routing the discard through RunStore.delete_run would keep the mirror in step."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-a-store-signature-reads-no-payloads.html",
+      "line": 75,
+      "severity": "non-blocking",
+      "text": "non-blocking: the evidence quotes the negative-control failure as 210,452,555 bytes, but negative-control.log records 210452554, so the fragment's quotation does not match the log it cites."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": 1995,
+      "severity": "non-blocking",
+      "text": "non-blocking: _retire_signature's INSERT fallback writes project as the caller's empty default string when no mirror row exists, so a deletion or archive of an unmirrored row leaves a tombstone that a project-filtered incremental read never sees; the fallback should carry the row's real project."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "production call sites reaching the change are reckon/ledger.py:1852 stored_history, reckon/ledger.py:1950 picker_runs and reckon/budget.py:715.",
+    "diff": "read commit by commit from 5ac9f1d1df7a to c7589c1719: the fix adds the run_signatures mirror and sequence cursor to run_store.py and the delta read to ledger.py, the test adds four cases, and the two docs commits only add the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_store_signature_reads_no_payloads.py and its four cases measure both reads in bytes, the rows each statement returned, payload doubling within 10 percent, and value equality against the base query; manifest and after_suite log record the run.",
+    "goal": "the node goal is a change signature that reads a payload-free mirror instead of the store's payloads; reckon/run_store.py:1328 stored_run_signature now answers from run_signatures and ledger.py:1892 passes a version cursor.",
+    "manifest": "read; it records all four cases passing, the scoped gate (62 passed), both suite arms with their revisions and EXIT lines, and the all_debug live-store probe numbers.",
+    "write_paths": "the manifest declares reckon/run_store.py, reckon/ledger.py, the new test and the evidence fragment, and all four diff paths fall inside that list."
+  },
+  "justifications": {
+    "durability": "the negative control at 5ac9f1d1df7a fails on the byte bound (EXIT=1, 210452554 bytes), so reverting the mirror reddens the suite, but the tombstone-on-incremental-delete path has no assertion of its own.",
+    "evidence": "tests/test_a_store_signature_reads_no_payloads.py measures both reads with /proc/self/io and the statement counters, and the after_suite log at c22bc47ad3 records 62 passed in 67.18s ending EXIT=0, though the evidence fragment at line 75 misquotes the negative-control byte figure.",
+    "fit": "the added symbols follow the module's existing declaration-plus-comment idiom and ruff check is clean on every changed file.",
+    "goal_fidelity": "reckon/run_store.py:1328 now answers from the payload-free run_signatures table and its version cursor (stored_run_signature's since branch at reckon/run_store.py:1394), so the signature no longer reads payloads as the goal requires.",
+    "reuse": "no existing owner of a payload-free signature mirror exists in reckon/ (a capability search over run_store.py, metadata_index.py and file_memo.py found none), but the added delete_run at reckon/run_store.py:2683 does not replace the direct DELETE in reckon/crew/promotion_scope.py:2769.",
+    "scope_discipline": "all four changed paths (reckon/run_store.py, reckon/ledger.py, the new test and the evidence fragment) are inside the node's declared write paths, and the declared figures directory is simply unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a change signature read from a payload-free mirror; reckon/run_store.py:1328 stored_run_signature answers from run_signatures and the ledger passes a version cursor.\nVERDICT done_when: the done_when names tests/test_a_store_signature_reads_no_payloads.py, and its four cases measure both reads in bytes, the rows each statement returned, payload doubling within 10 percent, and value equality against the base query; the after_suite log records the run.\nVERDICT write_paths: the manifest declares reckon/run_store.py, reckon/ledger.py, the new test and the evidence fragment, and every diff path is inside that list.\nVERDICT manifest: read; it records all four cases passing, the scoped gate (62 passed), both suite arms with revisions and EXIT lines, and the all_debug live-store probe.\nVERDICT diff: read commit by commit from 5ac9f1d1df7a to c7589c1719; the fix adds the mirror and sequence cursor to run_store.py and the delta read to ledger.py, the test adds four cases, and the two docs commits add only the evidence fragment.\nCALL_SITES: reckon/ledger.py:1852 stored_history, reckon/ledger.py:1950 picker_runs, reckon/budget.py:715\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1328 stored_run_signature now answers from the payload-free run_signatures table and the since cursor.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_store_signature_reads_no_payloads.py measures both reads with /proc/self/io and the statement counters, and after_suite-1795342573131800923.log records 62 passed with EXIT=0, though the evidence fragment at line 75 misquotes the negative-control byte figure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all four changed paths are inside the declared write paths listed in the manifest.\nSCORE durability: 16\nJUSTIFICATION durability: the base arm at 5ac9f1d1df7a fails the byte bound with EXIT=1, but the tombstone-on-incremental-delete path has no assertion of its own.\nSCORE fit: 19\nJUSTIFICATION fit: the added declarations follow reckon/run_store.py:205's commentary idiom and ruff check is clean.\nSCORE reuse: 17\nJUSTIFICATION reuse: no existing payload-free signature owner exists, but delete_run at reckon/run_store.py:2683 leaves the direct DELETE in reckon/crew/promotion_scope.py:2769 in place.\nFINDING reckon/crew/promotion_scope.py:2769 non-blocking: _discard_run_store_row bypasses the run_signatures mirror so a refused landing permanently forces the payload-reading legacy fallback.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-a-store-signature-reads-no-payloads.html:75 non-blocking: the quoted negative-control figure 210,452,555 does not match negative-control.log's 210452554.\nFINDING reckon/run_store.py:1995 non-blocking: _retire_signature's INSERT fallback writes an empty project, hiding the tombstone from project-filtered incremental reads.\n",
+  "review_run_id": "r-20261122T102236412893-review-of-mrfo-a-store-signature-reads-no-payloads-c7589c1719a5",
+  "reviewed_base_sha": "5ac9f1d1df7a27012084bffb48099375a5c8a23a",
+  "reviewed_head_sha": "c7589c1719a5ee969f4898ea3aa036a67ce1802f",
+  "reviewed_run_id": "r-20261122T092150461624-mrfo-a-store-signature-reads-no-payloads",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T10:34:07.843198+00:00",
+  "total": 105
+}

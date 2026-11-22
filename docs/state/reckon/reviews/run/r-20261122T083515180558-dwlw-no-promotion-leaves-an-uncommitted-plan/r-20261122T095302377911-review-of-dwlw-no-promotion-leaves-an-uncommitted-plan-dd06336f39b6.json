@@ -1,0 +1,101 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:699",
+    "reckon/cli.py:435"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-dwlw-no-promotion-leaves-an-uncommitted-plan-dd06336f39b6",
+      "recorded_at": "2026-11-22T10:21:26.176861+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-dwlw-no-promotion-leaves-an-uncommitted-plan-dd06336f39b6",
+      "recorded_at": "2026-11-22T10:21:40.281335+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T09:53:55Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "dwlw-no-promotion-leaves-an-uncommitted-plan",
+      "recorded_at": "2026-11-22T10:23:05.807768+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_no_promotion_leaves_an_uncommitted_plan.py",
+      "line": "195",
+      "severity": "blocking",
+      "text": "blocking: test_two_promotions_started_together_commit_both_comments passes at the pinned base revision as well as at the head, so no assertion in it fails when the concurrent-write defect is reinstated, and the declared negative control (the plan file modified and the second promotion refused on a changed snapshot) is absent from the recorded base arm."
+    },
+    {
+      "file": "tests/test_no_promotion_leaves_an_uncommitted_plan.py",
+      "line": "232",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_a_landing_over_an_uncommitted_comment_commits_it also passes at base, so it records the intended scenario but is not a regression guard for the change."
+    },
+    {
+      "file": "tests/test_no_promotion_leaves_an_uncommitted_plan.py",
+      "line": "192",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert met[\"c-run-\" + RUN_ONE][\"who\"] == \"reckon-build\" compares against the author string the test itself passed to _record_landing_comment, so it moves with its input; the same shape appears at line 258."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2212",
+      "severity": "non-blocking",
+      "text": "non-blocking: _commit_landing_comments_left_in re-implements the render-and-compare recognition of HEAD plus an appended landing comment already owned by _adopt_a_plan_edited_after_the_snapshot at promotion.py:2358, where a shared helper would have extended the owner."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2593",
+      "severity": "non-blocking",
+      "text": "non-blocking: when settle_landing_comments returns an empty list the message replaces the whole restore error with \"the plan already matches its committed revision\", discarding a restore failure that may have been about the plan index entry rather than the plan bytes."
+    },
+    {
+      "file": "negative-control-base.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scratch-tree base arm header at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T083515180558-dwlw-no-promotion-leaves-an-uncommitted-plan/negative-control-base.log names the revision, tree and command but neither module.__file__ nor the resolved working directory, so a reader cannot verify the base tree's module was the one imported."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/promotion_requests.py:699 and reckon/cli.py:435 reach the wrapped complete.",
+    "diff": "read commit by commit against dde7b001; the two commits add a settle wrapper and a committing helper in promotion.py plus the 258-line test, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_no_promotion_leaves_an_uncommitted_plan.py with a three-case gate and a negative control; the gate is recorded in the manifest, but the negative control as written is not reproduced.",
+    "goal": "the node goal is that no promotion leaves uncommitted bytes in a plan file; promotion.py:989 and promotion.py:2212 implement the settle-on-refusal path and the head tests pass 3/3.",
+    "manifest": "read; it records status complete, commits 829d44ea9d and dd06336f39, the gate command, three logs, and a negative control note that the other two cases pass at base.",
+    "write_paths": "the source node declared reckon/crew/promotion.py, reckon/crew/promotion_scope.py, the new test, an evidence fragment and a figure path; the diff contains only promotion.py and the new test."
+  },
+  "justifications": {
+    "durability": "tests/test_no_promotion_leaves_an_uncommitted_plan.py:188 fails at the base revision and passes at the head, but :195 and :232 pass at both revisions, so only one of three cases guards the change.",
+    "evidence": "the manifest records scoped-gate 61 passed, baseline 58 passed and after 61 passed with EXIT=0, but the declared negative control names the two-promotions case failing and the recorded base arm (negative-control-base.log) fails only test_a_gate_refused_promotion_commits_the_comment_it_met.",
+    "fit": "reckon/crew/promotion.py:2212 follows the module's existing read_state/write_state idiom and its names describe the behaviour; the two assertion-line findings are about test structure, not naming.",
+    "goal_fidelity": "reckon/crew/promotion.py:989 wraps complete so a refusal in an early guard still settles the plan, and promotion.py:2212 commits an abandoned landing comment, which is the observed defect; the concurrent-write arm the section describes is not shown to be fixed because it already passes at base.",
+    "reuse": "reckon/crew/promotion.py:2212 re-implements the HEAD-plus-appended-comment render comparison already owned by _adopt_a_plan_edited_after_the_snapshot at promotion.py:2358 instead of extending it, though it does reuse _commit_landing_writes and _store._resolve_html_file.",
+    "scope_discipline": "the diff touches only reckon/crew/promotion.py and tests/test_no_promotion_leaves_an_uncommitted_plan.py, both inside the declared write paths, and touches neither the evidence fragment nor the figure path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that no promotion leaves uncommitted bytes in a plan file; reckon/crew/promotion.py:989 wraps complete to settle the plan on every outcome and promotion.py:2212 commits an abandoned landing comment.\nVERDICT done_when: the done_when names tests/test_no_promotion_leaves_an_uncommitted_plan.py with three cases and a negative control; the manifest records scoped-gate 61 passed, baseline 58 passed and after 61 passed, but the declared negative control is not reproduced.\nVERDICT write_paths: the declared paths are promotion.py, promotion_scope.py, the new test, an evidence fragment and a figure path; the diff dde7b001..dd06336f contains promotion.py and tests/test_no_promotion_leaves_an_uncommitted_plan.py only.\nVERDICT manifest: read; it records status complete, commits 829d44ea9d and dd06336f39, the literal gate command, three logs, and the note that two cases pass at base.\nVERDICT diff: read commit by commit against dde7b001; 455 insertions in two files, all inside the declared scope, no plan, state or figure file touched.\nCALL_SITES: reckon/crew/promotion_requests.py:699, reckon/cli.py:435\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:989 settles the plan in a finally block and promotion.py:2212 commits an abandoned landing comment, though the concurrent arm the section describes is not demonstrated.\nSCORE evidence: 11\nJUSTIFICATION evidence: negative-control-base.log fails only test_a_gate_refused_promotion_commits_the_comment_it_met, not the two-promotions case the declared negative control names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and two declared paths were not touched.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_no_promotion_leaves_an_uncommitted_plan.py:188 fails at base, but :195 and :232 pass at base and therefore cannot fail on a reinstated regression.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/promotion.py:2212 follows the read_state/write_state idiom used at promotion.py:2358.\nSCORE reuse: 8\nJUSTIFICATION reuse: promotion.py:2212 duplicates the render-and-compare predicate owned by _adopt_a_plan_edited_after_the_snapshot at promotion.py:2358.\nFINDING tests/test_no_promotion_leaves_an_uncommitted_plan.py:195 blocking: test_two_promotions_started_together_commit_both_comments passes at the pinned base revision too, so it cannot guard the concurrent-write defect and the declared negative control is unmet.\nFINDING tests/test_no_promotion_leaves_an_uncommitted_plan.py:232 non-blocking: test_a_landing_over_an_uncommitted_comment_commits_it also passes at base and is a scenario check rather than a regression guard.\nFINDING tests/test_no_promotion_leaves_an_uncommitted_plan.py:192 non-blocking: the who assertion compares against the author string the test itself supplied, and repeats at line 258.\nFINDING reckon/crew/promotion.py:2212 non-blocking: the HEAD-plus-appended-comment recognition duplicates the owner at promotion.py:2358.\nFINDING reckon/crew/promotion.py:2593 non-blocking: an empty settlement result replaces a restore failure that may concern the plan index entry.\nFINDING negative-control-base.log:1 non-blocking: the scratch-tree base arm names neither module.__file__ nor the resolved working directory.\n",
+  "review_run_id": "r-20261122T095302377911-review-of-dwlw-no-promotion-leaves-an-uncommitted-plan-dd06336f39b6",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "dd06336f39b66bce1bc8964deb15ab348c002aea",
+  "reviewed_run_id": "r-20261122T083515180558-dwlw-no-promotion-leaves-an-uncommitted-plan",
+  "scores": {
+    "durability": 8,
+    "evidence": 11,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T10:01:47.537478+00:00",
+  "total": 78
+}

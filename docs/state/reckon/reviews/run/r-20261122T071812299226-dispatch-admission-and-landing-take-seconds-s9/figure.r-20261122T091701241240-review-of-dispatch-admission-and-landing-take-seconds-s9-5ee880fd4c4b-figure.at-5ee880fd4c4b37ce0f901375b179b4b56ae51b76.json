@@ -1,0 +1,36 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:17:33Z",
+  "figures_reviewed": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T091701241240-review-of-dispatch-admission-and-landing-take-seconds-s9-5ee880fd4c4b-figure/image-0.png",
+    "docs/figures/dispatch-admission-and-landing-take-seconds/dispatch-admission-and-landing-take-seconds-s9/stage-costs-after.svg"
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/archive/dispatch-admission-and-landing-take-seconds-landed.html",
+      "line": 41,
+      "severity": "non-blocking",
+      "summary": "The image's alt text reads 'Five control-loop operations measured before and after the work landed, on one logarithmic time axis, with the bound each one is held to', which says all five operations carry a bound. Four do (30 s, 20 s, 30 s and 600 s) and the plan-selected store read does not: the rendered PNG shows no dotted mark on that row, and the visible figcaption directly below the image states the exception - 'A row without a mark is not bounded by this section.' So a sighted reader gets the correct account, while a screen-reader user, who hears only the alt text, is told a bound exists for a row that has none. Severity non-blocking: it misdescribes one row's bound status to one audience and hides nothing a sighted reader needs. Disposition exempted - the visible caption already carries the expected qualifier for the sighted reader and the correction is a one-line alt-text edit, which is outside this read-only review."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T091701241240-review-of-dispatch-admission-and-landing-take-seconds-s9-5ee880fd4c4b-figure",
+  "reviewed_base_sha": "3a0f33d3620466b129202c886269037fcdd018fc",
+  "reviewed_head_sha": "5ee880fd4c4b37ce0f901375b179b4b56ae51b76",
+  "reviewed_run_id": "r-20261122T071812299226-dispatch-admission-and-landing-take-seconds-s9",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "Text clears its background: the row labels and value labels render in near-black on white (well above 4.5:1), the row labels a dark grey still around 7:1, and the dotted reference mark samples at about #727270, roughly 4.7:1 on white. The grey 'before' bars sample at #929292, about 2.9:1 on white, which is the population grey the repository style names for a reference series, and the blue 'after' bars at about #3B6FB6, roughly 4.6:1.",
+    "data_ink": "The bars and their value labels carry the ink. Ten solid bars (five grey before, five blue after) plus one dotted reference line per bounded row, on an otherwise white field; nothing competes with the bars, and the value labels are the only text inside the plot area besides the axis ticks.",
+    "decoration": "No decoration. No gradient, background fill, shading, gridline, frame, drop shadow or in-figure title. The only non-data ink is the two-line row labels, the axis line and ticks, and the dotted reference marks, all of which are needed to read the comparison.",
+    "label_collision": "Nothing clipped and nothing overlapping. Measured off the rendered PNG, all ink lies inside x 17-1379 and y 28-696 of the 1400x720 canvas, leaving 17-20 px of margin at the left and right edges, 28 px top, 23 px bottom. The row-1 value label '13.9 s' ends about 16 px left of the 30 s bound mark at x 696, so the mark does not run through the text; the row-4 '1.3 s' label sits in the whitespace above its blue bar without touching it; the row-5 label '5,814.0 s' clears the right edge; and the legend sits in clear space above the first bar with no overlap. The dotted bound marks are drawn over the bars, not under them, so each bound reads across the bar it is measured against.",
+    "legibility": "Legible at a glance at the rendered 1400x720 canvas. Log time axis with major ticks at 1, 10, 100, 1 000 and 10 000 s and the axis titled 'time [s]'; each of the five operations carries a two-line row label naming the statistic (median of 3, median of 10, median of 3 reads, one plan 1 055 rows, 90th percentile); every bar is direct-labelled with its value, e.g. '86.4 s', '205.4 s', '5,814.0 s'; the frameless legend above the plot names before/after and the dotted bound. No value needs a zoom to read.",
+    "table_form": "Not naturally a table. The five measures span 1.3 s to 5,814 s, so the single logarithmic axis is what makes them comparable at all, and each row's verdict is the position of a bar against a dotted bound on that axis - a visual judgement a table of the same numbers cannot show. The document already carries the same figures as a table beside this figure, and the figure adds the crossings, not the digits."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:41:30.874768+00:00",
+  "total": null
+}

@@ -804,47 +804,44 @@ def _canonical_identity_is_unique(
 #: One directory's HTML entries, each with the stamp that identifies it.
 _Listing = tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]
 
-#: Entry names held between resolves, keyed as ``_INDEX_MEMO`` is. Resolving a
-#: slug revalidates a held identity index against its directory's listing, and
-#: the listing's names were rediscovered by a glob on every resolve although the
-#: directory had not moved. Only the names are held: every entry is stamped
-#: afresh on each call, because a sibling rewritten in place changes no
-#: directory entry and would otherwise keep the identity it carried before the
-#: write. The identity is ``metadata_index._dir_identity``, which moves exactly
-#: when an entry is added, removed or renamed, so a moved directory is globbed
-#: again and an unchanged one pays no glob at all.
-_ENTRY_NAMES: dict[tuple[str, str, str], tuple[list[int], tuple[Path, ...]]] = {}
-
 
 def _identity_listing(directory: Path, docs_dir: Path, project: str) -> _Listing:
-    """Return each HTML entry of ``directory`` with the directory's own identity.
+    """Return each HTML entry of ``directory``, taken once per directory change.
 
-    The listing is the key a held index is revalidated against: an entry added
-    or removed changes the names, and a sibling written in place changes its own
-    stamp. Only the names are held, against the directory's entry-set identity,
-    so an unchanged directory is not globbed again; every entry is stamped on
-    each call, so a rewrite is seen by the next resolve and the index is never
-    revalidated against a stamp the file no longer carries. A file that cannot
-    be stat'ed keeps its place in the listing with no stamp, so the index is
-    rebuilt rather than trusted. The identity is read before the names are
-    taken, so a directory that moved during the read is globbed again on the
-    next call rather than trusted here.
+    The listing is what a held identity index is revalidated against, and taking it
+    enumerates the directory and stamps every entry. A named resolve needs it only
+    to answer who else claims the identity it resolved, so paying that per entry
+    per resolve made a read of one plan cost the whole directory's metadata, and
+    grew with the plans a read never names. The listing is therefore held against
+    the directory's own stat identity: an entry added, removed or renamed moves it,
+    and the directory is enumerated and re-stamped in full on the next resolve that
+    finds it moved. An unchanged directory answers from the held listing with one
+    stat of the directory itself.
+
+    A sibling rewritten in place moves no directory entry, so its new content is
+    seen by the next read that resolves it, because the file being read is stamped
+    for itself; its place among another slug's claimants updates when the directory
+    next moves. A directory that cannot be stat'ed has no identity to be held
+    against and is listed uncached, and an entry that cannot be stat'ed keeps its
+    place with no stamp, so the index is rebuilt rather than trusted.
     """
-    from reckon import metadata_index
 
-    key = (str(docs_dir), project, str(directory))
-    identity = metadata_index._dir_identity(directory)
-    names: tuple[Path, ...] | None = None
-    if identity is not None:
-        with _INDEX_LOCK:
-            held = _ENTRY_NAMES.get(key)
-        if held is not None and held[0] == identity:
-            names = held[1]
-    if names is None:
-        names = _list_entry_names(directory, docs_dir, project)
-        if names is not None and identity is not None:
-            with _INDEX_LOCK:
-                _ENTRY_NAMES[key] = (identity, names)
+    try:
+        identity = file_memo.file_signature(directory)
+    except OSError:
+        return _stamped_listing(directory, docs_dir, project)
+    return file_memo.memoized(
+        "resource-identity-listing",
+        directory,
+        lambda: _stamped_listing(directory, docs_dir, project),
+        variant=(str(docs_dir), project),
+        identity=identity,
+    )
+
+
+def _stamped_listing(directory: Path, docs_dir: Path, project: str) -> _Listing:
+    """Enumerate one directory and stamp every entry it holds."""
+    names = _list_entry_names(directory, docs_dir, project)
     if not names:
         return ()
     listing: list[tuple[str, tuple[int, int, int, int, int] | None]] = []

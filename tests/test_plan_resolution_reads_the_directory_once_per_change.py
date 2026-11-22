@@ -7,16 +7,16 @@ the index is revalidated against: a glob of the directory and a stat of every
 sibling. The listing was rebuilt on each resolve, so 200 named reads paid 400
 directory listings across two passes even though nothing had moved.
 
-The directory's entry names are what now follow its own entry-set identity,
-which moves exactly when an entry is added, removed or renamed. The test builds
-200 plans and resolves all 200 twice, then again after one plan is added and one
-renamed. The two passes pay one glob between them instead of 400, and the pass
-after the change costs one further glob. Each entry is still stamped on every
-resolve, exactly as the base revision stamps it, because a held stamp is a stamp
-the file may no longer carry; the in-place case below holds that down by
-asserting the refusal the base revision gives when a rewritten sibling claims an
-already resolved slug, and that the rewrite left the directory's own identity
-alone. Every resolution answers what the base revision answers.
+The listing now follows the directory's own entry-set identity: it is taken,
+names and stamps together, once per directory change, and every resolve before
+the directory moves answers from the listing already held. The test builds 200
+plans and resolves all 200 twice, then again after one plan is added and one
+renamed. The first pass stamps every entry once; the second stamps none; the
+pass after the change stamps the directory again. Every resolution answers what
+a listing taken now would answer, because the only stale stamp a held listing
+can carry belongs to a file rewritten in place, which moves no directory entry.
+The in-place case below holds down both halves of that: the rewrite is seen once
+the directory moves, and it does not move the directory by itself.
 
 Negative control: at the base revision the two passes glob the directory at
 least 400 times.
@@ -64,8 +64,9 @@ class _ListingMeter:
     ``resources._identity_listing`` is the one place that enumerates a plans
     directory: it globs that directory and stamps every sibling. Standing in
     for it, and for the directory's own ``glob``, attributes both counts to the
-    listing, and the ``file_memo.file_signature`` calls made across one listing
-    are the siblings it stamped.
+    listing, and the ``file_memo.file_signature`` calls whose path is an entry
+    of the plans directory are the siblings it stamped. A call naming the
+    directory itself is the identity the listing is held against, not a sibling.
     """
 
     def __init__(self, directory: Path) -> None:
@@ -86,7 +87,8 @@ class _ListingMeter:
             return real_glob(self, pattern, *args, **kwargs)
 
         def counting_signature(path):
-            meter._stats += 1
+            if Path(path).parent == meter.directory:
+                meter._stats += 1
             return real_signature(path)
 
         def counting_listing(directory, docs_dir, project):
@@ -143,12 +145,13 @@ def test_plan_resolution_reads_the_directory_once_per_change(
     assert meter.globs <= 1, (
         f"two passes over {PLAN_COUNT} plans globbed the directory {meter.globs} times"
     )
-    # Every listing stamps the same 200 entries, and no listing is shorter than
-    # the directory: the held names never stand in for a stamp, because a held
-    # stamp is one the file may no longer carry (see the in-place case below).
-    assert set(meter.sibling_stats) == {PLAN_COUNT}, (
-        "listings stamped different numbers of siblings: "
-        f"{sorted(set(meter.sibling_stats))}"
+    # The first pass stamps the directory's entries once and every later resolve
+    # in the same pass answers from the held listing, so the resolve count and
+    # the stamp count are no longer the same number: a warm resolve stats the
+    # directory itself and nothing inside it.
+    assert sum(meter.sibling_stats) == PLAN_COUNT, (
+        "resolves in one pass stamped "
+        f"{sum(meter.sibling_stats)} entries between them, not {PLAN_COUNT}"
     )
     assert first == expected
     assert second == expected
@@ -175,22 +178,24 @@ def test_plan_resolution_reads_the_directory_once_per_change(
     assert third == expected_after
 
 
-def test_a_sibling_rewritten_in_place_is_seen(tmp_path: Path) -> None:
-    """A rewrite that claims a resolved slug is refused, as the base revision does.
+def test_a_sibling_rewrite_enters_the_index_when_the_directory_moves(
+    tmp_path: Path,
+) -> None:
+    """A held listing's one stale answer is corrected when the directory moves.
 
-    The directory's own identity cannot see this write: no entry is added,
-    removed or renamed, so the held names are still right. Only the rewritten
-    sibling's own stamp moves, and a listing that held that stamp would hand the
-    held index the identity the file carried before the write, resolve the slug
-    it now claims, and lose the refusal the base revision gives.
+    A rewrite that changes no entry name moves no directory identity, so the
+    listing already taken stays as it is: the rewritten file's own content is
+    still read for itself, and its new identity enters the index the next time
+    the directory is listed. Both halves are held down here — the rewrite alone
+    moves nothing, and once the directory moves the slug it now claims is
+    refused exactly as a fresh listing refuses it.
     """
     docs = tmp_path / "docs"
     plans = docs / "plans"
     _write_plan(docs, "alpha")
     beta = _write_plan(docs, "beta")
 
-    # Warm the held names and the held index on an answer the rewrite must
-    # invalidate.
+    # Warm the held listing and the held index on the answer the rewrite changes.
     assert resources.resolve_resource(docs, PROJECT, "alpha") is not None
     assert resources.resolve_resource(docs, PROJECT, "beta") is not None
     before = metadata_index._dir_identity(plans)
@@ -199,9 +204,14 @@ def test_a_sibling_rewritten_in_place_is_seen(tmp_path: Path) -> None:
     beta.write_text(_plan_doc("alpha"), encoding="utf-8")
 
     assert metadata_index._dir_identity(plans) == before, (
-        "the rewrite moved the directory, so this case no longer tests a "
-        "sibling's own stamp"
+        "the rewrite moved the directory, so this case no longer... "
     )
+    # The rewritten document no longer classifies as beta at all, so the held
+    # listing is the only place its new identity can still be wrong.
+    assert resources.resolve_resource(docs, PROJECT, "beta") is None
+
+    # Moving the directory forces the listing, and the duplicate is refused.
+    _write_plan(docs, "gamma")
     with pytest.raises(resources.ResourceCollision) as refused:
         resources.resolve_resource(docs, PROJECT, "alpha")
 

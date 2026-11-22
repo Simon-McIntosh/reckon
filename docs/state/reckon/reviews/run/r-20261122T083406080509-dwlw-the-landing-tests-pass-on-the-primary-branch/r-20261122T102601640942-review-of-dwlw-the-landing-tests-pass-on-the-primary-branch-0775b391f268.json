@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew/pending_landing.py:clear_conflict",
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/crew/obligation_snapshot.py:payload_for"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T10:26:31Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the manifest's tests: line, which promotion turns into the gate receipt, names the five-file scoped gate rather than the 34-file population command the done_when asserts; the population arms are recorded only under artifacts/evidence_inputs and their own logs, so a reader of the receipt alone sees a narrower measure (107 tests over five files) than the node claims (260 tests over 34 files)."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: bb5180ce79 rewrites the five cases and their shared helper, a5b0e929c1 and 0775b391f2 add and then correct the evidence fragment; no product file and no deletion-without-replacement appears in the diff.",
+    "done_when": "the done_when names the 34-file population at both revisions on all_debug with revision, literal command and EXIT= recorded, plus a per-id attribution; population-head.log (260 passed, EXIT=0, bb5180ce79) and population-base.log (5 failed, 255 passed, EXIT=1, dde7b00176) satisfy the two arms, and manifest.md:25-30 gives each id a 'test wrong' verdict with the commit that already carried the behaviour.",
+    "goal": "the goal is that the pending_landing population grep -l pending_landing tests/*.py runs green at the node's head and red only at the five named ids on base; the landed change delivers exactly that by rewriting five stale cases, with no product source edited.",
+    "manifest": "read; it records status complete, each arm's revision, literal command and per-arm log path, the five failure ids under both arms, per-id attribution citing 521683b87c, 294e725a57 and b217b010d6 (all confirmed present and ancestors of the reviewed head), and a rubric self-check line per dimension.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/pending_landing.py, reckon/crew/promotion_requests.py, three test files, an evidence fragment and a figures path); the diff touches only three of the test files and the evidence fragment, and the two product files and figures path are unused, which is a granted scope not an obligation."
+  },
+  "justifications": {
+    "durability": "the rewritten cases assert literal product outcomes rather than inputs they supplied \u2014 test_a_finished_pending_landing_retires_its_run.py:56-58 asserts repair['status'] == 'resumed' and the rebuilt pointer file, and :119-130 assert 'awaiting-merge-repair' across two passes \u2014 so restoring the record-only refusal of bc57e4220e reddens them; test_a_resume_hold_ends_when_it_is_judged.py:330 asserts landed == [] and test_no_caller_waits_on_a_promotion.py:281-284 supplies fields the snapshot reads (obligation_snapshot.py:2336 raises without them, as the base arm shows).",
+    "evidence": "the two arm logs carry revision, tree, the literal command and a closing EXIT= line (population-head.log:1-39 and :last, population-base.log:1-39 and :last), the scoped gate reconciles to its recorded summary (scoped-gate-1795342786707285477.log:9 '107 passed in 183.63s'), and every figure the evidence fragment cites matches the log it names; the one gap is that the manifest's tests: line names the five-file scoped gate rather than the 34-file population command the done_when asserts.",
+    "fit": "the rewritten cases keep the file's own docstring-and-fixture idiom, name behaviour rather than a plan item (test_a_conflicted_promotion_is_sent_back_to_its_worker, test_a_delivered_repair_lands_the_promoted_run), and a scan of the added lines for phase/stage/plan/ticket/version labels returned nothing.",
+    "goal_fidelity": "the goal asks the pending_landing population to run green at head with the same population red at base on all_debug; population-head.log:39-44 records 260 passed, EXIT=0 at bb5180ce79 and population-base.log:39-454 records 5 failed, 255 passed, EXIT=1 at dde7b00176 with exactly the five named ids, and the diff at 0775b391f2 changes only those three test files plus the evidence fragment.",
+    "reuse": "the node adds no production definition \u2014 the diff is three test files and one evidence HTML page \u2014 so no capability is forked; the case that needed a field map extends the existing hand-built state rather than introducing a parallel snapshot helper.",
+    "scope_discipline": "every path in the diff dde7b00176..0775b391f2 is inside the declared write paths (three test files and docs/evidence/fragments/.../dwlw-the-landing-tests-pass-on-the-primary-branch.html), and the declared product files reckon/crew/pending_landing.py and reckon/crew/promotion_requests.py are correctly untouched because the attribution found no product defect."
+  },
+  "node": "review-of-dwlw-the-landing-tests-pass-on-the-primary-branch-0775b391f268",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the pending_landing population runs green at head and red only at the five named ids on base; population-head.log:44 records 260 passed, EXIT=0 at bb5180ce79 and the diff's three test files carry every one of those five cases.\nVERDICT done_when: the done_when names the 34-file population at both revisions with revision, literal command and EXIT= recorded plus a per-id attribution; population-head.log:1-44 and population-base.log:1-454 supply both arms and manifest.md:25-30 supplies each id's 'test wrong' verdict with its commit.\nVERDICT write_paths: every path in the diff dde7b00176..0775b391f2 is inside the declared write paths \u2014 three test files and docs/evidence/fragments/delivered-work-lands-without-a-coordinator/dwlw-the-landing-tests-pass-on-the-primary-branch.html \u2014 and reckon/crew/pending_landing.py, reckon/crew/promotion_requests.py and the declared figures path are untouched.\nVERDICT manifest: read; status complete, both arms carried with revision, literal command, per-arm log path and failure ids, and five per-id attributions citing 521683b87c, 294e725a57 and b217b010d6, each of which I confirmed exists and is an ancestor of the reviewed head.\nVERDICT diff: read commit by commit against dde7b00176; bb5180ce79 rewrites the five cases and their shared helper, a5b0e929c1 adds the evidence fragment and 0775b391f2 corrects its cited summaries, with no product file and no case deleted without replacement.\nCALL_SITES: reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew/pending_landing.py:clear_conflict, reckon/crew/queue_landing.py:land_once, reckon/crew/obligation_snapshot.py:payload_for\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: population-head.log:44 records 260 passed, EXIT=0 at bb5180ce79 and population-base.log:454 records 5 failed, 255 passed, EXIT=1 at dde7b00176 with exactly the five named ids.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arm logs carry revision, tree, literal command and a closing EXIT= line, and the evidence fragment's 107-passed figure reconciles with scoped-gate-1795342786707285477.log:9, but manifest.md:18 records the five-file scoped gate where the done_when measures the 34-file population.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/test_a_finished_pending_landing_retires_its_run.py, tests/test_a_resume_hold_ends_when_it_is_judged.py and tests/test_no_caller_waits_on_a_promotion.py plus the declared evidence fragment, leaving the two declared product files untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_finished_pending_landing_retires_its_run.py:56-58 asserts repair['status'] == 'resumed' and a rebuilt pointer, so reinstating the record-only refusal of bc57e4220e reddens the case.\nSCORE fit: 19\nJUSTIFICATION fit: the rewritten cases at tests/test_a_finished_pending_landing_retires_its_run.py:111 and :137 name behaviour rather than a plan item, and a label scan of the added lines found no phase, stage, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition \u2014 three test files and one evidence page \u2014 so no capability the repository owns is re-implemented; the obligation case extends the existing hand-built state at tests/test_no_caller_waits_on_a_promotion.py:281.\nFINDING manifest.md:18 non-blocking: the tests: line, which promotion turns into the gate receipt, names the five-file scoped gate rather than the 34-file population command the done_when asserts, so the receipt records 107 tests where the node's measure is 260.",
+  "review_run_id": "r-20261122T102601640942-review-of-dwlw-the-landing-tests-pass-on-the-primary-branch-0775b391f268",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "0775b391f268d8483248e747f0c40a419b0c2a09",
+  "reviewed_run_id": "r-20261122T083406080509-dwlw-the-landing-tests-pass-on-the-primary-branch",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T10:40:00+00:00",
+  "total": 114
+}

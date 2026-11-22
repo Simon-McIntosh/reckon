@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="delivered-work-lands-without-a-coordinator">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-claim-nobody-is-working-is-released#s2&quot;,&quot;a-claim-nobody-is-working-is-released#s3&quot;,&quot;a-claim-nobody-is-working-is-released#s4&quot;,&quot;a-claim-nobody-is-working-is-released#s5&quot;]}">
   <title>A Claim Nobody Is Working Is Released | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -45,7 +45,7 @@
     <p>The rule each section keeps from the landed work: a run showing a turn in progress is never released on an unknown reading. Only a run with no turn in progress may be released without proof that its worker is dead.</p>
 
     <h2 id="s2">§2 — A run whose worker was on a previous fleet node gives up its claim</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> The fleet moves node every few days. Every promoted run launched before the move then reads as liveness unknown for ever, and its pointer is never retired.</p>
     <p><strong>Deliverable.</strong> A promoted run whose recorded launcher host is not the node the fleet record names, and which shows no turn in progress, gives up its pointer on the next pass. A discard of such a run is not undone.</p>
     <p><strong>Done when.</strong> A test builds a temporary crew home holding three promoted runs recorded on a host other than the current fleet node: one with no turn in progress, one whose stream grew inside the turn window, and one recorded on the current node with a dead process. After one pass the first and third have no pointer and the second keeps its pointer. A discarded run of the first kind has no pointer after two further passes. Negative control: at the base revision the first run keeps its pointer. The existing release tests add no failure against the base. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/process_liveness.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_run_from_a_previous_fleet_node_is_released.py</code>.</p>
@@ -114,7 +114,10 @@
     <div class="r-comment-body"><p>figure review of release-gates.svg at head cc8e541a9e5c — 6 rubric items answered in a parsed read-only record, 2 non-blocking findings, 0 blocking, no figure edits</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261122T080059295633-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-cc8e541a9e5c" data-who="reckon-build" data-when="2026-11-22T08:24:07.991Z">
-    <div class="r-comment-body"><p>review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up at cc8e541a9e5ce92b982ed3c705919e99bac15557 (base a2f8ccc7710fe6a356df8e2474d29603a94a471d) scored goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 20, with added_failure_count 0 and one non-blocking finding on the evidence fragment&#x27;s arm pair.</p></div>
+    <div class="r-comment-body"><p>review of r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up at cc8e541a9e5ce92b982ed3c705919e99bac15557 (base a2f8ccc7710fe6a356df8e2474d29603a94a471d) scored goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 20, with added_failure_count 0 and one non-blocking finding on the evidence fragment's arm pair.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up" data-who="reckon-build" data-when="2026-11-22T08:00:47Z">
+    <div class="r-comment-body"><p>A promoted run whose recorded launcher host is the node the fleet has left, and whose newest stream shows no turn inside the silence window, gives up its pointer on the next pass, while a stream carrying a turn inside the window keeps it. The pass reads the host before the pid, so a foreign record never consults this host&#x27;s process table: a quiet run whose pid number names a live process here is released, and a run still writing keeps its pointer even though the promotion row alone would retire it. A workspace on disk, an unfinished landing journal, a pointer with no promotion evidence, and a run outside the caller&#x27;s project or session are each left alone.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261122T063715152464-review-of-acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen-96b9787d6806" data-who="reckon-build" data-when="2026-11-22T06:50:36.975Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T032518975799-acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen at base d24fa090 and head 96b9787d: the release of a recorded measurement run is landed in reckon/crew/pending_landing.py:1370,1376,1419-1428 and 1553-1562, the fence-prologue reader in reckon/crew/reports.py:1556-1566,1671, with the test at tests/test_a_recorded_measurement_run_is_released.py and evidence at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-measurement-run-gives-up-its-claim-when-its-measuremen.html; scores 19/19/15/18/16/16, no blocking finding, no added failures.</p></div>

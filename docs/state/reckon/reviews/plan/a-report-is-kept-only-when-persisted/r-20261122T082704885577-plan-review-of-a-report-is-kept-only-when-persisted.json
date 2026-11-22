@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:27:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html#s9",
+      "id": "reuse_search-1",
+      "reason": "the section's stated deliverable and its \"no report composed\" negative control are both wrong against the base revision, so the node would either fail its gate or re-implement a working composer; the section must be rewritten as the three deltas to `write_sprint_page`.",
+      "text": "\u00a79's premise, \"A sprint closes with no account of itself\", is false and its negative control cannot hold: `write_sprint_page` (reckon/evidence.py:1354) already composes one closing page per sprint, is invoked by every sprint close at reckon/project_state.py:2456 through `_write_sprint_closing_page` (:2438), writes it through `sprint_page_path` (evidence.py:1151) into `docs/evidence/archive/<sprint>-closing.html`, renders one row per member plan with its status, sections landed, headline result and figures (`read_sprint_plan_row`, evidence.py:1194), and is idempotent on a second close (one fixed path, atomic overwrite). What is actually missing is narrow: a sprint theme, a link to each plan's *evidence report* rather than to the plan document (`_plan_page_href`, evidence.py:1166), and the carried-plan's destination sprint; the done-when at base would already pass every case except those three",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html#s7",
+      "id": "reuse_search-2",
+      "reason": "the deliverable reduces to deleting/summarising one clause and extending `_artifact_allowance`, and the \"checked save function\" wording contradicts the universal-prompt constraint the owner states; \u00a77 as written would build a classifier that duplicates one already there.",
+      "text": "the figure rule \u00a77 asks for is already implemented, in four pieces: `SMALL_NODE_RULE` still withholds \"no figure ... unless its done-when names that artifact\" (reckon/crew/prompts.py:215-217); `PLAN_LANDING_CONTRACT` already asks \"Use a figure wherever a figure is clearer\" and already requires \"Name each figure you keep on a `figures:` line in your manifest\" (:309-315); `BRIEF_LANDING_CONTRACT` carries the same ask for brief nodes (:354-356); and `reckon/crew/reports.py:2138-2168` already parses that `figures:` line and holds each named figure to a file the run's commits carry. The plan's new taxonomy (\"a measurement across cases or over time, a comparison of arms, a geometry or a sequence\") is a second classifier beside `FIGURE_NAME_PATTERN` (:248) and `_artifact_allowance` (:253), which exist precisely so the prompt never emits both a withhold and an ask \u2014 the defect is that `PLAN_LANDING_CONTRACT` still contains the ask beside `SMALL_NODE_RULE`'s withhold; and the composed contract deliberately names \"no repository, path, tool, model or project\" (:134-140) while \u00a77 requires it to name \"the repository's checked save function\", which no reckon module owns",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html#s8",
+      "id": "duplicate_owner-1",
+      "reason": "the node brief must name project_state.py's close path and the two existing resolvers, or the implementation adds a second close hook and a second plan\u2192sprint mapping; the plan's write-path line is what carries that, so it changes.",
+      "text": "\u00a78's \"closing a plan composes one evidence report for it\" names `reckon/evidence.py` as its only write path, but closing a plan is owned by the `close` op in reckon/project_state.py (op vocabulary at reckon/project_state.py:130, described at reckon/_mcp_tools.py-adjacent mcp.py:2118 and exercised by the close path), exactly as the sprint closing page is owned by `_write_sprint_closing_page` (reckon/project_state.py:2438-2461) rather than by evidence.py; a brief that lets the node compose at a new call site forks the close path. The plan\u2192sprint lookup \u00a78 needs is likewise already owned: `_sprint_holds_item` (reckon/project_state.py:2124) and the sprint item rows answer which sprint holds a plan, and `_evidence_record_path` (reckon/evidence.py:113) owns plan\u2192landed-record path resolution",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html#s7",
+      "id": "deep_module-1",
+      "reason": "\u00a77 should make the evidence rule one constant composed into both landing contracts (and have the protocol reference point at it rather than restate it), so the rule cannot drift between carriers; \u00a77's fourth copy is a shallow wrapper over the same text.",
+      "text": "the design spreads one rule over four carriers with no owner: `SMALL_NODE_RULE` (:215), `ARTIFACT_NAMED_CLAUSE`/`ARTIFACT_UNNAMED_CLAUSE` (:232, :238), the figure placement paragraphs in `PLAN_LANDING_CONTRACT` (:309) and `BRIEF_LANDING_CONTRACT` (:354), plus the worker protocol reference \u00a77 requires to state it \"in the same words\". The repository already demonstrates the deep form beside it: `FALSIFIABLE_EVIDENCE_CONTRACT` (:141) and `RUBRIC_SELF_CHECK_CONTRACT` (:167) are single constants composed into every prompt, and `_artifact_allowance` (:253) is the one classifier that decides which clause a node receives",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html#s7",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is a mode of `lane_window_census.py` (or dropping the script from the section's write paths and using the existing census to record the baseline), so the brief need not create a fourth one-shot counter that will drift from the three existing ones.",
+      "text": "`scripts/measure_evidence_trail.py` (counts landed implement runs, `docs(evidence)` commits and figure files over a named seven-day window) is a fourth windowed census over instruments that already have readers: `scripts/lane_window_census.py:1-37` reads the run ledger over an explicit `--window START/END` with `--baseline` and `--negative-control` arms and states each figure beside the population it was computed over; `scripts/count_uncommitted_ledger_figures.py:53` counts ledger rows and figures at HEAD versus the working tree; `scripts/derive_run_figures.py` derives per-run figures. Nothing in \u00a77 says why none of these can be extended",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html#s8",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface figures it adds (a new public entry point and a new reported-refusal family) or state that it extends the existing `synthesize_landed_record`/`write_sprint_page` signatures and adds none, which is what makes the counts reconcile.",
+      "text": "against public_definitions 3133, cli_options 535, mcp_views 15, refusal_families 25, \u00a78 adds a public composition entry point on `reckon/evidence.py` and a new report family for \"closing a plan that belongs to no sprint is reported naming the plan, not composed\", and names neither what it retires or merges nor why nothing can be; \u00a79, correctly designed as the three deltas to `write_sprint_page`, should add no definition at all, which it also does not state",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ec06f6cebfb08a332aab542e4c86536ba575faf4",
+  "plan_fingerprint": "1548a142f5b5356990e124093b78502fa139b07bde172b8bfa637812cb3bf153",
+  "plan_slug": "a-report-is-kept-only-when-persisted",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T082704885577-plan-review-of-a-report-is-kept-only-when-persisted",
+  "reviewed_blob_sha": "f023c7d5118f6c0acb6e6a79be6278c4107fb52b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a77 would carry one rule in four places (the two landing contracts, the small-node rule, the worker protocol reference) while the existing single classifier for it (`FIGURE_NAME_PATTERN`/`_artifact_allowance`, reckon/crew/prompts.py:248) owns none of them.",
+    "duplicate_owner": "a finding \u2014 \u00a78 names only `reckon/evidence.py` as its write path, but plan close is owned by the `close` op in reckon/project_state.py, whose sprint analogue is `_write_sprint_closing_page` (reckon/project_state.py:2438); and the plan\u2192sprint lookup it needs is already owned by `_sprint_holds_item` (reckon/project_state.py:2124).",
+    "interface_budget": "a finding \u2014 public_definitions 3133, cli_options 535, mcp_views 15, refusal_families 25; \u00a78 adds a public entry point and a new \"cannot compose, no sprint\" report family without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a79's entire endpoint already exists (`write_sprint_page`, reckon/evidence.py:1354, called on every sprint close from reckon/project_state.py:2456), \u00a78's landed record already exists (`synthesize_landed_record`, reckon/evidence.py:1786), and \u00a77's figure ask, its `figures:` manifest line and its file check already exist in three carriers.",
+    "thin_wrapper": "a finding \u2014 \u00a77's `scripts/measure_evidence_trail.py` is a fourth one-shot window census over instruments two existing scripts already read, with nothing said about why either cannot be extended."
+  },
+  "section_digests": {
+    "_document": "0799f0466d3134f205f7a89610eaa43cc22450e24b22249b558c93609836ada9",
+    "s1": "ee47fe5018715e3fb4b9e9312fa9f5edd9cb7704d33128b5fb7faff903354379",
+    "s2": "9396d7300c138b3407fc2803876606122442333cef7e2724797bf8da6d1fe47c",
+    "s3": "8573e847fda408bfd51552ae8c7f8d2235f117e5893a0e4a0c4757f299a53073",
+    "s4": "0135c54654765e34c225b2005ed6c7260ffcd2724f3222ebf808142a3e452e49",
+    "s5": "a9ffa2d13b324d19fed981ebdf51dc4cda72bf363197ea6f5e5d693238dcb7cd",
+    "s6": "6c471b14972a42e0101dac6f6557f756abdebee752fe914375756de57c03b742",
+    "s7": "6dc50c24ef7b40c929c4cdc9ffa33ea4c64ced24414db604f5576b2b27971301",
+    "s8": "07022aad894abd1482bdab9440226a4fcb9d867bd120de4969739cd13faf044c",
+    "s9": "74ef4b91bde351f4e5c7088c43d1932a1290f1e07ad72d1b8fa222a2400873e1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:36:08.132504+00:00",
+  "total": null
+}

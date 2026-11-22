@@ -21,7 +21,12 @@ from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from reckon.crew.node import CrewError, TaskNode
+from reckon.crew.node import (
+    NEGATIVE_CONTROL_NONE,
+    CrewError,
+    TaskNode,
+    negative_control_writes_a_check,
+)
 
 #: The fields a batch entry may carry. Anything else is refused by name rather
 #: than silently dropped, because a misspelt field would otherwise store a
@@ -127,6 +132,20 @@ _DESCRIBED_FILE = re.compile(
 
 #: Phases a request reports as waiting for its upstream rather than queued.
 WAITING_UPSTREAM_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
+
+#: Phases a live pointer carries when its run delivered nothing.
+_UNDELIVERED_PHASES = frozenset(
+    {"failed", "stopped", "interrupted", "discarded", "dropped"}
+)
+
+#: A promoted row carries no phase, because a promotion is a landing, so a run
+#: whose own check failed is read from the gate the row does carry. The
+#: classification says what the failure measured: a failure recorded as
+#: pre-existing or as a negative result is work that landed with the check
+#: reading red for a reason outside the node, so the section is delivered; any
+#: other classification, and an unclassified failure, names work the run did
+#: not do, so the section is still to queue.
+_LANDED_DESPITE_FAILED_GATE = frozenset({"pre-existing-failure", "negative-result"})
 
 
 class BatchEntryRefusedError(CrewError):
@@ -283,6 +302,42 @@ def _built_once(
         roadmap_module.build_roadmap = original
 
 
+#: The wording that opens a section's negative-control paragraph, together with
+#: the separator that ends the heading — a colon or a full stop, or the dash a
+#: plan may use in its place. The separator is part of the pattern because a
+#: section's explanatory prose also names its negative control while saying why
+#: the section exists; only the paragraph that states the declaration closes
+#: the phrase with a separator, so matching one is what tells the two apart.
+_NEGATIVE_CONTROL_MARKER = re.compile(
+    "\\bnegative[\\s-]+control\\b\\s*[:.\\u2014\\u2013-]", re.IGNORECASE
+)
+
+
+def _negative_control_paragraph(prose: str) -> str | None:
+    """The negative control a section states in its prose, or ``None``.
+
+    The declaration is the section's closing paragraph, so the last phrase that
+    opens one states it. A paragraph that opens ``none`` declares that no
+    mutation applies and gives its reason; it is written with the colon the
+    node's declaration reads that reason after, so a plan and a batch entry
+    that spell the same exemption reach one declaration, and both are judged by
+    the same reader.
+    """
+    normalised = " ".join(prose.split())
+    matches = list(_NEGATIVE_CONTROL_MARKER.finditer(normalised))
+    if not matches:
+        return None
+    rest = normalised[matches[-1].end() :].strip()
+    rest = rest.lstrip(" .:-")
+    if not rest:
+        return None
+    head = rest.partition(" ")[0]
+    if head.rstrip(",;:.").lower() == NEGATIVE_CONTROL_NONE:
+        reason = rest[len(head) :].lstrip(" ,;:.-")
+        return f"{NEGATIVE_CONTROL_NONE}: {reason}" if reason else NEGATIVE_CONTROL_NONE
+    return rest
+
+
 class _PlanRead:
     """One plan document, parsed once for every section the batch takes from it.
 
@@ -330,6 +385,15 @@ class _PlanRead:
                 "done-when, so the entry must give one"
             )
         return paragraph
+
+    def negative_control(self, section: str) -> str:
+        """The negative control the section states in its prose, or ``""``.
+
+        A section that states none yields the empty string: the absence is
+        answered where the node's check is known, because whether a missing
+        control refuses the request depends on whether the node writes a check.
+        """
+        return _negative_control_paragraph(self.prose_for(section)) or ""
 
     def write_paths(self, section: str) -> list[str]:
         """Every path the section's write-paths sentence puts in scope.
@@ -507,6 +571,12 @@ def section_derivation(
     values: dict[str, Any] = {}
     with contextlib.suppress(BatchEntryRefusedError):
         values["done_when"] = read.done_when(section)
+    # A section that states no control supplies none, and the request keeps
+    # whatever its entry gave, or is refused where the node's check is known.
+    with contextlib.suppress(BatchEntryRefusedError):
+        declaration = read.negative_control(section)
+        if declaration:
+            values["negative_control"] = declaration
     # An entry that gives its own write paths keeps them, so the sentence is
     # not read for it at all: a description the sentence cannot resolve must
     # not refuse an entry that never needed the derivation.
@@ -637,6 +707,12 @@ def _entry_node(
         # refused. An entry that declares paths keeps them, exactly as before.
         write_paths, derived["write_paths"] = derivation["write_paths"]
 
+    # A control the entry states is the entry's own and is never overridden by
+    # the section's paragraph, exactly as a supplied field beats a derived one.
+    negative_control = str(entry.get("negative_control") or "").strip()
+    if not negative_control and "negative_control" in derivation:
+        negative_control, derived["negative_control"] = derivation["negative_control"]
+
     estimated_hours = entry.get("estimated_hours")
     if estimated_hours is None and "estimated_hours" in derivation:
         estimated_hours, derived["estimated_hours"] = derivation["estimated_hours"]
@@ -658,7 +734,7 @@ def _entry_node(
         brief=str(entry.get("brief") or ""),
         role=str(entry.get("role") or "implement"),
         spec_level=spec_level,
-        negative_control=str(entry.get("negative_control") or ""),
+        negative_control=negative_control,
         mcp_set=str(entry.get("mcp_set") or ""),
         done_when=done_when,
         write_paths=list(write_paths),
@@ -674,6 +750,25 @@ def _entry_node(
         inputs=_as_list(entry.get("inputs")),
         compares_with=str(entry.get("compares_with") or ""),
     )
+    if negative_control_writes_a_check(node):
+        # The section's prose is the authority on its own control, so its
+        # absence is refused here, by name, rather than left to the generic
+        # node contract where neither the section nor the paragraph it lacks is
+        # named. The refusal a plan-level dispatch raises is the section's to
+        # repair, so it says what the section is missing.
+        if node.write_paths:
+            trigger = (
+                f"its write paths include a test file ({', '.join(node.write_paths)})"
+            )
+        else:
+            trigger = "its done-when names a test file"
+        raise BatchEntryRefusedError(
+            f"{project}:{plan}#{section}: the section states no negative-control "
+            f"paragraph, and {trigger}, so it writes a check, but its "
+            f"negative_control field declares no mutation that check must fail "
+            f"against; add a `Negative control.` paragraph to the section, or "
+            f"declare the control as `{NEGATIVE_CONTROL_NONE}: <reason>`"
+        )
     return project, node, derived
 
 
@@ -794,6 +889,16 @@ def queue_plan(
     nor forgets delivered work whose pointer has already been promoted. The
     command-level options are carried to every section this queues, exactly as
     they are to the entries of a batch file.
+
+    Delivered work is read from the run store, which is where a promotion puts
+    its row, rather than from the ledger documents beside a checkout: the
+    documents are no longer written, so a reader of them alone sees no landed
+    run at all. A row is matched on the plan and section it names rather than
+    on the node id, because a section dispatched on its own carries the node id
+    that dispatch chose, not the one this call derives from the section. A
+    stored row carries no phase, so a run whose own check failed is read from
+    the gate and classification the row does carry: such a run is delivered
+    only when its failure is recorded as one the node's work did not cause.
     """
     from reckon import _plan_html, ledger
     from reckon.crew import runs
@@ -806,7 +911,7 @@ def queue_plan(
     live = list(runs.list_live(project=project))
     ownership = resolve_plan_coordinators(project, root=read.repo_root, pointers=live)
     owner = (ownership.get("plans", {}).get(plan) or {}).get("coordinator")
-    history = ledger.run_rows_from_documents(project, root=read.repo_root)
+    history = ledger.picker_runs(project, read.repo_root)
     entries: list[dict[str, Any]] = []
     rows: dict[str, dict[str, Any]] = {}
     config = None
@@ -833,16 +938,20 @@ def queue_plan(
         for candidate in [*live, *history]:
             node = candidate.get("node")
             node = node if isinstance(node, Mapping) else {}
-            candidate_plan = node.get("plan") or candidate.get("plan")
+            candidate_plan = ledger.row_plan(candidate) or str(node.get("plan") or "")
             candidate_section = node.get("section") or candidate.get("section")
             phase = str(candidate.get("phase") or candidate.get("status") or "")
+            gate = str(candidate.get("gate") or "")
+            classification = str(candidate.get("failure_classification") or "")
+            delivered = phase not in _UNDELIVERED_PHASES and (
+                gate != "failed" or classification in _LANDED_DESPITE_FAILED_GATE
+            )
             role = node.get("role") or candidate.get("role") or "implement"
             if (
                 candidate_plan == plan
                 and normalize_section(candidate_section) == normalize_section(identity)
                 and role == "implement"
-                and phase
-                not in {"failed", "stopped", "interrupted", "discarded", "dropped"}
+                and delivered
             ):
                 existing = candidate
                 break

@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:_entry_node",
+    "reckon/crew/dispatch_batch.py:section_derivation"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:33:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 316,
+      "severity": "non-blocking",
+      "text": "_negative_control_paragraph takes everything from the last marker to the end of the section prose, so a section that states 'Negative control.' before another paragraph (for example Evidence inputs) yields a declaration containing that later text; real plan sections close with the paragraph, and the sibling done-when reader at plan_review.py:967 slices the same way, so this is latent rather than observed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "section_derivation is reached from _entry_node at dispatch_batch.py:623 and from rederived_section_fields at :555, so the derived control flows into both queue-time and held-request release paths.",
+    "diff": "The single commit 43bf98d11d changes dispatch_batch.py (+83/-2) and adds the 263-line test file; the change is confined to section derivation, the negative-control reader, and the entry-time refusal message.",
+    "done_when": "The done_when names four cases in tests/test_a_plan_dispatch_reads_the_sections_control.py; the run logs a scoped gate of 62 passed with the file included and a base arm of 3 failed 1 passed, so the gate asserts the measure.",
+    "goal": "The node goal is 'read a section's negative control at plan-level dispatch'; reckon/crew/dispatch_batch.py:316-322 reads it and :693-701 carries it onto the queued node.",
+    "manifest": "The source manifest reads status complete, records 4 passed for the new file and cites the scoped-gate, baseline, after-suite and negative-control logs, each of which I opened and whose EXIT= lines agree.",
+    "write_paths": "Every path in the diff (reckon/crew/dispatch_batch.py and tests/test_a_plan_dispatch_reads_the_sections_control.py) lies inside the declared write paths; requests.py, the evidence fragment and the figure directory were declared but not touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_dispatch_reads_the_sections_control.py::test_a_section_that_states_its_control_is_queued_with_that_sentence compares the parsed control against the fixture constant STATED_CONTROL, so it reddens if the derivation is removed, as the base arm's 3 failures show.",
+    "evidence": "The done_when names tests/test_a_plan_dispatch_reads_the_sections_control.py; the scoped-gate log records 62 passed at head 43bf98d11d, the baseline log 58 passed at base dde7b00176, and the negative-control log 3 failed 1 passed at the base, each closing EXIT=.",
+    "fit": "reckon/crew/dispatch_batch.py:302 follows the surrounding _PlanRead reader idiom and reuses node.py's NEGATIVE_CONTROL_NONE and negative_control_writes_a_check rather than inventing a second vocabulary.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:316 derives the section's negative-control sentence and :375 exposes it to section_derivation, so a plan-level dispatch now carries the control the goal names.",
+    "reuse": "No generic owner of 'read a labelled closing paragraph from section prose' exists; reckon/crew/plan_review.py:967 owns only the done-when reader, so the added reader extends the pattern rather than duplicating an existing mechanism.",
+    "scope_discipline": "The delivered diff dde7b0017..43bf98d11 touches only reckon/crew/dispatch_batch.py and tests/test_a_plan_dispatch_reads_the_sections_control.py, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261122T093316754369-review-of-rpfw-a-plan-dispatch-reads-the-sections-control-43bf98d11d15",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "43bf98d11d15f010f210f9a5310048c86d95652a",
+  "reviewed_run_id": "r-20261122T083549089756-rpfw-a-plan-dispatch-reads-the-sections-control",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:44:21.788185+00:00",
+  "total": 114
+}

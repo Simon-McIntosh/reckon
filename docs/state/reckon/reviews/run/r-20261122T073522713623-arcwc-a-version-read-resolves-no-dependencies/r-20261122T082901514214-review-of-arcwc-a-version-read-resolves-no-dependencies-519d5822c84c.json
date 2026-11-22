@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: after_suite-1795335506425180408.log at bc1c48a68e records '62 passed in 37.33s' with no FAILED line and a closing EXIT=0; baseline_suite-1795335431591527480.log at 48a03513a8 records '58 passed in 36.41s' with no FAILED line and a closing EXIT=0; the set difference is empty, so 0 added failures.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:_read_plan_view (sets with_deps from the selected view)",
+    "reckon/mcp.py:_read_plan_tool (routes every typed read into _read_plan_view)",
+    "reckon/mcp.py:3909 (mcp.tool read_plan registration)",
+    "reckon/mcp.py:_served_why (the why view bypasses the flag and calls the legacy read with its default)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:29:22Z",
+  "findings": [
+    {
+      "file": "tests/test_a_version_read_pays_only_its_version.py",
+      "line": "167",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative-control log is dated 08:57 local while commit e491453a67 is 09:01, and its traceback reports this assertion at line 172 against the landed file's 167, so the red demonstration ran a five-line-longer variant of the test rather than the committed one; re-running the control on the landed file would make the evidence correspond exactly."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1768",
+      "severity": "non-blocking",
+      "text": "non-blocking: the set literal excludes the summary view from any test, yet reckon/mcp_views.py:3069 serves deps through _section_blocking in summary as well as detail, so a regression dropping \"summary\" from this literal would leave every landed test green while breaking the plan's promise that summary keeps its dependency rows."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 48a03513a8b684d47d35bf506cc4e3bbe45171f4; e491453a67 carries the whole code change (a with_deps parameter and its two gates), bc1c48a68e reflows one docstring line, and the other four commits are the evidence fragment alone.",
+    "done_when": "the done_when names tests/test_a_version_read_pays_only_its_version.py over a cold temporary store plus a timed cold version read recorded beside the base; tests/test_a_version_read_pays_only_its_version.py:163-169 asserts builds == 0 and parsed == [\"target\"] for the three views, :172-185 asserts detail keeps its section rows, and timed-arms.log carries both arms' revision, command and EXIT=0.",
+    "goal": "the node goal is that a version, raw or section read parses only its own document; reckon/mcp.py:1768 sets with_deps false for every view but summary and detail, and reckon/mcp.py:1106 and :1114 gate both dependency-resolution blocks on it.",
+    "manifest": "read; it reports status complete, a scoped gate of 62 passed at e491453a67, a base arm of 58 passed at 48a03513a8 and an after arm of 62 passed at bc1c48a68e, all of which I confirmed in the named logs, and it states the negative control's three failures at base.",
+    "write_paths": "the manifest declares reckon/mcp.py, the new test, the evidence fragment and a figures directory; the diff touches only the first three, so every landed path is inside the declared scope and the declared figures path is simply unused."
+  },
+  "justifications": {
+    "durability": "the negative control at base reddens tests/test_a_version_read_pays_only_its_version.py:167 for all three views, so the assertion is a real guard, but no test covers the summary view's dependency rows served at reckon/mcp_views.py:3069, so dropping \"summary\" from the set at reckon/mcp.py:1768 would leave the suite green.",
+    "evidence": "every done_when element is on disk and reconciles (violations: none), the timed job 1336654 is verified all_debug by sacct, but the negative-control log at tests/test_a_version_read_pays_only_its_version.py:167 cites line 172 and predates the code commit, so the red demonstration ran a variant of the landed test.",
+    "fit": "the new keyword sits beside the existing with_schema parameter at reckon/mcp.py:869 and the comment at reckon/mcp.py:1103 states the mechanism rather than a ticket, with no plan or stage identifier in the diff.",
+    "goal_fidelity": "reckon/mcp.py:1768 sends with_deps false for version, raw and section, and the timed arm shows the 888 KB monitor plan read falling from 16.079 s to 0.741 s with version_field 950 unchanged, so the stated deliverable is also the delivered one.",
+    "reuse": "a search over reckon/ for with_deps, include_deps, skip_deps and dependency-view names found no existing mechanism the parameter forks, and the two consumers of the field (reckon/mcp.py:1106 and :1114) are the ones extended.",
+    "scope_discipline": "git diff --stat 48a03513a8..519d5822c8 lists only reckon/mcp.py, the new test and the node's evidence fragment, all inside the declared write paths, with bc1c48a68e a five-line docstring reflow of reckon/mcp.py and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a version, raw or section read parses only its own document; reckon/mcp.py:1768 sets with_deps false for every view but summary and detail, and reckon/mcp.py:1106 and :1114 gate both dependency-resolution blocks on it.\nVERDICT done_when: the done_when names tests/test_a_version_read_pays_only_its_version.py over a cold temporary store plus a timed cold version read recorded beside the base; tests/test_a_version_read_pays_only_its_version.py:163-169 asserts builds == 0 and parsed == [\"target\"] for the three views, :172-185 asserts detail keeps its section rows, and timed-arms.log carries both arms' revision, command and EXIT=0.\nVERDICT write_paths: the manifest declares reckon/mcp.py, the new test, the evidence fragment and a figures directory; the diff touches only the first three, so every landed path is inside the declared scope and the declared figures path is simply unused.\nVERDICT manifest: read; it reports status complete, a scoped gate of 62 passed at e491453a67, a base arm of 58 passed at 48a03513a8 and an after arm of 62 passed at bc1c48a68e, all of which I confirmed in the named logs, and it states the negative control's three failures at base.\nVERDICT diff: read commit by commit against base 48a03513a8b684d47d35bf506cc4e3bbe45171f4; e491453a67 carries the whole code change (a with_deps parameter and its two gates), bc1c48a68e reflows one docstring line, and the other four commits are the evidence fragment alone.\nCALL_SITES: reckon/mcp.py:_read_plan_view (sets with_deps from the selected view), reckon/mcp.py:_read_plan_tool (routes every typed read into _read_plan_view), reckon/mcp.py:3909 (mcp.tool read_plan registration), reckon/mcp.py:_served_why (the why view bypasses the flag and calls the legacy read with its default)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1768 sends with_deps false for version, raw and section, and the timed arm shows the 888 KB monitor plan read falling from 16.079 s to 0.741 s with version_field 950 unchanged, so the stated deliverable is also the delivered one.\nSCORE evidence: 16\nJUSTIFICATION evidence: every done_when element is on disk and reconciles (violations: none), the timed job 1336654 is verified all_debug by sacct, but the negative-control log at tests/test_a_version_read_pays_only_its_version.py:167 cites line 172 and predates the code commit, so the red demonstration ran a variant of the landed test.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 48a03513a8..519d5822c8 lists only reckon/mcp.py, the new test and the node's evidence fragment, all inside the declared write paths, with bc1c48a68e a five-line docstring reflow of reckon/mcp.py and nothing else.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control at base reddens tests/test_a_version_read_pays_only_its_version.py:167 for all three views, so the assertion is a real guard, but no test covers the summary view's dependency rows served at reckon/mcp_views.py:3069, so dropping \"summary\" from the set at reckon/mcp.py:1768 would leave the suite green.\nSCORE fit: 19\nJUSTIFICATION fit: the new keyword sits beside the existing with_schema parameter at reckon/mcp.py:869 and the comment at reckon/mcp.py:1103 states the mechanism rather than a ticket, with no plan or stage identifier in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for with_deps, include_deps, skip_deps and dependency-view names found no existing mechanism the parameter forks, and the two consumers of the field (reckon/mcp.py:1106 and :1114) are the ones extended.\nFINDING tests/test_a_version_read_pays_only_its_version.py:167 non-blocking: the negative-control log is dated 08:57 local while commit e491453a67 is 09:01, and its traceback reports this assertion at line 172 against the landed file's 167, so the red demonstration ran a five-line-longer variant of the test rather than the committed one; re-running the control on the landed file would make the evidence correspond exactly.\nFINDING reckon/mcp.py:1768 non-blocking: the set literal excludes the summary view from any test, yet reckon/mcp_views.py:3069 serves deps through _section_blocking in summary as well as detail, so a regression dropping \"summary\" from this literal would leave every landed test green while breaking the plan's promise that summary keeps its dependency rows.",
+  "review_run_id": "r-20261122T082901514214-review-of-arcwc-a-version-read-resolves-no-dependencies-519d5822c84c",
+  "reviewed_base_sha": "48a03513a8b684d47d35bf506cc4e3bbe45171f4",
+  "reviewed_head_sha": "519d5822c84c56a67e186e56cb90f49c9d85f050",
+  "reviewed_run_id": "r-20261122T073522713623-arcwc-a-version-read-resolves-no-dependencies",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:56:58.418941+00:00",
+  "total": 108
+}
