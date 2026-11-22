@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+<title>One MCP server per node serves every worker | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<h1>One MCP server per node serves every worker that uses it</h1>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-mechanism">
+<h2>Mechanism</h2>
+<p>A flight may declare a server under <code>shared_mcp_servers</code>, keyed by
+the name a node names in its MCP set. The first launch on a node starts the
+server on the MCP network transport and publishes its endpoint in a node-local
+runtime record, holding an exclusive lock for the server's lifetime. A later
+launch on that node finds the record and hands its worker the endpoint as an
+HTTP server declaration instead of a command, so the worker connects to the
+node's one process. A server the node cannot bring up leaves the worker with the
+stdio declaration its set already resolved, so a node-side fault degrades
+isolation rather than removing tools. The shipped flight defaults declare the
+reckon server shared.</p>
+</section>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-gate">
+<h2>Gate</h2>
+<p><code>tests/test_one_server_per_node_serves_every_worker.py</code> — five tests
+pass in 28.16 s. Forty real client sessions each call <code>read_plan</code>
+against the node's server; all forty answers arrive with no error, and the
+<code>/proc</code> census by the server's own node directory reads exactly one
+server process. A second ensure call on the same node returns the same pid.</p>
+</section>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-measure">
+<h2>Resident memory</h2>
+<p><code>scripts/measure_shared_mcp_memory.py</code> holds 5 then 40 client
+sessions open against one server and samples its resident set over equal
+windows. Recorded on 2026-11-22: 5 workers median 683,932 kB; 40 workers median
+684,972 kB; delta 1,040 kB, against a limit of 500,000 kB. The node ran one
+server process (pid 1872) throughout.</p>
+<p><strong>Scope note.</strong> The plan's measure asks for ten-minute sampling
+over one hour per arm. This node's 75-minute fence could not carry a two-hour
+soak, so the recorded run is the same instrument over ten-second windows with
+two-second sampling. The script defaults to the plan's interval and duration;
+the full soak remains to be run.</p>
+</section>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-negative">
+<h2>Negative control</h2>
+<p>At the base shape a worker's configuration carries the server's own command,
+so each worker starts its own copy. Reproduced with eight workers and the same
+process census: eight servers started, eight live server pids, and the gate's
+one-server assertion failed with <code>one server per node expected, read 8</code>
+(exit 1). Log: <code>negative_control.log</code> in this run's directory.</p>
+</section>
+</main>
+</body>
+</html>
