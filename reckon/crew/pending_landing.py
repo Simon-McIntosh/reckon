@@ -70,6 +70,39 @@ def save_group(group: Mapping[str, Any]) -> None:
     write_json_atomically(group_path(str(group["run_id"])), dict(group))
 
 
+#: The node fields that say which node a pointer serves. The rest of a node is
+#: its body, which a dispatched run keeps in its own file: a listing of live
+#: pointers leaves the body out and a direct read puts it back, so the two
+#: forms of one unchanged pointer differ there and nowhere else.
+_NODE_IDENTITY_FIELDS = ("id", "plan", "section", "role")
+
+
+def _changed_pointer_fields(
+    current: Mapping[str, Any], pointer: Mapping[str, Any]
+) -> list[str]:
+    """The fields in which a pointer differs from the one a caller judged.
+
+    A node is compared by the fields that identify it, because its body is
+    stored apart and present in one reading of a pointer and absent from
+    another. Every other field is compared whole.
+    """
+
+    def node_identity(record: Mapping[str, Any]) -> Any:
+        node = record.get("node")
+        if not isinstance(node, Mapping):
+            return node
+        return {field: node.get(field) for field in _NODE_IDENTITY_FIELDS}
+
+    changed = sorted(
+        key
+        for key in set(current) | set(pointer)
+        if key != "node" and current.get(key) != pointer.get(key)
+    )
+    if node_identity(current) != node_identity(pointer):
+        changed.append("node")
+    return changed
+
+
 def _release_integrated_pointer(
     pointer: Mapping[str, Any],
     repository: Path,
@@ -87,8 +120,12 @@ def _release_integrated_pointer(
 
     def release(current: Mapping[str, Any]) -> bool:
         nonlocal refusal, outcome
-        if dict(current) != pointer:
-            refusal = "the live pointer changed before workspace release"
+        changed = _changed_pointer_fields(current, pointer)
+        if changed:
+            refusal = (
+                "the live pointer changed before workspace release: "
+                + ", ".join(changed)
+            )
             return False
         refusal = landed_workspace_refusal(current, repository, primary)
         if refusal:
@@ -1251,8 +1288,12 @@ def _release_measured_pointer(
 
     def release(current: Mapping[str, Any]) -> bool:
         nonlocal refusal, outcome
-        if dict(current) != pointer:
-            refusal = "the live pointer changed before workspace release"
+        changed = _changed_pointer_fields(current, pointer)
+        if changed:
+            refusal = (
+                "the live pointer changed before workspace release: "
+                + ", ".join(changed)
+            )
             return False
         refusal = _measured_workspace_refusal(current, repository, head)
         if refusal:
