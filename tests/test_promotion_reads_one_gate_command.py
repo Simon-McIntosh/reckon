@@ -91,13 +91,15 @@ def _node() -> TaskNode:
 
 
 def test_two_gate_command_lines_are_refused_quoting_both_and_run_nothing(
-    tmp_path: Path,
+    repository: Path, tmp_path: Path
 ) -> None:
-    """The second line is a review answer, and neither line reaches a shell.
+    """The second line is refused, and the arm that would run it is shown.
 
-    The sentinel is the instrument: the refusal is read from its own message,
-    and the command that would have created the file is quoted in that message,
-    so the file's absence cannot be an absence of evidence.
+    The second line writes a sentinel when a shell executes it, so the file's
+    presence is the proof that a command ran rather than an inference from an
+    exit status. A reader that accepts the manifest has the command it chose
+    replayed here, exactly as promotion replays it, before the case fails —
+    which is what makes this case red on a reader that keeps the last line.
     """
     sentinel = tmp_path / "gate-command-ran"
     second = f"sh -c 'touch {sentinel}'"
@@ -106,13 +108,30 @@ def test_two_gate_command_lines_are_refused_quoting_both_and_run_nothing(
     text = _manifest_text(gate_lines=[GTEST, second], log=log)
     path = _write(tmp_path, "two-lines", text)
 
-    with pytest.raises(reports.ManifestParseError) as refusal:
-        reports.parse_manifest(text, path=str(path))
+    try:
+        manifest = reports.parse_manifest(text, path=str(path))
+    except reports.ManifestParseError as refusal:
+        message = str(refusal)
+        assert GTEST in message, message
+        assert second in message, message
+        assert "exactly one" in message, message
+    else:
+        record = _record(tmp_path, path)
+        gate_check, _commits = promotion_records._default_gate_evidence_from_manifest(
+            record, verdict="passed", gate_check={}, commits=()
+        )
+        promotion_gate.rerun_gate_at_integrated_revision(
+            repository,
+            gate_check,
+            integrated_revision=git(repository, "rev-parse", "HEAD"),
+            replay_log_path=tmp_path / "replay.log",
+        )
+        raise AssertionError(
+            "the read accepted two gate commands and chose "
+            f"{manifest['tests']!r}; replayed, it wrote the sentinel: "
+            f"{sentinel.exists()}"
+        )
 
-    message = str(refusal.value)
-    assert GTEST in message, message
-    assert second in message, message
-    assert "exactly one" in message, message
     assert not sentinel.exists(), "a line was executed despite the refusal"
 
     # Both readers of the file refuse with that message: the check a worker
