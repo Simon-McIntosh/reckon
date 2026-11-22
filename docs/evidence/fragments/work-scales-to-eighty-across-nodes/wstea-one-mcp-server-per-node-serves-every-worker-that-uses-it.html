@@ -30,9 +30,10 @@ reckon server shared.</p>
 <section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-gate">
 <h2>Gate</h2>
 <p><code>tests/test_one_server_per_node_serves_every_worker.py</code> at revision
-<code>80d609fc6ef832179ca74e2b905dd3011875997a</code> — five tests pass in 27.34 s
-(logged in <code>gate-shared-mcp.log</code>, which carries that revision in its
-header). Forty real client sessions each call <code>read_plan</code>
+<code>80d609fc6ef832179ca74e2b905dd3011875997a</code> — logged in
+<code>gate-shared-mcp.log</code>, whose header carries that revision and whose
+summary line reads <code>5 passed, 40 warnings in 27.34s</code> with
+<code>EXIT=0</code>. Forty real client sessions each call <code>read_plan</code>
 against the node's server; all forty answers arrive with no error, and the
 <code>/proc</code> census by the server's own node directory reads exactly one
 server process. A second ensure call on the same node returns the same pid.</p>
