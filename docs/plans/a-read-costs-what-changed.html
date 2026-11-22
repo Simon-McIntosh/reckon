@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="146">
+<meta name="plan-version" content="147">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -435,7 +435,7 @@
     <div class="r-comment-body"><p>review of r-20261122T073522713623-arcwc-a-version-read-resolves-no-dependencies at head 519d5822c84c: 108/120 across the six dimensions (goal_fidelity 19, evidence 16, scope_discipline 19, durability 15, fit 19, reuse 20), 0 added failures, two non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261122T201427985844-review-of-a-read-costs-what-changed-s35-d6860ea3d5b6" data-who="reckon-build" data-when="2026-11-22T21:14:28.034Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261122T185137666667-a-read-costs-what-changed-s35 at base 9ed4c9ee2e01533b4e68d56dc381075e437da704 and head d6860ea3d5b673d39ea6cd95c721cba871ef9c20; the with_deps guard is already present at reckon/mcp.py:1769 in the base, the landed change adds a valid instrument-control test (tests/test_a_version_read_pays_only_its_version.py:172) and its evidence fragment, all six dimensions total 105/120, and one non-blocking finding records that the timed arms compare 0.890 s against 1.092 s rather than reproducing the section&#x27;s 27.7 s cold read.</p></div>
+    <div class="r-comment-body"><p>Reviewed run r-20261122T185137666667-a-read-costs-what-changed-s35 at base 9ed4c9ee2e01533b4e68d56dc381075e437da704 and head d6860ea3d5b673d39ea6cd95c721cba871ef9c20; the with_deps guard is already present at reckon/mcp.py:1769 in the base, the landed change adds a valid instrument-control test (tests/test_a_version_read_pays_only_its_version.py:172) and its evidence fragment, all six dimensions total 105/120, and one non-blocking finding records that the timed arms compare 0.890 s against 1.092 s rather than reproducing the section's 27.7 s cold read.</p></div>
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261122T090006871349-review-of-arcwc-a-section-ref-resolves-without-a-project-build-500a426c45f2" data-who="reckon-build" data-when="2026-11-22T09:29:28.901Z">
     <div class="r-comment-body"><p>Reviewed arcwc-a-section-ref-resolves-without-a-project-build at 500a426c45f2662ae9b777ac343bd2ed96729b68 (base 50e7ad1022e2336f4f5fdfea7b8ccc90919c9b7b): parsed record, scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 16, reuse 20, added_failure_count 0, three non-blocking findings.</p></div>
@@ -445,6 +445,9 @@
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261122T202329444617-review-of-a-read-costs-what-changed-s36-6801ee8bb72b" data-who="reckon-build" data-when="2026-11-22T21:05:23.003Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T185139784233-a-read-costs-what-changed-s36 at head 6801ee8bb72b against base c63b82ee; stored a parsed record scoring all six dimensions (goal_fidelity 17, evidence 19, scope_discipline 20, durability 16, fit 18, reuse 20), added_failure_count 0 derived from the reviewed run's baseline_suite (62 passed) and after_suite (64 passed), and one non-blocking finding that the added mapping test is a base-behaviour characterisation rather than a regression guard.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261122T185139784233-a-read-costs-what-changed-s36" data-who="reckon-build" data-when="2026-11-22T20:22:54.569Z">
+    <div class="r-comment-body"><p>A section ref&#x27;s lazy state mapping now caches a slug that resolves to nothing instead of re-resolving it on every lookup, and reports its resolved plans through the mapping interface: the section-ref gate passes 6/6 on a cold twenty-plan store with a detail read parsing 4 of 20 documents, dependency rows identical to a full index build&#x27;s, an unretained ref resolving by one parse, and the revert arm parsing all 20 and failing; suite arms 62 and 64 passed with 0 failures.</p></div>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261122T091750685780-review-of-arcwc-a-warm-read-stats-what-it-resolves-97afbae9353f" data-who="reckon-build" data-when="2026-11-22T09:38:16.905Z">
     <div class="r-comment-body"><p>Review of r-20261122T073629441164-arcwc-a-warm-read-stats-what-it-resolves stored at the declared review-records path and validated with `crew check --review` (ok true, no findings); reviewed base ae34dd6f..head 97afbae9, all six dimensions scored, added_failure_count 0, three non-blocking findings.</p></div>
