@@ -112,9 +112,12 @@ PARKED_REQUEST_PHASES = (
 #: and the abandoned pointer holds whatever claim it took in silence. The row
 #: carries the classifier's own next action, which is the command that releases
 #: it.
+#: The duty kind carried by a run whose launch ended before it reached a model.
+LAUNCH_FAILED_DUTY_KIND = "launch-failed"
+
 RECOVERY_CLASSIFICATION_DUTY_KINDS = {
     "needs-help": "needs-help",
-    "launch-failed": "launch-failed",
+    "launch-failed": LAUNCH_FAILED_DUTY_KIND,
     # Both classifications whose recovery verb is ``repair``: the run's own
     # declaration is what is wrong, so no sweep, resume or promotion moves it
     # until the session edits the thing the classifier refused. Left out, they
@@ -128,7 +131,9 @@ RECOVERY_CLASSIFICATION_DUTY_KINDS = {
 #: what is wrong with the run, carried on the row's ``detail``. A coordinator
 #: reading one of these owes a repair, so the obligation says what to repair
 #: rather than only that the run is halted.
-CLASSIFIER_DETAIL_DUTY_KINDS = frozenset({"unreadable", "exited-unfinished"})
+CLASSIFIER_DETAIL_DUTY_KINDS = frozenset(
+    {"unreadable", "exited-unfinished", "launch-failed"}
+)
 
 # A duty kind whose evidence is a stored review rather than a live run's state:
 # the row is owed while the dimension carries no disposition, and it names the
@@ -2063,6 +2068,18 @@ def _live_item(
                 item["age_seconds"] = _seconds_since(stamped, now=now)
             remedy = str(hold.get("remedy") or "")
             item["next_command"] = remedy or f"wait: {item['reason']}"
+    if kind == LAUNCH_FAILED_DUTY_KIND and row.get("ended_during_launch"):
+        # A launch that recorded its own end before reaching a model leaves
+        # nothing to continue: there is no session to resume and no work to
+        # carry on. The classifier's remedy still names the command-and-PATH
+        # repair, which is what a person does before trying the run again, but
+        # the duty handed to a coordinator must name a command accepted for the
+        # run as it stands, so it names the discard and carries the cause.
+        run_id = str(item.get("run_id") or "")
+        item["next_command"] = f"reckon crew discard --run {run_id}"
+        launch_error = str(row.get("launch_error") or "").strip()
+        if launch_error and launch_error not in item.get("reason", ""):
+            item["reason"] = f"{item.get('reason') or ''} ({launch_error})".strip()
     return item
 
 
