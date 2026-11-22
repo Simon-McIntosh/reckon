@@ -583,11 +583,6 @@ def fleet_node_name() -> str:
         return ""
 
 
-def _short_host(host: Any) -> str:
-    """The short form a host name and a fleet record node are compared on."""
-    return str(host or "").strip().split(".", 1)[0]
-
-
 def launched_on_another_fleet_node(
     record: Mapping[str, Any] | None, fleet_node: str | None = None
 ) -> bool:
@@ -601,10 +596,14 @@ def launched_on_another_fleet_node(
     """
     if not record:
         return False
+    from reckon.crew import watch_unit
+
     host = record.get("launcher_host")
     if host is None:
         return False
     node = fleet_node_name() if fleet_node is None else str(fleet_node)
-    left = _short_host(host)
-    right = _short_host(node)
-    return bool(left) and bool(right) and left != right
+    # One spelling of the host comparison, in the module that already owns it:
+    # a second spelling disagrees the first time a name carries a domain.
+    if not str(host).strip() or not node.strip():
+        return False
+    return not watch_unit._hosts_match(str(host), node)
