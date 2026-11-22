@@ -1,0 +1,36 @@
+<section id="arcwc-a-version-read-resolves-no-dependencies">
+  <h2>arcwc-a-version-read-resolves-no-dependencies — a version, raw or section read parses its own document</h2>
+
+  <p id="arcwc-a-version-read-resolves-no-dependencies-what"><strong>What changed.</strong>
+  <code>reckon/mcp.py</code>'s <code>_read_plan</code> now takes a <code>with_deps</code>
+  flag, and the progressive resource read sets it false for every view but
+  <code>summary</code> and <code>detail</code>. Those two views serve dependency rows and
+  keep resolving them; <code>version</code>, <code>raw</code>, <code>section</code>,
+  <code>history</code> and <code>schema</code> serve none, so they no longer resolve the
+  plan's <code>depends_on</code> and <code>plan-section-depends-on</code> refs. Resolving a
+  ref reached <code>_section_dependency_rows</code> → <code>_indexed_plan_states</code> →
+  <code>metadata_index.discovery_state(build=True)</code>, which built the whole project to
+  answer one meta field.</p>
+
+  <p id="arcwc-a-version-read-resolves-no-dependencies-measure"><strong>Measure.</strong>
+  A cold <code>view="version"</code> read of <code>docs/plans/the-monitor-shows-the-work-it-watches.html</code>
+  (888 KB) in a scratch copy of this repository's docs tree, on <code>all_debug</code>:
+  <strong>16.079 s</strong> at base revision <code>48a03513a8</code> and
+  <strong>0.741 s</strong> at head <code>e491453a67</code>, a factor of 21.7. Both arms ran
+  the same literal command in fresh processes with a fresh <code>RECKON_HOME</code>, so the
+  persisted index was cold in each. The logs are
+  <code>timed-arms.log</code> in the run directory, carrying each arm's revision, literal
+  command and closing <code>EXIT=0</code>.</p>
+
+  <p id="arcwc-a-version-read-resolves-no-dependencies-gate"><strong>Gate.</strong>
+  <code>tests/test_a_version_read_pays_only_its_version.py</code> builds a temporary store whose
+  target plan declares three section refs and whose index is cold, then counts
+  <code>metadata_index.build_index</code> calls and plan parses: a <code>version</code>, a
+  <code>raw</code> and a <code>section</code> read each build the index zero times and parse
+  exactly one document (the target). A <code>detail</code> read of the same plan still returns
+  its two section rows' waits (<code>alpha#s1</code> for <code>s1</code>; <code>beta</code> and
+  <code>gamma</code> for <code>s2</code>), each found and active.
+  <strong>Negative control.</strong> At the base revision the three cases build the index once
+  and parse all twelve documents, and fail with <code>assert 1 == 0</code>; the detail case
+  passes there too, so the change is shown to remove only the index build.</p>
+</section>
