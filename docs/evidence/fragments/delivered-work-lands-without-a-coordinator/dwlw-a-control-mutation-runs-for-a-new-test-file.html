@@ -1,0 +1,54 @@
+<section id="dwlw-a-control-mutation-runs-for-a-new-test-file" class="evidence-fragment">
+  <h2>§30 — A run that adds a test file can still have its control mutation measured</h2>
+  <p>
+    The control mutation is a node's own tests run over the tree its repair is
+    absent from. Where the measurement goes to a partition, that tree is built
+    from a revision inside the submitted job, so a test file the node adds —
+    absent from the run's base revision — has to be carried in from a revision
+    that holds it. The partitioned builder carried from the revision it was
+    asked to build, and the control measure asked it for the base revision
+    (its own arm's revision), so an added test file produced
+    <code>fatal: pathspec 'tests/test_iron_field_source.py' did not match any
+    files</code>, then <code>tar: This does not look like a tar archive</code>,
+    and <code>EXIT=2</code> — read as "the control mutation did not run".
+  </p>
+  <p>
+    Reproduced before the change against a temporary repository whose head adds
+    <code>tests/test_added.py</code> and whose base does not hold it: the
+    submitted script's log held exactly those three lines and
+    <code>control_mutation_observation</code> returned
+    <code>{'unreadable': 'the control mutation did not run'}</code>.
+  </p>
+  <p>
+    The control now carries the node's test files from the head the delivered
+    tree is at — the revision that holds them — while still building the tree
+    at the run's base revision. The carry step is named: a path the revision
+    does not hold stops the arm with
+    <code>cannot build the measurement tree: &lt;path&gt; is not present at
+    revision &lt;rev&gt;</code> rather than two runner fragments, and that
+    sentence is the arm's unreadable reason, so the refusal names the path and
+    the revision it asked.
+  </p>
+  <p id="dwlw-a-control-mutation-runs-for-a-new-test-file-measure">
+    Measure: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider
+    -q tests/test_a_control_mutation_runs_for_a_new_test_file.py</code> reports
+    <strong>3 passed</strong>. The three cases are: an added test file carried
+    from the head reads red over the base as declared
+    (<code>tests/test_added.py::test_mutated</code>, <code>EXIT=1</code>); a run
+    editing only an existing test is measured from the base revision's own
+    copy; and a path neither revision holds is refused naming the path and the
+    revision. The neighbouring partition and control tests —
+    <code>tests/test_a_gate_creates_its_log.py</code>,
+    <code>tests/test_negative_control_log_is_a_path.py</code>,
+    <code>tests/test_a_landing_measures_a_mismatched_arm.py</code>,
+    <code>tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py</code>
+    — report <strong>42 passed</strong> with the change.
+  </p>
+  <p>
+    Negative control: on the base revision the first case fails with
+    <code>{'unreadable': 'the control mutation did not run'}</code>, red with a
+    <code>FAILED</code> id and <code>EXIT=1</code>. Each arm's log sits under
+    the run directory and carries its revision, its literal command and a
+    closing <code>EXIT=</code> line.
+  </p>
+</section>

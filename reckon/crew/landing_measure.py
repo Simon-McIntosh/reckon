@@ -90,6 +90,12 @@ _FAILED_ID = re.compile(r"^(?:FAILED|ERROR)[ \t]+(\S+)", re.MULTILINE)
 #: superseded by the trap's own, which is written after everything the arm ran.
 _EXIT_RECEIPT = re.compile(r"^EXIT=(\d+)[ \t]*$", re.MULTILINE)
 
+#: The sentence a partitioned arm prints when a test file its tree lacked could
+#: not be carried from the revision asked for it, with both facts in the line.
+_TREE_BUILD_REFUSAL = re.compile(
+    r"^cannot build the measurement tree: .*$", re.MULTILINE
+)
+
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
 
@@ -919,6 +925,45 @@ def partition_submission(
     return selected, argv, environment
 
 
+def _delivered_head(tree: Path, timeout: float) -> str:
+    """The revision a delivered worktree is at, when it can be read.
+
+    The head of the tree a run delivered is the revision that holds the test
+    files the run added, so it is what a measurement tree that lacks one of
+    them carries it from. An unreadable head leaves the caller to fall back to
+    the revision it already has, and the arm then refuses naming what it could
+    not find.
+    """
+    try:
+        finished = _git(tree, "rev-parse", "HEAD", timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    if finished.returncode:
+        return ""
+    return finished.stdout.strip()
+
+
+def _carry_line(git: str, relative: str, revision: str) -> str:
+    """One shell step carrying a test file the measurement tree lacks.
+
+    The archive is named so a failure says which path was asked for and which
+    revision it was asked of, rather than letting ``git archive`` and ``tar``
+    each print a fragment of the same failure into the arm's log. A path the
+    revision does not hold cannot be carried, so the tree cannot be built and
+    the arm stops with that sentence instead of running a suite over a tree
+    that is missing a file the node declared.
+    """
+    quote = shlex.quote
+    return (
+        f'if [ ! -e "$scratch/tree"/{quote(relative)} ]; then '
+        f"{{ {git} archive {quote(revision)} -- {quote(relative)} | "
+        'tar -x -C "$scratch/tree"; } || { '
+        'printf "cannot build the measurement tree: %s is not present at '
+        f'revision %s\\n" {quote(relative)} {quote(revision)} >&2; '
+        "exit 4; }; fi"
+    )
+
+
 def _partition_runner(
     runner,
     *,
@@ -954,12 +999,7 @@ def _partition_runner(
         scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote
         git = shlex.join(["git", "--git-dir", str(git_dir)])
-        carry = "\n".join(
-            f'if [ ! -e "$scratch/tree"/{quote(relative)} ]; then '
-            f"{git} archive {quote(head_sha)} -- {quote(relative)} | "
-            'tar -x -C "$scratch/tree"; fi'
-            for relative in carried
-        )
+        carry = "\n".join(_carry_line(git, relative, head_sha) for relative in carried)
         assignments = options.pop("arm_environment")
         invocation = shlex.join(
             ["env", *[f"{k}={v}" for k, v in assignments.items()], *command]
@@ -1037,7 +1077,12 @@ exit "$status"
         receipts = _EXIT_RECEIPT.findall(output)
         status = int(receipts[-1]) if receipts else 3
         reason = ""
-        if not receipts:
+        refusal = _TREE_BUILD_REFUSAL.search(output)
+        if refusal:
+            # The arm's own sentence names the path and the revision, so it is
+            # the reason a reader is given rather than a log excerpt.
+            reason = refusal.group(0).strip()
+        elif not receipts:
             reason = "carries no exit receipt"
         elif status != finished.returncode:
             reason = (
@@ -1415,6 +1460,12 @@ def control_mutation_observation(
     The failing ids are the control's own, judged by the same reader promotion
     uses for a log the run recorded.
 
+    The tree the control runs over is the base revision, but a test file the
+    node adds does not exist there. That file is carried from the run's own
+    head, read from the delivered tree, which is the revision that holds it, so
+    a control measure of an added test is a tree that can be built rather than
+    an archive request for a path its revision does not carry.
+
     The run is submitted to the configured measurement partition the way an
     armed arm is, so taking the reading costs a queue wait rather than a suite
     run on the landing host. The return value carries ``unreadable`` when the
@@ -1444,7 +1495,7 @@ def control_mutation_observation(
             repo=tree,
             base_tree=base_tree,
             base_sha=base_sha,
-            head_sha=base_sha,
+            head_sha=_delivered_head(tree, timeout) or base_sha,
             partition=partition,
             long_partition=str(landing.get("measure_long_partition") or "rigel"),
             test_files=node_tests,
