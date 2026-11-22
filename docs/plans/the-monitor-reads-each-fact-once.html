@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="595">
+<meta name="plan-version" content="596">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -2147,7 +2147,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
 </div>
 <div class="r-comment" data-section="s116" data-id="c-run-r-20261122T213407325451-review-of-the-monitor-reads-each-fact-once-s116-88510c5e16d2" data-who="reckon-build" data-when="2026-11-22T22:01:00.717Z">
-    <div class="r-comment-body"><p>Review of r-20261122T143232125878-the-monitor-reads-each-fact-once-s116 at 88510c5e16: 13 files change to open bounded or post-seek binary reads unbuffered, plus one AST-discovery test; reviewed independently at 5 passed in 7.96s and the base arm&#x27;s trace reproduced from logs/bounded-reads-base.trace (8,454,146 bytes vs 73,794 at head); scores 19/19/20/20/17/20 with one non-blocking docstring-duplication finding.</p></div>
+    <div class="r-comment-body"><p>Review of r-20261122T143232125878-the-monitor-reads-each-fact-once-s116 at 88510c5e16: 13 files change to open bounded or post-seek binary reads unbuffered, plus one AST-discovery test; reviewed independently at 5 passed in 7.96s and the base arm's trace reproduced from logs/bounded-reads-base.trace (8,454,146 bytes vs 73,794 at head); scores 19/19/20/20/17/20 with one non-blocking docstring-duplication finding.</p></div>
+</div>
+<div class="r-comment" data-section="s116" data-id="c-run-r-20261122T143232125878-the-monitor-reads-each-fact-once-s116" data-who="reckon-build" data-when="2026-11-22T21:21:19.929Z">
+    <div class="r-comment-body"><p>Every binary read in reckon/crew/, reckon/run_store.py and reckon/ledger.py that takes a bounded slice or reads after a seek now opens unbuffered or reads positionally, so a bounded probe or a tail scan costs its own bytes instead of a 4 MiB GPFS block: one producer pass on a 16,940,000-byte GPFS file requested 8,454,146 bytes at 9ed4c9ee2e and 73,794 at f90e3db88f, the new test discovers the sites by parsing the modules and reports 5 passed at head against 4 of 5 failing at base, and the importing files&#x27; suite reports 58 passed at base and 63 passed at head with no added failures.</p></div>
 </div>
 </section>
 </main>
