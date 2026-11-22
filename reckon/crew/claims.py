@@ -489,7 +489,13 @@ def _run_record_paths(pointer: Mapping[str, Any], run_id: str) -> list[Path]:
 def _review_record_paths(
     pointer: Mapping[str, Any], run_id: str, review_records: Any
 ) -> list[Path] | None:
-    """Every review record a run carries, or None when the store cannot be read."""
+    """Every review record a run carries, or None when the store cannot be read.
+
+    A store this cannot read is not evidence that no review happened, so it
+    answers None and the claim keeps binding: the review store is the one record
+    here whose reader reaches a whole project's history, and a failure in it must
+    never release a path.
+    """
     project = str(pointer.get("project") or "")
     if not project:
         return []
@@ -498,7 +504,7 @@ def _review_record_paths(
             path
             for path, _record in review_records.stored_records_for_run(project, run_id)
         ]
-    except (OSError, CrewError):
+    except Exception:  # noqa: BLE001 - an unreadable store keeps the claim, not fails the pass
         return None
 
 
