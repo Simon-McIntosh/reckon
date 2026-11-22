@@ -153,3 +153,33 @@ def test_a_recorded_measurement_run_is_released_and_a_recordless_one_is_kept(
     assert runs.pointer_path("r-recordless").exists()
     assert recordless["tree"].is_dir()
     assert {row["run_id"] for row in again if row["run_id"] == "r-recorded"} == set()
+
+
+def test_a_fence_temp_notice_is_not_the_logs_first_record(tmp_path: Path) -> None:
+    """A job node lacks the worker's temp directory, and the fence says so.
+
+    The fence writes its notice, then the notice that the task's own empty temp
+    stands in, before the measure writes its header. Both lines are the
+    launch's, so the header after them is what a reader takes as the log's
+    first record — a measurement taken from a node-local scratch directory is
+    unreadable otherwise.
+    """
+    from reckon.crew.fragment_reconcile import log_record
+
+    log = tmp_path / "gate.log"
+    log.write_text(
+        "srun: task re-enters the worker fence; this is the shim, reached by name or by absolute path.\n"
+        "fence: temp directory /tmp/scratch is absent on node-b; the task's own "
+        "empty temp directory stands in for it\n"
+        "# revision: 0123456789abcdef0123456789abcdef01234567\n"
+        "# tree: /tmp/x/tree\n"
+        "# command: python -m pytest -q\n"
+        "3 passed in 1.20s\n"
+        "EXIT=0\n",
+        encoding="utf-8",
+    )
+
+    record = log_record(log)
+
+    assert record.revision == "0123456789abcdef0123456789abcdef01234567"
+    assert record.summary == "3 passed in 1.20s"
