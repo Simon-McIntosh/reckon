@@ -59,6 +59,13 @@ a-read-answers-inside-its-deadline (impl 1.0).</pre>
       project declaring no limit carries none. The gate log names the revision, tree and command and ends in
       <code>EXIT</code>.</p>
 
+    <p id="owic-a-limit-on-pending-plans-per-project-arms">The base arm runs at <code>b95808d7a485</code> and the
+      head arm at <code>31a2cd366a4f</code>. The scoped command
+      <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_pending_plan_limit.py</code> reports 3 passed in 1.10s at base <code>b95808d7a485</code> and
+      3 passed in 1.81s at head <code>31a2cd366a4f</code>, both at <code>EXIT=0</code>, so the change adds no
+      failure.</p>
+
     <h2 id="owic-a-limit-on-pending-plans-per-project-velocity">Velocity figures</h2>
     <p id="owic-a-limit-on-pending-plans-per-project-velocity-figures">The velocity view (<code>velocity.report</code>,
       the computation behind <code>crew(view="velocity")</code>) was read on 2026-11-22 over 2026-10-26..2026-11-16,
