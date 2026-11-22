@@ -16,9 +16,10 @@
       <li>The tolerance is reached only where a reader actually refused the file. An unreadable manifest with no delivered record, an unreadable manifest on an implement run, and an absent manifest all behave as before, and each of those three is pinned by a case.</li>
     </ul>
     <h3 id="dwlw-a-review-is-promoted-from-its-record-alone--evidence">Evidence</h3>
-    <p>Five cases pass at the head: the promotion route and the sweep route both promote a complete record behind a one-byte manifest and record the unreadable manifest on the row; a review with no record stays refused with <code>record cannot be read</code> and keeps its pointer; an implement run stays refused naming the manifest; and the sweep leaves a record-less review as it found it.</p>
+    <p>Six cases pass at the head: the promotion route and the sweep route both promote a complete record behind a one-byte manifest and record the unreadable manifest on the row; a review with no record stays refused with <code>record cannot be read</code> and keeps its pointer; an implement run stays refused naming the manifest; and the sweep leaves a record-less review as it found it.</p>
     <p>Negative control: on the pinned base revision the first case fails with the cannot-read-manifest refusal, and the sweep route fails because the run is never promoted. Both figures are in the run's gate logs.</p>
     <p>The logs cited: the baseline suite at revision b5444d24, the after suite at revision 27eba3ba0f, and the scoped gate at revision 45d373ae. Each opens with its own revision and command and closes with its exit status.</p>
+    <p>Results as recorded, at revision b5444d24: 58 passed in 37.42s; at revision 27eba3ba0f: 63 passed in 38.77s; at revision 45d373ae: 64 passed in 38.17s.</p>
   </main>
 </body>
 </html>
