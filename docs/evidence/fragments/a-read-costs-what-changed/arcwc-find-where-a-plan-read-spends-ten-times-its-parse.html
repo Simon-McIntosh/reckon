@@ -1,0 +1,83 @@
+<section id="arcwc-find-where-a-plan-read-spends-ten-times-its-parse">
+  <h2>arcwc-find-where-a-plan-read-spends-ten-times-its-parse — a version read pays the project's index, not its own parse</h2>
+
+  <p id="arcwc-find-where-a-plan-read-spends-ten-times-its-parse-what"><strong>What was measured.</strong>
+  The served entry points were profiled on revision <code>319b74cb95</code>:
+  <code>read_plan(view="version")</code> and a no-op-shaped <code>edit_plan</code> (setting
+  <code>status</code> to the value it already held) of
+  <code>the-monitor-shows-the-work-it-watches</code> (904,485 bytes) and of a 29 KB control,
+  <code>a-dry-run-must-resolve-what-the-real-call-resolves</code> (29,282 bytes), both through
+  <code>reckon.mcp.read_plan_tool</code> / <code>edit_plan_tool</code> with
+  <code>checkout_path</code> naming the working tree. Because the deadline wrapper runs the body on
+  a pool worker, each <code>cProfile</code> was taken on the synchronous body inside exactly the
+  request scopes the read wrapper enters on that worker
+  (<code>metadata_index.discovery_file_scope()</code>, <code>resources.resource_scan_scope()</code>);
+  full served calls were timed separately without a profiler.</p>
+
+  <p id="arcwc-find-where-a-plan-read-spends-ten-times-its-parse-result"><strong>Result.</strong>
+  Warm version read: <strong>1.474–2.112 s</strong> (wall) / 0.828–1.003 s CPU for the monitor plan
+  and <strong>1.373–2.112 s</strong> / 0.661–1.199 s for the 29 KB plan — flat in plan size. Cold
+  index: <strong>27.732 s</strong> / 19.457 s CPU for the monitor plan against
+  <strong>0.769 s</strong> / 0.337 s for the 29 KB plan. No-op edit: <strong>8.167 s</strong> /
+  6.308 s CPU for the monitor plan and <strong>4.573 s</strong> / 2.537 s for the 29 KB plan with
+  the index current. The requested plan's own parse is <strong>0.332 s</strong> (monitor) and
+  <strong>0.013 s</strong> (29 KB) in a fresh process. Load average was logged with every figure.</p>
+
+  <p id="arcwc-find-where-a-plan-read-spends-ten-times-its-parse-dominant"><strong>Dominant cost.</strong>
+  A version read does not spend its time parsing the plan it names: on a cold cache 66.5 of the
+  69.5 profiled seconds (96%) is one whole-project metadata discovery index build reached from
+  <code>_section_dependency_rows</code> (<code>reckon/mcp.py:1920</code>) -> <code>_indexed_plan_states</code>
+  (<code>:1952</code>) -> <code>metadata_index.discovery_state</code> -> <code>build_index</code>,
+  which calls <code>_plan_html.read_state</code> <strong>548</strong> times and <code>parse_meta</code>
+  548 times (25,315 <code>soup.select</code> calls, 2.24 million CSS-match calls). The plan declares
+  40 sections with waits and 50 section-scoped refs; the 29 KB control declares none, never enters
+  the path, and builds no index. With the index warm, 3.14 of 3.29 profiled seconds sit in
+  <code>_read_state</code>: <code>resources._directory_identity_index</code> re-lists the plans
+  directory on every resolution (<strong>5,297 posix.stat calls</strong>, 1.5 s) and a 21,642,761-byte
+  persisted index is decoded per read (0.76 s) and re-encoded (2.999 s) whenever any covered
+  signature has moved. The no-op write parses the same 904 KB document <strong>five times inside
+  <code>write_plan</code> plus twice more in the section-coverage guard</strong>, then the next read
+  rewrites the 21 MB index.</p>
+
+  <p id="arcwc-find-where-a-plan-read-spends-ten-times-its-parse-repair"><strong>Proposed repair
+  (a plan section, for the coordinator to write).</strong> (1) Resolve <code>deps</code> and
+  section-scoped refs only for the views that serve them, so <code>version</code>, <code>raw</code>
+  and <code>section</code> resolve none. (2) Resolve refs from
+  <code>metadata_index.persisted_discovery_entries</code> / <code>current_discovery</code>,
+  validating only the target plans named, rather than a tree-wide validation pass. (3) Serve
+  <code>resources._directory_identity_index</code> from <code>file_memo.memoized</code>
+  keyed on the directory's stat identity. (4) Thread one parsed state through
+  <code>write_plan</code>, <code>_require_heading_for_section_records</code> and
+  <code>new_section_coverage_gaps</code> so a write parses once. Write paths:
+  <code>reckon/mcp.py</code>, <code>reckon/metadata_index.py</code>,
+  <code>reckon/resources.py</code>, <code>reckon/_store.py</code> and a new test.
+  Test: a synthetic store whose target plan declares section refs and whose index is cold, asserting
+  <code>view="version"</code> builds no index and parses at most once while <code>view="detail"</code>
+  still builds it; two resolutions list the directory once; a no-op edit parses once. Negative
+  control: restore the unconditional section-ref resolution for the version view and the first case
+  fails.</p>
+
+  <p id="arcwc-find-where-a-plan-read-spends-ten-times-its-parse-evidence"><strong>Evidence.</strong>
+  The full note is
+  <code>where-a-plan-read-spends-its-time.md</code> under the run directory
+  <code>…/runs/r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse/</code>.
+  Profiles and timings are in that run's <code>logs/</code>:
+  <code>02-read-monitor-cold.log</code>, <code>02-read-monitor-warm.log</code>,
+  <code>03-read-monitor-warm.log</code>, <code>04-read-monitor-cold-profile.log</code>,
+  <code>05-read-monitor-warm-profile.log</code>, <code>06-edit-monitor-noop.log</code>,
+  <code>07-edit-monitor-noop-profile.log</code>, <code>08-read-small-cold.log</code>,
+  <code>09-read-small-warm-profile.log</code>, <code>10-read-small-warm.log</code>,
+  <code>11-read-small-warm.log</code>, <code>12-parse-baseline.log</code>,
+  <code>13-edit-small-noop-profile.log</code>, <code>14-read-small-settle.log</code>,
+  <code>16-edit-small-noop-settled.log</code>. Each starts with the revision and the literal command
+  and ends in a bare <code>EXIT=</code> line.</p>
+
+  <p id="arcwc-find-where-a-plan-read-spends-ten-times-its-parse-caveats"><strong>Caveats.</strong>
+  The fence mounts <code>~/.config/reckon</code> read-only (only the run directory is a
+  <code>rw</code> bind-mount), so the done-when's note path
+  <code>~/.config/reckon/crew/reports/reckon/where-a-plan-read-spends-its-time.md</code> could not be
+  written and the same note was delivered under the run directory; <code>RECKON_HOME</code> pointed
+  at a scratch home, which moves only the metadata-index cache and the empty staging review store.
+  The write experiments modified the two plan files and restored them byte-for-byte from backups
+  (sha256 verified; <code>git status</code> clean afterwards); no plan state was left changed.</p>
+</section>
