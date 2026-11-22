@@ -117,6 +117,15 @@ arms at e5aef21c: base d24fa090e52748cc3100cd54e60d68ad3e87fb1b
 <code>58 passed in 36.23s</code>, after arm <code>66 passed in 42.28s</code>, and
 the scoped gate including the release test <code>67 passed in 41.51s</code>.
 </p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p12">
+Measure at the reviewed head ad40298e2a66e00108f2b23bd6964716caa3c9a8: the
+fence arms re-run there give base d24fa090e52748cc3100cd54e60d68ad3e87fb1b
+<code>58 passed in 40.70s</code> and after arm <code>66 passed in 37.30s</code>.
+The declared mutation applied to the product code, in which the pass reads this
+host's process table for a previous-node run, fails the quiet and the working
+previous-node cases: <code>2 failed, 6 passed in 1.67s</code>, logged with its
+non-zero exit, after which the tree was returned to this revision.
+</p>
 </article>
 </body>
 </html>
