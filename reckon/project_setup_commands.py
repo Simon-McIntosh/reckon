@@ -16,6 +16,7 @@ def agent_context():
     """Inspect the effective agent instructions and skill metadata."""
 
 
+
 @agent_context.command(name="doctor")
 @click.option(
     "--target",
@@ -114,6 +115,7 @@ def agent_context_doctor(
         raise click.exceptions.Exit(1)
 
 
+
 @main.command()
 @click.option("--port", default=8765, show_default=True, help="Port to listen on.")
 @click.option(
@@ -152,6 +154,7 @@ def mcp(transport, host, port, name):
     from reckon.mcp import main as mcp_main
 
     mcp_main(transport=transport, host=host, port=port, name=name)
+
 
 
 @main.command(name="fleet")
