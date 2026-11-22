@@ -1,5 +1,6 @@
 import inspect
 import os
+import re
 import time
 from collections.abc import Iterable, Mapping
 from contextvars import ContextVar
@@ -71,6 +72,53 @@ def _emit_completion_reply(payload, pretty: bool) -> None:
         reply.append(dict(payload))
     else:
         _emit(payload, pretty)
+
+
+# A worker records a gate's status the way it read it off the job, as a number
+# followed by where it came from — "0 (job 1335599, all_debug)". The job is one
+# execution, so the number is the status and the rest is provenance; refusing
+# the whole value leaves the gate unrecorded and a later reader concludes the
+# run has no passing gate at all. An integer is read from the opening of the
+# value, an integer passes through untouched, and a value that opens with
+# anything else is refused naming the field and the text, because a status
+# nobody can read is worse recorded as zero.
+_LEADING_INTEGER = re.compile(r"\s*([+-]?\d+)")
+
+
+def gate_exit_status_integer(value: Any) -> int | None:
+    """The integer at the opening of a recorded gate exit status, else None."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if value is None:
+        return None
+    match = _LEADING_INTEGER.match(str(value))
+    return int(match.group(1)) if match else None
+
+
+class GateExitStatusType(click.ParamType):
+    """A ``--gate-exit-status`` value: its leading integer, denying anything else.
+
+    Reading only the opening keeps one incident from recurring at every caller:
+    the promotion, the dry run and the landing all take the status through this
+    one option, so a stored value carrying its provenance reads as the number in
+    each of them rather than as a usage error in the first.
+    """
+
+    name = "gate_exit_status"
+
+    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None):
+        if value is None or value == "":
+            return None
+        status = gate_exit_status_integer(value)
+        if status is None:
+            self.fail(
+                f"gate_exit_status must open with an integer; found {str(value)!r}",
+                param,
+                ctx,
+            )
+        return status
 
 
 # Preserve the CLI re-export while the retired name resolves through the
@@ -338,7 +386,10 @@ def _merge_land_refusal(
 )
 @click.option("--gate-command", default="", help="Promotion gate command.")
 @click.option(
-    "--gate-exit-status", type=int, default=None, help="Promotion gate exit status."
+    "--gate-exit-status",
+    type=GateExitStatusType(),
+    default=None,
+    help="Promotion gate exit status; a leading integer is read, the rest is note.",
 )
 @click.option("--gate-log-path", default="", help="Promotion gate log path.")
 @click.option("--gate-log-digest", default="", help="Promotion gate log digest.")
@@ -3505,8 +3556,10 @@ def _gate_exit_status(result: Mapping[str, Any] | None) -> int | None:
     """The status the gate's own command ended at, or None when it carries none.
 
     ``verify-gate`` reports it inside the re-run's report; ``suite run`` carries
-    it on the suite row itself. A status that is not an integer is no status at
-    all, so a row that recorded none does not read as a zero.
+    it on the suite row itself. A row records the status the way its job
+    printed it, so a value that opens with an integer reads as that integer and
+    keeps the provenance after it as a note; a row that records no integer
+    reads as no status, so it does not read as a zero.
     """
     if not isinstance(result, Mapping):
         return None
@@ -3514,10 +3567,7 @@ def _gate_exit_status(result: Mapping[str, Any] | None) -> int | None:
     value = report.get("exit_status") if isinstance(report, Mapping) else None
     if value is None:
         value = result.get("exit_status")
-    try:
-        return int(value) if value is not None else None
-    except (TypeError, ValueError):
-        return None
+    return gate_exit_status_integer(value)
 
 
 def _refuse_a_flag_as_a_reason(
@@ -3872,9 +3922,14 @@ def _record_suite_delta_waiver(
 )
 @click.option(
     "--gate-exit-status",
-    type=int,
+    type=GateExitStatusType(),
     default=None,
-    help="The check command's exit status.",
+    help=(
+        "The check command's exit status. A leading integer is read and the "
+        "prose after it is kept as a note, so a status recorded as "
+        "'0 (job 1335599, all_debug)' reads as 0; a value that does not open "
+        "with an integer is refused by name."
+    ),
 )
 @click.option(
     "--gate-log-path",
