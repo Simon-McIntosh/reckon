@@ -20,7 +20,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="delivered-work-lands-without-a-coordinator">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-claim-nobody-is-working-is-released#s2&quot;,&quot;a-claim-nobody-is-working-is-released#s3&quot;,&quot;a-claim-nobody-is-working-is-released#s4&quot;,&quot;a-claim-nobody-is-working-is-released#s5&quot;]}">
   <title>A Claim Nobody Is Working Is Released | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -45,7 +45,7 @@
     <p>The rule each section keeps from the landed work: a run showing a turn in progress is never released on an unknown reading. Only a run with no turn in progress may be released without proof that its worker is dead.</p>
 
     <h2 id="s2">§2 — A run whose worker was on a previous fleet node gives up its claim</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> The fleet moves node every few days. Every promoted run launched before the move then reads as liveness unknown for ever, and its pointer is never retired.</p>
     <p><strong>Deliverable.</strong> A promoted run whose recorded launcher host is not the node the fleet record names, and which shows no turn in progress, gives up its pointer on the next pass. A discard of such a run is not undone.</p>
     <p><strong>Done when.</strong> A test builds a temporary crew home holding three promoted runs recorded on a host other than the current fleet node: one with no turn in progress, one whose stream grew inside the turn window, and one recorded on the current node with a dead process. After one pass the first and third have no pointer and the second keeps its pointer. A discarded run of the first kind has no pointer after two further passes. Negative control: at the base revision the first run keeps its pointer. The existing release tests add no failure against the base. Tests run on <code>all_debug</code> with at most <code>-n 4</code>. Write paths: <code>reckon/crew/pending_landing.py</code>, <code>reckon/crew/process_liveness.py</code>, <code>reckon/crew/promotion_release.py</code> and <code>tests/test_a_run_from_a_previous_fleet_node_is_released.py</code>.</p>
