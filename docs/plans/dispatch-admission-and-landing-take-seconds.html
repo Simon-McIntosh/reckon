@@ -25,8 +25,8 @@
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
-<meta name="plan-modified" content="2026-11-18">
+<meta name="plan-version" content="30">
+<meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
   <main class="plan-doc">
@@ -251,6 +251,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes" data-who="reckon-build" data-when="2026-11-17T21:04:19Z">
     <div class="r-comment-body"><p>The review request now has an instant, a reason, and a reader: review_request_census reads each delivered non-review run's stage receipts, reports the delivery-to-request and request-to-launch intervals apart, and raises an obligation past 600 s naming the reason the run's own record gives; that obligation is written into the review pass's owed rows so the station's duty rows show it. The census artifact live-census-20261117T2145Z.log, of the fleet before this change lands, records {"counts": {"delivered": 23, "launched": 4, "request_unrecorded": 9, "requested": 5, "unrequested": 9}, "deadline_seconds": 600, "launch_lag_seconds": {"max": 147.50823, "p50": 124.142871, "p90": 147.50823}, "obligations": 8, "request_lag_seconds": {"max": 917.087791, "p50": 96.674459, "p90": 917.087791}, "request_unrecorded": 9}. The request's priority is inherited from the run it reviews by the pointer the dispatch builds from it, now asserted in `test_the_review_requests_the_priority_of_the_run_it_reviews`.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T045120140326-review-of-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass-fc301c39b6f9" data-who="reckon-build" data-when="2026-11-22T05:04:43.745Z">
+    <div class="r-comment-body"><p>Review of run r-20261122T032524701158-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass at head fc301c39b6: scores goal_fidelity 8, evidence 6, scope_discipline 18, durability 6, fit 15, reuse 12; five findings, one blocking (the landed test counts roadmap builds around obligation_snapshot.sweep, a path with no roadmap reference, so its zero is structural and the declared negative control cannot reproduce).</p></div>
 </div>
 </section>
   </main>

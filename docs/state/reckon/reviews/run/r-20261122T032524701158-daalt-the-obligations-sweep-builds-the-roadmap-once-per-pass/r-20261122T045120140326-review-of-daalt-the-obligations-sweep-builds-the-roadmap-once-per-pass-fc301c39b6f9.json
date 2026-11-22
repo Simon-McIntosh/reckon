@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/runs.py:5252",
+    "reckon/crew/obligation_snapshot.py:2431",
+    "reckon/crew/station_obligations.py:421"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T04:52:08Z",
+  "findings": [
+    {
+      "file": "tests/test_an_obligations_sweep_builds_the_roadmap_once.py",
+      "line": 158,
+      "severity": "blocking",
+      "summary": "the test counts roadmap builds around obligation_snapshot.sweep, whose reachable modules contain no roadmap reference, so the zero is structural and the done_when's negative control cannot reproduce."
+    },
+    {
+      "file": "tests/test_an_obligations_sweep_builds_the_roadmap_once.py",
+      "line": 175,
+      "severity": "non-blocking",
+      "summary": "assert second == first compares two sweeps of the same code and fixture, so both sides move together and the equal-to-base-sweep requirement is unmeasured."
+    },
+    {
+      "file": "tests/test_an_obligations_sweep_builds_the_roadmap_once.py",
+      "line": 152,
+      "severity": "non-blocking",
+      "summary": "the positive control calls the patched roadmap_module.build_roadmap itself, proving the wrapper is installed rather than that the sweep reaches a build."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032524701158-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass/baseline.log",
+      "line": 2,
+      "severity": "non-blocking",
+      "summary": "the base arm runs a different test file under a literal base-tree placeholder, so no base comparison for the landed test can be re-run."
+    },
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass.html",
+      "line": 9,
+      "severity": "non-blocking",
+      "summary": "plan-verdict=passed contradicts the fragment's own body, which records the negative control as unreproducible and two arms unrun."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed run's goal (prompt.txt:38) is \"make this hold: the obligations sweep builds the roadmap once per pass\"; the landed test asserts at most one build but changes no source module, and the sweep it exercises at reckon/crew/obligation_snapshot.py:2431 contains no roadmap build at all, so the bound holds by absence rather than by a guard.\nVERDICT done_when: the done_when (node.json) names a 40-item two-project sweep, obligations equal to a base sweep, a negative control above two at base, ten staged sweeps under 30 s, and an all_debug run at -n 4; the manifest records only the zero count and a 3-test pass, and records the timing arm and composed arms as not run.\nVERDICT write_paths: the diff touches tests/test_an_obligations_sweep_builds_the_roadmap_once.py and docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass.html, both inside the declared paths; the three declared source modules were not changed.\nVERDICT manifest: read at the reviewed run directory; it reports status complete, 0 roadmap builds at base for 40 review items, a focused gate of 3 passed, and a negative control that refuses 40 builds; its baseline_suite names a different test file and a command carrying an unsubstituted PYTHONPATH placeholder.\nVERDICT diff: read changeset by changeset (555fb3db8f, 8452b00f11, 1787f1d0ce, fc301c39b6) against 1f914072e1; two new files and 194 insertions, with no source or test-of-source change.\nCALL_SITES: reckon/crew/runs.py:5252, reckon/crew/obligation_snapshot.py:2431, reckon/crew/station_obligations.py:421\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: tests/test_an_obligations_sweep_builds_the_roadmap_once.py:158 asserts at most one roadmap build, a bound reckon/crew/obligation_snapshot.py:2431 meets by never reaching a roadmap build.\nSCORE evidence: 6\nJUSTIFICATION evidence: the focused log records 3 passed for the named test, but the base arm at baseline.log:2 ran tests/test_an_admission_pass_reads_the_roadmap_once.py under an unsubstituted base-tree placeholder, and the timing and all_debug arms the done_when names were not run.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff's two paths (the test file and the evidence fragment) are both declared, and nothing outside them changed.\nSCORE durability: 6\nJUSTIFICATION durability: tests/test_an_obligations_sweep_builds_the_roadmap_once.py:175 compares two sweeps of the same code and fixture, so both sides move together and a regression in the derivation leaves it true.\nSCORE fit: 15\nJUSTIFICATION fit: the test follows the surrounding pytest idiom and naming, though tests/test_an_obligations_sweep_builds_the_roadmap_once.py:128 binds the private roadmap_module._build_roadmap and the file ends without a trailing newline.\nSCORE reuse: 12\nJUSTIFICATION reuse: the counting wrapper at tests/test_an_obligations_sweep_builds_the_roadmap_once.py:124 duplicates the existing roadmap-build counter at tests/test_a_dispatch_reads_one_sections_readiness.py:263, and the once-per-pass capability named by the reviewer's goal is already owned by reckon/crew/dispatch_batch.py:203 _built_once without being extended.\nFINDING tests/test_an_obligations_sweep_builds_the_roadmap_once.py:158 blocking: the test counts roadmap builds around obligation_snapshot.sweep, whose reachable modules (reckon/crew/obligation_snapshot.py and reckon/crew/obligations.py) contain no roadmap reference at all, so the zero is structural and cannot distinguish the defect being absent from the defect's path being unreached; the done_when's negative control consequently cannot reproduce and the plan's per-item build claim is left unmeasured.\nFINDING tests/test_an_obligations_sweep_builds_the_roadmap_once.py:175 non-blocking: `assert second == first` compares two sweeps of the same code and the same fixture, so both sides move together and the done_when's equal-to-base-sweep requirement is never measured, while the docstring at :172 claims a base comparison the body does not make.\nFINDING tests/test_an_obligations_sweep_builds_the_roadmap_once.py:152 non-blocking: the positive control calls the patched roadmap_module.build_roadmap itself, so it proves only that the wrapper is installed, not that the sweep reaches a build; it cannot license reading the zero in :158 as evidence about the sweep.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032524701158-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass/baseline.log:2 non-blocking: the base arm records the literal placeholder PYTHONPATH=<base-tree> in its command and runs tests/test_an_admission_pass_reads_the_roadmap_once.py rather than the landed test, so no base comparison for this node can be re-run from the record.\nFINDING docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass.html:9 non-blocking: the fragment carries plan-verdict=\"passed\" while its own body states the declared negative control does not reproduce and two of the done_when's arms were not run, so a machine reader takes a pass the record does not support.\n",
+  "review_run_id": "r-20261122T045120140326-review-of-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass-fc301c39b6f9",
+  "reviewed_base_sha": "1f914072e1646e1a5cd3f591470859d2866c0093",
+  "reviewed_head_sha": "fc301c39b6f96a8f00020e0cc0139dd514b6b34b",
+  "reviewed_run_id": "r-20261122T032524701158-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass",
+  "scores": {
+    "durability": 6,
+    "evidence": 6,
+    "fit": 15,
+    "goal_fidelity": 8,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:05:12.639202+00:00",
+  "total": 65
+}
