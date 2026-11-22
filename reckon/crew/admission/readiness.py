@@ -719,14 +719,28 @@ def _promotion_record(project: str, run_id: str) -> tuple[str, bool, str]:
     reader that opened only those documents answered nothing for a promotion
     written after they stopped moving -- and every request waiting on such a
     run held forever. The run's own document is still read for a checkout whose
-    rows live only there. An absent store is not an unreadable one: it names no
-    run, and the documents answer for it.
+    documents live only there. An absent store is not an unreadable one: it
+    names no run, and the documents answer for it.
+
+    The landing is asked for before either: a retention pass may remove the row
+    that carried it, and the store keeps the landing apart from the row so a
+    landed run still reads as landed once its row and document are gone.
     """
     from reckon import ledger, run_store
 
     revision = ""
     named = False
     unreadable = ""
+    # A retention pass may remove the row that carried the landing, so the
+    # landing index answers first: it is the only copy left once a run's row
+    # and its document have both left, and a run that landed must still read
+    # as landed after them.
+    try:
+        landed_revision = run_store.promoted_revision(project, run_id)
+    except Exception:  # noqa: BLE001 - a store that cannot answer names no landing
+        landed_revision = ""
+    if landed_revision:
+        return landed_revision, True, ""
     try:
         stored = run_store.stored_run_rows(project, run_ids=[run_id])
     except run_store.UnreadableRunStoreError as exc:

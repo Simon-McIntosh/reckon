@@ -156,6 +156,31 @@ _RUNS_ARCHIVE_INSERT = (
     f"INSERT INTO archive.runs ({_RUNS_INSERT_COLUMNS}) "  # noqa: S608
     f"SELECT {_RUNS_INSERT_COLUMNS} FROM main.runs WHERE run_id = ?"
 )
+
+
+def _land_from(schema: str) -> str:
+    """Copy one schema's promoted rows into the landing index.
+
+    The index exists so a retention pass can remove a run's row without the
+    store forgetting where that run landed, so it is filled from the same rows
+    the pass is about to delete.
+    """
+    return (
+        'INSERT INTO "landed_runs" '  # noqa: S608 - a literal schema from this module
+        '("run_id", "project", "promoted_revision") '
+        'SELECT "run_id", "project", '
+        "json_extract(\"payload\", '$.promoted_revision') "
+        f'FROM {schema}."runs" WHERE "project" = ? '
+        'AND json_valid("payload") '
+        "AND json_extract(\"payload\", '$.promoted_revision') != '' "
+        'ON CONFLICT("run_id") DO UPDATE SET '
+        '"project" = excluded."project", '
+        '"promoted_revision" = excluded."promoted_revision"'
+    )
+
+
+_LAND_FROM_MAIN = _land_from("main")
+_LAND_FROM_ARCHIVE = _land_from("archive")
 # The migration backfills every column a row is missing. The SET list and the
 # values share the QUERY_KEYS declaration, so the two cannot drift. The revision
 # is COALESCEd rather than assigned: a record that cannot name the commit its
@@ -199,6 +224,12 @@ CREATE TABLE IF NOT EXISTS "retired_runs" (
     "project" TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS "idx_retired_runs_project" ON "retired_runs" ("project");
+CREATE TABLE IF NOT EXISTS "landed_runs" (
+    "run_id" TEXT PRIMARY KEY,
+    "project" TEXT NOT NULL,
+    "promoted_revision" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "idx_landed_runs_project" ON "landed_runs" ("project");
 CREATE TABLE IF NOT EXISTS "store_meta" (
     "key" TEXT PRIMARY KEY,
     "value" TEXT NOT NULL
@@ -1033,6 +1064,74 @@ def stored_run_revisions(
     finally:
         connection.close()
     return revisions
+
+
+def promoted_revision(
+    project: str,
+    run_id: str,
+    *,
+    path: str | Path | None = None,
+) -> str:
+    """The commit a run was promoted at, answerable after its row is retired.
+
+    A retention pass may remove every copy of a run's row — the archive the
+    store retires into is itself rebuilt from the committed ledger, so a run
+    whose document has left the tree loses both. The landing is kept apart from
+    the row for exactly that reason, and this is the read that answers it: the
+    landing index first, then the row that still holds it, hot store before its
+    archive. An empty string is a landing nothing holds, which a caller reads
+    as "not known to have landed" rather than as a revision.
+
+    The connection is read-only: resolving a landing creates, migrates and
+    rebuilds nothing, so a question never changes the answer it is asking.
+    """
+    run_id = str(run_id or "").strip()
+    if not run_id:
+        return ""
+    target = store_path() if path is None else Path(path)
+    if not target.is_file():
+        return ""
+    try:
+        connection = sqlite3.connect(f"{target.resolve().as_uri()}?mode=ro", uri=True)
+    except sqlite3.Error:
+        return ""
+    try:
+        tables = _read_attached_tables(connection, target)
+    except (OSError, sqlite3.Error, RuntimeError):
+        connection.close()
+        return ""
+    try:
+        for table in tables:
+            if table == "main":
+                try:
+                    row = connection.execute(
+                        'SELECT "promoted_revision" FROM "landed_runs" '
+                        'WHERE "run_id" = ?',
+                        (run_id,),
+                    ).fetchone()
+                except sqlite3.Error:
+                    row = None
+                if row is not None and row[0]:
+                    return str(row[0])
+            try:
+                payload = connection.execute(
+                    f'SELECT "payload" FROM {table}."runs" WHERE "run_id" = ?',  # noqa: S608 - fixed table names
+                    (run_id,),
+                ).fetchone()
+            except sqlite3.Error:
+                continue
+            if payload is None:
+                continue
+            try:
+                record = json.loads(payload[0])
+            except (TypeError, ValueError):
+                continue
+            revision = str(record.get("promoted_revision") or "").strip()
+            if revision:
+                return revision
+        return ""
+    finally:
+        connection.close()
 
 
 def stored_run_payloads(
@@ -1933,6 +2032,45 @@ class RunStore:
         ).fetchone()
         return int(row[0])
 
+    def _record_landing(self, project: str, payload: Mapping[str, Any]) -> None:
+        """Keep the commit a promoted run landed at after its row is retired.
+
+        A retention pass may remove a run's row — the store's own retirement
+        moves it to the archive, and the membership rebuild deletes rows the
+        committed ledger no longer carries. Neither is a fact about whether the
+        run landed, so the landing is not retired at all: a reader asking
+        whether a run landed, and any request waiting on it, gets the same
+        answer afterwards. The write joins the caller's transaction, so the
+        landing and the row it describes move together or not at all.
+        """
+        run_id = str(payload.get("run_id") or "")
+        revision = str(payload.get("promoted_revision") or "").strip()
+        if not run_id or not revision:
+            return
+        self._conn.execute(
+            'INSERT INTO "landed_runs" ("run_id", "project", "promoted_revision") '
+            'VALUES (?, ?, ?) ON CONFLICT("run_id") DO UPDATE SET '
+            '"project" = excluded."project", '
+            '"promoted_revision" = excluded."promoted_revision"',
+            (run_id, str(project or ""), revision),
+        )
+
+    def _land_before_rebuild(self, project: str) -> None:
+        """Keep every promoted row's landing before a rebuild drops its row.
+
+        The membership rebuild rewrites a project's rows from the committed
+        ledger, so a run whose document has left the tree loses its row from
+        the hot store and from the archive alike. The landing is copied out
+        first, from the same rows the rebuild is about to delete, so the
+        question the row answered is still answered afterwards.
+        """
+        statements = [_LAND_FROM_MAIN]
+        if self._attach_archive():
+            statements.append(_LAND_FROM_ARCHIVE)
+        with self._conn:
+            for statement in statements:
+                self._conn.execute(statement, (project,))
+
     def _write_signature(
         self,
         project: str,
@@ -2111,6 +2249,7 @@ class RunStore:
                 detail=detail,
                 ordinal=cursor.lastrowid,
             )
+            self._record_landing(project, payload)
 
     def sync_run(self, project: str, record: Mapping[str, Any]) -> str:
         """Ensure one run's row matches the record, returning what happened.
@@ -2168,6 +2307,7 @@ class RunStore:
                     schema_name="archive" if table.startswith("archive") else "main",
                     ordinal=cursor.lastrowid,
                 )
+                self._record_landing(project, payload)
                 return "inserted"
             if existing[0] == encoded_payload and (existing[1] or "") == encoded_detail:
                 return "unchanged"
@@ -2196,6 +2336,7 @@ class RunStore:
                 ordinal=existing[2],
                 revision=existing[3],
             )
+            self._record_landing(project, payload)
             return "updated"
 
     @property
@@ -2293,13 +2434,18 @@ class RunStore:
                         )
                     )
                 ):
-                    candidates.append(str(run_id))
+                    candidates.append((str(run_id), str(project or ""), payload))
                     if len(candidates) >= limit:
                         break
             pages_before = self._conn.execute("PRAGMA main.page_count").fetchone()[0]
             if candidates and apply:
                 self._attach_archive(create=True)
-                for run_id in candidates:
+                for run_id, project, payload in candidates:
+                    # The archive keeps the row, but the archive is itself
+                    # rebuilt from the committed ledger and can drop it. The
+                    # landing is the part a reader and a waiting request ask
+                    # for, so it is copied out of the row before the row moves.
+                    self._record_landing(project, json.loads(payload))
                     self._conn.execute(
                         _RUNS_ARCHIVE_INSERT,
                         (run_id,),
@@ -2337,9 +2483,10 @@ class RunStore:
             self._conn.execute(
                 f"PRAGMA main.incremental_vacuum({int(vacuum_pages)})"
             ).fetchall()
+        retired = [run_id for run_id, _project, _payload in candidates]
         return {
-            "offered": candidates,
-            "retired": candidates if apply else [],
+            "offered": retired,
+            "retired": retired if apply else [],
             "archive": str(self.archive_path),
             "pages_before": pages_before,
             "pages_after": self._conn.execute("PRAGMA main.page_count").fetchone()[0],
@@ -2446,6 +2593,8 @@ class RunStore:
                 # write was refused has no column to read it back from.
                 records[run_id] = {"project": name, **payload, **detail}
         try:
+            for name in changed:
+                self._land_before_rebuild(name)
             with self._conn:
                 for name, rows in changed.items():
                     self._conn.execute(
@@ -2708,6 +2857,11 @@ class RunStore:
             if deleted:
                 self._conn.execute(
                     'DELETE FROM "retired_runs" WHERE "run_id" = ?', (run_id,)
+                )
+                # An explicit removal is not a retention pass: the caller is
+                # taking the run back, so the landing goes with it.
+                self._conn.execute(
+                    'DELETE FROM "landed_runs" WHERE "run_id" = ?', (run_id,)
                 )
                 self._retire_signature(
                     run_id,
