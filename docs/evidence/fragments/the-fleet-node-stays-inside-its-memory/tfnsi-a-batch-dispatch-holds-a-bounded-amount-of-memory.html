@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-node-stays-inside-its-memory">
+  <meta name="plan-title" content="A batch dispatch holds a bounded amount of memory">
+  <meta name="plan-summary" content="A batch dispatch's section-hold read asks the run store for the node it is about to queue, projected to the fields a hold decision reads, and caches the hold index rather than the decoded rows behind it. Queuing one node decodes that node's rows where the read it replaced decoded the project's whole promoted history, and the batch's peak no longer grows with its width; the peak itself is set by a whole-population decode on the section-history read, which this node's paths do not cover, so the section's halving and doubling criteria move to a section that owns it.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-inside-its-memory">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-inside-its-memory#s8">
+  <meta name="plan-commits" content="d2b98999,ee7298959,a893dfdf3">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="partial">
+  <meta name="plan-tags" content="crew,dispatch,batch,memory,run-store,section-hold">
+  <title>A batch dispatch holds a bounded amount of memory — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-record" data-node="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory" data-reckon="landed" data-when="2026-11-22">
+  <h2>A batch dispatch holds a bounded amount of memory</h2>
+
+  <p id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-what">A <code>crew dispatch --batch</code> asks, once per entry, whether the node it is about to queue has already been delivered. That answer was read from the project's whole promoted history: every row decoded with the wide detail a promotion records, then filtered in Python. Queuing eight entries therefore decoded everything the store held, and the batch's peak resident memory grew with the store rather than with the work it was asked to place.</p>
+
+  <p id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-read">The read now asks the store's own plan and node index for the rows of the node it is about to queue, projected to the six fields a hold decision reads (<code>run_id</code>, <code>node</code>, <code>plan</code>, <code>section</code>, <code>role</code>, <code>completed_at</code>). What the module caches is the hold index the decision builds — one small record per delivered node — and not the decoded rows behind it. Queuing one node decodes its own rows: 3 in the test's 603-row store, unchanged when the store is doubled to 1,203, against 603 and 1,203 for the read it replaced. The new <code>tests/test_dispatch_batch_memory_profile.py</code> measures the rows actually decoded through the store's one decode point, so a projection that decoded the population and then dropped it would fail the measure rather than pass on its answer.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-fleet-node-stays-inside-its-memory/tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory/dispatch-peaks.svg" alt="Peak resident memory of one prepared home's batch dispatch at the base revision and at this read, for eight entries, forty entries, and forty entries with the store's delivered-run rows doubled.">
+    <figcaption>One prepared home, both arms in the same job on <code>rigel</code>, identical input. Each forty-entry arm stores 39 of its 40 entries, refusing one on its own estimated input size, identically on both sides.</figcaption>
+  </figure>
+
+  <p id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-figures">The head peaks at 0.83 and 0.96 of the base at eight and forty entries — below the 0.5 the section asked for, so the criterion is not met — and the head's peak no longer grows with the batch's width (12.32 GiB at eight and 12.62 GiB at forty before the index cache, 11.71 and 11.75 after it). The decoded population fell from 51,769 rows and 2.34 GB to 34,972 rows and 0.69 GB at eight entries, and from 120,692 rows and 6.57 GB to the same 34,972 rows and 0.69 GB at forty: the read is now bounded by the node, not by the batch's width.</p>
+
+  <p id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-attribution">What did not move is the peak, and a resident attribution pass says why. At the base, 11.81 of an 11.82 GiB resident high-water mark is anonymous heap against a traced Python heap peak of 3.34 GiB, so about 8.5 GiB is allocator-retained churn from decode traffic rather than memory the hold read keeps live. Doubling the prepared store's delivered-run rows from 12,266 to 24,532 takes the head's forty-entry peak from 11.75 GiB to 22.19 GiB, an 89 % rise against the 10 % the section allows, and the base's from 12.25 GiB to 24.62 GiB, a 101 % rise that satisfies the section's negative control. Both arms grow by about the same amount, so the population the batch decodes is not the hold read: roughly 19,500 main-store and 15,500 archive rows per pass are decoded on the roadmap's section-history read, which covers the section's whole plan set and stays population-wide. That read is outside this node's write paths, and the section's 0.5 ratio and 10 % doubling bound move to a section that owns it.</p>
+
+  <p id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-fallback">A review of the first landing found that the read had its own answer for a store that holds no promotions. A store exists for a project's mutable state before anything is promoted into it, and the store reports that as an empty list rather than as absence, so a ledger-only project's delivered nodes read as free and the queue could queue a node it had already built. The repair adopts the ledger's own rule — any empty answer falls through to the committed ledger — and the fallback read is <code>ledger.picker_runs</code>, as the whole-population read always did.</p>
+
+  <p id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-ordering">The same review found the index kept a node's last row in iteration order, and the store answers hot rows before retired ones, so a node re-promoted after its first row was retired kept the retired record. Rows are now ordered by <code>ledger.promotion_order_key</code>, the ledger's own answer for the position a row takes in the union of the two sources, before the last row per node is kept. One case in the node's test file covers each repair, and both fail against the revision before it: the store-with-no-promotions case answers from the ledger and the retired-row case answers with the later delivery; that run ends <code>EXIT=1</code> with both cases named against <code>EXIT=0</code> at the repair head.</p>
+
+  <p id="tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-gate">The gate is the node's own file plus the two files that cover the section-hold read and its plan fallback: <code>tests/test_dispatch_batch_memory_profile.py</code>, <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> at head, and the last two at the base revision, because the node's file does not exist there. Both arms exit 0 on <code>rigel</code>. The two covering files alone run at head as 15 passed, <code>EXIT=0</code>.</p>
+</article>
+</body>
+</html>
