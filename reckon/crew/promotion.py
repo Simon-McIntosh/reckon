@@ -2251,10 +2251,23 @@ def _commit_landing_comments_left_in(
         head_state
     ) != _state_without_the_comment_ledger(current_state):
         return None
+    # The state read cannot see every edit a file may carry — a heading's own
+    # prose is not one of its keys — so the file must also be what the writer
+    # would render from the state it parsed. Any other byte in it is another
+    # writer's content.
+    try:
+        rendered = _plan_html.write_state(
+            head_text, current_state, drop_authored_impl_meta=True
+        )
+    except (TypeError, ValueError):
+        return None
+    if rendered != current:
+        return None
     held = {
         anchor: [str(entry.get("id") or "") for entry in entries]
         for anchor, entries in (head_state.get("comments") or {}).items()
     }
+    own_comment_id = "c-run-" + run_id
     adopted: list[str] = []
     for anchor, entries in (current_state.get("comments") or {}).items():
         ids = [str(entry.get("id") or "") for entry in entries]
@@ -2264,6 +2277,10 @@ def _commit_landing_comments_left_in(
         for entry in entries[len(kept) :]:
             comment_id = str(entry.get("id") or "")
             if not comment_id.startswith("c-run-"):
+                return None
+            if comment_id == own_comment_id:
+                # This call's own comment is the write snapshot's business: a
+                # different body under its id is not a comment to adopt.
                 return None
             adopted.append(comment_id[len("c-run-") :])
     if not adopted:
