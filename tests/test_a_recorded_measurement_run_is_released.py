@@ -165,6 +165,7 @@ def test_a_fence_temp_notice_is_not_the_logs_first_record(tmp_path: Path) -> Non
     unreadable otherwise.
     """
     from reckon.crew.fragment_reconcile import log_record
+    from reckon.crew.reports import _test_log_command
 
     log = tmp_path / "gate.log"
     log.write_text(
@@ -183,3 +184,6 @@ def test_a_fence_temp_notice_is_not_the_logs_first_record(tmp_path: Path) -> Non
 
     assert record.revision == "0123456789abcdef0123456789abcdef01234567"
     assert record.summary == "3 passed in 1.20s"
+    # The prologue is the launch's, so the command behind it is still near the
+    # log's head: a reader that counted the notice would see the tree line last.
+    assert _test_log_command(log.read_text()) == "python -m pytest -q"

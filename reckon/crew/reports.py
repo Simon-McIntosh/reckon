@@ -1668,7 +1668,7 @@ def _test_log_command(text: str) -> str | None:
     seen = 0
     for raw_line in text.splitlines():
         line = raw_line.strip()
-        if not line:
+        if not line or _is_fence_prologue(line):
             continue
         seen += 1
         if seen > _TEST_LOG_HEAD_LINES:
