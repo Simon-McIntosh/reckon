@@ -62,16 +62,25 @@
     passing arm too, which is what proves the failure is the landing read and not the
     passes failing to run.</li>
     <li id="rpfw-a-landed-run-keeps-its-store-row-head"><strong>The head arm.</strong> At
-    <code>044f4dd7</code> the node's three cases pass: a promoted run taken through every
-    retention pass — archive retirement, the document leaving the tree, and the
+    <code>f6f12ebb4fe2</code> the node's three cases pass: a promoted run taken through
+    every retention pass — archive retirement, the document leaving the tree, and the
     membership rebuild — is still reported landed at its commit and still releases a
     wait; a run discarded without landing is reported as not landed after the same
     passes; and a queued request held on the landed run is released and launched.</li>
+    <li id="rpfw-a-landed-run-keeps-its-store-row-merge"><strong>The merge with
+    primary.</strong> Primary had fixed the same wait independently at
+    <code>985b4b13</code>, reading the promotion from the run store but stopping at the
+    row, so a landed run whose retention passes removed the row still answered as never
+    promoted. The repair merge <code>f6f12ebb</code> keeps primary's structure — its
+    named and unreadable answers, its obligation when no record names a run, and the wait
+    validator that routes through it — and asks the landing index first inside the
+    promotion record, so both fixes hold together. Both test modules pass together:
+    <code>6 passed in 12.27s</code>, <code>EXIT=0</code>.</li>
     <li id="rpfw-a-landed-run-keeps-its-store-row-gate"><strong>The gate and its
-    arms.</strong> The scoped gate at <code>044f4dd7</code> ran
-    <code>61 passed in 52.66s</code>, <code>EXIT=0</code>. The baseline arm at
-    <code>0e50b0b188</code> reported <code>58 passed in 50.12s</code> and the after arm
-    at <code>6c0f7ea0585c</code> reported <code>61 passed in 52.20s</code>, both
+    arms.</strong> The scoped gate at <code>f6f12ebb4fe2</code> ran
+    <code>61 passed in 42.01s</code>, <code>EXIT=0</code>. The baseline arm at
+    <code>0e50b0b188</code> reported <code>58 passed in 37.05s</code> and the after arm
+    at <code>f6f12ebb4fe2</code> reported <code>61 passed in 40.89s</code>, both
     <code>EXIT=0</code>: the three added passes are this node's cases and the head adds
     no failure id.</li>
   </ul>
