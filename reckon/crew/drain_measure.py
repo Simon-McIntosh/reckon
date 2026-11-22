@@ -51,6 +51,25 @@ WAITING_VERDICTS = frozenset(
     }
 )
 
+#: A review run carries its subject's section and is not held by that section's
+#: waits, so its launch neither waits for an upstream nor violates the order.
+#: Counting it was the measure's first defect: twelve of fourteen reported
+#: launches were reviews of sections whose own waits did not apply to them.
+UNHELD_ROLES = frozenset({"review"})
+
+#: A run record may carry the reason its section wait was lifted before launch.
+#: A string covers every wait the run declares; a mapping names a reason per
+#: waited-on ref. Reading it is what lets an early launch be reported as allowed
+#: rather than as a defect.
+WAIVER_FIELD = "section_wait_waiver"
+
+#: A run record may carry the waits it was dispatched under. A wait the plan
+#: carries now and the run's own dispatch record does not is an edited wait:
+#: the declaration moved after the request was queued, so the launch was never
+#: held by it. A run that records no dispatch waits is judged as held by every
+#: declared wait, which reports an unexplained early launch as a defect.
+DISPATCHED_WAITS_FIELD = "dispatched_waits"
+
 #: How a run records that its own review landed it, with no coordinator turn.
 SELF_LANDED = frozenset({"review-self", "review-acceptance"})
 
@@ -126,24 +145,46 @@ def measure_dag_order(
     *,
     history: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Count launches that preceded the landing of a section they wait on.
+    """Count work runs launched before the landing of a section they wait on.
+
+    Only a run the queue holds on its section waits is counted. A review run
+    carries its subject's section and is never held by that section's waits, so
+    a review run is skipped rather than reported: the measure's first reading
+    counted twelve review launches as violations of a wait that did not bind
+    them.
 
     A section's landing moment is the earliest completion recorded for that
-    section. That is the earliest moment the work could have landed, so a launch
-    is reported only when it preceded even that: the count is a lower bound on
-    the violations, never an artefact of a landing recorded late.
+    section, read from the run record that landed it. That is the earliest
+    moment the work could have landed, so a launch is reported only when it
+    preceded even that: the count is a lower bound on the violations, never an
+    artefact of a landing recorded late.
 
     ``history`` is every run the landing moments may be read from. It defaults
     to ``runs``, and a caller measuring a window must pass the whole ledger:
     an upstream that landed before the window opened is landed, and reading
-    only the window would report it as never having landed at all.
+    only the window would report it as never having landed at all. Because a
+    landing moment comes from an immutable completion record and the rows are
+    sorted, two reads of one window return identical rows; a run added outside
+    the window cannot move them.
+
+    An early launch is reported by why it was allowed. A ``section_wait_waiver``
+    recorded on the run names the reason the wait was lifted. A run whose
+    ``dispatched_waits`` omit a wait the plan declares now was never held by
+    it: the declaration was edited after the request was queued. An early
+    launch with neither is a defect.
     """
     runs = list(runs)
     landed = landed_moments(history if history is not None else runs)
     checked = 0
+    reviews_skipped = 0
     blocked_edges = 0
     violations: list[dict[str, Any]] = []
+    waived: list[dict[str, Any]] = []
+    edited: list[dict[str, Any]] = []
     for run in runs:
+        if _unheld_role(run):
+            reviews_skipped += 1
+            continue
         project = str(run.get("project") or "")
         plan = _run_plan(run)
         section = _run_section(run)
@@ -158,33 +199,121 @@ def measure_dag_order(
         for ref in edges:
             upstream = dependency_key(ref, default_project=project)
             upstream_moment = landed.get(upstream)
+            if upstream_moment is not None and launched >= upstream_moment:
+                continue
             row = {
                 "run_id": str(run.get("run_id") or ""),
+                "role": _run_role(run),
                 "project": project,
                 "plan": plan,
                 "section": section,
                 "waits_on": "{}#{}".format(*upstream[1:]),
                 "launched_at": launched.isoformat(),
             }
+            waiver = _recorded_waiver(run, ref, upstream)
+            if waiver:
+                row["reason"] = (
+                    "launched before the waited-on section landed; the wait was "
+                    "lifted by a recorded waiver"
+                )
+                row["waiver"] = waiver
+                waived.append(row)
+                continue
+            if _wait_was_edited(run, ref, upstream):
+                row["reason"] = (
+                    "launched before the waited-on section landed; the request "
+                    "was queued under an edited wait the plan no longer holds"
+                )
+                edited.append(row)
+                continue
             if upstream_moment is None:
                 row["reason"] = "the waited-on section never landed"
-                violations.append(row)
-            elif launched < upstream_moment:
+            else:
                 row["reason"] = "launched before the waited-on section landed"
                 row["seconds_early"] = round(
                     (upstream_moment - launched).total_seconds(), 3
                 )
-                violations.append(row)
+            violations.append(row)
+    waived.sort(key=_row_order)
+    edited.sort(key=_row_order)
+    violations.sort(key=_row_order)
     return {
         "status": "measured",
         "basis": "launch compared with the earliest completion recorded for each "
-        "declared upstream section",
+        "declared upstream section, counting only runs the queue holds on those "
+        "waits",
         "launches_with_declared_waits": checked,
         "launches_without_a_launch_moment": blocked_edges,
+        "review_runs_not_counted": reviews_skipped,
         "violations": len(violations),
         "runs_in_violation": len({row["run_id"] for row in violations}),
+        "waived_launches": len(waived),
+        "waived_rows": waived[:50],
+        "edited_wait_launches": len(edited),
+        "edited_wait_rows": edited[:50],
+        "allowed_early_launches": len(edited) + len(waived),
         "rows": violations[:50],
     }
+
+
+def _run_role(run: Mapping[str, Any]) -> str:
+    """The role a run records, defaulting to the implement role when it says none."""
+    return str(run.get("role") or "implement")
+
+
+def _unheld_role(run: Mapping[str, Any]) -> bool:
+    """Whether the run's role is one the queue does not hold on section waits."""
+    return _run_role(run) in UNHELD_ROLES
+
+
+def _ref_keys(ref: str, upstream: tuple[str, str, str]) -> tuple[str, ...]:
+    """Every spelling a recorded reason may use for one waited-on section."""
+    return (ref, "{}#{}".format(*upstream[1:]))
+
+
+def _recorded_waiver(
+    run: Mapping[str, Any], ref: str, upstream: tuple[str, str, str]
+) -> str:
+    """The recorded reason this run's wait on ``ref`` was lifted, or nothing.
+
+    A string on the run covers every wait it declares; a mapping names a reason
+    per waited-on ref, in either the raw declaration's spelling or the
+    ``plan#section`` form a reported row displays.
+    """
+    value = run.get(WAIVER_FIELD)
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, Mapping):
+        for key in _ref_keys(ref, upstream):
+            reason = value.get(key)
+            if reason:
+                return str(reason).strip()
+    return ""
+
+
+def _wait_was_edited(
+    run: Mapping[str, Any], ref: str, upstream: tuple[str, str, str]
+) -> bool:
+    """Whether the run was queued under a wait set that no longer names this edge.
+
+    A run that records the waits it was dispatched under and does not name this
+    edge was never held by it: the plan's declaration moved after the request
+    was queued. A run that records no dispatch waits is judged as held by every
+    declared wait, so an unexplained early launch stays a defect.
+    """
+    dispatched = run.get(DISPATCHED_WAITS_FIELD)
+    if isinstance(dispatched, Mapping):
+        present = {str(key) for key in dispatched}
+    elif isinstance(dispatched, Sequence) and not isinstance(dispatched, str):
+        present = {str(item) for item in dispatched}
+    else:
+        return False
+    return not any(key in present for key in _ref_keys(ref, upstream))
+
+
+def _row_order(row: Mapping[str, Any]) -> tuple[str, str]:
+    """A stable order for reported rows, so two reads return the same list."""
+    return (str(row.get("run_id") or ""), str(row.get("waits_on") or ""))
 
 
 def measure_fair_share(
