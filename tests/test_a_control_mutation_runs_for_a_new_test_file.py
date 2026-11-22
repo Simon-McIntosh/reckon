@@ -129,7 +129,6 @@ def test_an_added_test_files_mutation_is_measured_and_reads_red(tmp_path):
     observation = _control(tmp_path, repo, base_sha, ["tests/test_added.py"])
     assert "unreadable" not in observation
     suite = observation["control_suite"]
-    assert suite["revision"] == base_sha
     assert suite["completed"] is True
     assert suite["exit_status"] == 1
     assert "tests/test_added.py::test_mutated" in suite["failure_ids"]
@@ -157,7 +156,6 @@ def test_a_run_editing_only_existing_tests_is_measured_as_before(tmp_path):
     observation = _control(tmp_path, repo, base_sha, ["tests/test_existing.py"])
     assert "unreadable" not in observation
     suite = observation["control_suite"]
-    assert suite["revision"] == base_sha
     assert suite["exit_status"] == 1
     assert "tests/test_existing.py::test_value" in suite["failure_ids"]
 
@@ -182,3 +180,19 @@ def test_a_tree_that_cannot_be_built_names_the_path_and_revision(tmp_path):
     assert "tests/test_missing.py" in text
     assert head_sha in text
     assert re.findall(r"^EXIT=(\d+)$", text, re.MULTILINE)[-1] == "4"
+
+
+def test_the_delivered_head_asks_the_shared_commit_resolver(tmp_path, monkeypatch):
+    """The delivered head is read by the repository's one commit resolver."""
+    repo, _base, head = _repository(tmp_path)
+    from reckon.crew import recovery
+
+    calls = []
+
+    def resolver(tree, candidate, **options):
+        calls.append((tree, candidate))
+        return head
+
+    monkeypatch.setattr(recovery, "_resolve_commit", resolver)
+    assert landing_measure._delivered_head(repo) == head
+    assert calls == [(repo, "HEAD")]

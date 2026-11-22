@@ -925,7 +925,7 @@ def partition_submission(
     return selected, argv, environment
 
 
-def _delivered_head(tree: Path, timeout: float) -> str:
+def _delivered_head(tree: Path) -> str:
     """The revision a delivered worktree is at, when it can be read.
 
     The head of the tree a run delivered is the revision that holds the test
@@ -933,14 +933,14 @@ def _delivered_head(tree: Path, timeout: float) -> str:
     them carries it from. An unreadable head leaves the caller to fall back to
     the revision it already has, and the arm then refuses naming what it could
     not find.
+
+    The read is the repository's shared commit resolver's, so a bound or a
+    revision validation fixed there reaches this caller too rather than
+    leaving a second reader to disagree with it.
     """
-    try:
-        finished = _git(tree, "rev-parse", "HEAD", timeout=timeout)
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
-    if finished.returncode:
-        return ""
-    return finished.stdout.strip()
+    from reckon.crew.recovery import _resolve_commit
+
+    return _resolve_commit(tree, "HEAD")
 
 
 def _carry_line(git: str, relative: str, revision: str) -> str:
@@ -1495,7 +1495,7 @@ def control_mutation_observation(
             repo=tree,
             base_tree=base_tree,
             base_sha=base_sha,
-            head_sha=_delivered_head(tree, timeout) or base_sha,
+            head_sha=_delivered_head(tree) or base_sha,
             partition=partition,
             long_partition=str(landing.get("measure_long_partition") or "rigel"),
             test_files=node_tests,
