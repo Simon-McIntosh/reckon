@@ -60,13 +60,20 @@ def section_waits_for(pointer: Mapping[str, Any]) -> list[str]:
 
 
 def _run_record_held(project: str, run_id: str) -> bool:
-    """Whether one project's ledger holds the row for a run."""
+    """Whether one project's records name a run.
+
+    Read through the readiness reader that resolves a ``run:`` wait, so a
+    request queued before its upstream was promoted still finds the run once
+    the promotion has recorded it: the store holds that row, and the per-run
+    documents beside the aggregate are not maintained for every checkout. A
+    reader that opened only the documents called a promoted run unresolvable,
+    and the request waiting on it could never be released.
+    """
     if not project:
         return False
     try:
-        from reckon import ledger
-
-        return ledger.run_path(project, run_id).is_file()
+        _revision, named, _unreadable = _readiness._promotion_record(project, run_id)
+        return named
     except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
         return False
 
@@ -320,7 +327,6 @@ def _validated_batch_waits(
 ) -> tuple[dict[str, list[str]], dict[str, dict[str, str]]]:
     """Resolve all waits and reject absent targets or a combined graph cycle."""
     from reckon import _plan_html as plan_html_reader
-    from reckon import ledger
     from reckon._schema import parse_plan_ref
 
     current_docs = Path(repo_root) / "docs"
@@ -352,7 +358,7 @@ def _validated_batch_waits(
             run_id = ref[len(REQUEST_REF_PREFIX) :]
             if run_id not in request_nodes and run_id not in live_requests:
                 known = any(
-                    ledger.run_path(candidate, run_id).is_file()
+                    _run_record_held(candidate, run_id)
                     for candidate in {owner_project, project}
                     if candidate
                 )

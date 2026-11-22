@@ -706,6 +706,57 @@ def _section_run_unlanded(
     return False
 
 
+def _promotion_record(project: str, run_id: str) -> tuple[str, bool, str]:
+    """A run's promotion, as the records that hold one today name it.
+
+    Answers ``(promoted_revision, named, unreadable)``: the revision the run
+    was promoted at, whether any record holds a row for the run at all, and why
+    the records could not be read. A run that was recorded but not promoted is
+    ``("", True, "")`` and one no record names is ``("", False, "")``.
+
+    The run store is read first. A promotion writes the store, and the per-run
+    documents beside the aggregate are not maintained for every checkout, so a
+    reader that opened only those documents answered nothing for a promotion
+    written after they stopped moving -- and every request waiting on such a
+    run held forever. The run's own document is still read for a checkout whose
+    rows live only there. An absent store is not an unreadable one: it names no
+    run, and the documents answer for it.
+    """
+    from reckon import ledger, run_store
+
+    revision = ""
+    named = False
+    unreadable = ""
+    try:
+        stored = run_store.stored_run_rows(project, run_ids=[run_id])
+    except run_store.UnreadableRunStoreError as exc:
+        unreadable = str(exc) or type(exc).__name__
+        stored = None
+    for row in stored or ():
+        if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
+            continue
+        named = True
+        revision = str(row.get("promoted_revision") or "").strip()
+        if revision:
+            return revision, True, ""
+    try:
+        text = ledger.run_path(project, run_id).read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001 - an absent document names no run
+        return revision, named, unreadable
+    try:
+        document = json.loads(text)
+    except ValueError:
+        return (
+            revision,
+            named,
+            unreadable or f"{run_id}: the run document will not parse",
+        )
+    if isinstance(document, Mapping) and (str(document.get("run_id") or "") == run_id):
+        named = True
+        revision = revision or str(document.get("promoted_revision") or "").strip()
+    return revision, named, unreadable
+
+
 def _request_state(
     ref: str,
     *,
@@ -717,19 +768,35 @@ def _request_state(
     run_id = str(ref[len(REQUEST_REF_PREFIX) :]).strip()
     if not run_id:
         return PENDING
+    live_names_it = False
+    live_revision = ""
     for pointer in live:
         if str(pointer.get("run_id") or "") != run_id:
             continue
+        live_names_it = True
+        live_revision = str(pointer.get("promoted_revision") or "").strip()
         phase = str(pointer.get("phase") or "")
-        if phase in (BLOCKED_UPSTREAM_PHASE, *DEAD_RUN_PHASES) or _release._discarded(
-            run_id
-        ):
+        if phase in (BLOCKED_UPSTREAM_PHASE, *DEAD_RUN_PHASES):
             return ABANDONED
     if _release._discarded(run_id):
         return ABANDONED
     status = _manifest_status(run_id, issues=issues)
     if status in RUN_FAILED_STATUSES:
         return ABANDONED
+    revision = live_revision
+    if project and not live_names_it:
+        revision, named, unreadable = _promotion_record(project, run_id)
+        if not named and not unreadable and not runs.run_dir(run_id).is_dir():
+            # Nothing records a landing of this run and no delivery of it
+            # exists, so no admission pass can ever release the wait. Held
+            # silently it waits for the life of the queue, so the reason is
+            # raised to the request's coordinator instead.
+            if issues is not None:
+                issues.append(
+                    f"{run_id}: no record names this run, so the landing that "
+                    "would release this request can never be read"
+                )
+            return PENDING
     if status not in RUN_DELIVERED_STATUSES:
         return PENDING
     if not project:
@@ -744,17 +811,14 @@ def _request_state(
                 f"{run_id}: the wait names no project, so its landing cannot be read"
             )
         return PENDING
+    if not revision:
+        if issues is not None:
+            issues.append(f"{run_id}: promoted_revision absent")
+        return PENDING
     try:
-        from reckon import ledger
         from reckon.crew.dispatch_sections import project_mount_repository
         from reckon.crew.promotion_scope import _revision_is_ancestor
 
-        row = json.loads(ledger.run_path(project, run_id).read_text(encoding="utf-8"))
-        revision = str(row.get("promoted_revision") or "").strip()
-        if not revision:
-            if issues is not None:
-                issues.append(f"{run_id}: promoted_revision absent")
-            return PENDING
         checkout = project_mount_repository(project)
         if checkout is None:
             if issues is not None:
