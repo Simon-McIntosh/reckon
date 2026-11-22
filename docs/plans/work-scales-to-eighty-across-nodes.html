@@ -24,7 +24,7 @@
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-11-22">
 <meta name="plan-sprint" content="S28">
 </head>
@@ -137,7 +137,10 @@
     <div class="r-comment-body"><p>none — read-only figure review; the review record is the deliverable</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261122T110805714183-review-of-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-0802dcd14535" data-who="reckon-build" data-when="2026-11-22T11:21:50.505Z">
-    <div class="r-comment-body"><p>Independent re-review of r-20261122T032400625016 at 0802dcd145 scored goal_fidelity 18, evidence 17, scope_discipline 15, durability 16, fit 15, reuse 19, added_failure_count 0, with four non-blocking findings (three-blank-line churn in project_setup_commands.py, two assertions that rest on values the test supplied, and a per-session scratch fallback in node_dir that can split one node&#x27;s server across sessions); the prior review&#x27;s two blocking findings are repaired and the one-hour soak measure is recorded.</p></div>
+    <div class="r-comment-body"><p>Independent re-review of r-20261122T032400625016 at 0802dcd145 scored goal_fidelity 18, evidence 17, scope_discipline 15, durability 16, fit 15, reuse 19, added_failure_count 0, with four non-blocking findings (three-blank-line churn in project_setup_commands.py, two assertions that rest on values the test supplied, and a per-session scratch fallback in node_dir that can split one node's server across sessions); the prior review's two blocking findings are repaired and the one-hour soak measure is recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261122T032400625016-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it" data-who="reckon-build" data-when="2026-11-22T10:17:45Z">
+    <div class="r-comment-body"><p>One MCP server now serves every worker on a node: a flight&#x27;s shared_mcp_servers declaration starts the server once on the network transport under a node-local lock and hands each worker its endpoint (falling back to that worker&#x27;s own stdio declaration if the node server cannot start); the gate reads one server process answering forty workers&#x27; tool calls, including one through the composed worker config, and the base shape starts one server per worker; over the plan&#x27;s hour-long per-arm soak the resident set is 666,784 kB median at 5 workers and 670,968 kB at 40 (difference 4,184 kB against the 500,000 kB limit), with one server process throughout.</p></div>
 </div>
 </section>
 </main>
