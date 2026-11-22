@@ -2540,6 +2540,30 @@ def _commit_with_plan_snapshot(
         raise
 
 
+def _refuse_a_disagreeing_plan(content: bytes, path: Path) -> None:
+    """Refuse a landing whose plan's section record disagrees with its declaration.
+
+    The typed read refuses such a plan, so a landing that reached its comment
+    write would fail there with the parser's own message and no account of
+    which file to repair. Naming the section and both values here stops the
+    landing before either store is written, so a refused promotion leaves the
+    plan and the ledger exactly as they were.
+    """
+    from reckon import _plan_html
+
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        return
+    disagreements = _plan_html.section_status_disagreements(text)
+    if not disagreements:
+        return
+    raise CrewError(
+        f"{_plan_html.section_status_disagreement_message(disagreements[0])} "
+        f"(refusing to commit {path}; repair the plan before promoting)"
+    )
+
+
 def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callable:
     """Restore uncommitted plan writes on every exit that refuses a landing."""
 
@@ -2586,6 +2610,7 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
                 ),
             )
             kwargs["_plan_snapshot"] = snapshot
+            _refuse_a_disagreeing_plan(snapshot.content, path)
             try:
                 return promote(run_id, **kwargs)
             except BaseException as exc:

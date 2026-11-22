@@ -39,7 +39,11 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from reckon._schema import LEGACY_EFFORT_HOURS, PlanState
+from reckon._schema import (
+    LEGACY_EFFORT_HOURS,
+    SECTION_DECLARATION_ENUM,
+    PlanState,
+)
 from reckon.capability import (
     CAPABILITY_SCHEMA_VERSION,
     from_legacy_tier,
@@ -2768,6 +2772,62 @@ def _head_declarations(metas: dict) -> dict | None:
     ):
         return declarations
     return None
+
+
+def section_record_statuses(html_text: str) -> dict[str, str]:
+    """Every section record's own status, keyed by identity, best-effort.
+
+    The status each section element carries, read directly from the tree
+    rather than through :class:`PlanState`, so a document whose record and
+    declaration disagree can still be described: the typed read refuses that
+    document, which is exactly the case a caller needs to name.
+    """
+    soup = document_parse(html_text).soup
+    statuses: dict[str, str] = {}
+    for element in _section_record_elements(soup):
+        attrs = {str(key): str(value) for key, value in element.attrs.items()}
+        identity = section_record_id(attrs)
+        status = attrs.get("data-status")
+        if identity and status:
+            statuses.setdefault(identity, status)
+    return statuses
+
+
+def section_status_disagreements(html_text: str) -> list[dict]:
+    """Sections whose record status disagrees with their declaration.
+
+    Each entry carries the section identity and both values. A section with no
+    declaration, or a status outside the declaration vocabulary, states
+    something else and is left to the readers that own those defects. The
+    comparison is what makes the served record and the declaration agree, so a
+    write that reopens a declaration cannot leave its record behind.
+    """
+    declarations = _head_declarations(_metas_of_text(html_text)) or {}
+    statuses = section_record_statuses(html_text)
+    out = []
+    for identity in sorted(statuses):
+        declared = declarations.get(identity)
+        status = statuses[identity]
+        if declared is None or status not in SECTION_DECLARATION_ENUM:
+            continue
+        if status != declared:
+            out.append({"id": identity, "record": status, "declaration": declared})
+    return out
+
+
+def section_status_disagreement_message(disagreement: Mapping[str, str]) -> str:
+    """The one refusal wording every surface uses for a disagreeing section."""
+    return (
+        f"section {disagreement['id']!r} carries record status "
+        f"{disagreement['record']!r} but its declaration reads "
+        f"{disagreement['declaration']!r}; the write that reopens a "
+        "declaration must move its section record with it"
+    )
+
+
+def _metas_of_text(html_text: str) -> dict[str, str]:
+    """The raw ``<meta>`` map a document's head declares, without its path."""
+    return _meta_head_fields(Path("plan.html"), html_text, None)[1]
 
 
 def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
