@@ -2007,11 +2007,15 @@ class _PersistedPlanStates(dict):
     project's index instead would parse every covered document to answer a
     handful of refs, which is what a dependency-serving read exists to avoid.
 
-    Each slug is resolved at most once per read: the first lookup keeps the
-    answer here, and ``state_cache`` shares one mapping across every ref a
-    single read resolves. A slug that a live and an archived document share
-    keeps the live document, matching the live-first resolution a full read
-    takes.
+    Each slug is resolved at most once per read, including a slug that
+    resolves to nothing: the first lookup keeps the answer — the state in
+    ``self``, an absence in ``self._absent`` — and ``state_cache`` shares one
+    mapping across every ref a single read resolves. A slug that a live and an
+    archived document share keeps the answer a full read takes, live first.
+
+    The mapping itself holds only the plans that resolved to a state, so
+    ``len``, ``in``, iteration and item access report what has been resolved
+    and never claim a plan the store could not answer for.
     """
 
     def __init__(self, project: str, checkout_path: str | None) -> None:
@@ -2020,6 +2024,7 @@ class _PersistedPlanStates(dict):
         self._checkout_path = checkout_path
         self._docs_dir = _docs_dir_for_project(project, checkout_path)
         self._entries: dict[str, dict] | None = None
+        self._absent: set[str] = set()
 
     def _persisted_entries(self) -> dict[str, dict]:
         if self._entries is not None:
@@ -2035,11 +2040,13 @@ class _PersistedPlanStates(dict):
         return self._entries
 
     def get(self, slug: str, default: Any = None) -> dict[str, Any] | None:
-        cached = dict.get(self, slug)
-        if cached is not None:
-            return cached
+        if slug in self:
+            return dict.__getitem__(self, slug)
+        if slug in self._absent:
+            return default
         state = self._resolve(slug)
         if state is None:
+            self._absent.add(slug)
             return default
         dict.__setitem__(self, slug, state)
         return state

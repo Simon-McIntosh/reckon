@@ -313,6 +313,47 @@ def test_a_ref_absent_from_the_persisted_index_resolves_by_one_parse(
     )
 
 
+def test_an_unresolved_ref_is_looked_up_once(cold_store: Path) -> None:
+    """A ref that resolves to nothing is cached as absent, not retried.
+
+    The mapping's promise is that each slug is resolved at most once per read.
+    An absence is an answer, so a second lookup of the same missing plan must
+    not repeat the parse-or-store work the first one already did.
+    """
+
+    states = mcp_module._PersistedPlanStates(PROJECT, None)
+    calls: list[str] = []
+    real = states._resolve
+
+    def counting(slug: str) -> dict[str, Any] | None:
+        calls.append(slug)
+        return real(slug)
+
+    states._resolve = counting  # type: ignore[method-assign]
+    assert states.get("no-such-plan") is None
+    assert states.get("no-such-plan") is None
+    assert calls == ["no-such-plan"], calls
+
+
+def test_the_state_mapping_reports_the_plans_it_holds(cold_store: Path) -> None:
+    """The mapping reports its resolved plans through the dict interface.
+
+    Every lookup the ref resolution makes goes through ``get``, but a later
+    caller that iterates the mapping must see the plans it resolved rather than
+    an empty mapping that only implements ``get``.
+    """
+
+    metadata_index.index_rows(cold_store, PROJECT, revalidate=True)
+    states = mcp_module._PersistedPlanStates(PROJECT, None)
+    state = states.get(TARGETS[0])
+    assert state is not None
+    assert len(states) == 1, len(states)
+    assert list(states) == [TARGETS[0]], list(states)
+    assert TARGETS[0] in states
+    assert states[TARGETS[0]] is state
+    assert dict(states.items()) == {TARGETS[0]: state}
+
+
 def test_the_negative_control_restores_the_index_build(
     cold_store: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
