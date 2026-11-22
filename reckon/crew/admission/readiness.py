@@ -745,12 +745,20 @@ def _request_state(
             )
         return PENDING
     try:
-        from reckon import ledger
+        from reckon import ledger, run_store
         from reckon.crew.dispatch_sections import project_mount_repository
         from reckon.crew.promotion_scope import _revision_is_ancestor
 
-        row = json.loads(ledger.run_path(project, run_id).read_text(encoding="utf-8"))
-        revision = str(row.get("promoted_revision") or "").strip()
+        # The store keeps a landed run's revision after every retention pass
+        # has removed the row that carried it, which is the only copy left once
+        # a run's document has left the tree. The document is read as the
+        # fallback a project with no store still answers from.
+        revision = run_store.promoted_revision(project, run_id)
+        if not revision:
+            row = json.loads(
+                ledger.run_path(project, run_id).read_text(encoding="utf-8")
+            )
+            revision = str(row.get("promoted_revision") or "").strip()
         if not revision:
             if issues is not None:
                 issues.append(f"{run_id}: promoted_revision absent")

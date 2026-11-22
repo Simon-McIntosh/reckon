@@ -320,7 +320,7 @@ def _validated_batch_waits(
 ) -> tuple[dict[str, list[str]], dict[str, dict[str, str]]]:
     """Resolve all waits and reject absent targets or a combined graph cycle."""
     from reckon import _plan_html as plan_html_reader
-    from reckon import ledger
+    from reckon import ledger, run_store
     from reckon._schema import parse_plan_ref
 
     current_docs = Path(repo_root) / "docs"
@@ -353,6 +353,7 @@ def _validated_batch_waits(
             if run_id not in request_nodes and run_id not in live_requests:
                 known = any(
                     ledger.run_path(candidate, run_id).is_file()
+                    or run_store.promoted_revision(candidate, run_id)
                     for candidate in {owner_project, project}
                     if candidate
                 )

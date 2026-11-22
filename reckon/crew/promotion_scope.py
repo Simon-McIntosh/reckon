@@ -2765,6 +2765,12 @@ def _discard_run_store_row(run_id: str) -> bool:
             connection.execute(
                 'DELETE FROM "run_details" WHERE "run_id" = ?', (run_id,)
             )
+            if connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE name = 'landed_runs'"
+            ).fetchone():
+                connection.execute(
+                    'DELETE FROM "landed_runs" WHERE "run_id" = ?', (run_id,)
+                )
             removed = connection.execute(
                 'DELETE FROM "runs" WHERE "run_id" = ?', (run_id,)
             )
