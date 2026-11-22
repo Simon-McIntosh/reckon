@@ -1817,13 +1817,17 @@ def _read_plan_view(
             # The list-level rows a plan's holds are assembled from are the
             # project's inventory. Reading it is cheap once the persisted index
             # covers the project, and building it parses every covered document,
-            # which a read about one plan must not pay. On a cold store the
-            # detail read therefore serves the plan and its refs alone and
+            # which a read about one plan must not pay. On a cold legacy store
+            # the detail read therefore serves the plan and its refs alone and
             # carries no list-derived holds; the summary view is the read whose
-            # subject is the project's inventory, so it assembles it either way.
+            # subject is the project's inventory, and a distributed project's
+            # blockers and sprints exist only in that composition, so both
+            # assemble it either way.
+            docs_dir = _docs_dir_for_project(selector.project, checkout_path)
             discovered = (
                 _index_discovery(selector.project, checkout_path)
                 if selected_view == "summary"
+                or (docs_dir is not None and _distributed(docs_dir))
                 or _persisted_index_holds_rows(selector.project, checkout_path)
                 else {}
             )
