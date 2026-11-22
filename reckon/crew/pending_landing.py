@@ -53,6 +53,85 @@ UNPROMOTED_RECORD_SECONDS = 2 * 3600
 #: stopped between its record and its ledger row rather than one still running.
 UNFINISHED_PROMOTION_SECONDS = 60.0
 
+#: The live phases in which a section has not landed a node. A stored request is
+#: counted because it is work the section still owes: the request is queued,
+#: waiting for a lane slot, or waiting for its upstream. A run that has launched
+#: and not promoted is counted for the same reason. A run that stopped without
+#: delivering is not, because its node is neither queued, working nor delivered,
+#: and what remains of it is recorded as an obligation rather than as a request.
+UNLANDED_NODE_PHASES = frozenset(
+    {
+        "queued",
+        "held",
+        "awaiting-upstream",
+        "blocked-upstream",
+        "launch-failed",
+        "starting",
+        "working",
+        "running",
+        "delivered",
+    }
+)
+
+
+def nodes_awaiting_landing(
+    project: str,
+    plan: str,
+    section: str,
+    *,
+    node_id: str = "",
+    run_id: str = "",
+) -> list[str]:
+    """The other nodes of one plan section that have not landed yet.
+
+    A section split into several nodes is finished by its last landing, not by
+    the first one: a landing that declared the section done while a sibling was
+    still queued made the section's remaining requests read as dispatches of
+    finished work. This answers, from the live pointers alone, whether any other
+    node of the same section is queued, waiting for its upstream, working, or
+    delivered and unlanded, so a landing can record itself without closing the
+    section another node still owes.
+
+    The landing's own run is never one of them, and neither is a repair run of
+    its own node: the identity compared is the dispatch node id, with the
+    section id standing in for a record written before node ids were recorded.
+    """
+
+    from reckon._plan_html import section_record_id
+    from reckon.evidence import EXECUTABLE_SECTION_ROLES
+
+    wanted = section_record_id(section or "")
+    if not plan or not wanted:
+        return []
+    try:
+        pointers = runs._list_live_records(project=project)
+    except (OSError, ValueError):
+        return []
+    waiting: set[str] = set()
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        if run_id and str(pointer.get("run_id") or "") == run_id:
+            continue
+        node = pointer.get("node")
+        node = node if isinstance(node, Mapping) else {}
+        if str(node.get("plan") or pointer.get("plan") or "") != plan:
+            continue
+        pointer_section = node.get("section") or pointer.get("section") or ""
+        if section_record_id(pointer_section) != wanted:
+            continue
+        role = str(node.get("role") or pointer.get("role") or "implement")
+        if role not in EXECUTABLE_SECTION_ROLES:
+            continue
+        if str(pointer.get("phase") or "") not in UNLANDED_NODE_PHASES:
+            continue
+        identity = str(node.get("id") or "") or wanted
+        if node_id and identity == node_id:
+            continue
+        waiting.add(identity)
+    return sorted(waiting)
+
+
 # The completion callback still owns publication. A group defers that callback
 # until every member's ordinary promotion has succeeded.
 LANDING_GROUP: ContextVar[dict[str, Any] | None] = ContextVar(
