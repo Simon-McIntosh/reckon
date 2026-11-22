@@ -145,17 +145,18 @@ def _attach_plans(project: str, rows: list[dict[str, Any]]) -> list[dict[str, An
     return rows
 
 
-#: The last section-history read per project and filter, held with the run
-#: store's change token it was read at. The queue ordering rebuilds the roadmap
+#: The section-hold index per project and filter, held with the run store's
+#: change token it was read at. The queue ordering rebuilds the roadmap
 #: whenever a plan input moves, which is most ticks, and every rebuild asks this
-#: module for the project's promoted rows. Those rows live in the run store,
-#: which gains a few an hour, so a token that has not moved answers a rebuild
-#: rows without reading the store; a promotion replaces the entry rather than
-#: accumulating one per change. Each entry holds the narrow projection this
-#: module reads, not the rows' wide detail.
+#: module which nodes are held. Those answers come from the run store, which
+#: gains a few rows an hour, so a token that has not moved answers a rebuild
+#: without reading the store; a promotion replaces the entry rather than
+#: accumulating one per change. What is kept is the index a hold decision turns
+#: on — one small record per delivered node — and not the decoded rows it was
+#: built from, which is the term a batch's peak resident memory turned on.
 _HISTORY_READS: dict[
     tuple[str, str, str | None, str | None],
-    tuple[tuple[int, ...], list[dict[str, Any]]],
+    tuple[tuple[int, ...], dict[tuple[str, str], dict[str, dict[str, Any]]]],
 ] = {}
 
 
@@ -170,18 +171,11 @@ def _store_history_rows(
     ``None`` means the store holds no rows for the project, so the caller falls
     back to the committed ledger. A plan or node filter is answered by the
     store's own indexed read, so queuing one node decodes that node's rows and
-    not the project's whole history. The answer is kept beside the store's
-    change token, so an unchanged store answers a rebuild without reading it.
+    not the project's whole history.
     """
 
     from reckon import run_store
 
-    stamp = run_store.store_stamp()
-    key = (project, str(run_store.store_path()), plan, node)
-    if stamp is not None:
-        cached = _HISTORY_READS.get(key)
-        if cached is not None and cached[0] == stamp:
-            return cached[1]
     try:
         rows = run_store.stored_run_rows(
             project, plan=plan, node=node, fields=_HISTORY_FIELDS
@@ -190,50 +184,73 @@ def _store_history_rows(
         return None
     if rows is None:
         return None
-    rows = _attach_plans(project, rows)
-    if stamp is not None and run_store.store_stamp() == stamp:
-        _HISTORY_READS[key] = (stamp, rows)
-    return rows
+    return _attach_plans(project, rows)
 
 
-def _history_rows(
+def _history_index(
     project: str,
     root: str | Path | None,
     *,
     plan: str | None = None,
     node: str | None = None,
-) -> list[dict[str, Any]]:
-    """The project's completed promotions, through the ledger's indexed read.
+) -> dict[tuple[str, str], dict[str, dict[str, Any]]]:
+    """Which node of each section the promoted records hold, and its record.
 
-    Every row a store read returns is a completed promotion. A row's gate
-    records what that run's own check found — ``passed``, ``not-run`` or
-    ``failed`` — and not whether the node was delivered, so a delivery promoted
-    under any of them holds its node. Filtering on ``passed`` would read a
-    section whose run skipped or lost its check as never delivered, which is the
-    delivered state this module exists to stop offering again.
+    A row is a completed promotion. A row's gate records what that run's own
+    check found — ``passed``, ``not-run`` or ``failed`` — and not whether the
+    node was delivered, so a delivery promoted under any of them holds its node.
+    Filtering on ``passed`` would read a section whose run skipped or lost its
+    check as never delivered, which is the delivered state this module exists to
+    stop offering again.
 
-    The answer is projected to the narrow set this module reads and is released
-    once the caller has built its held/free index, so the population held at
-    once is the index, not the store. A ``plan`` or ``node`` narrows the store's
-    own read; a project with no store falls back to the committed ledger, which
-    is one aggregate read and is then filtered in memory.
+    A node's last row is the one that answers for it, so the returned index is
+    keyed by section and then by node and keeps only that record. That is a few
+    short strings per delivered node, and it is what an unchanged store answers a
+    rebuild from; the decoded rows it was built from are released here.
     """
 
-    from reckon import ledger
+    from reckon import ledger, run_store
 
+    stamp = run_store.store_stamp()
+    key = (project, str(run_store.store_path()), plan, node)
+    if stamp is not None:
+        cached = _HISTORY_READS.get(key)
+        if cached is not None and cached[0] == stamp:
+            return cached[1]
+    index: dict[tuple[str, str], dict[str, dict[str, Any]]] = defaultdict(dict)
     rows = _store_history_rows(project, plan=plan, node=node)
     if rows is None:
         try:
             rows = list(ledger.picker_runs(project, root))
         except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
-            return []
+            return index
         if plan is not None:
             rows = [row for row in rows if ledger.row_plan(row) == plan]
         if node is not None:
-            rows = [
-                row for row in rows if str(row.get("node") or "") == node
-            ]
-    return rows
+            rows = [row for row in rows if str(row.get("node") or "") == node]
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        node_id, row_plan, section, role = _row_parts(row)
+        if role not in EXECUTABLE_SECTION_ROLES:
+            continue
+        if not row_plan or not section:
+            continue
+        index[(row_plan, section)][node_id or section] = {
+            "kind": RUN_HOLD,
+            "run_id": str(row.get("run_id") or ""),
+            "node": node_id or section,
+            "plan": row_plan,
+            "section": section,
+            "state": "promoted",
+            "completed_at": str(row.get("completed_at") or ""),
+        }
+    result = dict(index)
+    if stamp is not None and run_store.store_stamp() == stamp:
+        _HISTORY_READS[key] = (stamp, result)
+    return result
+
+
 
 
 def _collect(
@@ -296,32 +313,18 @@ def _collect(
             "phase": phase,
         }
 
-    for row in _history_rows(
-        project, root, plan=history_plan, node=history_node
-    ):
-        if not isinstance(row, Mapping):
-            continue
-        node_id, plan, section, role = _row_parts(row)
-        if role not in EXECUTABLE_SECTION_ROLES:
-            continue
-        key = target(plan, section)
+    for (held_plan, held_section), nodes in _history_index(
+        project, root, plan=history_plan, node=history_node).items():
+        key = target(held_plan, held_section)
         if key is None:
             continue
-        node_key = node_id or section
         # A promoted row is the node's last record. A pointer released since then
         # (a stored request that was dropped, a run that stopped without
         # delivering) still names the node and must not keep it free, because the
         # row says the node was delivered.
-        free[key].discard(node_key)
-        held[key][node_key] = {
-            "kind": RUN_HOLD,
-            "run_id": str(row.get("run_id") or ""),
-            "node": node_key,
-            "plan": plan,
-            "section": section,
-            "state": "promoted",
-            "completed_at": str(row.get("completed_at") or ""),
-        }
+        for node_key, row in nodes.items():
+            free[key].discard(node_key)
+            held[key][node_key] = row
     return held, free
 
 
