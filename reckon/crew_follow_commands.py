@@ -1760,6 +1760,26 @@ def _follow_watch_lines(
         _settle_grace_default() if settle_interval is None else float(settle_interval)
     )
 
+    def _pane_holds_work_here() -> bool:
+        """Whether a population this pane carries holds work in this project.
+
+        A dispatch asks the session's host for a follower before the dispatch
+        that requested it has been admitted, so a request that is refused and
+        stores nothing can leave a follower attached to a project its session
+        holds nothing in. Such a follower must stay quiet about that project:
+        every producer-health row it paints wakes the coordinator over a
+        producer it does not own, and a lost row tells the reader to re-arm a
+        watch for a project that is not theirs.
+
+        The judgement is the one the settle makes — any population the pane
+        carries, its own session or one it was asked to observe, holding a run
+        or a queued request here — and it is asked when a row about the project
+        is actually owed rather than on every pass.
+        """
+        if session is None:
+            return True
+        return any(name is not None and _is_live(name) for name in settle_populations)
+
     def _check_settle() -> None:
         """End this arming when the work this pane carries has drained.
 
@@ -2031,7 +2051,16 @@ def _follow_watch_lines(
         _check_consumer()
         _check_settle()
         _renew_producer_lease()
-        return producer_notices.poll()
+        rows = producer_notices.poll()
+        if rows and not _pane_holds_work_here():
+            # A producer-health row is news about this project, not about a run
+            # the pane carries. A pane whose session holds nothing here is not
+            # watching this project, so the row is dropped by the same
+            # judgement that gates its producer-stop lines below. A run's own
+            # transitions travel the row path rather than this one, so a run's
+            # last rows are delivered whatever its population reads then.
+            return []
+        return rows
 
     # The follower prints no standing summary line, and no closing row that
     # names runs either. Under the session host every printed line is a
@@ -2394,18 +2423,23 @@ def _follow_watch_lines(
                 }
             if report_reload:
                 producer_reload_failure_reported = True
+                line = (
+                    f"producer {project} stopped during its reload begun "
+                    f"{identity['reload_started_at']}; last output: "
+                    f"{identity.get('log_path') or 'not recorded'}"
+                )
+                if watched:
+                    # The command re-arms a project this pane is watching. A
+                    # pane that holds nothing here is not watching it, so the
+                    # row names the state and no command.
+                    line += f"; re-arm with: {runs.watcher_ensure_line(project)}"
                 yield {
                     "event": FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT,
                     "project": project,
                     "session": session or "",
                     "run_id": None,
                     "pane_line": watched,
-                    "line": (
-                        f"producer {project} stopped during its reload begun "
-                        f"{identity['reload_started_at']}; last output: "
-                        f"{identity.get('log_path') or 'not recorded'}; re-arm with: "
-                        f"{runs.watcher_ensure_line(project)}"
-                    ),
+                    "line": line,
                 }
             # The sweep runs here rather than at the top of the loop: a pane
             # must show its rows before the recovery sweep's cost is paid,
