@@ -253,3 +253,34 @@ def test_an_existing_fragment_still_renders_through_the_served_page(
     text = composed.decode("utf-8") if isinstance(composed, bytes) else composed
 
     assert FRAGMENT_MARKER in text
+
+
+def test_the_landing_beat_reads_a_section_spelled_with_a_section_sign(
+    request: pytest.FixtureRequest,
+) -> None:
+    """A pointer naming its section as "§1" ticks the plan's section s1.
+
+    Older pointers carry the display spelling. The beat wrote that text into the
+    plan's declaration path, the write was refused with no detail, and the
+    landed run kept its pointer.
+    """
+    promoted_repo = request.getfixturevalue("promoted")
+    from reckon import _store
+    from reckon.crew.queue_landing import _landing_beat
+    from tests.test_a_closing_plan_gets_one_sourced_overview import _synthesize
+
+    _synthesize(promoted_repo)
+    pointer = {
+        "node": {"id": NODE, "plan": PLAN, "section": "§1"},
+        "project": PROJECT,
+        "repo": str(promoted_repo),
+    }
+
+    assert _landing_beat(pointer, "s1-attempt-2") == ""
+
+    state, _version = _store.read_plan(PROJECT, PLAN, str(promoted_repo))
+    assert state["section_declarations"]["s1"] == "done"
+    bodies = " ".join(
+        comment.get("body", "") for comment in state["comments"].get("s1", [])
+    )
+    assert "s1-attempt-2" in bodies

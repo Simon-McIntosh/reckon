@@ -1680,7 +1680,11 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     """
     node = pointer.get("node") if isinstance(pointer.get("node"), Mapping) else {}
     plan = str(node.get("plan") or "").strip()
-    section = str(node.get("section") or "").strip()
+    # A pointer may spell its section with a section sign or as its record id;
+    # the plan's declarations and comment anchors are keyed by the record id.
+    from reckon._plan_html import section_record_id
+
+    section = section_record_id(node.get("section") or "")
     project = str(pointer.get("project") or "").strip()
     repo = str(pointer.get("repo") or "").strip()
     if not (plan and section and project and repo):
@@ -1730,7 +1734,9 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     except (OSError, ValueError) as exc:
         return f"landing beat refused: {type(exc).__name__}: {exc}"
     if not result.get("ok"):
-        return f"landing beat refused: {result.get('error') or 'unknown refusal'}"
+        detail = str(result.get("detail") or result.get("message") or "").strip()
+        refusal = f"landing beat refused: {result.get('error') or 'unknown refusal'}"
+        return f"{refusal}: {detail}" if detail else refusal
     return ""
 
 
