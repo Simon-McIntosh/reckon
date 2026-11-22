@@ -515,6 +515,104 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
     return retire_pointer_if(run_id, promoted)
 
 
+PREVIOUS_FLEET_NODE_RETIRED = "retired-previous-fleet-node"
+
+
+def _is_a_promoted_pointer(pointer: Mapping[str, Any]) -> bool:
+    """Whether a live pointer records a run whose promotion has happened.
+
+    Three records say so: the mark a promotion writes when it cannot retire the
+    pointer itself, the pending-landing journal a promotion leaves for its merge,
+    and the ledger row that records the promotion. Any one of them is proof the
+    run delivered; a run carrying a live pointer and none of them has not been
+    promoted and is left to the paths that own it.
+    """
+    from reckon.crew.promotion import PROMOTED_POINTER_MARK
+
+    if pointer.get(PROMOTED_POINTER_MARK):
+        return True
+    run_id = str(pointer.get("run_id") or "")
+    project = str(pointer.get("project") or "")
+    if not run_id or not project:
+        return False
+    if _record_path(run_id).exists():
+        return True
+    return _promoted_row(project, run_id) is not None
+
+
+def release_pointers_of_a_previous_fleet_node(
+    *, only_run: str = "", fleet_node: str | None = None
+) -> list[dict[str, Any]]:
+    """Retire a promoted pointer its fleet's move left nobody to reclaim.
+
+    A promoted run whose launcher host is not the node the fleet record names
+    keeps a pid that answers only on the machine the fleet has left, so its
+    liveness can never be read from here: unknown, and unknown is kept for a run
+    showing a turn in progress. Once the stream shows no turn inside the silence
+    window there is nobody left to work the run, and the pointer is retired so
+    the claim it holds is released.
+
+    Two readings release, and both require that the promoted run show no turn in
+    progress: a worker proved dead on the host that issued its pid, and a
+    launcher host that is not the fleet's node. A stream still carrying an
+    assistant turn inside the window keeps the pointer in either case — a worker
+    on a previous node is unknown, and unknown with a turn in progress is never
+    a licence to release.
+
+    Retiring the pointer releases a *claim*, never work: the run's worktree,
+    commits and records are untouched, and the paths that reclaim workspaces
+    still see the run's own evidence. A run already discarded has no pointer to
+    find, so a later pass cannot bring it back.
+    """
+    from reckon.crew import process_liveness
+
+    node = process_liveness.fleet_node_name() if fleet_node is None else str(fleet_node)
+    results: list[dict[str, Any]] = []
+    for pointer in runs.list_live():
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or (only_run and run_id != only_run):
+            continue
+        # The cheap gates first: a pointer carrying no promotion evidence at all
+        # is not this pass's, and a run whose worker this host can still see
+        # alive is working. Only the few that pass are asked the expensive
+        # questions — the ledger row and the stream.
+        if not _is_a_promoted_pointer(pointer):
+            continue
+        if process_liveness.record_process_liveness(pointer).alive is True:
+            continue
+        dead = process_liveness.record_process_alive(pointer) is False
+        moved = process_liveness.launched_on_another_fleet_node(pointer, node)
+        if not dead and not moved:
+            continue
+        if process_liveness.turn_in_progress(pointer):
+            results.append(
+                {
+                    "run_id": run_id,
+                    "status": "release-held",
+                    "reason": "a turn is in progress in the run's newest stream",
+                }
+            )
+            continue
+        if (
+            retire_pointer_if(
+                run_id,
+                lambda current, expected=dict(pointer): dict(current) == expected,
+            )
+            != POINTER_RETIRED
+        ):
+            continue
+        results.append(
+            {
+                "run_id": run_id,
+                "status": PREVIOUS_FLEET_NODE_RETIRED,
+                "launcher_host": pointer.get("launcher_host"),
+                "fleet_node": node,
+                "basis": "proved-dead" if dead else "previous-fleet-node",
+            }
+        )
+    return results
+
+
 def retire_promoted_pointers(
     *,
     project: str | None = None,
@@ -530,6 +628,10 @@ def retire_promoted_pointers(
         if release_workspaces
         else []
     )
+    # A fleet that has moved node; a pointer written on the node it left is
+    # retired here whatever the workspace path can prove, because the pid it
+    # records answers only on a machine this reader cannot reach.
+    retired.extend(release_pointers_of_a_previous_fleet_node(only_run=only_run))
     live = runs.list_live() if project is None else runs.list_live(project=project)
     selected = [
         pointer
