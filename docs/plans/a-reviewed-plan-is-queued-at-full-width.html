@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="building-a-plan-queues-all-of-it">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;building-a-plan-queues-all-of-it#s3&quot;],&quot;s7&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s3&quot;,&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;,&quot;a-reviewed-plan-is-queued-at-full-width#s11&quot;],&quot;s8&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s7&quot;],&quot;s9&quot;:[&quot;a-reviewed-plan-is-queued-at-full-width#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;descoped&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;descoped&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;descoped&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;descoped&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -135,6 +135,13 @@
     <p><strong>Deliverable.</strong> A whole-plan dispatch from a session that does not coordinate the plan queues it when the coordinating session is no longer live, and from then on the dispatching session coordinates the plan. A live coordinator still keeps the plan, and the refusal names it. Each row the call prints says which session coordinated the plan before the call.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_successor_queues_an_ended_coordinators_plan.py</code> passes, covering: a plan whose coordinating session has ended is queued by another session, and the plan's coordinator is then that session; a plan whose coordinating session is live is refused naming it; and the dry run reports the same rows. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. Write paths: <code>reckon/crew/dispatch_batch.py</code>, <code>reckon/crew/plan_coordinator.py</code> and the new test.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case must fail, with every section skipped as coordinated by the ended session.</p>
+
+    <h2 id="s18">§18 — A batch dry run resolves a wait on a sibling entry as the dispatch does</h2>
+<section data-reckon="section" data-id="s18" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>nova-a0 reported on 22 November 2026 that a batch dry run refused an entry whose <code>after</code> named a sibling node id in the same file, with <code>wait names missing request</code>, while the real dispatch of the same file resolved the wait and queued both. A coordinator who previews a batch is told it is broken when it is not.</p>
+    <p><strong>Deliverable.</strong> A batch dry run reports the same row for every entry that the dispatch of the same file would, including an entry that waits on another entry of the file.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_batch_dry_run_resolves_sibling_waits.py</code> passes, covering: a two-entry batch whose second entry names the first in <code>after</code> reads would-queue and awaiting-upstream in the dry run, matching the statuses the real dispatch stores; and an <code>after</code> naming an id in neither the file nor the queue is refused by both, with the same reason. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. Write paths: <code>reckon/crew/dispatch_batch.py</code> and the new test.</p>
+    <p><strong>Negative control.</strong> At the base revision, the first case must fail, with the dry run refusing the second entry.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
