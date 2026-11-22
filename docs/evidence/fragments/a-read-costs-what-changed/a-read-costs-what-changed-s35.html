@@ -20,22 +20,33 @@
   absence the instrument could have contradicted.</p>
 
   <p id="a-read-costs-what-changed-s35-mutation"><strong>Declared mutation.</strong>
-  Restoring dependency resolution for the version view (
-  <code>with_deps=True</code> at the view's call site) fails all three view cases with
-  a closing <code>EXIT=1</code>: the counter reads four parses,
-  <code>['target', 'alpha', 'beta', 'gamma']</code>, where the guard allows one. The
-  build counter still reads zero under this mutation, because a section ref now
-  resolves through the persisted index one plan at a time rather than by rebuilding
-  the project — the property the three cases guard is the parse bound, and that is
-  what turns red.</p>
+  At revision <code>9ed4c9ee2e01</code> with dependency resolution restored for the
+  version view (<code>with_deps=True</code> at the view's call site) the test reports
+  <code>3 failed, 2 passed in 5.51s</code> with a closing <code>EXIT=1</code>: the
+  counter reads four parses, <code>['target', 'alpha', 'beta', 'gamma']</code>, where
+  the guard allows one. The build counter still reads zero under this mutation,
+  because a section ref now resolves through the persisted index one plan at a time
+  rather than by rebuilding the project — the property the three cases guard is the
+  parse bound, and that is what turns red.</p>
+
+  <p id="a-read-costs-what-changed-s35-gate"><strong>Gate and suite arms.</strong>
+  The scoped gate at revision <code>5e216cc302b9</code> reported
+  <code>63 passed in 38.34s</code> with <code>EXIT=0</code>. The baseline arm at
+  <code>9ed4c9ee2e01</code> reported <code>62 passed in 52.07s</code> and the after
+  arm at <code>5e216cc302b9</code> reported <code>63 passed in 44.40s</code>, both
+  <code>EXIT=0</code>; the one-case difference is the control this node adds, and
+  no failure is added.</p>
 
   <p id="a-read-costs-what-changed-s35-measure"><strong>Timed arms.</strong>
   A cold <code>view="version"</code> read of
   <code>docs/plans/the-monitor-shows-the-work-it-watches.html</code> in a scratch copy
   of this repository's docs tree, on <code>all_debug</code> job
   <code>1337584</code>: <strong>1.092 s</strong> with resolution restored and
-  <strong>0.890 s</strong> as the base revision stands. The plan's 27.7 s and the
-  earlier 16.079 s figures were both taken before section refs resolved per plan, so
-  the guard's marginal saving at this revision is 0.2 s; its value here is that the
-  read parses one document instead of four, whatever the index cost beneath it.</p>
+  <strong>0.890 s</strong> as the base revision stands. Each arm's log
+  (<code>timed-base-resolution-restored.log</code>,
+  <code>timed-base.log</code>) names its tree, its imported module and its literal
+  command and closes with <code>EXIT=0</code>. The plan's 27.7 s and the earlier
+  16.079 s figures were both taken before section refs resolved per plan, so the
+  guard's marginal saving at this revision is 0.2 s; its value here is that the read
+  parses one document instead of four, whatever the index cost beneath it.</p>
 </section>
