@@ -1621,6 +1621,37 @@ def _lane_allowance_unknown(detail: str) -> dict[str, Any]:
 # negative figure states that no window has been observed, and a figure resting
 # on no history is read exactly as a block that states no window at all, so the
 # allowance falls back to headroom, which needs none.
+#: Live runs the lane may hold for each request its gate serves at once. The
+#: router's slot figure divides served requests by live runs, and a saturated
+#: gate serves exactly its width however many runs are waiting, so under load
+#: that figure cannot shed runs. A run admitted past this multiple only queues
+#: at the gate, where every model turn waits and its time budget still runs.
+LIVE_RUNS_PER_GATE_WIDTH = 2.0
+
+
+def _live_run_cap(document: object) -> tuple[float, float, float] | None:
+    """The live-run ceiling, the gate width and the live runs the lane publishes.
+
+    ``None`` when the document states no gate width or no live-run count, so a
+    lane that does not publish them is admitted as before.
+    """
+    if not isinstance(document, Mapping):
+        return None
+    admission = document.get("admission")
+    if not isinstance(admission, Mapping):
+        return None
+    utilisation = admission.get("utilisation")
+    width = (
+        _metric_number(utilisation.get("width"))
+        if isinstance(utilisation, Mapping)
+        else None
+    )
+    live = _metric_number(admission.get("live_runs"))
+    if width is None or width <= 0 or live is None:
+        return None
+    return LIVE_RUNS_PER_GATE_WIDTH * width, width, live
+
+
 def _lane_worker_allowance(
     document: object, *, session: str, weights_configured: bool = False
 ) -> dict[str, Any]:
@@ -1717,6 +1748,17 @@ def _lane_worker_allowance(
         detail = str(admission.get("detail") or reading.get("detail") or "").strip()
         detail = detail or "no worker-slot figure and no headroom were published"
         return _lane_allowance_unknown(detail) | {"session": session_id}
+
+    capped = _live_run_cap(document)
+    if capped is not None:
+        cap, width, live = capped
+        room = cap - live
+        if room < allowance:
+            allowance = room
+            source = (
+                f"the live-run cap of {cap:g} ({LIVE_RUNS_PER_GATE_WIDTH:g} times the "
+                f"gate width of {width:g}) less {live:g} live runs"
+            )
 
     held = allowance <= 0
     grant = (
