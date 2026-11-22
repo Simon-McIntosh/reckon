@@ -181,6 +181,9 @@ def test_one_resolver_serves_both_the_promotion_guard_and_the_replay(
         }
 
     monkeypatch.setattr(promotion_gate, "resolve_gate_program", recording)
+    monkeypatch.setattr(
+        promotion_gate, "_run_checkout_roots", lambda run_id: (merged_tree.resolve(),)
+    )
     with pytest.raises(CrewError) as refused:
         promotion_gate._require_executable_gate_command(
             "r-20261122T120000000000-resolver",
@@ -189,9 +192,14 @@ def test_one_resolver_serves_both_the_promotion_guard_and_the_replay(
 
     assert answers, "the guard did not ask the shared resolver"
     assert answers[0]["command"] == f"{PROGRAM_THAT_EXISTS_NOWHERE} --version"
-    assert answers[0]["options"].get("interpreter"), (
-        "the guard resolved without the interpreter fallback the replay passes, "
-        "so a command the replay can start could be refused at promotion"
+    assert answers[0]["options"].get("roots") == (merged_tree.resolve(),), (
+        "the guard resolved without the run's own roots, so a relative program "
+        "would be read against whatever directory the promotion ran from"
+    )
+    assert "interpreter" not in answers[0]["options"], (
+        "the guard must not fall back to the promoting interpreter: a run whose "
+        "checkout lacks the relative program it recorded is refused naming that "
+        "tree, which is what the replay's extra fallback cannot be used for"
     )
     assert PROGRAM_THAT_EXISTS_NOWHERE in str(refused.value)
 

@@ -12,15 +12,20 @@
   <p><strong>What changed.</strong> One resolver — <code>gate_program</code>,
   <code>resolve_gate_program</code> and <code>rewrite_gate_program</code> in
   <code>reckon/crew/promotion_gate.py</code> — now serves both the promotion
-  guard that admits a recorded command and the replay that executes it, so the
-  command a promotion accepts is exactly the command the re-run can start.
-  The replay resolves the command's program
+  guard that admits a recorded command and the replay that executes it, so one
+  tokenisation, PATH lookup, relative-candidate resolution and executable test
+  answer for both. The replay resolves the command's program
   before the shell receives it. A relative spelling — <code>.venv/bin/python</code>
   — is looked for under the tree being measured, then under each recorded worker
   root, then through any resolved <code>.venv</code>, then through the
   interpreter running the measurement, and the first executable found is
   substituted into the command as an absolute path, leaving every other word
-  alone. The report names <code>gate_program</code>, the seats it was looked in,
+  alone. The guard looks in fewer seats than the replay: it resolves over the
+  run's own checkout and repository and applies no interpreter fallback, so a
+  run whose checkout lacks the <code>.venv/bin/python</code> it recorded is
+  still refused naming that tree. The extra fallback exists for the opposite
+  case — a merged head whose tree holds no <code>.venv</code> although the run's
+  own checkout did. The report names <code>gate_program</code>, the seats it was looked in,
   and <code>gate_program_rewritten</code>. A program that resolves nowhere is
   reported as a gate that did not start —
   <code>integrated_verdict: not-run</code>, <code>gate_started: false</code>,

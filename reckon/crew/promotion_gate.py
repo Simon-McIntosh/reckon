@@ -651,18 +651,22 @@ def _require_executable_gate_command(
     """Refuse a recorded gate command whose first token names no executable.
 
     The recorded command is what the integration re-run executes, so it has to
-    name a program that can start. The resolution is the one the replay itself
-    uses — ``resolve_gate_program`` — so the command a promotion accepts is
-    exactly the command the re-run can start, and the two cannot drift. A
-    command written as prose can satisfy every shape check that refuses
-    placeholders, ellipses and prose parentheticals and still name no program at
-    all, so the token itself is resolved here and a promotion recording such a
-    command is refused before the row is written.
+    name a program that can start. The resolution is ``resolve_gate_program``,
+    the one the replay itself uses, over the run's checkout and repository, so
+    the tokenisation, PATH lookup, relative-candidate resolution and executable
+    test are one implementation rather than two that can drift. A command
+    written as prose can satisfy every shape check that refuses placeholders,
+    ellipses and prose parentheticals and still name no program at all, so the
+    token itself is resolved here and a promotion recording such a command is
+    refused before the row is written.
 
-    Refusal reaches only a command whose program cannot be resolved from the run
-    and repository roots: the lookup is the same one the replay makes, and a
-    command that resolves still promotes on whatever the other gate checks make
-    of its evidence.
+    The guard resolves over fewer seats than the replay: no measuring-interpreter
+    fallback. A worker records ``.venv/bin/python`` because its own checkout
+    carries it, so a run whose checkout lacks it recorded a program that never
+    existed there, and that is refused naming the tree rather than accepted on
+    the strength of the interpreter promoting it. The replay's extra fallback
+    exists for the opposite case — a merged head whose tree holds no ``.venv``
+    although the run's own checkout did.
     """
     if not isinstance(gate_check, Mapping):
         return
@@ -697,11 +701,9 @@ def _require_executable_gate_command(
     # the answer depend on who ran the promotion: the same command passes in the
     # caller's shell and is refused in the admission service, which runs from
     # the crew home. The roots are the run's own checkout and repository, and
-    # the interpreter fallback is the one the replay passes, so the two answers
-    # agree on the same command.
-    resolved = resolve_gate_program(
-        command, roots=_run_checkout_roots(run_id), interpreter=sys.executable
-    )
+    # no interpreter fallback applies: the recording tree must carry the program
+    # it names.
+    resolved = resolve_gate_program(command, roots=_run_checkout_roots(run_id))
     if resolved["resolved"] is not None:
         return
     program = resolved["program"] or program
