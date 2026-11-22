@@ -463,7 +463,36 @@ _SHELL_BUILTINS = frozenset(
 )
 
 
-_SHELL_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+def _program_token_index(argv: Sequence[str]) -> int | None:
+    """The position in ``argv`` of the token a shell would start, or None.
+
+    Leading ``NAME=value`` assignments are skipped, and an ``env`` wrapper is
+    unwrapped with its own arguments, so ``env -C <tree> .venv/bin/python …``
+    reports the interpreter rather than ``env``. Both the resolver and the
+    rewriter read the program from this one walk, so a command cannot be resolved
+    as one word and rewritten as another.
+    """
+    index = 0
+    while index < len(argv) and _SHELL_ASSIGNMENT.match(argv[index]):
+        index += 1
+    if index >= len(argv):
+        return None
+    if Path(argv[index]).name != "env":
+        return index
+    index += 1
+    while index < len(argv):
+        token = argv[index]
+        if token in _ENV_PROGRAM_ARGUMENTS:
+            index += 2
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        if _SHELL_ASSIGNMENT.match(token):
+            index += 1
+            continue
+        return index
+    return None
 
 
 def gate_program(command: str) -> str | None:
@@ -479,27 +508,8 @@ def gate_program(command: str) -> str | None:
         argv = shlex.split(command)
     except ValueError:
         return None
-    index = 0
-    while index < len(argv) and _SHELL_ASSIGNMENT.match(argv[index]):
-        index += 1
-    if index >= len(argv):
-        return None
-    if Path(argv[index]).name == "env":
-        index += 1
-        while index < len(argv):
-            token = argv[index]
-            if token in _ENV_PROGRAM_ARGUMENTS:
-                index += 2
-                continue
-            if token.startswith("-"):
-                index += 1
-                continue
-            if _SHELL_ASSIGNMENT.match(token):
-                index += 1
-                continue
-            return token
-        return None
-    return argv[index]
+    index = _program_token_index(argv)
+    return None if index is None else argv[index]
 
 
 def resolve_gate_program(
@@ -585,29 +595,53 @@ def resolve_gate_program(
     return resolution
 
 
-def _is_executable_file(path: Path) -> bool:
-    try:
-        return path.is_file() and os.access(path, os.X_OK)
-    except OSError:
-        return False
+def _program_token_span(command: str, index: int) -> tuple[int, int] | None:
+    """The character span of ``argv[index]`` in ``command``, or None."""
+    import io
+
+    stream = io.StringIO(command)
+    lexer = shlex.shlex(stream, posix=True)
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    position = 0
+    while True:
+        start = stream.tell()
+        try:
+            token = lexer.get_token()
+        except ValueError:
+            return None
+        if token == lexer.eof:
+            return None
+        if position == index:
+            raw = command[start : stream.tell()]
+            return start, start + len(raw.rstrip())
+        position += 1
 
 
 def rewrite_gate_program(command: str, program: str, replacement: str) -> str:
     """Replace the command's program with an absolute one, and nothing else.
 
-    The replacement is applied to the first whole-token occurrence only, at a
-    path boundary, so a program name that also appears inside an argument — a
-    test path, a quoted expression — is left alone. The replacement is quoted for
-    the shell, and a resolved path equal to the recorded spelling is a no-op, so a
-    command that already ran correctly replays byte-identically.
+    The substituted word is the token the command actually starts — the position
+    ``gate_program`` reads it from — so a program name that also appears inside an
+    argument, or earlier in the command than the program token, is left alone.
+    The replacement is quoted for the shell, and a resolved path equal to the
+    recorded spelling is a no-op, so a command that already ran correctly replays
+    byte-identically.
     """
     if not program or not replacement or program == replacement:
         return command
-    pattern = re.compile(r"(?<![\w./-])" + re.escape(program) + r"(?![\w./-])")
-    match = pattern.search(command)
-    if match is None:
+    try:
+        argv = shlex.split(command)
+    except ValueError:
         return command
-    return command[: match.start()] + shlex.quote(replacement) + command[match.end() :]
+    index = _program_token_index(argv)
+    if index is None or argv[index] != program:
+        return command
+    span = _program_token_span(command, index)
+    if span is None:
+        return command
+    start, end = span
+    return command[:start] + shlex.quote(replacement) + command[end:]
 
 
 def _require_executable_gate_command(
@@ -662,10 +696,15 @@ def _require_executable_gate_command(
     # Resolving it against the promoting process's working directory would let
     # the answer depend on who ran the promotion: the same command passes in the
     # caller's shell and is refused in the admission service, which runs from
-    # the crew home. The roots are the run's own checkout and repository.
-    resolved = resolve_gate_program(command, roots=_run_checkout_roots(run_id))
+    # the crew home. The roots are the run's own checkout and repository, and
+    # the interpreter fallback is the one the replay passes, so the two answers
+    # agree on the same command.
+    resolved = resolve_gate_program(
+        command, roots=_run_checkout_roots(run_id), interpreter=sys.executable
+    )
     if resolved["resolved"] is not None:
         return
+    program = resolved["program"] or program
     candidates = tuple(Path(seat) for seat in resolved["seats"])
     raise CrewError(
         f"run {run_id!r} records the gate command {command!r}, whose program "

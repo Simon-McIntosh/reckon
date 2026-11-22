@@ -18,6 +18,8 @@ These cases pin the three outcomes that must stay distinct:
 
 from __future__ import annotations
 
+import inspect
+import re
 import subprocess
 from pathlib import Path
 
@@ -187,4 +189,59 @@ def test_one_resolver_serves_both_the_promotion_guard_and_the_replay(
 
     assert answers, "the guard did not ask the shared resolver"
     assert answers[0]["command"] == f"{PROGRAM_THAT_EXISTS_NOWHERE} --version"
+    assert answers[0]["options"].get("interpreter"), (
+        "the guard resolved without the interpreter fallback the replay passes, "
+        "so a command the replay can start could be refused at promotion"
+    )
     assert PROGRAM_THAT_EXISTS_NOWHERE in str(refused.value)
+
+
+def test_the_module_defines_each_shared_helper_once() -> None:
+    """A second definition in one module silently shadows the first.
+
+    ``_is_executable_file`` and ``_SHELL_ASSIGNMENT`` are helpers the resolver and
+    the guard both depend on. Two definitions of either means the module answers
+    two ways depending on which one happens to be read last, which is the defect
+    that having one owner of the executable test is supposed to remove.
+    """
+    source = inspect.getsource(promotion_gate)
+
+    for name in ("_is_executable_file", "_SHELL_ASSIGNMENT"):
+        definitions = len(re.findall(rf"^(?:def\s+)?{name}\b", source, re.MULTILINE))
+        assert definitions == 1, (
+            f"{name} is defined {definitions} times in promotion_gate; the later "
+            "definition silently shadows the earlier"
+        )
+
+
+def test_the_rewrite_touches_the_program_token_and_no_earlier_one() -> None:
+    """An occurrence of the program's spelling inside an earlier word is not it."""
+    command = (
+        f"GATE={PROGRAM_THAT_EXISTS_NOWHERE} {PROGRAM_THAT_EXISTS_NOWHERE} --version"
+    )
+
+    rewritten = promotion_gate.rewrite_gate_program(
+        command, PROGRAM_THAT_EXISTS_NOWHERE, "/opt/gate/python"
+    )
+
+    assert rewritten == f"GATE={PROGRAM_THAT_EXISTS_NOWHERE} /opt/gate/python --version"
+
+
+def test_the_refusal_names_the_program_the_resolver_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An ``env``-wrapped command is refused naming the interpreter, not ``env``."""
+    monkeypatch.setattr(promotion_gate, "_run_checkout_roots", lambda run_id: ())
+
+    with pytest.raises(CrewError) as refused:
+        promotion_gate._require_executable_gate_command(
+            "r-20261122T120000000000-env",
+            {
+                "command": f"env -C /nonexistent {PROGRAM_THAT_EXISTS_NOWHERE} --version",
+                "exit_status": 0,
+            },
+        )
+
+    message = str(refused.value)
+    assert PROGRAM_THAT_EXISTS_NOWHERE in message
+    assert "'env'" not in message
