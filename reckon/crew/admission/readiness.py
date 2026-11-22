@@ -533,6 +533,25 @@ def _manifest_status(run_id: str, *, issues: list[str] | None = None) -> str:
         return ""
 
 
+#: The fields a section's landing verdict is decided from.
+#:
+#: The verdict asks two things of a row: which plan and section it belongs to,
+#: resolved the way :func:`reckon.ledger.row_plan` resolves a brief-carried
+#: dispatch, and which revision promotion recorded for it. A whole record
+#: carries the brief, the node definition, the budget and every other document
+#: the run wrote beside those, so decoding every field made a batch's peak
+#: follow the store's row count rather than the nodes it names.
+_LANDING_FIELDS = (
+    "run_id",
+    "plan",
+    "impl_move",
+    "node_definition",
+    "node",
+    "section",
+    "promoted_revision",
+)
+
+
 def _ledger_run_rows(
     project: str, plan: str, cache: dict[str, Any] | None
 ) -> list[Mapping[str, Any]] | None:
@@ -552,15 +571,23 @@ def _ledger_run_rows(
     footprint flat: the store selects the plan's rows in SQL and decodes only
     those.
     """
-    from reckon import ledger
+    from reckon import ledger, run_store
 
     key = (_SECTION_RUNS_CACHE_KEY, project, plan)
     if cache is not None and key in cache:
         return cache[key]
     try:
-        data, _version = ledger.load(project, plan=plan)
+        # The store projects the fields the verdict reads and decodes nothing
+        # else, so the read is bounded by this plan's rows rather than by their
+        # width. An absent store answers None and the committed ledger answers
+        # instead; a store holding no delivery for the plan answers empty,
+        # which is the same answer the full projection gave after filtering.
+        stored = run_store.stored_run_rows(project, plan=plan, fields=_LANDING_FIELDS)
+        if stored is None:
+            data, _version = ledger.load(project, plan=plan)
+            stored = list(data.get("runs") or ())
         rows: list[Mapping[str, Any]] | None = [
-            row for row in data.get("runs") or () if isinstance(row, Mapping)
+            row for row in stored if isinstance(row, Mapping)
         ]
     except Exception:  # noqa: BLE001 - an unreadable ledger proves no landing
         rows = None
