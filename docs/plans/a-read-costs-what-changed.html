@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="137">
+<meta name="plan-version" content="138">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -466,6 +466,9 @@
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261122T090006871349-review-of-arcwc-a-section-ref-resolves-without-a-project-build-500a426c45f2" data-who="reckon-build" data-when="2026-11-22T09:29:28.901Z">
     <div class="r-comment-body"><p>Reviewed arcwc-a-section-ref-resolves-without-a-project-build at 500a426c45f2662ae9b777ac343bd2ed96729b68 (base 50e7ad1022e2336f4f5fdfea7b8ccc90919c9b7b): parsed record, scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 16, reuse 20, added_failure_count 0, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261122T073626584775-arcwc-a-section-ref-resolves-without-a-project-build" data-who="reckon-build" data-when="2026-11-22T08:47:26.450Z">
+    <div class="r-comment-body"><p>A section ref now resolves from the persisted index one plan at a time (mcp.py `_PersistedPlanStates`), and a target the store does not cover is parsed from its own document, so a cold detail read of a twenty-plan store parses 4 documents instead of 20 with dependency rows identical to a full build&#x27;s; a ref absent from the store resolves by one parse.</p></div>
 </div>
 </section>
 </main>
