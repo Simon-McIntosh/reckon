@@ -78,9 +78,9 @@ the read volume and 40 times the CPU.</p>
 itself: a known 197-byte file is read and the <code>rchar</code> delta is
 printed. The first window reports <code>rchar_delta=300</code> and the second
 <code>rchar_delta=294</code> for that 197-byte file, so a small or zero total
-could not have been a counter that stopped working. Neither total is zero, and six producer seats in each window read
-nothing at all: an idle seat inside the measured set is a quiet process, not a
-dead instrument.</p>
+could not have been a counter that stopped working. Neither total is zero, and
+six producer seats read nothing at all in each window: an idle seat inside the
+measured set is a quiet process, not a dead instrument.</p>
 
 <h3 id="the-monitor-reads-each-fact-once-s12-attribution">Where the station's bytes go</h3>
 
@@ -123,8 +123,7 @@ of its six samples &mdash; the station itself is one of them, at
 today's event log was not run. The cutover it would qualify is withheld on the
 cost clause, and the RCA's section 11 already recorded that the station
 carries every row at that earlier attempt. Recording the replay as unmeasured
-is the honest
-reading; it is not evidence that the rows fail.</p>
+is the honest reading; it is not evidence that the rows fail.</p>
 
 <h3 id="the-monitor-reads-each-fact-once-s12-negative-control">The negative control</h3>
 
@@ -154,14 +153,20 @@ fleet watched.</p>
   <li>Census: <code>census-station-threads.log</code>, parsed by <code>census_threads.py</code>.</li>
   <li>Store probe: <code>store-call-cost.log</code>, produced by <code>probe_store_cost.py</code>.</li>
   <li>Instrument: <code>measure_crew_cost.py</code>.</li>
-  <li>Reconciliation gate: <code>window-reconcile.log</code>, run at revision
-  <code>790a380eb7</code> by <code>test_window_reconciles_with_the_evidence.py</code>,
-  which re-reads both windows and asserts every figure above:
-  <code>4 passed in 1.48s</code>. Its first run caught a wrong digit in the
-  follower figure (799.5 against the log's 799.0), which is the check seeing
-  something known wrong before it is trusted with what is right.</li>
-  <li>All of these, and the reconciliation test itself, live in the run directory
-  <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>.</li>
+  <li>Reconciliation gate: <code>test_evidence_matches_the_captures.py</code>,
+  committed beside the figure at revision <code>83991ce7f9</code>. It reads this
+  fragment as text, not a table held inside itself, and asserts every control
+  delta, window total, per-kind figure, D-state count and the bound against the
+  two captures committed beside it, and that the figure's own reader returns
+  the same numbers the captures record: <code>5 passed in 0.82s</code>.
+  Restoring the earlier control sentence reddens it
+  (<code>1 failed, 4 passed</code>, <code>EXIT=1</code>), which is the gate
+  seen failing on the defect it was written for.</li>
+  <li>The two captures are committed beside that test
+  (<code>captures/window-1.txt</code>, <code>captures/window-2.txt</code>). The
+  measuring instrument, the census and the store probe live in the run directory
+  <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>, as
+  does the earlier run-directory gate this one replaces.</li>
 </ul>
 </section>
 </main>

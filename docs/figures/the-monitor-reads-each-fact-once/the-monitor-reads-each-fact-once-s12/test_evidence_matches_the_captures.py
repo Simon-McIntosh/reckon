@@ -122,6 +122,21 @@ def test_every_window_is_above_both_bounds() -> None:
         )
 
 
+def test_the_fragment_names_the_gate_that_guards_it() -> None:
+    """A record that cites a guard must cite one a reader can run."""
+    text = prose()
+    assert "test_evidence_matches_the_captures.py" in text, (
+        "the evidence names no committed gate, so a reader cannot run the check "
+        "it claims"
+    )
+    assert "test_window_reconciles_with_the_evidence.py" not in text, (
+        "the evidence still cites the run-directory gate this module replaced"
+    )
+    assert "4 passed in 1.48s" not in text, (
+        "the evidence still quotes the superseded gate's result as its own"
+    )
+
+
 def test_the_figure_reads_the_same_numbers_as_the_capture() -> None:
     sys.path.insert(0, str(HERE))
     from plot_cutover_window import read_capture
