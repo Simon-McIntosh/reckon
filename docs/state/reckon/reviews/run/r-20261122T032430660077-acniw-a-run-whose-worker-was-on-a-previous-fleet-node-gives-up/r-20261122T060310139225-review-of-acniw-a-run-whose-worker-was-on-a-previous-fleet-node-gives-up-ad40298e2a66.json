@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:680",
+    "reckon/crew/pending_landing.py:508",
+    "reckon/crew/merge.py:216"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-22T06:04:46Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/manifest.md",
+      "line": "13",
+      "severity": "blocking",
+      "summary": "negative_control_log names negative-control-this-round.log, whose last line is EXIT=0, so the mutation the node declares was never shown to fail; reckon crew check --manifest on this run returns ok:false with reckon/crew/reports.py:2535's refusal, so the run cannot be admitted until the line names a red log such as negative-control-before-both.log, which ends EXIT=1 with reuse and figure both FAIL."
+    },
+    {
+      "file": "docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html",
+      "line": "104",
+      "severity": "non-blocking",
+      "summary": "the sentence names revision 9bc7839053 as the one where the release pass read the fleet's node through a one-line wrapper, but 9bc7839 is the commit that deleted that wrapper, so the durable record attributes the superseded reading to the revision that removed it; p11 of the same fragment records the sequence correctly."
+    },
+    {
+      "file": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release_gates.py",
+      "line": "210",
+      "severity": "non-blocking",
+      "summary": "nothing committed verifies the figure this line saves, so the outline form the round repaired has no guard in the suite; the assertion lives only in check_findings.py, which is not in the repository and is no longer on disk, so a hand-edit or a revert to font-referenced text restores the exact defect this commit repaired with no test reddening."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the three commits taken from 46e141da78b031d62bd9f86e87c663236ad5e23f (the prior review's head; the node base is d24fa090e52748cc3100cd54e60d68ad3e87fb1b) to ad40298e2a66e00108f2b23bd6964716caa3c9a8: four lines swapped across two modules, a 222-line generator plus its regenerated 57-path SVG, and 23 lines of evidence; no assertion and no test-file change.",
+    "done_when": "the done_when at docs/plans/a-claim-nobody-is-working-is-released.html s2 asks for three promoted fixture runs, one pass, two further passes, a base negative control and no added failure in the existing release tests; the delta changes no release behaviour, and the gate logs at e5aef21c end EXIT=0 with 58 passed (base arm), 66 passed (after arm) and 67 passed (scoped gate), each log carrying 0 FAILED ids.",
+    "goal": "the node goal at node.json is 'make this hold: a run whose worker was on a previous fleet node gives up its claim'; the three commits gained since the prior review (9bc7839053, e5aef21c40, ad40298e2a) delete the duplicate fleet-node wrapper and call reckon/crew/watch_unit.py:431 fleet_record_node at reckon/crew/process_liveness.py:588, and regenerate docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg with its lettering as path outlines.",
+    "manifest": "read at manifest.md; it lists fourteen commits, records both suite arms completed with failure_count 0 and empty failure_ids, and states the three-revision control sequence, but its negative_control_log at manifest.md:13 names negative-control-this-round.log, which ends EXIT=0, and reckon crew check --manifest on this run returns ok:false with the reports.py:2535 refusal.",
+    "write_paths": "read the seven declared paths; the five paths the delta's commits touch (reckon/crew/pending_landing.py, reckon/crew/process_liveness.py, the evidence fragment, release-gates.svg and the new release_gates.py inside the declared figure directory) are all inside them, and reckon/crew/promotion_release.py and tests/test_a_run_from_a_previous_fleet_node_is_released.py are untouched."
+  },
+  "justifications": {
+    "durability": "the delta adds no assertion; the release behaviour stays covered by tests/test_a_run_from_a_previous_fleet_node_is_released.py:136 and :155, but nothing in the suite reddens if release-gates.svg returns to font-referenced text, and the only check for that lived in check_findings.py, which is neither committed nor still on disk.",
+    "evidence": "the arms at e5aef21c are real logs ending EXIT=0 with 58, 66 and 67 passed and no FAILED id, but negative_control_log at manifest.md:13 names a log ending EXIT=0, which reckon/crew/reports.py:2535 refuses, so the declared mutation is not shown to fail.",
+    "fit": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release_gates.py follows the repo's figure-script idiom (matplotlib, plt.style.use data-ink, svg.fonttype path as two sibling scripts already set) and carries no plan or ticket label, though the comment at reckon/crew/process_liveness.py:589 restates the docstring above it.",
+    "goal_fidelity": "reckon/crew/process_liveness.py:588 now calls the owner reckon/crew/watch_unit.py:431 instead of the deleted wrapper, and docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg carries 0 text and 57 path elements so every label survives a fontless rasteriser.",
+    "reuse": "the delta removes a wrapper rather than adding one, and reckon/crew/process_liveness.py:588 plus reckon/crew/pending_landing.py:602 now call reckon/crew/watch_unit.py:431, the reader reckon/crew/merge.py:216 already calls.",
+    "scope_discipline": "every path the three delta commits touch is inside the declared write paths, and reckon/crew/promotion_release.py and tests/test_a_run_from_a_previous_fleet_node_is_released.py are untouched by the delta."
+  },
+  "plan": "a-claim-nobody-is-working-is-released",
+  "plan_section": "s2",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal at node.json is 'make this hold: a run whose worker was on a previous fleet node gives up its claim'; the three commits gained since the prior review (9bc7839053, e5aef21c40, ad40298e2a) delete the duplicate fleet-node wrapper and call reckon/crew/watch_unit.py:431 fleet_record_node at reckon/crew/process_liveness.py:588, and regenerate docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg with its lettering as path outlines.\nVERDICT done_when: the done_when at docs/plans/a-claim-nobody-is-working-is-released.html s2 asks for three promoted fixture runs, one pass, two further passes, a base negative control and no added failure in the existing release tests; the delta changes no release behaviour, and the gate logs at e5aef21c end EXIT=0 with 58 passed (base arm), 66 passed (after arm) and 67 passed (scoped gate), each log carrying 0 FAILED ids.\nVERDICT write_paths: read the seven declared paths; the five paths the delta's commits touch (reckon/crew/pending_landing.py, reckon/crew/process_liveness.py, the evidence fragment, release-gates.svg and the new release_gates.py inside the declared figure directory) are all inside them, and reckon/crew/promotion_release.py and tests/test_a_run_from_a_previous_fleet_node_is_released.py are untouched.\nVERDICT manifest: read at manifest.md; it lists fourteen commits, records both suite arms completed with failure_count 0 and empty failure_ids, and states the three-revision control sequence, but its negative_control_log at manifest.md:13 names negative-control-this-round.log, which ends EXIT=0, and reckon crew check --manifest on this run returns ok:false with the reports.py:2535 refusal.\nVERDICT diff: read the three commits taken from 46e141da78b031d62bd9f86e87c663236ad5e23f (the prior review's head; the node base is d24fa090e52748cc3100cd54e60d68ad3e87fb1b) to ad40298e2a66e00108f2b23bd6964716caa3c9a8: four lines swapped across two modules, a 222-line generator plus its regenerated 57-path SVG, and 23 lines of evidence; no assertion and no test-file change.\nCALL_SITES: reckon/crew/station.py:461, reckon/crew/pending_landing.py:680, reckon/crew/pending_landing.py:508, reckon/crew/merge.py:216\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/process_liveness.py:588 now calls the owner reckon/crew/watch_unit.py:431 instead of the deleted wrapper, and docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg carries 0 text and 57 path elements so every label survives a fontless rasteriser.\nSCORE evidence: 10\nJUSTIFICATION evidence: the arms at e5aef21c are real logs ending EXIT=0 with 58, 66 and 67 passed and no FAILED id, but negative_control_log at manifest.md:13 names a log ending EXIT=0, which reckon/crew/reports.py:2535 refuses, so the declared mutation is not shown to fail.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the three delta commits touch is inside the declared write paths, and reckon/crew/promotion_release.py and tests/test_a_run_from_a_previous_fleet_node_is_released.py are untouched by the delta.\nSCORE durability: 13\nJUSTIFICATION durability: the delta adds no assertion; the release behaviour stays covered by tests/test_a_run_from_a_previous_fleet_node_is_released.py:136 and :155, but nothing in the suite reddens if release-gates.svg returns to font-referenced text, and the only check for that lived in check_findings.py, which is neither committed nor still on disk.\nSCORE fit: 18\nJUSTIFICATION fit: docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release_gates.py follows the repo's figure-script idiom (matplotlib, plt.style.use data-ink, svg.fonttype path as two sibling scripts already set) and carries no plan or ticket label, though the comment at reckon/crew/process_liveness.py:589 restates the docstring above it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes a wrapper rather than adding one, and reckon/crew/process_liveness.py:588 plus reckon/crew/pending_landing.py:602 now call reckon/crew/watch_unit.py:431, the reader reckon/crew/merge.py:216 already calls.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/manifest.md:13 blocking: negative_control_log names negative-control-this-round.log, whose last line is EXIT=0, so the mutation the node declares was never shown to fail; reckon crew check --manifest on this run returns ok:false with reckon/crew/reports.py:2535's refusal, so the run cannot be admitted until the line names a red log such as negative-control-before-both.log, which ends EXIT=1 with reuse and figure both FAIL.\nFINDING docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up.html:104 non-blocking: the sentence names revision 9bc7839053 as the one where the release pass read the fleet's node through a one-line wrapper, but 9bc7839 is the commit that deleted that wrapper, so the durable record attributes the superseded reading to the revision that removed it; p11 of the same fragment records the sequence correctly.\nFINDING docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release_gates.py:210 non-blocking: nothing committed verifies the figure this line saves, so the outline form the round repaired has no guard in the suite; the assertion lives only in check_findings.py, which is not in the repository and is no longer on disk, so a hand-edit or a revert to font-referenced text restores the exact defect this commit repaired with no test reddening.",
+  "review_run_id": "r-20261122T060310139225-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-ad40298e2a66",
+  "reviewed_base_sha": "46e141da78b031d62bd9f86e87c663236ad5e23f",
+  "reviewed_head_sha": "ad40298e2a66e00108f2b23bd6964716caa3c9a8",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "scores": {
+    "durability": 13,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T06:12:52.908393+00:00",
+  "total": 99
+}
