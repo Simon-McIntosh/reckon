@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-reviewed-plan-is-queued-at-full-width">
+  <meta name="plan-title" content="A landed section is not queued again">
+  <meta name="plan-summary" content="A plan-level dispatch reads delivered work from the run store, matched on the plan and section, so a section whose run has landed is skipped by name instead of queued a second time.">
+  <meta name="plan-evidence-for" content="reckon:a-reviewed-plan-is-queued-at-full-width">
+  <meta name="plan-verifies" content="reckon:a-reviewed-plan-is-queued-at-full-width#s12">
+  <meta name="plan-commits" content="83196da7 21917e9a">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,queue,ledger">
+  <title>A landed section is not queued again — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="rpfw-a-landed-section-is-not-queued-again" data-reckon="landed" data-when="2026-11-22">
+  <h2>A landed section is not queued again</h2>
+
+  <p id="rpfw-a-landed-section-is-not-queued-again-why">A plan-level dispatch asks,
+  section by section, whether a section's work already exists. It asked the ledger
+  documents beside a checkout, and those documents are no longer written: the run store
+  is where a promotion puts its row. At <code>dde7b001</code> a run retired its live
+  pointer when it landed, so the live set could not answer either, and a section still
+  declared implementable in the minute before its landing's closing write read as never
+  delivered. A second request was queued for it. At that revision the new
+  test reports <code>1 failed, 1 passed in 1.73s</code>.</p>
+
+  <p id="rpfw-a-landed-section-is-not-queued-again-what">The delivery read now comes from
+  the run store through the ledger's own picker projection, and a row is matched on the
+  plan and section it names rather than on the node id. A section dispatched on its own
+  carries the node id that dispatch chose, which is not the plan-level id
+  <code>queue_plan</code> derives from the section, so a node-id match could not see
+  the landed run of a section that was built as its own node.
+  <code>reckon/crew/dispatch_batch.py</code>: <code>queue_plan</code> reads
+  <code>ledger.picker_runs</code> and resolves each candidate's plan through
+  <code>ledger.row_plan</code>.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li id="rpfw-a-landed-section-is-not-queued-again-base"><strong>The declared
+    negative control, executed and logged.</strong> At the pinned base
+    <code>dde7b001</code>, with this node's test file copied into a scratch tree built
+    from that revision, <code>tests/test_a_landed_section_is_not_queued_again.py</code>
+    fails its first case with a second request queued:
+    <code>assert 'queued' == 'skipped'</code> over a result reading
+    <code>'queued': 2</code>, closing <code>EXIT=1</code>. The section beside it queues
+    in that arm too, which is what proves the failure is the landed section's and not a
+    whole-plan refusal.</li>
+    <li id="rpfw-a-landed-section-is-not-queued-again-head"><strong>The head
+    arm.</strong> At <code>83196da7</code> both cases pass: the landed section is
+    reported <code>skipped</code> with the landed run id in its reason, and a section
+    whose only run was discarded is reported <code>queued</code>.</li>
+    <li id="rpfw-a-landed-section-is-not-queued-again-check"><strong>A run whose
+    own check failed.</strong> The stored row carries no phase, so the match reads
+    the gate and failure classification the row does carry: at
+    <code>21917e9a</code> a section whose run was promoted under a failed check
+    classified <code>work-rejected</code> is <code>queued</code> again, while one
+    whose failure is recorded as <code>pre-existing-failure</code> is
+    <code>skipped</code> naming its run. Reverting that commit, in a scratch tree
+    built from <code>85435d242654</code> with this node's test copied in, the
+    rejected case reads <code>assert 'skipped' == 'queued'</code>, reports
+    <code>1 failed, 3 passed</code>, and closes <code>EXIT=1</code>.</li>
+    <li id="rpfw-a-landed-section-is-not-queued-again-gate"><strong>The gate and its
+    arms.</strong> The scoped gate ran <code>60 passed in 40.52s</code> with
+    <code>EXIT=0</code> at <code>83196da7</code>. The baseline arm at
+    <code>dde7b001</code> reported <code>58 passed in 37.30s</code> and the after arm at
+    <code>83196da7</code> reported <code>60 passed in 40.78s</code>, both
+    <code>EXIT=0</code>: the two added passes are this node's cases and the head adds
+    no failure id. After the check repair the same command over
+    <code>582f8001e7fc</code> reported <code>62 passed in 54.01s</code> at
+    <code>EXIT=0</code> against the same baseline arm's
+    <code>58 passed in 37.30s</code>: two more of this node's cases, still no
+    added failure id.</li>
+  </ul>
+</article>
+</body>
+</html>

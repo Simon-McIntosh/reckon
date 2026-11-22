@@ -133,6 +133,20 @@ _DESCRIBED_FILE = re.compile(
 #: Phases a request reports as waiting for its upstream rather than queued.
 WAITING_UPSTREAM_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
 
+#: Phases a live pointer carries when its run delivered nothing.
+_UNDELIVERED_PHASES = frozenset(
+    {"failed", "stopped", "interrupted", "discarded", "dropped"}
+)
+
+#: A promoted row carries no phase, because a promotion is a landing, so a run
+#: whose own check failed is read from the gate the row does carry. The
+#: classification says what the failure measured: a failure recorded as
+#: pre-existing or as a negative result is work that landed with the check
+#: reading red for a reason outside the node, so the section is delivered; any
+#: other classification, and an unclassified failure, names work the run did
+#: not do, so the section is still to queue.
+_LANDED_DESPITE_FAILED_GATE = frozenset({"pre-existing-failure", "negative-result"})
+
 
 class BatchEntryRefusedError(CrewError):
     """One entry cannot be queued, and the rest of the batch still can."""
@@ -875,6 +889,16 @@ def queue_plan(
     nor forgets delivered work whose pointer has already been promoted. The
     command-level options are carried to every section this queues, exactly as
     they are to the entries of a batch file.
+
+    Delivered work is read from the run store, which is where a promotion puts
+    its row, rather than from the ledger documents beside a checkout: the
+    documents are no longer written, so a reader of them alone sees no landed
+    run at all. A row is matched on the plan and section it names rather than
+    on the node id, because a section dispatched on its own carries the node id
+    that dispatch chose, not the one this call derives from the section. A
+    stored row carries no phase, so a run whose own check failed is read from
+    the gate and classification the row does carry: such a run is delivered
+    only when its failure is recorded as one the node's work did not cause.
     """
     from reckon import _plan_html, ledger
     from reckon.crew import runs
@@ -887,7 +911,7 @@ def queue_plan(
     live = list(runs.list_live(project=project))
     ownership = resolve_plan_coordinators(project, root=read.repo_root, pointers=live)
     owner = (ownership.get("plans", {}).get(plan) or {}).get("coordinator")
-    history = ledger.run_rows_from_documents(project, root=read.repo_root)
+    history = ledger.picker_runs(project, read.repo_root)
     entries: list[dict[str, Any]] = []
     rows: dict[str, dict[str, Any]] = {}
     config = None
@@ -914,16 +938,20 @@ def queue_plan(
         for candidate in [*live, *history]:
             node = candidate.get("node")
             node = node if isinstance(node, Mapping) else {}
-            candidate_plan = node.get("plan") or candidate.get("plan")
+            candidate_plan = ledger.row_plan(candidate) or str(node.get("plan") or "")
             candidate_section = node.get("section") or candidate.get("section")
             phase = str(candidate.get("phase") or candidate.get("status") or "")
+            gate = str(candidate.get("gate") or "")
+            classification = str(candidate.get("failure_classification") or "")
+            delivered = phase not in _UNDELIVERED_PHASES and (
+                gate != "failed" or classification in _LANDED_DESPITE_FAILED_GATE
+            )
             role = node.get("role") or candidate.get("role") or "implement"
             if (
                 candidate_plan == plan
                 and normalize_section(candidate_section) == normalize_section(identity)
                 and role == "implement"
-                and phase
-                not in {"failed", "stopped", "interrupted", "discarded", "dropped"}
+                and delivered
             ):
                 existing = candidate
                 break
