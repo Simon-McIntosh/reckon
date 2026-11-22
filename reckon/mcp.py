@@ -876,11 +876,7 @@ def _read_plan(
           → { project, slug, version, data } — one plan's parsed state, or the
             index/project JSON envelope data for those special slugs.
 
-    ``with_deps`` false skips resolving the plan's depends-on and section refs.
-    The views that serve no dependency row set it false, so such a read parses
-    its own document and never reaches the project metadata index.
-
-      read_plan(project, slug, with_schema=True)
+    read_plan(project, slug, with_schema=True)
           → the above PLUS "schema" (the published JSON Schema), a compact
             dos/don'ts note, and an op-vocabulary summary — the context injector
             an agent reads before calling edit_plan.
@@ -908,6 +904,10 @@ def _read_plan(
 
       read_plan()  or  read_plan("*")    [project omitted/"*"]
           → { projects: [...] } — folds list_projects.
+
+    ``with_deps`` false skips resolving the plan's depends-on and section refs.
+    The views that serve no dependency row set it false, so such a read parses
+    its own document and never reaches the project metadata index.
 
     Multi-worktree (``checkout_path``):
       When an agent runs inside a git worktree (a separate checkout of the same
