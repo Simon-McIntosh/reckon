@@ -2590,7 +2590,7 @@ def _is_binary_receipt(path: Path) -> bool:
     if path.suffix.lower() in BINARY_SUFFIXES:
         return True
     try:
-        with path.open("rb") as handle:
+        with path.open("rb", buffering=0) as handle:
             head = handle.read(BINARY_HEAD_PROBE_BYTES)
     except OSError:
         return False
@@ -4714,7 +4714,7 @@ def watch_stream_latest_events(project: str) -> dict[str, dict[str, Any]]:
             )
         if stat_result.st_size > memory.offset:
             try:
-                with path.open("rb") as stream:
+                with path.open("rb", buffering=0) as stream:
                     stream.seek(memory.offset)
                     appended = stream.read()
             except OSError:
@@ -4788,7 +4788,7 @@ def line_boundary(path: Path, *, chunk: int = 64 * 1024) -> int:
     if size <= 0:
         return 0
     try:
-        with path.open("rb") as stream:
+        with path.open("rb", buffering=0) as stream:
             end = size
             while end > 0:
                 start = max(0, end - chunk)
@@ -4863,7 +4863,7 @@ def _iter_stream_lines_backwards(
     if size <= 0:
         return
     try:
-        with path.open("rb") as stream:
+        with path.open("rb", buffering=0) as stream:
             end = size
             held = b""
             while end > 0:

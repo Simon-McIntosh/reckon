@@ -289,7 +289,7 @@ def append_scheduler_reading(directory: Path, row: Mapping[str, str]) -> bool:
             raise FleetNodeError(f"health series lacks scheduler columns: {path}")
         # Only the tail is read, keeping each tick independent of series age.
         stream.flush()
-        with path.open("rb") as reader:
+        with path.open("rb", buffering=0) as reader:
             reader.seek(0, os.SEEK_END)
             reader.seek(max(0, reader.tell() - 65536))
             tail = reader.read().decode("utf-8", errors="replace").splitlines()

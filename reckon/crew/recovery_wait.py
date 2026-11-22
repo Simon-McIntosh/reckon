@@ -206,7 +206,7 @@ def _appended_lines(path: Path, offset: int) -> tuple[list[bytes], int]:
     the bytes that complete it, and the next scan decodes that record once.
     """
     try:
-        with path.open("rb") as handle:
+        with path.open("rb", buffering=0) as handle:
             handle.seek(offset)
             payload = handle.read()
     except OSError:
@@ -327,7 +327,7 @@ def _read_last_tool_call(log: Path) -> tuple[str, str] | None:
     offset returned is the last newline's, taken from the same handle so the
     next scan resumes exactly where this read stopped.
     """
-    with log.open("rb") as handle:
+    with log.open("rb", buffering=0) as handle:
         size = handle.seek(0, os.SEEK_END)
         end = _last_newline_offset(handle, size)
         position = size
@@ -1892,7 +1892,7 @@ def _tail_record_type(path: Path) -> tuple[str | None, int]:
     the whole fleet's tails.
     """
     try:
-        with path.open("rb") as handle:
+        with path.open("rb", buffering=0) as handle:
             size = handle.seek(0, os.SEEK_END)
             covered: int | None = None
             window = _STREAM_TAIL_BYTES

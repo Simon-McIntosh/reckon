@@ -3373,7 +3373,7 @@ def _newest_session_event(path: Path) -> Mapping[str, Any] | None:
         if status.st_size > size:
             newest = event
             try:
-                with path.open("rb") as handle:
+                with path.open("rb", buffering=0) as handle:
                     handle.seek(size)
                     appended = handle.read(status.st_size - size)
             except OSError:
