@@ -25,7 +25,7 @@
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -129,6 +129,15 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261122T083549089756-rpfw-a-plan-dispatch-reads-the-sections-control" data-who="reckon-build" data-when="2026-11-22T09:31:20.353Z">
     <div class="r-comment-body"><p>A plan-level dispatch now reads a section's closing negative-control paragraph and carries its sentence onto the queued request (a "none, because ..." paragraph becomes the node's `none: &lt;reason&gt;` declaration, an entry that names its own control still wins), and a section that writes a check and states none is refused by name naming the section and the missing paragraph; tests/test_a_plan_dispatch_reads_the_sections_control.py records 4 passed.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261122T094600846205-review-of-rpfw-a-landed-section-is-not-queued-again-85435d242654" data-who="reckon-build" data-when="2026-11-22T09:54:27.936Z">
+    <div class="r-comment-body"><p>Review of run r-20261122T083611402933-rpfw-a-landed-section-is-not-queued-again at dde7b00176..85435d2426: a landed section is now skipped by name and the node's two cases plus a recorded negative control hold, but the delivered-work match reads phase/status from a picker projection that carries neither, so a section whose only stored run failed its gate is now silently skipped and never queued again (blocking), with no case covering that arm (non-blocking).</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261122T100726612147-review-of-rpfw-a-landed-section-is-not-queued-again-791d6d5080eb" data-who="reckon-build" data-when="2026-11-22T10:17:03.496Z">
+    <div class="r-comment-body"><p>independent review of r-20261122T083611402933-rpfw-a-landed-section-is-not-queued-again — scores goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, reuse 20 (total 120), zero findings, reviewed 85435d242654..791d6d5080ebb6; the prior blocking finding (the delivered-work match read a phase a stored row does not carry) is fixed at 21917e9ac8 and covered by a durable test with an executed negative control.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261122T083611402933-rpfw-a-landed-section-is-not-queued-again" data-who="reckon-build" data-when="2026-11-22T10:04:51Z">
+    <div class="r-comment-body"><p>A plan-level dispatch now reads a section&#x27;s delivered work from the run store, matches it on the plan and section rather than on the node id, and reads a stored row&#x27;s own gate and failure classification where it used to read a phase a stored row does not carry, so a section whose run landed is skipped naming that run, a section whose only run failed its check or was discarded is queued again, and a failure recorded as pre-existing or as a negative result still counts as delivered; the new test is red at the pinned base with a second request queued (EXIT=1) and green at head.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261122T064159258632-review-of-rpfw-a-request-records-its-dispatch-width-0ecf1e4e75ea" data-who="reckon-build" data-when="2026-11-22T06:52:01.854Z">
     <div class="r-comment-body"><p>Review of r-20261122T035743985722-rpfw-a-request-records-its-dispatch-width at head 0ecf1e4e75 from base 68413ae856: the landed change records the dispatch width (plan/batch/section) on the request pointer, on the promoted ledger row, and in the live queue view's row and filter; the reviewed gate records 60 passed / EXIT=0 at head and the base negative control 2 failed / EXIT=1. Scores: goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 20; two non-blocking findings (unused DISPATCH_WIDTHS constant; a dead debug print in the test).</p></div>
 </div>
@@ -146,12 +155,6 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261122T035912179260-rpfw-the-queue-view-counts-waits-by-cause" data-who="reckon-build" data-when="2026-11-22T05:31:32Z">
     <div class="r-comment-body"><p>The queue view's waiting count is given in four parts with each part's oldest age, the last three read from the wait_class the admission pass already stamps and never recomputed, and a request parked behind a hold counted as held rather than as a slot wait. The view decides the fault itself and carries the rendered pane row on the document every queue reader loads, so the row and the fault have a production caller and cannot disagree with the counts; the renderer reads each part's name and letter from the document and the view reads the pane's in-flight phase set, so neither restates the other's vocabulary.</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261122T094600846205-review-of-rpfw-a-landed-section-is-not-queued-again-85435d242654" data-who="reckon-build" data-when="2026-11-22T09:54:27.936Z">
-    <div class="r-comment-body"><p>Review of run r-20261122T083611402933-rpfw-a-landed-section-is-not-queued-again at dde7b00176..85435d2426: a landed section is now skipped by name and the node's two cases plus a recorded negative control hold, but the delivered-work match reads phase/status from a picker projection that carries neither, so a section whose only stored run failed its gate is now silently skipped and never queued again (blocking), with no case covering that arm (non-blocking).</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261122T100726612147-review-of-rpfw-a-landed-section-is-not-queued-again-791d6d5080eb" data-who="reckon-build" data-when="2026-11-22T10:17:03.496Z">
-    <div class="r-comment-body"><p>independent review of r-20261122T083611402933-rpfw-a-landed-section-is-not-queued-again — scores goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, reuse 20 (total 120), zero findings, reviewed 85435d242654..791d6d5080ebb6; the prior blocking finding (the delivered-work match read a phase a stored row does not carry) is fixed at 21917e9ac8 and covered by a durable test with an executed negative control.</p></div>
 </div>
 </section>
   </main>
