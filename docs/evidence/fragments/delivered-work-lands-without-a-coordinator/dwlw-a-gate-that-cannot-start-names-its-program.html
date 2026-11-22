@@ -50,12 +50,15 @@
   runs a command that fails and keeps <code>tests/test_sample.py::test_broken</code>
   as its failure id.</p>
 
-  <p>The scoped gate and both suite arms were run by the project's own measuring
-  path on <code>all_debug</code> at revision
-  <code>831132252430ad5474fb216f9308d8d1f2f204a9</code>: the scoped gate logged
-  <em>61 passed in 43.18s</em>, the after arm <em>61 passed in 36.75s</em>, and
-  the base arm at <code>dde7b001769544957d5ca63f50cbb48c26574553</code>
-  <em>58 passed in 37.15s</em> — the base arm is narrower because the node's
-  test file does not exist there. The negative control at the pinned base
-  logged <em>3 failed in 0.58s</em>.</p>
+  <p>Both suite arms were run by the project's own measuring path on
+  <code>all_debug</code> at revision
+  <code>78755444b1e1a5fdd41e119aa23c7eea7acc4e37</code>: the after arm logged
+  <em>62 passed in 36.49s</em> and the base arm at
+  <code>dde7b001769544957d5ca63f50cbb48c26574553</code> <em>58 passed in
+  53.34s</em> — the base arm is narrower because the node's test file does not
+  exist there. The negative control at the pinned base logged <em>3 failed in
+  0.58s</em>; the control for the single-resolver case runs the same file
+  against the tree before the consolidation and logs <em>1 failed, 3 passed</em>,
+  the failure naming <code>landing_measure</code> as the module that
+  re-implements <code>gate_program</code>.</p>
 </section>
