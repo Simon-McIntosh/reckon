@@ -107,6 +107,9 @@ def _row(
         "plan": str(pointer.get("plan") or ""),
         "section": _node_field(pointer, "section"),
         "lane": str(pointer.get("backend") or ""),
+        # The width the request was queued at, so this read answers how much of
+        # a plan was dispatched rather than only what is waiting.
+        "dispatch_width": str(pointer.get("dispatch_width") or ""),
         "phase": phase,
         "priority": _priority(pointer),
     }
@@ -197,6 +200,7 @@ def queue_view(
     session: str | None = None,
     now: datetime | None = None,
     checkout_path: str | None = None,
+    dispatch_width: str | None = None,
 ) -> dict[str, Any]:
     """Where the queue's work stands, for one project and optionally one session.
 
@@ -225,6 +229,10 @@ def queue_view(
         if project and str(pointer.get("project") or "") != project:
             continue
         if session and str(pointer.get("session") or "") != session:
+            continue
+        if dispatch_width and str(pointer.get("dispatch_width") or "") != (
+            dispatch_width
+        ):
             continue
         row = _row(
             pointer,
