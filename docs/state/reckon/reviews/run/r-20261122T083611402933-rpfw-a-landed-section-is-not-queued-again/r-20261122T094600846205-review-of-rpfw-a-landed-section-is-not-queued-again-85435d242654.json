@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1221"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:47:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 845,
+      "severity": "blocking",
+      "text": "the delivered-work match reads candidate.get(\"phase\") or candidate.get(\"status\"), but history is now ledger.picker_runs whose rows are projected through _PICKER_FIELDS (reckon/ledger.py:1702-1726) which carries neither key, measured on the live store as zero of 20 rows having phase or status; so phase is always the empty string for a stored row and the failed/stopped/interrupted/discarded/dropped exclusion can never fire, and a section whose only run failed its gate is now skipped as an existing run instead of being queued again."
+    },
+    {
+      "file": "tests/test_a_landed_section_is_not_queued_again.py",
+      "line": 231,
+      "severity": "non-blocking",
+      "text": "the discarded-run case passes because crew.discard removes the pointer and writes no store row, so the section is queued by absence rather than by the phase exclusion; a stored run whose gate failed is the case that would exercise the exclusion and it is not covered, which is why the regression above passes the node's own gate."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from dde7b001 (83196da753 fix, 0db926ed6e fragment, 85435d2426 fragment edit); the source change is two lines that swap ledger.run_rows_from_documents for ledger.picker_runs and node.get(\"plan\") for ledger.row_plan(candidate), and add a docstring paragraph.",
+    "done_when": "the done_when names tests/test_a_landed_section_is_not_queued_again.py for two cases; both exist and the scoped gate log scoped-gate-1795340146325948711.log records 60 passed in 40.52s closing EXIT=0 at 83196da7.",
+    "goal": "the node goal in docs/plans/a-reviewed-plan-is-queued-at-full-width.html:98 is that a plan-level dispatch does not queue a section whose run has landed, naming that run; reckon/crew/dispatch_batch.py:840-853 now reads delivered work from ledger.picker_runs and matches on plan+section, and the new test shows a landed section reported skipped with its run id.",
+    "manifest": "read; it records status complete, both suite arms (58 passed at base, 60 passed at head, both EXIT=0) and negative-control.log closing EXIT=1 with `assert 'queued' == 'skipped'` over `'queued': 2`.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_batch.py, the new test, the evidence fragment and a figures directory; the diff touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landed_section_is_not_queued_again.py:221 reddens at the base revision (shown by negative-control.log), so the landed-skip guard is durable, but no test covers a stored row whose gate is failed, which is the case the new read silently changes.",
+    "evidence": "the negative control at dde7b001 is executed and logged with the exact assertion that fails, and the scoped gate and both suite arms are recorded with revision, command and EXIT at scoped-gate-1795340146325948711.log:8.",
+    "fit": "the change uses the ledger's own picker_runs and row_plan and adds a docstring paragraph in the surrounding voice at reckon/crew/dispatch_batch.py:794-803, with no new symbol or banned name.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:840-853 skips the landed section by name as the goal requires, but the same match now treats every stored row as delivered because ledger.picker_record drops phase and status from the picker projection.",
+    "reuse": "no new definition is added; the change extends the existing ledger owner (reckon/ledger.py:1923 picker_runs and :1987 row_plan) rather than re-implementing a delivered-work read.",
+    "scope_discipline": "the diff dde7b001..85435d24 touches only reckon/crew/dispatch_batch.py, tests/test_a_landed_section_is_not_queued_again.py and the evidence fragment, all inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal in docs/plans/a-reviewed-plan-is-queued-at-full-width.html:98 is that a plan-level dispatch does not queue a section whose run has landed, naming that run; reckon/crew/dispatch_batch.py:840-853 now reads delivered work from ledger.picker_runs and matches on plan+section, and the new test shows a landed section reported skipped with its run id.\nVERDICT done_when: the done_when names tests/test_a_landed_section_is_not_queued_again.py for two cases, a landed section skipped by name and a discarded-only section queued; both exist and the scoped gate log scoped-gate-1795340146325948711.log records 60 passed in 40.52s closing EXIT=0 at 83196da7.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_batch.py, the new test, the evidence fragment and a figures directory; the diff touches the first three and nothing outside them.\nVERDICT manifest: read; it records status complete, both suite arms (58 passed at base, 60 passed at head, both EXIT=0) and a negative control log negative-control.log closing EXIT=1 with `assert 'queued' == 'skipped'` over `'queued': 2`.\nVERDICT diff: read commit by commit from dde7b001 (83196da753 fix, 0db926ed6e fragment, 85435d2426 fragment edit); the source change is two lines that swap ledger.run_rows_from_documents for ledger.picker_runs and node.get(\"plan\") for ledger.row_plan(candidate), and add a docstring paragraph.\nCALL_SITES: reckon/crew_dispatch_commands.py:1221 (the `crew dispatch --plan` path selects queue_plan)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:840-853 skips the landed section by name as the goal requires, but the same match now treats every stored row as delivered because ledger.picker_record drops phase and status from the picker projection.\nSCORE evidence: 17\nJUSTIFICATION evidence: the negative control at dde7b001 is executed and logged with the exact assertion that fails, and the scoped gate and both suite arms are recorded with revision, command and EXIT at scoped-gate-1795340146325948711.log:8.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff dde7b001..85435d24 touches only reckon/crew/dispatch_batch.py, tests/test_a_landed_section_is_not_queued_again.py and the evidence fragment, all inside the four declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_landed_section_is_not_queued_again.py:221 reddens at the base revision (shown by negative-control.log), so the landed-skip guard is durable, but no test covers a stored row whose gate is failed, which is the case the new read silently changes.\nSCORE fit: 19\nJUSTIFICATION fit: the change uses the ledger's own picker_runs and row_plan and adds a docstring paragraph in the surrounding voice at reckon/crew/dispatch_batch.py:794-803, with no new symbol or banned name.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new definition is added; the change extends the existing ledger owner (reckon/ledger.py:1923 picker_runs and :1987 row_plan) rather than re-implementing a delivered-work read.\nFINDING reckon/crew/dispatch_batch.py:845 blocking: the delivered-work match reads candidate.get(\"phase\") or candidate.get(\"status\"), but history is now ledger.picker_runs whose rows are projected through _PICKER_FIELDS (reckon/ledger.py:1702-1726) which carries neither key, measured on the live store as zero of 20 rows having phase or status; so `phase` is always the empty string for a stored row and the {\"failed\",\"stopped\",\"interrupted\",\"discarded\",\"dropped\"} exclusion can never fire, and a section whose only run failed its gate is now skipped as \"existing run <id>\" instead of being queued again.\nFINDING tests/test_a_landed_section_is_not_queued_again.py:231 non-blocking: the discarded-run case passes because crew.discard removes the pointer and writes no store row, so the section is queued by absence rather than by the phase exclusion; a stored run whose gate failed is the case that would exercise the exclusion and it is not covered, which is why the regression above passes the node's own gate.\n",
+  "review_run_id": "r-20261122T094600846205-review-of-rpfw-a-landed-section-is-not-queued-again-85435d242654",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "85435d24265456eddeeefda823f1bd5a0e414ff4",
+  "reviewed_run_id": "r-20261122T083611402933-rpfw-a-landed-section-is-not-queued-again",
+  "reviewer_run_id": "r-20261122T094600846205-review-of-rpfw-a-landed-section-is-not-queued-again-85435d242654",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:52:18.465140+00:00",
+  "total": 104
+}
