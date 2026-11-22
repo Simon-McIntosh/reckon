@@ -21,7 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import runs
+from reckon import file_memo
+from reckon.crew import obligations, runs
 from reckon.crew.admission import service
 
 
@@ -108,6 +109,40 @@ def test_an_idle_pass_writes_a_reading_carrying_its_memory(crew_home: Path) -> N
     readings = [json.loads(line) for line in log.read_text().splitlines()]
     assert len(readings) == 1, readings
     reading = readings[0]
+    process = resident_bytes()
     assert reading["pointers"] == []
-    assert reading["resident_bytes"] == service.resident_bytes()
+    assert abs(reading["resident_bytes"] - process) <= process * 0.10, (
+        f"the reading says {reading['resident_bytes']} B resident while this "
+        f"process's own /proc record says {process} B"
+    )
     assert reading["memory_bound_bytes"] == service.ADMIT_MEMORY_BOUND_BYTES
+
+
+def test_a_pass_under_the_bound_keeps_the_parse_memo(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pointers(50, generation=1)
+    file_memo.clear()
+    monkeypatch.setattr(service, "ADMIT_MEMORY_BOUND_BYTES", 1 << 62)
+    _run_pass()
+    assert file_memo.memo_entries() > 0
+
+
+def test_a_pass_over_the_bound_drops_the_parse_memo(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pointers(50, generation=1)
+    file_memo.clear()
+    monkeypatch.setattr(service, "ADMIT_MEMORY_BOUND_BYTES", 1)
+    _run_pass()
+    assert file_memo.memo_entries() == 0
+
+
+def test_a_retirement_stays_readable_across_idle_passes(crew_home: Path) -> None:
+    log = runs.crew_home() / service._verdicts.ADMISSION_VERDICT_LOG
+    log.parent.mkdir(parents=True, exist_ok=True)
+    retirement = {"run_id": "r-retired", "session": "s-1", "project": "p-1"}
+    lines = [json.dumps({"retired": [retirement]})]
+    lines += [json.dumps({"retired": []}) for _ in range(3)]
+    log.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert obligations.recent_upstream_retirements() == [retirement]

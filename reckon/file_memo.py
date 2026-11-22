@@ -642,6 +642,12 @@ def bounded_map[V](name: str, *, limit: str | int) -> BoundedMap[V]:
     return helper
 
 
+def memo_entries() -> int:
+    """How many parsed files the process-wide memo currently holds."""
+    with _LOCK:
+        return len(_CACHE)
+
+
 def clear() -> None:
     """Drop every memoised parse and every bounded map."""
 

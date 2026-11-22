@@ -50,6 +50,8 @@ growing       before 36c098539b        2 failed in 115.19s (0:01:55)
 suite arms    base 4a5ec5081e        58 passed in 41.44s
                      head c0ef2a0bb3        60 passed in 236.22s (0:03:56)</pre>
 
+<p id="mrfo-the-admit-service-holds-bounded-memory-guards">Three cases guard the change rather than the band alone, which the base revision passes on this fixture: a pass under the idle reading's bound keeps the process-wide parse memo and one over it drops it, so removing either branch fails a case; the idle reading is compared with the process's own <code>/proc</code> figure within 10 %, using a reader the code under test does not call, so a reader returning a constant cannot satisfy it; and a retirement followed by three idle passes is still returned, because every pass now writes a record and the reader takes the newest non-empty list instead of the last record's. A shrinking fleet was also measured — 2,000 runs then 200, resident 169 MiB before and 166 MiB after — so handing the pages back does not reclaim them on that shape and no case claims it does.</p>
+
 <p id="mrfo-the-admit-service-holds-bounded-memory-reading">Every pass now writes a reading, including a pass over a lane with nothing queued, and the reading carries the resident figure the service measured and the bound it holds to, so the bound is read from the service's own record rather than inferred from outside.</p>
 </body>
 </html>
