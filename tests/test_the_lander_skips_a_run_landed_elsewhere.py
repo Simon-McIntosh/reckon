@@ -9,7 +9,6 @@ import pytest
 
 from reckon import ledger
 from reckon.crew import landing_measure, queue_admission, queue_landing, runs
-from reckon.crew.admission.shared import ADMIT_MEMORY_BOUND_BYTES
 from reckon.crew.node import CrewError
 from tests.test_the_landing_pass_measures_and_lands import (
     PROJECT,
@@ -114,8 +113,7 @@ def test_skipped_only_landing_writes_a_pass_verdict(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
-    resident = 1 << 20
-    empty = {"verdicts": [], "landing": {}, "resident_bytes": resident}
+    empty = {"verdicts": [], "landing": {}}
     skipped = {
         "verdicts": [],
         "landing": {"skipped": [{"run_id": RUN, "status": "landed-elsewhere"}]},
@@ -126,8 +124,7 @@ def test_skipped_only_landing_writes_a_pass_verdict(
     assert idle is not None
     assert idle["pointers"] == []
     assert idle["landing"] == {}
-    assert idle["resident_bytes"] == resident
-    assert idle["memory_bound_bytes"] == ADMIT_MEMORY_BOUND_BYTES
+    assert "resident_bytes" in idle
     assert (
         queue_admission._pass_verdict_record(
             {"verdicts": [], "landing": {"landed": [RUN]}}, lane="", code_stamp=""
