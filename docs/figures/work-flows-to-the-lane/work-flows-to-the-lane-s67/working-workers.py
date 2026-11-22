@@ -5,11 +5,17 @@
 The spans come from the lane census module, so the trace is computed from the
 same ledger reading the mean in the record is computed over rather than from a
 second instrument. The SVG carries the record's own figure directory.
+
+The save gate is the one figure guard the repository already runs — labels
+outside the canvas, labels over each other, labels over a plotted line — taken
+from the figure that owns it rather than written again here, so a repair to that
+guard reaches this figure too.
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -24,18 +30,19 @@ MEAN = "#0b0b0b"  # the measured summary, near-black dashed
 
 CANVAS_IN = (14.0, 7.2)
 
+GUARD = (
+    Path(__file__).resolve().parents[4]
+    / "docs/figures/a-project-reads-as-one-picture"
+    / "work-in-flight-sits-on-its-section/section_row_readers.py"
+)
 
-def texts(ax, fig):
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    boxes = []
-    for artist in [*ax.texts, ax.xaxis.label, ax.yaxis.label]:
-        boxes.append((artist.get_text(), artist.get_window_extent(renderer)))
-    for axis in (ax.xaxis, ax.yaxis):
-        for tick in axis.get_ticklabels():
-            if tick.get_text():
-                boxes.append((tick.get_text(), tick.get_window_extent(renderer)))
-    return boxes
+
+def load_guard(path=GUARD):
+    """Import the repository's figure save gate from the module that owns it."""
+    spec = importlib.util.spec_from_file_location("figure_save_gate", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def place_mean_label(ax, fig, mean, x, series, *, size=14) -> None:
@@ -53,27 +60,6 @@ def place_mean_label(ax, fig, mean, x, series, *, size=14) -> None:
             return
         label.remove()
     raise SystemExit("no clear place for the mean label")
-
-
-def check(ax, fig, series) -> None:
-    """Refuse to save a figure whose text is clipped, overlaps, or sits on data."""
-    width, height = fig.canvas.get_width_height()
-    boxes = texts(ax, fig)
-    for name, box in boxes:
-        if box.x0 < -1 or box.y0 < -1 or box.x1 > width + 1 or box.y1 > height + 1:
-            raise SystemExit(f"text outside the canvas: {name!r}")
-    for index, (name, box) in enumerate(boxes):
-        for other, other_box in boxes[index + 1 :]:
-            if box.overlaps(other_box):
-                raise SystemExit(f"text overlaps: {name!r} and {other!r}")
-    points = ax.transData.transform([(x, y) for x, y in series])
-    for name, box in boxes:
-        inside = [
-            (px, py) for px, py in points
-            if box.x0 < px < box.x1 and box.y0 < py < box.y1
-        ]
-        if inside:
-            raise SystemExit(f"text sits over plotted data: {name!r} at {inside[0]}")
 
 
 def main(argv: list[str]) -> int:
@@ -111,7 +97,10 @@ def main(argv: list[str]) -> int:
     ax.text(minutes / 60.0, 12, " bound 12", color=LIMIT, fontsize=14,
             va="bottom", ha="right")
     place_mean_label(ax, fig, mean, 0.04, list(zip(xs, counts)))
-    check(ax, fig, list(zip(xs, counts)))
+    gate = load_guard()
+    gate.DATA_LINES[:] = [list(zip(xs, counts))]
+    gate.DATA_MARKERS[:] = []
+    gate._check(fig, ax)
     fig.savefig(out, format="svg")
     print(f"{out} mean={mean} peak={max(counts)}")
     return 0

@@ -10,24 +10,33 @@
   <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s67">
   <meta name="plan-recorded-at" content="2026-11-22">
   <meta name="plan-verdict" content="partial">
-  <title>A later night's window meets three of the landing targets | reckon</title>
+  <title>A later night's window meets two of the landing targets | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
  <main class="plan-doc">
-  <h1 id="work-flows-to-the-lane-s67-title">A later night's window meets three of the landing targets</h1>
+  <h1 id="work-flows-to-the-lane-s67-title">A later night's window meets two of the landing targets</h1>
 
-  <p id="work-flows-to-the-lane-s67-summary"><strong>Three of the gate's four figures are met.</strong>
+  <p id="work-flows-to-the-lane-s67-summary"><strong>Two of the gate's four figures are met.</strong>
   In the four hours from 08:00 to 12:00 UTC on 22 November the lane carried a time-weighted mean of
-  <strong>1.03</strong> working workers against a bound of 12; a completed implement run waited a median
-  of <strong>19.7 minutes</strong> (1,183.0 s) to be promoted against a bound of 20;
+  <strong>1.15</strong> working workers against a bound of 12; a completed implement run waited a median
+  of <strong>31.3 minutes</strong> (1,876.0 s) to be promoted against a bound of 20;
   <strong>none</strong> of the window's <strong>496</strong> admit passes held a request on a claim
   under a shared root — one claim path held requests, at the repository root, and it is named below
   with its root; and the claims directory held <strong>1</strong> worker identity file against a bound
-  of 100. The promotion latency, the shared-claim figure and the identity figure hold. The mean does
-  not, and the reason is measurable: the window carried 10 dispatches, and ten dispatches over four
-  hours cannot average twelve workers however long each one lives.</p>
+  of 100. The shared-claim figure and the identity figure hold. The mean and the promotion latency do
+  not: the window carried 12 dispatches, and twelve dispatches over four hours cannot average twelve
+  workers however long each one lives.</p>
+
+  <p id="work-flows-to-the-lane-s67-summary-readings"><strong>Two readings of one window.</strong> The
+  census was first run two minutes after the close: <strong>1.03</strong> mean over 11 spans and a
+  <strong>1,183.0 s</strong> median over 4 of 4 implement runs. A fifth implement run of the window
+  then had its completion and landing records written, and the settled reading is the one above —
+  1.15 over 12 spans and 1,876.0 s over 5 of 5. Both readings are reported here, and both are
+  recoverable: the first is the census output committed at revision 96c047cd, the settled one is
+  <code>work-flows-to-the-lane-s67.census.json</code> beside this record. The table, the figure and the
+  verdict use the settled reading, which is the population the window actually carried.</p>
 
   <h2 id="work-flows-to-the-lane-s67-window">The window, and why it is this one</h2>
 
@@ -48,14 +57,14 @@
    </thead>
    <tbody>
     <tr><td>time-weighted mean working workers</td><td>&ge; 12</td>
-        <td><strong>1.03</strong> (peak 5)</td>
-        <td>11 worker spans overlapping the window; 10 requests dispatched in it, over 10 distinct
+        <td><strong>1.15</strong> (peak 6)</td>
+        <td>12 worker spans overlapping the window; 12 requests dispatched in it, over 12 distinct
             project nodes; 0 runs still in flight at the close</td>
         <td>not met</td></tr>
     <tr><td>median completion to promotion, implement runs</td><td>&le; 20 min</td>
-        <td><strong>19.7 min</strong> (1,183.0 s; p90 96.2 min)</td>
-        <td>cohort of 4 implement runs completed in the window: all 4 with a landing record, 0 without</td>
-        <td>met</td></tr>
+        <td><strong>31.3 min</strong> (1,876.0 s; p90 96.2 min)</td>
+        <td>cohort of 5 implement runs completed in the window: all 5 with a landing record, 0 without</td>
+        <td>not met</td></tr>
     <tr><td>admit passes holding a request on a claim under a shared root</td><td>none</td>
         <td><strong>0</strong> of 496 passes hold a shared-root claim</td>
         <td>496 passes in the window; 878 claim pointers across 451 passes name one path, at the
@@ -69,13 +78,21 @@
   </table>
 
   <p id="work-flows-to-the-lane-s67-mean-reading"><strong>Reading the mean.</strong> The figure is low
-  because the lane was fed ten requests in four hours, not because the counter lost workers. A mean of
-  twelve across four hours needs forty-eight worker-hours; ten dispatches at any plausible worker life
-  cannot supply them. The window holds eleven spans and a peak of five, the longest of them an
-  implement run; the arithmetic bound from ten dispatches is a few workers at most. The same script run
-  twice over this window returns the identical report (1.03, median 1,183.0 s, 496 passes, 1 identity),
-  and a companion pass that counts runs still in flight at the close finds none, so the mean is not an
-  artefact of runs whose spans had not yet been recorded.</p>
+  because the lane was fed twelve requests in four hours, not because the counter lost workers. A mean
+  of twelve across four hours needs forty-eight worker-hours; twelve dispatches at any plausible worker
+  life cannot supply them. The window holds twelve spans and a peak of six, the longest of them an
+  implement run; the arithmetic bound from twelve dispatches is a few workers at most. A companion pass
+  that counts runs still in flight at the close finds none, so the mean is not an artefact of runs
+  whose spans had not yet been recorded — it is the lane's load.</p>
+
+  <p id="work-flows-to-the-lane-s67-mean-drift">The mean moved between the first reading and the
+  settled one (1.03 to 1.15) because a run's completion record was written after the first pass, which
+  lengthened the window's counted worker-minutes. The promotion median moved with it, and worse: the
+  fifth run waited 1,876.0 s, so the settled median of five is <strong>31.3 minutes</strong> against a
+  bound of 20, where the first reading of four runs gave 19.7 minutes and met it. The record reports
+  the settled population, because that is the population the window carried; a reader who takes the
+  first reading meets the bound and a reader who takes the second does not, and only the second is the
+  whole cohort.</p>
 
   <h2 id="work-flows-to-the-lane-s67-claims">Every claim that held a request, by path</h2>
 
@@ -85,7 +102,7 @@
 
   <table id="work-flows-to-the-lane-s67-claims-table">
    <thead>
-    <tr><th>claimed path</th><th>root</th><th>passes holding it</th><th>pointers</th><th>shared root</th><th>run-owned</th></tr>
+    <tr><th>claimed path</th><th>root</th><th>distinct passes holding it (of 496)</th><th>claim pointers</th><th>shared root</th><th>run-owned</th></tr>
    </thead>
    <tbody>
     <tr><td><code>docs/figures/the-local-lane-delivers-its-plateau</code></td>
@@ -93,6 +110,17 @@
         <td>no</td><td>no</td></tr>
    </tbody>
   </table>
+
+  <p id="work-flows-to-the-lane-s67-claims-reconcile"><strong>Reconciling the row with the census
+  output.</strong> The census output beside this record reports <code>"passes": 878</code> for this
+  path, a number larger than the 496 passes in the window. That field counts <em>claim pointers</em>,
+  not passes — the census increments it once for every held pointer it reads, and one pass can carry
+  several pointers naming the same path. The distinct number of passes that held at least one pointer
+  on this path is <strong>451</strong>, and it is the figure in the third column, taken from
+  <code>work-flows-to-the-lane-s67.claim-analysis.json</code>, which counts each pass once. Both
+  numbers describe the same 496 passes; neither is a pass count of the window in the first case. The
+  gate figure — 0 of 496 passes holding a claim under a shared root — is unaffected either way, since
+  this path's root is the repository.</p>
 
   <p id="work-flows-to-the-lane-s67-claims-reading"><strong>What the row means.</strong> Each pointer
   is a request whose own write path (<code>docs/figures/the-local-lane-delivers-its-plateau/&lt;node&gt;</code>)
@@ -163,7 +191,8 @@
     <tr><th>window (UTC)</th><th>mean workers</th><th>median promotion</th><th>admit passes / shared holds</th><th>identity files</th></tr>
    </thead>
    <tbody>
-    <tr><td>2026-11-22 08:00&ndash;12:00 (this node)</td><td>1.03</td><td>19.7 min over 4 of 4</td><td>496 / 0</td><td>1 (live)</td></tr>
+    <tr><td>2026-11-22 08:00&ndash;12:00 (this node, settled)</td><td>1.15</td><td>31.3 min over 5 of 5</td><td>496 / 0</td><td>1 (live)</td></tr>
+    <tr><td>2026-11-22 08:00&ndash;12:00 (this node, first reading at the close)</td><td>1.03</td><td>19.7 min over 4 of 4</td><td>496 / 0</td><td>1 (live)</td></tr>
     <tr><td>2026-11-21 20:00&ndash;2026-11-22 00:00 (the four hours before)</td><td>6.18</td><td>164.8 min over 16 of 16</td><td>not spooled</td><td>not readable</td></tr>
     <tr><td>2026-11-14 21:00&ndash;2026-11-15 01:00 (§9's window, the control)</td><td>10.49</td><td>84.2 min over 16 of 16</td><td>8 / 5</td><td>27,854 at its close</td></tr>
     <tr><td>2026-11-07 00:00&ndash;2026-11-12 00:00 (baseline)</td><td>4.34</td><td>62.8 min over 16 of 506</td><td>not readable</td><td>not readable</td></tr>
@@ -204,34 +233,47 @@
   record will find different numbers, and both are correct for the population each was computed over.
   The population is reported beside every figure for that reason.</p>
 
-  <p id="work-flows-to-the-lane-s67-instrument-cohort">The promotion median rests on a cohort of four
-  implement runs. It is the whole cohort that completed in the window — none lacked a landing record —
-  but four runs is a small base, and one long run would move it; the p90 beside it (96.2 min) is the
-  honest companion figure.</p>
+  <p id="work-flows-to-the-lane-s67-instrument-late-records">The fourth limit applies to the current
+  window too, and this record met it: a run's completion and landing records are written when the run
+  finishes its turns, so a window read two minutes after it closes can miss a run that completes inside
+  it. The first reading here had four implement runs and the settled one has five, and the fifth moved
+  the median from 19.7 to 31.3 minutes. A window's figures are therefore not final at its close; they
+  settle over the minutes that follow, and the only reliable statement is the population each reading
+  was computed over — which is why both readings are on this page and in the committed history.</p>
+
+  <p id="work-flows-to-the-lane-s67-instrument-cohort">The promotion median rests on a cohort of five
+  implement runs, settled from the four the first reading saw. It is the whole cohort that completed in
+  the window — none lacked a landing record — but five runs is a small base, and the fifth run moved the
+  median by more than eleven minutes, which is the clearest illustration of that; the p90 beside it
+  (96.2 min) is the honest companion figure.</p>
 
   <figure id="work-flows-to-the-lane-s67-figure">
    <img src="/reckon/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.svg"
-        alt="Working workers per minute through the window: a line that stays between 0 and 5 and never reaches the bound of 12">
+        alt="Working workers per minute through the window: a line that stays between 0 and 6 and never reaches the bound of 12">
    <figcaption>Working workers per minute through 2026-11-22T08:00Z to 12:00Z, drawn from the same
-   ledger spans the mean is computed over, with the bound of 12 and the measured mean of 1.03
-   marked. The trace never leaves the bottom of the bound's scale.</figcaption>
+   ledger spans the mean is computed over, with the bound of 12 and the measured mean of 1.15
+   marked. The trace never leaves the bottom half of the bound's scale.</figcaption>
   </figure>
 
   <h2 id="work-flows-to-the-lane-s67-verdict">Verdict</h2>
 
-  <p id="work-flows-to-the-lane-s67-verdict-text">Three of the section's four figures hold. No
-  admission pass held a request on a claim under a shared root; the claims directory held one identity
-  file at the window's close; and a completed implement run reached promotion in a median of 19.7
-  minutes, inside the twenty-minute bound and a large improvement on the 49.1 minutes the same gate
-  measured on 17 November. The mean of 1.03 does not hold, and it cannot hold in this window: ten
-  dispatches over four hours bound it far below twelve. That is a reading of how much work the lane was
-  given, not of whether the lane can carry more — the same instrument reads 23.55 over §9's window
-  when the ledger holds that window's runs. Of the three figures that hold, the shared-claim clause is
+  <p id="work-flows-to-the-lane-s67-verdict-text">Two of the section's four figures hold. No
+  admission pass held a request on a claim under a shared root, and the claims directory held one
+  identity file at the window's close. The mean of 1.15 does not hold, and it cannot hold in this
+  window: twelve dispatches over four hours bound it far below twelve. That is a reading of how much
+  work the lane was given, not of whether the lane can carry more — the same instrument reads 23.55
+  over §9's window when the ledger holds that window's runs. The promotion median does not hold either
+  on the settled cohort: 31.3 minutes over five implement runs against a bound of 20, where the first
+  reading of four runs gave 19.7 minutes and met it. The fifth run completed at 11:17Z and was promoted
+  at 12:07Z, so its record landed after the first pass; on the whole cohort the bound is missed. That
+  is an improvement on the 49.1 minutes the same gate measured on 17 November and still outside the
+  bound. Of the two figures that hold, the shared-claim clause is
   met while a stale claim on a peer plan's figure directory did hold two requests for the entire
   window; that hold is reported under <em>outside this node's scope</em>, where releasing it belongs.
   One earlier measurement of this same section, on the night of 17 November, is recorded beside this
   one as <code>wftl-a-second-nights-window-meets-the-landing-targets.html</code>; the two agree on the
-  shape of the result and differ on the promotion figure, which has improved.</p>
+  shape of the result, and the promotion latency has improved from 49.1 to 31.3 minutes while remaining
+  outside the bound.</p>
 
   <h2 id="work-flows-to-the-lane-s67-scope">Outside this node's scope</h2>
 
@@ -248,8 +290,8 @@
    <li id="work-flows-to-the-lane-s67-scope-pruning">The run store was pruned mid-session (21,275
    archived rows to 8,392), so windows older than the retention horizon read lower on every later
    reading. Reported, not triaged; the window measured here is unaffected.</li>
-   <li id="work-flows-to-the-lane-s67-scope-feed">The window carried 10 dispatches. How much work
-   reaches the lane is a coordinator's decision and is the bound on this figure.</li>
+   <li id="work-flows-to-the-lane-s67-scope-feed">The window carried 12 dispatches. How much work
+   reaches the lane is a coordinator's decision and is the bound on the mean.</li>
   </ul>
  </main>
 </body>
