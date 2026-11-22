@@ -67,19 +67,25 @@ def _write_promoted_pointer(
     *,
     launcher_host: str,
     pid: object,
+    project: str = "release-fixture",
+    session: str | None = None,
+    promoted: bool = True,
     stream: str | None = None,
     stream_age_seconds: float | None = None,
 ) -> dict:
     """Write one promoted run's live pointer, and its stream when asked for."""
     pointer = {
         "run_id": run_id,
-        "project": "release-fixture",
+        "project": project,
         "repo": "/nonexistent/repository",
         "phase": "complete",
-        "promoted": True,
         "launcher_host": launcher_host,
         "pid": pid,
     }
+    if promoted:
+        pointer["promoted"] = True
+    if session is not None:
+        pointer["session"] = session
     runs._write_json(runs.pointer_path(run_id), pointer)
     if stream is not None:
         directory = runs.run_dir(run_id)
@@ -127,6 +133,66 @@ def test_a_promoted_run_from_a_previous_fleet_node_gives_up_its_claim(
     assert by_run[dead_here["run_id"]]["basis"] == "proved-dead"
     assert by_run[working["run_id"]]["status"] == "release-held"
     assert "turn is in progress" in by_run[working["run_id"]]["reason"]
+
+
+def test_a_pending_landing_journal_keeps_the_run_its_retry_will_finish(
+    crew_home: Path,
+) -> None:
+    """A journal is written before the promotion completes, so it is not proof.
+
+    A worker that dies mid-promotion leaves the journal behind for a run that
+    has delivered nothing yet. The interrupted-landing pass finishes that run
+    from its live pointer, so the pointer must outlive a quiet stream.
+    """
+    pointer = _write_promoted_pointer(
+        "r-mid-promotion",
+        launcher_host=PREVIOUS_NODE,
+        pid=UNREADABLE_PID,
+        promoted=False,
+        stream=ASSISTANT_RECORD,
+        stream_age_seconds=QUIET_SECONDS,
+    )
+    pending_landing.write_pending(pointer["run_id"], pointer["project"], head="0" * 40)
+
+    pending_landing.retire_promoted_pointers(release_workspaces=False)
+
+    assert runs.pointer_path(pointer["run_id"]).exists()
+
+
+def test_a_scoped_pass_leaves_the_runs_it_was_not_given(crew_home: Path) -> None:
+    """A station tick scoped to one project and session retires only those."""
+    mine = _write_promoted_pointer(
+        "r-scoped-mine",
+        launcher_host=PREVIOUS_NODE,
+        pid=UNREADABLE_PID,
+        session="this-session",
+        stream=ASSISTANT_RECORD,
+        stream_age_seconds=QUIET_SECONDS,
+    )
+    other_project = _write_promoted_pointer(
+        "r-scoped-other-project",
+        project="another-project",
+        launcher_host=PREVIOUS_NODE,
+        pid=UNREADABLE_PID,
+        stream=ASSISTANT_RECORD,
+        stream_age_seconds=QUIET_SECONDS,
+    )
+    other_session = _write_promoted_pointer(
+        "r-scoped-other-session",
+        launcher_host=PREVIOUS_NODE,
+        pid=UNREADABLE_PID,
+        session="another-session",
+        stream=ASSISTANT_RECORD,
+        stream_age_seconds=QUIET_SECONDS,
+    )
+
+    pending_landing.retire_promoted_pointers(
+        project="release-fixture", session="this-session", release_workspaces=False
+    )
+
+    assert not runs.pointer_path(mine["run_id"]).exists()
+    assert runs.pointer_path(other_project["run_id"]).exists()
+    assert runs.pointer_path(other_session["run_id"]).exists()
 
 
 def test_a_released_claim_is_not_restored_by_a_later_pass(crew_home: Path) -> None:
