@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T13:16:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1291,
+      "severity": "non-blocking",
+      "summary": "_undisposed_review_cause re-implements the stored-record selection loop owned by _review_dispatch_refusal (obligations.py:1220): both walk stored_records_for_run, filter by review_lifecycle.OPEN and take the first undisposed blocking finding. The two readers of one rule can drift; extract the selection into a shared helper the refusal and the duty both call."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 352,
+      "severity": "non-blocking",
+      "summary": "On the --run path _compose_run_review refuses the plan/code/portfolio and answer flags but not --carried or --review-run, which reach it through **params and are silently ignored, so `crew review --run X --carried` composes a review with no effect from the flag. Refuse them beside the other answer flags, or state why they are irrelevant to a run subject."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T131643903464-review-of-dwlw-a-coordinator-requests-a-run-review-fe991ba8163b",
+  "reviewed_base_sha": "432b5ff1a1625be57d5c7a1589ae591cdd91a7f3",
+  "reviewed_head_sha": "fe991ba8163b7d26528c0ad25b337fdea53e473d",
+  "reviewed_run_id": "r-20261122T124837612288-dwlw-a-coordinator-requests-a-run-review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T13:26:59.878064+00:00",
+  "total": 99
+}
