@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="117">
+<meta name="plan-version" content="118">
 <meta name="plan-modified" content="2026-11-22">
 <meta name="plan-sprint" content="S28">
 </head>
@@ -258,6 +258,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261122T013246053454-review-of-anchored-launch-record-s18-040070e41ed2" data-who="reckon-build" data-when="2026-11-22T01:44:27.021Z">
     <div class="r-comment-body"><p>review stored parsed for run r-20261121T201934910206-anchored-launch-record-s18 over 08b86e8ab6..040070e41e, scored goal_fidelity 15, evidence 12, scope_discipline 20, durability 5, fit 18, reuse 20, with four non-blocking findings and zero added failures</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261121T201934910206-anchored-launch-record-s18" data-who="reckon-build" data-when="2026-11-21T23:20:29Z">
+    <div class="r-comment-body"><p>reckon/crew/dispatch_launch.py no longer writes an anchored_edit region at any of its three record sites, and the merged head 573d3ceb282e carries no anchored_edit or anchored-edit reference in that module or in reckon/crew/prompts.py; the base-versus-head arms ran green on all_debug (1666d19f7744 99 passed in 39.45s, 573d3ceb282e 58 passed in 38.76s, EXIT=0 in both), and the 91-file importer sweep adds no failure at the merged head.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261110T203544773136-review-of-anchored-edit-tool-27ed13983a3d" data-who="reckon-build" data-when="2026-11-10T20:58:16.138Z">
     <div class="r-comment-body"><p>Reviewed run r-20261110T192355232896-anchored-edit-tool at head 27ed13983a3d19b3a69b18e35b56b33e9f52b354 from base cb5dcf17a3be6c8a022f5c9391ec843c67adb509; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 19; total 110), zero added failures against the reviewed arms, and three non-blocking findings recorded — a self-referential assertion at tests/test_anchored_edit.py:54, a negative-control log whose header revision predates the module checksum it measured, and a ruff claim in the evidence fragment with no recorded log which re-ran clean.</p></div>
