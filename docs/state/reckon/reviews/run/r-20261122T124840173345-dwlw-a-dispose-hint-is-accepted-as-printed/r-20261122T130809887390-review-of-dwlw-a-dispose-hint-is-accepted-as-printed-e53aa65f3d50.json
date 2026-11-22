@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligations.py:_finding_disposition_commands",
+    "reckon/crew/obligations.py:_review_dispatch_refusal",
+    "reckon/crew/obligations.py:_reflex_open_refusal",
+    "reckon/crew/obligations.py:_review_duty_detail",
+    "reckon/crew/obligations.py:_sub_floor_items_by_session"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T13:08:40Z",
+  "findings": [
+    {
+      "file": "tests/test_a_dispose_hint_is_accepted_as_printed.py",
+      "line": 96,
+      "severity": "non-blocking",
+      "text": "the new test file has no trailing newline, which ruff reports as W292 (selected through the `W` family in pyproject.toml [tool.ruff.lint]); the commit therefore adds one lint finding to a tree whose declared policy is that a commit adds none"
+    },
+    {
+      "file": "tests/test_a_dispose_hint_is_accepted_as_printed.py",
+      "line": 94,
+      "severity": "non-blocking",
+      "text": "`assert result.exit_code != 2` is inert for the defect under test: the dispose verb refuses an unknown family with `click.ClickException` at reckon/crew_run_commands.py:1220, whose exit code is 1, not 2, so this line never reddens on the rubric refusal and the guard rests entirely on the assertion at line 93"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 4492,
+      "severity": "non-blocking",
+      "text": "the sub-floor dimension composition site is corrected only through the shared `_cli_review_rubric` normaliser and is not exercised by the new test, which drives the blocking-finding path; a regression that stops routing this site through the normaliser would print a refused rubric with no test reddening"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the production callers of the changed normaliser in reckon/crew/obligations.py",
+    "diff": "read commit by commit across c9c18387d2, efd8834a67 and e53aa65f3d: one twelve-line behaviour change in the shared normaliser, one 96-line test, and one evidence fragment citing the measured arms.",
+    "done_when": "the done_when names tests/test_a_dispose_hint_is_accepted_as_printed.py; the reviewed run's manifest records the scoped gate at 60 passed / EXIT=0 and the base arm at 1 failed / 1 passed / EXIT=1, and both logs sit under the run directory carrying revision, literal command and a closing EXIT= line.",
+    "goal": "the goal is that every dispose command an obligation prints is accepted by the command as printed; reckon/crew/obligations.py:1131 now emits the rubric flag only for the figure family, which is the only one reckon/crew_run_commands.py:1220 accepts.",
+    "manifest": "read; it records status complete, gate and suite logs, the negative control, and one rubric line per dimension, and its claimed arm summaries match the logs at scoped-gate-1795352431468419284.log:8 (60 passed) and baseline_suite-1795352562286796798.log:8 (58 passed).",
+    "write_paths": "read the manifest's four declared paths; the diff's three paths (obligations.py, the new test, the evidence fragment) are all inside them, and the declared figure directory is simply unused."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_a_dispose_hint_is_accepted_as_printed.py:93 fails if obligations.py:1131 regresses to returning the stored family, as the base arm in negative-control-base.log demonstrates; the dimension-branch site and the inert line-94 assertion are recorded as findings.",
+    "evidence": "the done_when's own file ran as the scoped gate at efd8834a673d for 60 passed / EXIT=0 and the base arm at a2bf0d8d5a65 fails the code-review case with the exact refusal, all recorded in the reviewed run's logs; the after-suite arm ran at efd8834a673d rather than the docs-only head e53aa65f.",
+    "fit": "reckon/crew/obligations.py:1131 keeps the module's docstring-and-normaliser idiom and reuses review_module.FIGURE_REVIEW_RUBRIC rather than a string literal, but the new test file adds a W292 finding that pyproject.toml [tool.ruff.lint] selects.",
+    "goal_fidelity": "reckon/crew/obligations.py:1131 now returns the rubric only for review_module.FIGURE_REVIEW_RUBRIC and None otherwise, so every hint composed from a health, run, code or node record renders without a flag the verb refuses.",
+    "reuse": "the change extends the existing owner, reckon/crew/obligations.py:_cli_review_rubric, in place and renders through review_dispositions.dispose_commands; a capability search over obligations.py, review_dispositions.py and recovery_review_dispatch.py found no second rubric-flag normaliser (_review_dispatch_field selects a pointer field, not a flag).",
+    "scope_discipline": "all three diff paths (reckon/crew/obligations.py, tests/test_a_dispose_hint_is_accepted_as_printed.py, docs/evidence/fragments/delivered-work-lands-without-a-coordinator/dwlw-a-dispose-hint-is-accepted-as-printed.html) lie inside the four declared write paths, and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every dispose command an obligation prints is accepted by the command as printed; reckon/crew/obligations.py:1131 now emits the rubric flag only for the figure family, which is the only one reckon/crew_run_commands.py:1220 accepts.\nVERDICT done_when: the done_when names tests/test_a_dispose_hint_is_accepted_as_printed.py; the reviewed run's manifest records the scoped gate at 60 passed / EXIT=0 and the base arm at 1 failed / 1 passed / EXIT=1, and both logs carry revision, literal command and a closing EXIT= line.\nVERDICT write_paths: read the manifest's four declared paths; the diff's three paths are all inside them, and the declared figure directory is simply unused.\nVERDICT manifest: read; it records status complete, gate and suite logs, the negative control, and one rubric line per dimension, and its claimed arm summaries match the logs.\nVERDICT diff: read commit by commit across c9c18387d2, efd8834a67 and e53aa65f3d: one twelve-line behaviour change in the shared normaliser, one 96-line test, and one evidence fragment citing the measured arms.\nCALL_SITES: reckon/crew/obligations.py:_finding_disposition_commands, reckon/crew/obligations.py:_review_dispatch_refusal, reckon/crew/obligations.py:_reflex_open_refusal, reckon/crew/obligations.py:_review_duty_detail, reckon/crew/obligations.py:_sub_floor_items_by_session\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1131 returns the rubric only for review_module.FIGURE_REVIEW_RUBRIC and None otherwise, so every hint from a health, run, code or node record renders without a refused flag.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done_when's file ran as the scoped gate at efd8834a673d for 60 passed / EXIT=0 and the base arm fails the code-review case with the exact refusal; the after-suite arm ran at efd8834a673d rather than the docs-only head e53aa65f.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all three diff paths lie inside the four declared write paths and the change carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_dispose_hint_is_accepted_as_printed.py:93 fails if obligations.py:1131 regresses to returning the stored family, as negative-control-base.log shows; the dimension-branch site and the inert line-94 assertion are recorded as findings.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/obligations.py:1131 keeps the module's normaliser idiom and reuses review_module.FIGURE_REVIEW_RUBRIC, but the new test file adds a W292 finding that pyproject.toml [tool.ruff.lint] selects.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner, reckon/crew/obligations.py:_cli_review_rubric, in place and renders through review_dispositions.dispose_commands; a capability search over obligations.py, review_dispositions.py and recovery_review_dispatch.py found no second rubric-flag normaliser.\nFINDING tests/test_a_dispose_hint_is_accepted_as_printed.py:96 non-blocking: the new test file has no trailing newline, which ruff reports as W292 (selected through the W family in pyproject.toml [tool.ruff.lint]), so the commit adds one lint finding to a tree whose policy is that a commit adds none.\nFINDING tests/test_a_dispose_hint_is_accepted_as_printed.py:94 non-blocking: `assert result.exit_code != 2` is inert for this defect because the verb refuses an unknown family with click.ClickException at reckon/crew_run_commands.py:1220 (exit 1, not 2), so the guard rests entirely on the assertion at line 93.\nFINDING reckon/crew/obligations.py:4492 non-blocking: the sub-floor dimension composition site is corrected only through the shared normaliser and is not exercised by the new test, which drives the blocking-finding path, so a regression that stops routing this site through the normaliser would go uncaught.",
+  "review_run_id": "r-20261122T130809887390-review-of-dwlw-a-dispose-hint-is-accepted-as-printed-e53aa65f3d50",
+  "reviewed_base_sha": "a2bf0d8d5a65bfab8a9e3d6db922bbab1984f67b",
+  "reviewed_head_sha": "e53aa65f3d50f424678bf11d78190d8b1227aed3",
+  "reviewed_run_id": "r-20261122T124840173345-dwlw-a-dispose-hint-is-accepted-as-printed",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T13:14:40.899362+00:00",
+  "total": 108
+}
