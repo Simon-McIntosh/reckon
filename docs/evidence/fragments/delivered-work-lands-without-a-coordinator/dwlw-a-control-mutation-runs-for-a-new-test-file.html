@@ -29,33 +29,43 @@
     sentence is the arm's unreadable reason, so the refusal names the path and
     the revision it asked.
   </p>
+  <p>
+    The delivered head is read through the repository's shared commit resolver
+    rather than by a second <code>rev-parse</code> of its own, so a bound or a
+    revision validation fixed in that resolver reaches this reader too. The
+    case that holds it replaces the resolver and asserts the delivered head
+    came from it, which a private <code>rev-parse</code> call cannot satisfy.
+  </p>
   <p id="dwlw-a-control-mutation-runs-for-a-new-test-file-measure">
     Measure: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider
     -q tests/test_a_control_mutation_runs_for_a_new_test_file.py</code> reports
-    <strong>3 passed</strong> at <code>24c282881d10</code>, against the base
-    revision <code>b5444d24baca</code>. The three cases are: an added test file carried
-    from the head reads red over the base as declared
+    <strong>4 passed</strong> at <code>8fa3985e4e</code>, against the base
+    revision <code>b5444d24baca</code>. The four cases are: an added test file
+    carried from the head reads red over the base as declared
     (<code>tests/test_added.py::test_mutated</code>, <code>EXIT=1</code>); a run
     editing only an existing test is measured from the base revision's own
-    copy; and a path neither revision holds is refused naming the path and the
-    revision. The neighbouring partition and control tests —
+    copy; a path neither revision holds is refused naming the path and the
+    revision; and the delivered head is answered by the shared commit
+    revision while the arm's own log header records the revision it ran at.
+    The neighbouring partition and control tests —
     <code>tests/test_a_gate_creates_its_log.py</code>,
     <code>tests/test_negative_control_log_is_a_path.py</code>,
     <code>tests/test_a_landing_measures_a_mismatched_arm.py</code>,
     <code>tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py</code>
-    — report <strong>42 passed</strong> with the change. The scoped gate at
-    <code>24c282881d</code> reports
-    <code>61 passed in 37.37s</code>, the baseline arm at
-    <code>b5444d24baca</code> reports <code>58 passed in 36.24s</code> and the
-    after arm at <code>24c282881d</code> reports
-    <code>61 passed in 38.94s</code>, each arm resolving the declared suite
+    — report <strong>42 passed</strong> with the change. The baseline arm at
+    <code>b5444d24baca</code> reports <code>58 passed in 36.68s</code> and the
+    after arm at <code>8fa3985e4e</code> reports
+    <code>62 passed in 38.45s</code>, each arm resolving its declared suite
     over its own tree.
   </p>
   <p>
     Negative control: on the base revision the first case fails with
     <code>{'unreadable': 'the control mutation did not run'}</code>, red with a
-    <code>FAILED</code> id and <code>EXIT=1</code>. Each arm's log sits under
-    the run directory and carries its revision, its literal command and a
-    closing <code>EXIT=</code> line.
+    <code>FAILED</code> id and <code>EXIT=1</code>. Reverting the delegation so
+    the delivered head is read by a private <code>rev-parse</code> makes the
+    resolver case fail on its own assertion, with <code>EXIT=1</code> and
+    <code>FAILED</code> naming that case. Each arm's log sits under the run
+    directory and carries its revision, its literal command and a closing
+    <code>EXIT=</code> line.
   </p>
 </section>
