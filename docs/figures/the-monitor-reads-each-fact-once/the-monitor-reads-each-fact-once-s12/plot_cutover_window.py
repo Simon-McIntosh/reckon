@@ -1,17 +1,22 @@
 """Read volume and CPU of the fleet's monitor processes against the cutover bound.
 
-Two 60 s windows on the fleet node, taken with the RCA's section 2 instruments:
-per-process ``/proc/<pid>/io`` rchar deltas and utime+stime deltas from
+The two windows are the captures committed beside this script, taken on the
+fleet node with the RCA's section 2 instruments: per-process
+``/proc/<pid>/io`` rchar deltas and utime+stime deltas from
 ``/proc/<pid>/stat``. Processes are selected by adjacent argv tokens (crew
 station, crew watch, crew follow). The station is the subject; the producers
-and the followers are the old cost it was to replace.
+and the followers are the old cost it was measured against.
 
-Read volume is drawn on a log axis because the bound and the measurement are
-three decades apart; CPU is linear. The save refuses a figure whose text runs
-off the canvas or overlaps another label.
+Every number drawn is read from the captures, so the figure cannot state a
+figure the logs do not carry. Read volume is drawn on a log axis because the
+bound and the measurement are three decades apart; CPU is linear. The save
+refuses a figure whose text runs off the canvas or overlaps another label.
 """
 
 from __future__ import annotations
+
+import re
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,11 +25,20 @@ from matplotlib.patches import Patch
 BOUND_MB_PER_MIN = 20.0
 BOUND_CPU_PERCENT = 5.0
 
-# (kind, window-1 MB/min, window-1 CPU %, window-2 MB/min, window-2 CPU %)
-KINDS: tuple[tuple[str, float, float, float, float], ...] = (
-    ("station", 11644.6, 90.25, 13621.5, 104.58),
-    ("producers (crew watch)", 10702.2, 142.76, 6468.9, 89.92),
-    ("followers (crew follow)", 299.3, 28.98, 799.0, 13.85),
+CAPTURES = (
+    ("window 1", Path(__file__).resolve().parent / "captures" / "window-1.txt"),
+    ("window 2", Path(__file__).resolve().parent / "captures" / "window-2.txt"),
+)
+KIND_ORDER = ("station", "watch", "follow")
+KIND_LABELS = {
+    "station": "station",
+    "watch": "producers (crew watch)",
+    "follow": "followers (crew follow)",
+}
+
+KIND = re.compile(
+    r"^BY_KIND (?P<kind>\w+) count=\d+ rchar_MB_per_min=(?P<rchar>[\d.]+)"
+    r" read_bytes_MB=[\d.]+ cpu_pct=(?P<cpu>[\d.]+)"
 )
 
 SUBJECT = "#2f6f8f"
@@ -38,8 +52,21 @@ LABEL_PT = 16
 TICK_PT = 14
 
 
+def read_capture(path: Path) -> dict[str, float]:
+    """Per-kind read volume and CPU of one capture, in its own units."""
+    figures: dict[str, float] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if match := KIND.match(line):
+            figures[f"{match['kind']}_mb"] = float(match["rchar"])
+            figures[f"{match['kind']}_cpu"] = float(match["cpu"])
+    missing = [kind for kind in KIND_ORDER if f"{kind}_mb" not in figures]
+    if missing:
+        raise SystemExit(f"{path} carries no figure for {missing}")
+    return figures
+
+
 def _panel(axis, first, second, bound, unit, log, limit) -> None:
-    labels = [kind[0] for kind in KINDS]
+    labels = [KIND_LABELS[kind] for kind in KIND_ORDER]
     positions = np.arange(len(labels), dtype=float)
     height = 0.34
     axis.barh(positions - height / 2, first, height=height, color=SUBJECT, linewidth=0, zorder=2)
@@ -63,10 +90,12 @@ def _panel(axis, first, second, bound, unit, log, limit) -> None:
         ha="left",
         va="center",
     )
-    for position, value, colour in (
-        *[(p - height / 2, v, SUBJECT) for p, v in zip(positions, first, strict=True)],
-        *[(p + height / 2, v, SUBJECT_LIGHT) for p, v in zip(positions, second, strict=True)],
-    ):
+    marks = [
+        (position - height / 2, value, SUBJECT) for position, value in zip(positions, first, strict=True)
+    ] + [
+        (position + height / 2, value, SUBJECT_LIGHT) for position, value in zip(positions, second, strict=True)
+    ]
+    for position, value, colour in marks:
         axis.annotate(
             f"{value:,.0f} MB/min" if log else f"{value:.1f} %",
             xy=(value, position),
@@ -101,7 +130,6 @@ def _check_labels(figure) -> None:
     """Refuse text that leaves the canvas or overlaps another label."""
     figure.canvas.draw()
     renderer = figure.canvas.get_renderer()
-    # The saved figure uses the tight bounding box, which is what a reader sees.
     canvas = figure.get_tightbbox(renderer).transformed(figure.dpi_scale_trans)
     boxes = []
     for axis in figure.axes:
@@ -130,12 +158,13 @@ def _check_labels(figure) -> None:
 
 
 def main() -> None:
+    windows = [(label, read_capture(path)) for label, path in CAPTURES]
     plt.style.use("data-ink")
     figure, (left, right) = plt.subplots(1, 2, figsize=(WIDTH_IN, HEIGHT_IN), dpi=DPI)
     _panel(
         left,
-        [kind[1] for kind in KINDS],
-        [kind[3] for kind in KINDS],
+        [windows[0][1][f"{kind}_mb"] for kind in KIND_ORDER],
+        [windows[1][1][f"{kind}_mb"] for kind in KIND_ORDER],
         BOUND_MB_PER_MIN,
         "read volume [MB/min, log scale]",
         True,
@@ -143,8 +172,8 @@ def main() -> None:
     )
     _panel(
         right,
-        [kind[2] for kind in KINDS],
-        [kind[4] for kind in KINDS],
+        [windows[0][1][f"{kind}_cpu"] for kind in KIND_ORDER],
+        [windows[1][1][f"{kind}_cpu"] for kind in KIND_ORDER],
         BOUND_CPU_PERCENT,
         "CPU [% of one core]",
         False,
@@ -153,8 +182,8 @@ def main() -> None:
     right.tick_params(axis="y", labelleft=False, left=False)
     figure.legend(
         handles=[
-            Patch(color=SUBJECT, label="window 1"),
-            Patch(color=SUBJECT_LIGHT, label="window 2"),
+            Patch(color=SUBJECT, label=windows[0][0]),
+            Patch(color=SUBJECT_LIGHT, label=windows[1][0]),
         ],
         loc="upper center",
         ncol=2,
