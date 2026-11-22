@@ -52,6 +52,11 @@ from reckon.crew.review import (
 #: sees why the run landed over the finding rather than who landed it.
 DEFERRED_AT_LANDING_RULE = "landing-defers-non-blocking-findings"
 
+#: The rule recorded when the delivery is already on the primary branch and the
+#: findings that would have withheld its landing are carried instead: nothing
+#: withholds a landing that has happened, and the reflex judges none of them.
+LANDED_RUN_CARRY_RULE = "landed-run-carries-undisposed-findings"
+
 
 def _floor_value(entry: Any) -> int | None:
     """Reduce one declared floor to an integer, or ``None`` when it declares none.
@@ -706,6 +711,8 @@ def record_landed_deferrals(
     *,
     reviewed_head_sha: str | None = None,
     base_dir: str | Path | None = None,
+    holding_landing: bool = False,
+    section: str = "",
 ) -> list[int]:
     """Record each finding the landing carried forward as ``deferred``.
 
@@ -730,6 +737,12 @@ def record_landed_deferrals(
     the answers the store already holds. The record rewritten is the one for the head
     this review read, so a deferral recorded against one revision never speaks
     for another. The returned indexes are the findings this call deferred.
+
+    ``holding_landing=True`` defers the other half of the population instead: the
+    findings that withhold a landing. It is for a landing that has already
+    happened outside this pass — a delivery observed on the primary branch after
+    its review was read — where nothing withholds anything any more and the same
+    deferral is owed to the findings a landing would otherwise have refused.
     """
     from reckon.crew import findings as findings_module
 
@@ -745,14 +758,20 @@ def record_landed_deferrals(
             f"{project!r} to record a deferral against"
         )
     deferred = list(
-        findings_module.undisposed_finding_indexes(stored, holding_landing=False)
+        findings_module.undisposed_finding_indexes(
+            stored, holding_landing=holding_landing
+        )
     )
     entry = {
         "kind": DEFERRED_DISPOSITION_KIND,
         "run": reviewed_run_id,
-        "rule": DEFERRED_AT_LANDING_RULE,
+        "rule": (
+            LANDED_RUN_CARRY_RULE if holding_landing else DEFERRED_AT_LANDING_RULE
+        ),
         "recorded_at": datetime.now(UTC).isoformat(),
     }
+    if section:
+        entry["section"] = section
     for index in deferred:
         _write_disposition_against_finding(
             project,

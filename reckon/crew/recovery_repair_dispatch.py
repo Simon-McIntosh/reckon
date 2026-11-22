@@ -33,6 +33,12 @@ from reckon.crew.resume import station_hold_reason
 REPAIR_ADVICE_HOLD_SECONDS = 60
 REPAIR_ADVICE_HOLD_FIELD = "repair_advice_hold"
 
+#: The repair outcome recorded for a round whose reviewed head has landed. The
+#: round's work is carried to the run's section for a later node, so no worker
+#: answers it: the status is outside every opening set and no reader draws an
+#: in-flight row from it.
+LANDED_ROUND_STATUS = "carried"
+
 
 def dispatch_merge_repair(
     record: Mapping[str, Any],
@@ -726,6 +732,7 @@ def _record_repair_dispatch(
     node_id: str = "",
     open_findings: Sequence[Mapping[str, Any]] | None = None,
     dimensions: Sequence[str] = (),
+    section: str = "",
 ) -> int:
     """Write the reflex's repair outcome onto the reviewed run it acted for.
 
@@ -792,6 +799,8 @@ def _record_repair_dispatch(
         }
         if dimensions:
             pointer[REPAIR_DISPATCH_FIELD]["dimensions"] = list(dimensions)
+        if section:
+            pointer[REPAIR_DISPATCH_FIELD]["section"] = section
         if open_findings is not None:
             pointer[REPAIR_DISPATCH_FIELD]["open_findings"] = [
                 dict(row) for row in open_findings
@@ -1352,6 +1361,184 @@ def _reviewed_head_is_integrated(record: Mapping[str, Any], reviewed_head: str) 
         return False
 
 
+def _reviewed_head_is_landed(record: Mapping[str, Any], reviewed_head: str) -> bool:
+    """Whether the delivery the review read already sits on the primary branch.
+
+    Two shapes answer true, and they are one question asked at two moments of
+    the branch. ``_reviewed_head_is_integrated`` answers the case where the
+    branch has moved past the head: the work is in history and the findings
+    describe code the branch already carries. The second shape is the branch's
+    own tip being the head, which that reader deliberately declines — a tip is
+    its own candidate rather than a delivery merged in beyond it — so it is
+    settled here instead, on the evidence that makes the head a *delivery*:
+    it has a change of its own over the run's recorded base, the branch's tip is
+    that change, and every path the change touched is still carried in the
+    shape the change left it. A run that delivered nothing, a head whose
+    delivery was reverted, and a repository that cannot be read all answer
+    false, so an undecidable tree is repaired as before rather than skipped.
+
+    A landed head is the state a review-driven repair must never act on: the
+    run has landed, its record is settled, and a resume that commits on top
+    moves a landed run's head out from under the record that describes it.
+    """
+    if _reviewed_head_is_integrated(record, reviewed_head):
+        return True
+    return _reviewed_head_is_the_branch_tip(record, reviewed_head)
+
+
+def _reviewed_head_is_the_branch_tip(
+    record: Mapping[str, Any], reviewed_head: str
+) -> bool:
+    """Whether the branch's own tip is this run's landed delivery.
+
+    The head is the tip and has a change of its own over the run's base, all of
+    whose paths the tip still carries. Anything the reader cannot decide — a
+    missing repository or base, an unreadable branch, a failed git call —
+    answers false, which leaves the round to the ordinary repair path.
+    """
+    from reckon.crew import merge, recovery_classification
+    from reckon.crew.promotion_scope import _head_revision
+
+    repository_value = str(record.get("repo") or "").strip()
+    head = str(reviewed_head or "").strip()
+    base = str(record.get("base_sha") or "").strip()
+    if not repository_value or not head or not base or same_revision(base, head):
+        return False
+    repository = Path(repository_value)
+    try:
+        tip = _head_revision(repository)
+        if not tip or not same_revision(tip, head):
+            return False
+        if (
+            recovery_classification._head_on_primary_branch(
+                repository, head, time.time()
+            )
+            is not True
+        ):
+            return False
+        markers = merge.change_markers(repository, base, head)
+        if not markers:
+            return False
+        return not merge.surviving_change_refusals(repository, tip, markers)
+    except (CrewError, merge.MergeError, OSError):
+        return False
+
+
+def _carried_work_rows(
+    findings: Sequence[Mapping[str, Any]],
+) -> list[dict[str, str]]:
+    """One row per finding a landed round carries to its section.
+
+    The row shape is the one the escalation record already uses — the stable id
+    a later node answers by, the location it names and its text — with the
+    severity carried beside them so a reader can tell a blocking finding from
+    an observation without re-reading the stored review.
+    """
+    rows: list[dict[str, str]] = []
+    for finding in findings:
+        location = str(finding.get("file") or "").strip()
+        line = str(finding.get("line") or "").strip()
+        if location and line:
+            location = f"{location}:{line}"
+        rows.append(
+            {
+                "id": str(finding.get("id") or "").strip(),
+                "location": location,
+                "text": str(finding.get("text") or "").strip(),
+                "severity": str(finding.get("severity") or "").strip(),
+            }
+        )
+    return rows
+
+
+def _carry_a_landed_round(
+    run_id: str,
+    *,
+    record: Mapping[str, Any],
+    project: str,
+    plan: str,
+    section: str,
+    findings: Sequence[Mapping[str, Any]],
+    dimension_findings: Sequence[Mapping[str, Any]],
+    round_id: str,
+    reviewed_head: str,
+) -> dict[str, Any]:
+    """Record a landed round's work against its section instead of repairing it.
+
+    The run has landed, so its findings are not repair work: a resume would
+    commit on top of a landed delivery and leave the record describing a head
+    the primary branch does not carry. They are carried instead — deferred on
+    the stored review through the one writer a landing's carried findings go
+    through, which leaves them open work in the findings view rather than
+    exempting them, and recorded on the run's own repair record with the plan
+    and section a later node answers them in.
+
+    Both halves of the finding population are carried: the non-blocking findings
+    a landing already defers, and the blocking ones — which withhold a landing
+    that has already happened here — deferred for the same reason, because the
+    reflex makes no judgement about them either. The deferral is idempotent, so
+    a sweep that reconsiders the same round records nothing twice. The run's
+    record stays as it was when it landed: the manifest, the status and the run
+    phase are not written here.
+    """
+    from reckon.crew import review_dispositions
+
+    deferred: list[int] = []
+    defer_failure = ""
+    try:
+        for holding_landing in (False, True):
+            deferred.extend(
+                review_dispositions.record_landed_deferrals(
+                    project,
+                    run_id,
+                    reviewed_head_sha=reviewed_head or None,
+                    holding_landing=holding_landing,
+                    section=section,
+                )
+            )
+    except (OSError, ValueError) as exc:
+        # The outcome is recorded either way: a deferral that could not be
+        # rounded does not license a repair, and the reason carries the failure.
+        defer_failure = f"{type(exc).__name__}: {exc}"
+    carried = _carried_work_rows(findings)
+    where = f"{plan} §{section}" if plan and section else (plan or "its section")
+    reason = (
+        f"the reviewed head is already on the primary branch ({reviewed_head}); "
+        f"the round's {len(carried)} finding(s) are carried to {where} for a later "
+        "node and the run's record stays as it landed"
+    )
+    if defer_failure:
+        reason += f"; the findings could not be deferred on the stored review: {defer_failure}"
+    prior = _recorded_repair_dispatch(record)
+    already_recorded = str(prior.get("status") or "") == LANDED_ROUND_STATUS and str(
+        prior.get("round_id") or ""
+    ) == str(round_id or "")
+    if not already_recorded:
+        _record_repair_dispatch(
+            run_id,
+            status=LANDED_ROUND_STATUS,
+            reason=reason,
+            round_id=round_id,
+            section=section,
+            open_findings=carried,
+            dimensions=[
+                finding["id"].removeprefix("dimension-")
+                for finding in dimension_findings
+                if str(finding.get("id") or "").startswith("dimension-")
+            ],
+        )
+    return {
+        "run_id": run_id,
+        "dispatched": False,
+        "landed": True,
+        "round_id": round_id,
+        "carried_to": {"plan": plan, "section": section},
+        "carried_findings": carried,
+        "deferred_findings": sorted(set(deferred)),
+        "reason": reason,
+    }
+
+
 def _opened_repair_rounds(record: Mapping[str, Any]) -> Mapping[str, Any]:
     """The run-wide record of repair rounds the reflex has opened, or empty.
 
@@ -1700,26 +1887,25 @@ def dispatch_repair_for_run(
     # repair never stood on. A promoted run never reaches here (the launch
     # refusal above settles it), so this is the unpromoted case by construction.
     reviewed_head = _review_carried_head(review)
-    # A reviewed head the integration branch has already taken in is work the
-    # findings no longer describe: the coordinator merged it by hand, and a
-    # round composed against it would repair code the branch carries. The round
-    # is reported and recorded rather than dispatched, so a coordinator sees why
-    # nothing followed the review.
-    if _reviewed_head_is_integrated(record, reviewed_head):
-        reason = (
-            "the reviewed head is already integrated: the integration branch has "
-            f"moved past it ({reviewed_head})"
+    # A reviewed head the primary branch already carries is work the findings no
+    # longer describe: the run has landed, whether the branch moved past the
+    # head or sits exactly on it. A repair resume of any kind is refused: it
+    # would commit on top of a landed delivery and leave the run's record
+    # describing a head the primary branch does not carry. The round's findings
+    # are carried to its section for a later node and the run's record stays as
+    # it landed.
+    if _reviewed_head_is_landed(record, reviewed_head):
+        return _carry_a_landed_round(
+            run_id,
+            record=record,
+            project=project,
+            plan=str(fields.get("plan") or ""),
+            section=str(fields.get("section") or ""),
+            findings=findings,
+            dimension_findings=dimension_findings,
+            round_id=round_id,
+            reviewed_head=reviewed_head,
         )
-        _record_repair_dispatch(
-            run_id, status="refused", reason=reason, round_id=round_id
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "integrated": True,
-            "round_id": round_id,
-            "reason": reason,
-        }
     # A later round's brief carries only the work since the previous round was
     # reviewed, not the whole run again: the last reviewed head is named by the
     # round id the reflex last opened, which is ``<run>@<head>``.
