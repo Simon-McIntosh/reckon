@@ -337,7 +337,7 @@ def _read_range(path: Path, offset: int, limit: int | None = None) -> bytes:
     it reads per tick is one named step a test can count rather than an
     emergent property of the code below.
     """
-    with path.open("rb") as handle:
+    with path.open("rb", buffering=0) as handle:
         handle.seek(offset)
         return handle.read() if limit is None else handle.read(limit)
 

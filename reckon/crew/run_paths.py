@@ -38,10 +38,20 @@ def _utc_now() -> str:
 
 
 def _read_watch_record(handle) -> dict[str, Any]:
-    """Read watcher metadata while preserving the handle's advisory lock."""
-    handle.seek(0)
+    """Read watcher metadata while preserving the handle's advisory lock.
+
+    The record is read positionally so that a few hundred bytes cost that many
+    bytes from storage: a buffered handle fills one filesystem block before it
+    returns the first byte, and a filesystem reporting a 4 MiB block makes a
+    small record cost 4 MiB.
+    """
     try:
-        value = json.loads(handle.read().decode() or "{}")
+        size = os.fstat(handle.fileno()).st_size
+        payload = os.pread(handle.fileno(), size, 0) if size else b""
+    except OSError:
+        return {}
+    try:
+        value = json.loads(payload.decode() or "{}")
     except (UnicodeDecodeError, ValueError):
         return {}
     return value if isinstance(value, dict) else {}

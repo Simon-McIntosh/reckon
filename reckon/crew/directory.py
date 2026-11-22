@@ -186,7 +186,7 @@ def _last_assistant_request(path: Path) -> dict[str, Any] | None:
     for size in _TRANSCRIPT_TAIL_SIZES:
         start = max(0, end - size)
         try:
-            with path.open("rb") as stream:
+            with path.open("rb", buffering=0) as stream:
                 stream.seek(start)
                 data = stream.read()
         except OSError:

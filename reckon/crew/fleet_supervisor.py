@@ -678,7 +678,7 @@ def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[st
         pending.mkdir(parents=True, exist_ok=True)
         _fsync_directory(pending.parent)
         _fsync_directory(directory)
-        with path.open("a+b") as stream:
+        with path.open("a+b", buffering=0) as stream:
             for number, receipt in enumerate(pending.glob("*.json")):
                 if number >= 32:
                     break
@@ -2272,7 +2272,7 @@ def trim_file_ends(
     tail_size = int(tail)
     head_bytes = b""
     tail_bytes = b""
-    with open(path, "rb") as handle:
+    with open(path, "rb", buffering=0) as handle:
         if head:
             head_bytes = handle.read(min(head, size))
         if tail_size > 0:
@@ -2415,7 +2415,7 @@ def _run_file_is_binary(path: Path, mode: int) -> bool:
         return True
     if mode & 0o111:
         return True
-    with open(path, "rb") as handle:
+    with open(path, "rb", buffering=0) as handle:
         return b"\x00" in handle.read(RUN_FILE_HEAD_PROBE_BYTES)
 
 

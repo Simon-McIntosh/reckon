@@ -541,7 +541,7 @@ class _ReceiptFold:
         fold, which is what a whole-file read of the same bytes reports.
         """
         try:
-            with path.open("rb") as stream:
+            with path.open("rb", buffering=0) as stream:
                 stream.seek(self.offset)
                 chunk = stream.read()
         except OSError:
