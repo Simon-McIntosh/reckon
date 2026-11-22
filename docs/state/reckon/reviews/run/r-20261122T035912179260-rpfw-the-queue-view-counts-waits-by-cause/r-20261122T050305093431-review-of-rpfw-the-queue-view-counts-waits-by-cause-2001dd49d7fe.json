@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "68413ae856fe7431aa22ecb0915e28081dde8195",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp_views.py:4895 serve_crew_view (view == \"queue\") -> queue_view_module.queue_view"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T05:04:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "968",
+      "severity": "blocking",
+      "text": "queue_pane_row renders the four-part waiting row and the no-work-running fault, but no production code calls it: git grep over the head tree finds only tests/test_the_queue_view_counts_waits_by_cause.py, and the live pane's waiting count is produced by reckon/crew/recovery_watch.py:2388, so no reader ever sees the split or the fault the plan requires."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "RUNNING_PHASES re-declares the in-flight phase set that reckon/crew/ticker.py:3263 already owns as IN_FLIGHT_PHASES; the two now drift independently if a phase is added."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": "84",
+      "severity": "non-blocking",
+      "text": "wait_part_of returns SLOT for every phase that is not awaiting-upstream, so a request in the held phase (a paused gate) is counted as waiting for a lane slot, which is the opposite of what a reader diagnosing '14 waiting, nothing running' needs to know."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": "371",
+      "severity": "non-blocking",
+      "text": "counts.waiting is a second key holding exactly len(requests), the value counts.requests already publishes, so two names now claim the same figure and a future filter applied to one will silently disagree with the other."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "960",
+      "severity": "non-blocking",
+      "text": "WAIT_PART_LETTERS restates the four part names that reckon/crew/queue_view.py:48 QUEUE_WAIT_PARTS owns, rather than importing them, so a renamed part would leave the renderer keying on a name the view no longer emits."
+    }
+  ],
+  "head_log_revision": "2001dd49d7fe0411c3a3c3187c447e91bed719a0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified one production call site for the queue view document, reckon/mcp_views.py:4895 serve_crew_view (view == 'queue'); the new pane row renderer at reckon/crew/ticker.py:968 has none.",
+    "diff": "read the single commit 2001dd49d7 against base 68413ae8: queue_view.py adds wait_part_of, _wait_summary, _upstream_plans and _running plus counts.waiting_by_cause; ticker.py adds WAIT_PART_LETTERS and queue_pane_row; the new test file adds four cases, none of which exercises a production call site of the new pane row.",
+    "done_when": "the done_when names tests/test_the_queue_view_counts_waits_by_cause.py; the manifest records the scoped gate at 2001dd49d7 as 62 passed EXIT=0 (scoped-gate-1795323432288888184.log) and the declared negative control as 1 failed EXIT=1 on base 68413ae8 (negative_control.log), which is the measure the done_when states.",
+    "goal": "the node goal is to count waiting requests in the queue view by what they wait for; reckon/crew/queue_view.py:73-90 classifies each waiting row from the wait_class the admission pass stamps, never recomputing it, and queue_view at :353-377 publishes counts.waiting_by_cause with each part's oldest age, so the counting half is landed and reachable, but the pane rendering half is not wired.",
+    "manifest": "read; status complete, commits 2001dd49d7fe, changed_paths the three landed files, tests the literal scoped-gate command, test_logs naming the scoped gate and both suite arms, baseline_suite 68413ae8 with 0 failures and after_suite 2001dd49d7 with 0 failures, and negative_control_log recorded.",
+    "write_paths": "the node was fenced to five paths (reckon/crew/queue_view.py, reckon/crew/ticker.py, tests/test_the_queue_view_counts_waits_by_cause.py, one evidence fragment and one figure directory); the delivered diff touches the first three and nothing else, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_the_queue_view_counts_waits_by_cause.py:145-170 reddens if the class-to-part mapping is reverted (the status text says a mutation of the mapping fails), but the reader-visible pane path has no test because no production caller exists, so the guard protects an uncalled function.",
+    "evidence": "the run directory records scoped-gate-1795323432288888184.log (rev 2001dd49d7, 62 passed, EXIT=0) and negative_control.log (rev 68413ae8, 1 failed, EXIT=1 with 'waiting count given alone'), and both suite arms carry revision, literal command and a closing EXIT= line.",
+    "fit": "reckon/crew/ticker.py:960 WAIT_PART_LETTERS and reckon/crew/queue_view.py:57 RUNNING_PHASES restate vocabularies the module already holds elsewhere (the pane's STAT_LETTER cells and ticker.py:3263 IN_FLIGHT_PHASES), so the new code reads as a parallel convention beside the existing one.",
+    "goal_fidelity": "reckon/crew/queue_view.py:73-90 splits each waiting row into slot/advancing/idle/stranded from the stamped wait_class and queue_view publishes counts.waiting_by_cause, but the pane half of the deliverable is unwired: reckon/crew/ticker.py:968 queue_pane_row is called by nothing outside the node's own test.",
+    "reuse": "reckon/crew/queue_view.py:57 re-implements the in-flight phase set that reckon/crew/ticker.py:3263 already owns as IN_FLIGHT_PHASES, and ticker.py:960 restates the four part names owned by queue_view.py:48 QUEUE_WAIT_PARTS instead of importing them.",
+    "scope_discipline": "git diff --stat 68413ae8..2001dd49d7 lists only reckon/crew/queue_view.py, reckon/crew/ticker.py and tests/test_the_queue_view_counts_waits_by_cause.py, all inside the five declared write paths, with the evidence fragment and figure directory unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to count waiting requests in the queue view by what they wait for; reckon/crew/queue_view.py:73-90 classifies each waiting row from the wait_class the admission pass stamps, never recomputing it, and queue_view at :353-377 publishes counts.waiting_by_cause with each part's oldest age, so the counting half is landed and reachable, but the pane rendering half is not wired.\nVERDICT done_when: the done_when names tests/test_the_queue_view_counts_waits_by_cause.py; the manifest records the scoped gate at 2001dd49d7 as 62 passed EXIT=0 (scoped-gate-1795323432288888184.log) and the declared negative control as 1 failed EXIT=1 on base 68413ae8 (negative_control.log), which is the measure the done_when states.\nVERDICT write_paths: the node was fenced to five paths; the delivered diff touches only reckon/crew/queue_view.py, reckon/crew/ticker.py and tests/test_the_queue_view_counts_waits_by_cause.py, all inside the fence.\nVERDICT manifest: read; status complete, commits 2001dd49d7fe, changed_paths the three landed files, tests the literal scoped-gate command, test_logs naming the scoped gate and both suite arms, baseline_suite 68413ae8 with 0 failures and after_suite 2001dd49d7 with 0 failures, and negative_control_log recorded.\nVERDICT diff: read the single commit 2001dd49d7 against base 68413ae8: queue_view.py adds wait_part_of, _wait_summary, _upstream_plans and _running plus counts.waiting_by_cause; ticker.py adds WAIT_PART_LETTERS and queue_pane_row; the new test file adds four cases, none of which exercises a production call site of the new pane row.\nCALL_SITES: reckon/mcp_views.py:4895 serve_crew_view (view == \"queue\") -> queue_view_module.queue_view\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/queue_view.py:73-90 splits each waiting row into slot/advancing/idle/stranded from the stamped wait_class, but reckon/crew/ticker.py:968 queue_pane_row is called by nothing outside the node's own test.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795323432288888184.log (rev 2001dd49d7, 62 passed, EXIT=0) and negative_control.log (rev 68413ae8, 1 failed, EXIT=1) are recorded, and both suite arms carry revision, literal command and a closing EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 68413ae8..2001dd49d7 lists only queue_view.py, ticker.py and the new test file, every one inside the node's declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_queue_view_counts_waits_by_cause.py:145-170 reddens if the class-to-part mapping is reverted, but the reader-visible pane path has no test because no production caller exists.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/ticker.py:960 and reckon/crew/queue_view.py:57 restate vocabularies the module already holds (STAT_LETTER cells and ticker.py:3263 IN_FLIGHT_PHASES), so the new code sits as a parallel convention beside the existing one.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_view.py:57 re-implements the in-flight phase set that reckon/crew/ticker.py:3263 already owns as IN_FLIGHT_PHASES, and ticker.py:960 restates the part names owned by queue_view.py:48 QUEUE_WAIT_PARTS instead of importing them.\nFINDING reckon/crew/ticker.py:968 blocking: queue_pane_row renders the four-part row and the no-work-running fault, but no production code calls it (git grep finds only the node's test), and the live pane's waiting count comes from reckon/crew/recovery_watch.py:2388, so no reader sees the split or the fault.\nFINDING reckon/crew/queue_view.py:57 non-blocking: RUNNING_PHASES re-declares the in-flight phase set that reckon/crew/ticker.py:3263 already owns as IN_FLIGHT_PHASES, so the two drift independently.\nFINDING reckon/crew/queue_view.py:84 non-blocking: wait_part_of returns SLOT for every phase that is not awaiting-upstream, so a held (paused-gate) request is counted as waiting for a lane slot.\nFINDING reckon/crew/queue_view.py:371 non-blocking: counts.waiting is a second copy of len(requests), which counts.requests already publishes, so two keys claim one figure.\nFINDING reckon/crew/ticker.py:960 non-blocking: WAIT_PART_LETTERS restates the four part names owned by reckon/crew/queue_view.py:48 QUEUE_WAIT_PARTS rather than importing them, so a renamed part would drop out of the row.",
+  "review_run_id": "r-20261122T050305093431-review-of-rpfw-the-queue-view-counts-waits-by-cause-2001dd49d7fe",
+  "reviewed_base_sha": "68413ae856fe7431aa22ecb0915e28081dde8195",
+  "reviewed_head_sha": "2001dd49d7fe0411c3a3c3187c447e91bed719a0",
+  "reviewed_run_id": "r-20261122T035912179260-rpfw-the-queue-view-counts-waits-by-cause",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T050305093431-review-of-rpfw-the-queue-view-counts-waits-by-cause-2001dd49d7fe"
+  },
+  "reviewer_run_id": "r-20261122T050305093431-review-of-rpfw-the-queue-view-counts-waits-by-cause-2001dd49d7fe",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:12:00.163544+00:00",
+  "total": 84
+}
