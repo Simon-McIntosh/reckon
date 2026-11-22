@@ -813,6 +813,33 @@ def _promotion_lease_held(run_id: str) -> bool:
     return lease.holder() is not None
 
 
+def land_attempt_in_progress(run_id: str) -> bool:
+    """Whether a coordinator's landing of this run has not been answered yet."""
+    return _land_attempt_unanswered(run_id)
+
+
+def clear_conflict(run_id: str) -> None:
+    """Drop a recorded landing conflict from the journal and the live pointer.
+
+    A conflict whose head the branch already contains is answered, so leaving
+    it on either record keeps the run naming an obligation nobody owes.
+    """
+    path = _record_path(run_id)
+    pending = _read(path)
+    if pending is not None and pending.get("merge_conflict"):
+        pending.pop("merge_conflict", None)
+        runs._write_json(path, pending)
+
+    def clear(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer.pop("merge_conflict", None)
+        return pointer
+
+    try:
+        runs._mutate_pointer(run_id, clear)
+    except runs.CrewError:
+        return
+
+
 def _land_attempt_unanswered(run_id: str) -> bool:
     """Whether the run's live pointer carries a land attempt still to be settled.
 
