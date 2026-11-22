@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/flight.py:2439 resolve",
+    "reckon/flight.py:3078 flight_report",
+    "reckon/project_setup_commands.py:422 flight",
+    "reckon/flight.py:2257 lane model_fields enumeration"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T14:54:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-flight-key-s18.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the fragment is a declared write path and no file exists at it at 9b3e4ac9fb, so this slice lands with no evidence record under the per-node fragment convention its siblings anchored-backends-s18.html and anchored-launch-record-s18.html follow."
+    },
+    {
+      "file": "tests/test_flight.py",
+      "line": "135",
+      "severity": "non-blocking",
+      "text": "nothing asserts the key's absence: the two round-trip tests prove only that the committed artifacts match their LinkML source, so re-declaring the slot in reckon/schema/flight.yaml and regenerating passes every test and the removal survives its own regression undetected."
+    },
+    {
+      "file": "tests/test_flight.py",
+      "line": "133",
+      "severity": "non-blocking",
+      "text": "the two round-trip tests skipped in both recorded arms ('LinkML generators absent - install the dev dependency group') because the arm runs invoked the venv python without .venv/bin on PATH, so the manifest's claim that both artifacts were proven to round-trip byte-identically has no log behind it; the claim is true, since regenerating at 9b3e4ac9fb reproduces both files exactly, but the gate did not establish it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T201937629427-anchored-flight-key-s18/negative-control.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the log's header labels its probe tree 'revision: 9d6c8a9ddc (pre-change tree, key removed by this node)', but reproducing both arms shows the base tree accepts anchored_edit (unknown_keys ['settle']) and only the post-change tree reports it, so the recorded revision names an arm that cannot have produced the logged result and no base arm is logged at all."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 9b3e4ac9fb against base 9d6c8a9ddc: one commit, 39 deletions and 0 additions, removing four JSON-schema backend definitions, two Pydantic field lines and the LinkML slot plus its class slot entry, with a conventional subject and a body and nothing outside the declared scope.",
+    "done_when": "the done_when asks for a grep receipt plus importing-test arms that add no failure against a base arm, run on all_debug one arm at a time at no more than -n 4; importing-tests-base.log and importing-tests-after.log each read 5 failed / 477 passed / 2 skipped, EXIT=1, with the same five failure ids in both arms (after-only 0), the grep clause is verified at exit 1, and the ruff clause has no logged receipt although a base-vs-head count on the one Python path is 40 both sides.",
+    "goal": "the node's goal is to remove the anchored_edit key from reckon/schema/flight.yaml and regenerate both derived artifacts from it; at 9b3e4ac9fb a grep for anchored[_-]edit over the three paths returns no line (exit 1, review-checks.log), and re-running scripts/scripts/regen_flight_schema.py at that revision reproduces both committed artifacts byte-identically, so they are generator output rather than hand edits.",
+    "manifest": "read; status complete, commits 9b3e4ac9fb, changed_paths lists the three schema paths, baseline_suite and after_suite both record 58 passed with failure_count 0 against logs that open at their own revision and end EXIT=0, and outside_scope names the pre-existing 'settle' unknown key and two sandbox spawn failures.",
+    "write_paths": "the five declared paths are the schema trio plus docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-flight-key-s18.html and a figures directory; the delivered diff touches only reckon/schema/flight.yaml, reckon/_flight_schema.py and docs/_shared/flight.schema.json, and neither the fragment nor the figures directory exists at the reviewed head."
+  },
+  "justifications": {
+    "durability": "nothing in the tree asserts the key's absence \u2014 tests/test_flight.py:135 and :151 prove only that the committed artifacts match their source, so re-declaring the slot in flight.yaml and regenerating passes every test, and even those two guards skipped in both recorded arms because gen-pydantic and gen-json-schema were not on the pytest PATH.",
+    "evidence": "baseline_suite-1795358259298270347.log reads 58 passed at 9d6c8a9ddc and after_suite-1795358334315091974.log reads 58 passed at 9b3e4ac9fb, both EXIT=0 and unrelated to the schema, while the measure that matters is importing-tests-base.log and importing-tests-after.log, which agree at 5 failed / 477 passed / 2 skipped with identical failure ids; the manifest's rounded-trip claim and the done_when's ruff clause carry no log.",
+    "fit": "the diff only deletes lines from a generated Pydantic model, its LinkML source and the served JSON schema, so it introduces no name at all and matches the surrounding generated idiom, and the commit reads 'feat(flight): drop the anchored_edit backend key from the schema' with a body and no plan, sprint or ticket identifier.",
+    "goal_fidelity": "git grep for anchored[_-]edit at 9b3e4ac9fb over reckon/schema/flight.yaml, reckon/_flight_schema.py and docs/_shared/flight.schema.json exits 1 on each, and regenerating those artifacts from the reviewed source with gen-pydantic and gen-json-schema on PATH reproduces them byte-identically, which is exactly what the goal's two clauses name.",
+    "reuse": "the change adds no definition: it removes a slot the generator already derives and relies on the existing flight_unknown_keys path at reckon/flight.py:2514 and :3109 rather than introducing a second unknown-key check, so no capability is forked.",
+    "scope_discipline": "every path in commit 9b3e4ac9fb is inside the declared write paths, and the two unused declarations (the evidence fragment and the figures directory) cost nothing in the diff, though the fragment left unwritten means the slice lands with no evidence record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to remove the anchored_edit key from reckon/schema/flight.yaml and regenerate both derived artifacts from it; at 9b3e4ac9fb a grep for anchored[_-]edit over the three paths returns no line (exit 1, review-checks.log), and re-running scripts/regen_flight_schema.py at that revision reproduces both committed artifacts byte-identically, so they are generator output rather than hand edits.\nVERDICT done_when: the done_when asks for a grep receipt plus importing-test arms that add no failure against a base arm on all_debug at no more than -n 4; importing-tests-base.log and importing-tests-after.log each read 5 failed / 477 passed / 2 skipped, EXIT=1, with the same five failure ids in both arms (after-only 0), and the remaining clauses are the grep (verified at exit 1) and ruff (no logged receipt; measured delta 0 on the done_when's only Python path).\nVERDICT write_paths: the five declared paths are the schema trio plus docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-flight-key-s18.html and a figures directory; the delivered diff touches only the three schema paths, and neither the fragment nor the figures directory exists at the reviewed head.\nVERDICT manifest: read; status complete, commits 9b3e4ac9fb, changed_paths lists the three schema paths, baseline_suite and after_suite both record 58 passed with failure_count 0 against logs that open at their own revision and end EXIT=0, and outside_scope names the pre-existing 'settle' unknown key and two sandbox spawn failures.\nVERDICT diff: read commit 9b3e4ac9fb against base 9d6c8a9ddc: one commit, 39 deletions and 0 additions, removing four JSON-schema backend definitions, two Pydantic field lines and the LinkML slot plus its class slot entry, with a conventional subject and a body and nothing outside the declared scope.\nCALL_SITES: reckon/flight.py:2439 resolve, reckon/flight.py:3078 flight_report, reckon/project_setup_commands.py:422 flight, reckon/flight.py:2257 lane model_fields enumeration\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: git grep for anchored[_-]edit at 9b3e4ac9fb over the three changed paths exits 1 on each, and regenerating those artifacts from the reviewed source with gen-pydantic and gen-json-schema on PATH reproduces them byte-identically, which is exactly what the goal's two clauses name.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline_suite-1795358259298270347.log reads 58 passed at 9d6c8a9ddc and after_suite-1795358334315091974.log reads 58 passed at 9b3e4ac9fb, both EXIT=0 and unrelated to the schema, while importing-tests-base.log and importing-tests-after.log agree at 5 failed / 477 passed / 2 skipped with identical failure ids; the round-trip claim and the ruff clause carry no log.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in commit 9b3e4ac9fb is inside the declared write paths, though the declared evidence fragment and figures directory were left unused and the fragment's absence leaves the slice with no evidence record.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_flight.py:135 and :151 prove only that the committed artifacts match their source, so re-declaring the slot in reckon/schema/flight.yaml and regenerating passes every test, and both guards skipped in the recorded arms.\nSCORE fit: 19\nJUSTIFICATION fit: the diff only deletes lines from a generated Pydantic model, its LinkML source and the served JSON schema, so it introduces no name and matches the surrounding generated idiom, and the commit carries a conventional subject and a body with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition, removing a slot the generator already derives and relying on the existing flight_unknown_keys path at reckon/flight.py:2514 and :3109 rather than introducing a second unknown-key check.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-flight-key-s18.html:1 non-blocking: the fragment is a declared write path and no file exists at it at 9b3e4ac9fb, so this slice lands with no evidence record under the per-node fragment convention its siblings anchored-backends-s18.html and anchored-launch-record-s18.html follow.\nFINDING tests/test_flight.py:135 non-blocking: nothing asserts the key's absence: the two round-trip tests prove only that the committed artifacts match their LinkML source, so re-declaring the slot in reckon/schema/flight.yaml and regenerating passes every test and the removal survives its own regression undetected.\nFINDING tests/test_flight.py:133 non-blocking: the two round-trip tests skipped in both recorded arms ('LinkML generators absent') because the arm runs invoked the venv python without .venv/bin on PATH, so the manifest's claim that both artifacts were proven to round-trip byte-identically has no log behind it; the claim is true, since regenerating at 9b3e4ac9fb reproduces both files exactly, but the gate did not establish it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T201937629427-anchored-flight-key-s18/negative-control.log:1 non-blocking: the log's header labels its probe tree 'revision: 9d6c8a9ddc (pre-change tree, key removed by this node)', but reproducing both arms shows the base tree accepts anchored_edit (unknown_keys ['settle']) and only the post-change tree reports it, so the recorded revision names an arm that cannot have produced the logged result and no base arm is logged at all.",
+  "review_run_id": "r-20261122T145403268962-review-of-anchored-flight-key-s18-9b3e4ac9fbd4",
+  "reviewed_base_sha": "9d6c8a9ddc151774eab70833fe4dc0815d8bc452",
+  "reviewed_head_sha": "9b3e4ac9fbd40cd9c5b5eba2853cdfada49f7892",
+  "reviewed_run_id": "r-20261121T201937629427-anchored-flight-key-s18",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T145403268962-review-of-anchored-flight-key-s18-9b3e4ac9fbd4"
+  },
+  "scores": {
+    "durability": 11,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T15:10:48.402992+00:00",
+  "total": 103
+}

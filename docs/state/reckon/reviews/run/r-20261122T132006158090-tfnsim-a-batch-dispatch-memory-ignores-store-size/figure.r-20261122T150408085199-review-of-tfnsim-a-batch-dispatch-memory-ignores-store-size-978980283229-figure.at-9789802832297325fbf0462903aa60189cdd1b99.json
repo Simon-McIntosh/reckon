@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T15:04:26Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229",
+      "recorded_at": "2026-11-22T17:29:17.716429+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size/dispatch-peaks.svg",
+      "line": null,
+      "severity": "blocking",
+      "summary": "The threshold annotation 'half the base peak (0.67)' is placed inside the plot area and drawn across the left panel's grey base bar: the text runs x 109-349 while the bar occupies x 197-263, so the words 'base' and most of 'peak' sit on the bar fill. Where they cross the bar they are #5c5c5c on #929292, about 2.1:1, so the bound the section asked for is the least readable label in the figure and the bar it is measured against is partly covered by text."
+    },
+    {
+      "file": "docs/figures/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size/dispatch-peaks.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The third right-panel group, 'plan documents doubled', carries only the this-change bar (1.80) and an empty base slot, while the other two groups show a grey/blue pair and the legend names both revisions. A reader cannot tell whether the base revision was measured there and failed to plot or was never measured; the caption does not say. The number is real - the evidence text records this arm as a within-change 1.51 to 1.80 comparison - so the fix is a caption sentence, not a bar."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The caption calls the threshold 'the dashed line in the left panel', but the line as rendered is a fine dotted rule; a reader looking for dashes is directed at a mark that is not there. Otherwise the caption adds information rather than repeating the alt text."
+    },
+    {
+      "file": "docs/figures/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size/dispatch-peaks.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The two panels use different tick-label precision for the same quantity (0.0/0.2/1.4 on the left, 0.00/0.25/1.75 on the right) and different y limits, so the same bar height means a different value in each panel. Both axes are labelled in GiB and every bar carries its value, so this does not mislead a careful reader, but the inconsistent formatting is visible and cheap to make uniform."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T150408085199-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229-figure",
+  "reviewed_base_sha": "0d4e508516652090a9d97e8198f92cd21e2105e0",
+  "reviewed_head_sha": "9789802832297325fbf0462903aa60189cdd1b99",
+  "reviewed_run_id": "r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "fail: where the threshold annotation crosses the base bar its glyphs are #5c5c5c on the #929292 bar, about 2.1:1 against a 4.5:1 requirement; text on white clears comfortably.",
+    "data_ink": "pass: solid bar fills and a single labelled threshold line carry all the ink; no gradient, texture or decorative fill.",
+    "decoration": "pass: no gradient, background fill, grid or styled theme; top/right spines are absent.",
+    "label_collision": "fail: 'half the base peak (0.67)' (x 109-349) overlaps the base bar (x 197-263) in the same rows; nothing is clipped at the canvas edge (ink spans x 26-1386, y 24-697 in a 1400x720 canvas).",
+    "legibility": "fail: the bars, titles, tick labels and value labels read at a glance, but the threshold annotation 'half the base peak (0.67)' is drawn across the base bar, so two of its words are hard to read where they cross the bar.",
+    "table_form": "pass: seven values with a bound drawn across the left panel, so the picture carries the comparison; a table would not show the bound against the base peak."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T15:15:24.332336+00:00",
+  "total": null
+}

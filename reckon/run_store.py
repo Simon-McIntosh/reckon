@@ -494,7 +494,10 @@ def store_stamp(path: str | Path | None = None) -> tuple[int, ...] | None:
     target = store_path() if path is None else Path(path)
     try:
         info = target.stat()
-        with target.open("rb") as handle:
+        # Unbuffered: a buffered reader fills one st_blksize block before
+        # returning the first byte, and on GPFS that block is 4 MiB, so a
+        # 28-byte header read would cost 4 MiB on every stamp.
+        with target.open("rb", buffering=0) as handle:
             header = handle.read(_STAMPED_HEADER_BYTES)
     except OSError:
         return None

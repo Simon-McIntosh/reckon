@@ -1755,10 +1755,8 @@ def crew_dispatch(
     # its own path: reading it as the whole plan would discard the node it
     # names, and a dry run of it would be refused as if the node were absent.
     if plan_slug and not section and not brief_path and not node_id:
-        if dry_run:
-            raise click.UsageError(
-                "--dry-run cannot queue a whole plan; name --section to preview one node"
-            )
+        # The whole-plan form takes the same command-level options as a batch
+        # file, and a dry run judges every section without storing any of them.
         _queue_dispatch_batch(
             None,
             project=project,
@@ -1769,6 +1767,10 @@ def crew_dispatch(
             overrides=overrides,
             launch_kind="cli",
             pretty=pretty,
+            over_fence_reason=over_fence_reason,
+            comment=comment,
+            local=local,
+            dry_run=dry_run,
         )
         return
     if not node_id:

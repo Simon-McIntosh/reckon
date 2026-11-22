@@ -1,0 +1,166 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T14:38:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-claim-nobody-is-working-is-released.html:74",
+      "id": "done_when-1",
+      "reason": "the section as written is unachievable, and a worker dispatched to it will either report a blocker or fabricate the before half, so \u00a76 needs its base arm restated as something obtainable (a synthetic crew home, as \u00a72\u2013\u00a74 use) or the before census dropped in favour of the per-run gates already landed.",
+      "text": "\u00a76's done-when requires \"A census of the live fleet after \u00a72 to \u00a75 have landed, beside the same census taken before\", but \u00a72\u2013\u00a75 are all `done` (landed 22 November, landed records in docs/evidence/fragments/a-claim-nobody-is-working-is-released/), no pre-landing census exists in any fragment, and the pre-landing fleet state cannot be reconstructed from the base revision because the pointers those sections released are already gone from the live directory \u2014 so the node cannot produce the half of its measure that shows the defect was there",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-claim-nobody-is-working-is-released.html:74",
+      "id": "wiring-1",
+      "reason": "after every section lands the census can pass while \u00a77's case is still unwatched, so the plan's completion certificate covers four of its five claim kinds, and the fix is a declared wait of \u00a76 on \u00a77 plus a fifth row and a fifth census column.",
+      "text": "`plan-section-depends-on` gives \u00a76 waits on s2, s3, s4 and s5 only, and \u00a76's census enumerates \"promoted, measurement-only or landed-group run\", so the plan's only whole-fleet measure never looks at the delivered-but-never-landed kind \u00a77 delivers; \u00a71's own map (lines 35\u201344) likewise states four kinds and stops at \u00a75",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-claim-nobody-is-working-is-released.html:79",
+      "id": "done_when-2",
+      "reason": "the safety of the lapse is exactly the value of that interval, and with it unstated a worker can make the test green with an interval short enough to drop a live coordinator's claim, which is the failure \u00a71's rule (\"never released on an unknown reading\") exists to prevent; the plan should state the interval or state the default constant and require the test to cross it.",
+      "text": "\u00a77's deliverable says the claim lapses after \"no coordinator action, landing attempt or review for a stated interval\" and its done-when says only that the request \"is admitted once the interval has passed\", so the interval \u2014 the parameter the whole guard turns on \u2014 is left to the implementer and any value, including a trivially short one, satisfies the gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-claim-nobody-is-working-is-released.html:68",
+      "id": "single_goal-1",
+      "reason": "the section has already landed as one node and its gate fails on either arm independently, so splitting it now would re-run landed work for no gain; recording it matters only if a future section repeats the shape.",
+      "text": "\u00a75's deliverable conjoins two independent mechanisms: a resumed run reads as working only once its worker has begun a turn (with a failed-launch classification on the bound), and stopping any run ends every process the launch started and reports each pid",
+      "type": "single_goal",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-claim-nobody-is-working-is-released.html:80",
+      "id": "reasoning-1",
+      "reason": "the line names files rather than symbols, formulas or step sequences, it is the authored template's declared field and is used uniformly by the five already-landed and reviewed sections, and removing it would also break the file-scoped dispatch the coordinator locks on \u2014 this is a template question, not a defect of this plan.",
+      "text": "every section carries a \"Write paths\" line naming the modules to extend (lines 51, 57, 63, 69, 74, 80), which is the reuse map the node brief is meant to compose, not a plan declaration",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "5cb69be178f56504cd3e64d934b6943ee59dccf1",
+  "plan_fingerprint": "5fc88735788338573e9b5e866d31d63c32b758cbe9fde536f6ea61140706b714",
+  "plan_slug": "a-claim-nobody-is-working-is-released",
+  "plan_version": 20,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "section 6 now reads its before-state from the cases section 1 records as seen on 18 and 19 November and says no earlier census exists",
+      "reason": "",
+      "when": "2026-11-22T18:27:58.802250+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "section 6 waits on section 7 and its census now counts a delivered unlanded run of an ended session holding a claim",
+      "reason": "",
+      "when": "2026-11-22T18:28:06.259083+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "section 7 fixes the interval at 24 hours from the latest write to the run's records, and requires the request still held at 23 hours",
+      "reason": "",
+      "when": "2026-11-22T18:28:13.486156+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "single_goal-1",
+      "reason": "section 5 has landed and is declared done; splitting its text now changes nothing that will be built",
+      "when": "2026-11-22T18:28:20.895385+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "reasoning-1",
+      "reason": "the write-paths line bounds which files the node may change, as the dispatch contract requires; it prescribes no method, and the worker settles how",
+      "when": "2026-11-22T18:28:30.530829+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 6 now reads its before-state from the cases section 1 records as seen on 18 and 19 November and says no earlier census exists",
+      "reason": "",
+      "when": "2026-11-22T18:27:58.802250+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 7 fixes the interval at 24 hours from the latest write to the run's records, and requires the request still held at 23 hours",
+      "reason": "",
+      "when": "2026-11-22T18:28:13.486156+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "the write-paths line bounds which files the node may change, as the dispatch contract requires; it prescribes no method, and the worker settles how",
+      "when": "2026-11-22T18:28:30.530829+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "section 5 has landed and is declared done; splitting its text now changes nothing that will be built",
+      "when": "2026-11-22T18:28:20.895385+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 6 waits on section 7 and its census now counts a delivered unlanded run of an ended session holding a claim",
+      "reason": "",
+      "when": "2026-11-22T18:28:06.259083+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-claim-nobody-is-working-is-released/r-20261122T143249441541-plan-review-of-a-claim-nobody-is-working-is-released.json",
+  "review_run_id": "r-20261122T143249441541-plan-review-of-a-claim-nobody-is-working-is-released",
+  "reviewed_blob_sha": "0d055ef574779f853cc047d57aad3642530d87f7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module exists (reckon/crew/pending_landing.py, process_liveness.py, promotion_release.py, landing_measure.py, resumption.py, claims.py, admission/readiness.py) and every cited existing test resolves; the two absent paths (docs/evidence/archive/\u2026-landed.html, tests/test_a_delivered_runs_claim_lapses.py) are the deliverables \u00a76 and \u00a77 create, not anchors; \u00a71's \u00a721/\u00a726/\u00a727/\u00a729 resolve to `done` sections of delivered-work-lands-without-a-coordinator; the `held-on-claim` verdict \u00a77 cites is emitted by reckon/crew/admission/shared.py:248 and attempts.py:317.",
+    "done_when": "a finding \u2014 \u00a76's done-when requires a census taken before \u00a72\u2013\u00a75 landed, which is no longer obtainable, and \u00a77 leaves the lapse interval it turns on to the implementer.",
+    "evidence_paths": "pass \u2014 \u00a76 writes docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html, \u00a77's arm logs sit under the run directory, and the four landed sections wrote durable records under docs/evidence/fragments/a-claim-nobody-is-working-is-released/; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 section titles, deliverable names and the two new test filenames read as behaviour (\"a delivered run's claim lapses\"), with no plan labels, stage names, ticket numbers or version tags, and no changelog prose.",
+    "reasoning": "a finding \u2014 the root-cause and reachability checks pass (see the three checks below), but every section names the module to extend in a \"Write paths\" line, which is the reuse map the node brief is supposed to own.",
+    "single_goal": "a finding \u2014 \u00a75 carries two deliverables: a turn-begun liveness classification and a stop that reaps and reports a whole launch tree.",
+    "wiring": "a finding \u2014 \u00a76's census declares waits on \u00a72\u2013\u00a75 only, so the plan's single live-fleet census never covers the fifth claim kind \u00a77 adds."
+  },
+  "section_digests": {
+    "_document": "528f568968837c06eead230d0fa3706c31a17e2ebf73a858440065384e8f6c41",
+    "s1": "05d19cd8311964ff3f39edcb6f6001983d854f54efe21e6fab628d2bf2d700be",
+    "s2": "31c170be4951db63af1611f315ea98f170521c6fa5d29d94f4de2266b76647fb",
+    "s3": "e1ab157cd4a1eae9aa12b1663c5b99dcd8436fed8b54c5252e0d9340bb82a93d",
+    "s4": "ec03acc9d9512d7a14042d8168f168a03f069190fef0cbc3e69139a2d33f3b79",
+    "s5": "dfd5788c2eb7c77b78075346068509e49b441c81c20632665e0f9e42a4780f0e",
+    "s6": "d7448a36c325bec906e26c628378d83db636835580ee0f69c43396dbb03bdebe",
+    "s7": "d2fc18ded7293076a0c43138d5194bb5743a555408ff2fd4361a89e0173f3fca"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T14:46:37.798413+00:00",
+  "total": null
+}

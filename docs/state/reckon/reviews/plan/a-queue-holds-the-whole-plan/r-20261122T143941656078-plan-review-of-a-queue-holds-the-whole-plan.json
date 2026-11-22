@@ -1,0 +1,236 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "digests": {
+        "_document": "f2ba9e8b69a836d47ddffc8aedbdb323ccf14c12e9b949292a94ef6fbf310a2e"
+      },
+      "reason": "these edits apply the answered findings of the stored content review as answered",
+      "units": [
+        "_document"
+      ],
+      "when": "2026-11-22T18:46:33.503237+00:00"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T14:40:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261122T143941656078-plan-review-of-a-queue-holds-the-whole-plan/plan.html:268",
+      "id": "reasoning-1",
+      "reason": "an implementer must pick one state, and whichever they pick half the section's own cases describe the other.",
+      "text": "s51's deliverable says an unreadable upstream \"treats that one wait as unresolved\", which in this plan's own vocabulary is the `awaiting-upstream` state that \u00a72 releases when its last ref lands, but its done-when says the request is \"stored held\", and `held` is \u00a710's state released only by a covering review or a coordinator; the two states have different release paths, so the third case (\"repairing the upstream plan releases the held request on the next pass\") describes a release `held` does not have",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261122T143941656078-plan-review-of-a-queue-holds-the-whole-plan/plan.html:261",
+      "id": "single_goal-1",
+      "reason": "splitting it into two nodes lets each be gated and reviewed on one deliverable instead of a node whose gate proves neither cleanly.",
+      "text": "\u00a750's deliverable carries two independent mechanisms: routing a refused request of an ended session to a live coordinator, and charging a hold to the session that placed it rather than the one that dispatched the run; the author signals this (\"Separately, nova-00 reported \u2026\"), and the second mechanism has its own defect, its own module behaviour and its own done-when case, so a single verdict cannot close both",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261122T143941656078-plan-review-of-a-queue-holds-the-whole-plan/plan.html:275",
+      "id": "reasoning-2",
+      "reason": "the granted scope cannot reach the surface the done-when tests, and the node would fail at dispatch exactly as the \u00a741 write-path finding did.",
+      "text": "\u00a752's endpoint requires \"the server's plan write \u2026 refuse it\", but the server patch path is `_handle_plan_write` in `reckon/serve.py:3827`, which does its own coverage check at `reckon/serve.py:3967` precisely because \"The patch path renders its own HTML and never reaches the store's write paths\"; `reckon/serve.py` is not among the section's write paths, so a node granted only `reckon/doccheck.py` and `reckon/_plan_html.py` cannot make the third case pass",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261122T143941656078-plan-review-of-a-queue-holds-the-whole-plan/plan.html:276",
+      "id": "done_when-1",
+      "reason": "a deliverable half of which no case measures can be silently unbuilt and still green.",
+      "text": "\u00a752's deliverable names three write surfaces that must refuse a disagreeing file (audit-doc, the server's plan write, a promotion's plan commit), but the done-when has no case for the promotion path, whose plan commit goes through `_plan_html.write_state` at `reckon/crew/promotion.py:2250` and `:2457`; a node can pass every named case with promotion refusing nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261122T143941656078-plan-review-of-a-queue-holds-the-whole-plan/plan.html:255",
+      "id": "done_when-2",
+      "reason": "the reported obligation is the section's actual product for the coordinator, so leaving its content untested lets a node pass while emitting a row that names no way to clear it.",
+      "text": "\u00a749's deliverable requires the obligation to name \"the refusal and what would clear it\", and to cover refusals only a plan or coordinator change can clear (the section declared done, the plan terminal, the section no longer exists), but its done-when asserts only that the obligation appears, that the request is not retried, and that a store lock is still retried; no case asserts the obligation names the clearing action, and the plan-terminal and section-removed classes are never exercised",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5cb69be178f56504cd3e64d934b6943ee59dccf1",
+  "plan_fingerprint": "67aa3531b5b35e5ddd8482d18e1c0d2d974a7fea7bb79c969535ac11f3eafb3d",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 385,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "section 51 now stores the request awaiting-upstream with the finding, the state whose release its third case uses",
+      "reason": "",
+      "when": "2026-11-22T18:35:15.282117+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "section 50 keeps the routing of an ended session's refusal; charging a hold to its holder is now section 53",
+      "reason": "",
+      "when": "2026-11-22T18:36:04.313626+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "section 52's write paths now include reckon/serve.py and reckon/crew/promotion.py",
+      "reason": "",
+      "when": "2026-11-22T18:37:01.082506+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "section 52's done-when adds a case refusing a promotion's plan commit of the disagreeing file",
+      "reason": "",
+      "when": "2026-11-22T18:37:55.059652+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "section 49's done-when requires the obligation to name the clearing change, and exercises the terminal-plan and removed-section classes",
+      "reason": "",
+      "when": "2026-11-22T18:38:53.485287+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 52's done-when adds a case refusing a promotion's plan commit of the disagreeing file",
+      "reason": "",
+      "when": "2026-11-22T18:37:55.059652+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 49's done-when requires the obligation to name the clearing change, and exercises the terminal-plan and removed-section classes",
+      "reason": "",
+      "when": "2026-11-22T18:38:53.485287+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 51 now stores the request awaiting-upstream with the finding, the state whose release its third case uses",
+      "reason": "",
+      "when": "2026-11-22T18:35:15.282117+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 52's write paths now include reckon/serve.py and reckon/crew/promotion.py",
+      "reason": "",
+      "when": "2026-11-22T18:37:01.082506+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "29eba59262d04c103ca22dbec4bd2337691d6b21",
+      "commit_basis": "edit",
+      "note": "section 50 keeps the routing of an ended session's refusal; charging a hold to its holder is now section 53",
+      "reason": "",
+      "when": "2026-11-22T18:36:04.313626+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-queue-holds-the-whole-plan/r-20261122T143941656078-plan-review-of-a-queue-holds-the-whole-plan.json",
+  "review_run_id": "r-20261122T143941656078-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "7d26b8c259f4aaaf1fe3fd319eb76e74e6904d37",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module, function and commit resolves (`git cat-file -e 2045b3f042` succeeds, both cited run directories exist, `derive_wait_refs` at `reckon/crew/admission/wait_refs.py:230`, `_plan_state_and_text` at `readiness.py:362`).",
+    "done_when": "a finding \u2014 s52's done-when exercises two of the three write surfaces its deliverable names, and s49's leaves \"what would clear it\" untested.",
+    "evidence_paths": "pass \u2014 each arm's log is placed under the run directory, a durable path the run keeps, and no scratch or node-local path is named.",
+    "naming": "pass \u2014 the four new test filenames and the section prose name mechanisms, with no plan labels, stage names, ticket numbers, version tags or changelog prose carried into them.",
+    "reasoning": "two findings \u2014 s51 names two different queue states for one outcome, and s52's endpoint is not reachable from its granted write paths for the server surface.",
+    "single_goal": "a finding \u2014 s50 carries two deliverables, orphaned-refusal routing and hold attribution.",
+    "wiring": "pass \u2014 s49-s52 declare no waits and each writes a distinct module; the modules they consume (`reckon/crew/admission/wait_refs.py`, `readiness.py`, `dispatch_batch.py`, `obligations.py`, `obligation_snapshot.py`, `doccheck.py`, `_plan_html.py`) all exist, so no dependency is missing and no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "c5ae7170f3d0a2d3de4e165d0858a264490a5e4fba42eb1c39b8f939158ecfee",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "92ae2c978f0293fbe8f09066288ab258d7d810c4bedc3ce5fe964f064ca7310e",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s29": "e7851807f93e49d39fd9789aa3dd5638ecc35016f60f53bc0c4fe3413a6bcf20",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s30": "b3148b61a2b1805ec38f8705fedffdb786ccee3a47f4a8bebcd794ce6b0983cf",
+    "s31": "23ef7a8f162555218fc698e3569bcef26b43435845dbb6c5af88193a0e76166e",
+    "s32": "04cecab62796d354c65abbea09c54c3d37a9155ab0d83b7da53e5c481a8cf8c6",
+    "s33": "9db5479d0d5cb815819bdb4c45cebe9064b8b2b85c07514b9bd6689e07590ac3",
+    "s34": "28ec67c9ff9af2e77a8ceca28cfe58dda22acf33e78752ecdc0c93437ec47ddd",
+    "s35": "53659cabcb1f264ddcdacc4c1d9271f132812f7e63527176f2a850f9317197fb",
+    "s36": "3c14bcaafca65d0775675f39af63a2199a057de32633294444dc446aab5a1fba",
+    "s37": "6889a6da568c36055f4606baa4ab3e17b94fa4a9d1fd14faa24909c0fa9e3243",
+    "s38": "0c15038b408405c23aad25c08b3c665a64c029cc83dfe975274581f85a2359a7",
+    "s39": "2d4849df481c1704d8a10e424069f9a5fb6de9a853f0284cf2ba5bd7246d929e",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s40": "b67e14fac669e26d4a727452d4e91d7ceae386acae6ecef50c9f87ec5fdce913",
+    "s41": "d081d0c388aaf2f0b8d28d3e6413bcb7713550c643c3a85d1f991f3c2e00d85f",
+    "s42": "5ed0d3d290e666aedba91c8eaee44250072f4612b690d2100a14c2f86579222d",
+    "s43": "99ab464f07ef1d60bf1996019b52210863d3b5563f25a28f9a606251e9276c68",
+    "s44": "fe0272c4e15c3f1eb814b3b08b38c1970e0fba23032a1ea8987a62f848311f65",
+    "s45": "ef6ab21ee159fce14a0dfa1dd2486e2ec8196cef5a364dcf6fe32fb7b61c3367",
+    "s46": "80dcefbded72c6e375e44eb501c94b226a687003af3e97b069e4230b4092afb4",
+    "s47": "7ca2d20eece7db4eb90cf352f56c8a66ef2c61c28022d3a3618a131af499a1ef",
+    "s48": "7b0e9a90d904a1337d8836657621170d9208df3b59cdcb3d362401862a417f7a",
+    "s49": "0ef96d919703ff4dc9a48555a54ae9f3e187bbb113668239ac7a75f5abef96d7",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s50": "3f5011d1ce7c1702c0867dee94bb6731d6278bbcfa8847fdac838f063889646e",
+    "s51": "8014197b5843dd2a79118837faa8dd8ef75a1280bf0bbce170d4d93b5212d7d3",
+    "s52": "780c2a7b17c970575fdd5760a7e954ca022f87219b23bfefac13bbd02aaaafb6",
+    "s6": "a81480c94db3372e03fb8862f58fcb5017c6a0d5c4471ceecbf3c71a6850ce93",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T14:51:47.998230+00:00",
+  "total": null
+}
