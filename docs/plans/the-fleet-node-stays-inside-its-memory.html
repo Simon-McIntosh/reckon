@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -310,7 +310,10 @@
     <div class="r-comment-body"><p>reviewed ebad3fef..ee7298959c (2 commits over 2 files, +328/-49) with all six dimensions scored — goal_fidelity 10, evidence 15, scope_discipline 18, durability 15, fit 17, reuse 5 — and five findings, one blocking: the new _store_history_rows at reckon/crew/section_holds.py:185 no longer falls through to the committed ledger when the store holds no rows for the project, so a ledger-only project's delivered nodes read free to held_section_blockers at reckon/roadmap.py:3812.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261122T093602664799-review-of-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-4a98aef29769-figure" data-who="reckon-build" data-when="2026-11-22T09:45:34.794Z">
-    <div class="r-comment-body"><p>Figure review of 4a98aef29769 for r-20261122T032527410081-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory: parsed, all six rubric items answered, one non-blocking contrast finding on the base arm&#x27;s value labels (3.11:1); no blocking defect.</p></div>
+    <div class="r-comment-body"><p>Figure review of 4a98aef29769 for r-20261122T032527410081-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory: parsed, all six rubric items answered, one non-blocking contrast finding on the base arm's value labels (3.11:1); no blocking defect.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261122T093509272482-review-of-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-4a98aef29769" data-who="reckon-build" data-when="2026-11-22T09:46:48.718Z">
+    <div class="r-comment-body"><p>review of r-20261122T032527410081-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory at ebad3fef..4a98aef (delta since its prior review at ee7298959c is a893dfdf, fab1100c, 4a98aef): parsed, scores goal_fidelity 11, evidence 13, scope_discipline 19, durability 18, fit 17, reuse 19, added_failure_count 0, one non-blocking finding (cache key at reckon/crew/section_holds.py:225 drops the ledger root); the two findings of the prior review (empty-store fallthrough, retired-row ordering) are repaired and each shown failing against the revision before it.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-17T15:44:00Z">
     <div class="r-comment-body"><p>§9 landed through the crew's own promotion after its review (landing commit <code>cda8859a2c</code>). The per-pass ledger read is bounded: resident memory held at 82 MB after the hundredth pass against 80 MB after the tenth on a copied home, with one decision digest across all passes equal to the base's; on a copy of the live stores the peak fell from 4.6 GB to 2.0 GB. The six-hour live-fleet reading the section asks for is still to be recorded.</p></div>
