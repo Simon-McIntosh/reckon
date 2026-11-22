@@ -348,9 +348,7 @@ def _prune_day_verdict_logs(today: str, home: Path | None = None) -> list[Path]:
     return removed
 
 
-def verdict_log_append(
-    record: Mapping[str, Any], *, home: Path | None = None
-) -> dict[str, Any]:
+def verdict_log_append(record: Mapping[str, Any]) -> dict[str, Any]:
     """Write one pass record to its day's log, rotating and pruning around it.
 
     Rotation and pruning happen on the append rather than on a timer, so a
@@ -360,19 +358,12 @@ def verdict_log_append(
     """
     at = parse_utc(record.get("at"))
     day = at.date().isoformat() if at is not None else _service._utc_now()[:10]
-    _rotate_current_verdict_log(day, home)
-    path = _current_verdict_log_path(home)
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        data = (
-            json.dumps(dict(record), separators=(",", ":"), default=str) + "\n"
-        ).encode()
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
-        try:
-            os.write(descriptor, data)
-        finally:
-            os.close(descriptor)
-    except OSError:
+    _rotate_current_verdict_log(day)
+    path = _current_verdict_log_path()
+    from reckon.crew.picker import _append_crew_log_line
+
+    _append_crew_log_line(ADMISSION_VERDICT_LOG, dict(record))
+    if not path.exists():
         return {"written": False, "day": day, "path": str(path)}
     from reckon.crew.fleet_supervisor import trim_service_log
 
@@ -382,7 +373,7 @@ def verdict_log_append(
             limit=ADMISSION_VERDICT_LOG_MAX_BYTES,
             keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
         )
-    _prune_day_verdict_logs(day, home)
+    _prune_day_verdict_logs(day)
     return {"written": True, "day": day, "path": str(path)}
 
 
@@ -394,7 +385,7 @@ def read_pass_verdicts(
     *,
     since: datetime | None = None,
     until: datetime | None = None,
-    home: Path | None = None,
+    paths: Sequence[tuple[str, Path]] | None = None,
 ) -> dict[str, Any]:
     """Every admission verdict the retained log holds, and the span it covers.
 
@@ -409,9 +400,11 @@ def read_pass_verdicts(
     is told the span it covers instead of being handed a window the log cannot
     support. ``days`` carries, per retained file, the day it holds, its path,
     its bytes and its record count; ``bytes_per_day`` is the same byte figure
-    keyed by day, which is the cost the log keeps per day.
+    keyed by day, which is the cost the log keeps per day. ``paths`` narrows the
+    read to given files, which a caller wanting only the newest records passes
+    so a pass need not parse the whole week.
     """
-    paths = _pass_record_paths(home)
+    paths = _pass_record_paths() if paths is None else list(paths)
     days: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
     covered: list[datetime] = []
@@ -482,7 +475,36 @@ _RECENT_PASS_CACHE: dict[str, Any] = {}
 
 
 def _recent_pass_reading(paths: Sequence[tuple[str, Path]]) -> dict[str, Any]:
-    """The last verdict and last stage duration each request carries."""
+    """The last verdict and last stage duration each request carries.
+
+    Parsed by :func:`read_pass_verdicts` over the newest retained files, so one
+    reader owns the log's format and the memo below only spares a pass the
+    re-parse it would otherwise repeat for every queued request.
+    """
+    key = _pass_files_signature(paths)
+    if _RECENT_PASS_CACHE.get("key") == key:
+        return _RECENT_PASS_CACHE
+    verdicts: dict[str, str] = {}
+    stages: dict[str, float] = {}
+    for record in read_pass_verdicts(paths=paths)["records"]:
+        for name, value in record.items():
+            if name.endswith("_seconds") and isinstance(value, (int, float)):
+                stages[name] = round(float(value), 3)
+        for row in record.get("pointers") or ():
+            if isinstance(row, Mapping):
+                run_id = str(row.get("run_id") or "")
+                if run_id:
+                    verdicts[run_id] = str(row.get("verdict") or "")
+    _RECENT_PASS_CACHE["key"] = key
+    _RECENT_PASS_CACHE["verdicts"] = verdicts
+    _RECENT_PASS_CACHE["stages"] = stages
+    return _RECENT_PASS_CACHE
+
+
+def _pass_files_signature(
+    paths: Sequence[tuple[str, Path]],
+) -> tuple[tuple[str, int, int, int], ...]:
+    """The identity of the files a recent reading parsed."""
     signature: list[tuple[str, int, int, int]] = []
     for _label, path in paths:
         try:
@@ -490,35 +512,7 @@ def _recent_pass_reading(paths: Sequence[tuple[str, Path]]) -> dict[str, Any]:
         except OSError:
             continue
         signature.append((str(path), stat.st_mtime_ns, stat.st_size, stat.st_ino))
-    key = tuple(signature)
-    if _RECENT_PASS_CACHE.get("key") == key:
-        return _RECENT_PASS_CACHE
-    verdicts: dict[str, str] = {}
-    stages: dict[str, float] = {}
-    for _label, path in paths:
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        for line in text.splitlines():
-            try:
-                record = json.loads(line)
-            except ValueError:
-                continue
-            if not isinstance(record, Mapping):
-                continue
-            for name, value in record.items():
-                if name.endswith("_seconds") and isinstance(value, (int, float)):
-                    stages[name] = round(float(value), 3)
-            for row in record.get("pointers") or ():
-                if isinstance(row, Mapping):
-                    run_id = str(row.get("run_id") or "")
-                    if run_id:
-                        verdicts[run_id] = str(row.get("verdict") or "")
-    _RECENT_PASS_CACHE["key"] = key
-    _RECENT_PASS_CACHE["verdicts"] = verdicts
-    _RECENT_PASS_CACHE["stages"] = stages
-    return _RECENT_PASS_CACHE
+    return tuple(signature)
 
 
 def _recent_pass_files() -> list[tuple[str, Path]]:

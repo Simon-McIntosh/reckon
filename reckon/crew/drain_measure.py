@@ -63,7 +63,7 @@ def measure_drain(
     ready_by_project: Mapping[str, int] | None = None,
     unloaded_by_project: Mapping[str, Sequence[str]] | None = None,
     live_pointers: Sequence[Mapping[str, Any]] = (),
-    passes: Sequence[Mapping[str, Any]] = (),
+    passes: Sequence[Mapping[str, Any]] | None = None,
     now: datetime | None = None,
     window_days: int = 7,
     projects: Sequence[str] | None = None,
@@ -75,9 +75,15 @@ def measure_drain(
     head carries it. ``weights`` are the fair-use weights by project.
     ``ready_by_project`` and ``unloaded_by_project`` are the drain view's own
     figures: a project's executable remainder, and the sections it could not
-    load. ``passes`` are admission pass records, oldest first.
+    load. ``passes`` are admission pass records, oldest first; a caller that
+    passes none has the retained week read here, so the gap measure is answered
+    from the span it is defined over rather than from one byte-bounded file.
     """
     moment = now or datetime.now(UTC)
+    if passes is None:
+        from reckon.crew.admission import verdicts as _verdicts
+
+        passes = _verdicts.read_pass_verdicts(until=moment)["records"]
     runs = list(runs)
     window_start = moment - timedelta(days=window_days)
     windowed = [run for run in runs if in_window(run, window_start, moment)]
