@@ -403,6 +403,54 @@ def _record_stage_reads(result: dict[str, Any], stage: str, tally: _ReadTally) -
     reads[stage] = tally.entries()
 
 
+def admit_read_sources() -> list[tuple[str, tuple[str, ...]]]:
+    """The stores a pass reads, ordered so a narrow path wins over its parent.
+
+    The pointer directory sits inside the crew home, and the run store's
+    database sits beside it, so a rule that named only the crew home would
+    charge every pointer and the database to one source and name neither.
+    """
+    from reckon import _store
+
+    crew_home = str(runs.crew_home())
+    live = str(runs.live_dir())
+    review_store = str(Path(crew_home) / "reviews")
+    state = str(_store._state_root())
+    return [
+        # The run store is SQLite; its reads never pass through ``open`` and are
+        # charged to the unattributed remainder rather than to a source they
+        # did not come from.
+        ("run store", (str(Path(crew_home) / "run_store"),)),
+        ("live and queued pointers", (live + "/",)),
+        ("review store", (review_store + "/",)),
+        ("ledger", (state + "/",)),
+        ("plan documents", ("*/docs/plans/",)),
+    ]
+
+
+def _reads_by_source(
+    account: Any, before: int | None, after: int | None
+) -> dict[str, Any]:
+    """A pass's bytes per source, with the whole-process figure beside them.
+
+    ``process_bytes`` is what the process read during the pass, taken from its
+    own ``/proc`` record; ``attributed_bytes`` is what the accounting placed.
+    Their gap is named rather than hidden: a reader comparing the two sees a
+    source the accounting missed, which is exactly the case the negative
+    control exercises.
+    """
+    summary = account.summary()
+    total = (
+        None if before is None or after is None else max(0, int(after) - int(before))
+    )
+    summary["process_bytes"] = total
+    if total is not None:
+        summary["unattributed_bytes"] = max(
+            0, total - int(summary.get("attributed_bytes") or 0)
+        )
+    return summary
+
+
 def _record_stage_timings(
     result: dict[str, Any],
     *,
@@ -481,7 +529,7 @@ def admit_until_stopped(
     # A service that replaced its own image in place still owns the children
     # the old image left. Registering them here, once, lets the shared reaper
     # collect them; nothing in this image refers to them otherwise.
-    from reckon import flight
+    from reckon import file_memo, flight
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
     from reckon.crew.fleet_supervisor import service_pass
     from reckon.crew.follower_reload import ReloadWindow
@@ -509,15 +557,21 @@ def admit_until_stopped(
         started_at = _utc_now()
         # The tally is opened before the stage's clock starts, so the cost of
         # measuring the stage is not charged to the stage.
-        with _read_tally() as release_reads:
-            started = time.monotonic()
-            release = _release._release_tick()
-            released = time.monotonic()
-        worker.tick()
-        promotions.tick()
-        landing = worker.settle()
-        with runs.resolution_scope():
-            result = _selection.admit_once(**admission_options)
+        before_reads = file_memo.read_character_count()
+        with file_memo.attributing(admit_read_sources()) as read_account:
+            with _read_tally() as release_reads:
+                started = time.monotonic()
+                release = _release._release_tick()
+                released = time.monotonic()
+            worker.tick()
+            promotions.tick()
+            landing = worker.settle()
+            with runs.resolution_scope():
+                result = _selection.admit_once(**admission_options)
+        after_reads = file_memo.read_character_count()
+        result["reads_by_source"] = _reads_by_source(
+            read_account, before_reads, after_reads
+        )
         ended = time.monotonic()
         result["release"] = release
         result["landing"] = landing
@@ -574,16 +628,22 @@ def admit_until_stopped(
                 # The landing runs in its own thread under its own lock, so this
                 # pass proceeds whether or not one is in flight, and the landing
                 # holds only the next landing.
-                worker.tick()
-                promotions.tick()
-                # Opened before the stage's clock starts, so the cost of
-                # measuring the stage is not charged to the stage.
-                with _read_tally() as release_reads:
-                    started = time.monotonic()
-                    release = _release._release_tick()
-                    released = time.monotonic()
-                with runs.resolution_scope():
-                    admitted = _selection.admit_once(**admission_options)
+                before_reads = file_memo.read_character_count()
+                with file_memo.attributing(admit_read_sources()) as read_account:
+                    worker.tick()
+                    promotions.tick()
+                    # Opened before the stage's clock starts, so the cost of
+                    # measuring the stage is not charged to the stage.
+                    with _read_tally() as release_reads:
+                        started = time.monotonic()
+                        release = _release._release_tick()
+                        released = time.monotonic()
+                    with runs.resolution_scope():
+                        admitted = _selection.admit_once(**admission_options)
+                after_reads = file_memo.read_character_count()
+                admitted["reads_by_source"] = _reads_by_source(
+                    read_account, before_reads, after_reads
+                )
                 ended = time.monotonic()
                 landing = worker.last
                 admitted["release"] = release
