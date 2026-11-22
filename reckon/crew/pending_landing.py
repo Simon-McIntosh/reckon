@@ -1477,13 +1477,15 @@ def release_merged_promotions(
             continue
         if not pointer.get("worktree") or pointer.get("landing_group"):
             continue
-        row = _promoted_row(run_project, run_id)
-        measured = bool(_measurement_reason(pointer) or _measurement_reason(row or {}))
         # A journaled landing already has an owner in the pending-record pass.
         # A measurement run is the exception: its head is never merged, so it
         # owes no landing for that owner to finish, and a journal left by a
         # promotion that could not retire its pointer would otherwise keep the
-        # run's paths claimed for as long as the record survives.
+        # run's paths claimed for as long as the record survives. The dispatch
+        # writes the measurement marker on the pointer, so both owner checks are
+        # settled from the pointer alone and a run that has an owner costs no
+        # ledger read.
+        measured = bool(_measurement_reason(pointer))
         if _record_path(run_id).exists() and not measured:
             continue
         if (
@@ -1491,6 +1493,8 @@ def release_merged_promotions(
             and read_promotion(run_id).get("phase") in PENDING
         ):
             continue
+        row = _promoted_row(run_project, run_id)
+        measured = measured or bool(_measurement_reason(row or {}))
         head = _reviewed_head(row) if row else ""
         if not head or _promotion_lease_held(run_id):
             continue
