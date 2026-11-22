@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="121">
+<meta name="plan-version" content="122">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -357,10 +357,16 @@
     <pre class="r-fu-prompt">/reckon-build delivered-work-lands-without-a-coordinator</pre>
     <p class="r-fu-outcome">Sections 30 to 37 landed on 22 November 2026. Section 10, the 24-hour fleet measurement, is delivered and in review.</p>
     </article>
-<article class="r-fu" data-id="f-dwl-s38" data-status="open" data-written-by="474f3b90" data-written-at="2026-11-22" data-recommends-skill="/reckon-build delivered-work-lands-without-a-coordinator §38" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dwl-s38" data-status="resolved" data-written-by="474f3b90" data-written-at="2026-11-22" data-recommends-skill="/reckon-build delivered-work-lands-without-a-coordinator §38" data-resolved-at="2026-11-22T12:47:38+00:00" data-resolved-by="474f3b90">
     <h4 class="r-fu-title">Build the five landing defects met on 22 November</h4>
     <div class="r-fu-body"><p>Sections 38 to 42 are the next work: five landing tests red on the primary branch, promotions that leave uncommitted bytes in a plan file, a locked run store that is never retried, a merged-head gate that cannot start its interpreter, and a coordinator landing that is not measured like the lander's. Section 10's measurement closes the plan's first chain once its review lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build delivered-work-lands-without-a-coordinator §38</pre>
+    <p class="r-fu-outcome">Sections 38 to 42 are on the primary branch as of 22 November 2026: the landing tests named there pass (8 failures at base, 2 at head, none added), no promotion leaves an uncommitted plan file, a locked run store is retried, a gate that cannot start names its program, and a coordinator landing is measured.</p>
+    </article>
+<article class="r-fu" data-id="f-dwl-s43" data-status="open" data-written-by="474f3b90" data-written-at="2026-11-22" data-recommends-skill="/reckon-build delivered-work-lands-without-a-coordinator §43" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the four landing defects reported from imas-efit</h4>
+    <div class="r-fu-body"><p>Sections 43 to 46 are the next work: no repair resume starts on a landed run, a coordinator can ask for a review of a named run, a reflex resume keeps the partition its dispatch named, and a dispose hint names a rubric the command accepts.</p></div>
+    <pre class="r-fu-prompt">/reckon-build delivered-work-lands-without-a-coordinator §43</pre>
     </article>
 </section>
 
@@ -723,7 +729,7 @@
     <div class="r-comment-body"><p>The review of r-20261122T083521486110 at dde7b001..5dc24d3cfc scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20 (total 115), with added_failure_count 0 against the run's own 58-passed base arm and 65-passed after arm; the landed resolver reports a merged-head gate that cannot start as not-run naming the program and the tree and resolves a relative .venv/bin/python before the shell sees it, the negative control reproduces exit_status=127 reported as "the merge changes what this node's gate proves" at the pinned base, and the one carried defect is that the population head arm log's command header is split and unusable; both findings are non-blocking.</p></div>
 </div>
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261122T083521486110-dwlw-a-gate-that-cannot-start-names-its-program" data-who="reckon-build" data-when="2026-11-22T12:30:40Z">
-    <div class="r-comment-body"><p>The merged-head gate replay resolves the command&#x27;s program before the shell sees it, so a gate command naming `.venv/bin/python` runs at a tree with no `.venv`, a program that exists nowhere is reported as a gate that did not start naming the program and the tree rather than as a gate the merge changed, and a gate that starts and fails keeps its verdict and `tests/test_sample.py::test_broken` as its failure id; one resolver in `reckon/crew/promotion_gate.py` serves both the promotion guard and the replay with each shared helper defined exactly once and one token walk feeding both the resolver and the rewriter, while the guard keeps resolving over the run&#x27;s own checkout alone so a relative program that checkout lacks is still refused naming it; the promotion_gate population ran 121 cases green at 54220d00 against 114 at the pinned base, and the after arm 65 against 58.</p></div>
+    <div class="r-comment-body"><p>The merged-head gate replay resolves the command's program before the shell sees it, so a gate command naming `.venv/bin/python` runs at a tree with no `.venv`, a program that exists nowhere is reported as a gate that did not start naming the program and the tree rather than as a gate the merge changed, and a gate that starts and fails keeps its verdict and `tests/test_sample.py::test_broken` as its failure id; one resolver in `reckon/crew/promotion_gate.py` serves both the promotion guard and the replay with each shared helper defined exactly once and one token walk feeding both the resolver and the rewriter, while the guard keeps resolving over the run's own checkout alone so a relative program that checkout lacks is still refused naming it; the promotion_gate population ran 121 cases green at 54220d00 against 114 at the pinned base, and the after arm 65 against 58.</p></div>
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261122T094523684413-review-of-dwlw-a-coordinator-landing-is-measured-de2390f73842" data-who="reckon-build" data-when="2026-11-22T09:51:31.509Z">
     <div class="r-comment-body"><p>Review of run r-20261122T083524853494-dwlw-a-coordinator-landing-is-measured at dde7b00176..de2390f738: the measure is wired into `crew complete --land` and its three cases plus a recorded negative control hold, but an unreadable population measurement is silently allowed through at reckon/crew_run_commands.py:4948 (blocking) and no case covers that arm (non-blocking).</p></div>
