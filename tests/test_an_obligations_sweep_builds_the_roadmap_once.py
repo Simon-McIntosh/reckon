@@ -1,26 +1,33 @@
 """One obligations sweep builds a project's roadmap at most once.
 
-The sweep examines every review item the fleet holds for a project, so the
-roadmap build is counted at its entry point: a sweep that composes the roadmap
-once per item cannot hide behind a cache that only its first call populates.
+The sweep asks the admission ordering where each queued request stands, once
+for every session's payload. Each of those asks carries the same pointers at
+the same instant, and ordering them again derives the project's roadmap again
+— the queued requests' section priorities come from it. This measurement
+drives that path: forty queued review items across two projects and four
+sessions, with the build counted where the ordering composes it.
 
-The counter is proved live by a positive control before a zero is reported.
+The counter is proved live by the fixture's own footfall: the sweep must
+derive at least one roadmap per project, so a zero count would be a fixture
+that never reached the path rather than a sweep that composed nothing.
 """
 
 from __future__ import annotations
 
+import itertools
 import json
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 from reckon import roadmap as roadmap_module
-from reckon.crew import obligation_snapshot, runs
+from reckon.crew import obligation_snapshot, queue_order, runs
 from tests.helpers.git import git
 
 PROJECTS = ("sweep-one", "sweep-two")
-SESSION = "sweep-session"
+SESSIONS = ("session-a", "session-b", "session-c", "session-d")
 ITEMS_PER_PROJECT = 20
 
 
@@ -28,32 +35,47 @@ def _now() -> datetime:
     return datetime(2026, 11, 1, 12, 0, 0, tzinfo=UTC)
 
 
-def _plan_html(slug: str) -> str:
+def _plan_html(project: str) -> str:
+    declarations = json.dumps({"s1": "implementable", "s9": "implementable"}).replace(
+        '"', "&quot;"
+    )
     return (
         "<html><head>"
-        '<meta name="docs-project" content="sweep">'
-        f'<meta name="plan-slug" content="{slug}">'
+        f'<meta name="docs-project" content="{project}">'
+        '<meta name="plan-slug" content="sweep-plan">'
         '<meta name="plan-status" content="active">'
-        '<meta name="plan-impl" content="0">'
+        f'<meta name="plan-section-declarations" content="{declarations}">'
         "</head><body>"
-        '<section data-reckon="section" data-id="s1" data-status="implementable">'
-        "</section></body></html>"
+        '<h2 id="s1">S1</h2>'
+        '<section data-reckon="section" data-id="s1" data-effort-hours="0.5" '
+        'data-capability-version="1.0" data-capability-class="general" '
+        'data-capability-reasoning="standard" data-capability-verification="standard" '
+        'data-capability-risk="low" data-status="implementable"></section>'
+        '<h2 id="s9">S9</h2>'
+        '<section data-reckon="section" data-id="s9" data-effort-hours="0.5" '
+        'data-capability-version="1.0" data-capability-class="general" '
+        'data-capability-reasoning="standard" data-capability-verification="standard" '
+        'data-capability-risk="low" data-status="implementable"></section>'
+        '<section data-reckon="gates"><div class="r-gate" data-id="ship" '
+        'data-status="open" data-verdict="" data-gated-sections="s1">'
+        '<h4 class="r-gate-measure">approve the release</h4></div></section>'
+        "</body></html>"
     )
 
 
 @pytest.fixture()
-def fleet(tmp_path, monkeypatch):
+def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     home = tmp_path / "config"
     (home / "crew").mkdir(parents=True)
     monkeypatch.setenv("RECKON_HOME", str(home))
-    roots: dict[str, Any] = {}
+    roots: dict[str, Path] = {}
     mounts: dict[str, str] = {}
     item = 0
     for project in PROJECTS:
         root = tmp_path / project
         plans = root / "docs" / "plans"
         plans.mkdir(parents=True)
-        (plans / "sweep-plan.html").write_text(_plan_html("sweep-plan"), encoding="utf-8")
+        (plans / "sweep-plan.html").write_text(_plan_html(project), encoding="utf-8")
         (root / "seed.txt").write_text("seed\n", encoding="utf-8")
         for args in (
             ("init", "-q", "-b", "main"),
@@ -67,7 +89,7 @@ def fleet(tmp_path, monkeypatch):
         roots[project] = root
         mounts[project] = str(root / "docs")
         for index in range(ITEMS_PER_PROJECT):
-            run_id = f"{project}-run-{index:03d}"
+            run_id = f"{project}-{index:03d}"
             head = f"{item + 1:040x}"
             manifest = home / "manifests" / f"{run_id}.md"
             manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -75,6 +97,7 @@ def fleet(tmp_path, monkeypatch):
                 f"node: {run_id}\nstatus: complete\ncommits: [{head}]\n",
                 encoding="utf-8",
             )
+            session = SESSIONS[index % len(SESSIONS)]
             runs._write_json(
                 runs.pointer_path(run_id),
                 {
@@ -82,10 +105,15 @@ def fleet(tmp_path, monkeypatch):
                     "project": project,
                     "repo": str(root),
                     "worktree": str(root),
-                    "session": SESSION,
+                    "session": session,
                     "role": "implement",
-                    "process_alive": False,
+                    "phase": "queued",
+                    "queued_at": "2026-11-01T11:00:00Z",
+                    "plan": "sweep-plan",
+                    "section": "s1",
+                    "backend": "clive",
                     "launcher_host": "another-host",
+                    "process_alive": False,
                     "base_sha": head,
                     "manifest_path": str(manifest),
                     "node": {
@@ -101,64 +129,40 @@ def fleet(tmp_path, monkeypatch):
     return {"home": home, "roots": roots}
 
 
-def _sweep(project: str) -> list[dict[str, Any]]:
-    obligation_snapshot.sweep(
-        project,
-        sessions=[SESSION],
-        producer={
-            "pid": 1,
-            "pid_start_time": "1",
-            "session": SESSION,
-            "started_at": None,
-            "code_stamp": "sweep-test",
-        },
-        stream_offset=0,
-        transition_fired=True,
-        now=_now(),
-    )
-    state = obligation_snapshot.fleet_state(project, now=_now())
-    payload = obligation_snapshot.payload_for(state, SESSION)
-    return payload.get("obligations", [])
+@pytest.fixture
+def builds(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Count every roadmap composition, with the ordering's input cache always missing.
 
-
-@pytest.fixture()
-def builds(monkeypatch):
+    A sweep writes while it reads, so the inputs the ordering keys on move
+    between one session's payload and the next; the cache therefore misses and
+    the ordering composes the roadmap again unless the sweep's own read is
+    reused. Forcing a fresh input signature each time is that shape, so this
+    fixture measures the sweep rather than the ordering's cache.
+    """
     counted: list[str] = []
-    original_build = roadmap_module.build_roadmap
-    original_low = roadmap_module._build_roadmap
+    original = roadmap_module.build_roadmap
+    original_signature = queue_order._roadmap_input_signature
+    seen = itertools.count()
 
-    def counting(project, *a, **k):
+    def counting(project: str, *args: Any, **kwargs: Any) -> Any:
         counted.append(project)
-        return original_build(project, *a, **k)
+        return original(project, *args, **kwargs)
 
-    def counting_low(project, *a, **k):
-        counted.append(project)
-        return original_low(project, *a, **k)
+    def moving(docs_dir: Path, slugs: set[str], project: str) -> tuple[Any, ...]:
+        return (original_signature(docs_dir, slugs, project), next(seen))
 
     monkeypatch.setattr(roadmap_module, "build_roadmap", counting)
-    monkeypatch.setattr(roadmap_module, "_build_roadmap", counting_low)
+    monkeypatch.setattr(queue_order, "_roadmap_input_signature", moving)
     return counted
 
 
-def test_the_counter_sees_a_build(fleet, builds):
-    """The instrument fires on a build it was handed, so a zero means zero."""
-    docs_dir = fleet["roots"][PROJECTS[0]] / "docs"
-    with roadmap_module.roadmap_build_scope(
-        resolve_coordinators=False, classify_runs=False, audit_landings=False
-    ):
-        roadmap_module.build_roadmap(
-            PROJECTS[0], [], [], docs_dir=docs_dir, now=_now(), include_attempts=False
-        )
-    assert builds, "the counting instrument saw no build it was handed"
-
-
-def test_a_sweep_builds_each_project_roadmap_at_most_once(fleet, builds):
-    reported = {project: _sweep(project) for project in PROJECTS}
-    counts = {project: builds.count(project) for project in PROJECTS}
-    assert all(count <= 1 for count in counts.values()), counts
-    assert all(reported[project] for project in PROJECTS), {
-        project: len(reported[project]) for project in PROJECTS
-    }
+def _sweep(project: str):
+    state = obligation_snapshot.fleet_state(project, now=_now())
+    reported: dict[str, list[dict[str, Any]]] = {}
+    for session in SESSIONS:
+        payload = obligation_snapshot.payload_for(state, session)
+        reported[session] = payload.get("obligations", [])
+    return state, reported
 
 
 def _identity(items: list[dict[str, Any]]) -> list[tuple[str, str]]:
@@ -168,8 +172,35 @@ def _identity(items: list[dict[str, Any]]) -> list[tuple[str, str]]:
     )
 
 
-def test_a_second_sweep_reports_the_same_obligations(fleet, builds):
-    """Whatever the sweep reports is the same obligations a base sweep does."""
-    first = {project: _identity(_sweep(project)) for project in PROJECTS}
-    second = {project: _identity(_sweep(project)) for project in PROJECTS}
+def test_the_sweep_reaches_the_roadmap_it_counts(
+    fleet: dict[str, Any], builds: list[str]
+) -> None:
+    """The fixture's footfall proves the counter sees this path's builds."""
+    for project in PROJECTS:
+        _sweep(project)
+    assert {project: builds.count(project) for project in PROJECTS} == dict.fromkeys(
+        PROJECTS, 1
+    ), builds
+
+
+def test_a_sweep_builds_each_project_roadmap_at_most_once(
+    fleet: dict[str, Any], builds: list[str]
+) -> None:
+    for project in PROJECTS:
+        _sweep(project)
+    counts = {project: builds.count(project) for project in PROJECTS}
+    assert all(count <= 1 for count in counts.values()), counts
+
+
+def _reported(project: str) -> dict[str, list[tuple[str, str]]]:
+    _, reported = _sweep(project)
+    return {session: _identity(items) for session, items in reported.items()}
+
+
+def test_a_second_sweep_reports_the_same_obligations(
+    fleet: dict[str, Any], builds: list[str]
+) -> None:
+    first = {project: _reported(project) for project in PROJECTS}
+    second = {project: _reported(project) for project in PROJECTS}
     assert second == first
+    assert all(items for project in first.values() for items in project.values())
