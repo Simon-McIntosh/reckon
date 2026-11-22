@@ -32,7 +32,8 @@ from typing import Any
 import pytest
 
 from reckon import run_store
-from reckon.crew import dispatch_batch, section_holds
+from reckon.crew import dispatch_batch, recovery_stream, section_holds
+from reckon.crew.admission import readiness
 
 PROJECT = "proj"
 SECTION = "s1"
@@ -424,3 +425,67 @@ def test_a_named_plan_set_reads_those_plans_and_nothing_else(
         )
         == {}
     )
+
+
+def test_the_wait_verdict_asks_the_store_for_the_fields_it_decides_from(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The landing verdict projects onto identity and promoted revision.
+
+    The verdict asks which plan and section a row belongs to and which
+    revision promotion recorded for it. Reading the whole record instead put
+    the brief, the budget and every other document a run writes into the
+    batch's footprint, so the read must ask for the narrow set and the rows
+    it receives must carry nothing else.
+    """
+
+    (tmp_path / "home").mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    store = _store_with_deliveries(tmp_path / "store.db", DELIVERED)
+    monkeypatch.setenv("RECKON_RUN_STORE", str(store))
+    _reset_caches()
+
+    asked: list[dict[str, Any]] = []
+    owner = run_store.stored_run_rows
+
+    def recording(project: str, **kwargs: Any) -> Any:
+        asked.append(kwargs)
+        return owner(project, **kwargs)
+
+    monkeypatch.setattr(run_store, "stored_run_rows", recording)
+
+    rows = readiness._ledger_run_rows(PROJECT, DELIVERED_PLAN, None)
+
+    assert asked == [{"plan": DELIVERED_PLAN, "fields": readiness._LANDING_FIELDS}]
+    assert rows, "the plan's delivered row should be read"
+    assert set(rows[0]) <= set(readiness._LANDING_FIELDS)
+    assert "budget" not in rows[0]
+
+
+def test_the_lane_rate_read_asks_the_store_for_the_fields_it_rates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The lane advisory projects onto the five fields a rate is computed from."""
+
+    (tmp_path / "home").mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    store = _store_with_deliveries(tmp_path / "store.db", DELIVERED)
+    monkeypatch.setenv("RECKON_RUN_STORE", str(store))
+    _reset_caches()
+
+    asked: list[dict[str, Any]] = []
+    owner = run_store.stored_run_rows
+
+    def recording(project: str, **kwargs: Any) -> Any:
+        asked.append(kwargs)
+        return owner(project, **kwargs)
+
+    monkeypatch.setattr(run_store, "stored_run_rows", recording)
+
+    rows = recovery_stream._bounded_rate_rows(PROJECT, 0.0)
+
+    assert asked == [
+        {"fields": recovery_stream._RATE_FIELDS, "activity_since": 0.0}
+    ]
+    assert rows is not None and rows
+    assert "budget" not in rows[0]
