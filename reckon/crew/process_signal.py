@@ -1113,8 +1113,19 @@ def signal_worker(
     own_pid = os.getpid()
     ended: list[int] = []
     step_placed = _run_uses_step(run_dir)
+    # A placed run's step writes this record on the node that runs it, so its
+    # absence says the step has not started. Until then the client and the
+    # processes under it are this launch's own local tree — there is no step
+    # work to leave to the scheduler — and a stop that skipped them would leave
+    # the client waiting for an allocation that will never come.
+    step_started = run_dir is not None and (Path(run_dir) / "step-task.txt").exists()
     client_pid = _step_worker_client(run_dir) if step_placed else None
-    client_tree = set(_running_descendants(client_pid)) if client_pid else set()
+    for_every_step = step_placed and step_started
+    client_tree = (
+        set(_running_descendants(client_pid))
+        if client_pid and for_every_step
+        else set()
+    )
     identity = _step_worker_identity(run_dir) if client_pid is not None else None
     task_tree = set(_running_descendants(identity[1])) if identity else set()
     for target in targets:
@@ -1122,9 +1133,9 @@ def signal_worker(
             continue
         # Before worker.json exists, the spec still identifies a placed run.
         # Its supervisor may share a group with srun, so only its PID is safe.
-        if step_placed and target != pid:
+        if for_every_step and target != pid:
             continue
-        if step_placed and _process_comm(target) in (None, "srun", "bwrap"):
+        if for_every_step and _process_comm(target) in (None, "srun", "bwrap"):
             continue
         if _signal_one(
             target,

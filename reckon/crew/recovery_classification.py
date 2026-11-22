@@ -1574,6 +1574,37 @@ def _wait_no_reader_will_run(
     }
 
 
+def first_reported_line(*texts: str) -> str:
+    """The first non-empty line of the launcher's own report, or ``""``.
+
+    A refusal announces itself on its first line and what follows is the
+    reporter's own retry or stack detail, so the first line is the cause a
+    reader acts on where the tail is only the tail's fate. One reader serves
+    every launch reading — a launch failure's recorded ``stderr_tail`` and a
+    resume's launcher log — so the two cannot come to disagree about which line
+    of the same log is the reason.
+    """
+    for text in texts:
+        for line in str(text or "").splitlines():
+            stripped = line.strip()
+            if stripped:
+                return stripped[:500]
+    return ""
+
+
+def _resume_without_a_started_turn(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> dict[str, Any] | None:
+    """A resumed attempt whose worker has begun no turn, or None.
+
+    Deferred: the resumption module imports this one for the wait producer
+    bound, so the read is taken where it is used rather than at load.
+    """
+    from reckon.crew.resumption import resume_without_a_started_turn
+
+    return resume_without_a_started_turn(record, now_seconds=now_seconds)
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -3163,17 +3194,10 @@ def classify_pointer(
         # is its own retry or stack detail. The last line is the tail's fate
         # rather than its reason, which is what a tail-quoting reader used to
         # report.
-        error_lines = [
-            line.strip()
-            for line in str(latest.get("stderr_tail") or "").splitlines()
-            if line.strip()
-        ]
-        if not error_lines:
-            recorded = str((ended_exit or {}).get("detail") or "").strip()
-            error_lines = [
-                line.strip() for line in recorded.splitlines() if line.strip()
-            ]
-        launch_error = error_lines[0] if error_lines else ""
+        launch_error = first_reported_line(
+            str(latest.get("stderr_tail") or ""),
+            str((ended_exit or {}).get("detail") or ""),
+        )
         cause = launch_error or "the process exited before any turn"
         classification = "launch-failed"
         ended_during_launch = True
@@ -3317,6 +3341,31 @@ def classify_pointer(
                 f"before the worker acted; it ended on {quote!r}"
             )
             action = f"reckon crew resume --run {run_id} --advice continue"
+    elif (
+        alive is not False
+        and (not_started := _resume_without_a_started_turn(record, now_seconds=moment))
+        is not None
+    ):
+        # A resume records its launcher's pid and the working phase as soon as
+        # it spawns, so a launcher that is merely waiting — an srun client on a
+        # step the scheduler never started — reads as a live worker for as long
+        # as it waits, and nothing resumes the run. A turn begun is what makes
+        # a resumed run working; absent one past the bound, this is the launch
+        # that never started, and the launcher's own words are the reason.
+        classification = "launch-failed"
+        waited = not_started["age_seconds"]
+        bound = not_started["bound_seconds"]
+        launch_error = str(not_started["waiting_reason"] or "").strip()
+        detail = (
+            "a resume that never started: the launch has begun no turn in "
+            f"{waited}s, past the {bound}s bound, while its launcher "
+            f"{not_started.get('launcher_pid')!r} was never observed to end; "
+            f"the launcher's own reason: {launch_error}"
+        )
+        # No end was recorded, so the remedy is the resume that carries the
+        # attempt on rather than a discard: a run whose launcher is still
+        # waiting has nothing to throw away, and its session survives.
+        action = f"reckon crew resume --run {run_id} --advice continue"
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
