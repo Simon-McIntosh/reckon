@@ -127,7 +127,7 @@ reading; it is not evidence that the rows fail.</p>
 
 <h3 id="the-monitor-reads-each-fact-once-s12-negative-control">The negative control</h3>
 
-<p>&sect;12 asks for the same window with the old followers running, to show
+<p>The plan asks for the same window with the old followers running, to show
 the old figures. Both windows above <em>are</em> that arm: all twelve
 producers and twelve followers are live and inside the measured set. The old
 figures are visible in it &mdash; a follower reads 299&ndash;799&nbsp;MB/min
@@ -143,7 +143,7 @@ station alone is still 11.6&ndash;13.6&nbsp;GB/min and 90&ndash;105&nbsp;% of
 a core. The measurable next step is the store path the census names &mdash;
 the signature read re-scanning 1.166&nbsp;GB per call on every change, and
 <code>picker_runs</code> scanning the store twice. Until that reads only what
-changed, &sect;12's condition is not met and the producers are what keeps the
+changed, the plan's condition is not met and the producers are what keeps the
 fleet watched.</p>
 
 <h3 id="the-monitor-reads-each-fact-once-s12-artifacts">Artifacts</h3>
@@ -153,7 +153,14 @@ fleet watched.</p>
   <li>Census: <code>census-station-threads.log</code>, parsed by <code>census_threads.py</code>.</li>
   <li>Store probe: <code>store-call-cost.log</code>, produced by <code>probe_store_cost.py</code>.</li>
   <li>Instrument: <code>measure_crew_cost.py</code>.</li>
-  <li>All five live in the run directory <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>.</li>
+  <li>Reconciliation gate: <code>window-reconcile.log</code>, run at revision
+  <code>790a380eb7</code> by <code>test_window_reconciles_with_the_evidence.py</code>,
+  which re-reads both windows and asserts every figure above:
+  <code>4 passed in 1.48s</code>. Its first run caught a wrong digit in the
+  follower figure (799.5 against the log's 799.0), which is the check seeing
+  something known wrong before it is trusted with what is right.</li>
+  <li>All of these, and the reconciliation test itself, live in the run directory
+  <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>.</li>
 </ul>
 </section>
 </main>
