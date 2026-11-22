@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+  <meta name="node-id" content="wstea-a-queued-request-holds-no-process-until-it-holds-a-slot">
+  <title>A queued request holds no process until it holds a slot</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1 id="wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-heading">A queued request holds no process until it holds a slot</h1>
+
+    <p>Base revision <code>bfacff713aa38c3fe8eeb608d95944e67aa23e23</code>. Three arms: a
+    census of the live crew home at the base revision, a gate test that drives the real
+    admission pass over a temporary crew home against a stand-in router of width 4, and a
+    negative control that removes the allowance hold and turns the gate test red.</p>
+
+    <h2 id="wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-census">Census at the base revision</h2>
+    <p>Every live pointer in the shared crew home was read from the base revision's code and
+    each queued, held, waiting and awaiting-upstream request was tested for a process by two
+    facts: a live pointer pid, and any operating-system process whose command line names the
+    run id. Instrument: <code>census.py</code> in the run directory; log
+    <code>census-base.log</code>.</p>
+    <table>
+      <thead><tr><th>Reading</th><th>Figure</th></tr></thead>
+      <tbody>
+        <tr><td>Live pointers</td><td>79</td></tr>
+        <tr><td>Queued / held requests</td><td>19</td></tr>
+        <tr><td>Queued / held requests holding a process</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>Positive control on the instrument: against a temporary crew home holding one queued
+    pointer whose pid is a live process, the same script reports
+    <code>queued/held requests holding a process: 1</code>
+    (<code>census-positive-control.log</code>), so the zero above is a reading and not an
+    empty scan.</p>
+
+    <h2 id="wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-gate">Gate: 20 queued requests against a router of width 4</h2>
+    <p><code>tests/test_a_launch_waits_for_a_slot.py</code> queues 20 requests in a temporary
+    crew home, publishes the router's remaining worker slots as the width less the workers
+    already live, and runs six admission passes. Each pass starts a real long-lived stand-in
+    process per launched request, so a live process is a worker and never the test's own
+    interpreter. At every pass it reads:</p>
+    <ul>
+      <li>live workers at most the router's width plus two (4 + 2);</li>
+      <li>every queued request carries no pid and no process start time;</li>
+      <li>the set of pid fields on launched pointers equals the set of live stand-in process
+      pids — so no request that is still queued owns a process.</li>
+    </ul>
+    <p>The final phase reaps one stand-in process, publishes the freed slot, and reads the head
+    of the queue admitted into it. Gate log <code>gate.log</code>: <code>1 passed in 160.29s</code>,
+    <code>EXIT=0</code>.</p>
+
+    <h2 id="wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-negative">Negative control</h2>
+    <p>Mutation: <code>reckon/crew/admission/holds.py</code> <code>_session_room_read</code>
+    returns <code>(None, "mutated: the lane's allowance is not read", "")</code>, so the pass
+    treats every queued request as admissible. The gate test fails on the first pass with
+    20 live workers against the width of 4. Log <code>negative-control.log</code>; it ends
+    <code>EXIT=1</code> with <code>FAILED tests/test_a_launch_waits_for_a_slot.py</code>.
+    The mutation was reverted by restoring the saved file; the product tree carries no
+    unstaged change at <code>git status</code>.</p>
+
+    <h2 id="wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-fleet">The one-hour full-lane fleet measure is not run here</h2>
+    <p>This node ran as a 75-minute worker on a compute allocation, not on the fleet node, so
+    it could not hold a one-hour window at a full lane. The measure a later node needs: read
+    the live worker count (launched pointers whose pid is alive) against the router's published
+    worker slots every five minutes for one hour at a full lane, and require every reading at
+    most the slots plus two. Recorded under <code>outside_scope</code> in the manifest with the
+    same wording, so the coordinator can dispatch it.</p>
+  </main>
+</body>
+</html>
