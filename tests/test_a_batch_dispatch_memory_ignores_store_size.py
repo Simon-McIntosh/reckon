@@ -293,21 +293,32 @@ def test_doubling_the_store_does_not_change_what_the_batch_decodes(
     )
 
 
-def test_the_history_index_keeps_a_bounded_number_of_answers() -> None:
-    """A process that asks about many plan sets holds the last few, not all.
+def test_the_history_index_is_the_shared_bounded_map() -> None:
+    """The index uses the repository's bounded map, not a cache of its own.
 
     The index is keyed by the plans it was asked about, and the plan set comes
     from the caller: a coordinator that dispatches for several projects, or
     queues batches naming different plans, would otherwise keep one entry per
     question for the life of the process, each holding the delivered nodes of
-    its plans. Dropping an answer costs a store read and never an answer, so the
-    map is capped; this holds the cap and the eviction order.
+    its plans. The repository already owns a bounded, least-recently-used map
+    that its parses share, so this asks the module for that map rather than for
+    a second container with its own bound and its own eviction order; a cold
+    read is then ``file_memo.clear()`` for every cache in the process, which is
+    what a caller asking for one means.
 
     The cap is read from the module rather than written here so the case does
     not restate a constant the code owns.
     """
 
-    section_holds._HISTORY_READS.clear()
+    from reckon import file_memo
+
+    held = section_holds._HISTORY_READS
+    assert isinstance(held, file_memo.BoundedMap), (
+        "the section-hold index must be the repository's bounded map, so its "
+        "bound, its lock and its cold-read path are shared with every other "
+        "cache rather than restated here"
+    )
+    held.clear()
     cap = section_holds._HISTORY_READ_ENTRIES
     stamp = (1, 2)
     questions = [
@@ -315,18 +326,21 @@ def test_the_history_index_keeps_a_bounded_number_of_answers() -> None:
         for index in range(cap * 3)
     ]
     for index, key in enumerate(questions):
-        section_holds._remember_history_index(
-            key, stamp, {(f"plan-{index}", SECTION): {}}
-        )
+        held.put(key, (stamp, {(f"plan-{index}", SECTION): {}}))
 
-    assert len(section_holds._HISTORY_READS) == cap
-    assert questions[-1] in section_holds._HISTORY_READS
-    assert questions[0] not in section_holds._HISTORY_READS
-    # Re-asking an old question moves it to the newest position rather than
-    # adding a second entry for it.
-    section_holds._remember_history_index(questions[-1], stamp, {})
-    assert len(section_holds._HISTORY_READS) == cap
-    section_holds._HISTORY_READS.clear()
+    assert len(held) == cap
+    assert held.get(questions[-1]) is not None
+    assert held.get(questions[0]) is None
+    # Reading an old question marks it as the newest rather than adding a
+    # second entry for it, so the next insertion drops the oldest one instead.
+    assert held.get(questions[-2]) is not None
+    held.put(questions[0], (stamp, {}))
+    assert len(held) == cap
+    assert held.get(questions[-2]) is not None
+    assert held.get(questions[-cap]) is None
+
+    file_memo.clear()
+    assert len(held) == 0, "a cold read must empty the index with the rest of the memo"
 
 
 def test_a_node_with_no_delivery_costs_no_row_decode(
@@ -359,4 +373,54 @@ def test_a_node_with_no_delivery_costs_no_row_decode(
     assert len(decoded) == 0, (
         "a node with no delivered row decoded rows: "
         f"{len(decoded)} rows in a {DELIVERED + 1}-row store"
+    )
+
+
+def test_a_named_plan_set_reads_those_plans_and_nothing_else(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A hold read given the plans it judges decodes those plans' rows only.
+
+    The hold read narrows to the plans its caller names, one store read per
+    plan, and holds only the sections those plans carry. A store that holds
+    nothing for the project at all is a different answer: the plan's rows are
+    not held out of a larger population, the store has no history for the
+    project, so the read falls through to the committed ledger rather than
+    reporting every named node as free.
+    """
+
+    (tmp_path / "home").mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    store = _store_with_deliveries(tmp_path / "store.db", DELIVERED)
+    monkeypatch.setenv("RECKON_RUN_STORE", str(store))
+    _reset_caches()
+    decoded = _decoded_rows(monkeypatch)
+
+    whole = section_holds.held_section_blockers(PROJECT, None)
+    population = len(decoded)
+    decoded.clear()
+    named = section_holds.held_section_blockers(
+        PROJECT, None, history_plans=(DELIVERED_PLAN,)
+    )
+
+    assert population == DELIVERED + 1
+    assert len(decoded) == 1, (
+        "the named-plan read decoded rows outside the plan it named: "
+        f"{len(decoded)} rows in a {DELIVERED + 1}-row store"
+    )
+    assert {plan for plan, _section in named} == {DELIVERED_PLAN}
+    assert {plan for plan, _section in whole.keys() - named.keys()} == set(OTHER_PLANS)
+
+    # A store the project has no history in answers nothing, and the read must
+    # then consult the committed ledger rather than read the named plans' nodes
+    # as free. The ledger here holds no run, so the fallback answers empty.
+    empty = tmp_path / "empty.db"
+    run_store.RunStore(empty).close()
+    monkeypatch.setenv("RECKON_RUN_STORE", str(empty))
+    _reset_caches()
+    assert (
+        section_holds.held_section_blockers(
+            PROJECT, None, history_plans=(DELIVERED_PLAN,)
+        )
+        == {}
     )

@@ -20,6 +20,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from reckon import file_memo
 from reckon._plan_html import section_record_id
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
@@ -143,20 +144,6 @@ def _attach_plans(project: str, rows: list[dict[str, Any]]) -> list[dict[str, An
     return rows
 
 
-#: The section-hold index per project and filter, held with the run store's
-#: change token it was read at. The queue ordering rebuilds the roadmap
-#: whenever a plan input moves, which is most ticks, and every rebuild asks this
-#: module which nodes are held. Those answers come from the run store, which
-#: gains a few rows an hour, so a token that has not moved answers a rebuild
-#: without reading the store; a promotion replaces the entry rather than
-#: accumulating one per change. What is kept is the index a hold decision turns
-#: on — one small record per delivered node — and not the decoded rows it was
-#: built from, which is the term a batch's peak resident memory turned on.
-_HISTORY_READS: dict[
-    tuple[str, str, str | None, str | None, tuple[str, ...] | None],
-    tuple[tuple[int, ...], dict[tuple[str, str], dict[str, dict[str, Any]]]],
-] = {}
-
 #: How many distinct questions the index answers from memory. A process that
 #: dispatches for many projects, or over many plan sets, would otherwise keep one
 #: entry per question for its whole life, and each entry holds the delivered
@@ -166,17 +153,23 @@ _HISTORY_READS: dict[
 #: number of distinct plan sets it has ever seen.
 _HISTORY_READ_ENTRIES = 4
 
-
-def _remember_history_index(
-    key: tuple[str, str, str | None, str | None, tuple[str, ...] | None],
-    stamp: tuple[int, ...],
-    index: dict[tuple[str, str], dict[str, dict[str, Any]]],
-) -> None:
-    """Hold one answer, dropping the oldest when the map is full."""
-    _HISTORY_READS.pop(key, None)
-    _HISTORY_READS[key] = (stamp, index)
-    while len(_HISTORY_READS) > _HISTORY_READ_ENTRIES:
-        del _HISTORY_READS[next(iter(_HISTORY_READS))]
+#: The section-hold index per project and filter, held with the run store's
+#: change token it was read at. The queue ordering rebuilds the roadmap
+#: whenever a plan input moves, which is most ticks, and every rebuild asks this
+#: module which nodes are held. Those answers come from the run store, which
+#: gains a few rows an hour, so a token that has not moved answers a rebuild
+#: without reading the store; a promotion replaces the entry rather than
+#: accumulating one per change. What is kept is the index a hold decision turns
+#: on — one small record per delivered node — and not the decoded rows it was
+#: built from, which is the term a batch's peak resident memory turned on.
+#:
+#: The store is the repository's one bounded map, so a process that reads this
+#: index and a process that reads a memoised parse share a lock and a bound,
+#: and ``file_memo.clear()`` empties both — which is what a caller asking for a
+#: cold read means.
+_HISTORY_READS = file_memo.bounded_map(
+    "crew-section-hold-index", limit=_HISTORY_READ_ENTRIES
+)
 
 
 def _store_history_rows(
@@ -320,7 +313,7 @@ def _history_index(
         }
     result = dict(index)
     if stamp is not None and run_store.store_stamp() == stamp:
-        _remember_history_index(key, stamp, result)
+        _HISTORY_READS.put(key, (stamp, result))
     return result
 
 
