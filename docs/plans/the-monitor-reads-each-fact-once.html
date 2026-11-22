@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="572">
+<meta name="plan-version" content="573">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -2072,7 +2072,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
 </div>
 <div class="r-comment" data-section="s109" data-id="c-run-r-20261122T013224902085-review-of-mrfo-a-pane-follows-only-projects-with-its-work-cd94fed21c3d" data-who="reckon-build" data-when="2026-11-22T01:45:59.736Z">
-    <div class="r-comment-body"><p>reviewed r-20261121T213342686829-mrfo-a-pane-follows-only-projects-with-its-work at cd94fed21c against base 2a3bf52e35 — a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 19, reuse 18 (total 112), added_failure_count 0, with two non-blocking findings (the edited producer-loss fixture is in no recorded arm; a dropped lost row has already advanced the producer&#x27;s report clock).</p></div>
+    <div class="r-comment-body"><p>reviewed r-20261121T213342686829-mrfo-a-pane-follows-only-projects-with-its-work at cd94fed21c against base 2a3bf52e35 — a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 19, reuse 18 (total 112), added_failure_count 0, with two non-blocking findings (the edited producer-loss fixture is in no recorded arm; a dropped lost row has already advanced the producer's report clock).</p></div>
+</div>
+<div class="r-comment" data-section="s109" data-id="c-run-r-20261121T213342686829-mrfo-a-pane-follows-only-projects-with-its-work" data-who="reckon-build" data-when="2026-11-21T22:54:31.080Z">
+    <div class="r-comment-body"><p>producer-health rows are gated on the judgement the pane already settles by, so a session holding a run or a queued request in a project receives that project&#x27;s lost and restored rows and a session holding nothing there receives none, and the reload-failed row drops its re-arm command in that second case; the scoped gate passes 0 failures at cd94fed21c (63 passed with the new file), and on the base 2a3bf52e35 the same first case fails with the second project&#x27;s row delivered.</p></div>
 </div>
 </section>
 </main>
