@@ -1,0 +1,41 @@
+<section id="a-read-costs-what-changed-s35">
+  <h2>Verified the version, raw and section read skip dependency resolution</h2>
+
+  <p id="a-read-costs-what-changed-s35-what"><strong>What this node found.</strong>
+  The product change this section names is already in the base revision: commit
+  <code>e491453a67</code> added <code>with_deps</code> to
+  <code>reckon/mcp.py</code>'s <code>_read_plan</code> and set it false for every
+  view but <code>summary</code> and <code>detail</code>. No product edit was needed.
+  What was missing was a control on the instrument: the test asserted
+  <code>builds == 0</code> against a counter that had never been shown to record a
+  build, so a counter wired to nothing would have produced the same zero the guard
+  produces.</p>
+
+  <p id="a-read-costs-what-changed-s35-instrument"><strong>The added control.</strong>
+  <code>tests/test_a_version_read_pays_only_its_version.py</code> gains a case that
+  resolves the target plan's own section refs through the path the guarded reads
+  skip — the parse counter sees <code>alpha</code>, <code>beta</code>,
+  <code>gamma</code> (three referenced plans, not one) — then builds the project
+  index directly and sees the build counter move. The guarded figures are now an
+  absence the instrument could have contradicted.</p>
+
+  <p id="a-read-costs-what-changed-s35-mutation"><strong>Declared mutation.</strong>
+  Restoring dependency resolution for the version view (
+  <code>with_deps=True</code> at the view's call site) fails all three view cases with
+  a closing <code>EXIT=1</code>: the counter reads four parses,
+  <code>['target', 'alpha', 'beta', 'gamma']</code>, where the guard allows one. The
+  build counter still reads zero under this mutation, because a section ref now
+  resolves through the persisted index one plan at a time rather than by rebuilding
+  the project — the property the three cases guard is the parse bound, and that is
+  what turns red.</p>
+
+  <p id="a-read-costs-what-changed-s35-measure"><strong>Timed arms.</strong>
+  A cold <code>view="version"</code> read of
+  <code>docs/plans/the-monitor-shows-the-work-it-watches.html</code> in a scratch copy
+  of this repository's docs tree, on <code>all_debug</code> job
+  <code>1337584</code>: <strong>1.092 s</strong> with resolution restored and
+  <strong>0.890 s</strong> as the base revision stands. The plan's 27.7 s and the
+  earlier 16.079 s figures were both taken before section refs resolved per plan, so
+  the guard's marginal saving at this revision is 0.2 s; its value here is that the
+  read parses one document instead of four, whatever the index cost beneath it.</p>
+</section>
