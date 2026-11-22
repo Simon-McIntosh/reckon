@@ -286,3 +286,72 @@ def test_a_landing_attempt_an_hour_ago_keeps_the_claim(
     row = _verdicts(result)[REQUEST_ID]
     assert row["verdict"] == "held-on-claim", row
     assert HOLDER_ID in str(row["detail"]), row
+
+
+def _review_record_for(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, age_hours: float
+) -> Path:
+    """Stand in for the review store, answering one record of this test's own.
+
+    The store is read through the module object, so replacing its lookup here
+    exercises the same path a real record travels: a review written an hour ago
+    must restart the day, because a review is somebody still acting on the run.
+    """
+    from reckon.crew import review_records
+
+    record = tmp_path / "review-record.json"
+    record.write_text(json.dumps({"run_id": HOLDER_ID, "status": "reviewed"}), "utf-8")
+    written = time.time() - age_hours * HOUR
+    os.utime(record, (written, written))
+    monkeypatch.setattr(
+        review_records,
+        "stored_records_for_run",
+        lambda _project, run_id: [(record, {"run_id": run_id})],
+    )
+    return record
+
+
+def test_a_review_an_hour_ago_keeps_the_claim(
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A review is a coordinator acting on the run, so its write restarts the day."""
+    _, resolve = _config_for()
+    _harness_sessions(tmp_path, monkeypatch)
+    _queue_the_request(admit_repo)
+    _delivered_holder(admit_repo, tmp_path)
+    _review_record_for(monkeypatch, tmp_path, age_hours=1.0)
+    probe = _LaunchProbe(monkeypatch)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    assert probe.attempts == [], "a reviewed run is still being acted on"
+    row = _verdicts(result)[REQUEST_ID]
+    assert row["verdict"] == "held-on-claim", row
+    assert HOLDER_ID in str(row["detail"]), row
+
+
+def test_an_unreadable_review_store_keeps_the_claim(
+    admit_repo: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A store that cannot be read is no evidence of quiet, so the claim stands."""
+    from reckon.crew import review_records
+
+    _, resolve = _config_for()
+    _harness_sessions(tmp_path, monkeypatch)
+    _queue_the_request(admit_repo)
+    _delivered_holder(admit_repo, tmp_path)
+
+    def _unreadable(_project: str, _run_id: str) -> list[tuple[Path, dict[str, Any]]]:
+        raise RuntimeError("the review index cannot be read")
+
+    monkeypatch.setattr(review_records, "stored_records_for_run", _unreadable)
+    probe = _LaunchProbe(monkeypatch)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    assert probe.attempts == [], "an unreadable store must never release a path"
+    row = _verdicts(result)[REQUEST_ID]
+    assert row["verdict"] == "held-on-claim", row
+    assert HOLDER_ID in str(row["detail"]), row

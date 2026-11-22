@@ -32,6 +32,7 @@ from reckon.crew.process_liveness import (
     LIVENESS_SESSION_WALK,
     record_process_liveness,
 )
+from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES, parse_manifest
 from reckon.crew.runs import (
     _write_json,
     pointer_path,
@@ -177,9 +178,10 @@ def widen_claim(
 
 
 #: The manifest statuses that count as a delivery: the worker finished its turn
-#: and wrote down what it did. A failed run has delivered nothing a coordinator
-#: can land, so its claim is judged by the settled rules alone.
-DELIVERED_MANIFEST_STATUSES = frozenset({"complete", "blocked"})
+#: and wrote down what it did. The vocabulary is owned by the manifest reader,
+#: and a failed run has delivered nothing a coordinator can land, so its claim
+#: is judged by the settled rules alone.
+DELIVERED_MANIFEST_STATUSES = TERMINAL_MANIFEST_STATUSES - {"failed"}
 
 #: How long a delivered run's claim survives with no coordinator action. The
 #: worktree's unlanded work is still promotable after this and the run keeps its
@@ -422,8 +424,16 @@ def lapsed_claim_reason(
 
 
 def _delivered_status(pointer: Mapping[str, Any]) -> str:
-    """The run's delivered manifest status, or empty when it has not delivered."""
-    from reckon.crew.reports import ManifestParseError, parse_manifest
+    """The run's delivered manifest status, or empty when it has not delivered.
+
+    The fresh-manifest read is the same pair of steps
+    :func:`reckon.crew.dispatch_claims.stopped_with_terminal_manifest` composes,
+    and it is written the same way here — the pointer's attempt baseline, then
+    the parser — so both answer from one manifest vocabulary and one set of
+    failures. What differs is the accepted statuses, which is why the status
+    word is returned rather than a verdict, and why liveness is not judged here:
+    the caller has already read the dispatching session's own record.
+    """
     from reckon.crew.runs import _manifest_freshness
 
     present, fresh = _manifest_freshness(pointer)
@@ -433,12 +443,11 @@ def _delivered_status(pointer: Mapping[str, Any]) -> str:
     try:
         status = str(
             parse_manifest(
-                manifest.read_text(encoding="utf-8", errors="replace"),
-                path=str(manifest),
+                manifest.read_text(encoding="utf-8"), path=str(manifest)
             ).get("status")
             or ""
         )
-    except (OSError, ManifestParseError, ValueError):
+    except (OSError, ValueError):
         return ""
     return status if status in DELIVERED_MANIFEST_STATUSES else ""
 
