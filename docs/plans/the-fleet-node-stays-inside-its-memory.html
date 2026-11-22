@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -217,6 +217,18 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261118T001329090851-unowned-scratch-is-reclaimed" data-who="reckon-build" data-when="2026-11-18T04:31:54Z">
     <div class="r-comment-body"><p>After durable intent acknowledgement, reclamation now repeats the fail-closed descendant activity walk immediately before deletion and records a retained refusal for changed, fresh or unreadable activity. The reviewed closed-write race reproduced before repair; both closed-write controls retain their payload with unchanged root ctime, no live pointer and no open writer. All 36 focused tests and both 94-test gates pass; the 93-file importer head has the same 22 failing IDs as baseline (1147 head passes versus 1123 baseline), adding zero failures. The declared ownership mutation fails four tests.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261122T150408085199-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229-figure" data-who="reckon-build" data-when="2026-11-22T15:14:52.821Z">
+    <div class="r-comment-body"><p>figure review of r-20261122T132006158090 at 9789802832297325fbf0462903aa60189cdd1b99: parsed, six rubric items recorded, one blocking finding (threshold label over the base bar) and three non-blocking</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261122T150322200259-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229" data-who="reckon-build" data-when="2026-11-22T15:16:31.985Z">
+    <div class="r-comment-body"><p>stored a parsed independent review for run r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size at head 9789802832: scores goal_fidelity 7, evidence 8, scope_discipline 20, durability 17, fit 18, reuse 19; one blocking finding (the node's peak done_when is not met: eight-entry head/base 1.10 against at most 0.5, store doubling +11.4% and plan doubling +19.0% against under 10%) and two non-blocking findings (unresolvable scratch revision in the arm log headers; an unbounded _HISTORY_READS cache key).</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261122T173004854496-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-0e368058cdbc-figure" data-who="reckon-build" data-when="2026-11-22T17:35:40.921Z">
+    <div class="r-comment-body"><p>Figure review of r-20261122T132006158090 at head 0e368058: the threshold annotation now renders clear of the left panel's bars, so the earlier blocking collision recorded against head 9789802 is gone; six rubric items answered, no blocking finding, three non-blocking findings (unexplained absent base bar in the plan-doubled group, differing panel y limits and tick precision, caption calling a dotted rule 'dashed'); record parsed and anchored to base 0d4e5085 and head 0e368058.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261122T172924263306-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-0e368058cdbc" data-who="reckon-build" data-when="2026-11-22T17:37:35.675Z">
+    <div class="r-comment-body"><p>review record for r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size stored at both declared paths, verdict partial — one of three peak criteria (eight-entry ratio 0.496) and the row-decode test hold, while the store-doubling (+17.1 %) and plan-doubling (+15.7 %) criteria remain over the 10 % allowed.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
 </div>
@@ -333,12 +345,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111352964502-the-admission-service-holds-steady-memory" data-who="reckon-build" data-when="2026-11-17T13:01:27Z">
     <div class="r-comment-body"><p>Each section verdict now reads only its own plan's runs: readiness._ledger_run_rows calls ledger.load(project, plan=slug) and caches under (project, plan), so the store narrows in SQL before any row is decoded. On a copy of the live crew home, 100 consecutive admission passes at 13b1d2bdc8 held resident at 1304825856 B after the hundredth against 1304825856 B after the tenth (growth_ratio 1.0, within_twenty_percent true, under_four_gib true, peak_resident_bytes 2045972480 in 656.0 s), decoding 441.9 run_store rows per pass where the base revision decoded 21148.7 on the same input over three passes, at a resident peak of 4619415552 B against the head's 2009300992 B.</p></div>
-</div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261122T150408085199-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229-figure" data-who="reckon-build" data-when="2026-11-22T15:14:52.821Z">
-    <div class="r-comment-body"><p>figure review of r-20261122T132006158090 at 9789802832297325fbf0462903aa60189cdd1b99: parsed, six rubric items recorded, one blocking finding (threshold label over the base bar) and three non-blocking</p></div>
-</div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261122T150322200259-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229" data-who="reckon-build" data-when="2026-11-22T15:16:31.985Z">
-    <div class="r-comment-body"><p>stored a parsed independent review for run r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size at head 9789802832: scores goal_fidelity 7, evidence 8, scope_discipline 20, durability 17, fit 18, reuse 19; one blocking finding (the node&#x27;s peak done_when is not met: eight-entry head/base 1.10 against at most 0.5, store doubling +11.4% and plan doubling +19.0% against under 10%) and two non-blocking findings (unresolvable scratch revision in the arm log headers; an unbounded _HISTORY_READS cache key).</p></div>
 </div>
 </section>
 </main>

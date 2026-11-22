@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:981 queue_plan -> queue_batch",
+    "reckon/crew_dispatch_commands.py:1221 crew dispatch --batch/--plan selects queue_batch",
+    "reckon/roadmap.py:3857 _build_roadmap -> held_section_blockers(history_plans=...)",
+    "reckon/crew/section_holds.py:404 held_section_blockers"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T17:29:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": 38,
+      "severity": "blocking",
+      "text": "blocking: two of the three peak criteria the done_when names still fail on the prepared home - doubling the store's delivered-run rows raises the head's forty-entry peak 17.1 % and doubling the plan documents raises it 15.7 %, both against the under-10 % the section allows - so the node's measure is not met and it cannot land as satisfying section 14; only the eight-entry ratio (0.496) and the row-decode test hold."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 170,
+      "severity": "non-blocking",
+      "text": "non-blocking: _remember_history_index and its _HISTORY_READ_ENTRIES constant duplicate the capability of reckon/file_memo.py:584 BoundedMap, a bounded least-recently-used map the repository already owns and already uses at reckon/run_store.py:1117 and reckon/ledger.py:1770; the addition should wrap or use file_memo.bounded_map rather than add a second bounded cache with its own eviction rule and its own reset path in _reset_caches."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 272,
+      "severity": "non-blocking",
+      "text": "non-blocking: the non-empty history_plans narrowing branch (the per-plan _store_history_rows loop and its missing-plan ledger fallback) has no test that exercises it - no test passes history_plans or sets a non-empty roadmap_history_scope - so a regression in that read would redden nothing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size/after_suite-0e368058.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite gate log carries a bare 'revision:' first line and a closing EXIT=0, but no literal command and no tree line, so the done_when's requirement that each arm's log carry its literal command is unmet for this arm; the command survives only in the manifest's after_suite JSON."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size/manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite.result_line quotes '58 passed in 147.62s', but the cited baseline_suite-repair.log summarises '58 passed in 39.47s' and no on-disk log carries 147.62s as a result line, so a metric the record quotes cannot be reconciled with the log it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the one production caller of held_section_blockers at reckon/roadmap.py:3857, the batch entry points at reckon/crew/dispatch_batch.py:981 and reckon/crew_dispatch_commands.py:1221, and that the per-entry duplicate check survives independently at reckon/crew/dispatch_batch.py:1190 held_node_rows.",
+    "diff": "Read the delta commit by commit against 9789802832: 8cbe6e99f2 caps _HISTORY_READS at four answers via _remember_history_index; c9dc42d370 moves the figure's threshold label clear of the bars; 0e368058cd re-seeds the measurement at recorded promotion widths and rewrites the fragment; and read the wider 0d4e5085..0e368058 range the delta sits in.",
+    "done_when": "The done_when names three peak criteria plus the row-decode test; measure/logs13/{base-8,head-8,head-40,head-40-store2,head-40-plans2,base-40,base-40-store2}.log each carry a resolved revision, a literal command and a closing EXIT= line, measure/criteria.py reads a ratio of 0.4962, a store rise of 0.1707, a plan rise of 0.1573 and a control of 0.4979, so one criterion and the row-decode test pass and two criteria fail; after_suite-0e368058.log records 61 passed at the head.",
+    "goal": "The node goal is 'bound a batch dispatch's peak memory by the plans it names'; the delta's bounded history index at reckon/crew/section_holds.py:167 and the empty-history scope at reckon/crew/dispatch_batch.py:1056 cut the store read (measure/logs13 head-8 decodes 191 rows against 30,903 at the base) and halve the eight-entry peak (3.12 to 1.55 GiB, ratio 0.496), but the peak still rises 17.0 % when the store doubles and 15.7 % when the plan set doubles, so the bounding property the goal names does not hold on the prepared home.",
+    "manifest": "Read; status complete, the manifest records the nine commits, the seven-arm sweep on rigel job 1337416, baseline_suite 58 passed at 0d4e5085 and after_suite 61 passed at 0e368058 (both exit 0, no failure ids), though its baseline_suite result_line quotes a summary the cited log does not contain.",
+    "write_paths": "The declared write paths are reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, reckon/roadmap.py, tests/test_a_batch_dispatch_memory_ignores_store_size.py, the evidence fragment and the figure directory; the delta 9789802832..0e368058 touches only section_holds.py, the test file, dispatch-peaks.svg and the fragment, all inside the fence."
+  },
+  "justifications": {
+    "durability": "The decode-count cases fail at 0d4e5085 (negative-control-0d4e5085.log, 2 failed, EXIT=1) and the cap case fails when 8cbe6e99f2's own file is reverted (negative-control-8cbe6e99f2.log, 1 failed, EXIT=1), but the non-empty history_plans branch at reckon/crew/section_holds.py:272 has no test.",
+    "evidence": "measure/logs13 records all three criteria with resolved revisions and criteria.py derives 0.4962/0.1707/0.1573 plus a 0.4979 negative control, so the gate measures the done_when and records the two misses honestly, though after_suite-0e368058.log:1 omits the literal command the done_when requires.",
+    "fit": "_remember_history_index and the added case follow the surrounding module style, and roadmap_history_scope at reckon/roadmap.py:3389 mirrors the existing roadmap_build_scope idiom with no plan, sprint or ticket identifier in source.",
+    "goal_fidelity": "The empty-history scope at reckon/crew/dispatch_batch.py:1056 cuts decoded rows from 30,903 to 191 and the eight-entry ratio to 0.496, but the peak still grows 17.0 % with the store and 15.7 % with the plan set, so the invariant the goal names fails.",
+    "reuse": "_remember_history_index at reckon/crew/section_holds.py:170 re-implements the bounded least-recently-used map that reckon/file_memo.py:584 BoundedMap already owns and that reckon/run_store.py:1117 and reckon/ledger.py:1770 already use.",
+    "scope_discipline": "Every path in git diff 9789802832..0e368058 is one of the declared write paths, and no file outside the fence appears in any delta commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is 'bound a batch dispatch's peak memory by the plans it names'; the delta's bounded history index at reckon/crew/section_holds.py:167 and the empty-history scope at reckon/crew/dispatch_batch.py:1056 cut the store read (measure/logs13 head-8 decodes 191 rows against 30,903 at the base) and halve the eight-entry peak (3.12 to 1.55 GiB, ratio 0.496), but the peak still rises 17.0 % when the store doubles and 15.7 % when the plan set doubles, so the bounding property the goal names does not hold on the prepared home.\nVERDICT done_when: The done_when names three peak criteria plus the row-decode test; measure/logs13/{base-8,head-8,head-40,head-40-store2,head-40-plans2,base-40,base-40-store2}.log each carry a resolved revision, a literal command and a closing EXIT= line, measure/criteria.py reads a ratio of 0.4962, a store rise of 0.1707, a plan rise of 0.1573 and a control of 0.4979, so one criterion and the row-decode test pass and two criteria fail; after_suite-0e368058.log records 61 passed at the head.\nVERDICT write_paths: The declared write paths are reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, reckon/roadmap.py, tests/test_a_batch_dispatch_memory_ignores_store_size.py, the evidence fragment and the figure directory; the delta 9789802832..0e368058 touches only section_holds.py, the test file, dispatch-peaks.svg and the fragment, all inside the fence.\nVERDICT manifest: Read; status complete, the manifest records the nine commits, the seven-arm sweep on rigel job 1337416, baseline_suite 58 passed at 0d4e5085 and after_suite 61 passed at 0e368058 (both exit 0, no failure ids), though its baseline_suite result_line quotes a summary the cited log does not contain.\nVERDICT diff: Read the delta commit by commit against 9789802832: 8cbe6e99f2 caps _HISTORY_READS at four answers via _remember_history_index; c9dc42d370 moves the figure's threshold label clear of the bars; 0e368058cd re-seeds the measurement at recorded promotion widths and rewrites the fragment; and read the wider 0d4e5085..0e368058 range the delta sits in.\nCALL_SITES: reckon/crew/dispatch_batch.py:981 queue_plan -> queue_batch, reckon/crew_dispatch_commands.py:1221 crew dispatch --batch/--plan selects queue_batch, reckon/roadmap.py:3857 _build_roadmap -> held_section_blockers(history_plans=...), reckon/crew/section_holds.py:404 held_section_blockers\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: the empty-history scope at reckon/crew/dispatch_batch.py:1056 cuts decoded rows from 30,903 to 191 and the eight-entry ratio to 0.496, but the peak still grows 17.0 % with the store and 15.7 % with the plan set, so the invariant the goal names fails.\nSCORE evidence: 15\nJUSTIFICATION evidence: measure/logs13 records all three criteria with resolved revisions and criteria.py derives 0.4962/0.1707/0.1573 plus a 0.4979 negative control, so the gate measures the done_when and records the two misses honestly, though after_suite-0e368058.log:1 omits the literal command the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 9789802832..0e368058 is one of the declared write paths, and no file outside the fence appears in any delta commit.\nSCORE durability: 15\nJUSTIFICATION durability: the decode-count cases fail at 0d4e5085 (negative-control-0d4e5085.log, 2 failed, EXIT=1) and the cap case fails when 8cbe6e99f2's own file is reverted (negative-control-8cbe6e99f2.log, 1 failed, EXIT=1), but the non-empty history_plans branch at reckon/crew/section_holds.py:272 has no test.\nSCORE fit: 17\nJUSTIFICATION fit: _remember_history_index and the added case follow the surrounding module style, and roadmap_history_scope at reckon/roadmap.py:3389 mirrors the existing roadmap_build_scope idiom with no plan, sprint or ticket identifier in source.\nSCORE reuse: 5\nJUSTIFICATION reuse: _remember_history_index at reckon/crew/section_holds.py:170 re-implements the bounded least-recently-used map that reckon/file_memo.py:584 BoundedMap already owns and that reckon/run_store.py:1117 and reckon/ledger.py:1770 already use.\nFINDING docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html:38 blocking: two of the three peak criteria the done_when names still fail (+17.1 % store doubling, +15.7 % plan doubling, against under 10 %), so the node's measure is not met.\nFINDING reckon/crew/section_holds.py:170 non-blocking: _remember_history_index duplicates reckon/file_memo.py:584 BoundedMap instead of using file_memo.bounded_map.\nFINDING reckon/crew/section_holds.py:272 non-blocking: the non-empty history_plans narrowing branch has no test that exercises it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size/after_suite-0e368058.log:1 non-blocking: the after_suite log carries no literal command or tree line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size/manifest.md:21 non-blocking: baseline_suite.result_line quotes '58 passed in 147.62s', which the cited log does not contain (it says 39.47s).\n",
+  "review_run_id": "r-20261122T172924263306-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-0e368058cdbc",
+  "reviewed_base_sha": "9789802832297325fbf0462903aa60189cdd1b99",
+  "reviewed_head_sha": "0e368058cdbca497c168dcba732c559b09681f59",
+  "reviewed_run_id": "r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size",
+  "reviewer_run_id": "r-20261122T172924263306-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-0e368058cdbc",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T17:38:11.088477+00:00",
+  "total": 84
+}
