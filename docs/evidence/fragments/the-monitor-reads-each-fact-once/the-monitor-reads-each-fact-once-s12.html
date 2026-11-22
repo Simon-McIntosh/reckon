@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s12">
+  <meta name="evidence-verdict" content="fail">
+  <meta name="evidence-date" content="2026-11-22">
+  <meta name="evidence-commit" content="790a380eb7">
+  <title>The cutover window on the fleet node: the bound is not met | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-monitor-reads-each-fact-once-s12-cutover-window">
+<h2>The cutover window on the fleet node: the bound is not met</h2>
+
+<p><strong>The decision.</strong> The retirement is withheld and the
+per-project producers stay. The station carries the rows, but its cost is not
+inside the bound this plan sets, and the condition for retiring the
+producers &mdash; that the station cost the node less than they do &mdash; is
+not met either: measured on the fleet node the station alone reads
+<strong>11,645&ndash;13,622 MB/min</strong> against a bound of 20, and the
+twelve producers together read a further
+<strong>10,702&ndash;6,469 MB/min</strong>.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-measure">The measure, and the two windows</h3>
+
+<p>Both windows were taken on the fleet node (<code>98dci4-clu-3026</code>,
+job <code>1319168</code>) with the RCA's section 2 instruments unchanged:
+per-process <code>/proc/&lt;pid&gt;/io</code> <code>rchar</code> deltas and
+<code>utime+stime</code> deltas from <code>/proc/&lt;pid&gt;/stat</code> over
+60&nbsp;s, and six process-state samples 10&nbsp;s apart. Processes are
+selected on adjacent argv tokens &mdash; <code>crew station</code>,
+<code>crew watch</code>, <code>crew follow</code> &mdash; never on a substring
+of the command line, so the station, twelve producers and twelve followers
+are counted and nothing else is. The second window ran on the station's reload
+image built at 07:40:36Z, which carries byte-identical copies of
+<code>reckon/ledger.py</code>, <code>run_store.py</code>,
+<code>crew/station.py</code>, <code>station_store.py</code>,
+<code>_backends.py</code> and <code>crew/recovery_watch.py</code> as revision
+<code>790a380eb7</code>, so the figures describe this revision's code rather
+than an older image. The first window began 24&nbsp;s before that image was
+built; the two windows agree to about a tenth, so the boundary does not change
+the reading.</p>
+
+<table>
+  <thead><tr><th>Window</th><th>Station</th><th>Producers</th><th>Followers</th><th>All three</th><th>CPU, all three</th></tr></thead>
+  <tbody>
+    <tr><td>1, 07:40:12Z, 71 live pointers</td><td>11,645 MB/min</td><td>10,702 MB/min</td><td>299 MB/min</td><td>22,646 MB/min</td><td>262&nbsp;% of one core</td></tr>
+    <tr><td>2, 07:45:57Z, 68 live pointers</td><td>13,622 MB/min</td><td>6,469 MB/min</td><td>799 MB/min</td><td>20,889 MB/min</td><td>208&nbsp;% of one core</td></tr>
+  </tbody>
+</table>
+
+<figure>
+  <img src="/reckon/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/cutover-window-against-the-bound.svg"
+       alt="Read volume and CPU of the station, the producers and the followers against the cutover bound, in two 60 s windows">
+  <figcaption>Two 60&nbsp;s windows on the fleet node with 71 and 68 live pointers,
+  measured 2026-11-22. Read volume is <code>rchar</code>; <code>read_bytes</code> was
+  0.000&nbsp;MB in every arm, so nothing was refetched from the file server and every
+  byte counted came from the page cache. The bound over all monitor processes
+  together is 20&nbsp;MB/min and 5&nbsp;% of one core, drawn dotted. Read volume is on
+  a log axis because the measurement is three decades above the bound.</figcaption>
+</figure>
+
+<p>The two windows agree to about a tenth on the total and on the station's
+share, so neither is a transient. Both are far outside the bound: 1,000 times
+the read volume and 40 times the CPU.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-control">The instrument seen counting before any absence is claimed</h3>
+
+<p>Each window's log opens with a positive control in the measuring process
+itself: a known 197-byte file is read and the <code>rchar</code> delta is
+printed. Both windows report <code>rchar_delta=300</code> for that 197-byte
+file, so a small or zero total could not have been a counter that stopped
+working. Neither total is zero, and six producer seats in each window read
+nothing at all: an idle seat inside the measured set is a quiet process, not a
+dead instrument.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-attribution">Where the station's bytes go</h3>
+
+<p><code>strace -f -ff -yy -e trace=read,pread64</code> over 10&nbsp;s,
+aggregated by path over one file per thread, puts <strong>90&nbsp;% of the
+station's reads in two files</strong>: <code>run_store.db</code>
+(37.8&nbsp;MB, 47.6&nbsp;%, 1.16&nbsp;GB on disk) and
+<code>run_store.archive.db</code> (33.6&nbsp;MB, 42.3&nbsp;%, 504&nbsp;MB). The
+rest of the sample is the per-project review index (7.0&nbsp;MB, 8.8&nbsp;%)
+and run documents. The trace's own total is lower than the process's
+<code>rchar</code> delta for the same period because ptrace slows the tick, so
+what it is used for is the share and not the rate.</p>
+
+<p>A direct probe of the read path, run at this revision against the live store
+and timed with <code>/proc/self/io</code>, gives the per-call cost the tick
+pays. One <code>run_store.stored_run_signature("reckon")</code> &mdash; 12,929
+rows &mdash; reads <strong>1,165,905,463</strong> bytes, the whole 1.166&nbsp;GB
+store, in 2.2&nbsp;s; a second call reads 1,165,626,178 bytes again.
+<code>ledger.picker_runs("reckon")</code> reads 2,319,775,486 bytes, two whole
+scans of it. A smaller project (imas-efit, 1,538 rows) costs 61&nbsp;MB and
+168&nbsp;MB respectively.</p>
+
+<p>The mechanism is in <code>reckon/ledger.py</code> and
+<code>reckon/run_store.py</code>: <code>stored_history</code> calls
+<code>stored_run_signature</code> whenever the store's change stamp moves, the
+stamp moves on every write to the store, and the signature query selects
+<code>LENGTH</code> for every row of the project across the live table and the
+attached archive. About ten such calls a minute account for the station's
+measured read volume, which is why the tick is not steady state even though
+every stream reader now resumes from its cursor.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-other-clauses">The other two clauses</h3>
+
+<p><strong>D-state.</strong> Window 2 has a monitor process in state D in four
+of its six samples &mdash; the station itself is one of them, at
+<code>cxiWaitEventWait</code> &mdash; so "no crew monitor process appears in six D-state samples" fails. Window
+1 had one of six.</p>
+
+<p><strong>The rows.</strong> The pane replay against a recorded hour of
+today's event log was not run. The cutover it would qualify is withheld on the
+cost clause, and &sect;11 already recorded the rows carried (100 of 100) at
+that earlier attempt. Recording the replay as unmeasured is the honest
+reading; it is not evidence that the rows fail.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-negative-control">The negative control</h3>
+
+<p>&sect;12 asks for the same window with the old followers running, to show
+the old figures. Both windows above <em>are</em> that arm: all twelve
+producers and twelve followers are live and inside the measured set. The old
+figures are visible in it &mdash; a follower reads 299&ndash;799&nbsp;MB/min
+and the producer set 6,469&ndash;10,702&nbsp;MB/min, against the RCA's
+&sect;2 figures of 100&ndash;130&nbsp;MB/min per follower and up to
+612&nbsp;MB/min per producer. There is no after arm to compare, because the
+station alone is already 580 times the bound.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-next">What would move it</h3>
+
+<p>Retiring the producers does not reach the bound: after that retirement the
+station alone is still 11.6&ndash;13.6&nbsp;GB/min and 90&ndash;105&nbsp;% of
+a core. The measurable next step is the store path the census names &mdash;
+the signature read re-scanning 1.166&nbsp;GB per call on every change, and
+<code>picker_runs</code> scanning the store twice. Until that reads only what
+changed, &sect;12's condition is not met and the producers are what keeps the
+fleet watched.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-artifacts">Artifacts</h3>
+
+<ul>
+  <li>Windows: <code>before-window.log</code>, <code>before-window-2.log</code>.</li>
+  <li>Census: <code>census-station-threads.log</code>, parsed by <code>census_threads.py</code>.</li>
+  <li>Store probe: <code>store-call-cost.log</code>, produced by <code>probe_store_cost.py</code>.</li>
+  <li>Instrument: <code>measure_crew_cost.py</code>.</li>
+  <li>All five live in the run directory <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>.</li>
+</ul>
+</section>
+</main>
+</body>
+</html>
