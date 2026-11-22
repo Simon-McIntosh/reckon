@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-title" content="The control loop on the fleet, 22 November">
+  <meta name="plan-summary" content="Measured on the live fleet after the work landed: a dispatch preview takes 13.9 s against a 30 s bound, and an admission pass 205.4 s, a review launch 1,421.9 s and the readiness read 39.6 s against theirs. Three of the four bounds are not met; each miss names the stage that caused it, and the readiness miss sits in pointer classification over the run store, not in the landing audit.">
+  <meta name="plan-evidence-for" content="reckon:dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-verifies" content="reckon:dispatch-admission-and-landing-take-seconds#s9">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="not-met">
+  <meta name="plan-tags" content="crew,admission,landing,measurement,fleet">
+  <title>The control loop on the fleet — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="dispatch-admission-and-landing-take-seconds-s9" data-reckon="landed" data-when="2026-11-22">
+  <h2 id="dispatch-admission-and-landing-take-seconds-s9-title">The control loop on the fleet, 22 November</h2>
+  <p id="dispatch-admission-and-landing-take-seconds-s9-figure">Every measure the research record took on 16 November was taken
+    again on the live fleet on 22 November, at revision <code>3a0f33d362</code>, between 07:07 and 08:16 UTC. Three dispatch
+    previews had a median of <strong>13.863 s</strong> against a bound of 30 s. Ten admission receipts had a median pass of
+    <strong>205.4 s</strong> against a bound of 20 s. Three reads of one declaration write's readiness report took 28.9 s, 39.6 s
+    and 99.4 s, median <strong>39.6 s</strong> against a bound of 30 s. One plan's rows came back from the run store in
+    <strong>9.22 s</strong>, returning 1,055 of 12,925. Over 24 hours, 82 runs recorded a delivery and the 90th percentile
+    from delivery to review launch was <strong>1,421.9 s</strong> against a bound of 600 s. One bound is met, the preview,
+    and three of the four are missed.</p>
+
+  <p id="dispatch-admission-and-landing-take-seconds-s9-admission">The admission miss is in the launch stage. A pass's own
+    decision work — release and wait together — has a median of 61.7 s, already three times the bound, and the launch stage
+    adds 7.2 s to 372.1 s on top: every receipt that names a slowest step names <code>dispatch</code> at 101 to 261 s for a
+    single launched run, while a dry-run preview of the same plans takes 13.9 s. The service restarted mid-sample (six
+    receipts on one code stamp, four on the next) and both stamps miss the bound. Every receipt also reports 2.33 GiB to
+    7.99 GiB resident against the 2 GiB threshold it sheds memory at, read after that shedding had already run.</p>
+
+  <p id="dispatch-admission-and-landing-take-seconds-s9-reads">The per-read times the receipts now carry do not account for
+    the time. Release's named reads sum to 0.86 s to 9.05 s of a release stage that ran 15.4 s to 93.9 s, and every named
+    read together — release, wait and the lost-session reads — sums to 1.06 s to 10.41 s of a pass that took 29.0 s to
+    434.1 s. So the receipt that names its reads still cannot say where its own minutes go: the time is inside stages the
+    receipt does not break down, and for the largest passes inside the dispatch call each launch makes.</p>
+
+  <p id="dispatch-admission-and-landing-take-seconds-s9-review">The review miss is in the request, not the launch, which is
+    the split the record asked for so the two could be told apart. Across the 24 hours to 07:44 UTC, 419 candidate runs
+    were read from the store, 82 recorded a delivery, 75 were requested and launched, and 7 were never requested. Delivery
+    to request had a median of 44.9 s and a 90th percentile of 1,037.3 s; request to launch had 76.0 s and 189.2 s. The
+    worst case was a run delivered at 21:35 on 20 November whose review was requested the next morning. All seven
+    unrequested runs carry one obligation reason: the run has no live pointer, so no sweep reaches it to ask.</p>
+
+  <p id="dispatch-admission-and-landing-take-seconds-s9-readiness">The readiness read misses its bound too, and not in the
+    place the sections aimed at. Three reads of the same helper took 28.9 s against a snapshot of the store, then 39.6 s and
+    99.4 s against the live store, median 39.6 s against 30 s. The landing audit is not the cost: it found eleven plans
+    holding runs, one declared done section among them, and <strong>zero</strong> promoted rows to compare ancestry for, so
+    it ran against nothing and made zero git probes. The cost is discovery over live pointers — <code>classify_pointer</code>
+    at 92.0 s over 176 calls inside a profiled 108.9 s call — and each classification reads the run store, where
+    <code>stored_run_rows</code> took 80.8 s over 207 calls and <code>_refuse_owed_migration</code> 77.5 s of it over 177.
+    The same helper against a quieter store is 28.9 s, so the miss scales with the store's load rather than being a fixed
+    cost. Two further reads beside these — 42.9 s and 14.7 s on a clone with cold git caches, 53.3 s and 32.0 s on a docs
+    root with no repository — are dominated by the first git object read and are not the same operation. §9 stays open on
+    all three misses, each recorded against the stage that caused it.</p>
+
+  <p id="dispatch-admission-and-landing-take-seconds-s9-method">The measures are the baseline's, taken the same way. The
+    previews ran with <code>RECKON_HOME</code> at a temporary config home whose crew directories are symlinks to the live
+    ones, because the worker fence makes the live crew home read-only — under the live home they failed three times at
+    about 8.8 s with <code>OSError: Read-only file system</code> on a watch lock, which is the reading rather than a
+    measurement. The receipts were accumulated from the verdict log, which trims at 1 MiB and holds about six passes, so a
+    single read cannot supply ten. The store read ran against a node-local SQLite backup of the hot store and its archive,
+    three times, each returning the same 1,055 rows as the exhaustive filter over the same snapshot. The census enumerated
+    candidates from the run store rather than by walking the crew home, and counted a delivery from the
+    <code>delivery_recorded</code> stage receipt. Every heavy step ran on <code>rigel</code>.</p>
+
+  <p id="dispatch-admission-and-landing-take-seconds-s9-negative">What could have made a reading false was checked. A
+    census with an empty or unknown population reports null lags rather than zeros, so a quiet window cannot read as a fast
+    one. The sampler targets ten distinct passes, so a nine-receipt set fails the section's read floor rather than being
+    averaged. The previews ran with <code>--local</code> so the picker's routing cost was not inside a preview-cost measure,
+    and created no worktree and no live pointer (two of each before, two after). The readiness read was repeated under a
+    profile to separate the landing audit from the rest of the helper, and the audit's own ancestor probes were counted, so
+    a cheap audit is distinguished from an audit that was asked nothing.</p>
+</article>
+</body>
+</html>
