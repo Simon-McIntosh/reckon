@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "caption_note": "The figcaption is substantive: it names the window (2026-11-22T08:00Z to 12:00Z), the source (the same ledger spans the mean is computed over), the marked bound of 12 and mean of 1.15, and the trace's position within the bound's scale. It does not merely repeat the figure's title.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T12:55:30Z",
+  "figures_reviewed": [
+    "docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.svg"
+  ],
+  "findings": [
+    {
+      "file": "docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py",
+      "line": 90,
+      "severity": "non-blocking",
+      "summary": "The y-axis is pinned to 0-14 (set_ylim(0, max(14, peak + 2))) while the trace peaks at 6, so roughly the upper half of the plot area is empty and the worker-count detail occupies the lower half. Non-blocking and exempted: the bound of 12 is the figure's subject, the caption states the trace never leaves the bound's lower scale, and the 0-6 levels remain individually readable, so the empty band is a deliberate, documented choice rather than a defect that stops a reader."
+    },
+    {
+      "file": "docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py",
+      "line": 92,
+      "severity": "non-blocking",
+      "summary": "The dashed mean reference at 1.15 sits just above the trace wherever the worker count is 1, so the two run close together along most of the width. Non-blocking and exempted: the trace is drawn on top (zorder 3 over the mean's 2) and remains visible, and the closeness is inherent to a mean that lands just above the modal count."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T125423848761-review-of-work-flows-to-the-lane-s67-23ad2ecbc28c-figure",
+  "reviewed_base_sha": "790a380eb77a2f01baaeed15ba1d793954be2acb",
+  "reviewed_head_sha": "23ad2ecbc28c4d2c47690867947791dbfb82ebc2",
+  "reviewed_run_id": "r-20261122T072450492220-work-flows-to-the-lane-s67",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "Pass \u2014 the near-black mean label and the mid-grey bound label both sit on white with ample contrast; no text sits over a filled or dark region.",
+    "data_ink": "Pass \u2014 the blue step trace is the heaviest mark and carries the visual weight; the empty band between the trace's peak of 6 and the bound of 12 follows from drawing the bound at its true value, which is the figure's subject, and the caption states the trace never leaves the lower part of the bound's scale.",
+    "decoration": "Pass \u2014 no gradient, background fill, grid or styled theme; axes are despined and only the trace and the two reference lines carry ink.",
+    "label_collision": "Pass \u2014 no label is clipped at the canvas edge, overlaps another label, or sits over plotted data; the mean label was lifted clear of the data and the rendered image shows it above the dashed line and clear of the trace, and 'bound 12' is right-aligned inside the canvas.",
+    "legibility": "Pass \u2014 the step trace over time reads at a glance: axis labels carry their quantities ('working workers', 'hours into the window'), direct labels name the mean (1.15) and the bound (12), and every worker-count level from 0 to 6 is individually distinguishable.",
+    "table_form": "Pass \u2014 a per-minute step trace against time is naturally a chart, not a table."
+  },
+  "scores_note": "A figure review records item verdicts, not the six landed-node dimension scores.",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T12:59:24.734548+00:00",
+  "total": null
+}
