@@ -131,9 +131,16 @@ def _change_one_row(index: int = 0, scale: int = 1) -> None:
 
 
 def _cursor() -> int:
-    """The sequence number the project's signature has reached."""
+    """The sequence number the project's signature has reached.
+
+    An implementation whose signature carries no sequence number answers zero,
+    which asks for the whole signature, as its readers ask for it.
+    """
     signature = run_store.stored_run_signature(PROJECT) or ()
-    return max((int(row[14]) for row in signature), default=0)
+    return max(
+        (int(row[14]) for row in signature if len(row) > 14),
+        default=0,
+    )
 
 
 def _base_signature() -> list[tuple[Any, ...]]:
@@ -184,7 +191,7 @@ def _signature_rows() -> dict[str, tuple[Any, ...]]:
     return {
         str(row[0]): tuple(row)
         for row in (run_store.stored_run_signature(PROJECT) or ())
-        if row[13]
+        if len(row) <= 13 or row[13]
     }
 
 
