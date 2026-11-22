@@ -638,6 +638,199 @@ def _link_environment(repo: Path, tree: Path) -> None:
         link.symlink_to(environment)
 
 
+_ENV_PROGRAM_ARGUMENTS = frozenset({"-C", "-u", "-S"})
+
+
+# Commands a POSIX shell starts itself rather than finding on PATH. They carry
+# no file for ``shutil.which`` to find, yet the shell that receives the gate
+# command runs them, so they count as startable.
+_SHELL_BUILTINS = frozenset(
+    {
+        ":",
+        "[",
+        "alias",
+        "bg",
+        "break",
+        "cd",
+        "continue",
+        "echo",
+        "eval",
+        "exec",
+        "exit",
+        "export",
+        "false",
+        "fg",
+        "getopts",
+        "hash",
+        "jobs",
+        "kill",
+        "pwd",
+        "read",
+        "readonly",
+        "return",
+        "set",
+        "shift",
+        "test",
+        "times",
+        "trap",
+        "true",
+        "type",
+        "ulimit",
+        "umask",
+        "unalias",
+        "unset",
+        "wait",
+    }
+)
+
+
+_SHELL_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+
+def gate_program(command: str) -> str | None:
+    """The program a shell command starts, or None when it names none.
+
+    The command is tokenised the way a shell tokenises it, leading ``NAME=value``
+    assignments are skipped, and an ``env`` wrapper is unwrapped with its own
+    arguments, so a command written as ``env -C <tree> .venv/bin/python ...``
+    reports the interpreter rather than ``env``. A command that does not
+    tokenise names nothing this can resolve, and None says so.
+    """
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return None
+    index = 0
+    while index < len(argv) and _SHELL_ASSIGNMENT.match(argv[index]):
+        index += 1
+    if index >= len(argv):
+        return None
+    if Path(argv[index]).name == "env":
+        index += 1
+        while index < len(argv):
+            token = argv[index]
+            if token in _ENV_PROGRAM_ARGUMENTS:
+                index += 2
+                continue
+            if token.startswith("-"):
+                index += 1
+                continue
+            if _SHELL_ASSIGNMENT.match(token):
+                index += 1
+                continue
+            return token
+        return None
+    return argv[index]
+
+
+def resolve_gate_program(
+    command: str,
+    *,
+    tree: Path,
+    roots: Sequence[str | Path] = (),
+    interpreter: str | None = None,
+) -> dict[str, Any]:
+    """Resolve the program a gate command starts against the tree it will run in.
+
+    A stored gate command names its interpreter relatively — ``.venv/bin/python``
+    — because that is where the worker's own checkout carries it. The merged-head
+    replay runs in a tree that may hold no ``.venv`` at all, and a shell asked to
+    start a path the tree does not carry exits 127 before the gate measures
+    anything. So the program is resolved here first, against the tree being
+    measured and then against the runs' recorded roots, and any relative spelling
+    that resolves is rewritten to the absolute path it found, leaving every other
+    word of the command untouched.
+
+    Two fallbacks keep the environment interpreter reachable when no checkout
+    carries a link: the resolved ``.venv`` of any seat (a provisioned worktree's
+    link reaches the one real environment), and the interpreter running this
+    process, which is the environment the promotion itself runs under. Both apply
+    only to a program whose name reads as a Python interpreter, so a relative
+    path naming anything else is never silently replaced by something else.
+
+    The result states which program was named, the seats it was looked in, the
+    absolute path it resolved to (None when nothing could start it), and where it
+    came from, so a caller that cannot start it can name both the program and the
+    tree rather than reporting a failure the merged revision did not cause.
+    """
+    from reckon.crew.fleet_supervisor import resolved_environment
+
+    program = gate_program(command)
+    seats: list[str] = [str(tree)]
+    seats.extend(str(root) for root in roots if str(root).strip())
+    resolution: dict[str, Any] = {
+        "program": program,
+        "seats": seats,
+        "resolved": None,
+        "source": None,
+    }
+    if program is None:
+        return resolution
+    path = Path(program).expanduser()
+    if "/" not in program:
+        found = shutil.which(program)
+        if found is not None:
+            resolution.update(resolved=found, source="path")
+        elif program in _SHELL_BUILTINS:
+            resolution.update(resolved=program, source="shell builtin")
+        return resolution
+    candidates = [path] if path.is_absolute() else [Path(seat) / path for seat in seats]
+    for candidate in candidates:
+        if _executable_file(candidate):
+            resolution.update(resolved=str(candidate), source="tree")
+            return resolution
+    if path.name.startswith("python"):
+        for seat in seats:
+            seat_path = Path(seat)
+            try:
+                relative = path.relative_to(seat_path) if path.is_absolute() else path
+            except ValueError:
+                continue
+            if not relative.parts or relative.parts[0] != ".venv":
+                continue
+            environment = resolved_environment(seat_path)
+            candidate = environment.joinpath(*relative.parts[1:])
+            if _executable_file(candidate):
+                resolution.update(
+                    resolved=str(candidate), source=f"environment of {seat}"
+                )
+                return resolution
+        if (
+            interpreter
+            and Path(interpreter).name.startswith("python")
+            and _executable_file(Path(interpreter))
+        ):
+            resolution.update(
+                resolved=str(interpreter), source="the measuring interpreter"
+            )
+    return resolution
+
+
+def _executable_file(path: Path) -> bool:
+    try:
+        return path.is_file() and os.access(path, os.X_OK)
+    except OSError:
+        return False
+
+
+def rewrite_gate_program(command: str, program: str, replacement: str) -> str:
+    """Replace the command's program with an absolute one, and nothing else.
+
+    The replacement is applied to the first whole-token occurrence only, at a
+    path boundary, so a program name that also appears inside an argument — a
+    test path, a quoted expression — is left alone. The replacement is quoted for
+    the shell, and a resolved path equal to the recorded spelling is a no-op, so a
+    command that already ran correctly replays byte-identically.
+    """
+    if not program or not replacement or program == replacement:
+        return command
+    pattern = re.compile(r"(?<![\w./-])" + re.escape(program) + r"(?![\w./-])")
+    match = pattern.search(command)
+    if match is None:
+        return command
+    return command[: match.start()] + shlex.quote(replacement) + command[match.end() :]
+
+
 def measure_timeout(config: Mapping[str, Any] | None) -> float:
     """The wall-clock bound for one measurement subprocess, in seconds.
 

@@ -8,6 +8,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -57,6 +58,60 @@ _PARTITION_RECEIPT = re.compile(r"^EXIT=(-?\d+)\s*$", re.MULTILINE)
 # What a job's log states when its submission never reached the command, so a
 # missing receipt and a receipt that says so report the same status.
 _UNREADABLE_JOB_STATUS = 3
+
+
+# The status a POSIX shell exits with when it cannot find the program it was
+# told to start. It is not a verdict on anything the program would have read.
+_SHELL_PROGRAM_NOT_FOUND_STATUS = 127
+
+
+_NOT_FOUND_LINE = re.compile(
+    r"(?:^|\n)[^\n:]*: (?:\d+: |line \d+: )?(\S+): (?:command )?not found"
+)
+
+
+def _not_found_program(output: str) -> str | None:
+    """The program a shell's ``not found`` line names, or None.
+
+    Used only when the replay exited 127, so the line it reads is the shell's
+    own account of what it could not start rather than a string a test printed.
+    """
+    match = _NOT_FOUND_LINE.search(output or "")
+    return match.group(1) if match else None
+
+
+def _program_not_found_reason(
+    resumed: Mapping[str, Any],
+    *,
+    tree: Path,
+    exit_status: int | None = None,
+) -> str:
+    """State that the gate never started, naming the program and the tree.
+
+    A shell that cannot start the gate's program exits 127, which a reader takes
+    for a gate that ran and failed — measured 2026-11-22, a command naming
+    ``.venv/bin/python`` in a merged-head tree that carried none was reported as
+    a gate the merge had changed, and the refusal sent the coordinator into the
+    merge for a missing file. The seats are named too, because that is where the
+    program was looked for and therefore where a reader would put it.
+    """
+    program = resumed.get("program") or "its program"
+    seats = [str(seat) for seat in resumed.get("seats") or ()]
+    looked = ", ".join(seats) if seats else str(tree)
+    if exit_status == _SHELL_PROGRAM_NOT_FOUND_STATUS:
+        outcome = (
+            "The shell reported it as not found (exit status 127) before the "
+            "gate started"
+        )
+    else:
+        outcome = "The gate never started"
+    return (
+        f"the gate command names the program {program!r}, which does not exist "
+        f"in the tree being measured or where it was looked for ({looked}). "
+        f"{outcome}: this is not a verdict on the merge and nothing about the "
+        "merged revision has been measured. Run the gate from a tree that can "
+        "start its program, or record a command whose program the tree carries"
+    )
 
 
 def run_worker_gate(
@@ -559,6 +614,9 @@ def _merged_gate_finding(
     failure_ids: Sequence[str] = (),
     timed_out: bool = False,
     replay_elapsed_seconds: float | None = None,
+    not_started: bool = False,
+    missing_program: str | None = None,
+    tree: str | None = None,
 ) -> dict[str, Any] | None:
     """The divergence a merge-time re-run exists to surface, or None.
 
@@ -599,6 +657,26 @@ def _merged_gate_finding(
             "accepted"
         ),
     }
+    if not_started:
+        # Nothing was measured at the merged head, so there is no divergence to
+        # attribute to the merge: the finding's prose must not send a
+        # coordinator looking for code that changed a gate that never ran.
+        program = missing_program or "its program"
+        seat = f" in {tree}" if tree else ""
+        finding["message"] = (
+            f"the gate could not be started at the integrated revision "
+            f"{integrated_revision[:12]}: the command names {program!r}, which "
+            f"does not exist{seat}, so nothing was measured at the merged head "
+            "and this is not a finding about the merge. Re-run the gate from a "
+            "tree that can start its program — or record a command naming a "
+            "program the tree carries — rather than looking for a code change "
+            "the merge did not make"
+        )
+        finding["gate_not_started"] = True
+        if missing_program:
+            finding["missing_program"] = missing_program
+        if tree:
+            finding["tree"] = tree
     if failure_ids:
         finding["failure_ids"] = list(failure_ids)
     if timed_out:
@@ -876,6 +954,17 @@ def _rerun_gate_at_integrated_revision(
     being replayed before the command executes, and ``worktree_roots_rewritten``
     names the ones the rewrite replaced.
 
+    The command's program is resolved before delivery to the shell, because a
+    worker records its environment interpreter relatively — ``.venv/bin/python``
+    — and the merged-head tree may hold no such link. A relative spelling that
+    resolves against the checkout, one of the recorded roots, a resolved
+    ``.venv`` or the measuring interpreter is rewritten to the absolute path it
+    found, and the report names the program, the seats it was looked in and the
+    path it resolved to. A command whose program resolves nowhere is reported as
+    a gate that did not start, naming the program and the tree it was looked for
+    in, and never as a gate the merge changed; an exit status of 127 from the
+    shell is read the same way.
+
     The re-run's own output is kept when ``replay_log_path`` is given: the
     command that ran, the captured stdout and stderr, and the exit status go to
     that path under a header naming the revision, the tree, and the command,
@@ -924,6 +1013,13 @@ def _rerun_gate_at_integrated_revision(
         "replay_bound_seconds": bound_seconds,
         "recorded_gate_seconds": recorded_gate_seconds,
         "ran": False,
+        "gate_started": False,
+        "gate_program": None,
+        "gate_program_seats": [],
+        "gate_program_source": None,
+        "gate_program_rewritten": None,
+        "missing_program": None,
+        "measure_partition": None,
         "exit_status": None,
         "timed_out": False,
         "replay_elapsed_seconds": None,
@@ -983,130 +1079,194 @@ def _rerun_gate_at_integrated_revision(
     else:
         reason = None
         checkout_root = Path(repository).expanduser().resolve()
+        report["checkout_tree"] = str(checkout_root)
+        report["gate_program"] = None
         replayed, rewritten_roots = _rewrite_worktree_roots(
             command, roots=worktree_roots, checkout=checkout_root
         )
         report["worktree_roots_rewritten"] = list(rewritten_roots)
-        landing = _replay_landing(checkout_root)
-        declared = str(landing.get("measure_partition") or "").strip()
-        selected = ""
-        executor = run or subprocess.run
-        job_log: Path | None = None
-        environment: dict[str, str] | None = None
-        if declared:
-            from reckon.crew.landing_measure import partition_submission
-
-            job_log = _replay_job_log(replay_log_path)
-            selected, argv, environment = partition_submission(
-                script=_partition_replay_script(replayed),
-                partition=declared,
-                long_partition=str(landing.get("measure_long_partition") or "rigel"),
-                bound_seconds=bound_seconds,
-                chdir=checkout_root,
-                log_path=job_log,
-            )
-            timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
-        else:
-            argv = ["sh", "-c", replayed]
-            timeout = bound_seconds
-        report["measure_partition"] = selected or "in-place"
-        header = _replay_log_header(
-            replay_command=replayed,
-            checkout=checkout_root,
-            checkout_revision=report["checkout_revision"],
-            integrated_revision=report["integrated_revision"],
-            rewritten_roots=rewritten_roots,
-            partition=selected,
+        from reckon.crew.landing_measure import (
+            resolve_gate_program,
+            rewrite_gate_program,
         )
-        started = time.monotonic()
-        try:
-            result = executor(
-                argv,
-                cwd=str(checkout_root if job_log is not None else repository),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                check=False,
-                timeout=timeout,
-                **({"env": environment} if environment is not None else {}),
+
+        resumed = resolve_gate_program(
+            replayed,
+            tree=checkout_root,
+            roots=worktree_roots,
+            interpreter=sys.executable,
+        )
+        report["gate_program"] = resumed["program"]
+        report["gate_program_seats"] = list(resumed["seats"])
+        report["gate_program_source"] = resumed["source"]
+        if resumed["program"] is not None and resumed["resolved"] is None:
+            report["missing_program"] = resumed["program"]
+            reason = _program_not_found_reason(resumed, tree=checkout_root)
+            header = _replay_log_header(
+                replay_command=replayed,
+                checkout=checkout_root,
+                checkout_revision=report["checkout_revision"],
+                integrated_revision=report["integrated_revision"],
             )
-        except subprocess.TimeoutExpired as expired:
-            elapsed = time.monotonic() - started
-            report.update(ran=True, timed_out=True, replay_elapsed_seconds=elapsed)
-            partial = expired.output if isinstance(expired.output, str) else ""
-            if job_log is not None and environment is not None:
-                # sbatch --wait prints the id before waiting; stop that job only.
-                identifier = re.match(r"^(\d+)(?:;[^\n]*)?(?:\n|$)", partial)
-                if identifier:
-                    executor(
-                        ["scancel", identifier.group(1)],
-                        cwd=str(checkout_root),
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        text=True,
-                        check=False,
-                        timeout=30,
-                        env=environment,
-                    )
             written = _write_replay_log(
                 replay_log_path,
                 stream=replay_log_stream,
                 header=header,
-                output=partial,
+                output=f"# not started: {reason}",
                 exit_status=None,
-                cut_short=_replay_cut_short_reason(
+            )
+            if written is not None:
+                report["log_path"] = str(written)
+        elif resumed["resolved"]:
+            replayed = rewrite_gate_program(
+                replayed, resumed["program"], resumed["resolved"]
+            )
+            report["gate_program_rewritten"] = resumed["resolved"]
+
+        if reason is None:
+            landing = _replay_landing(checkout_root)
+            declared = str(landing.get("measure_partition") or "").strip()
+            selected = ""
+            executor = run or subprocess.run
+            job_log: Path | None = None
+            environment: dict[str, str] | None = None
+            if declared:
+                from reckon.crew.landing_measure import partition_submission
+
+                job_log = _replay_job_log(replay_log_path)
+                selected, argv, environment = partition_submission(
+                    script=_partition_replay_script(replayed),
+                    partition=declared,
+                    long_partition=str(
+                        landing.get("measure_long_partition") or "rigel"
+                    ),
                     bound_seconds=bound_seconds,
-                    bound_source=bound_source,
-                    elapsed_seconds=elapsed,
-                ),
-            )
-            if written is not None:
-                report["log_path"] = str(written)
-            replay_text = partial
-        else:
-            report["ran"] = True
-            if job_log is not None:
-                # The job's own log is the durable copy; the submission's
-                # stdout carries only the job id and whatever the scheduler
-                # printed. Its terminal receipt is the status this replay
-                # reports, because a client-side return code cannot tell a
-                # finished job from one the scheduler stopped, and a job that
-                # never reached its command leaves no receipt at all — that is
-                # an unmeasured replay, not a passing one.
-                replay_text = (
-                    job_log.read_text(encoding="utf-8", errors="replace")
-                    if job_log.exists()
-                    else ""
+                    chdir=checkout_root,
+                    log_path=job_log,
                 )
-                receipt = _job_log_receipt(replay_text)
-                status = receipt if receipt is not None else _UNREADABLE_JOB_STATUS
+                timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
             else:
-                replay_text = result.stdout or ""
-                status = result.returncode
-            report["exit_status"] = status
-            written = _write_replay_log(
-                replay_log_path,
-                stream=replay_log_stream,
-                header=header,
-                output=replay_text,
-                exit_status=status,
+                argv = ["sh", "-c", replayed]
+                timeout = bound_seconds
+            report["measure_partition"] = selected or "in-place"
+            header = _replay_log_header(
+                replay_command=replayed,
+                checkout=checkout_root,
+                checkout_revision=report["checkout_revision"],
+                integrated_revision=report["integrated_revision"],
+                rewritten_roots=rewritten_roots,
+                partition=selected,
             )
-            if written is not None:
-                report["log_path"] = str(written)
-                report["integrated_verdict"] = "passed" if status == 0 else "failed"
-            elif status == 0:
-                report["integrated_verdict"] = "passed"
-            else:
-                # A replay that exited non-zero and wrote no log produced no
-                # evidence a reader can open. That is a failure of the replay
-                # itself, not a verdict on the run's code: recording it as the
-                # run's failure would charge the delivery for a measurement
-                # nobody can read.
-                report["integrated_verdict"] = "not-run"
-                report["replay_failure"] = (
-                    f"the replay exited {status} and wrote no log, so its "
-                    "output cannot be read as a verdict on the run"
+            report["gate_started"] = True
+            started = time.monotonic()
+            try:
+                result = executor(
+                    argv,
+                    cwd=str(checkout_root if job_log is not None else repository),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    check=False,
+                    timeout=timeout,
+                    **({"env": environment} if environment is not None else {}),
                 )
+            except subprocess.TimeoutExpired as expired:
+                elapsed = time.monotonic() - started
+                report.update(ran=True, timed_out=True, replay_elapsed_seconds=elapsed)
+                partial = expired.output if isinstance(expired.output, str) else ""
+                if job_log is not None and environment is not None:
+                    # sbatch --wait prints the id before waiting; stop that job only.
+                    identifier = re.match(r"^(\d+)(?:;[^\n]*)?(?:\n|$)", partial)
+                    if identifier:
+                        executor(
+                            ["scancel", identifier.group(1)],
+                            cwd=str(checkout_root),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                            check=False,
+                            timeout=30,
+                            env=environment,
+                        )
+                written = _write_replay_log(
+                    replay_log_path,
+                    stream=replay_log_stream,
+                    header=header,
+                    output=partial,
+                    exit_status=None,
+                    cut_short=_replay_cut_short_reason(
+                        bound_seconds=bound_seconds,
+                        bound_source=bound_source,
+                        elapsed_seconds=elapsed,
+                    ),
+                )
+                if written is not None:
+                    report["log_path"] = str(written)
+                replay_text = partial
+            else:
+                report["ran"] = True
+                if job_log is not None:
+                    # The job's own log is the durable copy; the submission's
+                    # stdout carries only the job id and whatever the scheduler
+                    # printed. Its terminal receipt is the status this replay
+                    # reports, because a client-side return code cannot tell a
+                    # finished job from one the scheduler stopped, and a job that
+                    # never reached its command leaves no receipt at all — that is
+                    # an unmeasured replay, not a passing one.
+                    replay_text = (
+                        job_log.read_text(encoding="utf-8", errors="replace")
+                        if job_log.exists()
+                        else ""
+                    )
+                    receipt = _job_log_receipt(replay_text)
+                    status = receipt if receipt is not None else _UNREADABLE_JOB_STATUS
+                else:
+                    replay_text = result.stdout or ""
+                    status = result.returncode
+                report["exit_status"] = status
+                written = _write_replay_log(
+                    replay_log_path,
+                    stream=replay_log_stream,
+                    header=header,
+                    output=replay_text,
+                    exit_status=status,
+                )
+                if written is not None:
+                    report["log_path"] = str(written)
+                    report["integrated_verdict"] = "passed" if status == 0 else "failed"
+                elif status == 0:
+                    report["integrated_verdict"] = "passed"
+                else:
+                    # A replay that exited non-zero and wrote no log produced no
+                    # evidence a reader can open. That is a failure of the replay
+                    # itself, not a verdict on the run's code: recording it as the
+                    # run's failure would charge the delivery for a measurement
+                    # nobody can read.
+                    report["integrated_verdict"] = "not-run"
+                    report["replay_failure"] = (
+                        f"the replay exited {status} and wrote no log, so its "
+                        "output cannot be read as a verdict on the run"
+                    )
+                if status == _SHELL_PROGRAM_NOT_FOUND_STATUS:
+                    # 127 is a gate that never started, not a gate that ran and
+                    # failed: the shell could not find the program it was told to
+                    # start. Charging that to the merge sends a coordinator to
+                    # the code for a missing file.
+                    missing = _not_found_program(replay_text) or report.get(
+                        "gate_program"
+                    )
+                    report["gate_started"] = False
+                    report["missing_program"] = missing
+                    report["integrated_verdict"] = "not-run"
+                    reason = _program_not_found_reason(
+                        {
+                            "program": missing,
+                            "seats": report.get("gate_program_seats") or [],
+                        },
+                        tree=checkout_root,
+                        exit_status=status,
+                    )
+                    report["replay_failure"] = reason
     if reason is not None:
         report["reason"] = reason
     elif report.get("replay_failure"):
@@ -1128,6 +1288,9 @@ def _rerun_gate_at_integrated_revision(
         else (),
         timed_out=report["timed_out"],
         replay_elapsed_seconds=report["replay_elapsed_seconds"],
+        not_started=report.get("missing_program") is not None,
+        missing_program=report.get("missing_program"),
+        tree=report.get("checkout_tree"),
     )
     # ``ok`` reads the verdict, not the measurement: only a replay that finished
     # and passed is a success. A replay cut short by the bound, or one that never

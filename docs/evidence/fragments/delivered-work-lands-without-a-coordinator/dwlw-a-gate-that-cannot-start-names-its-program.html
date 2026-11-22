@@ -1,0 +1,47 @@
+<section id="dwlw-a-gate-that-cannot-start-names-its-program-landing">
+  <h2>A merged-head gate that cannot start says so, instead of blaming the merge</h2>
+
+  <p>At the pinned base <code>dde7b001769544957d5ca63f50cbb48c26574553</code>,
+  replaying a gate command that names <code>.venv/bin/python</code> against a
+  tree carrying no <code>.venv</code> ends with the shell's exit status 127 and
+  the finding text <em>the gate passed at the worker's base but reports failed
+  on the integrated revision …: the merge changes what this node's gate
+  proves</em>. Nothing was measured at the merged head, and the refusal sent a
+  r-20261122T032524701158 coordinator into the merge for a missing program.</p>
+
+  <p><strong>What changed.</strong> The replay resolves the command's program
+  before the shell receives it. A relative spelling — <code>.venv/bin/python</code>
+  — is looked for under the tree being measured, then under each recorded worker
+  root, then through any resolved <code>.venv</code>, then through the
+  interpreter running the measurement, and the first executable found is
+  substituted into the command as an absolute path, leaving every other word
+  alone. The report names <code>gate_program</code>, the seats it was looked in,
+  and <code>gate_program_rewritten</code>. A program that resolves nowhere is
+  reported as a gate that did not start —
+  <code>integrated_verdict: not-run</code>, <code>gate_started: false</code>,
+  <code>missing_program</code> — with the program and the tree in the reason and
+  in the finding, whose message now says outright that this is not a shell from
+  the merge. An exit status of 127 from the shell is read the same way, with the
+  program taken from the shell's own <code>not found</code> line where it prints
+  one. A not-started replay still writes its log, under the same header, with a
+  <code># not started:</code> line and no <code>EXIT=</code> record.</p>
+
+  <p><strong>What does not change.</strong> A gate that starts and fails keeps
+  its verdict and the failure ids its own output named. A command whose program
+  already resolves replays byte-identically to before. The shell-builtin set is
+  recognised as startable, so a stored command such as <code>exit 3</code> is
+  still executed rather than refused.</p>
+
+  <h3 id="dwlw-a-gate-that-cannot-start-names-its-program-measured">Measured</h3>
+
+  <p>The negative control runs the node's own test file against the pinned base
+  code: three cases fail, the first with <em>verdict=failed
+  exit_status=127 … the merge changes what this node's gate proves</em>, and the
+  same three pass at the head. The first case's gate command,
+  <code>.venv/bin/python -c 'print("the gate ran")'</code>, runs at a tree the
+  fixture asserts carries no <code>.venv</code>, and its log ends
+  <code>EXIT=0</code> with the marker in the captured output. The second case
+  names a program that exists nowhere and is reported not started; the third
+  runs a command that fails and keeps <code>tests/test_sample.py::test_broken</code>
+  as its failure id.</p>
+</section>
