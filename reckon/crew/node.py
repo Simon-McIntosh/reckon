@@ -2009,6 +2009,9 @@ class ClaimDisposition:
     binding: bool
     reason: str
     unintegrated: tuple[str, ...] = ()
+    #: Set when the claim stopped binding because it lapsed, so an admission
+    #: that walks past it can say so rather than leaving the run unnamed.
+    lapsed: bool = False
 
 
 WAITING_REQUEST_PHASES = frozenset(
@@ -2110,6 +2113,9 @@ def claim_disposition(
         if kept:
             reason += f" — the worktree is kept, and a fresh node merges {kept}"
         return ClaimDisposition(binding=False, reason=reason + ", so its claim is released")
+    lapsed = _lapsed_claim_reason(pointer)
+    if lapsed is not None:
+        return ClaimDisposition(binding=False, reason=lapsed, lapsed=True)
     unintegrated = unintegrated_claim_work(pointer, integration_ref=integration_ref)
     if unintegrated:
         return ClaimDisposition(
@@ -2128,6 +2134,18 @@ def claim_disposition(
             "declared paths, so its claim is disregarded"
         ),
     )
+
+
+def _lapsed_claim_reason(pointer: Mapping[str, Any]) -> str | None:
+    """Why a stopped delivered run's claim lapsed, read in the claim module.
+
+    Imported here rather than at module load because the claim module reads
+    this one for the disposition it reports, and the judgement belongs with the
+    claim operations that share its rules.
+    """
+    from reckon.crew.claims import lapsed_claim_reason
+
+    return lapsed_claim_reason(pointer)
 
 
 def _claim_process_alive(pointer: Mapping[str, Any]) -> bool | None:
