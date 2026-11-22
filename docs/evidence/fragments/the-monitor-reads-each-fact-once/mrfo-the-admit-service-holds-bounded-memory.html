@@ -50,7 +50,8 @@ growing       before 36c098539b        2 failed in 115.19s (0:01:55)
 suite arms    base 4a5ec5081e        58 passed in 41.44s
                      head c0ef2a0bb3        60 passed in 236.22s (0:03:56)
 repair arms   base 4a5ec5081e        62 passed in 50.53s
-                     head 00945f8e1d        67 passed in 312.60s (0:05:12)</pre>
+                     head 00945f8e1d        67 passed in 312.60s (0:05:12)
+                     head b43546e9ef        69 passed in 337.14s (0:05:37)</pre>
 
 <p id="mrfo-the-admit-service-holds-bounded-memory-guards">Three cases guard the change rather than the band alone, which the base revision passes on this fixture: a pass under the idle reading's bound keeps the process-wide parse memo and one over it drops it, so removing either branch fails a case; the idle reading is compared with the process's own <code>/proc</code> figure within 10 %, using a reader the code under test does not call; and a retirement followed by three idle passes is still returned, because every pass now writes a record and the reader takes the newest non-empty list instead of the last record's. A shrinking fleet was also measured — 2,000 runs then 200, resident 169 MiB before and 166 MiB after — so handing the pages back does not reclaim them on that shape and no case claims it does. Reverting the service's reader to a constant 1 GiB fails the idle-reading case against the process's own figure, so that agreement is measured by a reader the code under test does not call. The duration the section states is measured too: a hundred consecutive passes over a working fleet of 30 live pointers end under the 2 GiB bound and match the process's own figure within 10 %, and an unreadable <code>/proc</code> record is carried as no reading rather than as a measured zero. A pass record also keeps both figures: the lander case gives the recorder a result that carries a reading and asserts the record returns it with the bound beside it.</p>
 
