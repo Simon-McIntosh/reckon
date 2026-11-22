@@ -168,7 +168,7 @@ def test_a_list_shaped_server_store_is_filtered_and_takes_the_endpoint(tmp_path)
     assert config["disabledServers"] == ["other"]
 
 
-async def _answered(url: str, count: int) -> tuple[int, list]:
+async def _answers(url: str, count: int) -> list:
     from mcp import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
 
@@ -178,18 +178,27 @@ async def _answered(url: str, count: int) -> tuple[int, list]:
             ClientSession(read, write) as session,
         ):
             await session.initialize()
-            result = await session.call_tool(
+            return await session.call_tool(
                 "read_plan", {"project": "reckon", "slug": "index"}
             )
-            return result.isError
 
-    errors = await asyncio.gather(*(one() for _ in range(count)))
-    return len(errors), [error for error in errors if error]
+    return await asyncio.gather(*(one() for _ in range(count)))
+
+
+def answer_text(result) -> str:
+    return "".join(
+        block.text
+        for block in result.content
+        if isinstance(getattr(block, "text", None), str)
+    )
 
 
 def test_every_worker_tool_call_is_answered_by_one_server(node):
     directory, server = node
-    answered, errors = asyncio.run(_answered(server.url, WORKERS))
-    assert errors == []
-    assert answered == WORKERS
-    assert server_pids(directory) == [server.pid]
+    results = asyncio.run(_answers(server.url, WORKERS))
+    answers = [answer_text(result) for result in results]
+    assert len(answers) == WORKERS
+    assert [result.isError for result in results] == [False] * WORKERS
+    assert all(answer.strip() for answer in answers), "every call must be answered"
+    assert len(set(answers)) == 1, "every worker must receive the same answer"
+    assert server_pids(directory) and server_pids(directory) == [server.pid]
