@@ -688,7 +688,17 @@ def _seed_worker_mcp_exclusions(
         config = {}
     servers = config.get("mcpServers")
     allowed = set(allowed_servers)
-    removed = set(servers or {}) - allowed
+    if isinstance(servers, dict):
+        names = {name for name in servers if isinstance(name, str)}
+    elif isinstance(servers, list):
+        names = {
+            entry["name"]
+            for entry in servers
+            if isinstance(entry, Mapping) and isinstance(entry.get("name"), str)
+        }
+    else:
+        names = set()
+    removed = names - allowed
     changed = bool(removed)
     if isinstance(servers, dict):
         config["mcpServers"] = {
@@ -710,12 +720,15 @@ def _seed_worker_mcp_exclusions(
         config["mcpServers"] = updated
         changed = True
     elif shared and isinstance(config.get("mcpServers"), list):
-        config["mcpServers"] = [
-            {**entry, "type": "http", "url": url}
-            if isinstance(entry, Mapping) and entry.get("name") in shared
-            else entry
-            for entry in config["mcpServers"]
-        ]
+        rewritten = []
+        for entry in config["mcpServers"]:
+            if isinstance(entry, Mapping) and entry.get("name") in shared:
+                rewritten.append(
+                    {**entry, "type": "http", "url": shared[entry["name"]]}
+                )
+            else:
+                rewritten.append(entry)
+        config["mcpServers"] = rewritten
         changed = True
     if refusal_list:
         disabled = config.get("disabledServers", [])

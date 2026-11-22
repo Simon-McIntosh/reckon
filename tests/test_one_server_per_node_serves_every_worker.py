@@ -128,6 +128,37 @@ def test_at_base_a_worker_carries_its_own_server_command(tmp_path):
     assert servers["reckon"] == {"command": "reckon-mcp"}
 
 
+def test_a_list_shaped_server_store_is_filtered_and_takes_the_endpoint(tmp_path):
+    """A harness may keep ``mcpServers`` as a list of named entries."""
+    path = tmp_path / "worker.json"
+    path.write_text(
+        json.dumps(
+            {
+                "mcpServers": [
+                    {"name": "reckon", "command": "reckon-mcp"},
+                    {"name": "other", "command": "other-mcp"},
+                ]
+            }
+        )
+    )
+    _worker_fence._seed_worker_mcp_exclusions(
+        tmp_path,
+        path.name,
+        {"reckon"},
+        refusal_list=True,
+        shared_endpoints={"reckon": "http://127.0.0.1:9/mcp"},
+    )
+    config = json.loads(path.read_text())
+    assert [entry["name"] for entry in config["mcpServers"]] == ["reckon"]
+    assert config["mcpServers"][0] == {
+        "name": "reckon",
+        "command": "reckon-mcp",
+        "type": "http",
+        "url": "http://127.0.0.1:9/mcp",
+    }
+    assert config["disabledServers"] == ["other"]
+
+
 async def _answered(url: str, count: int) -> tuple[int, list]:
     from mcp import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
