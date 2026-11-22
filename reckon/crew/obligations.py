@@ -39,7 +39,6 @@ from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_reset,
     obligation_snapshot,
-    queue_admission,
     recovery,
     recovery_classification,
     recovery_review_dispatch,
@@ -48,6 +47,7 @@ from reckon.crew import (
     review_records,
     runs,
 )
+from reckon.crew import queue_admission as _queue_admission_module
 from reckon.crew import (
     repair as repair_module,
 )
@@ -79,6 +79,66 @@ from reckon.git_head import _common_git_directory, _git_directory, _head_identit
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon.node_exclusive_lock import exclusive_lock
 from reckon.velocity import run_git
+
+
+def _ordering_key(
+    pointers: Sequence[Mapping[str, Any]], now: Any, lane: str
+) -> tuple[str, str]:
+    """The change key of one ordering read: what the order is a function of.
+
+    The order is derived from the pointers, the instant and the lane, and from
+    nothing else, so those three are the key a memo can answer on. The
+    pointers are digested rather than carried, because the memo keeps an entry
+    per distinct read and a fleet's pointers are large.
+    """
+    material = json.dumps(
+        list(pointers), sort_keys=True, default=str, separators=(",", ":")
+    )
+    return (hashlib.sha256(material.encode("utf-8")).hexdigest(), f"{now!r}|{lane or ''}")
+
+
+class _QueueAdmissionViews:
+    """``queue_admission``, answering one ordering per identical read.
+
+    Every other name on the module is reached through this object unchanged.
+    A sweep asks where each queued request stands once for every session's
+    payload, and each ask carries the same pointers at the same instant;
+    ordering them again re-derives the queued plans' section priorities, which
+    composes the project's roadmap again. The answer is memoised on the inputs
+    the order is derived from, so a sweep over many sessions derives each
+    project's roadmap once while a read at a later instant is answered fresh.
+
+    A caller that hands its own ``config_for`` is answered directly: the order
+    then depends on a callable this layer cannot compare, so it is not
+    memoised.
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(_queue_admission_module, name)
+
+    def queued_placements(
+        self,
+        pointers: Sequence[Mapping[str, Any]],
+        *,
+        now: Any = None,
+        lane: str = "",
+        config_for: Callable[..., Any] | None = None,
+    ) -> dict[str, dict[str, int]]:
+        if config_for is not None:
+            return _queue_admission_module.queued_placements(
+                pointers, now=now, lane=lane, config_for=config_for
+            )
+        material = list(pointers)
+        return file_memo.memoized_key(
+            "obligation_queue_ordering",
+            _ordering_key(material, now, lane),
+            lambda: _queue_admission_module.queued_placements(
+                material, now=now, lane=lane
+            ),
+        )
+
+
+queue_admission = _QueueAdmissionViews()
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
@@ -2155,12 +2215,14 @@ def admission_verdicts() -> dict[str, dict[str, Any]]:
 
 
 def recent_upstream_retirements() -> list[dict[str, Any]]:
-    """The upstream retirements the most recent admission pass recorded.
+    """The newest upstream retirements an admission pass recorded.
 
     A retired request has no pointer left to read, so the pass's own record is
-    the only account of it. Only the last record's list is returned: the pass
-    that retired the request carried it, and a later pass carrying none means
-    the retirement has already been read.
+    the only account of it. Every pass writes a record, and a pass that retired
+    nothing carries an empty list, so the newest non-empty list is the answer: a
+    retirement stays readable through the idle passes that follow it rather than
+    surviving only one line of the log. It is replaced when another pass retires
+    a request.
     """
     path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
     try:
@@ -2173,8 +2235,8 @@ def recent_upstream_retirements() -> list[dict[str, Any]]:
         except ValueError:
             continue
         retired = record.get("retired")
-        if not isinstance(retired, list):
-            return []
+        if not isinstance(retired, list) or not retired:
+            continue
         return [dict(row) for row in retired if isinstance(row, Mapping)]
     return []
 

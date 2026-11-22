@@ -9,6 +9,7 @@ from . import wait_refs as _wait_refs
 from .shared import (
     ADMISSION_VERDICT_LOG,
     ADMISSION_VERDICT_LOG_MAX_BYTES,
+    ADMIT_MEMORY_BOUND_BYTES,
     HELD_PHASE,
     HOLD_VERDICTS,
     NOT_ADMISSIBLE_PHASES,
@@ -495,23 +496,18 @@ def _record_readiness_verdicts(
 
 def _pass_verdict_record(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
-) -> dict[str, Any] | None:
-    """The one record a pass leaves, or ``None`` when it had no outcome.
+) -> dict[str, Any]:
+    """The one record a pass leaves, whether or not it decided anything.
 
+    A pass always leaves a reading: an idle pass is a fact a reader needs, and
+    the reading carries the service's resident memory so the bound the service
+    holds to is read from its own passes rather than inferred from the outside.
     The same object is what the verdict log holds and what the service loop
     prints, so a coordinator reading the log and a caller reading stdout see
     one account of the pass rather than two that can drift.
     """
     verdicts = result.get("verdicts") or []
     landing = result.get("landing") or {}
-    if (
-        not verdicts
-        and not result.get("retired")
-        and not landing.get("landed")
-        and not landing.get("skipped")
-        and not landing.get("obligations")
-    ):
-        return None
     return {
         "at": _service._utc_now(),
         "started_at": result.get("started_at"),
@@ -523,6 +519,8 @@ def _pass_verdict_record(
         "launch_budget_exhausted": bool(result.get("launch_budget_exhausted")),
         "land_seconds": result.get("land_seconds"),
         "reads": result.get("reads"),
+        "resident_bytes": result.get("resident_bytes"),
+        "memory_bound_bytes": ADMIT_MEMORY_BOUND_BYTES,
         "lane": lane,
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
@@ -543,21 +541,21 @@ def _publish_pass_verdicts(record: Mapping[str, Any] | None) -> None:
 
     The bare ``crew admit`` verb is the fleet's admit service: a coordinator
     watching it must see each decision as the pass reaches it rather than only
-    afterwards out of the verdict log. A pass that examined no queued pointer
-    decided nothing, so it prints nothing — the same silence it records.
+    afterwards out of the verdict log. Every pass prints its reading, so an
+    idle service is visible as a run of pass readings rather than as silence.
     """
-    if record is None:
-        return
     print(json.dumps(record), flush=True)
 
 
 def _record_pass_verdicts(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
-) -> dict[str, Any] | None:
-    """Write one log line for a pass with an admission or landing outcome.
+) -> dict[str, Any]:
+    """Write one log line for every pass, including a pass that decided nothing.
 
-    A pass with no pointer verdict or landing outcome writes nothing: an idle
-    pass is the absence of a line, not a line saying so. The line uses the shared
+    A reading that carried only outcomes made an idle service indistinguishable
+    from a stopped one, and left the service's resident memory unrecorded: the
+    pass reading is where the bound the service holds to is read. The line uses
+    the shared
     crew-home log writer, so this log and the picker's timings are written the
     same way, and the bound that follows is the shared service-log trim.
 
@@ -570,8 +568,6 @@ def _record_pass_verdicts(
     whose admission decision has already been made.
     """
     record = _pass_verdict_record(result, lane=lane, code_stamp=code_stamp)
-    if record is None:
-        return None
     from reckon.crew.fleet_supervisor import trim_service_log
     from reckon.crew.picker import _append_crew_log_line
 

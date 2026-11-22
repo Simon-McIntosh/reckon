@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="delivered-work-lands-without-a-coordinator">
+  <meta name="plan-evidence-for" content="delivered-work-lands-without-a-coordinator">
+  <title>A conflict repair does not start on a landed or landing run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="dwlw-a-repair-does-not-start-on-a-landed-run">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A conflict repair does not start on a run already landed or being landed</h2>
+      </header>
+      <p id="dwlw-a-repair-does-not-start-on-a-landed-run-landing">
+        <code>dispatch_merge_repair</code> now answers three questions before it
+        resumes a delivery's worker. A head the primary branch already contains
+        is refused with <code>already-landed</code> and its conflict is dropped
+        from the pending-landing journal and the live pointer, because the
+        landing the conflict asked for has happened. The local branch answers
+        that question even when the remote cannot be read, which is when a
+        repair would otherwise restart work the branch holds. A land attempt
+        still recorded on the pointer as <code>attempting</code> or
+        <code>interrupted</code> holds the repair and keeps the conflict, so a
+        resume cannot race the coordinator's landing; the next pass retries it.
+        A repair resume that does start passes
+        <code>preserve_manifest_status</code> to <code>resumption._resume</code>,
+        so a delivered manifest keeps the status word it carried instead of
+        being rewritten to <code>in-progress</code> — the rewrite that left a
+        run the supervisor could not retire.
+      </p>
+      <p id="dwlw-a-repair-does-not-start-on-a-landed-run-measure">
+        The after arm at <code>75248b99f6</code> ran
+        <code>tests/test_a_repair_does_not_start_on_a_landed_run.py</code>,
+        <code>tests/test_staged_write_inventory.py</code> and
+        <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+        <code>61 passed in 48.78s</code>, <code>EXIT=0</code>. The baseline arm
+        at <code>b5444d24ba</code> ran the two files that exist there —
+        <code>58 passed in 38.20s</code>, <code>EXIT=0</code> — so the new file
+        is the only thing the after arm adds, and the three new cases pass.
+      </p>
+      <p id="dwlw-a-repair-does-not-start-on-a-landed-run-control">
+        Against the base revision <code>b5444d24ba</code> the same file fails
+        three times, <code>3 failed in 1.72s</code>, <code>EXIT=1</code>: the
+        landed head launches a repair resume
+        (<code>assert [{'run_id': 'r-repair-landed', ...}] == []</code>), the
+        in-flight landing launches one beside it, and the live-conflict case
+        finds its manifest flipped from <code>complete</code> to
+        <code>in-progress</code>.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:_control_log_added_failure_ids",
+    "reckon/crew/promotion_checks.py:2513",
+    "reckon/crew/pending_landing.py:1000",
+    "reckon/crew/pending_landing.py:1088",
+    "reckon/crew/review.py:3649"
+  ],
+  "call_sites_emission": null,
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T03:51:50Z",
+  "findings": [
+    {
+      "file": "tests/test_a_negative_control_reads_a_ctest_summary.py",
+      "line": "128",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion on _control_log_added_failure_ids is vacuous for the green fixture, because that function returns set() at its exit-status check when the log records EXIT=0, so no reader regression on a passing log could make the assertion fail and it adds no protection the ids assertion at :122 does not already carry."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "1705",
+      "severity": "non-blocking",
+      "text": "non-blocking: the _log_failure_count docstring still states ctest's count is the number of entries across its failure blocks, which the landed extract path at review.py:2820-2828 no longer holds for a log with no block, so the docstring understates where the count it returns can come from."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against b5444d24ba; 646ca9dd1f changes only reckon/crew/review.py, and 2c5ce682bb, 7b7833e1a5 and 805be3cb41 add and then refine the evidence fragment's own quoted figures.",
+    "done_when": "the done_when names tests/test_a_negative_control_reads_a_ctest_summary.py and four cases; the file carries those four at lines 76-131 plus two further cases, and both suite-arm logs sit under the run directory with their revision, literal command and a closing EXIT= line (baseline_suite-1795318690475815691.log, after_suite-1795318766421398329.log).",
+    "goal": "the node's goal is that a cut-down ctest control log naming a failed test is read red with or without ctest's summary header; reckon/crew/review.py:2805-2872 reads the extract's progress and entry lines and returns the test name, which I confirmed end to end through promotion_evidence._control_log_added_failure_ids returning {\"unit/imas/iron_limb_outline\"} at head 805be3cb41.",
+    "manifest": "read; it records the scoped gate at 7b7833e1a5 as 64 passed exit 0, the base arm as 58 passed exit 0 at b5444d24ba, and the negative control as 2 failed 4 passed exit 1 at the pinned base, each citing its log path.",
+    "write_paths": "the diff touches 3 of the 5 declared paths (reckon/crew/review.py, the new test file, and the evidence fragment) and nothing outside them; reckon/crew/promotion_checks.py and the figures directory were declared and left untouched, which the change's shape does not require."
+  },
+  "justifications": {
+    "durability": "tests/test_a_negative_control_reads_a_ctest_summary.py:89 and :98 redden on the pinned base as the recorded negative control shows, but the assertion at :128 cannot fail because the fixture's EXIT=0 short-circuits _control_log_added_failure_ids before the reader is consulted.",
+    "evidence": "the gate at head is countable and the negative control runs on a base extraction, but the recorded gate command names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the edited reader, while the six tests that do cover reckon/crew/review.py's gate-log path were left out of the recorded arms (I ran them myself: 38 passed).",
+    "fit": "the two added regexes at reckon/crew/review.py:2334-2362 follow the surrounding module-level compiled-regex-plus-mechanism-comment idiom, and no added symbol names a plan, stage or ticket.",
+    "goal_fidelity": "I reproduced the base defect on the fixture shape independently \u2014 no ctest marker matched and _PYTEST_SUMMARY_RE did match \u2014 and the head at reckon/crew/review.py:2924-2930 reads it as ctest naming the test.",
+    "reuse": "the change extracts the existing block reader rather than duplicating it, and a search of reckon/ for ctest found promotion_evidence.py:1705 and promotion_checks.py:2507 consuming this one reader rather than owning a second parser.",
+    "scope_discipline": "every path in the diff is one of the declared write paths, and the 17 deleted lines in reckon/crew/review.py are the block reader moved verbatim into _ctest_block_failure_ids at review.py:2963."
+  },
+  "node": "review-of-dwlw-a-negative-control-reads-a-ctest-summary-805be3cb41b9",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a cut-down ctest control log naming a failed test is read red with or without ctest's summary header; reckon/crew/review.py:2805-2872 reads the extract's progress and entry lines and returns the test name, which I confirmed end to end through promotion_evidence._control_log_added_failure_ids returning {\"unit/imas/iron_limb_outline\"} at head 805be3cb41.\nVERDICT done_when: the done_when names tests/test_a_negative_control_reads_a_ctest_summary.py and four cases; the file carries those four at lines 76-131 plus two further cases, and both suite-arm logs sit under the run directory with their revision, literal command and a closing EXIT= line (baseline_suite-1795318690475815691.log, after_suite-1795318766421398329.log).\nVERDICT write_paths: the diff touches 3 of the 5 declared paths (reckon/crew/review.py, the new test file, and the evidence fragment) and nothing outside them; reckon/crew/promotion_checks.py and the figures directory were declared and left untouched, which the change's shape does not require.\nVERDICT manifest: read; it records the scoped gate at 7b7833e1a5 as 64 passed exit 0, the base arm as 58 passed exit 0 at b5444d24ba, and the negative control as 2 failed 4 passed exit 1 at the pinned base, each citing its log path.\nVERDICT diff: read commit by commit against b5444d24ba; 646ca9dd1f changes only reckon/crew/review.py, and 2c5ce682bb, 7b7833e1a5 and 805be3cb41 add and then refine the evidence fragment's own quoted figures.\nCALL_SITES: reckon/crew/promotion_evidence.py:_control_log_added_failure_ids, reckon/crew/promotion_checks.py:2513, reckon/crew/pending_landing.py:1000, reckon/crew/pending_landing.py:1088, reckon/crew/review.py:3649\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: I reproduced the base defect on the fixture shape independently \u2014 no ctest marker matched and _PYTEST_SUMMARY_RE did match \u2014 and the head at reckon/crew/review.py:2924-2930 reads it as ctest naming the test.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at head is countable and the negative control runs on a base extraction, but the recorded gate command names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the edited reader, while the six tests that do cover reckon/crew/review.py's gate-log path were left out of the recorded arms (I ran them myself: 38 passed).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is one of the declared write paths, and the 17 deleted lines in reckon/crew/review.py are the block reader moved verbatim into _ctest_block_failure_ids at review.py:2963.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_negative_control_reads_a_ctest_summary.py:89 and :98 redden on the pinned base as the recorded negative control shows, but the assertion at :128 cannot fail because the fixture's EXIT=0 short-circuits _control_log_added_failure_ids before the reader is consulted.\nSCORE fit: 18\nJUSTIFICATION fit: the two added regexes at reckon/crew/review.py:2334-2362 follow the surrounding module-level compiled-regex-plus-mechanism-comment idiom, and no added symbol names a plan, stage or ticket.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extracts the existing block reader rather than duplicating it, and a search of reckon/ for ctest found promotion_evidence.py:1705 and promotion_checks.py:2507 consuming this one reader rather than owning a second parser.\nFINDING tests/test_a_negative_control_reads_a_ctest_summary.py:128 non-blocking: the assertion on _control_log_added_failure_ids is vacuous for the green fixture, because that function returns set() at its exit-status check when the log records EXIT=0, so no reader regression on a passing log could make the assertion fail and it adds no protection the ids assertion at :122 does not already carry.\nFINDING reckon/crew/promotion_evidence.py:1705 non-blocking: the _log_failure_count docstring still states ctest's count is the number of entries across its failure blocks, which the landed extract path at review.py:2820-2828 no longer holds for a log with no block, so the docstring understates where the count it returns can come from.",
+  "review_run_id": "r-20261122T035108159569-review-of-dwlw-a-negative-control-reads-a-ctest-summary-805be3cb41b9",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_head_sha": "805be3cb41b9274f50161bbc0343b57328b21b28",
+  "reviewed_node": "dwlw-a-negative-control-reads-a-ctest-summary",
+  "reviewed_run_id": "r-20261122T023729717501-dwlw-a-negative-control-reads-a-ctest-summary",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:08:23.761888+00:00",
+  "total": 108
+}

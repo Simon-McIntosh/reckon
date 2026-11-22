@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:39 admit_once",
+    "reckon/crew/admission/holds.py:65 _session_room_read"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T06:36:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-a-queued-request-holds-no-process-until-it-holds-a-slot.html",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "the done_when's one-hour full-lane fleet measure is explicitly not run here (the node ran as a 75-minute compute-allocation worker), so the live-count-at-full-lane limb of the section's measure is unproven and needs a later node; the omission is declared in the fragment and the manifest's outside_scope rather than hidden."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the manifest carries no baseline_suite or after_suite pair, so a promotion reading this record has no suite delta to compare; for a test-only node the added test passes (gate.log 1 passed, EXIT=0) and no production code changed, but the absence of the pair should be stated so it is not mistaken for a zero-delta measurement."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/selection.py:39 admit_once is the production admission pass the test drives; reckon/crew/admission/holds.py:65 _session_room_read is the allowance reader the negative control mutates on that same path.",
+    "diff": "Read the single commit 27ecc8df6 against bfacff713: a 202-line new test that drives admit_once and a 75-line evidence fragment; no production source changed.",
+    "done_when": "The done_when has three limbs; the temporary-crew-home width-4 gate (1 passed, EXIT=0) and the base-revision census (0 of 19) are measured and logged, while the one-hour full-lane fleet measure is recorded as not run for this 75-minute worker.",
+    "goal": "The goal is that a queued request holds no process until the router grants it a slot; the landed test exercises reckon/crew/admission/selection.py:39 admit_once across six passes and reads both the live-worker bound and the no-pid-for-queued condition, and the evidence fragment records the base-revision census.",
+    "manifest": "Read; status complete, commits 27ecc8df67, changed_paths the test and fragment, tests the gate pytest command, test_logs naming gate/negative/census/census-positive logs; it carries no baseline_suite or after_suite pair, so no suite delta is recorded.",
+    "write_paths": "The declaration was the evidence fragment, its figures directory and tests/test_a_launch_waits_for_a_slot.py; the diff touches only the fragment and the test file, both inside the fence."
+  },
+  "justifications": {
+    "durability": "negative-control.log ends EXIT=1 with 'AssertionError: pass 0: 20 live workers against the router's width 4 plus 2', produced by mutating reckon/crew/admission/holds.py:65 _session_room_read to grant no allowance, so the bound assertion at tests/test_a_launch_waits_for_a_slot.py:114 fails if admission regresses to launching every queued request.",
+    "evidence": "The gate asserts two of the done_when's three limbs: census-base.log reads 0 of 19 queued/held requests holding a process with a positive control at 1, and gate.log reads '1 passed in 160.29s' EXIT=0; the third limb, the one-hour full-lane measure, was not run and is stated as such in the fragment and manifest.",
+    "fit": "The test follows the repo's pytest fixture idiom, imports the existing admit_repo/_config_for/_queue fixture rather than restating it, and its names describe behaviour with no plan, sprint or ticket identifier; one docstring line refers to 'the section's bound' at tests/test_a_launch_waits_for_a_slot.py:17.",
+    "goal_fidelity": "tests/test_a_launch_waits_for_a_slot.py:112-196 drives the real admit_once over 20 queued requests against a width-4 stand-in router and reads the bound and the no-pid-for-queued condition at every pass; the census at docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-a-queued-request-holds-no-process-until-it-holds-a-slot.html:21-37 is the section's first record, but the one-hour fleet measure the same done_when names is absent.",
+    "reuse": "tests/test_a_launch_waits_for_a_slot.py:44-52 imports the admission fixture from tests/test_a_queued_run_is_admitted.py, and _publish_router at :56-84 writes a lane document inline because reckon/crew/lane_document.py exposes only readers and every other lane-document test defines its own writer helper.",
+    "scope_discipline": "git diff --stat bfacff713..27ecc8df6 lists exactly the test file and the evidence fragment, both inside the declared write paths, and the reviewed worktree is clean at 27ecc8df6, so the negative-control mutation was reverted and no product source changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a queued request holds no process until the router grants it a slot; tests/test_a_launch_waits_for_a_slot.py:112-196 drives the real admit_once across six passes and reads both the live-worker bound and the no-pid-for-queued condition.\nVERDICT done_when: of its three limbs the width-4 temporary-home gate (gate.log '1 passed in 160.29s' EXIT=0) and the base-revision census (census-base.log 0 of 19) are measured with a positive control at 1, while the one-hour full-lane fleet measure is recorded as not run at docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-a-queued-request-holds-no-process-until-it-holds-a-slot.html:66.\nVERDICT write_paths: the declared paths were the evidence fragment, its figures directory and tests/test_a_launch_waits_for_a_slot.py; git diff --stat bfacff713..27ecc8df6 touches exactly the fragment and the test file, both inside the fence.\nVERDICT manifest: read; status complete, commits 27ecc8df67, changed_paths the test and fragment, tests the gate pytest command, and test_logs naming gate/negative/census/census-positive logs; it carries no baseline_suite or after_suite pair.\nVERDICT diff: read the single commit 27ecc8df6 against base bfacff713; it adds a 202-line test and a 75-line evidence fragment and changes no production source.\nCALL_SITES: reckon/crew/admission/selection.py:39 admit_once, reckon/crew/admission/holds.py:65 _session_room_read\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_launch_waits_for_a_slot.py:112-196 pins the gate behaviour and the fragment records the census, but the one-hour fleet limb of the done_when is absent.\nSCORE evidence: 15\nJUSTIFICATION evidence: census-base.log reads 0 of 19 with a positive control at 1 and gate.log reads '1 passed in 160.29s' EXIT=0, but the done_when's one-hour full-lane measure is unmeasured at docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-a-queued-request-holds-no-process-until-it-holds-a-slot.html:66.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_a_launch_waits_for_a_slot.py and the evidence fragment, both declared, and the reviewed worktree is clean at the reviewed head.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log ends EXIT=1 with 'pass 0: 20 live workers against the router's width 4 plus 2' from mutating reckon/crew/admission/holds.py:65, so the bound assertion at tests/test_a_launch_waits_for_a_slot.py:114 reddens on a real regression.\nSCORE fit: 18\nJUSTIFICATION fit: the test follows the repo fixture idiom and uses descriptive names; one docstring line at tests/test_a_launch_waits_for_a_slot.py:17 says 'the section's bound'.\nSCORE reuse: 19\nJUSTIFICATION reuse: tests/test_a_launch_waits_for_a_slot.py:44-52 reuses the admit_repo/_config_for/_queue fixture, and _publish_router at :56-84 writes a lane document inline because reckon/crew/lane_document.py offers only readers.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-a-queued-request-holds-no-process-until-it-holds-a-slot.html:66 non-blocking: the done_when's one-hour full-lane fleet measure is not run, so that limb is unproven and must go to a later node; the omission is declared rather than hidden.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot/manifest.md:13 non-blocking: the manifest carries no baseline_suite or after_suite pair, so no suite delta is recorded and the absence should not be read as a measured zero.",
+  "review_run_id": "r-20261122T063540653482-review-of-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-27ecc8df6746",
+  "reviewed_base_sha": "bfacff713aa38c3fe8eeb608d95944e67aa23e23",
+  "reviewed_head_sha": "27ecc8df6746b891bc48c4713870e5663706fa40",
+  "reviewed_run_id": "r-20261122T032359247748-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T063540653482-review-of-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-27ecc8df6746"
+  },
+  "reviewer_run_id": "r-20261122T063540653482-review-of-wstea-a-queued-request-holds-no-process-until-it-holds-a-slot-27ecc8df6746",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T06:52:59.989838+00:00",
+  "total": 108
+}

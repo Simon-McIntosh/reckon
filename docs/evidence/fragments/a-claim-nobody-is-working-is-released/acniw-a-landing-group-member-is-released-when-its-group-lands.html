@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A landing-group member is released when its group lands</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main>
+    <h2 id="acniw-a-landing-group-member-is-released-when-its-group-lands">A landing-group member is released when its group lands</h2>
+    <p id="acniw-a-landing-group-member-is-released-when-its-group-lands-defect">A finished landing group unlinks its journal and leaves its outcome record
+    behind. A member pointer that outlives the journal had no owner the landing
+    pass would reach: the promoted-pointer routine refuses any pointer that
+    carries a landing group, and the group routine is reached only through the
+    journal that no longer exists. The member therefore kept its claim, and a
+    section wait reads a live pointer as unlanded, so every request waiting on
+    that member stayed held with nothing left to release it.</p>
+
+    <h3 id="acniw-a-landing-group-member-is-released-when-its-group-lands-repro">Reproduction</h3>
+    <p id="acniw-a-landing-group-member-is-released-when-its-group-lands-revs">Base revision <code>b8d76fea6133</code>; the change lands at <code>3155dd788abf</code>.</p>
+    <p id="acniw-a-landing-group-member-is-released-when-its-group-lands-repro-body">A temporary repository and crew home hold a three-member group whose heads
+    are merged onto the primary branch, one request waiting on each member's
+    section, and only the group's outcome record where its journal used to be.
+    At the base revision one pass leaves all three member pointers and all three
+    requests waiting (<code>2 failed</code>, <code>EXIT=1</code>). With the
+    change one pass leaves no member pointer and moves all three requests to
+    <code>queued</code>. The arms: baseline <code>58 passed in 40.96s</code> (<code>b8d76fea6133</code>), after <code>61 passed in 39.61s</code> (<code>3155dd788abf</code> and the scoped gate at <code>61 passed in 40.11s</code>).</p>
+
+    <h3 id="acniw-a-landing-group-member-is-released-when-its-group-lands-note">What the change does</h3>
+    <p id="acniw-a-landing-group-member-is-released-when-its-group-lands-change">The landing pass now reads a finished group's own outcome, which names every
+    member beside the head it landed, and releases each member whose recorded
+    head is an ancestor of the primary branch. The release itself runs through
+    the existing integrated-release path, so the workspace check, the receipt
+    and the section-waiter release are the same ones a live-journal release
+    uses. A member whose recorded head is not on the branch keeps its pointer
+    and its waiters.</p>
+
+    <table id="acniw-a-landing-group-member-is-released-when-its-group-lands-measure">
+      <thead><tr><th>Case</th><th>Base</th><th>Head</th></tr></thead>
+      <tbody>
+        <tr><td>Landed group, journal gone</td><td>3 member pointers kept, 3 waits held</td><td>0 pointers, 3 requests queued</td></tr>
+        <tr><td>Partially landed group, journal gone</td><td>3 pointers kept</td><td>only the landed members released</td></tr>
+        <tr><td>Group not landed</td><td>3 pointers and waits kept</td><td>3 pointers and waits kept</td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

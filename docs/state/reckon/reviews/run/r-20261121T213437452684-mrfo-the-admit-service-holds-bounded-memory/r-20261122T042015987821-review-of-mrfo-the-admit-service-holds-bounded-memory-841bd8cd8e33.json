@@ -1,0 +1,112 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline-arm.log at 4a5ec5081e records 62 passed with a closing EXIT=0 and no FAILED line, so its failure set is empty; the head log after-arm.log at 841bd8cd8e carries only its two header lines and reads in no gate format, so it is unmeasured; the zero is taken from the reviewed run's own record of that same gate at 00945f8e1d - 67 passed with EXIT=0, captured in its stream at resume-3.jsonl line 5574 - and 00945f8e1d differs from the reviewed head only in the evidence fragment (git diff 00945f8e1d..841bd8cd8e is that file alone), so the added-failure set is empty but the head receipt is missing, which is reported as a blocking finding.",
+  "call_sites": [
+    "reckon/crew_run_commands.py:6223 (crew admit calls queue_admission.admit_until_stopped)",
+    "reckon/crew/queue_admission.py:254 (re-exports admit_until_stopped)",
+    "reckon/crew/queue_admission.py:367 (re-exports _publish_pass_verdicts)",
+    "reckon/crew/queue_admission.py:369 (re-exports _record_pass_verdicts)",
+    "reckon/crew/obligations.py:5019 (reads recent_upstream_retirements)"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-mrfo-the-admit-service-holds-bounded-memory-841bd8cd8e33",
+      "recorded_at": "2026-11-22T05:08:18.298880+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T04:22:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-mrfo-the-admit-service-holds-bounded-memory-841bd8cd8e33",
+      "recorded_at": "2026-11-22T05:08:15.941286+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-mrfo-the-admit-service-holds-bounded-memory-841bd8cd8e33",
+      "recorded_at": "2026-11-22T05:08:17.031643+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory/after-arm.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "the head-arm gate log carries only its two header lines: no pytest summary and no closing EXIT= line, so the manifest's after_suite (revision 841bd8cd8e, completed true, exit 0, failure_count 0) cannot be read from the artefact it names; attempt 4 was SIGTERMed at 04:19Z while that gate was running, and the completed 67-pass run the manifest quotes belongs to 00945f8e1d, not to the head 841bd8cd8e the record attributes it to."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory/manifest.md",
+      "line": "26",
+      "severity": "blocking",
+      "text": "the done_when's leading measure - the admit service on the fleet node, with at least 30 live pointers, after 100 consecutive passes, under 2 GiB resident and matching its own pass reading within 10 % - is neither asserted by a test nor recorded among evidence_inputs, which hold 50-pass fixture probes only; that a days-old service stays bounded is therefore unmeasured at the duration the section states."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "the growing-fixture after row records +20 % for 99 MiB after 5 passes and 121 MiB after 50, which is +22 %, and manifest.md:29 makes the same +20 % claim from 103,755,776 B to 127,389,696 B (which is +22.8 %), so the landed record understates the growth it reports."
+    },
+    {
+      "file": "tests/test_the_lander_skips_a_run_landed_elsewhere.py",
+      "line": "129",
+      "severity": "non-blocking",
+      "text": "assert idle[\"resident_bytes\"] == resident compares the record against the very value the test handed _pass_verdict_record at line 117, so it reddens only if the recorder drops or renames the key and cannot detect a wrong or zero reading; the truth of the value is guarded only by the independent /proc comparison at tests/test_the_admit_service_holds_bounded_memory.py:114."
+    },
+    {
+      "file": "tests/test_the_admit_service_holds_bounded_memory.py",
+      "line": "148",
+      "severity": "non-blocking",
+      "text": "the new test module ends without a newline and ruff reports W292 at 148:69 (verified by running ruff over the head tree), so the commit adds a lint finding in a repository whose rule is that a commit adds none."
+    },
+    {
+      "file": "reckon/crew/admission/service.py",
+      "line": "181",
+      "severity": "non-blocking",
+      "text": "resident_bytes returns 0 when /proc/self/status cannot be read and _release_pass_memory then records that 0 B as the pass's memory figure, so an unreadable reading is indistinguishable in the verdict log from a measured zero."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the eleven commits 47fe0ca621..841bd8cd8e against 4a5ec5081e; eight paths, +308/-35: resident_bytes and _release_pass_memory in service.py, the bound in shared.py, the removal of the idle-pass early returns in verdicts.py, the newest-non-empty retirements reader in obligations.py, memo_entries in file_memo.py, the new test module, the lander assertion change and the evidence fragment.",
+    "done_when": "the done_when names tests/test_the_admit_service_holds_bounded_memory.py covering a 50-pass 10 % band and an idle pass writing a reading that carries the memory figure; lines 99 and 114 assert exactly those against an independent /proc reader, but the done_when's leading measure - the fleet node, at least 30 live pointers, 100 consecutive passes under 2 GiB matched to the pass reading within 10 % - is asserted by no test and recorded nowhere in the run's evidence.",
+    "goal": "the section's goal is a service whose resident memory stays bounded across passes and whose every pass, including an idle one, leaves a reading carrying that memory; reckon/crew/admission/shared.py:224 states ADMIT_MEMORY_BOUND_BYTES = 2 GiB, reckon/crew/admission/service.py:186 releases a pass's freed pages and drops the parse memo only when the service's own reading is above that bound, service.py:528 and service.py:595 read the service's own /proc figure after every pass, and reckon/crew/obligations.py:2140 returns the newest non-empty retirement list so an idle pass cannot hide one.",
+    "manifest": "read; it reports status complete from 4a5ec5081e to 841bd8cd8e over eleven commits and its negative controls are corroborated by the logs, but its after_suite names after-arm.log and claims revision 841bd8cd8e with completed true, exit 0 and zero failures while that log carries only its two header lines and no summary or EXIT= line.",
+    "write_paths": "the declared set is reckon/crew/admission, reckon/run_store.py, reckon/ledger.py, reckon/crew/file_memo.py, tests/test_the_admit_service_holds_bounded_memory.py, the evidence fragment, the figures directory, tests/test_the_lander_skips_a_run_landed_elsewhere.py, reckon/crew/obligations.py and reckon/file_memo.py; every one of the eight paths in the delivered diff (service.py, shared.py, verdicts.py, obligations.py, reckon/file_memo.py, the two test files and the fragment) is inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_the_admit_service_holds_bounded_memory.py:138 and :128 fail with the memo branch restored (controls A and C), :114 fails against this process's own /proc figure when the reader is a constant (control D) and :148 fails when the retirements reader stops at the newest pass (control B), while the 50-pass band at :99 still passes at the base revision.",
+    "evidence": "the gate is named and its fixture arms are logged, but the reviewed head log after-arm.log records no run, and the fleet-node 100-pass measure the done_when leads with is absent, so the stated measure is not evidenced.",
+    "fit": "the new helpers follow the module's import-in-function style at reckon/crew/admission/service.py:186 and carry no plan or version label, but the added test file leaves a ruff W292, so the change is not clean at the paths it stages.",
+    "goal_fidelity": "reckon/crew/admission/service.py:186 releases a pass's freed pages and service.py:528 and service.py:595 record the service's own resident figure on every pass, idle included, so the landed code does what the goal states.",
+    "reuse": "the diff extends owners rather than forking them: it imports reckon/crew/station.py:878 release_freed_memory and adds an accessor beside reckon/file_memo.py:645 clear, and the one new reader at service.py:174 has no callable owner (the nearest is the inline VmRSS regex at reckon/crew/fleet_supervisor.py:1034).",
+    "scope_discipline": "every path in the delivered diff - service.py, shared.py, verdicts.py, obligations.py, reckon/file_memo.py, the two tests and the fragment - is inside the declared write paths, and the obligations.py change is the idle-reading change's own consequence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's goal is a service whose resident memory stays bounded across passes and whose every pass, including an idle one, leaves a reading carrying that memory; reckon/crew/admission/shared.py:224 states ADMIT_MEMORY_BOUND_BYTES = 2 GiB, reckon/crew/admission/service.py:186 releases a pass's freed pages and drops the parse memo only when the service's own reading is above that bound, service.py:528 and service.py:595 read the service's own /proc figure after every pass, and reckon/crew/obligations.py:2140 returns the newest non-empty retirement list so an idle pass cannot hide one.\nVERDICT done_when: the done_when names tests/test_the_admit_service_holds_bounded_memory.py covering a 50-pass 10 % band and an idle pass writing a reading that carries the memory figure; lines 99 and 114 assert exactly those against an independent /proc reader, but the done_when's leading measure - the fleet node, at least 30 live pointers, 100 consecutive passes under 2 GiB matched to the pass reading within 10 % - is asserted by no test and recorded nowhere in the run's evidence.\nVERDICT write_paths: the declared set is reckon/crew/admission, reckon/run_store.py, reckon/ledger.py, reckon/crew/file_memo.py, tests/test_the_admit_service_holds_bounded_memory.py, the evidence fragment, the figures directory, tests/test_the_lander_skips_a_run_landed_elsewhere.py, reckon/crew/obligations.py and reckon/file_memo.py; every one of the eight paths in the delivered diff (service.py, shared.py, verdicts.py, obligations.py, reckon/file_memo.py, the two test files and the fragment) is inside it.\nVERDICT manifest: read; it reports status complete from 4a5ec5081e to 841bd8cd8e over eleven commits and its negative controls are corroborated by the logs, but its after_suite names after-arm.log and claims revision 841bd8cd8e with completed true, exit 0 and zero failures while that log carries only its two header lines and no summary or EXIT= line.\nVERDICT diff: read the eleven commits 47fe0ca621..841bd8cd8e against 4a5ec5081e; eight paths, +308/-35: resident_bytes and _release_pass_memory in service.py, the bound in shared.py, the removal of the idle-pass early returns in verdicts.py, the newest-non-empty retirements reader in obligations.py, memo_entries in file_memo.py, the new test module, the lander assertion change and the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:6223 (crew admit calls queue_admission.admit_until_stopped), reckon/crew/queue_admission.py:254 (re-exports admit_until_stopped), reckon/crew/queue_admission.py:367 (re-exports _publish_pass_verdicts), reckon/crew/queue_admission.py:369 (re-exports _record_pass_verdicts), reckon/crew/obligations.py:5019 (reads recent_upstream_retirements)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/admission/service.py:186 releases a pass's freed pages and service.py:528 and service.py:595 record the service's own resident figure on every pass, idle included, so the landed code does what the goal states.\nSCORE evidence: 7\nJUSTIFICATION evidence: the gate is named and its fixture arms are logged, but the reviewed head log after-arm.log records no run, and the fleet-node 100-pass measure the done_when leads with is absent, so the stated measure is not evidenced.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the delivered diff - service.py, shared.py, verdicts.py, obligations.py, reckon/file_memo.py, the two tests and the fragment - is inside the declared write paths, and the obligations.py change is the idle-reading change's own consequence.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_admit_service_holds_bounded_memory.py:138 and :128 fail with the memo branch restored (controls A and C), :114 fails against this process's own /proc figure when the reader is a constant (control D) and :148 fails when the retirements reader stops at the newest pass (control B), while the 50-pass band at :99 still passes at the base revision.\nSCORE fit: 15\nJUSTIFICATION fit: the new helpers follow the module's import-in-function style at reckon/crew/admission/service.py:186 and carry no plan or version label, but the added test file leaves a ruff W292, so the change is not clean at the paths it stages.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff extends owners rather than forking them: it imports reckon/crew/station.py:878 release_freed_memory and adds an accessor beside reckon/file_memo.py:645 clear, and the one new reader at service.py:174 has no callable owner (the nearest is the inline VmRSS regex at reckon/crew/fleet_supervisor.py:1034).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory/after-arm.log:1 blocking: the head-arm gate log carries only its two header lines: no pytest summary and no closing EXIT= line, so the manifest's after_suite (revision 841bd8cd8e, completed true, exit 0, failure_count 0) cannot be read from the artefact it names; attempt 4 was SIGTERMed at 04:19Z while that gate was running, and the completed 67-pass run the manifest quotes belongs to 00945f8e1d, not to the head 841bd8cd8e the record attributes it to.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory/manifest.md:26 blocking: the done_when's leading measure - the admit service on the fleet node, with at least 30 live pointers, after 100 consecutive passes, under 2 GiB resident and matching its own pass reading within 10 % - is neither asserted by a test nor recorded among evidence_inputs, which hold 50-pass fixture probes only; that a days-old service stays bounded is therefore unmeasured at the duration the section states.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/mrfo-the-admit-service-holds-bounded-memory.html:30 non-blocking: the growing-fixture after row records +20 % for 99 MiB after 5 passes and 121 MiB after 50, which is +22 %, and manifest.md:29 makes the same +20 % claim from 103,755,776 B to 127,389,696 B (which is +22.8 %), so the landed record understates the growth it reports.\nFINDING tests/test_the_lander_skips_a_run_landed_elsewhere.py:129 non-blocking: assert idle[\"resident_bytes\"] == resident compares the record against the very value the test handed _pass_verdict_record at line 117, so it reddens only if the recorder drops or renames the key and cannot detect a wrong or zero reading; the truth of the value is guarded only by the independent /proc comparison at tests/test_the_admit_service_holds_bounded_memory.py:114.\nFINDING tests/test_the_admit_service_holds_bounded_memory.py:148 non-blocking: the new test module ends without a newline and ruff reports W292 at 148:69 (verified by running ruff over the head tree), so the commit adds a lint finding in a repository whose rule is that a commit adds none.\nFINDING reckon/crew/admission/service.py:181 non-blocking: resident_bytes returns 0 when /proc/self/status cannot be read and _release_pass_memory then records that 0 B as the pass's memory figure, so an unreadable reading is indistinguishable in the verdict log from a measured zero.",
+  "review_node": "review-of-mrfo-the-admit-service-holds-bounded-memory-841bd8cd8e33",
+  "review_run_id": "r-20261122T042015987821-review-of-mrfo-the-admit-service-holds-bounded-memory-841bd8cd8e33",
+  "reviewed_base_sha": "4a5ec5081e3dbac8d523e4d6a1b1d5261ec61410",
+  "reviewed_head_sha": "841bd8cd8e3320088b4b8cd277182f6ffed90dd7",
+  "reviewed_run_id": "r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T042015987821-review-of-mrfo-the-admit-service-holds-bounded-memory-841bd8cd8e33"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 7,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:48:34.484518+00:00",
+  "total": 92
+}

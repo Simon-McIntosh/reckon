@@ -813,7 +813,9 @@ def _refuse_undetermined_status(
         and not manifest_status_is_template(status)
         and str(status).strip().lower() not in MANIFEST_STATUSES
     ):
-        raise ManifestParseError(_unknown_status_word_manifest_message(path, status))
+        raise ManifestParseError(
+            _unknown_status_word_manifest_message(path, status, fields)
+        )
     return fields
 
 
@@ -827,15 +829,43 @@ def _incidental_prose_manifest_message(path: str | None, keys: list[str]) -> str
     )
 
 
-def _unknown_status_word_manifest_message(path: str | None, word: object) -> str:
+def _unknown_status_word_manifest_message(
+    path: str | None, word: object, fields: Mapping[str, Any] | None = None
+) -> str:
     where = f" at {path}" if path else ""
     recognised = ", ".join(sorted(MANIFEST_STATUSES))
-    return (
+    message = (
         f"refused manifest{where}: field 'status' rejected value {word!r} "
         f"because it is not a recognised manifest status (recognised: "
         f"{recognised}); the manifest structure and all remaining fields "
         "parsed successfully"
     )
+    # A body refused for its status word can also carry a wait declaration, and
+    # a declaration beside a status no reader accepts can never be probed.
+    # Quoting it here is the only place both are still in hand: the classifier
+    # reads a manifest the reader refused as an error text, which keeps the
+    # probe line out of everything downstream, and a coordinator otherwise
+    # repairs the status and leaves the wait still unrunnable.
+    declared_wait = _declared_wait_text(fields or {})
+    if declared_wait:
+        message += (
+            f"; the body also declares the wait {declared_wait}, which no reader "
+            "can probe while the status names no wait"
+        )
+    return message
+
+
+def _declared_wait_text(fields: Mapping[str, Any]) -> str:
+    """The wait a refused manifest declares, as the field and value a repair edits."""
+    for key in ("wait_probe", "wait_file"):
+        value = fields.get(key)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        if isinstance(value, list):
+            # The parsed array is quoted in the form a repair writes it back.
+            return f"{key} {json.dumps(value)!r}"
+        return f"{key} {str(value).strip()!r}"
+    return ""
 
 
 def _missing_status_manifest_message(path: str | None, keys: list[str]) -> str:
@@ -1548,14 +1578,13 @@ def _fence_notice_texts() -> tuple[str, ...]:
     return (current, *_RETIRED_FENCE_NOTICE_TEXTS)
 
 
-# The fence also records which temp directory stood in for the task's own. Its
-# paths and host vary with every launch, so its wording is matched rather than
-# its whole text; a log that carries it above the measure's header is a log
-# whose header is still the first line the measure wrote. Both notices are
-# written by one launch, so a log may open with both.
-_FENCE_STANDIN_TOOL = "fence"
-_FENCE_STANDIN_NOTICE = re.compile(
-    r"temp directory .+ is absent on .+; the task's own empty temp directory "
+# The fence's second prologue line, written when the worker's temp directory is
+# absent on the job node: the task's own empty temp stands in for it, and the
+# line names which overlay did so a gate log states what it measured under.
+# A node-local temp directory is absent on every other node by construction, so
+# a fenced gate records this line on any measurement it takes.
+_FENCE_TEMP_NOTICE = re.compile(
+    r"temp directory \S+ is absent on \S+; the task's own empty temp directory "
     r"stands in for it"
 )
 
@@ -1563,8 +1592,8 @@ _FENCE_STANDIN_NOTICE = re.compile(
 def _is_fence_prologue(line: str) -> bool:
     """Whether a log line is the launch fence's notice rather than a record."""
     tool, _, rest = line.partition(":")
-    if tool.strip() == _FENCE_STANDIN_TOOL:
-        return _FENCE_STANDIN_NOTICE.fullmatch(rest.strip()) is not None
+    if tool.strip() == "fence":
+        return _FENCE_TEMP_NOTICE.fullmatch(rest.strip()) is not None
     return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() in _fence_notice_texts()
 
 
