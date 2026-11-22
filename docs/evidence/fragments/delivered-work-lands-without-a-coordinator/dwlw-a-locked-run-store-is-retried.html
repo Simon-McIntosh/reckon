@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A promotion that lost the run store's lock is retried by the service</title>
+</head>
+<body>
+  <main class="evidence-fragment">
+    <h2 id="dwlw-a-locked-run-store-is-retried--finding">A locked run store left a promotion permanently failed</h2>
+    <p>A promotion records its row in the run store, and the store retries a held write lock with a bounded backoff. A lock outlasting that bound is a refusal rather than a landed run: the ledger raises it naming the store, the request records <code>promotion-failed</code>, and the deliverable is otherwise unchanged. Nothing promoted it again. The run stayed a coordinator obligation although the only thing that had gone wrong was a busy store.</p>
+    <p>The reproduction is a promotion whose store write raises the store's own lock error on the refusal's cause chain. On the base revision the service's next pass launches nothing, the request is still <code>promotion-failed</code>, and its obligation asks a coordinator to promote the run again.</p>
+    <h3 id="dwlw-a-locked-run-store-is-retried--change">What changed</h3>
+    <ul>
+      <li>A refusal whose cause chain carries the run store's lock now records that the service owes the retry, beside the ledger's own account of the refusal.</li>
+      <li>The service's next pass re-queues such a request with the kind and options it carried, so the promotion runs again and lands once the lock is free.</li>
+      <li>The obligation names the locked store and says the service retries the promotion, so no coordinator action is owed.</li>
+      <li>The debt is read from the lock itself. A gate refusal, and any other failure, is not marked and is never retried; the existing rule for a refusal judged by superseded code is unchanged.</li>
+    </ul>
+    <h3 id="dwlw-a-locked-run-store-is-retried--evidence">Evidence</h3>
+    <p>Three cases pass at the head: a locked-store refusal is re-queued on the next pass and reaches <code>promoted</code> when the lock clears; while it waits its obligation names the locked store and the service's retry; and a gate refusal is not retried.</p>
+    <p>Negative control: on the pinned base revision the first case fails with <code>the service left the request at promotion-failed after its pass</code>, and the obligation case fails because its reason carries the ledger refusal instead of the service's retry. Both figures are in the run's <code>negative-control.log</code>, which records the base revision, its tree and its literal command.</p>
+    <p>The logs cited: the baseline arm at revision dde7b001 (58 passed in 40.46s), the after arm at revision 038907d595 (61 passed in 40.86s), and the scoped gate at revision 038907d595 (61 passed in 36.35s). Each opens with its own revision, tree and command and closes with its exit status. The baseline arm omits the new test file, which is absent at the base revision, so the two arms collect the same suite plus that file.</p>
+  </main>
+</body>
+</html>
