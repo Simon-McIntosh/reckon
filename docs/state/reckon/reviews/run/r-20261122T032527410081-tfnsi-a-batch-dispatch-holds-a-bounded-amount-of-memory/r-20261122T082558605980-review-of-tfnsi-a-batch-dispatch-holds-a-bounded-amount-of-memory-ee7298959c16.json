@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:1074",
+    "reckon/roadmap.py:3812"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:26:54Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-ee7298959c16",
+      "recorded_at": "2026-11-22T09:34:08.910842+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 185,
+      "severity": "blocking",
+      "text": "_store_history_rows treats a store with no rows for the project as an answer and never falls through to the committed ledger \u2014 run_store.stored_run_rows returns an empty list when the store file exists (reckon/run_store.py:1028-1030, docstring 1011-1012) while reckon/ledger.py:2861-2864 falls through on any empty answer \u2014 so held_section_blockers at reckon/roadmap.py:3812 reports a ledger-only project's delivered nodes as free and the queue can re-dispatch them."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 163,
+      "severity": "non-blocking",
+      "text": "the added read duplicates the capability reckon/ledger.py:_load_file_history already owns (store-then-ledger selection, plan narrowing through stored_run_rows(plan=...), picker projection); it neither extends nor wraps that owner, which is how the fallback divergence above arose."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 239,
+      "severity": "non-blocking",
+      "text": "the index keeps a node's last row by iteration order, but stored_run_rows yields main rows before archived rows (reckon/run_store.py:785-799, ORDER BY rowid), so a node re-promoted after its earlier row was retired keeps the older archived run_id and completed_at; the hold itself is unaffected."
+    },
+    {
+      "file": "manifest.md",
+      "line": 29,
+      "severity": "non-blocking",
+      "text": "rubric.evidence claims the brief-carried plan fallback is asserted by the queue-ordering test, but no gate log runs tests/test_queue_ordering_reads_history_once.py or tests/test_a_brief_carried_run_counts_toward_its_section.py, the two files covering held_section_blockers and that fallback."
+    },
+    {
+      "file": "manifest.md",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "two of the five declared write paths \u2014 the evidence fragment and its figure directory under docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/ \u2014 carry no change, so the section's measured result is recorded only in the run manifest and not on the plan page."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/dispatch_batch.py:1074 and reckon/roadmap.py:3812",
+    "diff": "read commit by commit from ebad3fef to ee7298959c: d2b9899943 reads a node's hold from its own store rows and ee7298959c keeps the hold index rather than the decoded rows, +328/-49 over two files.",
+    "done_when": "the four-arm profile was run and logged (measure.log, measure2.log, doubled-{base,head}.log) and the unmet ratios are recorded in manifest.md:15 beside the base-revision negative control that fails in negative-control-base-tests.log.",
+    "goal": "\u00a78's deliverable asks that a batch dispatch hold one node's delivered-run records at a time so its peak no longer scales with the store; reckon/crew/section_holds.py:357 narrows held_node_rows to one node, but the delivered doubling arm shows the head's forty-entry peak still rising 89 % when the store doubles, contradicting the goal's second clause.",
+    "manifest": "read; reports complete at ee7298959c with 60 passed at the head and 58 at the base, the gate command and log paths, and the unmet criterion stated in the landing line.",
+    "write_paths": "five declared; the diff touches only reckon/crew/section_holds.py and tests/test_dispatch_batch_memory_profile.py, both inside the declared set, with the declared fragment and figure undelivered."
+  },
+  "justifications": {
+    "durability": "the two added assertions redden against the replaced read (negative-control-base-tests.log records 603 and 600 rows decoded and 2 failed), but no test covers the store-to-committed-ledger fallback the change removes.",
+    "evidence": "the gate is the done_when's own profile and its logs exist (after_suite-1795333166697187097.log EXIT=0, negative-control-base-tests.log EXIT=1), though the head and base figures in the landing line come from different jobs.",
+    "fit": "the added names describe the mechanism and the local-import and noqa: BLE001 idioms match the module's existing style at reckon/crew/section_holds.py:77.",
+    "goal_fidelity": "reckon/crew/section_holds.py:190 bounds the hold answer to one node's rows, while the delivered doubling arm recorded in manifest.md:15 shows the peak still scaling with the store.",
+    "reuse": "_store_history_rows at reckon/crew/section_holds.py:163 re-implements the capability reckon/ledger.py:2844 _load_file_history owns and drops its empty-store fallthrough.",
+    "scope_discipline": "both changed files lie inside the declared write paths and nothing outside them is touched, with the declared fragment and figure left undelivered."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a78's deliverable asks that a batch dispatch hold one node's delivered-run records at a time so its peak no longer scales with the store; reckon/crew/section_holds.py:357 does narrow held_node_rows to one node, but the node's own doubling arm shows the head's forty-entry peak still rising 89 % when the store doubles, so the second clause of the goal is contradicted by the evidence delivered with it.\nVERDICT done_when: the four-arm profile the done_when names was run and its logs are on disk \u2014 measure.log and measure2.log for the base/head widths, doubled-base.log and doubled-head.log for the doubling arm \u2014 and the unmet ratios (0.83 at eight entries, 0.96 at forty, 89 % on doubling) are recorded in manifest.md:15 beside the base-revision negative control that fails in negative-control-base-tests.log.\nVERDICT write_paths: five paths were declared and the diff touches two of them \u2014 reckon/crew/section_holds.py and tests/test_dispatch_batch_memory_profile.py \u2014 with no path outside the declared set changed; the declared evidence fragment and figure directory under docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/ carry no change.\nVERDICT manifest: read; it reports complete at commit ee7298959c with 60 passed at the head, 58 at the base, the gate command and both log paths, and it states the unmet criterion and the instrument's spread in the landing line rather than claiming a pass.\nVERDICT diff: read commit by commit from ebad3fef to ee7298959c \u2014 d2b9899943 reads a node's hold from its own store rows and ee7298959c keeps the hold index rather than the decoded rows \u2014 and the pair replaces the population-wide _history_rows read with a projected, node-narrowed _history_index across two files (+328/-49).\nCALL_SITES: reckon/crew/dispatch_batch.py:1074, reckon/roadmap.py:3812\nSCORE goal_fidelity: 10\nJUSTIFICATION goal_fidelity: reckon/crew/section_holds.py:190 bounds the hold answer to one node's rows, while the delivered doubling arm recorded in manifest.md:15 shows the peak still scaling with the store.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate is the done_when's own profile and its logs exist (after_suite-1795333166697187097.log EXIT=0, negative-control-base-tests.log EXIT=1), though the head and base figures in the landing line come from different jobs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: both changed files lie inside the declared write paths and nothing outside them is touched, with the declared fragment and figure left undelivered.\nSCORE durability: 15\nJUSTIFICATION durability: the two added assertions redden against the replaced read (negative-control-base-tests.log records 603 and 600 rows decoded and 2 failed), but no test covers the store-to-committed-ledger fallback the change removes.\nSCORE fit: 17\nJUSTIFICATION fit: the added names describe the mechanism and the local-import and noqa: BLE001 idioms match the module's existing style at reckon/crew/section_holds.py:77.\nSCORE reuse: 5\nJUSTIFICATION reuse: _store_history_rows at reckon/crew/section_holds.py:163 re-implements the capability reckon/ledger.py:2844 _load_file_history owns and drops its empty-store fallthrough.\nFINDING reckon/crew/section_holds.py:185 blocking: _store_history_rows treats a store with no rows for the project as an answer and never falls through to the committed ledger \u2014 run_store.stored_run_rows returns an empty list when the store file exists (reckon/run_store.py:1028-1030, docstring 1011-1012) while reckon/ledger.py:2861-2864 falls through on any empty answer \u2014 so held_section_blockers at reckon/roadmap.py:3812 reports a ledger-only project's delivered nodes as free and the queue can re-dispatch them.\nFINDING reckon/crew/section_holds.py:163 non-blocking: the added read duplicates the capability reckon/ledger.py:_load_file_history already owns (store-then-ledger selection, plan narrowing through stored_run_rows(plan=...), picker projection); it neither extends nor wraps that owner, which is how the fallback divergence above arose.\nFINDING reckon/crew/section_holds.py:239 non-blocking: the index keeps a node's last row by iteration order, but stored_run_rows yields main rows before archived rows (reckon/run_store.py:785-799, ORDER BY rowid), so a node re-promoted after its earlier row was retired keeps the older archived run_id and completed_at; the hold itself is unaffected.\nFINDING manifest.md:29 non-blocking: rubric.evidence claims the brief-carried plan fallback is asserted by the queue-ordering test, but no gate log runs tests/test_queue_ordering_reads_history_once.py or tests/test_a_brief_carried_run_counts_toward_its_section.py, which are the two files covering held_section_blockers and that fallback.\nFINDING manifest.md:3 non-blocking: two of the five declared write paths \u2014 the evidence fragment and its figure directory \u2014 carry no change, so the section's measured result is recorded only in the run manifest and not on the plan page.\n",
+  "review_run_id": "r-20261122T082558605980-review-of-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-ee7298959c16",
+  "reviewed_base_sha": "ebad3fef8f3d1dbfeb1da78e7da1e142b16c6b18",
+  "reviewed_head_sha": "ee7298959c1625fe77268f395dd70cba6022df87",
+  "reviewed_run_id": "r-20261122T032527410081-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 10,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:57:44.333184+00:00",
+  "total": 80
+}
