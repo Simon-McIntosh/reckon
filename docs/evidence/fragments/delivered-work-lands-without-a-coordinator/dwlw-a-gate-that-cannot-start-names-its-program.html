@@ -53,13 +53,21 @@
 
   <p>Both suite arms were run by the project's own measuring path on
   <code>all_debug</code> at revision
-  <code>78755444b1e1a5fdd41e119aa23c7eea7acc4e37</code>: the after arm logged
-  <em>62 passed in 36.49s</em> and the base arm at
+  <code>67b19df7a09f14adfe3b3790ac8e9df0a703a001</code>: the after arm logged
+  <em>65 passed in 42.38s</em> and the base arm at
   <code>dde7b001769544957d5ca63f50cbb48c26574553</code> <em>58 passed in
-  53.34s</em> — the base arm is narrower because the node's test file does not
-  exist there. The negative control at the pinned base logged <em>3 failed in
-  0.58s</em>; the control for the single-resolver case runs the same file
-  against the tree before the consolidation and logs <em>1 failed, 3 passed</em>,
-  the failure naming <code>landing_measure</code> as the module that
-  re-implements <code>gate_program</code>.</p>
+  36.32s</em> — the base arm is narrower because the node's test file does not
+  exist there.</p>
+
+  <p>Two controls pin the repairs. Against the tree before the resolver was
+  consolidated, the file logs <em>1 failed, 3 passed</em>, the failure naming
+  <code>landing_measure</code> as the module that re-implements
+  <code>gate_program</code>. Against the tree before the shared helpers were
+  consolidated, the same file logs <em>4 failed, 3 passed</em>: the
+  single-resolver case, the count of <code>_is_executable_file</code> and
+  <code>_SHELL_ASSIGNMENT</code> definitions, the rewrite that must touch the
+  program token and no earlier word, and the refusal that must name the program
+  the resolver read rather than the <code>env</code> wrapper. Every case is
+  green at the head. The node's own control at the pinned base logged
+  <em>3 failed in 0.58s</em>.</p>
 </section>
