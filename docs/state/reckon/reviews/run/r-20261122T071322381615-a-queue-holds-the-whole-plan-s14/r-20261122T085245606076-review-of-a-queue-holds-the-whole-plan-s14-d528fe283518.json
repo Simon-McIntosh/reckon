@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:54:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/drain_measure.py",
+      "line": 389,
+      "severity": "non-blocking",
+      "text": "measure_unloaded reports 'plans': len(sections), but sections is keyed by project, so the field counts projects rather than plans; the evidence page repeats it as '119 unloaded sections across 2 plans', while the unloaded lists name many distinct plan slugs, so the delivered evidence carries a wrong plan count."
+    },
+    {
+      "file": "reckon/crew/drain_measure.py",
+      "line": 529,
+      "severity": "non-blocking",
+      "text": "_weight_map accepts a Sequence[float] weights argument but never reads it, returning 1.0 for every project; a caller that passes positional weights gets a fair-share result computed against 1:1 while the report presents it as weighted, which silently understates a real deviation."
+    },
+    {
+      "file": "scripts/measure_queue_drain.py",
+      "line": 219,
+      "severity": "non-blocking",
+      "text": "the grouped bars are placed at the group's edges (position + index*width) while each tick sits at the group's midpoint, so when one project's phase count is zero the other's sole bar sits half a group off its phase label; in the delivered figure the blue 21 bar for 'launched' renders between 'launched' and 'failed', and the blue 12 bar for 'awaiting-upstream' between 'awaiting-upstream' and 'queued', so a reader can misattribute the value."
+    },
+    {
+      "file": "reckon/crew/drain_measure.py",
+      "line": 294,
+      "severity": "non-blocking",
+      "text": "measure_verdict_gap computes only pairwise gaps between a request's recorded verdicts, so a request whose first verdict arrives more than an hour into the covered span is never reported; the guarantee is that no waiting request went an integer span without a recorded verdict, and this misses the opening silence."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T085245606076-review-of-a-queue-holds-the-whole-plan-s14-d528fe283518",
+  "reviewed_base_sha": "3a0f33d3620466b129202c886269037fcdd018fc",
+  "reviewed_head_sha": "d528fe2835180f867e1ae869c2a8883b50b9663f",
+  "reviewed_run_id": "r-20261122T071322381615-a-queue-holds-the-whole-plan-s14",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:14:53.294018+00:00",
+  "total": 100,
+  "verdicts": {
+    "call_sites": "The only production entry point that reaches the added module is scripts/measure_queue_drain.py, which imports reckon.crew.drain_measure and is the operator-invoked script; no CLI verb, server route or MCP read wires the module in.",
+    "diff": "Read commit by commit over 3a0f33d3620..d528fe2835; five files, 3,145 insertions, one new measure module, one operator script, one new test file, one evidence fragment and one SVG figure, all additive.",
+    "done_when": "The section's done_when asks the evidence to record each of the nine measures with its figure and every defect to get its own plan section; the fragment docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queue-holds-the-whole-plan-s14.html tabulates all nine, four as measured, four as unmeasured with the missing record named, one not performed, and records four defects in the fragment instead of filing them as sections.",
+    "goal": "The section goal is a performed dogfood drain over at least 30 requests across two projects; the landed change delivers an instrument (reckon/crew/drain_measure.py) and a real seven-day reading of a normal week, and records plainly that the loading beat never ran, so the operational drain the section asks for is not performed.",
+    "manifest": "Read; it states tests/test_the_drain_measures_its_own_week.py reported 17 passed at the after arm and the delivered head, and points to gate.log, gate-final.log, after_suite.log and baseline_suite.log.",
+    "write_paths": "The manifest declares docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queue-holds-the-whole-plan-s14.html, docs/figures/a-queue-holds-the-whole-plan/a-queue-holds-the-whole-plan-s14, reckon/crew/drain_measure.py, scripts/measure_queue_drain.py and tests/test_the_drain_measures_its_own_week.py; every path in the diff lies inside them."
+  }
+}
