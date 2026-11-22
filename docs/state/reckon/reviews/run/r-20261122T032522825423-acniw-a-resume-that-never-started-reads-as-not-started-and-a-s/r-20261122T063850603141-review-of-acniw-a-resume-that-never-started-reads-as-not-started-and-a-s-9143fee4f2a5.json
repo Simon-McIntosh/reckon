@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/forgotten_runs.py:111 classify_pointer",
+    "reckon/crew/obligations.py:1794 classify_pointer",
+    "reckon/crew/directory.py:343 classify_pointer",
+    "reckon/crew/dispatch_sessions.py:2442 signal_worker(reach_run=True)",
+    "reckon/crew/dispatch_sessions.py:2812 signal_worker(reach_run=True)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T06:40:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 162,
+      "severity": "non-blocking",
+      "text": "RESUME_TURN_BOUND_SECONDS = 900 duplicates the owned STRANDED_LAUNCH_BOUND_SECONDS = 900 at reckon/crew/recovery_liveness.py:70, and the constant's own docstring says 'one clock keeps the two readings from disagreeing'; it is a second copy that drifts if the owner's bound changes and does not extend the owner."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 191,
+      "severity": "non-blocking",
+      "text": "_resumed_attempt_started_seconds re-implements 'when did this attempt begin', owned by reckon/crew/recovery_liveness.py:495 _attempt_started_seconds (re-exported at reckon/crew/recovery.py:100); the addition reads only the pointer's attempt_started_at and drops the owner's attempt.json fallback, so a run whose pointer still dates its predecessor is aged from the wrong attempt."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 165,
+      "severity": "non-blocking",
+      "text": "launcher_waiting_reason re-implements the 'first non-empty line of the launcher's stderr is the reason' convention owned by reckon/crew/recovery_classification.py:3160-3176, reading the file by path where the owner reads the recorded stderr_tail; it duplicates rather than extends the owner, though the owner's launch_failures list is empty for a never-started resume."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "classify_pointer is reached from reckon/crew/forgotten_runs.py:111, reckon/crew/obligations.py:1794, reckon/crew/directory.py:343 and reckon/crew/dispatch_sessions.py; signal_worker with reach_run=True is reached from reckon/crew/dispatch_sessions.py:2442 and :2812.",
+    "diff": "Read commit by commit against b8d76fea; b6f64a60 adds the reading and the step-start condition on the stop, and 41d3bfbb, 96a06832 and 9143fee4 add and correct the evidence fragment, with no test file edited or weakened.",
+    "done_when": "The done_when names a stand-in launcher that blocks, a bounded launch-failed classification carrying the launcher's own reason with a resume offered, a begun-turn case reading working, a stop that ends the launch tree naming each pid, and a base-revision negative control; tests/test_a_resume_that_never_started_reads_as_not_started.py:271-309 assert each and negative-control.log records 2 failed 2 passed at base against 4 passed at head.",
+    "goal": "The node goal is 'make this hold: a resume that never started reads as not started'; reckon/crew/recovery_classification.py:3273 adds the launch-failed reading for a resumed attempt whose own stream holds no turn, and reckon/crew/process_signal.py:1116 ends a never-started placed client's tree, so both halves of the goal are reached from the resume and the stop.",
+    "manifest": "Read in full; it names four commits, the scoped gate and both suite arms with EXIT=0, the negative-control log with 2 failed 2 passed at base, baseline 58 passed / after 62 passed, and the scope_note for the two extra source files.",
+    "write_paths": "The declared paths include resumption.py, process_liveness.py, the test module, process_signal.py, recovery_classification.py and the evidence-fragment and figure directories; the delivered diff is resumption.py, recovery_classification.py, process_signal.py, the test module and the fragment HTML, all inside that scope, with process_liveness.py unchanged and the two extra source files carrying a manifest scope_note."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'make this hold: a resume that never started reads as not started'; reckon/crew/recovery_classification.py:3273 adds the launch-failed reading and reckon/crew/process_signal.py:1116 ends the never-started client tree so the goal holds from the resume and the stop.\nVERDICT done_when: the done_when names a blocking stand-in launcher, a bounded launch-failed reading with the launcher's reason and a resume offered, a begun-turn case reading working, a stop that ends the tree naming every pid, and a base-revision negative control; tests/test_a_resume_that_never_started_reads_as_not_started.py:271-309 assert each and negative-control.log records 2 failed 2 passed at base against 4 passed at head.\nVERDICT write_paths: the declared scope is resumption.py, process_liveness.py, process_signal.py, recovery_classification.py, the test module and the evidence-fragment and figure directories; the delivered diff touches resumption.py, recovery_classification.py, process_signal.py, the test module and the fragment HTML, all inside it, with process_liveness.py unchanged.\nVERDICT manifest: read in full; it names four commits, the scoped gate and both suite arms with EXIT=0, the negative-control log as 2 failed 2 passed at base, baseline 58 passed / after 62 passed, and a scope_note for the two extra source files.\nVERDICT diff: read commit by commit against b8d76fea; b6f64a60 adds the reading and the step-start condition on the stop, and 41d3bfbb, 96a06832 and 9143fee4 add and correct the evidence fragment, with no test deleted or weakened.\nCALL_SITES: reckon/crew/forgotten_runs.py:111, reckon/crew/obligations.py:1794, reckon/crew/directory.py:343, reckon/crew/dispatch_sessions.py:2442, reckon/crew/dispatch_sessions.py:2812\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:3273 classifies a resumed attempt with no turn past the bound as launch-failed carrying the launcher's reason, and reckon/crew/process_signal.py:1116 ends a never-started client tree, so the goal's two behaviours hold.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_resume_that_never_started_reads_as_not_started.py:283 asserts launch-failed with the reason and a resume action, :309 asserts both pids ended, and negative-control.log records 2 failed 2 passed at base with EXIT=1 against head-arm.log's 62 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff b8d76fea..9143fee4 reports only resumption.py, recovery_classification.py, process_signal.py, the test module and the fragment HTML, all inside the dispatch's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_resume_that_never_started_reads_as_not_started.py:283 and :309 redden at the base revision as negative-control.log records, but :271 and :300 pass at base because they forbid an over-fire rather than detect the missing reading, and :278's getattr default lets the bound drift check pass if the constant is renamed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/resumption.py:162 and :218 follow the module's Mapping-typed, deferred-import idiom and add no plan or ticket identifiers, naming only the mechanism.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/resumption.py:162 re-implements the bound owned at reckon/crew/recovery_liveness.py:70 and :191 the attempt clock owned at :495 without extending either, the rubric's at-most-5 case for a duplicated capability.\nFINDING reckon/crew/resumption.py:162 non-blocking: RESUME_TURN_BOUND_SECONDS = 900 duplicates STRANDED_LAUNCH_BOUND_SECONDS = 900 at reckon/crew/recovery_liveness.py:70, a second copy of one clock the docstring itself says must be one.\nFINDING reckon/crew/resumption.py:191 non-blocking: _resumed_attempt_started_seconds re-implements _attempt_started_seconds at reckon/crew/recovery_liveness.py:495 and drops its attempt.json fallback, so a run whose pointer still dates its predecessor is aged from the wrong attempt.\nFINDING reckon/crew/resumption.py:165 non-blocking: launcher_waiting_reason re-implements the first-non-empty-stderr-line reason convention at reckon/crew/recovery_classification.py:3160-3176 rather than extending the owner.",
+  "review_run_id": "r-20261122T063850603141-review-of-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s-9143fee4f2a5",
+  "reviewed_base_sha": "b8d76fea6133278752f383eb93dd69996f9facf9",
+  "reviewed_head_sha": "9143fee4f2a5ad956444b947090c8973cf8a5973",
+  "reviewed_run_id": "r-20261122T032522825423-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T06:59:48.371109+00:00",
+  "total": 95
+}
