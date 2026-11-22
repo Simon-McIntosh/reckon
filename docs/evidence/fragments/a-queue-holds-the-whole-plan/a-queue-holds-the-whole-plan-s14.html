@@ -1,0 +1,190 @@
+<section id="a-queue-holds-the-whole-plan-s14-drain-measured">
+  <h2>A drain week read from the records, and the guarantees those records cannot answer</h2>
+
+  <p><strong>What changed.</strong> The operational drain had no instrument, so
+  none of the section's nine measures could be read at all. This node adds one:
+  <code>reckon/crew/drain_measure.py</code> measures each guarantee from the
+  records a finished run leaves behind, and
+  <code>scripts/measure_queue_drain.py</code> gathers those records — the
+  ledger, the admission verdict log and the drain view — across every project,
+  prints one JSON report and draws the figure beside it. The module is
+  deliberately plain data: a guarantee whose records do not exist reports
+  <code>unmeasured</code> with the name of the record it needs, never a zero.</p>
+
+  <p><strong>The reading.</strong> A real seven-day window,
+  2026-11-15T07:54Z to 2026-11-22T07:54Z, over the durable ledgers of
+  <code>reckon</code> and <code>imas-ambix</code>: <strong>2,194 runs</strong>
+  launched or landed in it. This is not yet the drain the section describes — no
+  coordinator has queued the two plans' remaining width in one beat, and the
+  project weights are 1:1 rather than 3:1 — so the numbers below describe a
+  normal week of the queue as it actually ran, with the gap named in each
+  measure. The loading beat is recorded as <em>not performed</em>, which is
+  itself a result: at measurement the drain view listed <strong>119 unloaded
+  sections across 2 plans</strong> (reckon 124 executable sections remaining,
+  imas-ambix 49), and the live queue held <strong>37 requests</strong> (reckon
+  33, imas-ambix 4).</p>
+
+  <figure id="a-queue-holds-the-whole-plan-s14-drain-week">
+    <img src="/reckon/figures/a-queue-holds-the-whole-plan/a-queue-holds-the-whole-plan-s14/drain-week.svg"
+      alt="Launches and landings per day for reckon and imas-ambix over the window, and requests by phase">
+    <figcaption>Left: runs launched (solid) and landed (dashed) per day, by
+    project, over the seven-day window. Right: the drain view's requests by
+    phase at measurement.</figcaption>
+  </figure>
+
+  <h3 id="a-queue-holds-the-whole-plan-s14-measures">The nine measures</h3>
+
+  <table>
+    <thead>
+      <tr><th>Measure</th><th>Result</th><th>Read from</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>No request launched before its upstream landed</td>
+        <td><strong>Measured, failed:</strong> 14 violations over 6 runs, from
+        269 launches that declare a wait</td>
+        <td>each run's <code>node_definition.section</code> against the plan's
+        <code>plan-section-depends-on</code>, comparing the launch with the
+        earliest recorded completion of each upstream across the whole
+        ledger</td>
+      </tr>
+      <tr>
+        <td>Launch share within ±15% of 3:1 while both projects had ready work</td>
+        <td><strong>Measured, failed:</strong> 98.81% reckon (2,168 launches)
+        against 1.19% imas-ambix (26). The declared weights are 1.0 for all six
+        projects, so the expected split was 50/50 even before the deviation</td>
+        <td><code>flight.declared_project_weights</code> and each project's
+        executable remainder</td>
+      </tr>
+      <tr>
+        <td>The bumped request launched before older default-priority work</td>
+        <td><strong>Unmeasured:</strong> <code>priority_override</code> and
+        <code>priority_set_at</code> live only on the live request pointer, and
+        the pointer is removed when the run launches; a promoted run record
+        carries neither</td>
+        <td>the live pointers — 3 of 37 carry an override at measurement, which
+        proves the field exists and shows where it is lost</td>
+      </tr>
+      <tr>
+        <td>The held request did not launch while held</td>
+        <td><strong>Unmeasured:</strong> the hold lives only on the live
+        pointer (held: 0 of 37 at measurement)</td>
+        <td>the live pointers</td>
+      </tr>
+      <tr>
+        <td>The edited request launched on the edited text, matching the digest</td>
+        <td><strong>Unmeasured:</strong> the steering digest lives only on the
+        live pointer (edited: 0 of 37 at measurement)</td>
+        <td>the live pointers</td>
+      </tr>
+      <tr>
+        <td>No request queued more than an hour without a recorded verdict</td>
+        <td><strong>Unmeasured:</strong> the admission pass log opens 602,505 s
+        after the window starts and spans 2,201 s, so a request that waited
+        across the start of the window has no rows to read. Over the covered
+        span there were 0 waiting requests and 0 violations</td>
+        <td><code>admission_pass_history()</code></td>
+      </tr>
+      <tr>
+        <td>Coordinator turns needed, set beside landed runs</td>
+        <td><strong>Unmeasured</strong> — a turn is recorded as token counts with
+        no turn identity. Lands beside it: <strong>2,194 runs</strong></td>
+        <td>the ledger</td>
+      </tr>
+      <tr>
+        <td>Share of runs landed without a coordinator turn</td>
+        <td><strong>Measured: 1,258 of 2,194 (57.34%)</strong> — review-self 947,
+        review-acceptance 311, no promoter recorded 936</td>
+        <td>the promoter each landed run records</td>
+      </tr>
+      <tr>
+        <td>The drain view listed no unloaded section after the loading beat</td>
+        <td><strong>Not performed:</strong> the beat never ran, and the view
+        lists 119 unloaded sections across 2 plans</td>
+        <td><code>crew view drain</code>, per project</td>
+      </tr>
+      <tr>
+        <td>Every codex-routed request launched as soon as it was ready, every
+        fallback recorded with its reason</td>
+        <td><strong>Partly measured:</strong> 307 launches on a codex backend
+        (<code>codex</code> 290, <code>codex-anchored</code> 17) beside 1,483
+        <code>omp-local</code>, 383 <code>clive</code> and 21
+        <code>clive-anchored</code>; <strong>257 fallbacks recorded</strong>, each
+        with a reason (<code>timeout</code> 45,
+        <code>timeout in pick:capability</code> 4,
+        <code>timeout in pick:snapshot</code> 1 in the sampled rows). The "as
+        soon as it was ready" half is unmeasured: the moment a request became
+        ready is not recorded</td>
+        <td>the backend and <code>picker_selection.fallback_reason</code> each
+        run records</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>The seeded control.</strong> A plan comment requires the drain
+  instrument to report exactly the one seeded DAG-order violation and nothing
+  else. <code>test_a_launch_before_its_upstream_landed_is_the_one_seeded_violation</code>
+  seeds exactly one, and the measure returns <code>violations: 1</code> naming
+  that run while a correctly ordered pair beside it is not counted. The fourteen
+  violations in the real week are therefore not a trigger-happy measure; they
+  are what the week recorded. Two of them wait on a section that never landed at
+  all (<code>the-escape-lane-and-reviews-keep-pace#s2</code>,
+  <code>workers-spend-fewer-tokens-per-landed-node#s17</code>), and ten are two
+  review runs that covered <code>the-monitor-reads-each-fact-once</code>
+  §104–§108 while those sections had not landed.</p>
+
+  <p><strong>Two instrument defects, found and fixed before this reading.</strong>
+  The first measure returned 132 violations. The cause was in the measure, not
+  of the queue: landing moments were computed from the seven-day window only, so
+  an upstream that landed before the window read as "never landed" in 44 of 50
+  sampled rows. It now resolves upstreams against the whole ledger, and a
+  regression test covers that case
+  (<code>test_an_upstream_that_landed_before_the_window_is_not_a_violation</code>).
+  The second: the figure's text check refused to write a figure because a top
+  tick label sat outside the canvas — but the label belonged to a tick beyond
+  the view limits, which is never drawn. The check now considers only ticks
+  inside the view limits. An implausible result was treated as a claim about the
+  instrument, which is what it was.</p>
+
+  <p><strong>Every cross-project wait in the pair.</strong> The two projects'
+  plans declare 822 section waits, 11 of them cross-project, including
+  <code>imas-ambix:local-lane-admission-control §27</code> waiting on
+  <code>reckon:a-queue-holds-the-whole-plan §4</code>. The measure resolves a
+  <code>project:plan#section</code> reference against the other project's runs,
+  so a drain that carries a cross-project wait is measured rather than skipped.</p>
+
+  <h3 id="a-queue-holds-the-whole-plan-s14-defects">Defects the reading exposed</h3>
+
+  <p>Each needs its own section in this plan or a named successor. This node
+  cannot write <code>docs/plans/</code>, so they are recorded here for the
+  coordinator to file.</p>
+
+  <ol>
+    <li><strong>A launched request loses the steering state the drain acted
+    on.</strong> Priority override, queue hold and steering digest are dropped
+    when the run launches, so three of the section's measures cannot be answered
+    after the fact. Either the run record carries the pointer's steering fields
+    at launch, or the verdict log keeps per-request history rather than a pointer
+    snapshot.</li>
+    <li><strong>The admission verdict log is not kept for the window it is read
+    over.</strong> It spans about 37 minutes here, so a silence measure can only
+    be answered for the covered span. The log needs retention at least as long
+    as a drain's measure window, or the measure must name the span it actually
+    covers rather than the drain's.</li>
+    <li><strong>Project weights are undeclared.</strong> All six projects
+    resolve to 1.0, so a 3:1 drain would silently run 1:1. The loading beat has
+    to write the weights before it dispatches.</li>
+    <li><strong>Fourteen launches beat their upstream, two of them waiting on a
+    section that never landed.</strong> A stale declaration and a genuine
+    release are different defects and both appear here; the two "never landed"
+    pairs read as stale section waits.</li>
+  </ol>
+
+  <p><strong>The evidence.</strong> The gate is
+  <code>tests/test_the_drain_measures_its_own_week.py</code>: 17 tests, all
+  passing, covering the seeded violation, the pre-window upstream, the
+  cross-project wait, the healthy verdict control, the log that opens inside its
+  window, and the unmeasured arm of every measure. The report and the run log
+  live beside the run's other records, and the figure is drawn by the same
+  script so it cannot drift from the numbers it illustrates.</p>
+</section>

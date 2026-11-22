@@ -6,9 +6,18 @@ from datetime import UTC, datetime, timedelta
 from reckon.crew import drain_measure
 
 
-def _run(run_id, *, project="reckon", plan="some-plan", section="§2",
-         launched="2026-11-20T10:00:00Z", completed="2026-11-20T12:00:00Z",
-         backend="clive", promoted_by=None, fallback_reason=None):
+def _run(
+    run_id,
+    *,
+    project="reckon",
+    plan="some-plan",
+    section="§2",
+    launched="2026-11-20T10:00:00Z",
+    completed="2026-11-20T12:00:00Z",
+    backend="clive",
+    promoted_by=None,
+    fallback_reason=None,
+):
     record = {
         "run_id": run_id,
         "project": project,
@@ -27,8 +36,12 @@ def _run(run_id, *, project="reckon", plan="some-plan", section="§2",
 
 
 def _pass(at, rows):
-    return {"at": at, "pointers": [{"run_id": run_id, "verdict": verdict}
-                                   for run_id, verdict in rows]}
+    return {
+        "at": at,
+        "pointers": [
+            {"run_id": run_id, "verdict": verdict} for run_id, verdict in rows
+        ],
+    }
 
 
 NOW = datetime(2026, 11, 22, 12, 0, tzinfo=UTC)
@@ -38,15 +51,31 @@ def test_a_launch_before_its_upstream_landed_is_the_one_seeded_violation():
     """The instrument counts the violation it is seeded with, and only that one."""
     runs = [
         # The seeded violation: §3 launches at 09:00, §2 it waits on lands 12:00.
-        _run("r-before", section="§3", launched="2026-11-20T09:00:00Z",
-             completed="2026-11-20T10:00:00Z"),
-        _run("r-upstream", section="§2", launched="2026-11-20T11:00:00Z",
-             completed="2026-11-20T12:00:00Z"),
+        _run(
+            "r-before",
+            section="§3",
+            launched="2026-11-20T09:00:00Z",
+            completed="2026-11-20T10:00:00Z",
+        ),
+        _run(
+            "r-upstream",
+            section="§2",
+            launched="2026-11-20T11:00:00Z",
+            completed="2026-11-20T12:00:00Z",
+        ),
         # Correct order: §5 waits on §4, and §4 landed first.
-        _run("r-upstream-2", section="§4", launched="2026-11-20T08:00:00Z",
-             completed="2026-11-20T09:00:00Z"),
-        _run("r-after", section="§5", launched="2026-11-20T09:30:00Z",
-             completed="2026-11-20T11:00:00Z"),
+        _run(
+            "r-upstream-2",
+            section="§4",
+            launched="2026-11-20T08:00:00Z",
+            completed="2026-11-20T09:00:00Z",
+        ),
+        _run(
+            "r-after",
+            section="§5",
+            launched="2026-11-20T09:30:00Z",
+            completed="2026-11-20T11:00:00Z",
+        ),
     ]
     depends_on = {
         ("reckon", "some-plan"): {
@@ -77,13 +106,18 @@ def test_a_wait_on_a_section_that_never_landed_is_a_violation():
 
 def test_an_upstream_that_landed_before_the_window_is_not_a_violation():
     upstream = _run(
-        "r-upstream", section="§2",
-        launched="2026-10-01T08:00:00Z", completed="2026-10-01T09:00:00Z",
+        "r-upstream",
+        section="§2",
+        launched="2026-10-01T08:00:00Z",
+        completed="2026-10-01T09:00:00Z",
     )
     window = [
-        _run("r-dependent", section="§3",
-             launched="2026-11-20T09:00:00Z",
-             completed="2026-11-20T10:00:00Z"),
+        _run(
+            "r-dependent",
+            section="§3",
+            launched="2026-11-20T09:00:00Z",
+            completed="2026-11-20T10:00:00Z",
+        ),
     ]
     depends_on = {("reckon", "some-plan"): {"s3": ["some-plan#s2"]}}
 
@@ -99,11 +133,21 @@ def test_an_upstream_that_landed_before_the_window_is_not_a_violation():
 
 def test_a_cross_project_wait_resolves_to_the_other_project():
     runs = [
-        _run("r-far", project="reckon", plan="other-plan", section="§2",
-             launched="2026-11-20T09:00:00Z"),
-        _run("r-upstream", project="imas-ambix", plan="their-plan", section="§4",
-             launched="2026-11-20T10:00:00Z",
-             completed="2026-11-20T11:00:00Z"),
+        _run(
+            "r-far",
+            project="reckon",
+            plan="other-plan",
+            section="§2",
+            launched="2026-11-20T09:00:00Z",
+        ),
+        _run(
+            "r-upstream",
+            project="imas-ambix",
+            plan="their-plan",
+            section="§4",
+            launched="2026-11-20T10:00:00Z",
+            completed="2026-11-20T11:00:00Z",
+        ),
     ]
     depends_on = {
         ("reckon", "other-plan"): {
@@ -130,9 +174,7 @@ def test_dag_order_counts_only_launches_that_declare_a_wait():
 
 
 def test_fair_share_reads_the_weights_both_projects_were_launched_under():
-    runs = [
-        _run(f"r-a{n}", project="reckon") for n in range(6)
-    ] + [
+    runs = [_run(f"r-a{n}", project="reckon") for n in range(6)] + [
         _run(f"r-b{n}", project="imas-ambix") for n in range(2)
     ]
     result = drain_measure.measure_fair_share(
@@ -151,7 +193,8 @@ def test_fair_share_reads_the_weights_both_projects_were_launched_under():
 def test_fair_share_is_unmeasured_while_one_project_alone_has_work():
     runs = [_run(f"r-a{n}", project="reckon") for n in range(4)]
     result = drain_measure.measure_fair_share(
-        runs, weights={"reckon": 3.0, "imas-ambix": 1.0},
+        runs,
+        weights={"reckon": 3.0, "imas-ambix": 1.0},
         ready_by_project={"reckon": 5, "imas-ambix": 0},
     )
     assert result["status"] == "unmeasured"
@@ -163,7 +206,8 @@ def test_fair_share_flags_a_split_outside_the_tolerance():
         _run(f"r-b{n}", project="imas-ambix") for n in range(3)
     ]
     result = drain_measure.measure_fair_share(
-        runs, weights={"reckon": 3.0, "imas-ambix": 1.0},
+        runs,
+        weights={"reckon": 3.0, "imas-ambix": 1.0},
         ready_by_project={"reckon": 5, "imas-ambix": 3},
     )
     assert result["status"] == "measured"
@@ -222,8 +266,12 @@ def test_landed_without_a_turn_counts_only_self_landed_runs():
 
 def test_live_interventions_are_counted_where_they_are_kept():
     pointers = [
-        {"run_id": "r-1", "priority_override": 5, "queue_hold": {"reason": "x"},
-         "steering_sha256": "abc"},
+        {
+            "run_id": "r-1",
+            "priority_override": 5,
+            "queue_hold": {"reason": "x"},
+            "steering_sha256": "abc",
+        },
         {"run_id": "r-2", "priority_override": None, "queue_hold": None},
     ]
     result = drain_measure.measure_live_interventions(pointers)
@@ -234,9 +282,7 @@ def test_live_interventions_are_counted_where_they_are_kept():
 
 
 def test_unloaded_sections_are_counted_per_project():
-    result = drain_measure.measure_unloaded(
-        {"reckon": ["s2", "s3"], "imas-ambix": []}
-    )
+    result = drain_measure.measure_unloaded({"reckon": ["s2", "s3"], "imas-ambix": []})
     assert result["plans"] == 1
     assert result["sections"] == 2
     assert result["unloaded"] == {"reckon": ["s2", "s3"]}

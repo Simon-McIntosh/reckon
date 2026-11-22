@@ -33,7 +33,9 @@ from reckon.crew.drain_measure import launch_moments
 from reckon.flight import declared_project_weights, resolve
 
 
-def read_plan_waits(projects: Sequence[str], plan_slugs: Mapping[str, set[str]]) -> dict:
+def read_plan_waits(
+    projects: Sequence[str], plan_slugs: Mapping[str, set[str]]
+) -> dict:
     """Each plan's section-wait declaration, keyed by (project, plan)."""
     declared: dict[tuple[str, str], Mapping[str, Sequence[str]]] = {}
     for project in projects:
@@ -66,7 +68,7 @@ def read_project_runs(project: str) -> list[dict[str, Any]]:
 
 
 def read_live(project: str) -> dict[str, Any]:
-    """The drain view's readiness and loading figures for one project.        """
+    """The drain view's readiness and loading figures for one project."""
     view = runs_module.drain(project)
     week = view.get("week") or {}
     project_view = week.get("project") or {}
@@ -152,12 +154,15 @@ def build_report(
     return report, series
 
 
-def draw_figure(report: Mapping[str, Any], series: Mapping[str, Any], path: Path) -> None:
+def draw_figure(
+    report: Mapping[str, Any], series: Mapping[str, Any], path: Path
+) -> None:
     """Draw launched and landed work per project per day, and depth by phase."""
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
 
     with suppress(OSError):
         plt.style.use("data-ink")
@@ -180,39 +185,73 @@ def draw_figure(report: Mapping[str, Any], series: Mapping[str, Any], path: Path
             for day, count in sorted(series["landings"][project].items())
         ]
         if lau:
-            left.plot([xy[0] for xy in lau], [xy[1] for xy in lau],
-                      color=colour, linewidth=2.6, marker="o",
-                      markersize=4, label=f"{project} launches")
+            left.plot(
+                [xy[0] for xy in lau],
+                [xy[1] for xy in lau],
+                color=colour,
+                linewidth=2.6,
+                marker="o",
+                markersize=4,
+                label=f"{project} launches",
+            )
         if lan:
-            left.plot([xy[0] for xy in lan], [xy[1] for xy in lan],
-                      color=colour, linewidth=2.4, linestyle="--",
-                      marker="s", markersize=3.5, label=f"{project} landings")
+            left.plot(
+                [xy[0] for xy in lan],
+                [xy[1] for xy in lan],
+                color=colour,
+                linewidth=2.4,
+                linestyle="--",
+                marker="s",
+                markersize=3.5,
+                label=f"{project} landings",
+            )
+    left.margins(y=0.08)
+    left.set_ylim(bottom=0)
     left.set_xticks(range(len(days)))
     left.set_xticklabels([day[5:] for day in days])
     left.set_xlabel("day [UTC]")
     left.set_ylabel("runs per day")
-    left.legend(frameon=False, fontsize=11, loc="upper left")
 
     phases = ["awaiting-upstream", "queued", "held", "launched", "failed"]
     width = 0.8 / max(len(report.get("live") or {}), 1)
     for index, (project, view) in enumerate(sorted((report.get("live") or {}).items())):
         values = [(view.get("phases") or {}).get(phase, 0) for phase in phases]
         xs = [position + index * width for position in range(len(phases))]
-        right.bar(xs, values, width=width * 0.9,
-                  color=colours.get(project, fallback[index % len(fallback)]),
-                  label=project)
+        right.bar(
+            xs,
+            values,
+            width=width * 0.9,
+            color=colours.get(project, fallback[index % len(fallback)]),
+            label=project,
+        )
     right.set_xticks([position + width / 2 for position in range(len(phases))])
     right.set_xticklabels(phases, rotation=20, ha="right")
     right.set_ylabel("requests at measurement")
-    right.legend(frameon=False, fontsize=11)
+    right.yaxis.set_major_locator(MaxNLocator(integer=True))
+    handles, labels = left.get_legend_handles_labels()
+    if handles:
+        figure.legend(handles, labels, loc="upper center", ncol=2, frameon=False)
     for axis in (left, right):
         axis.spines["top"].set_visible(False)
         axis.spines["right"].set_visible(False)
-    figure.tight_layout()
+    figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.93), pad=2.4)
     _refuse_clipped_text(figure)
     path.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(path, format="svg", metadata={"Date": None})
     plt.close(figure)
+
+
+def _visible_tick_labels(axis) -> list:
+    """Tick labels whose tick lies inside the view; the rest are never drawn."""
+    labels: list = []
+    for ticks, names, (low, high) in (
+        (axis.get_xticks(), axis.get_xticklabels(), axis.get_xlim()),
+        (axis.get_yticks(), axis.get_yticklabels(), axis.get_ylim()),
+    ):
+        for position, label in zip(ticks, names, strict=False):
+            if low <= position <= high:
+                labels.append(label)
+    return labels
 
 
 def _refuse_clipped_text(figure) -> None:
@@ -222,29 +261,32 @@ def _refuse_clipped_text(figure) -> None:
     canvas = figure.bbox
     seen: list[tuple[object, str]] = []
     offenders: list[str] = []
+    artists: list = []
     for axis in figure.axes:
-        artists = [axis.title, axis.xaxis.label, axis.yaxis.label]
-        artists += axis.get_xticklabels() + axis.get_yticklabels()
+        artists += [axis.title, axis.xaxis.label, axis.yaxis.label]
+        artists += _visible_tick_labels(axis)
         legend = axis.get_legend()
         if legend is not None:
             artists += legend.get_texts()
-        for artist in artists:
-            text = getattr(artist, "get_text", lambda: "")()
-            if not text:
-                continue
-            box = artist.get_window_extent(renderer=renderer)
-            if (
-                box.x0 < canvas.x0
-                or box.y0 < canvas.y0
-                or box.x1 > canvas.x1
-                or box.y1 > canvas.y1
-            ):
-                offenders.append(f"clipped: {text!r}")
-                continue
-            for other_box, other_text in seen:
-                if box.overlaps(other_box):
-                    offenders.append(f"overlaps: {text!r} / {other_text!r}")
-            seen.append((box, text))
+    for legend in figure.legends:
+        artists += legend.get_texts()
+    for artist in artists:
+        text = getattr(artist, "get_text", lambda: "")()
+        if not text:
+            continue
+        box = artist.get_window_extent(renderer=renderer)
+        if (
+            box.x0 < canvas.x0
+            or box.y0 < canvas.y0
+            or box.x1 > canvas.x1
+            or box.y1 > canvas.y1
+        ):
+            offenders.append(f"clipped: {text!r}")
+            continue
+        for other_box, other_text in seen:
+            if box.overlaps(other_box):
+                offenders.append(f"overlaps: {text!r} / {other_text!r}")
+        seen.append((box, text))
     if offenders:
         raise SystemExit("refusing to write the figure: " + "; ".join(offenders[:6]))
 

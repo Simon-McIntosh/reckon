@@ -89,9 +89,7 @@ def measure_drain(
         },
         "runs_in_window": len(windowed),
     }
-    report["dag_order"] = measure_dag_order(
-        windowed, depends_on or {}, history=runs
-    )
+    report["dag_order"] = measure_dag_order(windowed, depends_on or {}, history=runs)
     report["fair_share"] = measure_fair_share(
         windowed, weights=weights, ready_by_project=ready_by_project
     )
@@ -371,7 +369,9 @@ def measure_live_interventions(
     }
 
 
-def measure_unloaded(unloaded_by_project: Mapping[str, Sequence[str]]) -> dict[str, Any]:
+def measure_unloaded(
+    unloaded_by_project: Mapping[str, Sequence[str]],
+) -> dict[str, Any]:
     """Report sections the drain view could not load, per project."""
     sections = {
         str(project): sorted(str(section) for section in section_ids)
@@ -491,8 +491,6 @@ def dependency_key(ref: str, *, default_project: str) -> tuple[str, str, str]:
         project, text = text.split(":", 1)
     plan, _, section = text.partition("#")
     return (project.strip(), plan.strip(), section_record_id(section))
-
-
 
 
 def _run_plan(run: Mapping[str, Any]) -> str:
