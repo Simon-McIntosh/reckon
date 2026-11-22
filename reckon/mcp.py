@@ -866,6 +866,7 @@ def _read_plan(
     section: str | None = None,
     cursor: str | None = None,
     include_prompts: bool = False,
+    with_deps: bool = True,
 ) -> dict[str, Any]:
     """Read plan state — the single read entrypoint (folds the read tools in).
 
@@ -875,7 +876,7 @@ def _read_plan(
           → { project, slug, version, data } — one plan's parsed state, or the
             index/project JSON envelope data for those special slugs.
 
-      read_plan(project, slug, with_schema=True)
+    read_plan(project, slug, with_schema=True)
           → the above PLUS "schema" (the published JSON Schema), a compact
             dos/don'ts note, and an op-vocabulary summary — the context injector
             an agent reads before calling edit_plan.
@@ -903,6 +904,10 @@ def _read_plan(
 
       read_plan()  or  read_plan("*")    [project omitted/"*"]
           → { projects: [...] } — folds list_projects.
+
+    ``with_deps`` false skips resolving the plan's depends-on and section refs.
+    The views that serve no dependency row set it false, so such a read parses
+    its own document and never reaches the project metadata index.
 
     Multi-worktree (``checkout_path``):
       When an agent runs inside a git worktree (a separate checkout of the same
@@ -1095,7 +1100,10 @@ def _read_plan(
         "version": version,
         "data": data,
     }
-    deps = data.get("depends_on") if isinstance(data, dict) else None
+    # A view that serves no dependency row pays nothing for them: resolving a
+    # ref reaches the project metadata index, which builds the whole project
+    # for a read that answers one field.
+    deps = data.get("depends_on") if with_deps and isinstance(data, dict) else None
     # One referenced-plan index shared by the whole-plan and the section-scoped
     # refs, so a plan named by both is indexed once for the read.
     state_cache: dict[Any, dict[str, dict[str, Any]]] = {}
@@ -1103,7 +1111,7 @@ def _read_plan(
         result["deps"] = [
             _resolve_plan_ref(ref, project, checkout_path, state_cache) for ref in deps
         ]
-    if data and canonical_type(data.get("type")) == "plan":
+    if with_deps and data and canonical_type(data.get("type")) == "plan":
         # Section-scoped refs resolve through the same read, so a caller sees
         # the waiting section beside the whole-plan dependencies it already had.
         section_rows = _section_dependency_rows(
@@ -1757,6 +1765,7 @@ def _read_plan_view(
                 slug=selector.id,
                 checkout_path=checkout_path,
                 doc_type=selector.type,
+                with_deps=selected_view in {"summary", "detail"},
             )
             if legacy.get("ok") is False:
                 detail = str(legacy.get("detail") or "")
