@@ -133,6 +133,38 @@
   review runs that covered <code>the-monitor-reads-each-fact-once</code>
   §104–§108 while those sections had not landed.</p>
 
+  <p>The fourteen rows below are the report's own
+  (<code>drain-report.json</code>, captured at the window's end). Each row's
+  upstream landing time is that report's <code>seconds_early</code> added to the
+  launch, so the row reproduces from the stored report alone. A re-read of the
+  ledger an hour later resolved none of these fourteen upstreams and reported
+  four different violations, which is the reproducibility defect named below:
+  the measure records the landing time it used, and the record is the captured
+  report rather than a live re-read.</p>
+
+  <table id="a-queue-holds-the-whole-plan-s14-violations">
+    <thead>
+      <tr><th>Run</th><th>Section launched</th><th>Waited on</th>
+      <th>Launched (UTC)</th><th>Upstream landed (UTC)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>r-20261115T075919911761-review-of-named-lane-requests-queue-s5-4643356aaec7-figure</td><td>s5</td><td>the-escape-lane-and-reviews-keep-pace#s2</td><td>2026-11-15T08:04:04</td><td>never</td></tr>
+      <tr><td>r-20261115T081318569627-review-of-named-lane-requests-queue-s5-4643356aaec7</td><td>s5</td><td>the-escape-lane-and-reviews-keep-pace#s2</td><td>2026-11-15T08:15:34</td><td>never</td></tr>
+      <tr><td>r-20261118T062606648121-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1</td><td>s12</td><td>the-monitor-reads-each-fact-once#s104</td><td>2026-11-19T22:45:45</td><td>2026-11-20T05:03:28</td></tr>
+      <tr><td>r-20261118T062606648121-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1</td><td>s12</td><td>the-monitor-reads-each-fact-once#s105</td><td>2026-11-19T22:45:45</td><td>2026-11-20T05:03:28</td></tr>
+      <tr><td>r-20261118T062606648121-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1</td><td>s12</td><td>the-monitor-reads-each-fact-once#s106</td><td>2026-11-19T22:45:45</td><td>2026-11-20T19:48:17</td></tr>
+      <tr><td>r-20261118T062606648121-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1</td><td>s12</td><td>the-monitor-reads-each-fact-once#s107</td><td>2026-11-19T22:45:45</td><td>2026-11-20T22:54:08</td></tr>
+      <tr><td>r-20261118T062606648121-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1</td><td>s12</td><td>the-monitor-reads-each-fact-once#s108</td><td>2026-11-19T22:45:45</td><td>2026-11-21T06:37:47</td></tr>
+      <tr><td>r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure</td><td>s12</td><td>the-monitor-reads-each-fact-once#s104</td><td>2026-11-19T22:50:28</td><td>2026-11-20T05:03:28</td></tr>
+      <tr><td>r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure</td><td>s12</td><td>the-monitor-reads-each-fact-once#s105</td><td>2026-11-19T22:50:28</td><td>2026-11-20T05:03:28</td></tr>
+      <tr><td>r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure</td><td>s12</td><td>the-monitor-reads-each-fact-once#s106</td><td>2026-11-19T22:50:28</td><td>2026-11-20T19:48:17</td></tr>
+      <tr><td>r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure</td><td>s12</td><td>the-monitor-reads-each-fact-once#s107</td><td>2026-11-19T22:50:28</td><td>2026-11-20T22:54:08</td></tr>
+      <tr><td>r-20261118T062710002744-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1-figure</td><td>s12</td><td>the-monitor-reads-each-fact-once#s108</td><td>2026-11-19T22:50:28</td><td>2026-11-21T06:37:47</td></tr>
+      <tr><td>r-20261121T201609740875-pooled-local-record-s8</td><td>s8</td><td>workers-spend-fewer-tokens-per-landed-node#s17</td><td>2026-11-21T20:21:28</td><td>never</td></tr>
+      <tr><td>r-20261121T213243035776-review-of-pooled-local-record-s8-88a5e3e452cd</td><td>s8</td><td>workers-spend-fewer-tokens-per-landed-node#s17</td><td>2026-11-21T21:34:11</td><td>never</td></tr>
+    </tbody>
+  </table>
+
   <p><strong>Two instrument defects, found and fixed before this reading.</strong>
   The first measure returned 132 violations. The cause was in the measure, not
   of the queue: landing moments were computed from the seven-day window only, so
