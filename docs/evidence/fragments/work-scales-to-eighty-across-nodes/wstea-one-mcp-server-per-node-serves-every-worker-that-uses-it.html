@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+<title>One MCP server per node serves every worker | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<h1>One MCP server per node serves every worker that uses it</h1>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-mechanism">
+<h2>Mechanism</h2>
+<p>A flight may declare a server under <code>shared_mcp_servers</code>, keyed by
+the name a node names in its MCP set. The first launch on a node starts the
+server on the MCP network transport and publishes its endpoint in a node-local
+runtime record, holding an exclusive lock for the server's lifetime. A later
+launch on that node finds the record and hands its worker the endpoint as an
+HTTP server declaration instead of a command, so the worker connects to the
+node's one process. A server the node cannot bring up leaves the worker with the
+stdio declaration its set already resolved, so a node-side fault degrades
+isolation rather than removing tools. The shipped flight defaults declare the
+reckon server shared.</p>
+</section>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-gate">
+<h2>Gate</h2>
+<p><code>tests/test_one_server_per_node_serves_every_worker.py</code> with the two
+shared-home guards beside it, at revision <code>aa9504a25871</code>, which its
+log's header records. The summary line of <code>gate-after.log</code> reads
+<code>67 passed, 41 warnings in 73.40s (0:01:13)</code> with <code>EXIT=0</code>; the
+baseline arm at the base revision reads <code>58 passed in 36.88s</code> with
+<code>EXIT=0</code> over the two guards that exist there. Forty
+real client sessions each call <code>read_plan</code> against the node's server;
+every answer must carry text and no error, and the <code>/proc</code> census by
+the server's own node directory reads exactly one server process. A second
+ensure call on the same node returns the same pid, and every case stops the
+server it started.</p>
+</section>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-measure">
+<h2>Resident memory</h2>
+<p><code>scripts/measure_shared_mcp_memory.py</code> holds 5 then 40 client
+sessions open against one server and samples its resident set every ten minutes
+for one hour per arm. Recorded on 2026-11-22 at revision <code>1b72aa3966</code>
+on a compute partition (scheduler job 1336647, <code>EXIT=0</code>; log
+<code>~/.cache/reckon-portfolio/shared-mcp-soak/soak-1336647.log</code>, data
+<code>measure-shared-mcp-hour.json</code> beside it): 5 workers, all answered,
+seven samples ten minutes apart, median 666,784 kB; 40 workers, all answered,
+median 670,968 kB; delta 4,184 kB, against a limit of 500,000 kB. The node ran
+one server process (pid 1742420) throughout, and the set stayed flat within
+each arm.</p>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-figure">
+<h2>Resident set at both worker counts</h2>
+<figure>
+<img src="/reckon/figures/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it/resident-set-two-arms.svg" alt="Two near-flat traces of the shared server's resident set over seven samples taken ten minutes apart: 651 MB while five workers held sessions and 655 MB while forty did, a difference of 4.1 MB against an allowance of 488 MB" width="1200">
+<figcaption>The two arms of the resident-set measure, drawn from the measure's
+own samples. The node served every worker from one process in both arms: forty
+workers raise the server's footprint by 4.1 MB against the 488 MB the measure
+allows.</figcaption>
+</figure>
+</section>
+</section>
+
+<section id="wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-negative">
+<h2>Negative control</h2>
+<p>At the base shape a worker's configuration carries the server's own command,
+so each worker starts its own copy. Reproduced with eight workers and the same
+process census: eight servers started, eight live server pids, and the gate's
+one-server assertion failed with <code>one server per node expected, read 8</code>
+(exit 1). Log: <code>negative_control.log</code> in this run's directory.</p>
+</section>
+</main>
+</body>
+</html>

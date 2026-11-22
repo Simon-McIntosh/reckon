@@ -127,12 +127,13 @@ def worker_mcp_record(plan: _backends.LaunchPlan) -> dict[str, dict[str, Any]]:
     """
     if not plan.mcp_set and not plan.worker_mcp_servers:
         return {}
-    return {
-        "worker_mcp": {
-            "set": plan.mcp_set,
-            "servers": list(plan.worker_mcp_servers),
-        }
+    entry: dict[str, Any] = {
+        "set": plan.mcp_set,
+        "servers": list(plan.worker_mcp_servers),
     }
+    if plan.shared_mcp_endpoints:
+        entry["shared"] = dict(sorted(plan.shared_mcp_endpoints.items()))
+    return {"worker_mcp": entry}
 
 
 def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) -> None:
