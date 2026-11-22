@@ -772,17 +772,18 @@ prerequisite, user-owned decision, excess spend, or consent for an outward effec
 
 ### Queue the chosen work after the review round
 
-**Choose the sections that need doing now, from any plans whose review round is
-answered, size each into nodes and queue all of them in one beat, naming no
-lane.** Write the chosen work as one `reckon crew dispatch --batch <file>` call
-rather than one call per section: each entry names its project, plan, section,
-node id and goal, every omitted field is derived from the section, and the call
-reports one row per entry (queued, awaiting-upstream, already queued, or
-refused) without a refused entry stopping the rest. The picker routes each
-request. The set may include sections whose
-upstream has not landed. A coordinator chooses each section rather than loading a
-plan wholesale, so it queues work it knows needs doing and steers the queue as
-earlier results come back. Consult the plan's declared `plan-section-depends-on` waits and give
+**Queue every implementable section of each plan whose review round is
+answered, and queue all of them in one beat, naming no lane.** The whole-plan
+call `reckon crew dispatch --project <project> --plan <slug> --session <session>`
+with no `--section` queues them all, each section's done-when, write paths and
+waits taken from the plan, and reports one row per section (queued,
+awaiting-upstream, already queued, or refused) without a refused section
+stopping the rest. The picker routes each request. Use
+`reckon crew dispatch --batch <file>` only to add what a section does not carry,
+such as a node split or a time budget. The set may include sections whose
+upstream has not landed. A section the coordinator knows to be wrong is queued
+and held with `crew queue hold` and a reason, never left out; the coordinator
+steers the queue as earlier results come back. Consult the plan's declared `plan-section-depends-on` waits and give
 each node its write paths. Two nodes may name one source file: they are
 dispatched together and their edits meet at the merge, and only an exclusive
 path — a plan document, a cumulative evidence record, generated state, a figure

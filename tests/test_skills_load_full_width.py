@@ -22,6 +22,13 @@ def test_dispatch_set_includes_sections_waiting_for_upstream() -> None:
     assert "The set may include sections whose upstream has not landed" in build
     assert "Queue every reviewed plan you are orchestrating at its full width" in build
     assert "Never load a plan wholesale" not in build
+    assert (
+        "reckon crew dispatch --project <project> --plan <slug> --session <session>"
+        in build
+    )
+    assert "do not size sections into nodes by hand or write a batch file" in build
+    assert "rather than loading a plan wholesale" not in reference
+    assert "--plan <slug> --session <session>" in reference
     assert "parks its node `awaiting-upstream`" in build
     assert "queue all of them in one beat" in reference
     assert "naming no lane" in reference
