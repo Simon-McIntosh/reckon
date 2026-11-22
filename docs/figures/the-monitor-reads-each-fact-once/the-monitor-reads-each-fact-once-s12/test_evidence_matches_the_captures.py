@@ -25,6 +25,8 @@ FRAGMENT = (
     / "the-monitor-reads-each-fact-once-s12.html"
 )
 CAPTURES = (HERE / "captures" / "window-1.txt", HERE / "captures" / "window-2.txt")
+REMEASURE = (HERE / "captures" / "window-3.txt", HERE / "captures" / "window-4.txt")
+PROBE = HERE / "captures" / "signature-probe.txt"
 
 BOUND_MB_PER_MIN = 20.0
 BOUND_CPU_PERCENT = 5.0
@@ -104,10 +106,10 @@ def test_the_fragment_quotes_every_window_total_and_station_figure() -> None:
 def test_the_fragment_quotes_the_d_state_counts_the_samples_record() -> None:
     counts = [window(path)["dstate"] for path in CAPTURES]
     text = " ".join(prose().split())
-    assert f"four of its six samples" in text and counts[1] == 4, (
+    assert "four of its six samples" in text and counts[1] == 4, (
         f"the second capture has {counts[1]} D-state samples and the evidence states four"
     )
-    assert f"one of six" in text and counts[0] == 1, (
+    assert "one of six" in text and counts[0] == 1, (
         f"the first capture has {counts[0]} D-state samples and the evidence states one"
     )
 
@@ -115,8 +117,12 @@ def test_the_fragment_quotes_the_d_state_counts_the_samples_record() -> None:
 def test_every_window_is_above_both_bounds() -> None:
     for path in CAPTURES:
         figures = window(path)
-        assert figures["total_mb"] > BOUND_MB_PER_MIN, f"{path.name} is inside the read bound"
-        assert figures["cpu"] > BOUND_CPU_PERCENT, f"{path.name} is inside the CPU bound"
+        assert figures["total_mb"] > BOUND_MB_PER_MIN, (
+            f"{path.name} is inside the read bound"
+        )
+        assert figures["cpu"] > BOUND_CPU_PERCENT, (
+            f"{path.name} is inside the CPU bound"
+        )
         assert figures["kinds"]["station"]["mb"] > BOUND_MB_PER_MIN, (
             f"{path.name}: the station alone is inside the bound"
         )
@@ -135,6 +141,83 @@ def test_the_fragment_names_the_gate_that_guards_it() -> None:
     assert "4 passed in 1.48s" not in text, (
         "the evidence still quotes the superseded gate's result as its own"
     )
+
+
+def test_the_remeasurement_quotes_every_later_window() -> None:
+    """The later windows are the after arm; each figure they carry is in the prose."""
+    text = prose()
+    flat = " ".join(text.split())
+    for path in REMEASURE:
+        figures = window(path)
+        for value in (
+            figures["total_mb"],
+            figures["kinds"]["station"]["mb"],
+            figures["kinds"]["watch"]["mb"],
+            figures["kinds"]["follow"]["mb"],
+        ):
+            assert f"{value:,.0f}" in text, (
+                f"{path.name}: the evidence states no figure of {value:,.0f} MB/min"
+            )
+        assert f"{figures['cpu']:.2f}" in text, (
+            f"{path.name}: the evidence states no total CPU of {figures['cpu']:.2f} %"
+        )
+    assert "four of window 3's six samples" in flat, (
+        "the evidence does not state the first re-measured window's D-state count"
+    )
+    assert "five of window 4's" in flat, (
+        "the evidence does not state the second re-measured window's D-state count"
+    )
+
+
+def test_every_remeasured_window_is_above_both_bounds() -> None:
+    for path in REMEASURE:
+        figures = window(path)
+        assert figures["total_mb"] > BOUND_MB_PER_MIN, (
+            f"{path.name} is inside the read bound"
+        )
+        assert figures["cpu"] > BOUND_CPU_PERCENT, (
+            f"{path.name} is inside the CPU bound"
+        )
+        assert figures["kinds"]["station"]["mb"] > BOUND_MB_PER_MIN, (
+            f"{path.name}: the station alone is inside the bound"
+        )
+
+
+def test_the_fragment_quotes_the_signature_probe_it_diagnoses_with() -> None:
+    sys.path.insert(0, str(HERE))
+    from plot_remeasurement import read_signature_probe
+
+    rows = read_signature_probe(PROBE)
+    fallbacks = [row for row in rows if not row["agree"]]
+    assert {row["project"] for row in fallbacks} == {"reckon", "imas-efit"}, (
+        "the capture's disagreeing projects are not the two the evidence names"
+    )
+    assert sum(1 for row in rows if row["agree"]) == 11, (
+        "the capture answers for a different number of projects than the eleven stated"
+    )
+    text = prose()
+    for row in fallbacks:
+        assert f"{row['rchar']:,}" in text, (
+            f"the evidence states no call cost of {row['rchar']:,} B for {row['project']}"
+        )
+
+
+def test_the_remeasurement_figure_reads_the_same_numbers_as_the_capture() -> None:
+    sys.path.insert(0, str(HERE))
+    from plot_remeasurement import WINDOWS, read_capture
+
+    assert [path for _, path in WINDOWS] == list(REMEASURE), (
+        "the re-measurement figure draws captures other than the committed pair"
+    )
+    for path in REMEASURE:
+        drawn = read_capture(path)
+        recorded = window(path)
+        for kind, figures in recorded["kinds"].items():
+            assert drawn[f"{kind}_mb"] == figures["mb"], (
+                f"{path.name}: the figure would draw {drawn[f'{kind}_mb']} MB/min for "
+                f"{kind} where the capture records {figures['mb']}"
+            )
+            assert drawn[f"{kind}_cpu"] == figures["cpu"]
 
 
 def test_the_figure_reads_the_same_numbers_as_the_capture() -> None:
