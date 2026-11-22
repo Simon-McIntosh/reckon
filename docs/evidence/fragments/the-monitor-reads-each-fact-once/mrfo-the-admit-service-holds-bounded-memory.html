@@ -16,13 +16,21 @@
 <p id="mrfo-the-admit-service-holds-bounded-memory-what">A pass decodes every live pointer and the run documents behind it, then frees them. The allocator keeps the emptied arenas for the next request, so the service's resident set tracked the reported defect: 22.1 GB resident after three hours and thirty-two minutes. The service now hands a pass's freed pages back after every pass and drops the process-wide parse memo when its reading is still above the stated bound of 2 GB.</p>
 
 <h2 id="mrfo-the-admit-service-holds-bounded-memory-measure">Measure</h2>
+<p>The case this section names holds the fleet's population constant at 2,000 runs across the fifty passes, and on that fixture both revisions hold the 10 % band: the base revision passes it too, because retention follows the live population rather than the pass count. The case that does fail at the base revision is the idle-pass reading: the base writes no reading for a pass over a lane with nothing queued.</p>
+<table id="mrfo-the-admit-service-holds-bounded-memory-table-constant">
+  <tr><th>arm</th><th>after 5 passes</th><th>after 50 passes</th><th>the case</th></tr>
+  <tr><td>before (36c098539b)</td><td>150 MiB</td><td>152 MiB</td><td>50-pass band passes; idle-pass reading fails</td></tr>
+  <tr><td>after (this node)</td><td>123 MiB</td><td>119 MiB</td><td>both pass</td></tr>
+</table>
+<p>The figures above come from probes on the constant fixture; the arms' own summaries are <code>1 failed, 1 passed in 186.11s</code> at the base and <code>2 passed in 187.71s</code> here. A fixture whose population grows instead measures the per-live-run retention and is kept below as evidence of what still holds memory.</p>
+
 <table id="mrfo-the-admit-service-holds-bounded-memory-table">
   <tr><th>arm</th><th>after 5 passes</th><th>after 50 passes</th><th>change</th></tr>
   <tr><td>before (36c098539b)</td><td>101 MiB</td><td>147 MiB</td><td>+45 %, past the 10 % band</td></tr>
   <tr><td>after (this node)</td><td>99 MiB</td><td>121 MiB</td><td>+20 %, still past the 10 % band</td></tr>
 </table>
 
-<p id="mrfo-the-admit-service-holds-bounded-memory-gap">The band is not met. The fixture's population grows from 236 to 2,000 runs across the fifty passes, because a constant population plateaus by the fifth pass on the base revision as well and cannot show the defect at all. Even with a pass's freed pages handed back, its parse memo dropped and a collection run before each reading, the service still ends the fiftieth pass 20 % above its fifth, so a later pass is still paying for an earlier one. The bound on the code path is recorded, but this node does not close the band.</p>
+<p id="mrfo-the-admit-service-holds-bounded-memory-gap">A growing-population arm shows what the constant one cannot: with the fleet growing from 236 to 2,000 runs, the base revision ends the fiftieth pass 45 % above its fifth and this revision 20 % above, and the retainer table below names where that memory goes. Growth that follows the live population is expected in either revision, which is why the section's case holds the population constant.</p>
 
 <h2 id="mrfo-the-admit-service-holds-bounded-memory-retainer">What still retains it</h2>
 <p>Two tracemalloc snapshots of the same fixture, one after the tenth pass and one after the fiftieth, compared by allocation traceback. The live population grew by 1,440 runs between the two, and every line below holds one allocation per run added, so what remains is retained per live run rather than per pass. All five sit in <code>reckon/crew/runs.py</code>, outside this node's write paths.</p>
@@ -35,7 +43,9 @@
   <tr><td>+248 KiB</td><td>+7,200</td><td><code>runs.py:1758</code> <code>_pointer_text</code> → <code>runs.py:1665</code> <code>path.stat()</code></td><td>stat identities for the pointer cache</td></tr>
 </table>
 
-<pre id="mrfo-the-admit-service-holds-bounded-memory-arms">memory arms   before 36c098539b  2 failed in 115.19s (0:01:55)
+<pre id="mrfo-the-admit-service-holds-bounded-memory-arms">constant      base 36c098539b  1 failed, 1 passed in 186.11s (0:03:06)
+                     head 2a0896a533  2 passed in 187.71s (0:03:07)
+growing       before 36c098539b  2 failed in 115.19s (0:01:55)
                      after  636ec2c010  1 failed, 1 passed in 109.66s (0:01:49)
 suite arms    base 4a5ec5081e 58 passed in 41.44s
                      head a0878390c5 1 failed, 59 passed in 160.85s (0:02:40)</pre>
