@@ -813,7 +813,9 @@ def _refuse_undetermined_status(
         and not manifest_status_is_template(status)
         and str(status).strip().lower() not in MANIFEST_STATUSES
     ):
-        raise ManifestParseError(_unknown_status_word_manifest_message(path, status))
+        raise ManifestParseError(
+            _unknown_status_word_manifest_message(path, status, fields)
+        )
     return fields
 
 
@@ -827,15 +829,43 @@ def _incidental_prose_manifest_message(path: str | None, keys: list[str]) -> str
     )
 
 
-def _unknown_status_word_manifest_message(path: str | None, word: object) -> str:
+def _unknown_status_word_manifest_message(
+    path: str | None, word: object, fields: Mapping[str, Any] | None = None
+) -> str:
     where = f" at {path}" if path else ""
     recognised = ", ".join(sorted(MANIFEST_STATUSES))
-    return (
+    message = (
         f"refused manifest{where}: field 'status' rejected value {word!r} "
         f"because it is not a recognised manifest status (recognised: "
         f"{recognised}); the manifest structure and all remaining fields "
         "parsed successfully"
     )
+    # A body refused for its status word can also carry a wait declaration, and
+    # a declaration beside a status no reader accepts can never be probed.
+    # Quoting it here is the only place both are still in hand: the classifier
+    # reads a manifest the reader refused as an error text, which keeps the
+    # probe line out of everything downstream, and a coordinator otherwise
+    # repairs the status and leaves the wait still unrunnable.
+    declared_wait = _declared_wait_text(fields or {})
+    if declared_wait:
+        message += (
+            f"; the body also declares the wait {declared_wait}, which no reader "
+            "can probe while the status names no wait"
+        )
+    return message
+
+
+def _declared_wait_text(fields: Mapping[str, Any]) -> str:
+    """The wait a refused manifest declares, as the field and value a repair edits."""
+    for key in ("wait_probe", "wait_file"):
+        value = fields.get(key)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        if isinstance(value, list):
+            # The parsed array is quoted in the form a repair writes it back.
+            return f"{key} {json.dumps(value)!r}"
+        return f"{key} {str(value).strip()!r}"
+    return ""
 
 
 def _missing_status_manifest_message(path: str | None, keys: list[str]) -> str:
