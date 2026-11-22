@@ -747,7 +747,13 @@ _ACCOUNT: ContextVar[ReadAccount | None] = ContextVar("file_memo_account", defau
 
 
 class _CountedTextFile:
-    """A text file that charges the bytes it hands back to the open account."""
+    """A text file that charges the bytes it hands back to the open account.
+
+    A text read returns characters, and the process's own ``/proc`` figure
+    counts the bytes those characters were decoded from. They are charged at
+    their encoded size, in the stream's own encoding, so a document of
+    multibyte text is not counted at a fraction of what reading it cost.
+    """
 
     __slots__ = ("_account", "_path", "_wrapped")
 
@@ -756,24 +762,33 @@ class _CountedTextFile:
         self._account = account
         self._path = path
 
+    def _encoded(self, text: str) -> int:
+        if not text:
+            return 0
+        encoding = getattr(self._wrapped, "encoding", None) or "utf-8"
+        try:
+            return len(text.encode(encoding, "surrogatepass"))
+        except (LookupError, UnicodeEncodeError):
+            return len(text.encode("utf-8", "surrogatepass"))
+
     def read(self, *arguments: Any) -> str:
         data = self._wrapped.read(*arguments)
-        self._account.record(self._path, len(data))
+        self._account.record(self._path, self._encoded(data))
         return data
 
     def readline(self, *arguments: Any) -> str:
         data = self._wrapped.readline(*arguments)
-        self._account.record(self._path, len(data))
+        self._account.record(self._path, self._encoded(data))
         return data
 
     def readlines(self, *arguments: Any) -> list[str]:
         data = self._wrapped.readlines(*arguments)
-        self._account.record(self._path, sum(len(line) for line in data))
+        self._account.record(self._path, sum(self._encoded(line) for line in data))
         return data
 
     def __iter__(self) -> Iterator[str]:
         for line in self._wrapped:
-            self._account.record(self._path, len(line))
+            self._account.record(self._path, self._encoded(line))
             yield line
 
     def __enter__(self) -> Self:

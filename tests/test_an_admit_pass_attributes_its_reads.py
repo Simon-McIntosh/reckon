@@ -156,6 +156,23 @@ def _run_pass_with(omitted: str, files: dict[str, Path]) -> dict[str, int]:
             os.environ[OMIT_ENV] = saved
 
 
+def test_a_text_read_is_charged_the_bytes_it_was_decoded_from(tmp_path: Path) -> None:
+    """A multibyte document costs its byte count, not its character count."""
+    path = tmp_path / "config" / "crew" / "live" / "run-multibyte.json"
+    path.parent.mkdir(parents=True)
+    text = "é" * 1000
+    path.write_text(text, encoding="utf-8")
+    characters = len(text)
+    encoded = len(text.encode("utf-8"))
+    assert encoded != characters
+
+    with file_memo.attributing([("pointers", (str(path.parent) + "/",))]) as account:
+        read = path.read_text(encoding="utf-8")
+
+    assert read == text
+    assert account.summary()["pointers"] == encoded
+
+
 def test_the_reading_is_written_on_the_pass_verdict_row(crew_home, tmp_path) -> None:
     """A pass's reading carries the breakdown, so the verdict log names sources."""
     _service, files, _sizes = crew_home
