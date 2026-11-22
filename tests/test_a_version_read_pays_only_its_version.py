@@ -169,6 +169,28 @@ def test_view_builds_no_index_and_parses_one_document(store, counter, view):
     assert parsed == ["target"], counter["parsed"]
 
 
+def test_the_counter_sees_the_resolution_the_reads_skip(store, counter):
+    """Prove the instrument sees a build and more than one parse.
+
+    ``builds == 0`` and ``parsed == ["target"]`` are absences, and the
+    resolution path these reads skip still reaches the index: resolving the
+    target's own section refs parses the three plans they name, and a direct
+    project index build records a build. Without that, a counter wired to
+    nothing would report the same zeros the guard produces.
+    """
+
+    text = (store / "docs" / "plans" / "target.html").read_text()
+    rows = mcp._section_dependency_rows(text, _PROJECT, str(store), {})
+
+    assert {row["source_section"] for row in rows} == {"s1", "s2"}
+    parsed = sorted(slug for slug in counter["parsed"] if slug)
+    assert parsed == _REFERENCED, counter["parsed"]
+
+    assert counter["builds"] == 0, counter
+    metadata_index.index_rows(store / "docs", _PROJECT)
+    assert counter["builds"] == 1, counter
+
+
 def test_detail_keeps_the_section_rows(store):
     result = _read(store, view="detail")
 
