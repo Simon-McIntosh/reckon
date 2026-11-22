@@ -2155,12 +2155,14 @@ def admission_verdicts() -> dict[str, dict[str, Any]]:
 
 
 def recent_upstream_retirements() -> list[dict[str, Any]]:
-    """The upstream retirements the most recent admission pass recorded.
+    """The newest upstream retirements an admission pass recorded.
 
     A retired request has no pointer left to read, so the pass's own record is
-    the only account of it. Only the last record's list is returned: the pass
-    that retired the request carried it, and a later pass carrying none means
-    the retirement has already been read.
+    the only account of it. Every pass writes a record, and a pass that retired
+    nothing carries an empty list, so the newest non-empty list is the answer: a
+    retirement stays readable through the idle passes that follow it rather than
+    surviving only one line of the log. It is replaced when another pass retires
+    a request.
     """
     path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
     try:
@@ -2173,8 +2175,8 @@ def recent_upstream_retirements() -> list[dict[str, Any]]:
         except ValueError:
             continue
         retired = record.get("retired")
-        if not isinstance(retired, list):
-            return []
+        if not isinstance(retired, list) or not retired:
+            continue
         return [dict(row) for row in retired if isinstance(row, Mapping)]
     return []
 
