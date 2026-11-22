@@ -38,6 +38,28 @@ its pointer (2 failed).
 Gate summaries, verbatim: scoped gate and after arm both <code>60 passed in 36.88s</code>
 <code>60 passed in 38.04s</code>, base arm <code>58 passed in 38.11s</code>.
 </p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p6">
+Repair at revision 41ba34fc8d0583649eb391f5b3b5040e364fd1e1: releasing on a
+dead pid alone could drop the pointer that holds a run's uncommitted or
+unintegrated work, and the pending-landing journal was read as proof of
+promotion although it is written before the promotion completes. The pass now
+keeps the pointer of any run with a workspace on disk or an unfinished landing
+journal, reads promotion from the pointer mark or the ledger row alone, applies
+the project and session scope its caller was given, and compares host names
+through the one owner of that comparison.
+</p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p7">
+Repair measure: the third run in the control is now the release test the change
+reaches, <code>tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py</code>,
+which passes at 41ba34fc8d0583649eb391f5b3b5040e364fd1e1 (<code>63 passed in 38.30s</code> including it) and fails
+on its uncommitted-workspace case at 125dc5f71995a2b549a421154fffc64b87ba2dd4 (<code>1 failed in 2.63s</code>).
+Two cases added for the journal and scope gates fail against that revision and
+pass here. All three failing checks are recorded in one control run of the same
+two files against the pre-repair tree: <code>3 failed, 2 passed in 2.54s</code>.
+The fence arms were re-measured at the repaired head: base
+d24fa090e52748cc3100cd54e60d68ad3e87fb1b <code>58 passed in 38.80s</code>, after arm
+<code>62 passed in 45.83s</code>.
+</p>
 </article>
 </body>
 </html>
