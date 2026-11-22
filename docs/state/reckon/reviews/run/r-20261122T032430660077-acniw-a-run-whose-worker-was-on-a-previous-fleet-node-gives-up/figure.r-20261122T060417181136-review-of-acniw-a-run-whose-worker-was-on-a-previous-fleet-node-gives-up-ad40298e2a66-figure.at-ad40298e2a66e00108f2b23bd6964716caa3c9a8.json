@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T06:05:27Z",
+  "figures": {
+    "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg": {
+      "contrast": "defect, recorded as a non-blocking finding: the grey text (#555555 on white, 7.46:1) and the near-black gate text (#222222 on #f7f7f7, 14.85:1) both clear AA comfortably, and the terminal text (#1f6b43 on #e9f3ec, 5.70:1) does too. The green callout on the left and the green 'yes' beside the elbow are drawn in #2e8b57 on white, which measures 4.25:1 - under the 4.5:1 AA threshold for text at this size (12 pt at the declared 31.1 cm canvas, about 19 px in this render). It reads, but it is the weakest text on the page and the only text that misses the threshold.",
+      "data_ink": "pass: the ink is the decision chain itself. Each gate is one question with one labelled exit, the three held outcomes sit on the right, and the retired outcome anchors the bottom. No value labels, tick furniture or annotation clutter compete with it.",
+      "decoration": "pass: no gradient, no shadow, no grid, no frame, no styled theme. The only fills are flat tints that carry a role - a slightly darker grey on the entry box, #f7f7f7 on the gates, white on the held boxes, and a light green on the terminal box whose green edge and green ink mark it as the one outcome that releases a claim.",
+      "judged_from": "the rendered PNG image-0.png (1399x720) attached to this review run; no SVG was opened and no image other than that PNG was read",
+      "label_collision": "pass: measured against the 1399x720 render, every label sits inside the canvas - the rightmost held box ends near x=1370 and the leftmost callout line starts near x=127, so nothing is clipped. No label overlaps another: the green 'yes' at the left ends 30 units clear of the gate box edge and sits above its elbow segment, the two 'no' labels sit 12 units right of their vertical arrows, and the three right-hand 'yes' labels sit above their arrows. The callout block is in clear space with no data beneath it.",
+      "legibility": "pass: every box carries its own readable label and the decision questions read as questions. The chain reads top to bottom in five steps, and the outcomes are self-naming ('held: the landing paths decide the work', 'held: working, or unreadable', 'held: a turn is in progress', 'retired: ...'), so a reader can follow the pass without the caption. The one readability gap is the unconnected entry box recorded as a non-blocking finding below; it costs the reader visual grammar, not a value.",
+      "table_form": "pass: this is a sequential decision procedure, not a set of values; a flowchart is the natural form and a table of the same content would lose the order and the branch structure the figure exists to show."
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release_gates.py",
+      "line": 164,
+      "severity": "non-blocking",
+      "summary": "The entry box ('a live pointer with a promotion mark or a promoted ledger row', drawn at y 30-90) is not connected to the first gate ('workspace on disk, or an unfinished landing journal?', drawn at y 130). The inter-gate arrows are drawn inside the gate loop guarded by 'if index < len(gates) - 1', so they cover gate-to-gate transitions only, and the arrow into the terminal box is drawn separately at line 192; nothing draws the y 90-126 segment. On the rendered PNG the top box floats above the chain with an empty gap beneath it, while every other step is joined by an arrow. A reader still recovers the order from vertical position, which is why this does not block, but the figure's own visual grammar says the chain begins disconnected, and the entry condition is the one thing a reader must not skip."
+    },
+    {
+      "file": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release_gates.py",
+      "line": 188,
+      "severity": "non-blocking",
+      "summary": "The four-line callout 'its pid answers only there, so this host's table is never asked' and the green 'yes' at line 180 are drawn in GREEN #2e8b57 on white, which measures 4.25:1 - just under the 4.5:1 WCAG AA threshold for text at this size (12 pt on the declared 31.1 cm canvas, roughly 19 px in the 1399 px render). It is legible as rendered and carries the figure's key explanation of why the foreign-node branch bypasses the local process table, but it is the lightest text on the page and the only text below the threshold; GREEN_INK #1f6b43, already defined and used for the terminal box at 5.70:1, would clear it at the same hue."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T060417181136-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-ad40298e2a66-figure",
+  "reviewed_base_sha": "d24fa090e52748cc3100cd54e60d68ad3e87fb1b",
+  "reviewed_head_sha": "ad40298e2a66e00108f2b23bd6964716caa3c9a8",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "defect (non-blocking): grey 7.46:1 and near-black 14.85:1 text and the 5.70:1 terminal text pass, but the green callout and green 'yes' are #2e8b57 on white at 4.25:1, below the 4.5:1 AA threshold for this text size.",
+    "data_ink": "pass: the decision chain is the ink; one question per gate, one labelled exit, no chart furniture.",
+    "decoration": "pass: no gradient, shadow, grid or frame; the only fills are flat role-bearing tints.",
+    "label_collision": "pass: all content inside the 1399x720 canvas, no label clipped, no label overlapping another label or the data.",
+    "legibility": "pass: every gate and outcome is labelled and the top-to-bottom chain reads at a glance; the entry box floats unconnected, recorded as a non-blocking finding.",
+    "table_form": "pass: a sequential decision chain, which a flowchart conveys and a table would not."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T06:10:28.155535+00:00",
+  "total": null
+}
