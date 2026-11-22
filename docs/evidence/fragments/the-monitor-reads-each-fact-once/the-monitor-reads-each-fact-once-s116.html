@@ -1,0 +1,73 @@
+<section id="the-monitor-reads-each-fact-once-s116" class="evidence-fragment">
+  <h2>§116 — A small read of a large file costs its bytes, not a filesystem block</h2>
+  <p>
+    A default binary reader fills one <code>st_blksize</code> block before it
+    returns the first byte, and on GPFS that block is <strong>4 MiB</strong>
+    (<code>stat -f -c 'blksize=%S'</code> on the trace file below reports
+    4194304). Every monitor, admission and dispatch path that wanted a tail of
+    a worker's stream, a lock's small JSON record, or a bounded probe therefore
+    paid 4 MiB of transfer per open however few bytes it consumed.
+  </p>
+  <p>
+    Every binary read in <code>reckon/crew/</code>, <code>reckon/run_store.py</code>
+    and <code>reckon/ledger.py</code> that takes a bounded slice or reads after
+    a seek now opens unbuffered (<code>buffering=0</code>), so a read costs
+    exactly the bytes it asks for. The shared lock-record reader
+    (<code>_read_watch_record</code>) reads positionally with
+    <code>os.pread</code>, which fixes every lock holder at once: those handles
+    are opened <code>a+b</code>/<code>r+b</code> by many callers and all of
+    them read the same few hundred bytes.
+  </p>
+  <p role="note">
+    A tail-to-EOF read of exactly the tail costs its bytes even buffered, so
+    the honest measure is a bounded read with data beyond the slice. The trace
+    below is a single producer pass over
+    <code>logs/trace-data/stream.jsonl</code> (16,940,000 bytes on GPFS):
+    <code>_is_binary_receipt</code> (8 KiB probe), <code>_read_range(0, 64)</code>,
+    and <code>_tail_record_type</code> (64 KiB trailing chunk).
+  </p>
+  <table id="the-monitor-reads-each-fact-once-s116-trace">
+    <caption>
+      Bytes the kernel was asked for on the trace file, by arm, from
+      <code>strace -e trace=read</code>.
+    </caption>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>reads requested (bytes)</th><th>total delivered</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>9ed4c9ee2e</code></td>
+        <td>4194304, 4194304, 65537, 1</td>
+        <td><strong>8,454,146</strong></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>f90e3db88f</code></td>
+        <td>8192, 64, 65537, 1</td>
+        <td><strong>73,794</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The two 4 MiB requests are the block fill in front of the 8 KiB probe and
+    the 64-byte range read; the 64 KiB tail chunk is the same in both arms
+    because it reads the whole tail it asks for. The pass reads
+    <strong>8,454,146 → 73,794 bytes</strong>, a factor of about 114.
+  </p>
+  <p id="the-monitor-reads-each-fact-once-s116-measure">
+    Measure: the new
+    <code>tests/test_a_small_read_costs_its_bytes.py</code> discovers the reads
+    by parsing the modules rather than trusting a hand-written list, and
+    measures against an open that reports a 4 MiB block. It reports
+    <strong>5 passed</strong> at <code>f90e3db88f</code>, and at the base it
+    <strong>fails 4 of 5</strong>: the first case with
+    <code>AssertionError: a bounded tail read asked the file for [4194304]
+    bytes, up to the 4194304-byte block size</code>, and the discovery case
+    naming 17 buffered bounded/post-seek sites. The suite of files importing
+    the changed modules reports <strong>58 passed</strong> at
+    <code>9ed4c9ee2e</code> and <strong>63 passed</strong> at
+    <code>f90e3db88f</code> (the five new cases), both arms on
+    <code>all_debug</code>, so the change adds no failure.
+  </p>
+</section>
