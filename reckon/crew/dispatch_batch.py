@@ -1042,11 +1042,18 @@ def queue_batch(
     sections chosen.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.roadmap import roadmap_history_scope
     from reckon.serve import discovery_without_git_dates
 
     with (
         _parsed_once(),
         _built_once(),
+        # The batch reads no plan's promoted history: it prevents a duplicate
+        # with the per-node hold read, and the only reader of its roadmap — the
+        # wait check — reads gate and decision blockers and never a section's
+        # run holds. Stating that here keeps the roadmap's section-history read
+        # from decoding the project's whole plan set on every batch pass.
+        roadmap_history_scope(()),
         plan_read_scopes(),
         discovery_without_git_dates(),
     ):

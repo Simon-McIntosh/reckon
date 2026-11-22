@@ -153,7 +153,7 @@ def _attach_plans(project: str, rows: list[dict[str, Any]]) -> list[dict[str, An
 #: on — one small record per delivered node — and not the decoded rows it was
 #: built from, which is the term a batch's peak resident memory turned on.
 _HISTORY_READS: dict[
-    tuple[str, str, str | None, str | None],
+    tuple[str, str, str | None, str | None, tuple[str, ...] | None],
     tuple[tuple[int, ...], dict[tuple[str, str], dict[str, dict[str, Any]]]],
 ] = {}
 
@@ -175,6 +175,13 @@ def _store_history_rows(
     and offer it to the queue again. A plan or node filter is answered by the
     store's own indexed read, so queuing one node decodes that node's rows and
     not the project's whole history.
+
+    A filter that matches no row is a different answer from a project the store
+    holds nothing for, and they are told apart by one indexed membership read:
+    the store answers the project, it holds no delivery for this node, and the
+    caller must not fall back to the committed ledger — a fall-through here
+    decodes the project's whole picker projection to be filtered back down to
+    the same empty answer.
     """
     from reckon import run_store
 
@@ -184,9 +191,13 @@ def _store_history_rows(
         )
     except Exception:  # noqa: BLE001 - an unreadable store holds nothing
         return None
-    if not rows:
+    if rows:
+        return _attach_plans(project, rows)
+    try:
+        holds_project = run_store.stored_run_exists(project)
+    except Exception:  # noqa: BLE001 - an unreadable store holds nothing
         return None
-    return _attach_plans(project, rows)
+    return [] if holds_project else None
 
 
 def _history_index(
@@ -195,6 +206,7 @@ def _history_index(
     *,
     plan: str | None = None,
     node: str | None = None,
+    plans: Iterable[str] | None = None,
 ) -> dict[tuple[str, str], dict[str, dict[str, Any]]]:
     """Which node of each section the promoted records hold, and its record.
 
@@ -221,23 +233,47 @@ def _history_index(
 
     from reckon import ledger, run_store
 
+    narrowed = None if plans is None else tuple(dict.fromkeys(str(p) for p in plans))
     stamp = run_store.store_stamp()
-    key = (project, str(run_store.store_path()), plan, node)
+    key = (project, str(run_store.store_path()), plan, node, narrowed)
     if stamp is not None:
         cached = _HISTORY_READS.get(key)
         if cached is not None and cached[0] == stamp:
             return cached[1]
     index: dict[tuple[str, str], dict[str, dict[str, Any]]] = defaultdict(dict)
-    rows = _store_history_rows(project, plan=plan, node=node)
-    if rows is None:
-        try:
-            rows = list(ledger.picker_runs(project, root))
-        except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
-            return index
-        if plan is not None:
-            rows = [row for row in rows if ledger.row_plan(row) == plan]
-        if node is not None:
-            rows = [row for row in rows if str(row.get("node") or "") == node]
+    if narrowed is not None:
+        # The caller named the plans whose history it judges, so each plan is
+        # answered by the store's own indexed read and no other plan's rows are
+        # decoded. An empty set answers no holds without reading at all: the
+        # caller has already said no plan's history is consulted.
+        rows: list[dict[str, Any]] = []
+        missing: list[str] = []
+        for one in narrowed:
+            part = _store_history_rows(project, plan=one, node=node)
+            if part is None:
+                missing.append(one)
+            else:
+                rows.extend(part)
+        if missing:
+            try:
+                fallback = list(ledger.picker_runs(project, root))
+            except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
+                fallback = []
+            keep = {*missing}
+            rows.extend(
+                row for row in fallback if ledger.row_plan(row) in keep
+            )
+    else:
+        rows = _store_history_rows(project, plan=plan, node=node)
+        if rows is None:
+            try:
+                rows = list(ledger.picker_runs(project, root))
+            except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
+                return index
+            if plan is not None:
+                rows = [row for row in rows if ledger.row_plan(row) == plan]
+            if node is not None:
+                rows = [row for row in rows if str(row.get("node") or "") == node]
     # The store answers hot rows before retired ones, so iteration order is not
     # delivery order: a node re-promoted after its first row was retired would
     # otherwise keep the retired record. The ledger's own promotion key sorts
@@ -275,6 +311,7 @@ def _collect(
     plans: Iterable[str] | set[str] | frozenset[str] | None = None,
     history_plan: str | None = None,
     history_node: str | None = None,
+    history_plans: Iterable[str] | None = None,
 ) -> tuple[
     dict[tuple[str, str], dict[str, dict[str, Any]]],
     dict[tuple[str, str], set[str]],
@@ -328,7 +365,7 @@ def _collect(
         }
 
     for (held_plan, held_section), nodes in _history_index(
-        project, root, plan=history_plan, node=history_node
+        project, root, plan=history_plan, node=history_node, plans=history_plans
     ).items():
         key = target(held_plan, held_section)
         if key is None:
@@ -349,15 +386,24 @@ def held_section_blockers(
     pointers: Iterable[Mapping[str, Any]] = (),
     *,
     plans: Iterable[str] | None = None,
+    history_plans: Iterable[str] | None = None,
 ) -> dict[tuple[str, str], list[dict[str, Any]]]:
     """Every section that every known node holds, and the runs holding it.
 
     A section named here has no node the records read as free, so there is no
     node of it left to dispatch. A section one of whose nodes is waiting in a
     stored request is absent: that request is the section's remaining work.
+
+    ``history_plans`` narrows the promoted rows consulted to the plans a caller
+    judges, so a reader that knows which plans it is about decodes those plans'
+    rows and not the project's whole history. It is separate from ``plans``,
+    which filters the answer: a caller may judge one set of plans while still
+    reporting the sections its pointers hold.
     """
 
-    held, free = _collect(project, root, pointers, plans=plans)
+    held, free = _collect(
+        project, root, pointers, plans=plans, history_plans=history_plans
+    )
     result: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for key, nodes in held.items():
         if free.get(key):
