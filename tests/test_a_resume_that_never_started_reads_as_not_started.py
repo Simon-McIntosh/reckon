@@ -45,7 +45,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +64,7 @@ from tests.test_resume_and_lane_change_follow_their_own_attempt import (  # noqa
 )
 
 dispatch_sessions = importlib.import_module("reckon.crew.dispatch_sessions")
+recovery_liveness = importlib.import_module("reckon.crew.recovery_liveness")
 
 REASON = "srun: job 999999 queued and waiting for resources"
 
@@ -168,7 +169,13 @@ def _resume_through_a_stand_in(
     )
     assert result.exit_code == 0, result.output
     assert len(launched) == 1
-    return runs.read_pointer(run_id)
+    # Name a live process for the attempt, as a launcher that returned from its
+    # spawn does. Without one the record reads as starting before any bound is
+    # consulted, and no case here would be asking the bound a question.
+    record = runs.read_pointer(run_id)
+    record["pid"] = os.getpid()
+    record["pid_start_time"] = dispatch_sessions._process_start_time(os.getpid())
+    return record
 
 
 def _blocked_stop_fixture(
@@ -278,9 +285,12 @@ def test_past_the_bound_the_same_resume_reads_as_a_failed_launch_offering_resume
     record = _resume_through_a_stand_in(tmp_path, repo_path, monkeypatch, reason=REASON)
     started = _started_seconds(record)
 
-    assert (
-        getattr(resumption, "RESUME_TURN_BOUND_SECONDS", BOUND_SECONDS) == BOUND_SECONDS
-    )
+    bound = getattr(resumption, "RESUME_TURN_BOUND_SECONDS", BOUND_SECONDS)
+    assert bound == BOUND_SECONDS
+    if hasattr(resumption, "RESUME_TURN_BOUND_SECONDS"):
+        # The bound is the launch reading's own clock, not a second copy of its
+        # value: a copy would drift the moment the owner's bound moved.
+        assert bound is recovery_liveness.STRANDED_LAUNCH_BOUND_SECONDS
     row = recovery_classification.classify_pointer(
         record, now_seconds=started + BOUND_SECONDS + 60
     )
@@ -293,6 +303,61 @@ def test_past_the_bound_the_same_resume_reads_as_a_failed_launch_offering_resume
     # on rather than a discard of a run that still holds its session.
     assert row["ended_during_launch"] is False, row
     assert "crew resume" in str(row["next_action"]).lower(), row
+
+
+def test_a_resume_is_dated_from_the_later_of_its_two_attempt_records(
+    tmp_path: Path, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pointer still dating the predecessor must not age the resumed attempt.
+
+    A resume publishes the attempt record before it rewrites the pointer, so in
+    that window the pointer dates the attempt that ended while ``attempt.json``
+    already names the one running. Reading only the pointer would measure the
+    bound from the predecessor and release a run that has just begun.
+    """
+    repo_path = request.getfixturevalue("repo")
+    record = _resume_through_a_stand_in(tmp_path, repo_path, monkeypatch, reason=REASON)
+    now = datetime.now(tz=UTC)
+    stale = now.timestamp() - (BOUND_SECONDS * 4)
+    record["attempt_started_at"] = datetime.fromtimestamp(stale, tz=UTC).isoformat()
+    # The attempt names a live process, so the bound is the only question left:
+    # a launcher merely waiting is alive, and being alive is not a begun turn.
+    record["pid"] = os.getpid()
+    record["pid_start_time"] = dispatch_sessions._process_start_time(os.getpid())
+    runs._write_json(runs.pointer_path(record["run_id"]), record)
+    (runs.run_dir(record["run_id"]) / recovery_liveness.ATTEMPT_RECORD_NAME).write_text(
+        json.dumps(
+            {"attempt": record["attempt"], "attempt_started_at": now.isoformat()}
+        ),
+        encoding="utf-8",
+    )
+
+    reading = resumption.resume_without_a_started_turn(
+        record, now_seconds=stale + BOUND_SECONDS + 60
+    )
+
+    # The pointer says the attempt is an hour and a half old while its own
+    # record says it began a moment ago, so there is no stalled launch to
+    # report and the reading leaves the run to the arms that own it.
+    assert reading is None, reading
+
+
+def test_the_launcher_reason_is_the_recorded_tail_when_one_was_recorded(
+    tmp_path: Path, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The reason is read the way a launch failure reads it: the tail first."""
+    repo_path = request.getfixturevalue("repo")
+    record = _resume_through_a_stand_in(tmp_path, repo_path, monkeypatch, reason=REASON)
+    started = _started_seconds(record)
+    record["stderr_tail"] = "srun: waiting for the partition to free a node\n"
+    record["stderr_path"] = str(tmp_path / "absent.stderr.log")
+
+    row = recovery_classification.classify_pointer(
+        record, now_seconds=started + BOUND_SECONDS + 60
+    )
+
+    assert row["classification"] == "launch-failed", row
+    assert row["launch_error"] == "srun: waiting for the partition to free a node", row
 
 
 def test_a_resumed_attempt_whose_stream_begins_a_turn_reads_as_working(

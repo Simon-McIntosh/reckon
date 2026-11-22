@@ -93,8 +93,14 @@ from reckon.crew.recovery import (
     resume_window_refusal,
     stream_paths_newest_first,
 )
-from reckon.crew.recovery_classification import WAIT_PRODUCER_GONE_SECONDS
+from reckon.crew.recovery_classification import (
+    WAIT_PRODUCER_GONE_SECONDS,
+    first_reported_line,
+)
 from reckon.crew.recovery_liveness import (
+    STRANDED_LAUNCH_BOUND_SECONDS,
+    _attempt_started_seconds,
+    _exit_record_names_attempt,
     _newest_stream_in_motion,
     _record_is_known_foreign,
 )
@@ -156,42 +162,33 @@ RESUME_LAUNCH_IN_FLIGHT = "resume_launch_in_flight"
 #: it spawns, so the pointer says "working" for a launcher that is merely
 #: waiting: an srun client waiting on a step the scheduler never started holds
 #: the run, and the sections waiting on it, for as long as it waits. The bound
-#: is the stranded-launch clock, because it answers the same question — a
-#: launch that produced nothing of its own — and one clock keeps the two
-#: readings from disagreeing about when "never started" begins.
-RESUME_TURN_BOUND_SECONDS = 900
+#: is the stranded-launch clock itself, read from its owner, because it answers
+#: the same question — a launch that produced nothing of its own — and one
+#: clock keeps the two readings from disagreeing about when "never started"
+#: begins.
+RESUME_TURN_BOUND_SECONDS = STRANDED_LAUNCH_BOUND_SECONDS
 
 
 def launcher_waiting_reason(record: Mapping[str, Any]) -> str:
-    """The launcher's own words about what it is waiting for, or empty.
+    """The launcher's own words about what it is waiting for, or a statement.
 
-    A launcher blocked before its worker starts states why in its own log —
-    a scheduler client names the queue, the partition or the request it is
-    waiting on. The first non-empty line is the reason rather than the tail's
-    fate, the same convention the launch-failure reading uses: what follows a
-    scheduler's first line is its retry or stack detail.
+    A launcher blocked before its worker starts states why in its own log — a
+    scheduler client names the queue, the partition or the request it is
+    waiting on. Which line is the reason is the launch reading's own convention,
+    not a second one: the recorded ``stderr_tail`` is read first because that is
+    what a launch failure quotes, and the resume's own log is read where no tail
+    was recorded.
     """
+    texts = [str(record.get("stderr_tail") or "")]
     for name in ("stderr_path", "log_path"):
         path = str(record.get(name) or "").strip()
         if not path:
             continue
         try:
-            lines = (
-                Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
-            )
+            texts.append(Path(path).read_text(encoding="utf-8", errors="replace"))
         except OSError:
             continue
-        for line in lines:
-            stripped = line.strip()
-            if stripped:
-                return stripped[:500]
-    return "the launcher began no turn for its worker"
-
-
-def _resumed_attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
-    """When the run's current resumed attempt began, or None when undated."""
-    started = parse_utc(str(record.get("attempt_started_at") or ""))
-    return started.timestamp() if started is not None else None
+    return first_reported_line(*texts) or "the launcher began no turn for its worker"
 
 
 def _attempt_stream_began_a_turn(record: Mapping[str, Any], started: float) -> bool:
@@ -243,15 +240,18 @@ def resume_without_a_started_turn(
     if str(record.get("attempt_kind") or "") != "resume":
         return None
     run_id = str(record.get("run_id") or "")
-    started = _resumed_attempt_started_seconds(record)
+    # The attempt's clock is the launch reading's own: a resume rewrites the
+    # pointer after it publishes the new attempt's identity, so the pointer can
+    # still date the attempt that ended while attempt.json beside it already
+    # names the one running. The later of the two is the attempt the bound is
+    # measured from, and reading only the pointer would age a just-resumed run
+    # from its predecessor and release it as a launch that never started.
+    started = _attempt_started_seconds(record)
     if started is None:
         return None
     attempt = record.get("attempt")
-    if isinstance(attempt, int):
-        from reckon.crew.recovery_liveness import _exit_record_names_attempt
-
-        if _exit_record_names_attempt(record, attempt):
-            return None
+    if isinstance(attempt, int) and _exit_record_names_attempt(record, attempt):
+        return None
     if _attempt_stream_began_a_turn(record, started):
         return None
     started_at = float(now_seconds) - started
@@ -262,7 +262,7 @@ def resume_without_a_started_turn(
         "attempt": attempt,
         "bound_seconds": RESUME_TURN_BOUND_SECONDS,
         "age_seconds": int(started_at),
-        "started_at": str(record.get("attempt_started_at") or ""),
+        "started_at": datetime.fromtimestamp(started, tz=UTC).isoformat(),
         "waiting_reason": launcher_waiting_reason(record),
         "launcher_pid": record.get("pid"),
     }

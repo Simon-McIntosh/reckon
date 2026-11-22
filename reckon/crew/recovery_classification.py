@@ -1543,6 +1543,24 @@ def _settled_evidence(
     }
 
 
+def first_reported_line(*texts: str) -> str:
+    """The first non-empty line of the launcher's own report, or ``""``.
+
+    A refusal announces itself on its first line and what follows is the
+    reporter's own retry or stack detail, so the first line is the cause a
+    reader acts on where the tail is only the tail's fate. One reader serves
+    every launch reading — a launch failure's recorded ``stderr_tail`` and a
+    resume's launcher log — so the two cannot come to disagree about which line
+    of the same log is the reason.
+    """
+    for text in texts:
+        for line in str(text or "").splitlines():
+            stripped = line.strip()
+            if stripped:
+                return stripped[:500]
+    return ""
+
+
 def _resume_without_a_started_turn(
     record: Mapping[str, Any], *, now_seconds: float
 ) -> dict[str, Any] | None:
@@ -3116,17 +3134,10 @@ def classify_pointer(
         # is its own retry or stack detail. The last line is the tail's fate
         # rather than its reason, which is what a tail-quoting reader used to
         # report.
-        error_lines = [
-            line.strip()
-            for line in str(latest.get("stderr_tail") or "").splitlines()
-            if line.strip()
-        ]
-        if not error_lines:
-            recorded = str((ended_exit or {}).get("detail") or "").strip()
-            error_lines = [
-                line.strip() for line in recorded.splitlines() if line.strip()
-            ]
-        launch_error = error_lines[0] if error_lines else ""
+        launch_error = first_reported_line(
+            str(latest.get("stderr_tail") or ""),
+            str((ended_exit or {}).get("detail") or ""),
+        )
         cause = launch_error or "the process exited before any turn"
         classification = "launch-failed"
         ended_during_launch = True
