@@ -1,0 +1,28 @@
+<section id="dwlw-a-repair-resume-keeps-its-partition" class="evidence-fragment">
+  <h2>§45 — A repair resume runs under the fence its dispatch declared</h2>
+  <p>
+    A dispatch reads the partition its heavy gate runs on out of the node's
+    done-when and names it in the gate calls its prompt composes. A reflex
+    resume composes the reflex's advice instead, and the advice named no
+    partition, so a resumed worker ran its gate wherever the resume landed.
+    Reproduced before the change: a stopped run whose done-when read
+    <code>Done when the gate passes on the all_debug partition.</code> resumed
+    with a prompt holding only the advice and the time fence, and
+    <code>"all_debug"</code> was absent from it.
+  </p>
+  <p>
+    The resume advice now carries the compute instruction its dispatch named:
+    the partition, and the instruction to run the gate there as a separate
+    partition job rather than on the host the resume landed on. The partition
+    is read from the same done-when the dispatch read it from, and only when
+    the text names one; the dispatch's CPU default is not carried, because a
+    partition the dispatch never chose is not an instruction to hand a resume.
+  </p>
+  <p>
+    <strong>Measure.</strong> Both halves are driven through
+    <code>resumption._resume</code>, the door a reflex resume takes, with a
+    launcher that reads back the prompt the worker would be handed. The named
+    case carries <code>all_debug</code>, the compute fence and the gate
+    instruction; the case whose done-when names none carries neither.
+  </p>
+</section>
