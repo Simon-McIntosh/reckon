@@ -62,9 +62,10 @@
     <code>21917e9a</code> a section whose run was promoted under a failed check
     classified <code>work-rejected</code> is <code>queued</code> again, while one
     whose failure is recorded as <code>pre-existing-failure</code> is
-    <code>skipped</code> naming its run. Without the repair the rejected case
-    reads <code>assert 'skipped' == 'queued'</code> and closes
-    <code>EXIT=1</code>.</li>
+    <code>skipped</code> naming its run. Reverting that commit, in a scratch tree
+    built from <code>85435d242654</code> with this node's test copied in, the
+    rejected case reads <code>assert 'skipped' == 'queued'</code>, reports
+    <code>1 failed, 3 passed</code>, and closes <code>EXIT=1</code>.</li>
     <li id="rpfw-a-landed-section-is-not-queued-again-gate"><strong>The gate and its
     arms.</strong> The scoped gate ran <code>60 passed in 40.52s</code> with
     <code>EXIT=0</code> at <code>83196da7</code>. The baseline arm at
@@ -72,7 +73,7 @@
     <code>83196da7</code> reported <code>60 passed in 40.78s</code>, both
     <code>EXIT=0</code>: the two added passes are this node's cases and the head adds
     no failure id. After the check repair the same command over
-    <code>21917e9a</code> reported <code>62 passed in 50.64s</code> at
+    <code>582f8001e7fc</code> reported <code>62 passed in 54.01s</code> at
     <code>EXIT=0</code> against the same baseline arm's
     <code>58 passed in 37.30s</code>: two more of this node's cases, still no
     added failure id.</li>
