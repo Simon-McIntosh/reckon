@@ -23,12 +23,14 @@ yields a valid record (slug from filename, title from <title>, status=draft).
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import html as _htmlmod
 import json
 import re
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextvars import ContextVar
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from itertools import pairwise
@@ -394,10 +396,8 @@ class _StructuredSectionSpanParser(HTMLParser):
 
 
 def _structural_spans(html_text: str):
-    parser = _StructuredSectionSpanParser(html_text)
-    parser.feed(html_text)
-    parser.close()
-    return parser.records
+    """The structural scan of this text, shared with the rest of its write."""
+    return document_parse(html_text).structural.records
 
 
 class _PlanDocumentParse:
@@ -430,6 +430,63 @@ class _PlanDocumentParse:
             parser.close()
             self._structural = parser
         return self._structural
+
+
+# The parses one write has already made, keyed by the exact document text.
+# A plan write asks its reader, its heading guard, its coverage check and its
+# renderer about the same two documents — the file it read and the file it
+# renders — and each of those passes would otherwise build its own soup and
+# its own structural scan. Held per write rather than per process: a write
+# must see the bytes it holds, never a parse an earlier write left behind.
+_PARSE_SCOPE: ContextVar[dict[str, _PlanDocumentParse] | None] = ContextVar(
+    "plan_parse_scope", default=None
+)
+
+
+@contextlib.contextmanager
+def one_parse_per_document() -> Iterator[dict[str, _PlanDocumentParse]]:
+    """Share one parse of each document text across one write's passes.
+
+    Entered at the outermost write entry point and re-entered freely by every
+    write it calls: an inner entry uses the scope already open instead of
+    opening a second one, so a write reached through the served tool, the
+    store and the HTTP handler pays one parse of each document rather than one
+    per layer. Outside any scope each reader parses what it is given, which is
+    unchanged behaviour for a pass that is not a write.
+    """
+    existing = _PARSE_SCOPE.get()
+    if existing is not None:
+        yield existing
+        return
+    scope: dict[str, _PlanDocumentParse] = {}
+    token = _PARSE_SCOPE.set(scope)
+    try:
+        yield scope
+    finally:
+        _PARSE_SCOPE.reset(token)
+
+
+def shares_one_parse(fn):
+    """Run ``fn`` inside :func:`one_parse_per_document`."""
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        with one_parse_per_document():
+            return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def document_parse(html_text: str) -> _PlanDocumentParse:
+    """This text's parse, shared with every pass of the write that reads it."""
+    scope = _PARSE_SCOPE.get()
+    if scope is None:
+        return _PlanDocumentParse(html_text)
+    parse = scope.get(html_text)
+    if parse is None:
+        parse = _PlanDocumentParse(html_text)
+        scope[html_text] = parse
+    return parse
 
 
 def plan_headings(html_text: str):
@@ -1352,7 +1409,7 @@ def _body_resident_comment_counts(
 ) -> Counter:
     """Identity counts of the comment records a document holds outside its
     comments section — the records a write leaves exactly where they are."""
-    soup = (parse or _PlanDocumentParse(html_text)).soup
+    soup = (parse or document_parse(html_text)).soup
     counts: Counter = Counter()
     for element in _comment_elements(soup):
         if not _in_comments_section(element):
@@ -1396,7 +1453,7 @@ def descope_reasons(html_text: str) -> dict[str, str]:
 
 def _meta_content(html_text: str, meta_name: str) -> str | None:
     """Return a head meta's content, or ``None`` when the document has none."""
-    soup = BeautifulSoup(html_text or "", "html.parser")
+    soup = document_parse(html_text or "").soup
     for meta in soup.find_all("meta"):
         if (meta.get("name") or "").strip().lower() == meta_name:
             return meta.get("content", "")
@@ -1452,9 +1509,14 @@ def edit_keyed_meta(
     )
 
 
-def read_state(html_text: str) -> dict:
-    """Parse a plan's semantic HTML into the canonical state dict."""
-    soup = BeautifulSoup(html_text or "", "html.parser")
+def read_state(html_text: str, parse: _PlanDocumentParse | None = None) -> dict:
+    """Parse a plan's semantic HTML into the canonical state dict.
+
+    ``parse`` is a :func:`document_parse` of the same text, which a write holds
+    so its version check, its heading guard and its coverage check share one
+    soup. Every call still returns a fresh, mutable state dict.
+    """
+    soup = (parse or document_parse(html_text)).soup
     st: dict = {}
     meta_values: dict[str, str] = {}
 
@@ -1873,7 +1935,7 @@ def _splice_section_records(
     """Regenerate only record spans, preserving heading text and authored prose."""
     if not records and not _RECORD_MARKER_RE.search(html_text):
         return html_text
-    parse = parse or _PlanDocumentParse(html_text)
+    parse = parse or document_parse(html_text)
     parser = parse.structural
     soup = parse.soup
     _read_section_records(soup, {})
@@ -2324,7 +2386,7 @@ def _authored_child_count(
 ) -> int:
     """Count direct element children of section[data-reckon=ID] the renderers
     do not regenerate — the authored items a splice would remove."""
-    soup = (parse or _PlanDocumentParse(html_text)).soup
+    soup = (parse or document_parse(html_text)).soup
     section = soup.select_one(f'section[data-reckon="{reckon_id}"]')
     if section is None:
         return 0
@@ -2405,7 +2467,7 @@ def _impl_is_carried_by_records(
         return True
     if state.get("sections"):
         return False
-    soup = (parse or _PlanDocumentParse(html_text)).soup
+    soup = (parse or document_parse(html_text)).soup
     return bool(_section_record_elements(soup))
 
 
@@ -2426,7 +2488,7 @@ def write_state(
     is unchanged, so a round-trip or a reader-only serialise stays byte-identical.
     """
     out = html_text
-    parse = _PlanDocumentParse(html_text)
+    parse = document_parse(html_text)
     artifact_type = _canonical_type(state.get("type", "plan"))
     # The record splice runs before any meta edit: it indexes the document by
     # the source offsets the one parse holds, so it must see the text that

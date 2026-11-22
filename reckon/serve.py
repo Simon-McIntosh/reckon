@@ -3823,6 +3823,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": f"json: {e}"})
             return False, None
 
+    @_plan_html.shares_one_parse
     def _handle_plan_write(self, path: str) -> None:
         """POST /plan/<project>/<slug> — merge a dotted patch into the plan
         embedded semantic state and rewrite the HTML file in place. The plan HTML
