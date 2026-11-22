@@ -249,5 +249,7 @@ def test_a_release_refused_for_a_changed_pointer_names_the_field() -> None:
     before = {"run_id": "r", "phase": "complete", "node": {"id": "n", "plan": "p"}}
     after = {**before, "phase": "working"}
     assert pending_landing._changed_pointer_fields(after, before) == ["phase"]
+    observed = {**before, "observed_at": "2026-11-22T01:55:29Z"}
+    assert pending_landing._changed_pointer_fields(observed, before) == []
     with_body = {**before, "node": {**before["node"], "done_when": "x"}}
     assert pending_landing._changed_pointer_fields(with_body, before) == []
