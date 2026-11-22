@@ -102,6 +102,47 @@ def test_resident_memory_is_flat_across_fifty_passes(crew_home: Path) -> None:
     )
 
 
+def test_a_hundred_passes_over_a_working_fleet_stay_under_the_bound(
+    crew_home: Path,
+) -> None:
+    """The service's own duration: 100 passes with a working fleet queued.
+
+    A service runs for days, so the reading that matters is the one a
+    hundredth pass writes rather than the second. The fleet here is small but
+    working — 30 live pointers, their records rewritten as a live fleet's are
+    — so the case measures the pass loop at the length the service actually
+    reaches, not the pass count of a fixture that has barely started.
+    """
+    for index in range(1, 101):
+        _write_pointers(30, generation=index)
+        _run_pass()
+    log = runs.crew_home() / service._verdicts.ADMISSION_VERDICT_LOG
+    readings = [json.loads(line) for line in log.read_text().splitlines()]
+    assert len(readings) == 100, len(readings)
+    last = readings[-1]
+    process = resident_bytes()
+    assert abs(last["resident_bytes"] - process) <= process * 0.10, (
+        f"the hundredth reading says {last['resident_bytes']} B resident while "
+        f"this process's own /proc record says {process} B"
+    )
+    assert last["resident_bytes"] < service.ADMIT_MEMORY_BOUND_BYTES
+
+
+def test_an_unreadable_resident_record_is_not_a_measured_zero(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A reader that cannot open ``/proc`` reports nothing, not zero bytes."""
+    real_open = open
+
+    def unreadable(path: object, *args: object, **kwargs: object) -> object:
+        if str(path) == "/proc/self/status":
+            raise OSError("no such record")
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.open", unreadable)
+    assert service.resident_bytes() is None
+
+
 def test_an_idle_pass_writes_a_reading_carrying_its_memory(crew_home: Path) -> None:
     assert not runs.live_dir().exists() or not any(runs.live_dir().glob("*.json"))
     _run_pass()

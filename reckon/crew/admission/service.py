@@ -171,19 +171,24 @@ def _pause(seconds: float) -> None:
     time.sleep(seconds)
 
 
-def resident_bytes() -> int:
-    """This process's resident set size, read from its own ``/proc`` record."""
+def resident_bytes() -> int | None:
+    """This process's resident set size, read from its own ``/proc`` record.
+
+    ``None`` means the record could not be read, which the pass reading carries
+    as ``None`` rather than as a measured zero: a reader of the verdict log can
+    then tell an unreadable figure from a small one.
+    """
     try:
         with open("/proc/self/status", encoding="utf-8") as handle:
             for line in handle:
                 if line.startswith("VmRSS:"):
                     return int(line.split()[1]) * 1024
     except OSError:
-        return 0
-    return 0
+        return None
+    return None
 
 
-def _release_pass_memory() -> int:
+def _release_pass_memory() -> int | None:
     """Hand back what a pass freed and report the resident figure that follows.
 
     A pass decodes pointer records, run documents and plan text, then frees
@@ -202,7 +207,7 @@ def _release_pass_memory() -> int:
     gc.collect()
     release_freed_memory()
     resident = resident_bytes()
-    if resident > ADMIT_MEMORY_BOUND_BYTES:
+    if resident is not None and resident > ADMIT_MEMORY_BOUND_BYTES:
         file_memo.clear()
         gc.collect()
         release_freed_memory()
