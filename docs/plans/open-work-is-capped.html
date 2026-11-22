@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
   <title>Open Work Is Capped | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -93,6 +93,10 @@
     <p class="r-gate-required-evidence">the-fleet-reports-its-velocity#s5</p>
     <a class="r-gate-evidence" href="reckon.velocity.report, merged at 03ebd642 and served as crew(view=&quot;velocity&quot;), returns plans.by_project_week with opened and closed per project and ISO week. It was run on 2026-09-29 over reckon for the window 2026-09-15 to 2026-09-29 (report({&#x27;reckon&#x27;: &lt;checkout&gt;}, start=..., end=...)) and reported, among other weeks, 2026-W38 opened 20 closed 18, 2026-W39 opened 47 closed 8, and 68 pending. The open plan count matches the reconciled triage&#x27;s 68 rows. The MCP surface of the view does not yet answer within its 30 s read deadline, because the computation took 228.5 s; that is recorded on the-fleet-reports-its-velocity and does not change what the view reports.">Evidence</a>
 </div>
+<div class="r-gate" data-id="g-open-work-is-capped-weekly" data-section="s3" data-gated-sections="" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">two consecutive complete ISO weeks in which the project closes at least as many plans as it opens, read from the velocity view; the baseline on 22 November 2026 is W44 1 opened / 1 closed, W45 15 / 4, W46 15 / 10</h4>
+    <p class="r-gate-required-evidence">open-work-is-capped#s3</p>
+    </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -174,7 +178,7 @@
     <div class="r-comment-body"><p>Independent review of run r-20261122T032354947534-owic-a-limit-on-pending-plans-per-project at head 9e93fccc46780f9ec7f05de43bb0132f28cb678a from base b95808d7a48567307b30bfe9d091a8514e707297: scores goal_fidelity 18, evidence 12, scope_discipline 20, durability 15, fit 17, reuse 20 (total 102), added_failure_count 0, three non-blocking findings; the creation clause is verified and the done_when's two-consecutive-week velocity clause is recorded unmet.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261122T032354947534-owic-a-limit-on-pending-plans-per-project" data-who="reckon-build" data-when="2026-11-22T06:58:19Z">
-    <div class="r-comment-body"><p>The pending-plan limit holds at creation in the locked warn mode: reckon declares pending_plan_limit 25 (docs/state/reckon/project.json line 35, committed at dca923fb10) and a create on a full-state copy of reckon holding 72 pending plans succeeds while carrying a warning that names the limit, the pending count and the three plans nearest to closing by impl (a-dispatch-returns-without-its-worker, a-plan-is-reviewed-before-it-is-built, a-read-answers-inside-its-deadline, all impl 1.0); tests/test_pending_plan_limit.py reports 3 passed at EXIT=0. The section&#x27;s two-consecutive-complete-weeks clause stays open on the plan as a gate the coordinator records, with this measured baseline from the velocity view: 2026-W44 opened 1 / closed 1, 2026-W45 opened 15 / closed 4, 2026-W46 opened 15 / closed 10 (81 pending against the limit of 25).</p></div>
+    <div class="r-comment-body"><p>The pending-plan limit holds at creation in the locked warn mode: reckon declares pending_plan_limit 25 (docs/state/reckon/project.json line 35, committed at dca923fb10) and a create on a full-state copy of reckon holding 72 pending plans succeeds while carrying a warning that names the limit, the pending count and the three plans nearest to closing by impl (a-dispatch-returns-without-its-worker, a-plan-is-reviewed-before-it-is-built, a-read-answers-inside-its-deadline, all impl 1.0); tests/test_pending_plan_limit.py reports 3 passed at EXIT=0. The section's two-consecutive-complete-weeks clause stays open on the plan as a gate the coordinator records, with this measured baseline from the velocity view: 2026-W44 opened 1 / closed 1, 2026-W45 opened 15 / closed 4, 2026-W46 opened 15 / closed 10 (81 pending against the limit of 25).</p></div>
 </div>
 </section>
 </main>
