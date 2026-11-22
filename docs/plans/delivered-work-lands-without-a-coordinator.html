@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="111">
+<meta name="plan-version" content="112">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -652,6 +652,9 @@
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261122T102209544949-review-of-dwlw-no-promotion-leaves-an-uncommitted-plan-3d5294ab5865" data-who="reckon-build" data-when="2026-11-22T10:30:14.595Z">
     <div class="r-comment-body"><p>Reviewed dde7b001769544957d5ca63f50cbb48c26574553..3d5294ab58653796d7044431f430db9e0303b298; scores 18/17/20/17/17/19; zero added failures from the reviewed run's own arms (baseline 58 passed, after 61 passed); three non-blocking findings.</p></div>
 </div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261122T083515180558-dwlw-no-promotion-leaves-an-uncommitted-plan" data-who="reckon-build" data-when="2026-11-22T10:20:22Z">
+    <div class="r-comment-body"><p>A refused or early-refused promotion now settles the plan it targeted: when the file holds another promotion&#x27;s uncommitted landing comment the comment is committed (keeping its own id, author and time) instead of being left as uncommitted bytes, and complete() settles the plan on every outcome; the settlement also runs after a restore that succeeded, because the preimage a restore returns to can itself carry another run&#x27;s uncommitted comment. The revised test file&#x27;s refused-early and refused-inside cases both fail at the pinned base revision with &quot;status=&#x27;M docs/plans/landing-target.html&#x27; equal=False&quot;, and pass at 3d5294ab.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§4 landed through the crew's own promotion after its review (landing commit <code>9b3b985d86</code>). The drain leases the next request before releasing the finished one and its measured rate is recorded in the run's ledger row and review.</p></div>
 </div>
@@ -683,7 +686,7 @@
     <div class="r-comment-body"><p>Landed r-20261122T100639373047-review-of-dwlw-a-coordinator-landing-is-measured-978e289e6eec on the measured suite pair; <a href="/reckon/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html#review-of-dwlw-a-coordinator-landing-is-measured-978e289e6eec">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261122T083524853494-dwlw-a-coordinator-landing-is-measured" data-who="reckon-build" data-when="2026-11-22T10:04:00Z">
-    <div class="r-comment-body"><p>A coordinator&#x27;s `crew complete --gate passed --land` now refuses a landing whose population measurement cannot be read, not only one whose measurement adds a failure: the guard reads the measurement through the pass&#x27;s own reading, so a run with no resolvable head, no worktree, an unbuildable base or a stored unreadable record refuses with `landing-measure-refused` and the reason instead of merging while the population went unmeasured; the head at 978e289e6e passed 62 tests in 38.80s against a base arm of 58 passed in 37.16s, and the case reproducing the defect fails against the pre-repair head with the landing accepted, `assert 0 == 1`, EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A coordinator's `crew complete --gate passed --land` now refuses a landing whose population measurement cannot be read, not only one whose measurement adds a failure: the guard reads the measurement through the pass's own reading, so a run with no resolvable head, no worktree, an unbuildable base or a stored unreadable record refuses with `landing-measure-refused` and the reason instead of merging while the population went unmeasured; the head at 978e289e6e passed 62 tests in 38.80s against a base arm of 58 passed in 37.16s, and the case reproducing the defect fails against the pre-repair head with the landing accepted, `assert 0 == 1`, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-17T01:03:00Z">
     <div class="r-comment-body"><p>§5 landed by direct merge (head <code>8f67b37d02</code>), on the lead's instruction. The orientation check classifies a run from its pointer and its commits when the manifest's copy of a tool-issued field differs, records the repaired echo, and still blocks a difference in substance. Review 120 of 120. Merged candidate gate: 17 passed in 4.94s.</p></div>
