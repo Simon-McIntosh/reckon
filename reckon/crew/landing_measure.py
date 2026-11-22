@@ -1622,6 +1622,44 @@ def _git(repo: Path, *arguments: str, timeout: float):
     )
 
 
+def measures_on_partition(config: Mapping[str, Any] | None) -> bool:
+    """Whether the project's landing measure submits its arms to a partition."""
+    landing = (config or {}).get("landing") or {}
+    return bool(str(landing.get("measure_partition") or "").strip())
+
+
+@contextlib.contextmanager
+def base_tree_for_measure(
+    repo: Path, base_sha: str, timeout: float, *, partitioned: bool
+) -> Iterator[Path]:
+    """The base tree a measurement's base arms run against.
+
+    An arm submitted to a partition builds its own tree from the revision on
+    the node that runs it, and the runner tells the base arm apart from the
+    head arm by the directory it is given, so a partitioned measurement needs
+    only an empty directory to name its base. A checkout there would be a full
+    tree on the fleet node that nothing reads. An in-place measurement runs in
+    the tree, so it still gets the real checkout.
+    """
+    if not partitioned:
+        with base_checkout(repo, base_sha, timeout) as tree:
+            yield tree
+        return
+    try:
+        root = worker_scratch_root()
+        root.mkdir(parents=True, exist_ok=True)
+        placeholder = Path(tempfile.mkdtemp(prefix="landing-base-ref-", dir=root))
+    except OSError as exc:
+        raise BaseCheckoutError(
+            f"could not create the base placeholder for {base_sha}: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
+    try:
+        yield placeholder
+    finally:
+        shutil_rmtree(placeholder)
+
+
 @contextlib.contextmanager
 def base_checkout(
     repo: Path, base_sha: str, timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS
