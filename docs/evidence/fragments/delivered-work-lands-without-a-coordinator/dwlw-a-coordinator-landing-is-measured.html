@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="delivered-work-lands-without-a-coordinator">
+  <meta name="plan-evidence-for" content="delivered-work-lands-without-a-coordinator">
+  <title>A coordinator's landing is measured against the lander's population | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="dwlw-a-coordinator-landing-is-measured">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A coordinator's landing is measured against the population the lander measures</h2>
+      </header>
+      <p id="dwlw-a-coordinator-landing-is-measured-landing">
+        <code>crew complete --gate passed --land</code> now takes the landing
+        pass's own base-and-head measurement before it writes a pending record
+        or promotes. Across the delivered diff it runs the node's armed suite
+        and the test files that import what changed, base and head, and a
+        failure the head adds refuses the landing with
+        <code>landing-measure-refused</code>, naming the added ids. A
+        measurement already standing for the same head and primary is reused
+        rather than taken twice, so a pass that measured the delivery and left
+        it as an obligation and a coordinator landing it from the command line
+        read one answer. A run that armed no suite command has nothing for the
+        pass to measure either and keeps its own gate evidence as its only
+        guard, which is the case every existing landing path already covered.
+      </p>
+      <p id="dwlw-a-coordinator-landing-is-measured-beside">
+        The coordinator's gate evidence is written to
+        <code>&lt;run&gt;/landing-measure/coordinator-gate.json</code> beside
+        the population record in <code>measurement.json</code>, so a reader sees
+        what the coordinator cited and what the population found. Neither
+        replaces the other.
+      </p>
+      <p id="dwlw-a-coordinator-landing-is-measured-measure">
+        The after arm at <code>e2ba7955cc</code> ran
+        <code>tests/test_a_coordinator_landing_is_measured.py</code>,
+        <code>tests/test_staged_write_inventory.py</code> and
+        <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+        <code>61 passed in 40.28s</code>, <code>EXIT=0</code>. The baseline arm
+        at <code>dde7b00176</code> ran the two files that exist there —
+        <code>58 passed in 36.39s</code>, <code>EXIT=0</code> — so the new file
+        is what the after arm adds. The three cases are: a head whose change
+        reddens an importer test the coordinator's gate never ran is refused
+        naming it and nothing is merged; a head that adds no failure lands; and
+        a failure the base carries is not charged, with both revisions red.
+        A focused regression arm of six landing test files,
+        <code>34 passed in 35.38s</code>, <code>EXIT=0</code>, shows the
+        ordinary landing paths are unchanged.
+      </p>
+      <p id="dwlw-a-coordinator-landing-is-measured-control">
+        Against the base revision <code>dde7b00176</code> the same first case
+        runs the coordinator's command with the population measure absent and
+        fails, <code>1 failed, 2 deselected in 2.00s</code>,
+        <code>EXIT=1</code>: the landing is accepted with the importer test red,
+        <code>assert 0 == 1</code> where the case requires exit 1. That is the
+        defect the case names, reproduced against the revision that preceded the
+        repair.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
