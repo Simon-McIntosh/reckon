@@ -25,8 +25,8 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="130">
-<meta name="plan-modified" content="2026-11-21">
+<meta name="plan-version" content="131">
+<meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
   <main class="plan-doc">
@@ -423,6 +423,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261122T043600769941-review-of-arcwc-find-where-a-plan-read-spends-ten-times-its-parse-2a6107549b1c" data-who="reckon-build" data-when="2026-11-22T04:54:24.859Z">
+    <div class="r-comment-body"><p>Reviewed r-20261122T032357572500-arcwc-find-where-a-plan-read-spends-ten-times-its-parse from base 319b74cb954b1b0199295b0752a4344883911636 to head 2a6107549b1ca610b903e56729c20c6d1aca9ddb: parsed review, six dimensions scored 107 of 120, no blocking finding, four non-blocking findings; both records stored under the reviewed run&#x27;s review-records/.</p></div>
 </div>
 </section>
 </main>
