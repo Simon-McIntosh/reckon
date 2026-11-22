@@ -333,6 +333,15 @@ REVIEW_QUEUED_DUTY_KIND = "review-queued"
 # rather than sit in a foreground wait on it.
 REVIEW_IN_FLIGHT_DUTY_KIND = "review-in-flight"
 
+# The field a duty carries when its sentence quotes a fact read from another
+# run's own pointer, such as the phase a review had reached when the duty was
+# composed. A duty is composed once and can be served later, from a snapshot an
+# aged snapshot carried, so the value is recorded beside the sentence: a reader
+# re-reads the named run and quotes the value it finds then, rather than the one
+# the composer happened to see. The mapping holds the run id the fact belongs to
+# and the value quoted.
+QUOTED_RUN_FIELD = "quoted_run"
+
 # A run whose review has been dispatched, delivered, and not yet landed reads
 # as awaiting promotion: the wait is a promotion, not a dispatch and not a
 # follower. A review holds its pointer after it delivers, so the pointer alone
@@ -3216,6 +3225,10 @@ def _review_duty_detail(
     ):
         item = _live_item(row, kind=REVIEW_IN_FLIGHT_DUTY_KIND, now=now)
         item["reason"] = str(row.get("detail") or "")
+        item[QUOTED_RUN_FIELD] = {
+            "run_id": str(row.get("review_run_id") or ""),
+            "phase": str(row.get("review_run_phase") or ""),
+        }
         return item
 
     resumed_head, _tree = recovery._review_head_and_tree(pointer)
