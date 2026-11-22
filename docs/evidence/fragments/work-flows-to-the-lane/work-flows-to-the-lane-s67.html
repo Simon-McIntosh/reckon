@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s67">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="partial">
+  <title>A later night's window meets three of the landing targets | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1 id="work-flows-to-the-lane-s67-title">A later night's window meets three of the landing targets</h1>
+
+  <p id="work-flows-to-the-lane-s67-summary"><strong>Three of the gate's four figures are met.</strong>
+  In the four hours from 08:00 to 12:00 UTC on 22 November the lane carried a time-weighted mean of
+  <strong>1.03</strong> working workers against a bound of 12; a completed implement run waited a median
+  of <strong>19.7 minutes</strong> (1,183.0 s) to be promoted against a bound of 20;
+  <strong>none</strong> of the window's <strong>496</strong> admit passes held a request on a claim
+  under a shared root — one claim path held requests, at the repository root, and it is named below
+  with its root; and the claims directory held <strong>1</strong> worker identity file against a bound
+  of 100. The promotion latency, the shared-claim figure and the identity figure hold. The mean does
+  not, and the reason is measurable: the window carried 10 dispatches, and ten dispatches over four
+  hours cannot average twelve workers however long each one lives.</p>
+
+  <h2 id="work-flows-to-the-lane-s67-window">The window, and why it is this one</h2>
+
+  <p id="work-flows-to-the-lane-s67-window-why">The window runs
+  <strong>2026-11-22T08:00:00Z to 2026-11-22T12:00:00Z</strong>, the first hour-aligned four-hour
+  stretch after this wave's dispatch at 2026-11-22T07:24:50Z. It was chosen before any of its figures
+  were read, and it is not a window picked for its numbers: no four-hour stretch in the days since the
+  mid-November repairs meets both the mean of 12 and the twenty-minute promotion bound, so choosing on
+  the numbers would have meant choosing a stretch that fails the gate for a different reason. The
+  admission passes were spooled while the window was open, every fifteen minutes from 06:52Z and on
+  every wait poll, because neither admission source retains four hours (below).</p>
+
+  <h2 id="work-flows-to-the-lane-s67-figures">The four figures against their targets</h2>
+
+  <table id="work-flows-to-the-lane-s67-table">
+   <thead>
+    <tr><th>figure</th><th>target</th><th>measured</th><th>population</th><th>verdict</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>time-weighted mean working workers</td><td>&ge; 12</td>
+        <td><strong>1.03</strong> (peak 5)</td>
+        <td>11 worker spans overlapping the window; 10 requests dispatched in it, over 10 distinct
+            project nodes; 0 runs still in flight at the close</td>
+        <td>not met</td></tr>
+    <tr><td>median completion to promotion, implement runs</td><td>&le; 20 min</td>
+        <td><strong>19.7 min</strong> (1,183.0 s; p90 96.2 min)</td>
+        <td>cohort of 4 implement runs completed in the window: all 4 with a landing record, 0 without</td>
+        <td>met</td></tr>
+    <tr><td>admit passes holding a request on a claim under a shared root</td><td>none</td>
+        <td><strong>0</strong> of 496 passes hold a shared-root claim</td>
+        <td>496 passes in the window; 878 claim pointers across 451 passes name one path, at the
+            repository root, listed below</td>
+        <td>met</td></tr>
+    <tr><td>worker identity files at the window's end</td><td>&lt; 100</td>
+        <td><strong>1</strong></td>
+        <td>claims directory read live at 12:00:00Z: 192 entries, one an <code>exec-*.identity</code></td>
+        <td>met</td></tr>
+   </tbody>
+  </table>
+
+  <p id="work-flows-to-the-lane-s67-mean-reading"><strong>Reading the mean.</strong> The figure is low
+  because the lane was fed ten requests in four hours, not because the counter lost workers. A mean of
+  twelve across four hours needs forty-eight worker-hours; ten dispatches at any plausible worker life
+  cannot supply them. The window holds eleven spans and a peak of five, the longest of them an
+  implement run; the arithmetic bound from ten dispatches is a few workers at most. The same script run
+  twice over this window returns the identical report (1.03, median 1,183.0 s, 496 passes, 1 identity),
+  and a companion pass that counts runs still in flight at the close finds none, so the mean is not an
+  artefact of runs whose spans had not yet been recorded.</p>
+
+  <h2 id="work-flows-to-the-lane-s67-claims">Every claim that held a request, by path</h2>
+
+  <p id="work-flows-to-the-lane-s67-claims-intro">The gate asks for the total number of admission
+  passes and the root of every claim that held a request. The census prints both. One claim path held
+  requests in this window:</p>
+
+  <table id="work-flows-to-the-lane-s67-claims-table">
+   <thead>
+    <tr><th>claimed path</th><th>root</th><th>passes holding it</th><th>pointers</th><th>shared root</th><th>run-owned</th></tr>
+   </thead>
+   <tbody>
+    <tr><td><code>docs/figures/the-local-lane-delivers-its-plateau</code></td>
+        <td><code>.</code> (the repository the pass ran in)</td><td>451 of 496</td><td>878</td>
+        <td>no</td><td>no</td></tr>
+   </tbody>
+  </table>
+
+  <p id="work-flows-to-the-lane-s67-claims-reading"><strong>What the row means.</strong> Each pointer
+  is a request whose own write path (<code>docs/figures/the-local-lane-delivers-its-plateau/&lt;node&gt;</code>)
+  overlaps a live claim on the parent directory. Two requests were held on that claim through the whole
+  window: <code>llp-the-serve-registry-lives-under-home</code>, dispatched 2026-11-21T21:14:00Z, and
+  <code>llp-the-wait-bounds-evidence-cites-logs-that-hold-its-figures</code>, dispatched
+  2026-11-21T21:43:52Z. The claimant was
+  <code>r-20261118T103503522162-llp-the-lane-holds-its-plateau-through-a-measured-night</code>, which
+  recorded <code>status: blocked</code> and exited at <strong>2026-11-21T16:50:04Z</strong> — more than
+  fifteen hours before the window opened. Both held requests were launched at
+  <strong>2026-11-22T12:12:04Z</strong>, twelve minutes after the window closed. The root is the
+  repository, not the crew home, so the gate's shared-root clause is met; the hold itself is reported
+  under <em>outside this node's scope</em>, because releasing a claim whose holder has exited is
+  another plan's subject.</p>
+
+  <p id="work-flows-to-the-lane-s67-claims-zero">The gate's other half needs the check that the reading
+  can see a claim when one is there, and this window supplies it: <code>held_claim_paths</code> is not
+  empty, <code>unnamed_claim_pointers</code> is 0, and the one path is reported with its root. The
+  zero on the shared-root clause is therefore a count of zero and not an unparsed hold.</p>
+
+  <h2 id="work-flows-to-the-lane-s67-control">The negative control: §9's window</h2>
+
+  <p id="work-flows-to-the-lane-s67-control-reading">The same script run over §9's window
+  (2026-11-14T21:00Z to 2026-11-15T01:00Z), against the pass snapshot that run kept, reports all three
+  of the gate's latter figures unmet:</p>
+
+  <table id="work-flows-to-the-lane-s67-control-table">
+   <thead>
+    <tr><th>figure</th><th>target</th><th>§9's window</th><th>verdict</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>median completion to promotion</td><td>&le; 20 min</td>
+        <td>92.5 min (5,654.0 s; p90 3.6 h) over 38 of 39 implement runs</td><td>unmet</td></tr>
+    <tr><td>passes holding a shared-root claim</td><td>none</td>
+        <td><strong>5 of 8</strong> passes, over 6 pointers naming two files under
+            <code>/home/ITER/mcintos/.config/reckon/crew</code></td><td>unmet</td></tr>
+    <tr><td>worker identity files at the window's end</td><td>&lt; 100</td>
+        <td><strong>27,854</strong>, as that window's own census recorded at its close</td><td>unmet</td></tr>
+   </tbody>
+  </table>
+
+  <p id="work-flows-to-the-lane-s67-control-paths">The two shared-root paths, with their roots:</p>
+
+  <table id="work-flows-to-the-lane-s67-control-paths-table">
+   <thead>
+    <tr><th>claimed path (§9's window)</th><th>root</th><th>passes</th></tr>
+   </thead>
+   <tbody>
+    <tr><td><code>…/crew/runs/r-20261114T121904732821-diiid-edge-current-refusal/review-records/r-20261114T121904732821-diiid-edge-current-refusal.figure.json</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew</code></td><td>5</td></tr>
+    <tr><td><code>…/crew/runs/r-20261114T150759286619-wave4-codex-anchored-the-crew-does-its-own-bo-s18/review-records/r-20261114T150759286619-wave4-codex-anchored-the-crew-does-its-own-bo-s18.json</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew</code></td><td>1</td></tr>
+   </tbody>
+  </table>
+
+  <p id="work-flows-to-the-lane-s67-control-identity">The identity figure is read from §9's own census
+  output, committed in this repository
+  (<code>wftl-the-lane-is-fed-while-coordinators-land.census.json</code>), which recorded 27,854
+  identity files at 2026-11-15T01:00:00Z, the window's close. Read today the claims directory holds
+  none of them, because it is live state that maintenance prunes; that is why the control cites the
+  window's own reading rather than a fresh one, and why the census marks such a read
+  <code>reads_live_state: false</code>.</p>
+
+  <h2 id="work-flows-to-the-lane-s67-comparison">The same script over other windows</h2>
+
+  <table id="work-flows-to-the-lane-s67-comparison-table">
+   <thead>
+    <tr><th>window (UTC)</th><th>mean workers</th><th>median promotion</th><th>admit passes / shared holds</th><th>identity files</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>2026-11-22 08:00&ndash;12:00 (this node)</td><td>1.03</td><td>19.7 min over 4 of 4</td><td>496 / 0</td><td>1 (live)</td></tr>
+    <tr><td>2026-11-21 20:00&ndash;2026-11-22 00:00 (the four hours before)</td><td>6.18</td><td>164.8 min over 16 of 16</td><td>not spooled</td><td>not readable</td></tr>
+    <tr><td>2026-11-14 21:00&ndash;2026-11-15 01:00 (§9's window, the control)</td><td>10.49</td><td>84.2 min over 16 of 16</td><td>8 / 5</td><td>27,854 at its close</td></tr>
+    <tr><td>2026-11-07 00:00&ndash;2026-11-12 00:00 (baseline)</td><td>4.34</td><td>62.8 min over 16 of 506</td><td>not readable</td><td>not readable</td></tr>
+   </tbody>
+  </table>
+
+  <p id="work-flows-to-the-lane-s67-comparison-reading">The control row is shown as it reads today;
+  it read 23.55 at 07:59Z this morning and 10.49 at 12:06Z, and the median moved from 5,654.0 s to
+  5,050.0 s over the same span. Nothing about the window changed — what changed is the run store, which
+  was pruned from 21,275 archived rows to 8,392 between those readings (21,275 + 5,872 = 27,147 runs
+  read at 07:59Z against 8,392 + 5,851 = 14,243 at 12:06Z). A span whose run has been pruned no longer
+  counts, so an old window reads lower and over a smaller population on every later reading. The three
+  control figures the gate names are unmet under both readings, so the control's verdict does not
+  depend on the pruned population. This window's own row is unaffected — all of its runs are in the
+  live ledger — and it re-reads identically.</p>
+
+  <h2 id="work-flows-to-the-lane-s67-instrument">What the instrument cannot read, stated</h2>
+
+  <p id="work-flows-to-the-lane-s67-instrument-passlog">Neither admission instrument retains a
+  four-hour window. The crew-home verdict log is trimmed to its last mebibyte and held 7 passes when
+  read at 07:07Z; the admit service's log is trimmed to its last four mebibytes and began at
+  08:15:02Z when first read. The window was therefore measured from a spool: a copy loop ran every
+  fifteen minutes from 06:52Z to 12:10Z, and the wait probe took a copy on every poll. The spool holds
+  560 passes spanning 2026-11-22T06:52:42Z to 12:02:23Z, the in-window figure is read from it beside
+  both live sources, and coverage is continuous: the largest interval between consecutive passes
+  inside the window is <strong>279.8 s</strong>, and every 15-minute bucket holds between 17 and 44
+  passes. The spool is 20 MB and lives in the run directory, not the repository.</p>
+
+  <p id="work-flows-to-the-lane-s67-instrument-identities">The identity figure is a reading of a live
+  directory at the window's close, and the census reports it as such (<code>reads_live_state: true</code>).
+  A positive control ran first: with 150 synthetic <code>exec-*.identity</code> files placed in a
+  temporary claims directory, the same code reported 150, so the count of 1 is an absence of others
+  rather than a blind filter.</p>
+
+  <p id="work-flows-to-the-lane-s67-instrument-pruning">The third limit is the run store's pruning,
+  described above: a mean or a median over a window older than the retention horizon is a reading of
+  what survived, not of what ran. Any later reader comparing this record's control row to §9's own
+  record will find different numbers, and both are correct for the population each was computed over.
+  The population is reported beside every figure for that reason.</p>
+
+  <p id="work-flows-to-the-lane-s67-instrument-cohort">The promotion median rests on a cohort of four
+  implement runs. It is the whole cohort that completed in the window — none lacked a landing record —
+  but four runs is a small base, and one long run would move it; the p90 beside it (96.2 min) is the
+  honest companion figure.</p>
+
+  <figure id="work-flows-to-the-lane-s67-figure">
+   <img src="/reckon/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.svg"
+        alt="Working workers per minute through the window: a line that stays between 0 and 5 and never reaches the bound of 12">
+   <figcaption>Working workers per minute through 2026-11-22T08:00Z to 12:00Z, drawn from the same
+   ledger spans the mean is computed over, with the bound of 12 and the measured mean of 1.03
+   marked. The trace never leaves the bottom of the bound's scale.</figcaption>
+  </figure>
+
+  <h2 id="work-flows-to-the-lane-s67-verdict">Verdict</h2>
+
+  <p id="work-flows-to-the-lane-s67-verdict-text">Three of the section's four figures hold. No
+  admission pass held a request on a claim under a shared root; the claims directory held one identity
+  file at the window's close; and a completed implement run reached promotion in a median of 19.7
+  minutes, inside the twenty-minute bound and a large improvement on the 49.1 minutes the same gate
+  measured on 17 November. The mean of 1.03 does not hold, and it cannot hold in this window: ten
+  dispatches over four hours bound it far below twelve. That is a reading of how much work the lane was
+  given, not of whether the lane can carry more — the same instrument reads 23.55 over §9's window
+  when the ledger holds that window's runs. Of the three figures that hold, the shared-claim clause is
+  met while a stale claim on a peer plan's figure directory did hold two requests for the entire
+  window; that hold is reported under <em>outside this node's scope</em>, where releasing it belongs.
+  One earlier measurement of this same section, on the night of 17 November, is recorded beside this
+  one as <code>wftl-a-second-nights-window-meets-the-landing-targets.html</code>; the two agree on the
+  shape of the result and differ on the promotion figure, which has improved.</p>
+
+  <h2 id="work-flows-to-the-lane-s67-scope">Outside this node's scope</h2>
+
+  <ul id="work-flows-to-the-lane-s67-scope-list">
+   <li id="work-flows-to-the-lane-s67-scope-claim">A claim on
+   <code>docs/figures/the-local-lane-delivers-its-plateau</code> was held by a run that exited
+   <code>blocked</code> at 2026-11-21T16:50:04Z. It held two queued requests
+   (<code>llp-the-serve-registry-lives-under-home</code> and
+   <code>llp-the-wait-bounds-evidence-cites-logs-that-hold-its-figures</code>) for the whole window and
+   was released at 12:12:04Z. Releasing a claim whose holder has exited is the subject of the
+   <code>a-claim-nobody-is-working-is-released</code> plan, not of this node; it is recorded here
+   because it appears in this window's claim list and because it removed two workers from the lane the
+   mean counts.</li>
+   <li id="work-flows-to-the-lane-s67-scope-pruning">The run store was pruned mid-session (21,275
+   archived rows to 8,392), so windows older than the retention horizon read lower on every later
+   reading. Reported, not triaged; the window measured here is unaffected.</li>
+   <li id="work-flows-to-the-lane-s67-scope-feed">The window carried 10 dispatches. How much work
+   reaches the lane is a coordinator's decision and is the bound on this figure.</li>
+  </ul>
+ </main>
+</body>
+</html>
