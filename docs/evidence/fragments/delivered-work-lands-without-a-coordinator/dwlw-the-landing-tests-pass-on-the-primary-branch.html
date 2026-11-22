@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="delivered-work-lands-without-a-coordinator">
+  <meta name="plan-evidence-for" content="delivered-work-lands-without-a-coordinator">
+  <title>The landing population passes on the primary branch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="dwlw-the-landing-tests-pass-on-the-primary-branch">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>The landing population passes on the primary branch</h2>
+      </header>
+      <p id="dwlw-the-landing-tests-pass-on-the-primary-branch-landing">
+        Five cases in the pending-landing population asserted behaviour the
+        landing pass no longer has. A promotion whose merge meets a conflict is
+        no longer left as a record-only obligation: the merge-repair round is
+        sent back to the delivery's own worker, rebuilds the live pointer it
+        resumes, and records the conflict on the pending record, so the round
+        is durable across passes and a delivered repair lands the promoted run
+        and retires its record. A delivery whose head the primary branch
+        already carries is settled as carried rather than landed a second
+        time, which is what the mixed-cohort case now states. The promotion
+        obligation case's hand-built fleet state supplies the fields the
+        obligation snapshot reads. All five cases were rewritten to the
+        behaviour the code holds; no case was skipped, deleted or marked xfail.
+      </p>
+      <p id="dwlw-the-landing-tests-pass-on-the-primary-branch-measure">
+        The population <code>grep -l pending_landing tests/*.py</code> — 34
+        files, 260 tests — ran on <code>all_debug</code> at the node's head
+        <code>bb5180ce79</code>: <code>260 passed in 393.01s</code>,
+        <code>EXIT=0</code>. The same population at the base revision
+        <code>dde7b00176</code> gave <code>5 failed, 255 passed in 348.85s</code>,
+        <code>EXIT=1</code>, with exactly the five named ids failing and no
+        other: the two conflicted-promotion cases and the later-attempt case in
+        <code>test_a_finished_pending_landing_retires_its_run.py</code>, the
+        mixed-cohort case in
+        <code>test_a_resume_hold_ends_when_it_is_judged.py</code>, and the
+        durable-obligation case in
+        <code>test_no_caller_waits_on_a_promotion.py</code>.
+      </p>
+      <p id="dwlw-the-landing-tests-pass-on-the-primary-branch-attribution">
+        Every one of the five is a test wrong against product behaviour that
+        landed earlier. The conflicted-promotion resume and its durable open
+        round arrived with <code>521683b87c</code>, which resumes a promoted
+        delivery whose first merge conflicts, replacing the record-only
+        refusal <code>bc57e4220e</code> asserted. The carried-delivery
+        settlement arrived with <code>294e725a57</code>, which settles a
+        delivery the primary branch already carries. The obligation snapshot's
+        added fields arrived with <code>b217b010d6</code>, which publishes
+        section accounting duties in snapshots. The
+        scoped gate over the node's write scope ran at <code>bb5180ce79</code>
+        with <code>exit_status: 0</code> and no failing id.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
