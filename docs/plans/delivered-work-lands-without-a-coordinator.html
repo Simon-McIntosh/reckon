@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -709,6 +709,9 @@
 </div>
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261122T105627074826-review-of-dwlw-a-gate-that-cannot-start-names-its-program-b0157b82c3d0" data-who="reckon-build" data-when="2026-11-22T11:04:59.586Z">
     <div class="r-comment-body"><p>Review of r-20261122T083521486110 at dde7b001..b0157b82c3 delivers a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 5 with zero added suite failures; the landed resolver reports a merged-head gate that cannot start as not-run naming the program and tree and resolves a relative .venv/bin/python before the shell sees it, with the negative control showing all three cases red at the base quoting exit_status=127; the one non-blocking finding is that resolve_gate_program re-implements the program resolution that promotion_gate._require_executable_gate_command already owns.</p></div>
+</div>
+<div class="r-comment" data-section="s41" data-id="c-run-r-20261122T112154625542-review-of-dwlw-a-gate-that-cannot-start-names-its-program-b55533df9dc8" data-who="reckon-build" data-when="2026-11-22T11:30:24.154Z">
+    <div class="r-comment-body"><p>An independent review of the increment the node gained since it was reviewed (b0157b82c3d0..b55533df9dc8, commits 78755444b1 and b55533df9d) is stored as a parsed record scoring all six dimensions in 0..20 — goal_fidelity 19, evidence 17, scope_discipline 19, durability 16, fit 15, reuse 5, total 91 — with added_failure_count 0 over the run&#x27;s own baseline_suite (58 passed, EXIT=0 at dde7b001) and after_suite (62 passed, EXIT=0 at 78755444), and one blocking finding: the consolidation that exists to leave one owner of the executable test ships two definitions of `_is_executable_file` (reckon/crew/promotion_gate.py:588 and :681) and two of `_SHELL_ASSIGNMENT` (:466 and :417).</p></div>
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261122T094523684413-review-of-dwlw-a-coordinator-landing-is-measured-de2390f73842" data-who="reckon-build" data-when="2026-11-22T09:51:31.509Z">
     <div class="r-comment-body"><p>Review of run r-20261122T083524853494-dwlw-a-coordinator-landing-is-measured at dde7b00176..de2390f738: the measure is wired into `crew complete --land` and its three cases plus a recorded negative control hold, but an unreadable population measurement is silently allowed through at reckon/crew_run_commands.py:4948 (blocking) and no case covers that arm (non-blocking).</p></div>
