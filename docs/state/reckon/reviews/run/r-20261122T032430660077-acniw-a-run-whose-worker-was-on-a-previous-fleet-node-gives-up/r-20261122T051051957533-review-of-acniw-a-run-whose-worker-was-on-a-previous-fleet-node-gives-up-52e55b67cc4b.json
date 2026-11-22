@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:1634",
+    "reckon/crew/pending_landing.py:1977"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T05:11:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "611",
+      "severity": "blocking",
+      "text": "the alive gate and the dead read at line 613 resolve a foreign record's pid against this host's process table before the host is compared at line 614, so a previous-node run whose pid number happens to name a live local process is held for ever (the exact defect the node targets) and one whose number names nothing is reported proved-dead; moved must be computed first and a foreign record must never consult the local pid."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "708",
+      "severity": "blocking",
+      "text": "the trailing retire_promoted_pointer loop, unchanged, retires a promoted pointer with no workspace or journal on promotion evidence alone, so it undoes the host comparison and the release-held decision at line 617 within the same call; a quiet previous-node run is already retired at the base revision once its ledger row is present, and the test's working run keeps its pointer only because its fixture omits that row."
+    },
+    {
+      "file": "tests/test_a_run_from_a_previous_fleet_node_is_released.py",
+      "line": "151",
+      "severity": "non-blocking",
+      "text": "the journal case writes promoted=False, so _is_a_promoted_pointer returns False at reckon/crew/pending_landing.py:607 and the case returns before _landing_still_owns_run is evaluated; deleting the journal branch at line 608 would leave this case green, so it does not guard the gate its name claims."
+    },
+    {
+      "file": "tests/test_a_run_from_a_previous_fleet_node_is_released.py",
+      "line": "86",
+      "severity": "non-blocking",
+      "text": "_write_promoted_pointer sets the promotion mark without a ledger row, which reckon/crew/promotion.py:561 says the mark asserts is written, so the suite's key assertions run against a pointer state production cannot produce."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all eight commits d24fa090..52e55b67 commit by commit; five files, 572 insertions and no deletions, matching the declared scope.",
+    "done_when": "the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:49 requires three fixture runs, two further passes and a base negative control; the gate at tests/test_a_run_from_a_previous_fleet_node_is_released.py:101 records them passing, but the \"working run keeps its pointer\" assertion at line 130 holds only because _write_promoted_pointer at line 86 sets the promotion mark without the ledger row it asserts exists, a state a real promoted pointer cannot be in.",
+    "goal": "plan section s2's deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:48 is that a promoted run launched on a previous fleet node and showing no turn gives up its pointer; reckon/crew/pending_landing.py:558 implements such a pass, but the trailing legacy loop at line 708 retires the same class of pointer regardless of host or turn, so the new pass changes no production outcome.",
+    "manifest": "read; it records the scoped gate (63 passed), the base arm (58 passed, 0 failures), the after arm (62 passed, 0 failures) and a repair negative control (3 failed), all consistent with the logs, though it treats the release test as proof that the turn-in-progress hold works when that hold is undone by the same function's legacy loop.",
+    "write_paths": "read the declared six paths; the delivered diff touches five of them, all inside scope, and leaves reckon/crew/promotion_release.py untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_from_a_previous_fleet_node_is_released.py:130 would redden if the new pass at reckon/crew/pending_landing.py:558 were deleted, but it passes for the same reason the base does with a realistic pointer, and the journal test at line 138 never reaches the journal gate at line 608 because its pointer is written promoted=False at line 151.",
+    "evidence": "the manifest's gate logs record 0 added failures and EXIT=0, but the gate's own done-when measure at tests/test_a_run_from_a_previous_fleet_node_is_released.py:130 asserts the second run keeps its pointer only under a fixture that drops the ledger row the promotion mark documents at reckon/crew/promotion.py:561.",
+    "fit": "reckon/crew/process_liveness.py:545 and :586 follow the module's lazy-import, Mapping-typed, mechanism-named idiom and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:708 retires any promoted pointer with no workspace or journal regardless of launcher host or stream, so the pass added at line 558 only reproduces what the base already did for every run it can reach, while a run with a workspace on disk is held by line 608 in both revisions.",
+    "reuse": "reckon/crew/process_liveness.py:586 composes reckon/crew/watch_unit.py:408 _hosts_match and :431 fleet_record_node, and :545 wraps the existing stream reader, so the previously forked host spelling is gone.",
+    "scope_discipline": "every one of the five changed paths is inside the declared write paths and the diff is purely additive."
+  },
+  "plan": "a-claim-nobody-is-working-is-released",
+  "plan_section": "s2",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section s2's deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:48 is that a promoted run launched on a previous fleet node and showing no turn gives up its pointer; reckon/crew/pending_landing.py:558 implements such a pass, but the trailing legacy loop at line 708 retires the same class of pointer regardless of host or turn, so the new pass changes no production outcome.\nVERDICT done_when: the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:49 requires three fixture runs, two further passes and a base negative control; the gate at tests/test_a_run_from_a_previous_fleet_node_is_released.py:101 records them passing, but the \"working run keeps its pointer\" assertion at line 130 holds only because _write_promoted_pointer at line 86 sets the promotion mark without the ledger row it asserts exists, a state a real promoted pointer cannot be in.\nVERDICT write_paths: read the declared six paths; the delivered diff touches five of them, all inside scope, and leaves reckon/crew/promotion_release.py untouched.\nVERDICT manifest: read; it records the scoped gate (63 passed), the base arm (58 passed, 0 failures), the after arm (62 passed, 0 failures) and a repair negative control (3 failed), all consistent with the logs, though it treats the release test as proof that the turn-in-progress hold works when that hold is undone by the same function's legacy loop.\nVERDICT diff: read all eight commits d24fa090..52e55b67 commit by commit; five files, 572 insertions and no deletions, matching the declared scope.\nCALL_SITES: reckon/crew/station.py:461, reckon/crew/pending_landing.py:1634, reckon/crew/pending_landing.py:1977\nSCORE goal_fidelity: 5\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:708 retires any promoted pointer with no workspace or journal regardless of launcher host or stream, so the pass added at line 558 only reproduces what the base already did for every run it can reach, while a run with a workspace on disk is held by line 608 in both revisions.\nSCORE evidence: 8\nJUSTIFICATION evidence: the manifest's gate logs record 0 added failures and EXIT=0, but the gate's own done-when measure at tests/test_a_run_from_a_previous_fleet_node_is_released.py:130 asserts the second run keeps its pointer only under a fixture that drops the ledger row the promotion mark documents at reckon/crew/promotion.py:561.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the five changed paths is inside the declared write paths and the diff is purely additive.\nSCORE durability: 5\nJUSTIFICATION durability: tests/test_a_run_from_a_previous_fleet_node_is_released.py:130 would redden if the new pass at reckon/crew/pending_landing.py:558 were deleted, but it passes for the same reason the base does with a realistic pointer, and the journal test at line 138 never reaches the journal gate at line 608 because its pointer is written promoted=False at line 151.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/process_liveness.py:545 and :586 follow the module's lazy-import, Mapping-typed, mechanism-named idiom and carry no plan or ticket label.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/process_liveness.py:586 composes reckon/crew/watch_unit.py:408 _hosts_match and :431 fleet_record_node, and :545 wraps the existing stream reader, so the previously forked host spelling is gone.\nFINDING reckon/crew/pending_landing.py:611 blocking: the alive gate and the dead read at line 613 resolve a foreign record's pid against this host's process table before the host is compared at line 614, so a previous-node run whose pid number happens to name a live local process is held for ever (the exact defect the node targets) and one whose number names nothing is reported proved-dead; moved must be computed first and a foreign record must never consult the local pid.\nFINDING reckon/crew/pending_landing.py:708 blocking: the trailing retire_promoted_pointer loop, unchanged, retires a promoted pointer with no workspace or journal on promotion evidence alone, so it undoes the host comparison and the release-held decision at line 617 within the same call; a quiet previous-node run is already retired at the base revision once its ledger row is present, and the test's working run keeps its pointer only because its fixture omits that row.\nFINDING tests/test_a_run_from_a_previous_fleet_node_is_released.py:151 non-blocking: the journal case writes promoted=False, so _is_a_promoted_pointer returns False at reckon/crew/pending_landing.py:607 and the case returns before _landing_still_owns_run is evaluated; deleting the journal branch at line 608 would leave this case green, so it does not guard the gate its name claims.\nFINDING tests/test_a_run_from_a_previous_fleet_node_is_released.py:86 non-blocking: _write_promoted_pointer sets the promotion mark without a ledger row, which reckon/crew/promotion.py:561 says the mark asserts is written, so the suite's key assertions run against a pointer state production cannot produce.\n",
+  "review_run_id": "r-20261122T051051957533-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-52e55b67cc4b",
+  "reviewed_base_sha": "d24fa090e52748cc3100cd54e60d68ad3e87fb1b",
+  "reviewed_head_sha": "52e55b67cc4be53cce5a120c02dd8aebe26620f8",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "scores": {
+    "durability": 5,
+    "evidence": 8,
+    "fit": 16,
+    "goal_fidelity": 5,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:22:45.466572+00:00",
+  "total": 70
+}
