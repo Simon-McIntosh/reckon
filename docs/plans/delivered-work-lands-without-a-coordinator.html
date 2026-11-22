@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="129">
+<meta name="plan-version" content="130">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -747,7 +747,10 @@
     <div class="r-comment-body"><p>Independent review of run r-20261122T124837612288-dwlw-a-coordinator-requests-a-run-review at head fe991ba8 from base 432b5ff: goal met, evidence present in three gate logs (61 passed head / 58 passed base, negative control red at base), all five changed paths inside the declared scope; two non-blocking findings (a duplicated selection loop in obligations.py, and --carried/--review-run silently ignored on the --run path).</p></div>
 </div>
 <div class="r-comment" data-section="s44" data-id="c-run-r-20261122T133237623640-review-of-dwlw-a-coordinator-requests-a-run-review-e60c1ff32a03" data-who="reckon-build" data-when="2026-11-22T13:47:25.569Z">
-    <div class="r-comment-body"><p>Independent incremental review of run r-20261122T124837612288-dwlw-a-coordinator-requests-a-run-review at head e60c1ff32a from base fe991ba8: the two gained commits answer the prior round&#x27;s reuse finding by extracting `_open_review_finding` (obligations.py:1152) so the recorded-refusal duty and the undisposed-cause duty read one selection, with the evidence fragment updated at line 22 to quote the after arm `61 passed in 38.12s` at 6367dd85aa and baseline `58 passed in 37.45s` at 432b5ff1a1; scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 16; no findings, zero added gate failures.</p></div>
+    <div class="r-comment-body"><p>Independent incremental review of run r-20261122T124837612288-dwlw-a-coordinator-requests-a-run-review at head e60c1ff32a from base fe991ba8: the two gained commits answer the prior round's reuse finding by extracting `_open_review_finding` (obligations.py:1152) so the recorded-refusal duty and the undisposed-cause duty read one selection, with the evidence fragment updated at line 22 to quote the after arm `61 passed in 38.12s` at 6367dd85aa and baseline `58 passed in 37.45s` at 432b5ff1a1; scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 16; no findings, zero added gate failures.</p></div>
+</div>
+<div class="r-comment" data-section="s44" data-id="c-run-r-20261122T124837612288-dwlw-a-coordinator-requests-a-run-review" data-who="reckon-build" data-when="2026-11-22T13:32:17Z">
+    <div class="r-comment-body"><p>The reuse finding is answered: the owed-review-round selection — stored records, their lifecycle state, and the first blocking finding still owed an answer — now reads through one helper, `_open_review_finding`, where the recorded-refusal duty and the undisposed-cause duty each carried a copy, so the two duties and the dispatch read one derivation and cannot describe different states; the node&#x27;s own measure is unchanged, with 3 new cases green, the after suite at 6367dd85aa reporting `61 passed in 38.12s` against a baseline at 432b5ff1a1 reporting `58 passed in 37.45s`, and the reverted commit restoring two copies of the selection where the repair leaves one.</p></div>
 </div>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261122T130450221687-review-of-dwlw-a-repair-resume-keeps-its-partition-71ec35e4dc64" data-who="reckon-build" data-when="2026-11-22T13:11:54.456Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T124838904721-dwlw-a-repair-resume-keeps-its-partition at base 432b5ff1a1625be57d5c7a1589ae591cdd91a7f3 and head 71ec35e4dc64049eb32868245c28158d996828a9: the resume carries the partition its done-when names, a done-when naming none composes nothing, the negative control reddens at base (1 failed, 1 passed, EXIT=1), the arms add no failure (58 passed at base, 60 passed at after), and one non-blocking finding records that prompts.py:793 re-encodes the owner's default literal.</p></div>
