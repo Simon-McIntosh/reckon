@@ -1,0 +1,90 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:09:23Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery_classification.py:1191",
+      "id": "reuse_search-1",
+      "reason": "it changes what the section's done-when proves (its check must go through the shared probe, and must show the existing skip is not already firing) and names the mechanism its node brief cannot otherwise be given.",
+      "text": "\u00a712 proposes a new test for \"a run has landed on the primary branch\", but that question already has one owner and a census of callers: `_head_on_primary_branch` (:1191, cached by checkout/head/primary, returns None when unanswerable), `queue_landing._primary_carries_the_delivery` (reckon/crew/queue_landing.py:63, carried/removed/unverified over head/primary \u2014 the one that also judges whether the landed change survived), `obligations._refused_head_is_landed` (reckon/crew/obligations.py:3087), `recovery_repair_dispatch.py:85` (\"already-landed: the head is on the primary branch\"), `queue_landing.py:87`, and `merge._is_ancestor` (reckon/crew/merge.py:1305) beneath them; separately, `queue_landing._ledger_row` (:36) documents that a run's row records `promoted_revision`, which is what identifies a promoted run. `queue_plan` already skips a section with a concluded run at `dispatch_batch.py:836-861`. The brief must carry: extend that existing skip through the existing probe, do not write a second landing read",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_batch.py:492",
+      "id": "reuse_search-2",
+      "reason": "a read outside `section_derivation` is not re-derived at release and its digest is not recorded, so the queued control would silently keep a stale sentence rather than the plan's current one.",
+      "text": "\u00a711 proposes to read a section's \"Negative control.\" paragraph, but the repository has exactly one owner for reading a labelled paragraph out of section prose \u2014 `plan_review._done_when_paragraph` (reckon/crew/plan_review.py:967) and `plan_review._WRITE_PATHS_SENTENCE` (:6238) \u2014 and one owner for \"the node fields this section supplies\" \u2014 `section_derivation` (dispatch_batch.py:492), whose entries feed the digest recorded at queue time and the re-derivation at release (`rederived_section_fields`, :523). The census of every caller that reads section prose is short and all of it goes through those markers: `_PlanRead.done_when`/`write_paths` (`dispatch_batch.py:322-400); `_store._states_a_done_when` (`reckon/_store.py:5200`); `doccheck.py:1070`. \u00a711's own write paths already name `dispatch_batch.py` and `requests.py`; the brief must place the read as a fourth `section_derivation` entry",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:101",
+      "id": "reuse_search-3",
+      "reason": "without the record state that let the duplicate through, the control may already pass at base and cannot fire, which is the same defect the plan's own contract forbids.",
+      "text": "\u00a712's negative control (\"At the base revision, the first case must fail with a second request queued\") has an unstated premise: `queue_plan` at `reckon/crew/dispatch_batch.py:836-861` already skips a section whose run appears in `[*live, *history]` for every phase but failed/stopped/interrupted/discarded/dropped, and a promoted run's ledger row carries `promoted_revision` (`queue_landing.py:36`); the 22 November duplicate therefore got through a state the section never names (row absent, row phase inside that exclusion set, or a role/section field that did not match)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_checks.py:2295",
+      "id": "duplicate_owner-1",
+      "reason": "two derivations of one set drift (the plan already records that a covered section can be suppressed while its declaration still reads implementable), so \u00a712's result must be the owner's answer, and its brief should say which of the two is extended.",
+      "text": "the section-level set \"which sections still have work to land\" already has an owner: `_plan_remaining_sections` (:2295) subtracts `_landed_sections(state)` (:2257), which reads the plan's own landing comments; \u00a712 asks `queue_plan` to answer the same question again over the ledger and the git branch",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:100",
+      "id": "deep_module-1",
+      "reason": "either the section names the record that carries \"partial\" (a declaration, a run-row field, or a plan paragraph) or the arm is dropped; otherwise the first delivered node of a multi-node section suppresses the rest.",
+      "text": "the rule is stated at section granularity (\"does not queue a section for which a run has landed\"), yet its third arm requires a section whose run \"landed a partial node the plan names as partial\" to be queued; no such state exists anywhere in the repository (no \"partial\" node concept appears in `promotion_checks.py`, `landing_measure.py` or `reckon/_plan_html.py`), so a node brief gets an undefined term and must invent where it is recorded",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/node.py:1146",
+      "id": "deep_module-2",
+      "reason": "one clause settles it, and without it the section's first arm and the contract disagree on a legal declaration.",
+      "text": "\u00a711 says a section that states no negative-control paragraph is refused, but the node contract sanctions a declaration escape \u2014 `none: <reason>` (`NEGATIVE_CONTROL_NONE`, node.py:1033) is a legitimate declaration because a mutation cannot always be applied without disabling the system; \u00a711 does not say whether a section writing \"Negative control. None: \u2026\" is queued with that value or refused, so such a section could never be queued unattended",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ee81ed54a0ccf376fdb4366e4be0729fe91b6dac",
+  "plan_fingerprint": "dabef8530aeb6f1e30fda778fff5d824634effa834afb515f7d599a16f812dec",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T080904388855-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "e1ade98108ab951cb76697d41c2b726fc68eee51",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a712 fixes the skip at section granularity while its own third arm needs a \"partial node\" state that no record in the repository carries, and \u00a711 never says how the sanctioned `none: <reason>` control is expressed in a section.",
+    "duplicate_owner": "a finding \u2014 the read of \"which of this plan's sections still need work\" already has an owner, `promotion_checks._plan_remaining_sections`, and \u00a712's skip is a second derivation of the same set.",
+    "interface_budget": "pass \u2014 against this week's public_definitions 3133, cli_options 535, mcp_views 15, refusal_families 25 (read 2026-11-22T08:09:05Z): neither section adds a CLI option, MCP view or dispatch refusal code; \u00a711 reuses the existing negative-control refusal (`node.py:1138`) and \u00a712 adds a skip reason to the result list \u00a79 already accounted for, which is a message list and not a counted refusal family.",
+    "reuse_search": "a finding \u2014 \u00a712's \"a run has landed on the primary branch\" is already answered by `recovery_classification._head_on_primary_branch` and `promotion_checks._landed_sections`, and \u00a711's section-supplied field read is already owned by `plan_review._done_when_paragraph` and `section_derivation`; the design should extend those, not read the plan afresh.",
+    "thin_wrapper": "pass \u2014 neither section adds a layer: both are a change to an existing predicate or derivation entry rather than a new wrapper over one."
+  },
+  "section_digests": {
+    "_document": "f5d53c21be55000d69166d2a2e67278254b14aad458ab341f10abde8550553d1",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s10": "19cac31f7625580415ae589ef5632a42fa084f147d415318997b99ce31d1e5a6",
+    "s11": "e22d92d295b1856dd196f32eca6b86a3734e745dab85271a723b1e457c8b3122",
+    "s12": "8f1a49148c47d028a690e0830f4275c7c9e0ec6aa7de4b14808e8d034ade3ca9",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "7bf7f9b92e4bbc6a9d86f2d20aacc04cdaa9e3a0c27be56c9f1eccb8cea9efee",
+    "s4": "9728c2bdd6e0a20b020fe517e7b4b28259c17b6a31fb630c24213261ae299736",
+    "s5": "a0356c829de2dc9d9549641fb3dbdff1b2e2904914c61bc70b9f36213272e8ab",
+    "s6": "322422e335f3f8d278ca86100a57410fa7524921c9bda5e38840490a1fd1dd52",
+    "s7": "46ed5e587a3ccf200df8d9e3c23a84e8b5238c86449f9a30e4bcd07c28cc3b76",
+    "s8": "ab8adf6dcfeab65b717343054ca1c1fbd76bfa295179fc83776e83a5d2ae8606",
+    "s9": "6e84f853b79600df1fd05c11705c314262c11808dbcbb043660311f640c0474d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:22:35.411075+00:00",
+  "total": null
+}
