@@ -2070,6 +2070,34 @@ def _with_revision_suite_block(advice: str, record: Mapping[str, Any]) -> str:
     return advice.rstrip("\n") + "\n" + block
 
 
+def _compute_partition_block(record: Mapping[str, Any]) -> str:
+    """The compute instruction the run's own dispatch named, for its resume.
+
+    The done-when is where the dispatch read the partition from, and it is the
+    same field a resume still holds on the run's node. A run that recorded no
+    node or no done-when is told nothing rather than handed a default.
+    """
+    node = record.get("node")
+    if not isinstance(node, Mapping):
+        return ""
+    from reckon.crew.prompts import compute_partition_block
+
+    return compute_partition_block(str(node.get("done_when") or ""))
+
+
+def _with_compute_partition_block(advice: str, record: Mapping[str, Any]) -> str:
+    """The advice a resumed worker reads, with its dispatch's partition appended.
+
+    Appended for the same reason the suite revisions are: the advice's opening
+    names the round, and a manifest quoting it still reads as that round's
+    answer. A dispatch that named no partition leaves the advice untouched.
+    """
+    block = _compute_partition_block(record)
+    if not block:
+        return advice
+    return advice.rstrip("\n") + "\n" + block
+
+
 def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
     """Write the prompt the resumed worker reads from ``advice_path``.
 
@@ -2342,6 +2370,10 @@ def _resume(
             # here, with the command resolved separately over each. Appended
             # before the plan is built so the prompt the worker reads carries
             # them whether the backend feeds its prompt on stdin or on argv.
+            # The dispatch's compute partition is carried for the same reason:
+            # the advice alone names none, so the resumed worker otherwise runs
+            # its gate on whatever host the resume landed on.
+            advice = _with_compute_partition_block(advice, record)
             advice = _with_revision_suite_block(advice, record)
             plan = resume_plan(run_id, advice, config=config)
             directory = run_dir(run_id)

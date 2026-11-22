@@ -778,6 +778,47 @@ def worker_gate_commands(
     )
 
 
+def named_gate_partition(done_when: str) -> str:
+    """The partition a done-when names for its gate, or ``""`` when it names none.
+
+    ``node_gate_partition`` answers a CPU default when the text names no
+    partition, because a gate call needs one. That default is the dispatch's
+    own convenience rather than a partition the done-when chose, so it is not
+    an instruction a resume can carry: only a partition the text itself names
+    is returned here.
+    """
+    from reckon.crew.standing_suite import node_gate_partition
+
+    named = node_gate_partition(done_when)
+    if named == "all_debug" and not re.search(r"\ball_debug\b", done_when):
+        return ""
+    return named
+
+
+def compute_partition_block(done_when: str) -> str:
+    """The compute instruction a resume carries from its dispatch.
+
+    A dispatch names the partition its heavy gate runs on in the gate calls it
+    composes. A reflex resume carries the reflex's advice and no gate calls, so
+    a worker that runs its gate where the resume landed puts heavy work on the
+    launch node. The block restates the partition the done-when named and what
+    the worker does with it. A done-when that named no partition composes
+    nothing, so the resume invents no instruction its dispatch never gave.
+    """
+    partition = named_gate_partition(done_when)
+    if not partition:
+        return ""
+    from reckon import nested_launch as nested
+
+    return (
+        "\nFENCE — COMPUTE PARTITION (where this run's gate runs)\n"
+        f"  This run's dispatch named {partition} for its heavy gate.\n"
+        "  Run the gate there, not on the host this resume landed on: it goes to\n"
+        f"  {nested.PARTITION_ROUTE} naming --partition {partition}, and its log\n"
+        "  stays under this run's directory.\n"
+    )
+
+
 def compose_prompt(
     *,
     node: TaskNode,
