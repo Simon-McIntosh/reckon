@@ -14,7 +14,6 @@ the file rather than in which command was chosen.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -52,14 +51,12 @@ def repository_fixture(tmp_path: Path) -> Path:
     return repository
 
 
-def _manifest_text(
-    *, gate_lines: list[str], log: Path) -> str:
+def _manifest_text(*, gate_lines: list[str], log: Path) -> str:
     lines = [
         "node: one-gate-command",
         "status: complete",
         f"commits: {'0' * 40}",
-        "changed_paths: reckon/crew/reports.py "
-        "tests/test_promotion_reads_one_gate_command.py",
+        "changed_paths: reckon/crew/reports.py tests/test_promotion_reads_one_gate_command.py",
     ]
     lines.extend(f"tests: {gate}" for gate in gate_lines)
     lines.append(f"test_logs: {log}")
