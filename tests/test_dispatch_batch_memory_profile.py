@@ -38,8 +38,11 @@ SECTION = "s1"
 #: The node the caller is about to queue: three promotions have taken it.
 NODE = "plan-target-s1"
 #: Rows for other nodes of the same plan and project. They are the population
-#: the read must walk past without decoding.
-FOREIGN = 600
+#: the read must walk past without decoding. Each row is one committed insert,
+#: so the population is kept large enough to dwarf the node's own three rows
+#: and small enough that seeding it, and seeding it again for the doubling
+#: case, stays inside the per-test bound on a slow store filesystem.
+FOREIGN = 120
 
 NOW = "2026-11-22T00:00:00Z"
 
