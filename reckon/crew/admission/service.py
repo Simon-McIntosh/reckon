@@ -409,6 +409,10 @@ def admit_read_sources() -> list[tuple[str, tuple[str, ...]]]:
     The pointer directory sits inside the crew home, and the run store's
     database sits beside it, so a rule that named only the crew home would
     charge every pointer and the database to one source and name neither.
+
+    The review store is sharded one directory per project — ``reviews/<project>``
+    with thousands of records in a project's shard — so its rule names the
+    store's root and the prefix match carries every shard beneath it.
     """
     from reckon import _store
 
@@ -422,7 +426,7 @@ def admit_read_sources() -> list[tuple[str, tuple[str, ...]]]:
         # did not come from.
         ("run store", (str(Path(crew_home) / "run_store"),)),
         ("live and queued pointers", (live + "/",)),
-        ("review store", (review_store + "/",)),
+        ("review store", (review_store + "/", str(Path(state) / "reviews") + "/")),
         ("ledger", (state + "/",)),
         ("plan documents", ("*/docs/plans/",)),
     ]

@@ -56,7 +56,7 @@ def crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     files = {
         "live and queued pointers": home / "live" / "run-a.json",
         "run store": home / "run_store.db",
-        "review store": home / "reviews" / "review-a.json",
+        "review store": home / "reviews" / "sample-project" / "review-a.json",
         "ledger": config_home / "state" / "sample" / "ledger.jsonl",
         "plan documents": checkout / "docs" / "plans" / "sample.html",
         "everything else": home / "misc" / "other.txt",
