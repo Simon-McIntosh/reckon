@@ -25,7 +25,7 @@
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -114,12 +114,13 @@
     <p><strong>Done when.</strong> <code>tests/test_a_wait_probe_runs_once_at_a_time.py</code> passes, covering: ten readers polling one wait within a second start the probe once and all read its result; a probe that takes longer than 30 seconds is not started a second time; and a probe exceeding 60 seconds is stopped and raises one obligation naming the run and the probe. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case must fail with the probe started once per reader.</p>
 
-    <h2 id="s15">§15 — A promoted and landed run keeps its run-store row</h2>
+    <h2 id="s15">§15 — A landed run reads as landed after its record is retired</h2>
 <section data-reckon="section" data-id="s15" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>On 22 November 2026 a query of the run store for the four §18 runs of <code>workers-spend-fewer-tokens-per-landed-node</code>, landed as <code>ce451ced11</code>, <code>ec359cbdb2</code>, <code>9b8baaa6dc</code> and <code>dde7b00176</code>, returned no row for any of them. A direct query had shown a row for one of them about eight hours earlier. Any reader that asks the run store whether a run was promoted then reads a landed run as never promoted.</p>
-    <p><strong>Deliverable.</strong> A run recorded as promoted and landed is returned by the run store's row read for as long as its run record exists, whichever table the store keeps it in, and the node states what removed or hid the four rows named above.</p>
-    <p><strong>Done when.</strong> <code>tests/test_a_landed_run_keeps_its_store_row.py</code> passes, covering: a run promoted and landed is returned by the row read immediately and again after the store's own pruning and archiving passes have run; and a run whose record is removed is no longer returned. The node records, for each of the four runs, whether its row is absent, archived or filtered, and by what. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
-    <p><strong>Negative control.</strong> At the base revision, the first case must fail with the row missing after the pruning pass.</p>
+    <p>On 22 November 2026 a query of the run store for the four §18 runs of <code>workers-spend-fewer-tokens-per-landed-node</code>, landed as <code>ce451ced11</code>, <code>ec359cbdb2</code>, <code>9b8baaa6dc</code> and <code>dde7b00176</code>, returned no row for any of them. The plan review of this section measured why at base <code>1ba844cc</code>: the store's row read is correct for every run whose record exists, and falls back to the archive after the retirement pass. The four runs have no record left: the committed ledger loads 14 reckon runs and none of the four, and the per-run state directory holds 14 files. So the retention passes removed the only evidence that the four runs were promoted, while their commits are on the primary branch. A reader asking whether one of them landed is told it was never promoted, and a request waiting on one of them never releases.</p>
+    <p><strong>Deliverable.</strong> Whether a run was promoted and landed, and at which commit, is answerable by its id after every retention pass the store and the ledger run, for any run whose landing commit is on the primary branch. The node states, for each of the four runs, which pass removed its record and when.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_landed_run_keeps_its_store_row.py</code> passes, covering: a run promoted and landed, then put through every retention pass the store and the ledger offer until its run record is gone, is still reported as landed at its commit by the reader the admission service uses to release a <code>run:</code> wait; a run discarded without landing is not reported as landed after the same passes; and a request waiting on the landed run is released. The node records the removing pass for each of the four runs. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
+    <p><strong>Negative control.</strong> At the base revision, the first case must fail, with the landed run reported as never promoted once its record is retired.</p>
+
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
