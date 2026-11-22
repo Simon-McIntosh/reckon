@@ -168,3 +168,31 @@ def test_the_reading_is_written_on_the_pass_verdict_row(crew_home, tmp_path) -> 
     saved.write_text(json.dumps(record), encoding="utf-8")
     written = json.loads(saved.read_text(encoding="utf-8"))
     assert written["reads_by_source"]["live and queued pointers"] > 0
+
+
+def test_a_real_pass_carries_the_breakdown(tmp_path: Path, monkeypatch) -> None:
+    """The wrap around the pass itself is what carries the reading.
+
+    A helper test cannot see this: delete the accounting scope around the pass
+    and every helper still passes while no pass reading has a breakdown.
+    """
+    config_home = tmp_path / "config"
+    (config_home / "crew" / "live").mkdir(parents=True)
+    monkeypatch_pointer = config_home / "crew" / "live" / "run-a.json"
+    pointer_text = json.dumps(
+        {
+            "run_id": "run-a",
+            "project": "sample",
+            "node": {"id": "run-a"},
+            "phase": "queued",
+        }
+    )
+    monkeypatch_pointer.write_text(pointer_text, encoding="utf-8")
+    (config_home / "mounts.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    result = service.admit_until_stopped(once=True, lane="")
+
+    assert "reads_by_source" in result, sorted(result)
+    pointers = result["reads_by_source"].get("live and queued pointers", 0)
+    assert pointers >= len(pointer_text), (pointers, len(pointer_text))
