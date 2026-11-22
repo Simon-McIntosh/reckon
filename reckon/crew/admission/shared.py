@@ -49,8 +49,10 @@ __all__ = [
     "ADMISSION_HISTORY_KEY",
     "ADMISSION_RETRY_BACKOFF_CAP_SECONDS",
     "ADMISSION_RETRY_BACKOFF_SECONDS",
+    "ADMISSION_VERDICT_DAY_LOG_PREFIX",
     "ADMISSION_VERDICT_LOG",
     "ADMISSION_VERDICT_LOG_MAX_BYTES",
+    "ADMISSION_VERDICT_LOG_RETENTION_DAYS",
     "ADMIT_LOCK_NAME",
     "ADMIT_MEMORY_BOUND_BYTES",
     "AWAITING_UPSTREAM_PHASE",
@@ -208,11 +210,34 @@ ADMISSION_RETRY_BACKOFF_CAP_SECONDS = 600.0
 #: under the crew home beside ``pick-timings.jsonl``. A pass that holds a
 #: request for its session's allowance, its lane's gate, its retry back-off or
 #: an earlier request otherwise records nothing, so the log is what names why a
-#: request waited. The log is trimmed to this many bytes on every append, so a
-#: service that runs for days cannot grow it without limit.
+#: request waited.
+#:
+#: The file named here holds the current UTC day's records. At the first append
+#: of a new day it is rotated to ``admission-verdicts-<YYYY-MM-DD>.jsonl`` and a
+#: fresh current file is started, so the newest account a surface reads is always
+#: this file, as it was before the log was partitioned. Rotated day files are
+#: retained for :data:`ADMISSION_VERDICT_LOG_RETENTION_DAYS` so a measure of the
+#: log's last seven days has seven days of records to read rather than whatever
+#: fitted in one byte-bounded file.
 ADMISSION_VERDICT_LOG = "admission-verdicts.jsonl"
 
-ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576
+#: The prefix a rotated day's log carries; the day follows as ISO ``YYYY-MM-DD``
+#: and the suffix is ``.jsonl``. A file matching this shape and carrying a day
+#: older than the retention horizon is pruned by the writer.
+ADMISSION_VERDICT_DAY_LOG_PREFIX = "admission-verdicts-"
+
+#: How many days of admission verdicts are retained. The verdict-gap measure
+#: reads a seven-day window, so seven days of records have to survive; the
+#: current day is kept on top of them, so at most eight files are held. Pruning
+#: is by whole day, so a file is dropped only once it falls outside the window,
+#: never while a record inside it is still needed.
+ADMISSION_VERDICT_LOG_RETENTION_DAYS = 7
+
+#: The most bytes one day's file keeps before its oldest rows are trimmed. A day
+#: at the rate and row size measured on the live log is about 20 MB (1,065
+#: passes a day at a 19 KB mean row), so this bounds a pathological burst within
+#: one day instead of evicting the seven days of history a seven-day read needs.
+ADMISSION_VERDICT_LOG_MAX_BYTES = 134_217_728
 
 #: The resident memory the admission service may hold however many passes it
 #: has made. A pass decodes pointer records, run documents and plan text, and

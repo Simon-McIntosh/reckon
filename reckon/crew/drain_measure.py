@@ -252,6 +252,57 @@ def measure_fair_share(
     }
 
 
+#: The factor a day of retained verdicts may exceed the product of the record
+#: rate and the mean row size before the log is spending bytes on something the
+#: rate and the row size do not explain. One day of records costs the product;
+#: twice that is the most a day may cost, which is what rules out keeping two
+#: copies of every record.
+VERDICT_LOG_BYTES_CEILING_FACTOR = 2.0
+
+
+def measure_verdict_log_cost(
+    *,
+    bytes_per_day: Mapping[str, int],
+    verdicts_per_day: float,
+    mean_row_bytes: float,
+    factor: float = VERDICT_LOG_BYTES_CEILING_FACTOR,
+    measured_on: str = "",
+) -> dict[str, Any]:
+    """Bound what the retained verdict log costs each day.
+
+    A log that keeps a week of records is only affordable if a day's rows cost
+    what the record rate and row size say they cost. The product of the two is
+    one copy of a day; allowing twice it does not forbid a header or an index,
+    and it does forbid storing each record twice. ``bytes_per_day`` is the read's
+    own per-day byte figure, so this checks the log the reader actually parses
+    rather than a figure recomputed from the rows.
+
+    ``verdicts_per_day`` and ``mean_row_bytes`` are the rate and row size measured
+    on the live log; ``measured_on`` records where and when they were taken, so
+    a reader can tell a stale measurement from a wrong one.
+    """
+    if not bytes_per_day:
+        return {
+            **_unmeasured("no retained day of verdicts was read"),
+            "ceiling_factor": factor,
+        }
+    budget = factor * verdicts_per_day * mean_row_bytes
+    per_day = {day: int(size) for day, size in bytes_per_day.items()}
+    worst = max(per_day.values())
+    return {
+        "status": "measured",
+        "measured_on": measured_on,
+        "verdicts_per_day": round(float(verdicts_per_day), 3),
+        "mean_row_bytes": round(float(mean_row_bytes), 1),
+        "one_copy_bytes_per_day": round(verdicts_per_day * mean_row_bytes, 1),
+        "ceiling_factor": factor,
+        "ceiling_bytes_per_day": round(budget, 1),
+        "bytes_per_day": per_day,
+        "worst_bytes_per_day": worst,
+        "within_ceiling": worst <= budget,
+    }
+
+
 def measure_verdict_gap(
     passes: Sequence[Mapping[str, Any]],
     *,
