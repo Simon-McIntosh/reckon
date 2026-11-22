@@ -155,6 +155,10 @@ RECORD_FIELDS = (
     "lane",
     "model_key",
     "local",
+    # The width the request was dispatched at: "plan" for a whole-plan call,
+    # "batch" for a batch file, "section" for a call naming one section. Null on
+    # a row whose request recorded no width.
+    "dispatch_width",
     "agent",
     "dispatched_at",
     "completed_at",

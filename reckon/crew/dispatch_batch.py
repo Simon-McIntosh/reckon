@@ -878,6 +878,7 @@ def queue_plan(
             over_fence_reason=over_fence_reason,
             comment=comment,
             local=local,
+            dispatch_width="plan",
             dry_run=dry_run,
         )
         if entries
@@ -921,6 +922,7 @@ def queue_batch(
     comment: str = "",
     local: bool = False,
     priority: int | None = None,
+    dispatch_width: str = "",
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own — see :func:`_queue_batch`.
@@ -949,6 +951,7 @@ def queue_batch(
             comment=comment,
             local=local,
             priority=priority,
+            dispatch_width=dispatch_width,
             dry_run=dry_run,
         )
 
@@ -964,6 +967,7 @@ def _queue_batch(
     comment: str = "",
     local: bool = False,
     priority: int | None = None,
+    dispatch_width: str = "",
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own and report one row per entry.
@@ -1116,6 +1120,9 @@ def _queue_batch(
                 local=options["local"],
                 comment=options["comment"],
                 priority=options["priority"],
+                # An entry may state its own width; otherwise it is the width
+                # of the call that named the batch.
+                dispatch_width=str(entry.get("dispatch_width") or dispatch_width),
                 dry_run=dry_run,
             )
             if not dry_run:
