@@ -91,6 +91,9 @@ def test_a_second_launch_reuses_the_node_server(node):
     assert first.pid == second.pid
     live = server_pids(directory)
     assert live == [first.pid], "the node must run exactly one server"
+    record_file = mcp_shared.record_path("reckon", directory)
+    assert record_file.stat().st_mode & 0o777 == 0o600
+    assert json.loads(record_file.read_text())["pid"] == first.pid
 
 
 def test_no_server_outlives_the_test_that_started_it(tmp_path, monkeypatch):
@@ -100,6 +103,12 @@ def test_no_server_outlives_the_test_that_started_it(tmp_path, monkeypatch):
     assert server_pids(tmp_path) == [record.pid]
     stop_server(record)
     assert server_pids(tmp_path) == [], "a stopped server must leave no process"
+
+
+def test_the_node_directory_follows_the_node_runtime_root(tmp_path, monkeypatch):
+    monkeypatch.delenv(mcp_shared.NODE_DIR_ENV, raising=False)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path))
+    assert mcp_shared.node_dir() == tmp_path / "reckon-mcp"
 
 
 def test_a_node_that_cannot_start_a_server_keeps_the_worker_declaration(tmp_path):

@@ -22,6 +22,7 @@ import os
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
@@ -29,6 +30,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from reckon import node_runtime
+from reckon._store import write_json_atomically
+from reckon.crew.process_liveness import process_alive
 
 NODE_DIR_ENV = "RECKON_MCP_NODE_DIR"
 TRANSPORT_ENV = "RECKON_MCP_TRANSPORT"
@@ -75,8 +80,10 @@ def node_dir() -> Path:
     if override:
         root = Path(override)
     else:
-        runtime = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
-        root = Path(runtime) / "reckon-mcp"
+        base, _source = node_runtime.runtime_root_candidate()
+        if base is None:
+            base = Path(tempfile.gettempdir())
+        root = base / "reckon-mcp"
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     return Path(root)
 
@@ -120,15 +127,7 @@ def read_record(name: str, directory: Path | None = None) -> SharedServer | None
 
 
 def _pid_alive(pid: int) -> bool:
-    if pid <= 0:
-        return False
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
+    return bool(process_alive(pid))
 
 
 def _port_accepts(host: str, port: int, timeout: float = 0.3) -> bool:
@@ -165,20 +164,9 @@ def default_command() -> list[str]:
 
 
 def _write_record(record: SharedServer, directory: Path) -> None:
-    path = record_path(record.name, directory)
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    try:
-        with os.fdopen(descriptor, "w") as stream:
-            json.dump(record.as_dict(), stream, sort_keys=True)
-            stream.write("\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-    except BaseException:
-        with suppress(OSError):
-            temporary.unlink()
-        raise
+    write_json_atomically(
+        record_path(record.name, directory), record.as_dict(), mode=0o600
+    )
 
 
 def _free_port(host: str) -> int:
@@ -291,11 +279,6 @@ def serve(
         return record
     finally:
         os.close(descriptor)
-
-
-def worker_server_config(record: SharedServer) -> dict[str, Any]:
-    """The harness declaration that points a worker at the node's server."""
-    return {"type": "http", "url": record.url}
 
 
 def shared_server_urls(
