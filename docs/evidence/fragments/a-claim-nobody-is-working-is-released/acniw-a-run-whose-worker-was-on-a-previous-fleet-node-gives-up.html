@@ -126,6 +126,24 @@ host's process table for a previous-node run, fails the quiet and the working
 previous-node cases: <code>2 failed, 6 passed in 1.67s</code>, logged with its
 non-zero exit, after which the tree was returned to this revision.
 </p>
+<p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p13">
+Merge at 2de2827ba9418d3934039300f36b9b7b740ac5d2: primary main was merged into
+this node's worktree against a conflict in <code>pending_landing.py</code>. Both
+sides had added a pass over the live pointers at the same insertion point, this
+node's previous-fleet-node release and the primary branch's release of a landing
+group's members once the group's outcome record outlives the journal.
+
+The resolution keeps both: the group pass reads
+<code>landing-group.json</code> for the head each member landed at and releases
+only a member proved integrated, while the previous-node pass still reads the
+host before the pid and skips any run with a workspace or an unfinished landing.
+<code>retire_promoted_pointers</code> calls each in turn.
+
+Measure at the merge head: base d24fa090e52748cc3100cd54e60d68ad3e87fb1b
+<code>58 passed in 38.24s</code>, after arm <code>66 passed in 38.67s</code>, and
+the scoped gate including both release tests
+<code>67 passed in 38.71s</code>.
+</p>
 </article>
 </body>
 </html>
