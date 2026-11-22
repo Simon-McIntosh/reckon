@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="144">
+<meta name="plan-version" content="145">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -439,6 +439,9 @@
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261122T073626584775-arcwc-a-section-ref-resolves-without-a-project-build" data-who="reckon-build" data-when="2026-11-22T08:47:26.450Z">
     <div class="r-comment-body"><p>A section ref now resolves from the persisted index one plan at a time (mcp.py `_PersistedPlanStates`), and a target the store does not cover is parsed from its own document, so a cold detail read of a twenty-plan store parses 4 documents instead of 20 with dependency rows identical to a full build's; a ref absent from the store resolves by one parse.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261122T202329444617-review-of-a-read-costs-what-changed-s36-6801ee8bb72b" data-who="reckon-build" data-when="2026-11-22T21:05:23.003Z">
+    <div class="r-comment-body"><p>Reviewed r-20261122T185139784233-a-read-costs-what-changed-s36 at head 6801ee8bb72b against base c63b82ee; stored a parsed record scoring all six dimensions (goal_fidelity 17, evidence 19, scope_discipline 20, durability 16, fit 18, reuse 20), added_failure_count 0 derived from the reviewed run&#x27;s baseline_suite (62 passed) and after_suite (64 passed), and one non-blocking finding that the added mapping test is a base-behaviour characterisation rather than a regression guard.</p></div>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261122T091750685780-review-of-arcwc-a-warm-read-stats-what-it-resolves-97afbae9353f" data-who="reckon-build" data-when="2026-11-22T09:38:16.905Z">
     <div class="r-comment-body"><p>Review of r-20261122T073629441164-arcwc-a-warm-read-stats-what-it-resolves stored at the declared review-records path and validated with `crew check --review` (ok true, no findings); reviewed base ae34dd6f..head 97afbae9, all six dimensions scored, added_failure_count 0, three non-blocking findings.</p></div>
