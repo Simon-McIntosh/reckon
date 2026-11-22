@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -653,7 +653,7 @@
     <div class="r-comment-body"><p>Reviewed dde7b001769544957d5ca63f50cbb48c26574553..3d5294ab58653796d7044431f430db9e0303b298; scores 18/17/20/17/17/19; zero added failures from the reviewed run's own arms (baseline 58 passed, after 61 passed); three non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261122T083515180558-dwlw-no-promotion-leaves-an-uncommitted-plan" data-who="reckon-build" data-when="2026-11-22T10:20:22Z">
-    <div class="r-comment-body"><p>A refused or early-refused promotion now settles the plan it targeted: when the file holds another promotion&#x27;s uncommitted landing comment the comment is committed (keeping its own id, author and time) instead of being left as uncommitted bytes, and complete() settles the plan on every outcome; the settlement also runs after a restore that succeeded, because the preimage a restore returns to can itself carry another run&#x27;s uncommitted comment. The revised test file&#x27;s refused-early and refused-inside cases both fail at the pinned base revision with &quot;status=&#x27;M docs/plans/landing-target.html&#x27; equal=False&quot;, and pass at 3d5294ab.</p></div>
+    <div class="r-comment-body"><p>A refused or early-refused promotion now settles the plan it targeted: when the file holds another promotion's uncommitted landing comment the comment is committed (keeping its own id, author and time) instead of being left as uncommitted bytes, and complete() settles the plan on every outcome; the settlement also runs after a restore that succeeded, because the preimage a restore returns to can itself carry another run's uncommitted comment. The revised test file's refused-early and refused-inside cases both fail at the pinned base revision with "status='M docs/plans/landing-target.html' equal=False", and pass at 3d5294ab.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§4 landed through the crew's own promotion after its review (landing commit <code>9b3b985d86</code>). The drain leases the next request before releasing the finished one and its measured rate is recorded in the run's ledger row and review.</p></div>
@@ -747,6 +747,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261116T233752526352-delivered-rows-say-what-is-owed" data-who="reckon-build" data-when="2026-11-17T01:05:40Z">
     <div class="r-comment-body"><p>Shared live classification separates 1 delivered run, 2 promotion requests and 1 landed leftover across pane and obligations/MCP reads; refusal rows now keep their complete remedy beside the new counters. The committed gate passes 74 tests versus 70 at the repair base and 58 at the original base; all 9 affected importer tests pass unchanged, and reversing the answering commit makes the review-named assertion fail (1 failed). Earlier importer observations remain outside scope.</p></div>
+</div>
+<div class="r-comment" data-section="s41" data-id="c-run-r-20261122T105627074826-review-of-dwlw-a-gate-that-cannot-start-names-its-program-b0157b82c3d0" data-who="reckon-build" data-when="2026-11-22T11:04:59.586Z">
+    <div class="r-comment-body"><p>Review of r-20261122T083521486110 at dde7b001..b0157b82c3 delivers a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 5 with zero added suite failures; the landed resolver reports a merged-head gate that cannot start as not-run naming the program and tree and resolves a relative .venv/bin/python before the shell sees it, with the negative control showing all three cases red at the base quoting exit_status=127; the one non-blocking finding is that resolve_gate_program re-implements the program resolution that promotion_gate._require_executable_gate_command already owns.</p></div>
 </div>
 </section>
   </main>
