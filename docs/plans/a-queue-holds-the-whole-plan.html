@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S28">
-<meta name="plan-version" content="387">
+<meta name="plan-version" content="388">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -279,8 +279,8 @@
     <h2 id="s53">§53 — A hold is charged to the session that placed it</h2>
 <section data-reckon="section" data-id="s53" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>nova-00 reported on 22 November 2026 that <code>r-20261121T205621369895-default-policy-refusal-drift</code>, dispatched by its session <code>d2b31d35</code>, kept a run-held obligation in that session after coordinator nova-aa placed its own hold at 02:06:34Z (<code>hold.json</code> names nova-aa). <code>crew ack</code> from nova-00 returned ok and the row stayed outstanding, so a session that may not release another coordinator's hold could not clear its own stop hook.</p>
-    <p><strong>Deliverable.</strong> A run-held obligation is charged to the session named in the hold record, not to the session that dispatched the run, and that session's acknowledgement retires it.</p>
-    <p><strong>Done when.</strong> <code>tests/test_a_hold_is_charged_to_its_holder.py</code> passes, covering: a hold placed by session B on a run dispatched by session A appears in B's obligations and not A's; B's acknowledgement retires it; and a hold placed by the dispatching session still appears in that session's obligations. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. Write paths: <code>reckon/crew/obligations.py</code>, <code>reckon/crew/obligation_snapshot.py</code> and the new test.</p>
+    <p><strong>Deliverable.</strong> Every hold records the session id of the coordinator that placed it, beside the label it records today. A run-held obligation is charged to that session, not to the session that dispatched the run, and that session's acknowledgement retires it. A hold recorded before this change, which carries no session id, is charged to the dispatching session as it is today.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_hold_is_charged_to_its_holder.py</code> passes, covering: a hold placed by session B on a run dispatched by session A appears in B's obligations and not A's; B's acknowledgement retires it; a hold placed by the dispatching session still appears in that session's obligations; the hold record names the placing session's id; and a hold record with no session id is charged to the dispatching session. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. Write paths: <code>reckon/crew/obligations.py</code>, <code>reckon/crew/obligation_snapshot.py</code>, <code>reckon/crew/resume.py</code> and the new test.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case must fail, with the hold charged to session A.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
