@@ -954,7 +954,72 @@ def _run_plan_slug(record: Mapping[str, Any], node: Mapping[str, Any]) -> str:
     return _plan_review_pointer_slug(record)
 
 
+def _landing_plan_target(run_id: str, root: Any) -> tuple[Path, Path] | None:
+    """The checkout and plan file a call to complete would write, if any.
+
+    Resolved before the call runs, because a successful promotion removes the
+    pointer this reads and the plan then still has to be checked afterwards.
+    """
+    try:
+        record = read_pointer(run_id)
+    except (CrewError, OSError, ValueError):
+        return None
+    if not isinstance(record, Mapping) or not record:
+        return None
+    record = {**record, **read_dispatch_detail(record)}
+    if _is_shadow(record):
+        return None
+    repo = root if root is not None else record.get("repo")
+    plan = str((record.get("node") or {}).get("plan") or "")
+    project = str(record.get("project") or "")
+    if repo is None or not plan:
+        return None
+    checkout = Path(repo).expanduser().resolve()
+    try:
+        resolved = _store._resolve_html_file(
+            project, plan, checkout, artifact_type="plan"
+        )
+    except (CrewError, OSError, ValueError):
+        return None
+    if resolved is None:
+        return None
+    return checkout, Path(resolved).resolve()
+
+
+def _settle_the_plan_whatever_the_outcome(
+    promote: Callable[..., dict[str, Any]],
+) -> Callable:
+    """Leave the plan byte-equal to its committed revision however a call ends.
+
+    A promotion that refuses in an early guard — a gate with no check, a
+    checkout that cannot host a commit — never reaches the write snapshot, so
+    it is not the guard inside the locked body that decides what the plan looks
+    like afterwards. Whether it wrote nothing or wrote a landing comment and
+    then refused, the plan must not be left carrying uncommitted bytes: every
+    later landing on it is refused for them. A refusal that leaves the file
+    holding another promotion's uncommitted comment is settled by committing
+    that comment, which keeps its own id, author and time.
+    """
+    from functools import wraps as _wraps
+
+    @_wraps(promote)
+    def guarded(run_id: str, **kwargs: Any) -> dict[str, Any]:
+        if kwargs.get("dry_run"):
+            return promote(run_id, **kwargs)
+        target = _landing_plan_target(run_id, kwargs.get("root"))
+        try:
+            return promote(run_id, **kwargs)
+        finally:
+            if target is not None:
+                checkout, path = target
+                with suppress(CrewError, OSError, ValueError):
+                    _commit_landing_comments_left_in(checkout, path, run_id)
+
+    return guarded
+
+
 @operational_read
+@_settle_the_plan_whatever_the_outcome
 def complete(
     run_id: str,
     *,
@@ -2020,6 +2085,9 @@ class _PlanWriteSnapshot:
             "plan index changed after the snapshot; preserving the other writer's staging"
         )
 
+    def settle_landing_comments(self) -> list[str] | None:
+        return _commit_landing_comments_left_in(self.checkout, self.path, self.run_id)
+
     def restore(self, *, plan_locked: bool = False) -> None:
         from reckon.crew.merge import _run_waiting_out_a_held_index_lock
         from reckon.crew.promotion_scope import (
@@ -2126,6 +2194,145 @@ class _PlanWriteSnapshot:
                 )
 
 
+def _state_without_the_comment_ledger(state: Mapping[str, Any]) -> dict[str, Any]:
+    """A plan state with the fields a landing comment may move dropped.
+
+    A comment append rewrites the version and modified stamps and may move a
+    draft plan to in-progress, so those three keys are not evidence of a
+    different document. Everything else must be equal for a file to be read as
+    HEAD plus appended comments.
+    """
+    return {
+        key: value
+        for key, value in state.items()
+        if key not in ("comments", "version", "modified", "status")
+    }
+
+
+def _landing_comments_appended_to_head(
+    checkout: Path, path: Path, current_text: str
+) -> tuple[str, Mapping[str, Any], Mapping[str, Any]] | None:
+    """HEAD's plan text and both states, when the file is HEAD plus comments.
+
+    A landing comment is an append, so a plan file carrying another writer's
+    landing comments is HEAD's document re-rendered with those comments. That
+    is recognised by re-rendering HEAD with the state parsed from the file and
+    requiring the result to be byte-identical to the file: the state read
+    cannot see every edit a file may carry — a heading's own prose is not one
+    of its keys — so a writer that changed anything else does not match and no
+    caller may read it as an append.
+
+    Only the comment ledger may differ between the two states. A comment append
+    also rewrites the version and modified stamps and may move a draft plan to
+    in-progress, so those keys are excluded by
+    `_state_without_the_comment_ledger`.
+
+    Returns HEAD's text, HEAD's state and the state parsed from the file, or
+    None when the file is not such an append.
+    """
+    from reckon import _plan_html
+
+    relative = path.relative_to(checkout).as_posix()
+    shown = _git(checkout, "show", f"HEAD:{relative}", check=False)
+    if shown.returncode:
+        return None
+    head_text = shown.stdout
+    try:
+        head_state = _plan_html.read_state(head_text)
+        current_state = _plan_html.read_state(current_text)
+    except (TypeError, ValueError):
+        return None
+    if _state_without_the_comment_ledger(
+        head_state
+    ) != _state_without_the_comment_ledger(current_state):
+        return None
+    try:
+        rendered = _plan_html.write_state(
+            head_text, current_state, drop_authored_impl_meta=True
+        )
+    except (TypeError, ValueError):
+        return None
+    if rendered != current_text:
+        return None
+    return head_text, head_state, current_state
+
+
+def _commit_landing_comments_left_in(
+    checkout: Path, path: Path, run_id: str
+) -> list[str] | None:
+    """Commit the landing comments another promotion left uncommitted in a plan.
+
+    A refused promotion must leave the plan byte-equal to the committed
+    revision, whatever its own outcome. Its preimage is not always the
+    right restore target: the file may also carry a landing comment another
+    promotion wrote and did not commit — a writer that died between its
+    promotion's comment write and its commit. Reverting to the preimage
+    would drop that run's record, and declining to restore leaves the plan
+    modified, which refuses every later landing on it. Committing the
+    bytes keeps both: the comment carries its own id, author and time, so
+    the run it belongs to stays attributed.
+
+    Only appends of landing comments are settled. Any other difference
+    between the file and HEAD — an authored edit, a section move, a plan
+    whose parsed state changed in any key but the comment ledger — is
+    another writer's content, and the caller keeps its refusal.
+    """
+    try:
+        current = path.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    recognised = _landing_comments_appended_to_head(checkout, path, current)
+    if recognised is None:
+        return None
+    head_text, head_state, current_state = recognised
+    if current == head_text:
+        return []
+    held = {
+        anchor: [str(entry.get("id") or "") for entry in entries]
+        for anchor, entries in (head_state.get("comments") or {}).items()
+    }
+    own_comment_id = "c-run-" + run_id
+    adopted: list[str] = []
+    for anchor, entries in (current_state.get("comments") or {}).items():
+        ids = [str(entry.get("id") or "") for entry in entries]
+        kept = held.get(anchor, [])
+        if ids[: len(kept)] != kept:
+            return None
+        for entry in entries[len(kept) :]:
+            comment_id = str(entry.get("id") or "")
+            if not comment_id.startswith("c-run-"):
+                return None
+            if comment_id == own_comment_id:
+                # This call's own comment is the write snapshot's business: a
+                # different body under its id is not a comment to adopt.
+                return None
+            adopted.append(comment_id[len("c-run-") :])
+    if not adopted:
+        return None
+    try:
+        _commit_landing_writes(
+            run_id=run_id,
+            verdict="landed",
+            checkout=checkout,
+            paths=[path],
+            subject=(
+                f"land({run_id}): commit the landing comments another "
+                "promotion left uncommitted"
+            ),
+            body=(
+                "A promotion was refused while the plan carried landing "
+                "comments another promotion wrote and did not commit. "
+                "Committing them leaves the plan byte-equal to its committed "
+                "revision and keeps each comment attributed to the run whose "
+                "id it. The plan has ended with the checkout's committed copy "
+                "so no later landing is refused for these bytes."
+            ),
+        )
+    except BaseException:  # noqa: BLE001 - the caller reports its own refusal
+        return None
+    return adopted
+
+
 def _declared_sections(state: Mapping[str, Any]) -> set[str]:
     """The section ids a plan document declares, from its parsed state."""
     identity = {
@@ -2186,28 +2393,20 @@ def _adopt_a_plan_edited_after_the_snapshot(
     leave behind — rather than the preimage this run snapshotted before the
     other writer's edit existed.
     """
-    from reckon import _plan_html
-
     if not snapshot.comment_id:
         return None
-    relative = snapshot.path.relative_to(snapshot.checkout).as_posix()
-    shown = _git(snapshot.checkout, "show", f"HEAD:{relative}", check=False)
-    if shown.returncode:
-        return None
-    head_text = shown.stdout
     try:
-        actual = _plan_html.read_state(current.decode("utf-8"))
-    except (ValueError, TypeError):
+        current_text = current.decode("utf-8")
+    except UnicodeDecodeError:
         return None
+    recognised = _landing_comments_appended_to_head(
+        snapshot.checkout, snapshot.path, current_text
+    )
+    if recognised is None:
+        return None
+    head_text, _head_state, actual = recognised
     entries = (actual.get("comments") or {}).get(snapshot.comment_anchor or "", [])
     if not any(str(item.get("id") or "") == snapshot.comment_id for item in entries):
-        return None
-    rendered = _plan_html.write_state(
-        head_text,
-        actual,
-        drop_authored_impl_meta=True,
-    )
-    if rendered.encode("utf-8") != current:
         return None
     head_bytes = head_text.encode("utf-8")
     return replace(
@@ -2394,12 +2593,35 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
                 # plan here would add an index change reversing a landed commit.
                 if snapshot.committed_entry() != snapshot.head_entry:
                     raise
+                restore_error: CrewError | OSError | None = None
                 try:
                     snapshot.restore(plan_locked=True)
-                except (CrewError, OSError) as restore_error:
-                    message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
-                else:
+                except (CrewError, OSError) as error:
+                    restore_error = error
+                # A restore can succeed and still leave bytes that were never
+                # this run's: the preimage it went back to may itself carry a
+                # landing comment another promotion wrote and did not commit.
+                # Settling after either outcome is what leaves the plan equal
+                # to its committed revision, whatever the restore did.
+                adopted = snapshot.settle_landing_comments()
+                if adopted:
+                    message = (
+                        f"{exc}; committed the landing comment of "
+                        f"{', '.join(adopted)} that another promotion left "
+                        f"uncommitted in {path}, so the plan matches its "
+                        "committed revision"
+                    )
+                    if restore_error is not None:
+                        message += f" ({restore_error})"
+                elif restore_error is None:
                     message = f"{exc}; restored plan document, version and index entry {path} to their pre-promotion state"
+                elif adopted == []:
+                    message = (
+                        f"{exc}; the plan already matches its committed "
+                        f"revision, but the restore reported: {restore_error}"
+                    )
+                else:
+                    message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
                 exc.args = (message,)
                 raise
 
