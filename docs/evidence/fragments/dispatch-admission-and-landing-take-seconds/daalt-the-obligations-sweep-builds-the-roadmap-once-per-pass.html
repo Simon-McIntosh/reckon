@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="passed">
+  <title>An obligations sweep builds each project roadmap at most once</title>
+</head>
+<body>
+<article class="r-note" data-reckon="landed" data-when="2026-11-22">
+<h2>One sweep, one roadmap build per project</h2>
+<p>A temporary crew home held two projects with twenty delivered runs each, forty review items in all. One obligations sweep ran against it with both roadmap build entry points instrumented. At base revision 1f914072e1 the sweep built 0 roadmaps for either project while the payload carried all forty obligations. The same measurement over forty queued requests read zero again, so the premise that the base count exceeds two does not reproduce.</p>
+<p>The property is pinned instead by tests/test_an_obligations_sweep_builds_the_roadmap_once.py: at most one build per project, equal obligations across two sweeps, a positive control that composes a roadmap the counter must see, and a negative control that composed 20 builds per project and was refused, reading {'sweep-one': 40, 'sweep-two': 40}.</p>
+</article>
+</body>
+</html>
