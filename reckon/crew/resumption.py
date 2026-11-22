@@ -2504,24 +2504,17 @@ def _run_condition_probe(
     change there decides what a row says. They must agree on the answer, and
     nothing makes them agree but the declaration they both read.
     """
-    worktree = Path(str(record.get("worktree") or "."))
-    try:
-        completed = subprocess.run(
-            list(wait.get("probe") or ()),
-            cwd=worktree if worktree.is_dir() else None,
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=30,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+    outcome = recovery_wait.run_wait_probe(record, wait)
+    if outcome.get("error"):
         return {
             "terminal": False,
-            "observed": "unavailable",
-            "detail": f"condition probe could not run: {exc}",
+            "observed": "stopped" if outcome.get("stopped") else "unavailable",
+            "detail": (
+                f"condition probe could not run: {outcome['error']}"
+            ),
         }
-    lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
-    observed = lines[-1] if lines else f"exit:{completed.returncode}"
+    lines = list(outcome.get("lines") or ())
+    observed = lines[-1] if lines else f"exit:{outcome.get('returncode')}"
     candidates = {observed.casefold()}
     candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
     terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
@@ -2538,7 +2531,8 @@ def _run_condition_probe(
         "terminal": matched,
         "observed": observed,
         "detail": (
-            f"condition probe reported {observed!r} with exit {completed.returncode}"
+            f"condition probe reported {observed!r} with exit "
+            f"{outcome.get('returncode')}"
         ),
     }
 

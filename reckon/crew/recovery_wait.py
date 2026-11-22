@@ -5,18 +5,24 @@ import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import threading
+import time
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 from reckon import file_memo
+from reckon._store import write_json_atomically
 from reckon.capabilities import _charged_input_from_usage
 from reckon.crew import runs
 from reckon.crew.node import (
     CrewError,
     parse_duration,
 )
+from reckon.crew.run_paths import crew_home
+from reckon.node_exclusive_lock import exclusive_lock
 
 
 def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
@@ -707,6 +713,205 @@ def _wait_answer_names_terminal(
     )
 
 
+# A wait's probe is run by every reader that polls the wait, and a probe that
+# reads a shared store pays for that every time: on 22 November 2026 nine
+# copies of one probe ran at once against a 1.16 GB store, holding it open
+# until every promotion on the node failed on the database lock. The two
+# figures below are what one reader costs the others: a result is reused for
+# the interval, so a fleet of pollers costs one run per half minute, and a run
+# that passes the bound is killed rather than left holding the resource.
+WAIT_PROBE_INTERVAL_SECONDS = 30.0
+WAIT_PROBE_RUN_BOUND_SECONDS = 60.0
+#: Duty kind of a probe the bound stopped. The wait it serves cannot lift on
+#: its own, so the run's coordinator is the one who decides what happens next.
+WAIT_PROBE_STOPPED_DUTY_KIND = "run-wait-probe-stopped"
+
+
+def _wait_probe_state_key(run_id: str, probe: Sequence[str]) -> str:
+    """A stable filename for one (run, probe) pair's shared result.
+
+    The digest covers the argument vector, so two different probes declared on
+    one run never read each other's result and a repaired probe starts clean.
+    """
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", run_id).strip("-") or "run"
+    material = "\x00".join(str(part) for part in probe).encode("utf-8")
+    digest = hashlib.sha256(material).hexdigest()[:16]
+    return f"{readable}-{digest}"
+
+
+def _wait_probe_state_path(key: str) -> Path:
+    return crew_home() / "wait-probes" / f"{key}.json"
+
+
+def _wait_probe_lock_path(key: str) -> Path:
+    return crew_home() / "locks" / f"wait-probe-{key}.lock"
+
+
+def _read_wait_probe_state(path: Path) -> dict[str, Any]:
+    """One probe's recorded result, or an empty map when none is readable."""
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return record if isinstance(record, dict) else {}
+
+
+def _write_wait_probe_state(path: Path, record: Mapping[str, Any]) -> None:
+    with suppress(OSError):
+        # A probe's result is a cache and a duty record, not the answer the
+        # caller is waiting on: a home that cannot take the write must not turn
+        # a readable probe into a failed read.
+        write_json_atomically(path, dict(record), fsync=False)
+
+
+def _wait_probe_run_outcome(
+    probe: Sequence[str], *, worktree: Path | None, bound: float
+) -> dict[str, Any]:
+    """Run one probe vector, killing its whole session if it passes the bound.
+
+    The probe is started in its own process group so a bound that fires stops
+    the program *and* whatever it spawned: killing only the direct child leaves
+    a helper holding the resource the bound exists to release.
+    """
+    if not probe:
+        return {"returncode": None, "lines": [], "error": "no probe declared"}
+    try:
+        process = subprocess.Popen(
+            list(probe),
+            cwd=worktree if worktree is not None and worktree.is_dir() else None,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+    except (OSError, ValueError) as exc:
+        return {"returncode": None, "lines": [], "error": str(exc)}
+    try:
+        stdout, _stderr = process.communicate(timeout=bound)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except (OSError, AttributeError):
+            process.kill()
+        with suppress(subprocess.TimeoutExpired):
+            process.communicate(timeout=5)
+        return {
+            "returncode": None,
+            "lines": [],
+            "error": f"probe ran past its {int(bound)} s bound and was stopped",
+            "stopped": True,
+        }
+    lines = [line.strip() for line in (stdout or "").splitlines() if line.strip()]
+    return {"returncode": process.returncode, "lines": lines, "error": None}
+
+
+def run_wait_probe(
+    record: Mapping[str, Any],
+    wait: Mapping[str, Any],
+    *,
+    now: float | None = None,
+    interval: float | None = None,
+    bound: float | None = None,
+) -> dict[str, Any]:
+    """Answer one wait's probe at most once at a time, sharing the result.
+
+    Every reader that polls a wait goes through here instead of running the
+    argument vector itself. The run's outcome is kept under the crew home, so
+    a reader inside the interval is handed the last result rather than paying
+    for it again, and a reader that arrives while a run is in flight waits for
+    that run and is handed its result. The lock is the cross-node record lock
+    for the reason the pointer lock takes it: readers of one wait commonly run
+    on different login nodes.
+
+    The raw outcome is returned rather than a verdict: the classifier and the
+    sweep read one run's lines differently, and caching a verdict would hand
+    the second reader an answer to the first reader's question.
+
+    ``now``, ``interval`` and ``bound`` are the injection seam the tests use;
+    a caller passes none of them.
+    """
+    probe = [str(part) for part in (wait.get("probe") or ())]
+    run_id = str(record.get("run_id") or "")
+    key = _wait_probe_state_key(run_id, probe)
+    state_path = _wait_probe_state_path(key)
+    interval = WAIT_PROBE_INTERVAL_SECONDS if interval is None else interval
+    bound = WAIT_PROBE_RUN_BOUND_SECONDS if bound is None else bound
+    clock = time.time if now is None else (lambda: now)
+
+    with exclusive_lock(_wait_probe_lock_path(key)):
+        state = _read_wait_probe_state(state_path)
+        finished = state.get("finished_at")
+        moment = clock()
+        if isinstance(finished, (int, float)) and moment - finished < interval:
+            return {
+                "started": False,
+                "cached": True,
+                "stopped": state.get("stopped") is True,
+                "returncode": state.get("returncode"),
+                "lines": list(state.get("lines") or ()),
+                "error": state.get("error"),
+                "obligation": state.get("obligation"),
+            }
+        worktree_value = record.get("worktree")
+        worktree = Path(str(worktree_value)) if worktree_value else None
+        outcome = _wait_probe_run_outcome(probe, worktree=worktree, bound=bound)
+        stopped = bool(outcome.pop("stopped", False))
+        obligation = None
+        if stopped:
+            obligation = {
+                "kind": WAIT_PROBE_STOPPED_DUTY_KIND,
+                "run_id": run_id,
+                "probe": " ".join(probe),
+                "detail": (
+                    f"the wait probe {' '.join(probe)!r} ran past its "
+                    f"{int(bound)} s bound and was stopped; the wait cannot "
+                    "lift until the probe answers, so this run is raised to its "
+                    "coordinator"
+                ),
+                "raised_at": moment,
+            }
+        _write_wait_probe_state(
+            state_path,
+            {
+                "run_id": run_id,
+                "probe": probe,
+                "started_at": moment,
+                "finished_at": clock(),
+                "stopped": stopped,
+                **outcome,
+                "obligation": obligation,
+            },
+        )
+        return {
+            "started": True,
+            "cached": False,
+            "stopped": stopped,
+            "obligation": obligation,
+            **outcome,
+        }
+
+
+def wait_probe_stopped_duties() -> list[dict[str, Any]]:
+    """Every recorded probe-stopped duty, from the shared result files.
+
+    The gate writes one result file per (run, probe), so this is a directory
+    read rather than a manifest read per live run. Reading the record the gate
+    wrote is what makes the duty a coordinator sees the same fact the stopped
+    probe raised, instead of a second derivation that could disagree with it.
+    """
+    directory = crew_home() / "wait-probes"
+    try:
+        paths = sorted(directory.glob("*.json"))
+    except OSError:
+        return []
+    duties: list[dict[str, Any]] = []
+    for path in paths:
+        obligation = _read_wait_probe_state(path).get("obligation")
+        if isinstance(obligation, Mapping) and obligation.get("run_id"):
+            duties.append(dict(obligation))
+    return duties
+
+
 def _run_wait_condition_probe(
     record: Mapping[str, Any], wait: Mapping[str, Any]
 ) -> dict[str, str]:
@@ -733,33 +938,34 @@ def _run_wait_condition_probe(
     files = [str(path) for path in (wait.get("files") or ())]
     if files:
         return _wait_file_condition_observation(record, files)
-    worktree = Path(str(record.get("worktree") or "."))
-    try:
-        completed = subprocess.run(
-            list(wait.get("probe") or ()),
-            cwd=worktree if worktree.is_dir() else None,
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=WAIT_PROBE_TIMEOUT_SECONDS,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+    outcome = run_wait_probe(record, wait)
+    if outcome.get("stopped"):
+        return {
+            "state": "unknown",
+            "observed": "stopped",
+            "answered": False,
+            "detail": str(
+                (outcome.get("obligation") or {}).get("detail")
+                or "condition probe ran past its bound and was stopped"
+            ),
+        }
+    if outcome.get("error"):
         return {
             "state": "unknown",
             "observed": "unavailable",
             "answered": False,
-            "detail": f"condition probe could not answer: {exc}",
+            "detail": f"condition probe could not answer: {outcome['error']}",
         }
-    lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    lines = list(outcome.get("lines") or ())
     observed = lines[-1] if lines else "unavailable"
-    if completed.returncode != 0 or not lines:
+    returncode = outcome.get("returncode")
+    if returncode != 0 or not lines:
         return {
             "state": "unknown",
             "observed": observed,
             "answered": False,
             "detail": (
-                f"condition probe did not answer successfully; exit "
-                f"{completed.returncode}"
+                f"condition probe did not answer successfully; exit {returncode}"
             ),
         }
     if _wait_answer_names_terminal(wait, lines, observed):
@@ -1854,5 +2060,5 @@ from .recovery_stream import (  # noqa: E402
 )
 from .recovery_vocabulary import (  # noqa: E402
     WAIT_CONDITION_STATES,
-    WAIT_PROBE_TIMEOUT_SECONDS,
+    WAIT_PROBE_TIMEOUT_SECONDS,  # noqa: F401 - re-exported for reckon.crew.recovery
 )
