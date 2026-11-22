@@ -1,6 +1,11 @@
 <section id="dwlw-promotion-reads-one-gate-command-landing">
   <h2>Promotion reads one gate command, and a manifest that names two is refused</h2>
 
+  <p>At revision <code>804b2ab1f3a1663f2016a9470b3654b5afcef7bc</code> the reader
+  refuses the second <code>tests:</code> line; against the reader at
+  <code>b5444d24baca6ef9d1e71d26c2265191a1134845</code> the same manifest parses
+  and the second line runs as a command.</p>
+
   <p><strong>What changed.</strong> A worker manifest's gate command is read
   from its <code>tests:</code> line, and the tolerant text reader in
   <code>reckon/crew/reports.py</code> kept the last of several: a field opened
@@ -35,7 +40,18 @@
   the same seven cases green.</p>
 
   <p>The gate command's own measure is whether the file can name more than one:
-  on the base two lines parse and the last wins; at the head two lines are
-  written through <code>parse_manifest</code>, both by the delivery check and by
-  promotion's manifest guards, and the refusal is valid.</p>
+  on the base two lines parse and the sentinel is written; at the head both
+  lines are refused, the log is written and the sentinel is absent.</p>
+
+  <ul>
+    <li>Base arm at revision <code>b5444d24baca6ef9d1e71d26c2265191a1134845</code>
+    (<code>arm-baseline.log</code>): <code>58 passed</code>, <code>EXIT=0</code>.</li>
+    <li>After arm at revision <code>804b2ab1f3a1663f2016a9470b3654b5afcef7bc</code>
+    (<code>arm-after.log</code>): <code>65 passed</code>, <code>EXIT=0</code>.</li>
+    <li>Scoped gate at revision <code>804b2ab1f3a1663f2016a9470b3654b5afcef7bc</code>
+    (<code>gate-scoped.log</code>): <code>65 passed</code>, <code>EXIT=0</code>.</li>
+    <li>Negative control at revision <code>804b2ab1f3a1663f2016a9470b3654b5afcef7bc</code>
+    with the reader reverted to <code>b5444d24baca6ef9d1e71d26c2265191a1134845</code>
+    (<code>negative-control.log</code>): 3 failed, 4 passed, <code>EXIT=1</code>.</li>
+  </ul>
 </section>
