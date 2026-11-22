@@ -22,6 +22,16 @@ by the same pass. A stream carrying a turn inside the window keeps its pointer
 in either case, because unknown with a turn in progress is never a licence to
 release.
 </p>
+<figure>
+<img src="/reckon/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg"
+     alt="A decision chain over one promoted live pointer. A workspace on disk or an unfinished landing journal holds it, because the landing paths decide uncommitted and unintegrated work. A worker alive on the host that issued its pid holds it as working. A run neither proved dead nor launched on a foreign node is held, because nothing here can read its worker. A run proved dead or foreign is held while an assistant turn sits inside the silence window of its newest stream. Only a run that passes all four gates is retired, and retirement releases the claim only: the worktree, commits and run records stay on disk, and a later pass finds no pointer to restore.">
+<figcaption>Every promoted live pointer the station tick selects walks these
+gates. The first one is why a dead pid alone cannot release a claim: the
+landing paths read the workspace for uncommitted and unintegrated work, and
+the journal names a landing that has not finished. The last one is the
+previous-node reading — the pid answers only on the machine the fleet left, so
+the stream's own silence is what stands in for it.</figcaption>
+</figure>
 <p id="acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-p3">
 Retiring a pointer releases a claim, never work: the worktree, commits and run
 records are untouched, and the paths that reclaim workspaces still see them.
