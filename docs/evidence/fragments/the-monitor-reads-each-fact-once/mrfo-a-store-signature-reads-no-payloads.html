@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s114">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-22">
+  <meta name="evidence-commit" content="23a33176bb">
+  <title>A store signature reads no payloads | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="mrfo-a-store-signature-reads-no-payloads">
+  <h2>A store signature reads no payloads</h2>
+
+  <p><strong>The defect.</strong> The signature a stored-history reader compares
+  was taken from the rows themselves: <code>LENGTH(payload)</code> for every run
+  in the project, and, at the base, a second pass over the attached archive. A
+  signature read on the live store therefore read every payload, and under a
+  working fleet it is taken again whenever the store's stamp moves. A cold read
+  of the live store cost <strong>1,165,905,463 bytes</strong>, and the picker's
+  read beside it <strong>2,319,775,486 bytes</strong>.</p>
+
+  <p><strong>Why a mirror rather than a trigger.</strong> A payload-free mirror
+  of the signature columns has to be written by the store's own write path
+  because SQLite refuses a trigger that writes another attached database, and
+  the retired history lives in a separate file. The mirror carries each row's
+  encoded payload and detail lengths, every indexed column the signature
+  compares, the revision a backfill stamps, the activity seconds, a
+  <code>present</code> flag and a monotonic sequence number. It is maintained by
+  <code>append</code>, <code>sync_run</code>, <code>retire</code>,
+  <code>stamp_revisions</code>, <code>delete_run</code> and the rebuild pass
+  that brings an older store's declaration up to date.</p>
+
+  <p><strong>The fallback.</strong> Rows written by a process running an older
+  declaration would not be in the mirror, so a full read compares
+  <code>COUNT(*)</code> between the mirror and the <code>runs</code> table in
+  both the main and the attached archive store, and answers the payload-length
+  query when they disagree. In that transitional case every row stays visible
+  at the base cost rather than disappearing from the signature.</p>
+
+  <h3 id="mrfo-a-store-signature-reads-no-payloads-measure">The measure</h3>
+
+  <p><code>tests/test_a_store_signature_reads_no_payloads.py</code> prepares a
+  store whose payloads total <strong>210,000,000 bytes</strong> and measures each
+  read with the process's own read counter (<code>/proc/self/io</code>
+  <code>rchar</code>). After one row changes, the signature read costs
+  <strong>less than 5 MB</strong>, and the picker read costs less than 5 MB;
+  the store's own statement counters show the incremental signature returning
+  <strong>one row</strong> and the picker's read decoding <strong>one
+  row</strong>. Doubling every payload leaves the signature bytes, the
+  signature rows, the repeat picker bytes and the decoded rows unchanged, and
+  the read that takes the picker's change costs about one row at either size.
+  The signature moves when a row is rewritten in place, archived or deleted,
+  and not on an untouched store; and over that sequence of states both reads
+  answer the base query and <code>ledger.load(picker_only=True)</code> value for
+  value.</p>
+
+  <p><strong>Negative control.</strong> At
+  <code>5ac9f1d1df7a27012084bffb48099375a5c8a23a</code> the first case fails on
+  the byte bound with <code>the signature read cost 210,452,555 bytes against a
+  payload total of 210,000,000</code>, and the log ends <code>EXIT=1</code>.</p>
+
+  <h3 id="mrfo-a-store-signature-reads-no-payloads-live">The live store</h3>
+
+  <p>A probe read the live reckon store on a copy of its two files taken to
+  node-local disk, on <code>all_debug</code>, once through each of the twelve
+  projects it holds. Bringing the older copy's declaration up to date costs
+  <strong>571,030,342 bytes</strong> once (the mirror build, not a read). After
+  that the signature read costs <strong>8,549,419 bytes</strong> in total
+  across the twelve projects, against the base's 1,165,905,463, and the cold
+  picker read costs <strong>584,839,141 bytes</strong> against the base's
+  2,319,775,486. The second picker read, over a store that has not moved, costs
+  <strong>4,501,608 bytes</strong> in total &mdash; 271 KB to 656 KB per
+  project.</p>
+</section>
+</main>
+</body>
+</html>
