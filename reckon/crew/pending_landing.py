@@ -25,7 +25,7 @@ from __future__ import annotations
 import contextlib
 import json
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
@@ -515,6 +515,83 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
     return retire_pointer_if(run_id, promoted)
 
 
+def _finished_group_landings(group_id: str) -> dict[str, str]:
+    """The heads a finished landing group recorded for each of its members.
+
+    A group lands as one head, so a member carries no promotion of its own and
+    its ledger row proves nothing about it. The group's outcome is written as
+    the journal is unlinked, and it names every member beside the head it
+    landed, which is the same evidence :func:`retire_integrated_group_members`
+    reads from the journal while the journal still exists. A group whose
+    outcome is absent, unreadable or not a success names nothing: an unread
+    record is not evidence that a member was released.
+    """
+    try:
+        outcome = json.loads(
+            (runs.run_dir(group_id) / "landing-group.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(outcome, Mapping) or outcome.get("ok") is not True:
+        return {}
+    members = outcome.get("members")
+    commits = outcome.get("commits")
+    if not isinstance(members, list) or not isinstance(commits, list):
+        return {}
+    if len(members) != len(commits):
+        return {}
+    return {
+        str(run_id): str(head)
+        for run_id, head in zip(members, commits, strict=True)
+        if run_id and head
+    }
+
+
+def _retire_members_of_a_finished_group(
+    group_id: str, selected: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    """Release the surviving members of a group whose journal is gone."""
+    from reckon.crew import merge, queue_landing
+
+    landed = _finished_group_landings(group_id)
+    if not landed:
+        return []
+    results: list[dict[str, Any]] = []
+    for pointer in selected:
+        run_id = str(pointer.get("run_id") or "")
+        if str(pointer.get("landing_group") or "") != group_id or not landed.get(
+            run_id
+        ):
+            continue
+        repository_path = str(pointer.get("repo") or "")
+        if not repository_path:
+            results.append(
+                {
+                    "run_id": run_id,
+                    "status": "group-refused",
+                    "error": "the member pointer names no repository",
+                }
+            )
+            continue
+        try:
+            repository = Path(repository_path)
+            primary = queue_landing._primary_revision(pointer)
+            if not merge._is_ancestor(repository, landed[run_id], primary):
+                continue
+            _release_integrated_group_member(
+                run_id,
+                {"head": landed[run_id], "pointer": dict(pointer)},
+                primary,
+            )
+        except (runs.CrewError, merge.MergeError, OSError, ValueError) as exc:
+            results.append(
+                {"run_id": run_id, "status": "group-refused", "error": str(exc)}
+            )
+            continue
+        results.append({"run_id": run_id, "status": "retired-promoted-pointer"})
+    return results
+
+
 def retire_promoted_pointers(
     *,
     project: str | None = None,
@@ -544,6 +621,13 @@ def retire_promoted_pointers(
     }
     for group_id in sorted(groups):
         path = group_path(group_id)
+        if not path.exists():
+            # A finished group unlinks its journal and leaves its outcome
+            # behind. A member pointer that outlives the journal has no owner
+            # left to retire it, so the outcome's own record of where each
+            # member landed is the only evidence that can.
+            retired.extend(_retire_members_of_a_finished_group(group_id, selected))
+            continue
         try:
             with exclusive_lock(path.with_suffix(".lock"), blocking=False):
                 group = _read(path)
