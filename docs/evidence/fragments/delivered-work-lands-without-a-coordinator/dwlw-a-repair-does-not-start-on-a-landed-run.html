@@ -36,13 +36,23 @@
         run the supervisor could not retire.
       </p>
       <p id="dwlw-a-repair-does-not-start-on-a-landed-run-measure">
-        Gate <code>tests/test_a_repair_does_not_start_on_a_landed_run.py</code>:
-        3 passed, <code>EXIT=0</code> at <code>58297dd327</code>. Against the
-        base revision <code>b5444d24ba</code> the same file fails three times,
-        the first case with a repair resume launched
-        (<code>assert [{'run_id': 'r-repair-landed', ...}] == []</code>) and
-        the third with the manifest flipped from <code>complete</code> to
-        <code>in-progress</code>, <code>EXIT=1</code>.
+        The after arm at <code>75248b99f6</code> ran
+        <code>tests/test_a_repair_does_not_start_on_a_landed_run.py</code>,
+        <code>tests/test_staged_write_inventory.py</code> and
+        <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+        <code>61 passed in 48.78s</code>, <code>EXIT=0</code>. The baseline arm
+        at <code>b5444d24ba</code> ran the two files that exist there —
+        <code>58 passed in 38.20s</code>, <code>EXIT=0</code> — so the new file
+        is the only thing the after arm adds, and the three new cases pass.
+      </p>
+      <p id="dwlw-a-repair-does-not-start-on-a-landed-run-control">
+        Against the base revision <code>b5444d24ba</code> the same file fails
+        three times, <code>3 failed in 1.72s</code>, <code>EXIT=1</code>: the
+        landed head launches a repair resume
+        (<code>assert [{'run_id': 'r-repair-landed', ...}] == []</code>), the
+        in-flight landing launches one beside it, and the live-conflict case
+        finds its manifest flipped from <code>complete</code> to
+        <code>in-progress</code>.
       </p>
     </section>
   </main>
