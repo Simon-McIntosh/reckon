@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="120">
+<meta name="plan-version" content="121">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -338,7 +338,7 @@
 
     <h2 id="s46">§46 — An obligation's dispose hint names a rubric the command accepts</h2>
 <section data-reckon="section" data-id="s46" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>Obligation hints print <code>crew dispose … --rubric run</code> and <code>--rubric code</code>. The command accepts <code>figure</code> or no rubric, so a coordinator who pastes the hint is refused.</p>
+    <p>An obligation's dispose hint carries the stored review record's rubric: <code>--rubric health</code> for a code review, and a coordinator on imas-efit reported seeing <code>run</code> and <code>code</code>. The command accepts <code>figure</code> or no rubric, so a coordinator who pastes the hint is refused.</p>
     <p><strong>Deliverable.</strong> Every dispose command an obligation prints is accepted by the command as printed.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_dispose_hint_is_accepted_as_printed.py</code> passes, covering: for a code review and a figure review, the hint an obligation prints parses under the dispose command's own argument parser with no error. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
     <p><strong>Negative control.</strong> At the base revision, the code-review case must fail with the rubric refused.</p>
