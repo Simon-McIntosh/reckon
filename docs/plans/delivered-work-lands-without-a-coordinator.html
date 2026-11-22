@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="105">
+<meta name="plan-version" content="106">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -660,6 +660,9 @@
 </div>
 <div class="r-comment" data-section="s40" data-id="c-run-r-20261122T093432021794-review-of-dwlw-a-locked-run-store-is-retried-9a69d1b7851b" data-who="reckon-build" data-when="2026-11-22T09:47:34.878Z">
     <div class="r-comment-body"><p>reviewed r-20261122T083517834491-dwlw-a-locked-run-store-is-retried at base dde7b001769544957d5ca63f50cbb48c26574553 and head 9a69d1b7851b536176af1d1d6b98123311a0d1bb; the locked-store retry is implemented and guarded, the record scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 with one non-blocking finding; added_failure_count 0 against the 58-passed baseline and 61-passed after arm</p></div>
+</div>
+<div class="r-comment" data-section="s40" data-id="c-run-r-20261122T083517834491-dwlw-a-locked-run-store-is-retried" data-who="reckon-build" data-when="2026-11-22T09:33:48.436Z">
+    <div class="r-comment-body"><p>A promotion whose run store write is locked past its bound is re-queued by the service&#x27;s next pass and lands when the lock clears; while it waits its obligation names the locked store and says the service retries it, and a gate refusal is not retried. Scoped gate 61 passed in 36.76s at 7e0cea7fef; after arm 61 passed in 37.10s; baseline arm 58 passed in 35.73s; the new test&#x27;s first and obligation cases fail at the pinned base with the request left at promotion-failed.</p></div>
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261122T094523684413-review-of-dwlw-a-coordinator-landing-is-measured-de2390f73842" data-who="reckon-build" data-when="2026-11-22T09:51:31.509Z">
     <div class="r-comment-body"><p>Review of run r-20261122T083524853494-dwlw-a-coordinator-landing-is-measured at dde7b00176..de2390f738: the measure is wired into `crew complete --land` and its three cases plus a recorded negative control hold, but an unreadable population measurement is silently allowed through at reckon/crew_run_commands.py:4948 (blocking) and no case covers that arm (non-blocking).</p></div>
