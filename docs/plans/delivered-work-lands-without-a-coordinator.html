@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="135">
+<meta name="plan-version" content="136">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -842,6 +842,9 @@
 </div>
 <div class="r-comment" data-section="s43" data-id="c-close-s43" data-who="reckon-build" data-when="2026-11-22T14:42:10.807068+00:00">
     <div class="r-comment-body"><p>Landed r-20261122T141058829562-review-of-dwlw-no-repair-starts-on-a-landed-run-e8fb616f6063 on the measured suite pair; <a href="/reckon/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html#review-of-dwlw-no-repair-starts-on-a-landed-run-e8fb616f6063">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s43" data-id="c-run-r-20261122T124823265613-dwlw-no-repair-starts-on-a-landed-run" data-who="reckon-build" data-when="2026-11-22T13:26:29.896Z">
+    <div class="r-comment-body"><p>The repair reflex now tests whether a reviewed head has landed, not only whether it is an ancestor of the primary tip: recovery_repair_dispatch adds _reviewed_head_is_landed (integrated, or the branch tip carrying a change of its own over base_sha whose paths survive at the tip) and, when true, carries the round instead of starting any resume - deferring its undisposed findings on the stored review against the run&#x27;s section and recording repair_dispatch status &quot;carried&quot; with that section, leaving the run&#x27;s manifest and the primary branch untouched. Measure: 3 new tests pass (sub-floor dimension carried, blocking finding deferred, unlanded control still resumed); the scoped gate at the final head exits 0 with 61 passed; the after arm exits 0 with 61 passed against a baseline of 58; the repair-reflex regression batch passes 388 tests at the final head; and the negative control on the pinned base fails the first case with &quot;a repair resume was launched for a landed run&quot; (exit 1).</p></div>
 </div>
 </section>
   </main>
