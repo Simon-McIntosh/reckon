@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="85">
+<meta name="plan-version" content="86">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -549,6 +549,9 @@
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261122T033705089862-review-of-dwlw-promotion-reads-one-gate-command-cd7a35980da2" data-who="reckon-build" data-when="2026-11-22T03:57:35.386Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T023728327925-dwlw-promotion-reads-one-gate-command at cd7a35980da2a45f35d83ba78a43f3ff524995a6 against base b5444d24baca6ef9d1e71d26c2265191a1134845; the change refuses a manifest carrying two gate commands in both the text and JSON readers, the done_when's three cases are covered, and no defect was found (0 findings, 119/120).</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261122T023728327925-dwlw-promotion-reads-one-gate-command" data-who="reckon-build" data-when="2026-11-22T03:36:53.352Z">
+    <div class="r-comment-body"><p>The manifest reader refuses a manifest that states its gate command more than once, quoting every `tests:` line before any promotion guard can run a command, in place of the silent last-line-wins collapse that let a review answer be replayed as the gate; on the pinned base the case parses, the arm replays that second line and the sentinel it writes exists (3 failed, 4 passed, EXIT=1), where the head runs 7 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§4 landed through the crew's own promotion after its review (landing commit <code>9b3b985d86</code>). The drain leases the next request before releasing the finished one and its measured rate is recorded in the run's ledger row and review.</p></div>
