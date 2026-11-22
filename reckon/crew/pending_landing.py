@@ -729,24 +729,6 @@ def _promotion_lease_held(run_id: str) -> bool:
     return lease.holder() is not None
 
 
-def head_on_primary_branch(repository: Path, head: str) -> bool:
-    """Whether the branch a landing moves already contains ``head``.
-
-    The local primary branch is the authority a repair needs. A landing moves
-    it before anything is pushed, and it still answers when the remote cannot
-    be read — the moment a repair would otherwise restart work the branch
-    already holds.
-    """
-    from reckon.crew import merge
-
-    if not head:
-        return False
-    try:
-        return merge._is_ancestor(repository, head, merge._current_branch(repository))
-    except (merge.MergeError, OSError):
-        return False
-
-
 def land_attempt_in_progress(run_id: str) -> bool:
     """Whether a coordinator's landing of this run has not been answered yet."""
     return _land_attempt_unanswered(run_id)

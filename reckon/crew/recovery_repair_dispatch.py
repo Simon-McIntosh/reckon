@@ -75,9 +75,17 @@ def dispatch_merge_repair(
     # A head the primary branch already contains is answered: the coordinator
     # resolved the conflict and landed it by hand, so a resume would restart
     # work the branch holds and leave the run naming a conflict nobody owes.
-    # The local branch answers this even when the remote cannot be read.
-    if pending_landing.head_on_primary_branch(
-        Path(str(record.get("repo") or "")), head
+    # The local branch answers this even when the remote cannot be read, and
+    # the answer comes from the pointer classification's own ancestry probe so
+    # every surface reading this question reads it one way. Only a definite
+    # ``True`` refuses: an unanswerable probe is not a landing.
+    from reckon.crew import recovery_classification
+
+    if (
+        recovery_classification._head_on_primary_branch(
+            Path(str(record.get("repo") or "")), head, time.time()
+        )
+        is True
     ):
         receipt.update(
             status="refused",
