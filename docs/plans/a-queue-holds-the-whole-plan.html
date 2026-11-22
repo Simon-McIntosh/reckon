@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S28">
-<meta name="plan-version" content="382">
+<meta name="plan-version" content="383">
 <meta name="plan-modified" content="2026-11-22">
 </head>
 <body>
@@ -471,7 +471,7 @@
     <div class="r-comment-body"><p>Landed r-20261122T085505801354-review-of-a-queue-holds-the-whole-plan-s14-d528fe283518-figure on the measured suite pair; <a href="/reckon/evidence/archive/a-queue-holds-the-whole-plan-landed.html#review-of-a-queue-holds-the-whole-plan-s14-d528fe283518-figure">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261122T071322381615-a-queue-holds-the-whole-plan-s14" data-who="reckon-build" data-when="2026-11-22T08:34:09Z">
-    <div class="r-comment-body"><p>A queue drain now has an instrument — reckon/crew/drain_measure.py measures each of the plan&#x27;s nine guarantees from a run&#x27;s durable records, and scripts/measure_queue_drain.py reads both projects&#x27; ledgers, the admission verdict log and the drain view and draws the figure beside them. The section&#x27;s operational gate is not met: no coordinator has queued the two plans&#x27; remaining width in one beat, no drain ran for seven days, and the project weights resolve to 1.0 for all six projects against the 3:1 the gate asks for. Measured over a real seven-day window, 2026-11-15T07:54Z to 2026-11-22T07:54Z, 2,194 runs: 14 DAG-order violations over 6 runs from 269 launches that declare a wait, each row tabulated in the fragment with its launch and its upstream&#x27;s landing time; 2,168 launches (98.81%) against 26 (1.19%) where the declared 1:1 weights expect 50/50, outside ±15%; 1,258 of 2,194 landings (57.34%) without a coordinator turn; 307 codex-backend launches with 257 recorded fallbacks; and 119 unloaded sections across 2 plans. Four guarantees stay unmeasured with the missing record named: priority bump, queue hold and edit digest, because the live pointer carrying them is removed at launch, the verdict-gap measure because its log spans 2,201 s of the window, and the coordinator-turn count because a turn carries no identity. Figure: docs/figures/a-queue-holds-the-whole-plan/a-queue-holds-the-whole-plan-s14/drain-week.svg.</p></div>
+    <div class="r-comment-body"><p>A queue drain now has an instrument — reckon/crew/drain_measure.py measures each of the plan's nine guarantees from a run's durable records, and scripts/measure_queue_drain.py reads both projects' ledgers, the admission verdict log and the drain view and draws the figure beside them. The section's operational gate is not met: no coordinator has queued the two plans' remaining width in one beat, no drain ran for seven days, and the project weights resolve to 1.0 for all six projects against the 3:1 the gate asks for. Measured over a real seven-day window, 2026-11-15T07:54Z to 2026-11-22T07:54Z, 2,194 runs: 14 DAG-order violations over 6 runs from 269 launches that declare a wait, each row tabulated in the fragment with its launch and its upstream's landing time; 2,168 launches (98.81%) against 26 (1.19%) where the declared 1:1 weights expect 50/50, outside ±15%; 1,258 of 2,194 landings (57.34%) without a coordinator turn; 307 codex-backend launches with 257 recorded fallbacks; and 119 unloaded sections across 2 plans. Four guarantees stay unmeasured with the missing record named: priority bump, queue hold and edit digest, because the live pointer carrying them is removed at launch, the verdict-gap measure because its log spans 2,201 s of the window, and the coordinator-turn count because a turn carries no identity. Figure: docs/figures/a-queue-holds-the-whole-plan/a-queue-holds-the-whole-plan-s14/drain-week.svg.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-s15-no-metered-admitter" data-who="reckon-42" data-when="2026-10-24T12:40:00Z">
     <div class="r-comment-body"><p><strong>Measured on this plan's own queue, 24 October 2026.</strong> Two §4 requests dispatched with <code>--backend codex</code> waited <code>awaiting-upstream</code> on §5; when §5 closed, the admit service moved both to <code>queued</code> within two minutes, as §2 intends. They then sat on the codex lane with nothing to launch them: the only admit service on the fleet runs <code>crew admit --lane clive</code>, and no pass ever read them. A request routed to a metered lane at dispatch launches at once only if it is ready at dispatch. One that becomes ready later needs an admission pass for its lane. §15's admission per lane must therefore include every metered lane a queued request is routed to, whether that is a pass per lane or one pass that walks every lane's ready requests. Its done-when should include a codex-routed request that becomes ready after dispatch and launches with no coordinator call. The two requests were discarded and re-dispatched by hand this time.</p></div>
@@ -1064,6 +1064,13 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
 </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-a-queue-holds-the-whole-plan-drain-week" data-section="s14" data-gated-sections="" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">a second seven-day drain window, read by the section&#x27;s instrument after sections 46 to 48 have landed, in which every one of the nine measures is reported as measured and none as unmeasured; the first reading of 15 to 22 November 2026 left the steering, verdict-gap and order measures unanswered</h4>
+    <p class="r-gate-required-evidence">a-queue-holds-the-whole-plan#s48</p>
+    </div>
 </section>
 </main>
 </body>
