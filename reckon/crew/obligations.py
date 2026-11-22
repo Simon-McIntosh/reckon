@@ -39,7 +39,6 @@ from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_reset,
     obligation_snapshot,
-    queue_admission,
     recovery,
     recovery_classification,
     recovery_review_dispatch,
@@ -48,6 +47,7 @@ from reckon.crew import (
     review_records,
     runs,
 )
+from reckon.crew import queue_admission as _queue_admission_module
 from reckon.crew import (
     repair as repair_module,
 )
@@ -79,6 +79,66 @@ from reckon.git_head import _common_git_directory, _git_directory, _head_identit
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon.node_exclusive_lock import exclusive_lock
 from reckon.velocity import run_git
+
+#: The last queue ordering this thread answered, and the read it answered.
+#:
+#: A sweep asks for the queue's order once for every session's payload, and
+#: each of those asks carries the same pointers at the same instant. Ordering
+#: them again derives the same project roadmap again, which is what makes a
+#: sweep's answers arrive stale. The order is a function of the pointers, the
+#: instant and the lane, so an identical read is answered from the one before
+#: it. The instant is part of the key, so a later tick is never answered with
+#: an earlier ordering.
+_ORDERING_MEMO: ContextVar[Any] = ContextVar("obligations_ordering_memo", default=None)
+
+
+def _ordering_key(
+    pointers: Sequence[Mapping[str, Any]], now: Any, lane: str
+) -> tuple[str, str, str]:
+    """The identity of one ordering read, so an identical one is reused."""
+    material = json.dumps(list(pointers), sort_keys=True, default=str)
+    return (material, repr(now), str(lane or ""))
+
+
+class _QueueAdmissionViews:
+    """``queue_admission``, with one ordering per identical read.
+
+    Every other name on the module is reached through this object unchanged.
+    ``queued_placements`` is answered from the previous ordering when the
+    pointers, the instant and the lane are the same, so a sweep over many
+    sessions derives each project's roadmap once. A caller that hands its own
+    ``config_for`` is answered directly: the ordering then depends on a
+    callable this layer cannot compare, so it is not memoised.
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(_queue_admission_module, name)
+
+    def queued_placements(
+        self,
+        pointers: Sequence[Mapping[str, Any]],
+        *,
+        now: Any = None,
+        lane: str = "",
+        config_for: Callable[..., Any] | None = None,
+    ) -> dict[str, dict[str, int]]:
+        if config_for is not None:
+            return _queue_admission_module.queued_placements(
+                pointers, now=now, lane=lane, config_for=config_for
+            )
+        material = list(pointers)
+        key = _ordering_key(material, now, lane)
+        memo = _ORDERING_MEMO.get()
+        if memo is not None and memo[0] == key:
+            return memo[1]
+        value = _queue_admission_module.queued_placements(
+            material, now=now, lane=lane
+        )
+        _ORDERING_MEMO.set((key, value))
+        return value
+
+
+queue_admission = _QueueAdmissionViews()
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
