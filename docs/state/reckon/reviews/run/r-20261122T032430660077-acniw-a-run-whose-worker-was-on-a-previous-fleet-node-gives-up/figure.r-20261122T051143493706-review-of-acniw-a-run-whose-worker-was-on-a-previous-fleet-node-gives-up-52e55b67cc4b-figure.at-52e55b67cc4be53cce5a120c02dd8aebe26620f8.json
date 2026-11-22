@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T05:12:55Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "the secondary explanation beside each gate is rendered in a pale grey (measured about #929292 at 75 percent opacity over a #f7f7f7 fill, roughly 2.1:1) and the green state labels sit near #5ca57c (roughly 2.9:1), so a reader on a dim or projected display loses the reason a gate holds the pointer even though the gate names stay readable; a darker grey would keep them subordinate without dropping below 4.5:1."
+    },
+    {
+      "file": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "the 'lane-paused' node carries the dispatch admission rule (a paused gate queues nothing) and its outcome is 'queues nothing', which is not one of the release pass's outcomes, yet it is drawn inside a chain the caption describes as 'every promoted live pointer the station tick selects walks these gates'; nothing in the picture marks it as belonging to a different mechanism, so a reader can take it for a fifth gate of this pass."
+    },
+    {
+      "file": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "the second gate is labelled 'pipeline-dead-pid' while its stated effect is 'keep pointer: a worker proved alive on the host that issued its pid' \u2014 the id names the opposite condition to the one that holds the pointer, which reads as a contradiction to anyone scanning the left-hand column."
+    }
+  ],
+  "item_verdicts": {
+    "attachment_opened": "image-0.png (1399x720) opened and read; the whole rendered figure was visible, so no part of this verdict rests on the SVG source.",
+    "caption": "the figcaption does not repeat the title; it explains why the first gate exists and what the last gate stands in for, which is what a caption should add.",
+    "figure_judged": "docs/figures/a-claim-nobody-is-working-is-released/acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up/release-gates.svg, as rendered in the attached PNG.",
+    "gate_order_against_code": "the rendered gate order matches reckon/crew/pending_landing.py:558 release_pointers_of_a_previous_fleet_node at head 52e55b67 \u2014 landing-still-owns (line 609), worker alive on the issuing host (line 611), neither proved dead nor moved (lines 613-615), turn in progress (line 617) \u2014 so the picture is not merely plausible, it is the code's own sequence."
+  },
+  "plan": "a-claim-nobody-is-working-is-released",
+  "plan_section": "s2",
+  "project": "reckon",
+  "review_run_id": "r-20261122T051143493706-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-52e55b67cc4b-figure",
+  "reviewed_base_sha": "d24fa090e52748cc3100cd54e60d68ad3e87fb1b",
+  "reviewed_head_sha": "52e55b67cc4be53cce5a120c02dd8aebe26620f8",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "below the bar \u2014 the secondary 'keep pointer' explanation text is drawn in a pale grey on the near-white node fill (measured around #929292 at 75 percent opacity over #f7f7f7, roughly 2.1:1) and the green state labels are around #5ca57c, roughly 2.9:1; both are legible at full size but neither reaches the 4.5:1 usually wanted for body text.",
+    "data_ink": "pass \u2014 every mark carries meaning: the node boxes, their connectors and the caption's four keep-pointer outcomes. Nothing is plotted that does not carry the decision.",
+    "decoration": "pass \u2014 no gradient, no background wash, no drop shadow. The one pale tint marks the lane-paused state and the green outline marks the terminal retire/release node, and both encode a state rather than decorate the canvas.",
+    "label_collision": "pass \u2014 every label is fully inside the canvas with clear margins, and none overlaps another label, a connector or a node.",
+    "legibility": "pass \u2014 the six gate nodes read top to bottom as a decision chain of one promoted live pointer, each node naming the state it tests and the effect that follows from it; a reader gets the rule in one pass.",
+    "table_form": "pass \u2014 this is sequential decision logic with branches, not tabular data: the connectors carry the order and the outcome, which a table would flatten."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:23:46.382857+00:00",
+  "total": null
+}
