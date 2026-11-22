@@ -7,21 +7,29 @@ worker, and the process count is read from ``/proc`` by the node directory
 stamped into each server's environment, so a reading of one is meaningful.
 
 The negative control is the base revision, which has no shared declaration at
-all: there each worker's configuration carries the server's own command, so N
-workers start N servers. ``_worker_config_at_base`` reproduces that shape and
-the run script below writes the red log.
+all: there is no shared server to start, so each worker's configuration carries
+the server's own command and N workers start N servers. The base-shape test
+below reproduces that shape; the run script that exercises it with live servers
+is described in this node's evidence record.
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import os
+import signal
+import time
+from contextlib import suppress
 from pathlib import Path
+
+import pytest
 
 from reckon import _worker_fence, mcp_shared
 
 WORKERS = 40
 SMALL = 5
+STOP_TIMEOUT = 15.0
 
 
 def server_pids(node_dir: Path) -> list[int]:
@@ -40,14 +48,58 @@ def server_pids(node_dir: Path) -> list[int]:
     return sorted(found)
 
 
-def test_a_second_launch_reuses_the_node_server(tmp_path, monkeypatch):
+def stop_server(record: mcp_shared.SharedServer | None) -> None:
+    """Terminate a server this process started, and reap it.
+
+    The server is spawned detached, so nothing else will collect it. It is a
+    child of the test process, so waiting on it both removes its process-table
+    entry and makes the "no process survives" reading meaningful.
+    """
+    if record is None:
+        return
+    with suppress(ProcessLookupError):
+        os.kill(record.pid, signal.SIGTERM)
+    deadline = time.monotonic() + STOP_TIMEOUT
+    while time.monotonic() < deadline:
+        with suppress(ChildProcessError):
+            reaped, _ = os.waitpid(record.pid, os.WNOHANG)
+            if reaped == record.pid:
+                return
+        time.sleep(0.05)
+    with suppress(ProcessLookupError):
+        os.kill(record.pid, signal.SIGKILL)
+    with suppress(ChildProcessError):
+        os.waitpid(record.pid, 0)
+
+
+@pytest.fixture
+def node(tmp_path, monkeypatch):
+    """This test's node directory and the one server serving it."""
     monkeypatch.setenv(mcp_shared.NODE_DIR_ENV, str(tmp_path))
-    first = mcp_shared.ensure_shared_server("reckon", directory=tmp_path)
-    second = mcp_shared.ensure_shared_server("reckon", directory=tmp_path)
-    assert first is not None and second is not None
+    record = mcp_shared.ensure_shared_server("reckon", directory=tmp_path)
+    assert record is not None
+    try:
+        yield tmp_path, record
+    finally:
+        stop_server(record)
+
+
+def test_a_second_launch_reuses_the_node_server(node):
+    directory, first = node
+    second = mcp_shared.ensure_shared_server("reckon", directory=directory)
+    assert second is not None
     assert first.pid == second.pid
-    live = server_pids(tmp_path)
+    live = server_pids(directory)
     assert live == [first.pid], "the node must run exactly one server"
+
+
+def test_no_server_outlives_the_test_that_started_it(tmp_path, monkeypatch):
+    monkeypatch.setenv(mcp_shared.NODE_DIR_ENV, str(tmp_path))
+    record = mcp_shared.ensure_shared_server("reckon", directory=tmp_path)
+    assert record is not None
+    assert server_pids(tmp_path) == [record.pid]
+    stop_server(record)
+    assert server_pids(tmp_path) == [], "a stopped server must leave no process"
 
 
 def test_a_node_that_cannot_start_a_server_keeps_the_worker_declaration(tmp_path):
@@ -81,23 +133,23 @@ async def _answered(url: str, count: int) -> tuple[int, list]:
     from mcp.client.streamable_http import streamablehttp_client
 
     async def one():
-        async with streamablehttp_client(url) as (read, write, _), ClientSession(
-            read, write
-        ) as session:
-                await session.initialize()
-                result = await session.call_tool(
-                    "read_plan", {"project": "reckon", "slug": "index"}
-                )
-                return result.isError
+        async with (
+            streamablehttp_client(url) as (read, write, _),
+            ClientSession(read, write) as session,
+        ):
+            await session.initialize()
+            result = await session.call_tool(
+                "read_plan", {"project": "reckon", "slug": "index"}
+            )
+            return result.isError
 
     errors = await asyncio.gather(*(one() for _ in range(count)))
     return len(errors), [error for error in errors if error]
 
 
-def test_every_worker_tool_call_is_answered_by_one_server(tmp_path):
-    server = mcp_shared.ensure_shared_server("reckon", directory=tmp_path)
-    assert server is not None
+def test_every_worker_tool_call_is_answered_by_one_server(node):
+    directory, server = node
     answered, errors = asyncio.run(_answered(server.url, WORKERS))
     assert errors == []
     assert answered == WORKERS
-    assert server_pids(tmp_path) == [server.pid]
+    assert server_pids(directory) == [server.pid]
