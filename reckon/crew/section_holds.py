@@ -129,9 +129,7 @@ def _attach_plans(project: str, rows: list[dict[str, Any]]) -> list[dict[str, An
         )
     except Exception:  # noqa: BLE001 - an unreadable fallback leaves the plan empty
         fallback = None
-    by_id = {
-        str(extra.get("run_id")): extra for extra in (fallback or ())
-    }
+    by_id = {str(extra.get("run_id")): extra for extra in (fallback or ())}
     for row in missing:
         extra = by_id.get(str(row.get("run_id") or ""))
         if extra:
@@ -168,12 +166,16 @@ def _store_history_rows(
 ) -> list[dict[str, Any]] | None:
     """The project's promoted rows, projected to the fields this module reads.
 
-    ``None`` means the store holds no rows for the project, so the caller falls
-    back to the committed ledger. A plan or node filter is answered by the
+    ``None`` means the store answers nothing for the project, so the caller
+    falls back to the committed ledger. That is the ledger's own rule, and it
+    covers an existing store as well as an absent one: a store opened for a
+    project's mutable state alone holds no promotions, and the store reports
+    that as an empty list rather than as absence, so an empty answer taken as
+    history would read every delivered node of a ledger-only project as free
+    and offer it to the queue again. A plan or node filter is answered by the
     store's own indexed read, so queuing one node decodes that node's rows and
     not the project's whole history.
     """
-
     from reckon import run_store
 
     try:
@@ -182,7 +184,7 @@ def _store_history_rows(
         )
     except Exception:  # noqa: BLE001 - an unreadable store holds nothing
         return None
-    if rows is None:
+    if not rows:
         return None
     return _attach_plans(project, rows)
 
@@ -207,6 +209,14 @@ def _history_index(
     keyed by section and then by node and keeps only that record. That is a few
     short strings per delivered node, and it is what an unchanged store answers a
     rebuild from; the decoded rows it was built from are released here.
+
+    Selection and ordering stay the ledger's: whether a store answers at all is
+    its rule (any empty answer falls through to the committed ledger), the
+    fallback read is :func:`reckon.ledger.picker_runs`, and the module's
+    :func:`reckon.ledger.promotion_order_key` sorts the two sources into one
+    order. What this read adds is narrowing in SQL, which the ledger's reader
+    cannot do, so a caller that already knows the node pays for that node's rows
+    rather than for the projection's whole population.
     """
 
     from reckon import ledger, run_store
@@ -228,9 +238,15 @@ def _history_index(
             rows = [row for row in rows if ledger.row_plan(row) == plan]
         if node is not None:
             rows = [row for row in rows if str(row.get("node") or "") == node]
-    for row in rows:
-        if not isinstance(row, Mapping):
-            continue
+    # The store answers hot rows before retired ones, so iteration order is not
+    # delivery order: a node re-promoted after its first row was retired would
+    # otherwise keep the retired record. The ledger's own promotion key sorts
+    # the two sources into one completion order, which makes the last row per
+    # node the node's latest delivery.
+    for row in sorted(
+        (row for row in rows if isinstance(row, Mapping)),
+        key=ledger.promotion_order_key,
+    ):
         node_id, row_plan, section, role = _row_parts(row)
         if role not in EXECUTABLE_SECTION_ROLES:
             continue
@@ -249,8 +265,6 @@ def _history_index(
     if stamp is not None and run_store.store_stamp() == stamp:
         _HISTORY_READS[key] = (stamp, result)
     return result
-
-
 
 
 def _collect(
@@ -314,7 +328,8 @@ def _collect(
         }
 
     for (held_plan, held_section), nodes in _history_index(
-        project, root, plan=history_plan, node=history_node).items():
+        project, root, plan=history_plan, node=history_node
+    ).items():
         key = target(held_plan, held_section)
         if key is None:
             continue

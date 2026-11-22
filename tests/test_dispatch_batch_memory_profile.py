@@ -23,12 +23,13 @@ every case below decoded the full population instead of the named node's rows.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from reckon import run_store
+from reckon import ledger, run_store
 from reckon.crew import section_holds
 
 PROJECT = "demo"
@@ -153,4 +154,86 @@ def test_doubling_the_store_does_not_change_what_one_node_decodes(
     assert len(first) == at_one_population, (
         "doubling the store changed the rows one node's hold answer decodes: "
         f"{len(first)} rows against {at_one_population}"
+    )
+
+
+def test_a_store_holding_no_promotions_falls_through_to_the_ledger(
+    tmp_path: Path,
+) -> None:
+    """A store that answers nothing is not a project with no deliveries.
+
+    A store exists for a project's mutable state before anything is promoted
+    into it, and the store reports that as an empty answer rather than as
+    absence. Read as history, an empty answer makes every delivered node of a
+    ledger-only project look free and the queue dispatches it again.
+    """
+
+    root = tmp_path / "repo"
+    (root / "docs" / "state" / PROJECT / "runs").mkdir(parents=True)
+    record = ledger.build_record(
+        run_id="r-ledger-only",
+        plan=PLAN,
+        gate="passed",
+        project=PROJECT,
+        node=NODE,
+        section=SECTION,
+        role="implement",
+        spec_level="exact",
+        backend="worker",
+        agent={"backend": "worker", "model": "concrete", "effort": "high"},
+        node_definition={"id": NODE, "section": SECTION},
+        dispatched_at="2026-11-21T23:30:00Z",
+        completed_at=NOW,
+        completed_at_source="stream_mtime",
+    )
+    ledger.write_run_file(PROJECT, record, root, fsync=False)
+
+    # The store is present and holds no promotions at all, which is what the
+    # store answers for a project whose state lives only in the ledger.
+    store = run_store.RunStore(run_store.store_path())
+    store.close()
+    assert run_store.stored_run_rows(PROJECT, fields=("run_id",)) == []
+    _reset_history()
+
+    held = section_holds.held_node_rows(
+        PROJECT, root, (), plan=PLAN, section=SECTION, node=NODE
+    )
+
+    assert [row["run_id"] for row in held] == ["r-ledger-only"], (
+        "a ledger-only project's delivered node read as free because an "
+        f"existing store held no rows: {held}"
+    )
+
+
+def test_a_node_takes_its_latest_promotion_not_a_retired_one(
+    tmp_path: Path,
+) -> None:
+    """The index keeps a node's latest delivery when an older row is retired.
+
+    The store answers hot rows before retired ones, so a node re-promoted after
+    its first row moved to the archive would keep the retired record if the
+    index took the last row in iteration order.
+    """
+
+    store = run_store.RunStore(run_store.store_path())
+    store.append(PROJECT, _record("r-first", node=NODE))
+    store.append(
+        PROJECT,
+        {**_record("r-second", node=NODE), "completed_at": "2026-11-22T03:00:00Z"},
+    )
+    store.retire(
+        before=datetime(2026, 11, 22, 2, 0, tzinfo=UTC),
+        protected={"r-second"},
+        projects={PROJECT},
+        apply=True,
+    )
+    store.close()
+    _reset_history()
+
+    held = section_holds.held_node_rows(
+        PROJECT, tmp_path, (), plan=PLAN, section=SECTION, node=NODE
+    )
+
+    assert [row["run_id"] for row in held] == ["r-second"], (
+        f"a retired row answered for the node after it was delivered again: {held}"
     )
