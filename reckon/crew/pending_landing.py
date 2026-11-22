@@ -1366,15 +1366,20 @@ def release_merged_promotions(
             continue
         if not pointer.get("worktree") or pointer.get("landing_group"):
             continue
+        row = _promoted_row(run_project, run_id)
+        measured = bool(_measurement_reason(pointer) or _measurement_reason(row or {}))
         # A journaled landing already has an owner in the pending-record pass.
-        if _record_path(run_id).exists():
+        # A measurement run is the exception: its head is never merged, so it
+        # owes no landing for that owner to finish, and a journal left by a
+        # promotion that could not retire its pointer would otherwise keep the
+        # run's paths claimed for as long as the record survives.
+        if _record_path(run_id).exists() and not measured:
             continue
         if (
             COMMAND_REPLY.get() is None
             and read_promotion(run_id).get("phase") in PENDING
         ):
             continue
-        row = _promoted_row(run_project, run_id)
         head = _reviewed_head(row) if row else ""
         if not head or _promotion_lease_held(run_id):
             continue
@@ -1411,14 +1416,16 @@ def release_merged_promotions(
         # was, whether or not it names a process at all.
         try:
             repository = merge.project_repository(run_project)
-            if _measurement_reason(pointer) or _measurement_reason(row or {}):
+            if measured:
                 # A measurement run's head is never merged — not landing is what
                 # the run is for — so its promotion alone is the whole proof.
+                # The pending record is left exactly as written: it is the
+                # evidence that the run's measurement was recorded, and its
+                # owner is here rather than in the record pass.
                 retired, release, refusal = _release_measured_pointer(
                     pointer, repository, head, row
                 )
                 if retired == POINTER_RETIRED:
-                    clear_pending(run_id)
                     results.append(
                         {
                             "run_id": run_id,
@@ -1542,6 +1549,16 @@ def finish_pending_landings(
         settled = _settled_landing(run_id, head, project=project)
         if settled:
             results.append({"run_id": run_id, "status": settled, "head": head})
+            continue
+        from reckon.crew.promotion import _measurement_reason
+
+        if _measurement_reason(record.get("pointer") or {}) or _measurement_reason(
+            row or {}
+        ):
+            # A measurement run's head is never merged, so this record owns no
+            # landing for the pass to finish. Its release is the landing pass's,
+            # which reads the same record without consuming it; a refused
+            # release leaves both the pointer and this record claiming.
             continue
         from reckon.crew.resume import hold_reason
 
