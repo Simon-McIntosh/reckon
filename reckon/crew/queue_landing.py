@@ -1277,6 +1277,63 @@ def _measure_delivery(
     return measured
 
 
+def measure_a_coordinator_landing(
+    run_id: str, pointer: Mapping[str, Any] | None = None
+) -> landing_measure.Measurement | None:
+    """Measure a landing a coordinator asks for over the lander's own population.
+
+    The landing pass compares the base and head of the tests that import what a
+    delivery changed before the delivery is published. A coordinator's
+    ``complete --land`` skipped that comparison: it read the run's own gate
+    evidence, which covers the node's own test files and nothing that imports
+    what they changed, and merged a head that had reddened an importer test
+    nobody re-ran. The same base-and-head measurement is taken here, so a head
+    that adds a failure outside the gate the coordinator cited is refused naming
+    the id, exactly as the pass would have refused it.
+
+    A measurement already standing for this head and primary is reused rather
+    than taken twice: a pass that measured the delivery and left it as an
+    obligation, and the coordinator who lands it from the command line, read one
+    answer. A run that armed no suite command has nothing for the pass to
+    measure either, and reads as ``None`` — the coordinator's own gate evidence
+    stays the only guard for an unarmed run, rather than this refusing a landing
+    the run's own record never armed.
+
+    The measurement is recorded beside the run's gate evidence in the run's own
+    directory, so a later reader sees both what the coordinator checked and what
+    the population found.
+    """
+    pointer = _pointer_or_read(run_id, pointer)
+    command = str(pointer.get("suite_command") or "").strip()
+    if not command:
+        return None
+    head, tree = recovery._review_head_and_tree(pointer)
+    project = str(pointer.get("project") or "")
+
+    def unreadable(reason: str) -> landing_measure.Measurement:
+        return landing_measure.Measurement(
+            command=command,
+            suite={},
+            population={},
+            unreadable=reason,
+            head=head,
+            project=project,
+        )
+
+    if not head:
+        return unreadable("the run records no reviewed head to measure")
+    primary = _primary_revision(pointer)
+    stored = _stored_measurement(run_id, head, command, primary, pointer)
+    if stored is not None:
+        return stored
+    if tree is None or not Path(tree).is_dir():
+        return unreadable("the run's worktree holds no tree to measure")
+    try:
+        return _measure_delivery(pointer, run_id, head, str(tree))
+    except _LandedElsewhereError:
+        return None
+
+
 def run_measurement_request(path: Path) -> None:
     """Run the comparisons inside their scheduler allocation, never the fleet."""
     from reckon._store import write_json_atomically

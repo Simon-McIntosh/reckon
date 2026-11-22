@@ -4339,6 +4339,13 @@ def crew_complete(
         ) as exc:
             raise click.ClickException(str(exc)) from exc
     if land:
+        _refuse_a_landing_its_population_measure_refuses(
+            run_id,
+            pointer,
+            gate_check=gate_check,
+            candidate=candidate,
+            pretty=pretty,
+        )
         # Written before the promotion pushes anything, so a process killed
         # between the promotion and its merge leaves a record the landing pass
         # finds and finishes, instead of a run that reads as landed. The head
@@ -4899,6 +4906,58 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
         return outcome
     finally:
         lock.__exit__(None, None, None)
+
+
+def _refuse_a_landing_its_population_measure_refuses(
+    run_id: str,
+    pointer: Mapping[str, Any] | None,
+    *,
+    gate_check: Mapping[str, Any],
+    candidate: str = "",
+    pretty: bool = False,
+) -> None:
+    """Refuse a coordinator's landing the importer population adds a failure to.
+
+    A landing the pass makes by itself measures the delivered change against the
+    tests that import it, base and head, before publishing anything. A
+    coordinator's ``complete --land`` did not: it read the run's own gate
+    evidence, which covers the node's tests and nothing that imports what the
+    node changed, so a head that reddened an importer test merged with nothing
+    reported. The same measurement is taken here, and a failure it adds refuses
+    the landing and names the ids.
+
+    A candidate names a member the pass already measured, and a landing group
+    measures its members' heads together, so both are left to those measures
+    rather than measured a second time. The coordinator's gate evidence is kept
+    beside the measurement in the run's own directory, so the two are readable
+    together and the population measure sits beside the gate rather than
+    replacing it.
+    """
+    if candidate or not pointer:
+        return
+    from reckon.crew import pending_landing, queue_landing, runs
+
+    if pending_landing.LANDING_GROUP.get() is not None:
+        return
+    measured = queue_landing.measure_a_coordinator_landing(run_id, pointer)
+    if measured is None:
+        return
+    directory = runs.run_dir(run_id) / "landing-measure"
+    directory.mkdir(parents=True, exist_ok=True)
+    runs._write_json(directory / "coordinator-gate.json", dict(gate_check))
+    if not measured.real:
+        return
+    _emit_completion_reply(
+        {
+            "ok": False,
+            "run_id": run_id,
+            "error": "landing-measure-refused",
+            "detail": queue_landing._measure_guard(measured),
+            "added_failure_ids": list(measured.real),
+        },
+        pretty,
+    )
+    raise click.exceptions.Exit(1)
 
 
 def _land_a_promoted_run(
