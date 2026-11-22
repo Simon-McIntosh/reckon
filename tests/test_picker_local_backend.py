@@ -32,17 +32,16 @@ def local_flight(tmp_path):
                 "model": "local/local-model",
             },
             "clive": {"launch": "cli", "command": "clive", "model": "local-model"},
-            "clive-anchored": {
+            "clive-spare": {
                 "launch": "cli",
                 "command": "clive",
                 "model": "local-model",
-                "anchored_edit": True,
             },
         }
     )
     endpoints = tmp_path / "endpoints.json"
     endpoints.write_text(json.dumps({"endpoints": [{"model_id": "local-model"}]}))
-    for name in ("omp-local", "clive", "clive-anchored"):
+    for name in ("omp-local", "clive", "clive-spare"):
         config["backends"][name]["endpoints_document"] = str(endpoints)
     host = tmp_path / "flight.yaml"
     host.write_text(json.dumps(config))
@@ -91,7 +90,7 @@ def test_an_ordinary_node_gets_only_the_configured_local_harness(
     print("excluded:", {c.backend: c.reasons for c in options if c.reasons})
     assert "omp-local" in offered
     assert "codex-astra" in offered
-    assert offered.isdisjoint({"clive", "clive-anchored", "claude-opus"})
+    assert offered.isdisjoint({"clive", "clive-spare", "claude-opus"})
     claude = next(c for c in options if c.backend == "claude-opus")
     assert any(reason.startswith("reserved-lane:") for reason in claude.reasons)
 
@@ -100,7 +99,7 @@ def test_a_reserved_tier_gets_the_claude_lane(live_facts, local_flight):
     options = _options(live_facts, local_flight, _request(capability=HARDEST))
     offered = {c.backend for c in options if not c.reasons}
     assert {"omp-local", "claude-opus"} <= offered
-    assert offered.isdisjoint({"clive", "clive-anchored"})
+    assert offered.isdisjoint({"clive", "clive-spare"})
 
 
 def test_an_explicit_local_wrapper_choice_is_kept(repo, monkeypatch, local_flight):
@@ -180,5 +179,5 @@ def test_a_local_wrapper_exception_records_its_policy_and_reason(
 def test_a_claude_reask_also_excludes_the_selected_local_wrapper(local_flight):
     local_flight["local_backend"] = "clive"
     filtered = dispatch_picker._config_without_lane(local_flight, "claude")
-    assert {"clive", "clive-anchored", "claude-opus"}.isdisjoint(filtered["backends"])
+    assert {"clive", "clive-spare", "claude-opus"}.isdisjoint(filtered["backends"])
     assert "omp-local" in filtered["backends"]
