@@ -1739,6 +1739,12 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     Returns "" when the beat was recorded or the run names no plan section, and
     the refusal otherwise. The evidence anchor is the node's own fragment path,
     so a reader follows the closing comment to the record the worker wrote.
+
+    The declaration closes only with the section's last landing. A landing that
+    arrives while another node of the section is queued, waiting for its
+    upstream, working, or delivered and unlanded records itself and its
+    evidence and leaves the declaration as it was, so the sibling's request
+    still reads as live work rather than as a dispatch of a finished section.
     """
     node = pointer.get("node") if isinstance(pointer.get("node"), Mapping) else {}
     plan = str(node.get("plan") or "").strip()
@@ -1752,32 +1758,62 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     if not (plan and section and project and repo):
         return ""
     from datetime import UTC, datetime
+    from html import escape
 
     from reckon import _store
+    from reckon.crew import pending_landing
     from reckon.mcp_edit_plan import _edit_plan_tool
 
-    anchor = str(node.get("id") or run_id)
-    record_href = f"/{project}/evidence/archive/{plan}-landed.html#{anchor}"
-    body = (
-        f"<p>Landed {run_id} on the measured suite pair; "
-        f'<a href="{record_href}">evidence</a></p>'
+    node_id = str(node.get("id") or "")
+    outstanding = pending_landing.nodes_awaiting_landing(
+        project, plan, section, node_id=node_id, run_id=run_id
     )
+    anchor = node_id or run_id
+    record_href = f"/{project}/evidence/archive/{plan}-landed.html#{anchor}"
+    if outstanding:
+        # The section's last landing declares it, not its first: a sibling still
+        # queued, waiting for its upstream, working or delivered and unlanded is
+        # work this section still owes, and closing it here would make that
+        # sibling's request read as a dispatch of finished work.
+        waiting = ", ".join(escape(name) for name in outstanding)
+        body = (
+            f"<p>Landed {escape(run_id)} on the measured suite pair; the section "
+            f"stays implementable for {len(outstanding)} other node(s) still to "
+            f'land: {waiting}. <a href="{record_href}">evidence</a></p>'
+        )
+        comment_id = f"c-landed-{run_id}"
+    else:
+        body = (
+            f"<p>Landed {escape(run_id)} on the measured suite pair; "
+            f'<a href="{record_href}">evidence</a></p>'
+        )
+        comment_id = f"c-close-{section}"
     ops = [
         {
             "op": "append_evidence",
             "plan": plan,
             "anchor": anchor,
             "title": f"{section} landed",
-            "body": f"<p>Run <code>{run_id}</code> landed after the landing pass "
-            "measured its suite at base and head.</p>",
+            "body": f"<p>Run <code>{escape(run_id)}</code> landed after the landing "
+            "pass measured its suite at base and head.</p>",
         },
-        {"op": "set", "path": f"section_declarations.{section}", "value": "done"},
+        *(
+            []
+            if outstanding
+            else [
+                {
+                    "op": "set",
+                    "path": f"section_declarations.{section}",
+                    "value": "done",
+                }
+            ]
+        ),
         {
             "op": "append",
             "target": "comments",
             "section": section,
             "item": {
-                "id": f"c-close-{section}",
+                "id": comment_id,
                 "who": "reckon-build",
                 "when": datetime.now(UTC).isoformat(),
                 "body": body,
