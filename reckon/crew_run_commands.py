@@ -331,7 +331,95 @@ def _install_carried_answer() -> None:
     crew_review.callback = callback
 
 
+def _compose_run_review(pretty, run, **params):
+    """Compose the code review of one named delivered run at its head.
+
+    The subject is a run, so the plan, code and portfolio flags the review verb
+    also accepts are refused rather than dropped: a command naming two subjects
+    would compose a review of something nobody asked for. The composed dispatch
+    is the reflex's own, so a review composed here is the one that stands for
+    the run's head and the reflex composes no second one for it.
+    """
+    from reckon.crew import review as review_module
+    from reckon.crew.node import CrewError
+
+    def refuse(detail: str) -> None:
+        _emit({"error": "crew_error", "detail": detail}, pretty)
+        raise click.exceptions.Exit(1)
+
+    if (
+        params.get("plan_slug")
+        or params.get("around_plan")
+        or params.get("paths")
+        or params.get("portfolio")
+        or params.get("sprint_id")
+    ):
+        refuse(
+            "--run names one delivered run; drop --plan, --around, --path, "
+            "--portfolio and --sprint, which name other subjects"
+        )
+    if (
+        params.get("answer")
+        or params.get("acted")
+        or params.get("declined") is not None
+        or str(params.get("note") or "").strip()
+        or str(params.get("accept_edits") or "").strip()
+        or params.get("review_sections")
+    ):
+        refuse(
+            "the answer and section flags answer a plan finding; --run "
+            "composes a review of the run's delivered head"
+        )
+    try:
+        report = review_module.compose_run_review(
+            run,
+            dry_run=bool(params.get("dry_run")),
+            prefer_local=bool(params.get("local")),
+        )
+    except CrewError as exc:
+        refuse(str(exc))
+        return
+    _emit(report, pretty)
+    if report.get("refused") or report.get("error"):
+        raise click.exceptions.Exit(1)
+
+
+def _install_run_review_subject() -> None:
+    """Add the ``--run`` subject to the review verb.
+
+    A coordinator needs to compose the code review of one delivered run when
+    the reflex will not, and the review verb only names a plan, a path or a
+    portfolio. The option is attached to the existing command object rather
+    than a second ``review`` command being registered, and every other
+    invocation reaches the verb's own callback unchanged.
+    """
+    params = getattr(crew_review, "params", None)
+    if not isinstance(params, list):
+        return
+    if any("--run" in getattr(param, "opts", ()) for param in params):
+        return
+    params.append(
+        click.Option(
+            ["--run"],
+            default="",
+            help="Compose the code review of this delivered run at its head.",
+        )
+    )
+    original = crew_review.callback
+
+    def callback(run="", **kwargs):
+        if run:
+            pretty = kwargs.get("pretty", False)
+            params = dict(kwargs)
+            params.pop("pretty", None)
+            return _compose_run_review(pretty, run, **params)
+        return original(**kwargs)
+
+    crew_review.callback = callback
+
+
 _install_carried_answer()
+_install_run_review_subject()
 
 
 def _merge_land_refusal(
