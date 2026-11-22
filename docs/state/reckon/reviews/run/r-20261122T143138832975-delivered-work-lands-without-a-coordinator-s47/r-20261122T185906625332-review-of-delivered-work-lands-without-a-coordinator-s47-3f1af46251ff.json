@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "derived from the reviewed run's own arm logs: after_suite at 3f1af46251 reports '61 passed' and EXIT=0 with no FAILED line; baseline_suite at 2c522e9e1a reports 'EXIT=0' with no FAILED line; the set difference after-minus-base is empty.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "armed": false,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:2934 (land_once calls _landing_beat after an accepted landing)",
+    "reckon/crew/review_landing.py:186 (finish_landing calls the same beat)",
+    "reckon/crew/pending_landing.py:245 (finish_landing_groups drives finish_landing)",
+    "reckon/crew/pending_landing.py:2193 (the pending-landing pass drives finish_landing)",
+    "reckon/crew/recovery_review_acceptance.py:873 (review acceptance drives finish_landing)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T18:59:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "108",
+      "severity": "non-blocking",
+      "text": "non-blocking: the live-pointer read fails open \u2014 an OSError or ValueError returns [] and the caller then declares the section done, which is exactly the defect this change exists to repair, and no test exercises the error path, so the guard can pass its own test by switching itself off."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "non-blocking: nodes_awaiting_landing re-implements _pointer_parts and a phase classification that section_holds.py already owns as RELEASED_PHASES/_DEAD_PHASES, adding a second hand-maintained phase vocabulary that no check keeps consistent with the first."
+    },
+    {
+      "file": "tests/test_a_section_waits_for_its_last_node.py",
+      "line": "159",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 'last landing' arm creates no pointer for the first node at all, so it repeats the single-node case at :171 rather than testing the transition; no arm asserts that a stopped, failed or interrupted sibling does not hold the section open, which is the counterpart direction this behaviour depends on."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: this file imports only reckon.interface_counts, so the regression pair the done_when names cannot detect a break in _landing_beat, while tests/test_the_landing_pass_measures_and_lands.py and tests/test_a_per_node_fragment_is_optional.py, which call the changed function directly, ran in neither arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from 2c522e9e1a to 3f1af46251 \u2014 one commit, three files, +302/-9: the new pending_landing.nodes_awaiting_landing and its phase set, the _landing_beat branch in queue_landing.py, and the new test module.",
+    "done_when": "the done_when names tests/test_a_section_waits_for_its_last_node.py; the manifest and the after arm record 61 passed at 3f1af46251 and EXIT=0; the negative-control.log shows the first case FAILED at base 2c522e9e1a with 'implementable' != 'done'. The regression pair, however, runs only interface-inventory tests that never import the changed modules.",
+    "goal": "plan \u00a747's deliverable is that a landing declares a section done only when no other node of that section is outstanding; reckon/crew/queue_landing.py:1768 now consults pending_landing.nodes_awaiting_landing before emitting the `section_declarations.<section> = done` op, and omits the op when a sibling is outstanding, so a landing records itself and leaves the declaration as it was.",
+    "manifest": "read; it reads status complete with commits [3f1af46251ffb8d187759e99bcf289664eff4732], records the scoped gate plus both suite arms and the negative control with their literal commands and revisions, and reports failure_count 0 on both arms.",
+    "write_paths": "read the six declared paths; the diff touches three (reckon/crew/pending_landing.py, reckon/crew/queue_landing.py, tests/test_a_section_waits_for_its_last_node.py) and every one is inside the declared set, with no other path changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_section_waits_for_its_last_node.py:151 reddens at base for the main arm, but tests/test_a_section_waits_for_its_last_node.py:159 never creates the first node's pointer, so the closing transition and the stopped-sibling direction are unasserted.",
+    "evidence": "the gate names tests/test_a_section_waits_for_its_last_node.py and its 61-passed result is recorded, but the base/after pair (tests/test_staged_write_inventory.py:11) imports only reckon.interface_counts and cannot see a regression in _landing_beat.",
+    "fit": "reckon/crew/pending_landing.py:62 follows the module's frozenset-of-phases idiom and the function's lazy imports match reckon/crew/queue_landing.py:1755, with no plan or ticket label in any name.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1768 consults the sibling predicate and :1802 omits the `set ... value done` op when outstanding is non-empty, which is the declaration rule \u00a747 states.",
+    "reuse": "reckon/crew/pending_landing.py:116 re-derives the pointer node/plan/section/role extraction and phase classification that reckon/crew/section_holds.py:54 and its RELEASED_PHASES/_DEAD_PHASES already own, adding a second vocabulary nothing keeps in step.",
+    "scope_discipline": "all three changed paths are inside the declared set and the single commit 3f1af46251 carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan \u00a747's deliverable is that a landing declares a section done only when no other node of that section is outstanding; reckon/crew/queue_landing.py:1768 now consults pending_landing.nodes_awaiting_landing before emitting the `section_declarations.<section> = done` op, and omits the op when a sibling is outstanding, so a landing records itself and leaves the declaration as it was.\nVERDICT done_when: the done_when names tests/test_a_section_waits_for_its_last_node.py; the manifest and the after arm record 61 passed at 3f1af46251 and EXIT=0; the negative-control.log shows the first case FAILED at base 2c522e9e1a with 'implementable' != 'done'. The regression pair, however, runs only interface-inventory tests that never import the changed modules.\nVERDICT write_paths: read the six declared paths; the diff touches three (reckon/crew/pending_landing.py, reckon/crew/queue_landing.py, tests/test_a_section_waits_for_its_last_node.py) and every one is inside the declared set, with no other path changed.\nVERDICT manifest: read; it reads status complete with commits [3f1af46251ffb8d187759e99bcf289664eff4732], records the scoped gate plus both suite arms and the negative control with their literal commands and revisions, and reports failure_count 0 on both arms.\nVERDICT diff: read commit by commit from 2c522e9e1a to 3f1af46251 \u2014 one commit, three files, +302/-9: the new pending_landing.nodes_awaiting_landing and its phase set, the _landing_beat branch in queue_landing.py, and the new test module.\nCALL_SITES: reckon/crew/queue_landing.py:2934 (land_once calls _landing_beat after an accepted landing), reckon/crew/review_landing.py:186 (finish_landing calls the same beat), reckon/crew/pending_landing.py:245 (finish_landing_groups drives finish_landing), reckon/crew/pending_landing.py:2193 (the pending-landing pass drives finish_landing), reckon/crew/recovery_review_acceptance.py:873 (review acceptance drives finish_landing)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1768 consults the sibling predicate and :1802 omits the `set ... value done` op when outstanding is non-empty, which is the declaration rule \u00a747 states.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate names tests/test_a_section_waits_for_its_last_node.py and its 61-passed result is recorded, but the base/after pair (tests/test_staged_write_inventory.py:11) imports only reckon.interface_counts and cannot see a regression in _landing_beat.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all three changed paths are inside the declared set and the single commit 3f1af46251 carries nothing the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_section_waits_for_its_last_node.py:151 reddens at base for the main arm, but tests/test_a_section_waits_for_its_last_node.py:159 never creates the first node's pointer, so the closing transition and the stopped-sibling direction are unasserted.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/pending_landing.py:62 follows the module's frozenset-of-phases idiom and the function's lazy imports match reckon/crew/queue_landing.py:1755, with no plan or ticket label in any name.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/pending_landing.py:116 re-derives the pointer node/plan/section/role extraction and phase classification that reckon/crew/section_holds.py:54 and its RELEASED_PHASES/_DEAD_PHASES already own, adding a second vocabulary nothing keeps in step.\nFINDING reckon/crew/pending_landing.py:108 non-blocking: the live-pointer read fails open \u2014 an OSError or ValueError returns [] and the caller then declares the section done, which is exactly the defect this change exists to repair, and no test exercises the error path, so the guard can pass its own test by switching itself off.\nFINDING reckon/crew/section_holds.py:54 non-blocking: nodes_awaiting_landing re-implements _pointer_parts and a phase classification that section_holds.py already owns as RELEASED_PHASES/_DEAD_PHASES, adding a second hand-maintained phase vocabulary that no check keeps consistent with the first.\nFINDING tests/test_a_section_waits_for_its_last_node.py:159 non-blocking: the 'last landing' arm creates no pointer for the first node at all, so it repeats the single-node case at :171 rather than testing the transition; no arm asserts that a stopped, failed or interrupted sibling does not hold the section open, which is the counterpart direction this behaviour depends on.\nFINDING tests/test_staged_write_inventory.py:11 non-blocking: this file imports only reckon.interface_counts, so the regression pair the done_when names cannot detect a break in _landing_beat, while tests/test_the_landing_pass_measures_and_lands.py and tests/test_a_per_node_fragment_is_optional.py, which call the changed function directly, ran in neither arm.\n",
+  "review_run_id": "r-20261122T185906625332-review-of-delivered-work-lands-without-a-coordinator-s47-3f1af46251ff",
+  "reviewed_base_sha": "2c522e9e1a413798755b22ceed2fd2163b7ea6b2",
+  "reviewed_head_sha": "3f1af46251ffb8d187759e99bcf289664eff4732",
+  "reviewed_run_id": "r-20261122T143138832975-delivered-work-lands-without-a-coordinator-s47",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T20:02:46.578805+00:00",
+  "total": 96
+}
