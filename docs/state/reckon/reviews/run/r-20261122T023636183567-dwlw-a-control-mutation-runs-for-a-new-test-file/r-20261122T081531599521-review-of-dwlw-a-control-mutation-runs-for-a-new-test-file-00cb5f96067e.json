@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "test_a_run_editing_only_existing_tests_is_measured_as_before": "Carry the head's copy over an existing base path and the base arm reads the passing edited copy, so the exit_status assertion at :159 and the FAILED id at :160 both fail; :165 independently requires the edited head to be absent from the log.",
+    "test_a_tree_that_cannot_be_built_names_the_path_and_revision": "Remove the named refusal and the bare git pathspec/tar fragments return, so the reason assertions at :174-175 and the EXIT=4 at :182 fail; head_sha on :175 is derived from the repository, not passed into the code.",
+    "test_an_added_test_files_mutation_is_measured_and_reads_red": "Restore the base-revision carry and the added file cannot be carried: the assertion at tests/test_a_control_mutation_runs_for_a_new_test_file.py:130 fails with {'unreadable': 'the control mutation did not run'}, exactly as negative-control.log records at b5444d24.",
+    "test_the_delivered_head_asks_the_shared_commit_resolver": "Replace the delegation with a private rev-parse and :198 fails, which negative-control-reuse.log records red with EXIT=1."
+  },
+  "assertion_independence": "Every assertion credited above is checked against output the production code produced (the arm log's header, its EXIT receipt, the failure ids and the returned unreadable reason) or against a value derived from the repository rather than handed to the code. tests/test_a_control_mutation_runs_for_a_new_test_file.py:138 and :163 assert the log header against the base revision the test passed in, and each can fail because base_sha differs from the head in every case that runs them.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:_measured_control",
+    "reckon/crew/promotion_checks.py:2754",
+    "reckon/crew/queue_landing.py:1233"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:16:09Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023636183567-dwlw-a-control-mutation-runs-for-a-new-test-file/after_suite-1795322101078885956.log",
+      "revision": "8fa3985e4e35095c9ad6005a9b18c68a92236da9",
+      "summary": "62 passed in 38.45s"
+    },
+    "baseline_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T023636183567-dwlw-a-control-mutation-runs-for-a-new-test-file/baseline_suite-1795322057814258166.log",
+      "revision": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+      "summary": "58 passed in 36.68s"
+    }
+  },
+  "findings": [
+    {
+      "file": "r-20261122T023636183567-dwlw-a-control-mutation-runs-for-a-new-test-file/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests: field names the three-file gate command (`tests/test_a_control_mutation_runs_for_a_new_test_file.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py`) while test_logs cites scoped-gate-1795322674350443394.log, whose # command: header ran a five-file command at 8f68df5e; the record thus does not reconcile its own gate citation, and the cited log was taken before the 8fa3985e refactor commit it is said to cover."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/dwlw-a-control-mutation-runs-for-a-new-test-file.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Negative control paragraph claims the base-revision red run without citing the log that records it; negative-control.log in the run directory holds exactly that red case at b5444d24 with EXIT=1, but the manifest's negative_control_log field cites only negative-control-reuse.log, so the evidence must be found rather than followed."
+    }
+  ],
+  "notes": "Reviewed the delivered head 00cb5f96 in a clean review worktree at 6e3c6ac, reading the diff b5444d24..00cb5f96 through git show and git diff. Of the seven commits, only 8f68df5e, 8fa3985e and 00cb5f96 postdate the earlier review at d68f5a81; the later three were read against that review's two findings and both are answered (the tautological revision assertions are gone, replaced by the arm log-header checks at tests/test_a_control_mutation_runs_for_a_new_test_file.py:138/:163/:165, and _delivered_head now delegates to the shared resolver, proven by the reuse negative control). The three commits after the after arm are docs-only (one html file), so the arms apply to the delivered head. I did not modify the node or re-run the suite; the reading is of artefacts. No blocking finding.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is a control-mutation measure that can build its tree for a run whose added test file its base revision lacks, and reckon/crew/landing_measure.py:1498 supplies the delivered head as the carry revision while the built tree stays at base_sha.\nVERDICT done_when: the done_when names tests/test_a_control_mutation_runs_for_a_new_test_file.py and requires each arm's log to carry revision, command and a closing EXIT= line; after_suite-1795322101078885956.log records 62 passed in 38.45s at 8fa3985e with EXIT=0, baseline_suite-1795322057814258166.log 58 passed at b5444d24 with EXIT=0, and each log's own header carries the revision and the literal command.\nVERDICT write_paths: the manifest declares four paths and the diff b5444d24..00cb5f96 touches only reckon/crew/landing_measure.py, tests/test_a_control_mutation_runs_for_a_new_test_file.py and docs/evidence/fragments/delivered-work-lands-without-a-coordinator/dwlw-a-control-mutation-runs-for-a-new-test-file.html, all inside them; the declared figures directory is unused.\nVERDICT manifest: read at the reviewed run's manifest.md; it records status complete, seven commits, gate 43 passed at 8f68df5e, baseline 58 passed at b5444d24 and after 62 passed at 8fa3985e, with negative_control_log naming negative-control-reuse.log.\nVERDICT diff: read all seven commits commit by commit; c69b5d25 is the source change (a named carry step, the delivered-head carry revision, a named refusal), 8fa3985e delegates the head read to the shared resolver, and the remaining five are docs-only edits to the evidence fragment verified as one html file by the 8fa3985e..00cb5f96 stat.\nCALL_SITES: reckon/crew/promotion_evidence.py:_measured_control (invokes control_mutation_observation), reckon/crew/promotion_checks.py:2754 (control check reaching _measured_control), reckon/crew/queue_landing.py:1233 (landing_measure.measure_run, which shares the changed _partition_runner and _carry_line)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1498 reads the delivered tree's head through the shared resolver for the carry while landing_measure.py:1002 keeps the built tree at the revision the arm measures, and landing_measure.py:1080 turns the carry failure into a refusal naming the path and the revision.\nSCORE evidence: 18\nJUSTIFICATION evidence: both suite arms are recorded complete with headers and EXIT=0 in after_suite-1795322101078885956.log (62 passed at 8fa3985e) and baseline_suite-1795322057814258166.log (58 passed at b5444d24), but the manifest's tests: line at manifest.md:11 names a three-file command no cited log records, since the cited scoped gate at scoped-gate-1795322674350443394.log ran a five-file command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff b5444d24..00cb5f96 is one of the manifest's declared write paths, and nothing outside them changed.\nSCORE durability: 19\nJUSTIFICATION durability: the fix is proven by negative-control.log, where the unchanged landing_measure.py at b5444d24 makes test_an_added_test_files_mutation_is_measured_and_reads_red fail with \"the control mutation did not run\" and EXIT=1, and negative-control-reuse.log proves the delegation assertion at tests/test_a_control_mutation_runs_for_a_new_test_file.py:198 red under a private rev-parse.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/landing_measure.py:928 and :946 follow the module's private-helper-and-docstring idiom and no added name carries a plan, stage or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:940 delegates to the repository's shared commit resolver reckon/crew/recovery_review_subject.py:259, and _carry_line at :946 replaces an inline f-string the module already carried, so no capability is forked.\nFINDING r-20261122T023636183567/manifest.md:11 non-blocking: the tests: field names the three-file gate command while test_logs cites the five-file scoped gate at 8f68df5e, so the record does not reconcile its own gate citation against the log it points at, and a promotion reading that line finds no log carrying that command.",
+  "reuse_search": "Searched the repository by capability for an existing head-revision reader and an archive-carry helper: found reckon/crew/recovery_review_subject.py:259 _resolve_commit (the shared resolver), reckon/crew/promotion_scope.py:382 _resolve_commits and reckon/crew/queue_landing.py; the addition at landing_measure.py:940 delegates to _resolve_commit and _carry_line at :946 replaces an inline f-string already in this module, so nothing is duplicated.",
+  "review_run_id": "r-20261122T081531599521-review-of-dwlw-a-control-mutation-runs-for-a-new-test-file-00cb5f96067e",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_commits": [
+    "c69b5d25216ae2c3fbb7493c362a8913cce27648",
+    "24c282881d10a5270e3ad256fb921c5546f0c914",
+    "ddfa58f5a3db9dc3a09d12c759371769212285b9",
+    "d68f5a81bf1fb4208f9c1b14dec9b3c4c8f7f5c2",
+    "8f68df5e0eb29cf5e774004c421785b1f6df9027",
+    "8fa3985e4e35095c9ad6005a9b18c68a92236da9",
+    "00cb5f96067e309cebc4375ee4742e6b475a1009"
+  ],
+  "reviewed_head_sha": "00cb5f96067e309cebc4375ee4742e6b475a1009",
+  "reviewed_run_id": "r-20261122T023636183567-dwlw-a-control-mutation-runs-for-a-new-test-file",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:32:22.383779+00:00",
+  "total": 116
+}
