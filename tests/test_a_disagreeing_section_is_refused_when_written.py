@@ -41,6 +41,7 @@ _DECLARATIONS_META = re.compile(
 
 RUN_ID = "r-20261122T190000000000-a-disagreeing-section"
 SECTION = "s1"
+AUDIT_DISAGREES = "section-status-disagrees"
 DISAGREES = "section_status_disagreement"
 PLAN_PATH = f"docs/plans/{PLAN}.html"
 
@@ -132,7 +133,7 @@ def test_audit_names_the_section_and_both_values(tmp_path: Path) -> None:
 
     findings = doccheck.audit_file(path)
 
-    named = [f for f in findings if f.code == doccheck._SECTION_STATUS_DISAGREES]
+    named = [f for f in findings if f.code == AUDIT_DISAGREES]
     assert named, [f.code for f in findings]
     assert named[0].severity == "error"
     assert SECTION in named[0].message, named[0].message
@@ -149,7 +150,7 @@ def test_audit_passes_a_plan_whose_two_views_agree(
 
     findings = doccheck.audit_file(path)
 
-    assert not [f for f in findings if f.code == doccheck._SECTION_STATUS_DISAGREES]
+    assert not [f for f in findings if f.code == AUDIT_DISAGREES]
     assert not [f for f in findings if f.severity == "error"], [
         (f.severity, f.code) for f in findings
     ]
@@ -207,6 +208,7 @@ def test_the_server_plan_write_refuses_the_disagreeing_file(
     assert SECTION in payload["sections"], payload
     assert "done" in payload["detail"] and "implementable" in payload["detail"]
     assert path.read_text(encoding="utf-8") == before, "the refusal must not write"
+
 
 @pytest.fixture()
 def disagreeing_landing(
@@ -281,20 +283,15 @@ def test_a_promotion_refuses_to_commit_the_disagreeing_plan(
 
     assert result.exit_code != 0, result.output
     assert isinstance(result.exception, SystemExit), (
-        "the promotion crashed rather than refusing: "
-        f"{result.exception!r}"
+        f"the promotion crashed rather than refusing: {result.exception!r}"
     )
     assert SECTION in result.output, result.output
     assert "record status" in result.output, result.output
     assert "'done'" in result.output and "'implementable'" in result.output, (
         result.output
     )
-    assert (repository / PLAN_PATH).read_text(
-        encoding="utf-8"
-    ) == disagreeing_landing["plan_before"], "the refusal must not write the plan"
-    row = Path(
-        __import__("reckon.ledger", fromlist=["run_path"]).run_path(
-            PROJECT, disagreeing_landing["run_id"], repository
-        )
-    )
+    assert (repository / PLAN_PATH).read_text(encoding="utf-8") == disagreeing_landing[
+        "plan_before"
+    ], "the refusal must not write the plan"
+    row = Path(ledger.run_path(PROJECT, disagreeing_landing["run_id"], repository))
     assert not row.exists(), f"a refused landing wrote a ledger row at {row}"
