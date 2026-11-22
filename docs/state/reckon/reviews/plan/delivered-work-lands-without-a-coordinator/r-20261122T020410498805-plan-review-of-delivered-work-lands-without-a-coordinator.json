@@ -1,0 +1,123 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T02:06:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:2877",
+      "id": "reuse_search-1",
+      "reason": "the section would add a second ctest reader and a test proving behaviour the shared reader already has; the honest change is to find why the promotion-side caller did not reach this reader (or was given a log whose header lacked the colon), which is a different fix and a different gate.",
+      "text": "\u00a737 asks that a ctest failure summary be read \"alongside the pytest form read today\", but `review.gate_log_failure_ids` already reads both: `_gate_log_format` (reckon/crew/review.py:2916) returns `\"ctest\"` whenever `_CTEST_FAILED_HEADER_RE` (`^The following tests FAILED:\\s*$`, reckon/crew/review.py:2314) or `_CTEST_SUMMARY_RE` (`tests failed out of`, reckon/crew/review.py:2328) appears, `_ctest_failure_ids` (reckon/crew/review.py:2770) then returns the block's entries, and `_CTEST_ENTRY_RE` (`^\\s*\\d+\\s*-\\s*(.+?)\\s+\\(([^)]*)\\)\\s*$`, reckon/crew/review.py:2315) already matches the exact entry the section quotes, `1155 - unit/imas/iron_limb_outline (Failed)`.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/landing_measure.py:957",
+      "id": "reuse_search-2",
+      "reason": "the fix is threading the run's real head revision through an existing carry path, not building a new tree; a node brief that does not name `_partition_runner`'s `head_sha` will rebuild the carry and leave the control arm broken.",
+      "text": "\u00a730 says the control-mutation measure \"builds its own tree and still asks a revision for a file that revision does not hold\", but both halves of the mechanism already exist: `_carry_missing_tests` (reckon/crew/landing_measure.py:590) copies the head's copy of a missing test into the base tree, and `_partition_runner` composes the same carry into each job's script (`carry`, reckon/crew/landing_measure.py:957-962, `git archive {head_sha} -- {path}`). The actual defect is one argument: `control_mutation_observation` calls `_partition_runner` with `head_sha=base_sha` (reckon/crew/landing_measure.py:1442-1452), so the carry archives the file from the base revision that does not hold it and `set -euo pipefail` aborts the script \u2014 which is exactly the `fatal: pathspec` plus `tar: This does not look like a tar archive` the section quotes.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_run_commands.py:3504",
+      "id": "duplicate_owner-1",
+      "reason": "the section must extend the one reader so both the `suite run` path and the promotion path read a prose status identically, and name that the refusal is the existing one, not a parallel parse.",
+      "text": "\u00a731 asks that \"a gate exit status that opens with an integer is read as that integer\", but one reader already owns that question: `_gate_exit_status` (reckon/crew_run_commands.py:3504) reads `report.exit_status` then `result.exit_status` and does `int(value)`, returning `None` for `\"0 (job 1335599, all_debug, \u2026)\"` because `int` of the trailing prose raises. It is the same reader the caller at reckon/crew_run_commands.py:2358 and :5312 closes the gate with. A second parser in the acceptance path (reckon/crew/recovery_review_acceptance.py:707 refuses \"the run records no passing gate\") would read the same field two ways.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:288",
+      "id": "duplicate_owner-2",
+      "reason": "the refusal must sit in the manifest reader that already owns duplicate-key detection, so every reader (classification, promotion, audit) sees the same refusal and one implementation covers both the same-line and separate-line forms.",
+      "text": "\u00a736 asks that a manifest with two `tests:` lines be refused before any gate runs, quoting each line, but the manifest reader already refuses a duplicated field: `_two_keys_on_one_line_message` (reckon/crew/reports.py:288) names the path and line and explains that reading both \"would turn the earlier value into a corrupted string and the later key into an empty list\". \u00a736's case is the sibling defect \u2014 two `tests:` lines on separate lines \u2014 and the owner is the same reader, whose `_MANIFEST_KEY_ALTERNATION` already knows the key. A check added in the promotion path would leave the manifest reader accepting a record promotion refuses.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/pending_landing.py:1255",
+      "id": "duplicate_owner-3",
+      "reason": "the sections must extend the existing release path (and make its pointer compare read the file twice rather than compare a stale copy), not add a command that bypasses it; the census of the defect is both compares at :91 and :1255.",
+      "text": "\u00a734's defect is the compare `if dict(current) != pointer: refusal = \"the live pointer changed before workspace release\"` (reckon/crew/pending_landing.py:1255, and its twin at :91), which compares the caller's own copy against the file rather than the file against the file. The section asks for \"one command\" to retire a landed head, but the retirement path already exists in `promotion_release.py` (`_release_after_promotion`, called from reckon/crew/pending_landing.py:1266) and the landed-head release in `_release_measurement_worktree` (reckon/crew/pending_landing.py:1230). A second one-step command beside them would be a second owner of retirement.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s30",
+      "id": "interface_budget-1",
+      "reason": "eight sections adding to a 25-family surface without an account of what they replace is exactly the accretion the budget rule exists to stop; at minimum \u00a731 and \u00a736 replace mechanisms already named above and should be recorded as such.",
+      "text": "\u00a730 adds a refusal (\"a measure that cannot build its tree is refused naming the path and the revision it asked\") to the refusal_families 25 family, \u00a731 adds \"refused naming the field and the revision it asked\", \u00a732 adds \"promoted \u2026 records that the manifest was unreadable\", \u00a733 adds one obligation quoting two texts, \u00a734 adds \"a release that is refused says which field differed\", \u00a735 adds a second condition to repair-resume refusal, \u00a736 adds \"refused before any gate runs, quoting each line\", and \u00a737 adds a red/green verdict for a second log format; not one of the eight names a refusal it retires or merges, or states why nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_classification.py:1656",
+      "id": "duplicate_owner-4",
+      "reason": "the section must state which existing recovery class an unrecognised status maps to and extend `recovery_classification`/`recovery_vocabulary` (and `_wait_probe_shape_refusal` for the probe), otherwise the run is classified twice and the two verdicts can disagree.",
+      "text": "\u00a733's endpoint \u2014 a run whose manifest status is outside the recognised set is classed as needing its coordinator rather than complete \u2014 is the verdict the one classifier already produces: `manifest_status_is_template` (reckon/crew/reports.py:145) and the reader comment at reckon/crew/reports.py:126 (\"unrecognised spelling is not proof of work\") already define the vocabulary, `RECOVERY_CLASSES` (reckon/crew/recovery_vocabulary.py:33) already carries `unreadable`, `exited-unfinished` and `stopped` as the distinct outcomes for such a record, and `_wait_probe_shape_refusal` (reckon/crew/recovery_wait.py:462) already refuses a probe that \"is a scalar rather than a list\" \u2014 the prose `wait_probe` the section describes. A new classifier or a new obligation family would be a second classifier over the same fields.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b3d730c8e140b705ad25fbb12a7bc72eae6b5e0d",
+  "plan_fingerprint": "833e48edc11a8053937597ba21e161567237c84582bae95786786631586d8b7b",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 77,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T020410498805-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "d8d6a512ac4aea8102bcaba4c52d23b74508b9c0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no section proposes a new module; each names one behaviour, and the depth it needs is already in the owner each finding cites.",
+    "duplicate_owner": "a finding \u2014 \u00a731 adds a second gate-status parser rather than extending `_gate_exit_status`, \u00a736 adds a second duplicate-field refusal rather than extending `reports.py`'s, \u00a734 would add a second pointer compare beside the one it already fails on, and \u00a733's unrecognised-status verdict must extend the one classifier rather than a parallel one.",
+    "interface_budget": "a finding \u2014 public_definitions 3145, cli_options 535, mcp_views 15, refusal_families 25; seven of the eight sections add a refusal family (a new refusal message or decision) and none names a refusal it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 ten of the mechanisms these eight sections need already exist, and three of the sections (\u00a730's carry, \u00a736's duplicate-line refusal, \u00a737's ctest reader) ask for what those mechanisms already do; the owners are named in the findings below.",
+    "thin_wrapper": "pass \u2014 no section proposes a wrapper over existing machinery; \u00a732 and \u00a734 name a behaviour of an existing path rather than a layer beside it, and the reuse finding records the owner to extend."
+  },
+  "section_digests": {
+    "_document": "c5afbd355fe050403ec1acd4374cac6ee24183e44970e642c1581f336f31d2ff",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s18": "952c184917351117b3f92f50b109c64b6edc963dc57f74f8d0e96e260b672454",
+    "s19": "fd99cdb85821b8f1cc753d60d3461ddda1e36227553a34ad710f3c4edbcb65dd",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s20": "73a59983728fec7eb3a28f9305c1846bab53db81049cdf361b7332b51458b9ab",
+    "s21": "c95db350871319247d9fa4cc2afa9694a54554ea9e31d2e9da533f29a2f8331f",
+    "s22": "af8c57fe3c0c211e820c487af5729bf215453da9640ec5c8b23d71e3f7418e41",
+    "s23": "3739019144c6377f7bee7906410475d1c3b4b1cb8c6cc230ed6a6ba1fb090517",
+    "s24": "2d55de204feeb4689a853af6b9a87571dcb196723395a8172af8276eb87eb3b3",
+    "s25": "5a7d62a0abe80ca6575854a16a19342fe76fea7420d61e441c7c934523ebb7fd",
+    "s26": "a83b6d3223dde663f8b81971ca35c3f4f0d2f46d2f19f7761f9802cb61788701",
+    "s27": "6d263751c392fc5e86bdf0e86106d2e36860af9f0b37a3bfe889db5542c3f8e6",
+    "s28": "17e9b9db682ba8c582f60c11d7f752a497c3ef3401c66cc48a72764617d78e9e",
+    "s29": "aee1396a8754e1625c820205737fe59f7824cbf2b36e9dfd86c1035adf168991",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s30": "d93b8bb4383f924d889d17c41242ca68d40eacc16593a842828af0d7c12fc061",
+    "s31": "0cd73bcd2c2f9995003f53395122fdcf820de30cc0a379b6e2c4843155ea5ba3",
+    "s32": "5ed643747e9b7d9ed5abb8a077fe1a07abd308c872e6f4aa459a6b84437fc045",
+    "s33": "182952968e90a6809c9d1d6ffbdb9510e799ca5245584a0c5aedca3c540a8765",
+    "s34": "ba929b0ada9dbaaa04649c97228a35ddf2844c32297b5083c6074edca3fd9d73",
+    "s35": "342fa77136b1cf1369dc14d00ac464410822978a17a52d8ac2fe7106d46653db",
+    "s36": "e1acc1ea518a2d1fff9b7b9fc64ebec06e9e225473c57be34e0191904a51258d",
+    "s37": "75bf9ec15a1b269bf0794859f8e09c2048ab24714de05e977beba79ab09be4a0",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T02:10:07.788885+00:00",
+  "total": null
+}
