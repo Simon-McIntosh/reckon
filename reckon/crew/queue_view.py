@@ -11,6 +11,9 @@ The waiting count is given in four parts: waiting for a lane slot, waiting on an
 upstream that is advancing, waiting on an upstream nothing is building toward,
 and waiting on an upstream that can never land. The last three are the class the
 admission pass already stamped on each request; this read never recomputes it.
+A request parked behind a hold is reported in a fifth part of its own, because
+it waits for that hold to lift rather than for a lane slot. The document also
+carries the pane's one-line row, rendered from this same read.
 """
 
 from __future__ import annotations
@@ -21,6 +24,12 @@ from typing import Any
 
 from reckon._timestamps import parse_utc
 from reckon.crew import runs
+
+# The pane's own module, read here for two things it owns: the phases a
+# launched run holds while it is working, which its working rows count on, and
+# the one-line row that renders this document. The import runs one way, so a
+# phase added there cannot leave this view counting a different set.
+from reckon.crew import ticker as ticker_module
 from reckon.crew.admission.shared import (
     BLOCKED_UPSTREAM_PHASE,
     HELD_PHASE,
@@ -30,7 +39,15 @@ from reckon.crew.admission.shared import (
 from reckon.crew.stranded_wait import IDLE as IDLE_CLASS
 from reckon.crew.stranded_wait import PROGRESSING, STRANDED
 
-__all__ = ["QUEUE_WAIT_PARTS", "queue_view", "wait_part_of"]
+RUNNING_PHASES: frozenset[str] = ticker_module.IN_FLIGHT_PHASES
+
+__all__ = [
+    "PART_LETTERS",
+    "QUEUE_WAIT_PARTS",
+    "WAIT_PARTS_IN_ORDER",
+    "queue_view",
+    "wait_part_of",
+]
 
 WAITING_PHASES: tuple[str, ...] = (QUEUED_PHASE, HELD_PHASE, *WAITING_UPSTREAM_PHASES)
 
@@ -42,8 +59,24 @@ SLOT = "slot"
 ADVANCING = "advancing"
 IDLE = "idle"
 STRANDED_PART = "stranded"
+# A parked request waits for its hold to lift, not for a lane slot: it launches
+# only once the hold is gone, so counting it as a slot wait tells a reader the
+# lane is refusing work it was never offered. It is reported beside the four
+# admission causes, and only when one is waiting.
+HELD = "held"
 
 QUEUE_WAIT_PARTS: tuple[str, ...] = (SLOT, ADVANCING, IDLE, STRANDED_PART)
+
+WAIT_PARTS_IN_ORDER: tuple[str, ...] = (*QUEUE_WAIT_PARTS, HELD)
+
+# The letter that names each part's cell in the pane row.
+PART_LETTERS: dict[str, str] = {
+    SLOT: "s",
+    ADVANCING: "a",
+    IDLE: "i",
+    STRANDED_PART: "x",
+    HELD: "h",
+}
 
 # The class the pass stamps to the part this view counts it under.
 _PART_OF_CLASS: dict[str, str] = {
@@ -51,10 +84,6 @@ _PART_OF_CLASS: dict[str, str] = {
     IDLE_CLASS: IDLE,
     STRANDED: STRANDED_PART,
 }
-
-# The phases a launched run carries while it is working. A lane is running work
-# when any live request in the same scope holds one of them.
-RUNNING_PHASES: frozenset[str] = frozenset({"starting", "working", "running"})
 
 
 def _since(stamp: Any, moment: datetime) -> float | None:
@@ -74,12 +103,17 @@ def wait_part_of(pointer: Mapping[str, Any]) -> str:
     """The cause one waiting request waits for, from its own recorded class.
 
     A request waiting only for a lane slot carries no upstream class, so it is
-    counted as a slot wait. A request waiting on refs is counted under the class
-    the admission pass already stamped on it; the class is never recomputed
-    here. A request whose refs wait but whose class has not yet been stamped
-    falls back to its phase, where a blocked upstream can never land.
+    counted as a slot wait. A parked request is counted as held: its hold lifts
+    the queue or the clock, not a free lane, so a slot count would claim the
+    lane is refusing work it has never been offered. A request waiting on refs
+    is counted under the class the admission pass already stamped on it; the
+    class is never recomputed here. A request whose refs wait but whose class
+    has not yet been stamped falls back to its phase, where a blocked upstream
+    can never land.
     """
     phase = str(pointer.get("phase") or "")
+    if phase == HELD_PHASE:
+        return HELD
     if phase not in WAITING_UPSTREAM_PHASES:
         return SLOT
     stamped = str(pointer.get("wait_class") or "")
@@ -110,8 +144,10 @@ def _wait_summary(
     the pane draws a fault from.
     """
     summary: list[dict[str, Any]] = []
-    for part in QUEUE_WAIT_PARTS:
+    for part in WAIT_PARTS_IN_ORDER:
         members = [row for row in rows if row.get("wait_part") == part]
+        if not members and part == HELD:
+            continue
         ages = [
             row["waited_seconds"]
             for row in members
@@ -119,6 +155,7 @@ def _wait_summary(
         ]
         entry: dict[str, Any] = {
             "part": part,
+            "letter": PART_LETTERS[part],
             "count": len(members),
             "oldest_waited_seconds": max(ages) if ages else None,
         }
@@ -353,7 +390,22 @@ def queue_view(
     config = flight_module.resolve(project, checkout_path=checkout_path).config
     budget = flight_module.queue_priority_budget(config)
     promotions = _promotions(project, session or "", moment=moment)
-    return {
+    waiting_by_cause = _wait_summary(requests)
+    running = _running(pointers, project)
+    # The fault is a fact about this read, so it is decided here and published
+    # beside the counts; a surface that draws it formats this verdict and does
+    # not re-derive it from the parts. It stands when no lane is working and
+    # requests are waiting on work nobody is building.
+    idle = next((entry for entry in waiting_by_cause if entry["part"] == IDLE), None)
+    fault = (
+        None
+        if running or not idle or not idle["count"]
+        else {
+            "waits": idle["count"],
+            "upstream_plans": idle["upstream_plans"],
+        }
+    )
+    document: dict[str, Any] = {
         "ok": True,
         "view": "queue",
         "project": project,
@@ -363,12 +415,17 @@ def queue_view(
         "reviews": reviews,
         "sessions": _sessions(named, pointers=pointers, budget=budget),
         "promotions": promotions,
-        "running": _running(pointers, project),
+        "running": running,
+        "fault": fault,
         "counts": {
             "requests": len(requests),
             "reviews": len(reviews),
             "promotions": promotions["waiting"],
-            "waiting": len(requests),
-            "waiting_by_cause": _wait_summary(requests),
+            "waiting_by_cause": waiting_by_cause,
         },
     }
+    # The pane's row is rendered from this document rather than composed again
+    # by each surface that draws it, so every reader shows the split and the
+    # fault this read published.
+    document["pane"] = ticker_module.queue_pane_row(document)
+    return document

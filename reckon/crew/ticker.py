@@ -951,51 +951,35 @@ def _elapsed(seconds: float) -> str:
     return f"{hours}h{rest:02d}m"
 
 
-# The four causes a waiting request waits for, in the order the pane prints
-# them, each with the letter that names its cell. The split is the queue view's
-# own: a request waiting only for a lane slot carries no upstream class, and the
-# other three are the class the admission pass already stamped on it. A pane
-# that derived any of them would be a second author of one truth, which is what
-# the view's single read exists to prevent.
-WAIT_PART_LETTERS: tuple[tuple[str, str], ...] = (
-    ("slot", "s"),
-    ("advancing", "a"),
-    ("idle", "i"),
-    ("stranded", "x"),
-)
-
-
 def queue_pane_row(document: Mapping[str, Any]) -> str:
     """The queue view's waiting split as one pane row.
 
-    Each part is its count, the letter that names it and the age of its oldest
-    member, read from the document's own figures rather than recomputed here. A
-    part holding nobody prints its count and no age. When the lane is running
-    nothing and the idle part is not zero, the row also draws the fault: every
-    request that is waiting is waiting on work nobody is building, and the
-    upstream plans are named so a reader knows which work that is.
+    Each part is its count, the letter the view gave it and the age of its
+    oldest member, read from the document's own entries rather than recomputed
+    here, so the row cannot name a part or a letter the view does not publish.
+    A part holding nobody prints its count and no age. The fault is the view's
+    verdict, published on the document beside the counts: when it stands, the
+    row names how many requests wait and the upstream plans nobody is building,
+    so a reader knows which work that is.
     """
     counts = document.get("counts") or {}
-    parts = {
-        str(entry.get("part") or ""): entry
-        for entry in counts.get("waiting_by_cause") or ()
-        if isinstance(entry, Mapping)
-    }
     cells: list[str] = []
-    for part, letter in WAIT_PART_LETTERS:
-        entry = parts.get(part) or {}
+    for entry in counts.get("waiting_by_cause") or ():
+        if not isinstance(entry, Mapping):
+            continue
         count = int(entry.get("count") or 0)
+        letter = str(entry.get("letter") or "")
         oldest = entry.get("oldest_waited_seconds")
         age = f"@{_elapsed(float(oldest))}" if isinstance(oldest, Real) else ""
         cells.append(f"{count}{letter}{age}")
     row = "waiting " + " ".join(cells)
-    idle = parts.get("idle") or {}
-    idle_count = int(idle.get("count") or 0)
-    if not int(document.get("running") or 0) and idle_count:
-        plans = ", ".join(str(name) for name in idle.get("upstream_plans") or ())
+    fault = document.get("fault") or {}
+    if isinstance(fault, Mapping) and fault:
+        waits = int(fault.get("waits") or 0)
+        plans = ", ".join(str(name) for name in fault.get("upstream_plans") or ())
         row += (
-            f" | FAULT nothing is running and {idle_count} "
-            f"wait{'s' if idle_count == 1 else ''} on work nobody is building: "
+            f" | FAULT nothing is running and {waits} "
+            f"wait{'s' if waits == 1 else ''} on work nobody is building: "
             f"{plans or 'no upstream plan recorded'}"
         )
     return row
@@ -3260,6 +3244,9 @@ IN_FLIGHT_STAGE = "in flight"
 # arrival row already prints a launch, and a run that has not begun working has
 # nothing for the line to report. A run the fleet counters call blocked or
 # waiting is not here either, because its stop is a transition the pane draws.
+# The phases a launched run holds while it is working. The set is the queue
+# view's own, so the pane's working rows and the view's running count cannot
+# drift apart when a phase is added.
 IN_FLIGHT_PHASES = frozenset({"starting", "working", "running"})
 
 

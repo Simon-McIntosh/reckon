@@ -117,9 +117,11 @@ def test_the_four_parts_carry_counts_and_oldest_ages(home: Path) -> None:
     assert abs(parts["slot"]["oldest_waited_seconds"] - 4 * HOUR) < 120
     assert abs(parts["advancing"]["oldest_waited_seconds"] - 2 * HOUR) < 120
     assert abs(parts["idle"]["oldest_waited_seconds"] - HOUR / 2) < 120
-    assert document["counts"]["waiting"] == 7
+    assert document["counts"]["requests"] == 7
+    assert "waiting" not in document["counts"]
 
-    row = ticker_module.queue_pane_row(document)
+    row = document["pane"]
+    assert row == ticker_module.queue_pane_row(document)
     assert "2s@4h" in row
     assert "3a@2h" in row
     assert "2i@" in row
@@ -173,3 +175,29 @@ def test_changing_a_stamp_moves_a_request_between_counts(home: Path) -> None:
     assert _parts(after)["idle"]["count"] == 1
     assert after["counts"]["requests"] == 1
     assert after["requests"][0]["wait_part"] == "idle"
+
+
+def test_a_parked_request_counts_as_held_not_as_a_slot_wait(home: Path) -> None:
+    _queue(home, [_node("parked", "s1")], {"parked": "r-parked"})
+    _restamp("r-parked", "held", age=HOUR)
+
+    document = queue_view_module.queue_view(PROJECT)
+    parts = _parts(document)
+    assert parts["slot"]["count"] == 0
+    assert parts["held"]["count"] == 1
+    assert abs(parts["held"]["oldest_waited_seconds"] - HOUR) < 120
+    assert "0s " in document["pane"]
+    assert "1h@" in document["pane"]
+
+
+def test_the_pane_and_the_view_share_one_vocabulary(home: Path) -> None:
+    assert ticker_module.IN_FLIGHT_PHASES is queue_view_module.RUNNING_PHASES
+
+    _seed(home)
+    document = queue_view_module.queue_view(PROJECT)
+    named = [entry["part"] for entry in document["counts"]["waiting_by_cause"]]
+    assert named[: len(queue_view_module.QUEUE_WAIT_PARTS)] == list(
+        queue_view_module.QUEUE_WAIT_PARTS
+    )
+    for entry in document["counts"]["waiting_by_cause"]:
+        assert entry["letter"] == queue_view_module.PART_LETTERS[entry["part"]]
