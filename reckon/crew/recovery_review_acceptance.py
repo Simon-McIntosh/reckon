@@ -668,7 +668,11 @@ def accept_clean_review(
         with suppress(OSError):
             runs._write_json(
                 memo_path,
-                {"inputs": refusal_key, "refusal": result, "code_revision": code_revision},
+                {
+                    "inputs": refusal_key,
+                    "refusal": result,
+                    "code_revision": code_revision,
+                },
             )
         if implementation and not result.get("held"):
             review_landing.record_refusal(
@@ -1188,7 +1192,14 @@ def review_self_state(
     """
     project = str(pointer.get("project") or "")
     manifest_path = Path(str(pointer.get("manifest_path") or ""))
-    if _complete_manifest_write_time(manifest_path) is None:
+    # A manifest that is present and cannot be parsed will not turn into a
+    # verdict by waiting, but the record is the deliverable a review is judged
+    # on: a run whose record delivers is ready whatever its manifest says. Every
+    # other unreadable-manifest run keeps the wait it has today, so a manifest a
+    # worker is still writing is not refused mid-write.
+    if _complete_manifest_write_time(manifest_path) is None and not (
+        _manifest_cannot_be_read(manifest_path) and review_record_delivered(pointer)
+    ):
         return (
             REVIEW_SELF_WAITING,
             (
@@ -1920,6 +1931,8 @@ from .recovery_review_delivery import (  # noqa: E402
     _delivered_review_record,
     _is_review_run,
     _is_run_review_node,
+    _manifest_cannot_be_read,
+    review_record_delivered,
 )
 from .recovery_repair_dispatch import (  # noqa: E402
     _sweep_review_tier,
