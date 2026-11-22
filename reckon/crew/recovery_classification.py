@@ -1543,6 +1543,37 @@ def _settled_evidence(
     }
 
 
+def _wait_no_reader_will_run(
+    fields: Mapping[str, Any], qualified_status: str
+) -> dict[str, str] | None:
+    """The declared wait a manifest carries that nothing can probe.
+
+    A wait can be declared beside a working status rather than the declared
+    wait, with its probe written as prose naming a scheduler job instead of as
+    an argument vector. The waiting reader acts only on a manifest whose status
+    is the declared wait, and the reader that runs a probe refuses this shape,
+    so neither sweep nor resume lifts the run: nothing outside a coordinator
+    can act on the declaration at all. The status word and the probe text are
+    returned together, because they are the coordinator's whole repair.
+    """
+    declared_probe = str(fields.get("wait_probe") or "").strip()
+    declared_file = str(fields.get("wait_file") or "").strip()
+    condition = str(fields.get("wait_condition") or "").strip()
+    if not (declared_probe or declared_file or condition):
+        return None
+    refusal = _wait_probe_shape_refusal(fields.get("wait_probe")) or (
+        _wait_file_shape_refusal(fields.get("wait_file"))
+    )
+    if not refusal:
+        return None
+    declared = declared_probe or declared_file or condition
+    return {
+        "status": qualified_status,
+        "wait": declared,
+        "refusal": refusal,
+    }
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -2445,6 +2476,35 @@ def classify_pointer(
             "--reason '<the verdict the worker reached>'"
             if completion_offer(record, repair=True)
             else f"reckon crew observe --run {shlex.quote(run_id)}"
+        )
+    elif (
+        alive is False
+        and manifest_status not in TERMINAL_MANIFEST_STATUSES
+        and manifest_status != WAITING_STATUS
+        and (
+            unnameable_wait := _wait_no_reader_will_run(
+                manifest_data, manifest_reported_status or manifest_status
+            )
+        )
+        is not None
+    ):
+        # A worker that ended on a wait it declared but nothing can probe: the
+        # status is a working word rather than the declared wait, and the probe
+        # is a shape the reader refuses. No sweep will lift it and no resume can
+        # run it, so the run reads unreadable — the declaration is what is wrong
+        # — and the row carries both texts the coordinator has to repair,
+        # because "fix the wait" names nothing a session can act on alone.
+        classification = "unreadable"
+        detail = (
+            f"the worker ended with manifest status {unnameable_wait['status']!r} "
+            f"and a wait nothing can probe: {unnameable_wait['refusal']} "
+            f"(declared {unnameable_wait['wait']!r}); the run was left waiting on "
+            f"the manifest at {manifest} and no sweep or resume lifts it"
+        )
+        action = (
+            f"read {manifest}; replace the status with the verdict the worker "
+            "reached and re-declare the wait as "
+            f"{_WAIT_ACCEPTED_SHAPES} if it is still being awaited"
         )
     elif manifest_unwritten:
         classification = "running"
@@ -4099,6 +4159,7 @@ from .recovery_vocabulary import (  # noqa: E402
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402
+    _WAIT_ACCEPTED_SHAPES,
     _wait_probe_answered,
     _WAIT_HORIZON_FIELDS,
     _background_wait_signal,
@@ -4106,8 +4167,10 @@ from .recovery_wait import (  # noqa: E402
     _run_directory,
     _run_wait_condition_probe,
     _wait_condition_observation,
+    _wait_file_shape_refusal,
     _wait_probe_job_id,
     _wait_probe_job_ids,
+    _wait_probe_shape_refusal,
 )
 from .recovery_watch import (  # noqa: E402
     FLEET_SETTLED_STATES,
