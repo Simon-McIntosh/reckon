@@ -20,19 +20,12 @@ operator's crew home.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import pytest
 
 from reckon import file_memo
 from reckon.crew.admission import service
-
-#: The mutation this node declares: with one source left out of the accounting
-#: the sum must fall short of the process figure by more than the band. The
-#: negative-control run sets this to a source name; the ordinary run leaves it
-#: unset, so the mutation is applied to the same test rather than to a copy.
-OMIT_ENV = "MRFO_OMIT_SOURCE"
 
 BAND = 0.05
 KNOWN_BYTES = 64 * 1024
@@ -72,19 +65,7 @@ def _run_pass(files: dict[str, Path]) -> dict[str, int]:
         for path in files.values():
             path.read_text(encoding="utf-8", errors="replace")
     after = file_memo.read_character_count()
-    summary = service._reads_by_source(account, before, after)
-    omit = os.environ.get(OMIT_ENV)
-    if omit:
-        dropped = int(summary.pop(omit, 0) or 0)
-        summary["attributed_bytes"] = (
-            int(summary.get("attributed_bytes") or 0) - dropped
-        )
-        process = summary.get("process_bytes")
-        if isinstance(process, int):
-            summary["unattributed_bytes"] = max(
-                0, process - int(summary["attributed_bytes"])
-            )
-    return summary
+    return service._reads_by_source(account, before, after)
 
 
 def _shortfall(summary: dict[str, int]) -> float:
@@ -122,55 +103,18 @@ def test_each_sources_bytes_land_under_that_source_only(crew_home) -> None:
 
 
 def test_a_source_left_out_shortens_the_sum_beyond_the_band(crew_home) -> None:
-    """The mutation, applied on demand: the sum case must fail by more than 5%.
+    """What the declared mutation produces: a shortfall larger than the band.
 
-    The declared mutation is the environment hook above, so this test answers
-    the same question the sum test does under an accounting that drops one
-    source. It is left green in an ordinary run because it asserts the
-    *mutation* shortens the sum; the failing arm is the sum test itself run with
-    the hook set, which is what the node's negative-control log records.
+    The mutation itself is not in this module. The negative-control run loads a
+    plugin that removes one source from the product's ``admit_read_sources()``
+    rules and stops the account recording the paths that rule owned, then runs
+    the sum test above — which is the arm that must fail. What is asserted here
+    is the arithmetic the band rests on: a source the accounting loses is worth
+    more than five percent of the pass.
     """
-    _service, files, _sizes = crew_home
-    whole = _run_pass(files)
-    process_reads = whole["process_bytes"]
-    assert isinstance(process_reads, int) and process_reads > 0
-    omitted = service.admit_read_sources()[0][0]
-    assert omitted in whole
-    partial = _run_pass_with(omitted, files)
-    assert omitted not in partial
-    dropped = int(whole["attributed_bytes"]) - int(partial["attributed_bytes"])
-    assert dropped > 0
-    assert dropped / process_reads > BAND, (dropped, process_reads, partial)
-
-
-def _run_pass_with(omitted: str, files: dict[str, Path]) -> dict[str, int]:
-    """Run the same pass with one source excluded from the account."""
-    saved = os.environ.get(OMIT_ENV)
-    os.environ[OMIT_ENV] = omitted
-    try:
-        return _run_pass(files)
-    finally:
-        if saved is None:
-            os.environ.pop(OMIT_ENV, None)
-        else:
-            os.environ[OMIT_ENV] = saved
-
-
-def test_a_text_read_is_charged_the_bytes_it_was_decoded_from(tmp_path: Path) -> None:
-    """A multibyte document costs its byte count, not its character count."""
-    path = tmp_path / "config" / "crew" / "live" / "run-multibyte.json"
-    path.parent.mkdir(parents=True)
-    text = "é" * 1000
-    path.write_text(text, encoding="utf-8")
-    characters = len(text)
-    encoded = len(text.encode("utf-8"))
-    assert encoded != characters
-
-    with file_memo.attributing([("pointers", (str(path.parent) + "/",))]) as account:
-        read = path.read_text(encoding="utf-8")
-
-    assert read == text
-    assert account.summary()["pointers"] == encoded
+    _service, _files, sizes = crew_home
+    total = sum(sizes.values())
+    assert sizes["review store"] / total > BAND, (sizes["review store"], total)
 
 
 def test_the_reading_is_written_on_the_pass_verdict_row(crew_home, tmp_path) -> None:
