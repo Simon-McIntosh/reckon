@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:1648",
+    "reckon/crew/pending_landing.py:1991"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T05:38:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "line": "570",
+      "severity": "non-blocking",
+      "summary": "fleet_node_name duplicates reckon/crew/watch_unit.py:431 fleet_record_node, whose body it wraps unchanged, and its try/except guard cannot fire because dispatch_launch._read_fleet_record at reckon/crew/dispatch_launch.py:3704 already returns None for an unreadable record; reckon/crew/merge.py:216 shows the established idiom is to call the owner directly."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "616",
+      "severity": "non-blocking",
+      "summary": "the new pass applies no landing_group refusal, while the owner of the same decision at reckon/crew/pending_landing.py:503 holds every landing-group pointer and the group branch at line 688 releases members only on group-integration evidence, so a promoted-marked group member with no workspace on disk and a quiet foreign stream would be retired ahead of its group landing."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all ten commits against d24fa090e52748cc3100cd54e60d68ad3e87fb1b; 83047227cc adds the pass, its two liveness readings and the test, 1bb7fca9cf and f77f50a4fc repair it, 41ba34fc8d adds the journal and scope cases, and the remaining five commits are the evidence fragment and the SVG; 692 insertions, nothing removed outside those paths. The SVG renders at 1400 px with all thirty text labels present, no clipped or overlapping label.",
+    "done_when": "the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:51 asks for three promoted fixture runs in a temporary crew home, one pass, two further passes for the discarded run, a base-revision negative control and no added failure in the existing release tests; tests/test_a_run_from_a_previous_fleet_node_is_released.py covers each of those cases and the recorded arms show EXIT=0 with 58 passed at the base and 66 passed after.",
+    "goal": "plan section s2's deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:50 is a promoted run whose recorded launcher host is not the fleet node and which shows no turn in progress giving up its pointer on the next pass, and whose discard is not undone; reckon/crew/pending_landing.py:567 release_pointers_of_a_previous_fleet_node does exactly that and is called from retire_promoted_pointers at line 677.",
+    "manifest": "read; it records status complete, ten commits, the scoped gate at 67 passed, both suite arms with completed true and empty failure_ids, three negative-control runs each EXIT=1, and its changed_paths line names all five delivered paths.",
+    "write_paths": "read the declared write paths; the five committed paths (reckon/crew/pending_landing.py, reckon/crew/process_liveness.py, tests/test_a_run_from_a_previous_fleet_node_is_released.py, the evidence fragment and the figure directory) are all inside them, and reckon/crew/promotion_release.py was declared but not needed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_from_a_previous_fleet_node_is_released.py:118 and :132 redden if the release pass or the turn-in-progress hold is removed (recorded at 3 failed and 2 failed on the base and reviewed heads), but no case builds a landing-group member, so the new pass's missing landing_group refusal at reckon/crew/pending_landing.py:616 is unguarded.",
+    "evidence": "the gate recorded in the manifest runs tests/test_a_run_from_a_previous_fleet_node_is_released.py with the two existing release files and its logs end EXIT=0 with 67, 58 and 66 passed, so the done_when's five cases, the base negative control and the no-added-failure clause are each measured rather than claimed.",
+    "fit": "reckon/crew/pending_landing.py:567 and reckon/crew/process_liveness.py:545 follow the module's lazy-import, Mapping-typed, mechanism-named idiom and carry no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:567 retires a promoted pointer whose launcher host is not the fleet record's node and whose stream shows no turn, and reckons/crew/process_liveness.py:586 makes a foreign record never consult this host's process table, which is the deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:50.",
+    "reuse": "reckon/crew/process_liveness.py:570 adds fleet_node_name, a one-line wrapper around reckon/crew/watch_unit.py:431 fleet_record_node, which is the existing owner of that reading and is called directly at reckon/crew/merge.py:216, so the addition duplicates the owner rather than extending it.",
+    "scope_discipline": "every path in the ten-commit diff is inside the declared write paths, and the two repair commits touch only reckon/crew/pending_landing.py, reckon/crew/process_liveness.py and the test file."
+  },
+  "plan": "a-claim-nobody-is-working-is-released",
+  "plan_section": "s2",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section s2's deliverable at docs/plans/a-claim-nobody-is-working-is-released.html:50 is a promoted run recorded on a previous fleet node with no turn in progress giving up its pointer; reckon/crew/pending_landing.py:567 implements it and retire_promoted_pointers calls it at line 677.\nVERDICT done_when: the done_when at docs/plans/a-claim-nobody-is-working-is-released.html:51 asks for three promoted fixture runs, one pass, two further passes, a base negative control and no added failure in the existing release tests; tests/test_a_run_from_a_previous_fleet_node_is_released.py covers each and the recorded arms end EXIT=0 with 58 and 66 passed.\nVERDICT write_paths: read the declared paths; all five committed paths are inside them and reckon/crew/promotion_release.py was not needed.\nVERDICT manifest: read; ten commits, the scoped gate at 67 passed, both suite arms completed with empty failure_ids, and three negative-control runs each EXIT=1 are recorded.\nVERDICT diff: read all ten commits against d24fa090e52748cc3100cd54e60d68ad3e87fb1b; two source files, one test file, the evidence fragment and the SVG, 692 insertions, and the SVG renders legibly with all thirty labels present.\nCALL_SITES: reckon/crew/station.py:461, reckon/crew/pending_landing.py:1648, reckon/crew/pending_landing.py:1991\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:567 retires the previous-node promoted pointer with no turn in progress and reckon/crew/process_liveness.py:586 keeps a foreign record from consulting this host's process table.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's gate logs end EXIT=0 with 67, 58 and 66 passed, measuring the done_when's three fixture runs, the discarded run, the base control and the no-added-failure clause at docs/plans/a-claim-nobody-is-working-is-released.html:51.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the ten-commit diff is inside the declared write paths and the two repair commits touch only the pass, its readings and the test file.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_run_from_a_previous_fleet_node_is_released.py:118 and :132 redden when the pass or the turn-in-progress hold is removed, but no case builds a landing-group member, leaving reckon/crew/pending_landing.py:616's missing landing_group refusal unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/pending_landing.py:567 follows the module's lazy-import, Mapping-typed, mechanism-named idiom with no plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/process_liveness.py:570 duplicates reckon/crew/watch_unit.py:431 fleet_record_node, which merge.py:216 already calls directly, rather than extending the owner.\nFINDING reckon/crew/process_liveness.py:570 non-blocking: fleet_node_name is a one-line wrapper around the existing owner reckon/crew/watch_unit.py:431 fleet_record_node, and its try/except cannot fire because the record reader already returns None when unreadable.\nFINDING reckon/crew/pending_landing.py:616 non-blocking: the new pass omits the landing_group refusal retire_promoted_pointer applies at line 503, so a promoted landing-group member could be retired without the group-integration evidence the group branch at line 688 requires.\n",
+  "review_run_id": "r-20261122T053756786090-review-of-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up-46e141da78b0",
+  "reviewed_base_sha": "d24fa090e52748cc3100cd54e60d68ad3e87fb1b",
+  "reviewed_head_sha": "46e141da78b031d62bd9f86e87c663236ad5e23f",
+  "reviewed_run_id": "r-20261122T032430660077-acniw-a-run-whose-worker-was-on-a-previous-fleet-node-gives-up",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T05:47:32.200931+00:00",
+  "total": 92
+}
