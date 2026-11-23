@@ -38,6 +38,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import hashlib
+import io
 import json
 import math
 import os
@@ -46,6 +47,7 @@ import shlex
 import shutil
 import statistics
 import subprocess
+import tarfile
 import tempfile
 import threading
 import time
@@ -1589,7 +1591,7 @@ def delivered_paths(repo: Path, base: str, head: str) -> list[str]:
 
 @contextlib.contextmanager
 def candidate_checkout(
-    repo: Path, primary: str, head: str, timeout: float
+    repo: Path, primary: str, head: str, timeout: float, *, tests_only: bool = False
 ) -> Iterator[tuple[str, Path]]:
     """Build the same merge as landing, and measure it without moving a branch."""
     from reckon.crew import merge
@@ -1607,7 +1609,7 @@ def candidate_checkout(
         raise BaseCheckoutError(
             f"the merge candidate could not be built: {exc}"
         ) from exc
-    with base_checkout(repo, candidate, timeout) as tree:
+    with base_checkout(repo, candidate, timeout, tests_only=tests_only) as tree:
         yield candidate, tree
 
 
@@ -1662,7 +1664,11 @@ def base_tree_for_measure(
 
 @contextlib.contextmanager
 def base_checkout(
-    repo: Path, base_sha: str, timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS
+    repo: Path,
+    base_sha: str,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    *,
+    tests_only: bool = False,
 ) -> Iterator[Path]:
     """A detached scratch tree at ``base_sha``, released when the block ends.
 
@@ -1711,6 +1717,7 @@ def base_checkout(
                 "worktree",
                 "add",
                 "--detach",
+                *(("--no-checkout",) if tests_only else ()),
                 str(target),
                 base_sha,
                 timeout=timeout,
@@ -1733,6 +1740,16 @@ def base_checkout(
                 f"could not check out {base_sha} for the base arm: "
                 f"{(added.stderr or added.stdout or '').strip()}"
             )
+        if tests_only:
+            try:
+                _populate_tests_and_top_level(repo, target, base_sha, timeout)
+            except BaseCheckoutError:
+                with contextlib.suppress(Exception):
+                    _release_worktree_whole(
+                        repo, target, run_id="landing-base", trash_root=scratch
+                    )
+                shutil_rmtree(scratch)
+                raise
         _link_environment(repo, target)
         try:
             yield target
@@ -1751,6 +1768,44 @@ def base_checkout(
                 # it act immediately rather than after the default grace period.
                 with contextlib.suppress(OSError, subprocess.TimeoutExpired):
                     _git(repo, "worktree", "prune", "--expire", "now", timeout=timeout)
+
+
+def _populate_tests_and_top_level(
+    repo: Path, target: Path, revision: str, timeout: float
+) -> None:
+    """Write a revision's ``tests`` directory and top-level files into ``target``.
+
+    A partitioned measurement reads only these from its local tree: the test
+    files it selects and scans for imports, and the project files at the top.
+    The arms build their own full trees on the nodes that run them, so the rest
+    of a checkout would be gigabytes on the fleet node that nothing reads.
+    """
+    listed = _git(repo, "ls-tree", revision, timeout=timeout)
+    if listed.returncode:
+        raise BaseCheckoutError(
+            f"could not list {revision}: {(listed.stderr or '').strip()}"
+        )
+    names = []
+    for line in listed.stdout.splitlines():
+        meta, _, name = line.partition("\t")
+        kind = meta.split()[1] if len(meta.split()) > 1 else ""
+        if kind == "blob" or (kind == "tree" and name == "tests"):
+            names.append(name)
+    if not names:
+        return
+    archived = _RUN(
+        ["git", "-C", str(repo), "archive", revision, "--", *names],
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+    )
+    if archived.returncode:
+        raise BaseCheckoutError(
+            f"could not read the tests of {revision}: "
+            f"{bytes(archived.stderr or b'').decode(errors='replace').strip()}"
+        )
+    with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r:") as archive:
+        archive.extractall(target, filter="data")
 
 
 def shutil_rmtree(path: Path) -> None:

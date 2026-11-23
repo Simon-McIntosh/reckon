@@ -1208,11 +1208,22 @@ def _measure_delivery(
                 if not promoted and _landed_elsewhere(pointer, run_id):
                     raise _LandedElsewhereError
                 measured_head, measured_tree = stack.enter_context(
-                    landing_measure.candidate_checkout(repo, primary, head, timeout)
+                    landing_measure.candidate_checkout(
+                        repo,
+                        primary,
+                        head,
+                        timeout,
+                        tests_only=landing_measure.measures_on_partition(config),
+                    )
                 )
             elif request is not None:
                 measured_tree = stack.enter_context(
-                    landing_measure.base_checkout(repo, head, timeout)
+                    landing_measure.base_checkout(
+                        repo,
+                        head,
+                        timeout,
+                        tests_only=landing_measure.measures_on_partition(config),
+                    )
                 )
             if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
