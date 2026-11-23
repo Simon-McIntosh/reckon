@@ -269,8 +269,17 @@ def _with_sweep_failures(
     """
     rows = list(payload.get("obligations") or ())
     project = str(payload.get("project") or "")
+    raised: set[str] = set()
     for failure in _ended_sweep_failures(failures, project=project):
         run_id = str(failure["run_id"])
+        if run_id in raised:
+            # A failure is one duty per run, however many sweep authors stored
+            # it: the record is keyed by author and this list groups them under
+            # the run's owner, so the same run arrives once per author. The
+            # row's command names the run, so a second row adds nothing a
+            # coordinator can act on and only repeats itself on every pass.
+            continue
+        raised.add(run_id)
         command = f"reckon crew observe --run {shlex.quote(run_id)}"
         rows.append(
             {
