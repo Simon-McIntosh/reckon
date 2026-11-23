@@ -161,7 +161,7 @@ def test_a_named_defect_still_refuses_its_property(row: dict[str, Any]) -> None:
     )
 
 
-def test_a_placeholder_outside_a_quote_or_code_span_is_refused() -> None:
+def test_a_placeholder_outside_a_quote_is_refused() -> None:
     """The token half of the placeholder rule, shown firing."""
 
     def refused(goal: str):
@@ -169,8 +169,15 @@ def test_a_placeholder_outside_a_quote_or_code_span_is_refused() -> None:
 
     assert refused("write the census for <node>")
     assert refused("write <the-census> for this section")
-    # Quoted and code-span placeholders are the author quoting a literal.
+    # A double-quoted token is the author naming a literal to reproduce.
     assert not refused('write the census for "<node>"')
-    assert not refused("write the census for `<node>`")
+    # A code span is judged on what it holds: a token standing alone is still
+    # a gap the worker would have to close, so the span does not exempt it.
+    assert refused("write the census for `<node>`")
+    # A token inside a filename pattern or naming an HTML element is a literal
+    # the worker reproduces, not a value to fill.
+    assert not refused("write the census for `pf<n>-terminal-edge.json`")
+    assert not refused("write the census for `tests/<name>.py`")
+    assert not refused("preserve the `<strong>` tag in the rendered census")
     # A goal that is nothing but a placeholder word is the tiniest gap of all.
     assert refused("TODO")
