@@ -426,3 +426,58 @@ def test_a_state_receipt_does_not_adopt_prose_changed_after_the_snapshot(
     assert "Unrecorded edit." in path.read_text()
     assert _section_appended(_state(path.read_text()))
     assert not (run["repository"] / "reviewed.txt").exists()
+
+
+@pytest.mark.parametrize("kind", sorted(WRITES))
+@pytest.mark.parametrize("failure", ["stage", "commit"])
+def test_a_state_write_accepted_after_staging_survives_refusal(
+    run: dict[str, Any], kind: str, failure: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_stage = promotion_scope._stage_landing_writes
+    outcomes: list[dict[str, Any]] = []
+    written: list[bytes] = []
+    path = run["repository"] / PLAN_PATH
+    before = _state(path.read_text())
+    assert before["section_declarations"][SECTION] == "implementable"
+    hooks = run["repository"] / "hooks"
+    hooks.mkdir()
+    hook = hooks / "pre-commit"
+    hook.write_text("#!/bin/sh\necho 'injected commit refusal' >&2\nexit 1\n")
+    hook.chmod(0o755)
+    _git(run["repository"], "config", "core.hooksPath", str(hooks))
+
+    def stage_then_edit(*args, **kwargs):
+        staged = real_stage(*args, **kwargs)
+        assert staged.returncode == 0, staged.stderr
+        if not outcomes:
+            outcomes.append(_write(kind, run["repository"]))
+            written.append(path.read_bytes())
+        if failure == "stage":
+            return subprocess.CompletedProcess(
+                staged.args, 1, "", "injected staging refusal"
+            )
+        return staged
+
+    monkeypatch.setattr(promotion_scope, "_stage_landing_writes", stage_then_edit)
+
+    landing = _complete_land(run)
+
+    assert landing.exit_code != 0, landing.output
+    reason = (
+        "injected staging refusal" if failure == "stage" else "injected commit refusal"
+    )
+    assert reason in landing.output
+    assert outcomes and outcomes[0]["ok"] is True
+    state = _state(path.read_text())
+    _, holds = WRITES[kind]
+    observation = {
+        "accepted_write": outcomes[0],
+        "declaration_before": before["section_declarations"],
+        "declaration_after": state["section_declarations"],
+        "promotion_exit": landing.exit_code,
+    }
+    assert holds(state), json.dumps(observation)
+    assert path.read_bytes() == written[0]
+    assert "could not be restored" in landing.output
+    assert _git(run["repository"], "status", "--porcelain", "--", PLAN_PATH)
+    assert not (run["repository"] / "reviewed.txt").exists()

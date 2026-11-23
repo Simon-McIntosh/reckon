@@ -2154,6 +2154,7 @@ def _restore_landing_writes(
     paths: Sequence[Path],
     *,
     on_stale_removed: Callable[[Path, float], None] | None = None,
+    expected_contents: Mapping[Path, bytes] | None = None,
 ) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
@@ -2193,11 +2194,24 @@ def _restore_landing_writes(
     no trace of why a lock disappeared unless the clearing is recorded here.
     The default states it on stderr, which is where a caller with no run record
     of its own can still read it.
+
+    A caller supplying expected contents owns only those exact bytes. A path
+    changed since that snapshot keeps its working file and staging, and reads
+    as unrestored in the receipt. The outer plan snapshot then preserves the
+    other writer's state instead of rolling it back with this landing.
     """
     tracked: list[Path] = []
     created: list[Path] = []
     unsettled: dict[str, bool] = {}
     for path in paths:
+        if expected_contents is not None and path in expected_contents:
+            try:
+                unchanged = path.read_bytes() == expected_contents[path]
+            except OSError:
+                unchanged = False
+            if not unchanged:
+                unsettled[str(path)] = False
+                continue
         relative = _relative_to_checkout(checkout, path)
         if relative is None:
             unsettled[str(path)] = False
@@ -3113,6 +3127,7 @@ def _commit_landing_writes(
     *, run_id: str, verdict: str, checkout: Path, paths: Sequence[Path],
     subject: str | None = None, body: str | None = None,
     store_row_written: bool = False, plan_text_edits: Mapping[Path, str] | None = None,
+    expected_contents: Mapping[Path, bytes] | None = None,
 ) -> dict[str, Any]:
     """Commit available landing writes under the lazy branch lease."""
     if not any(Path(path).is_file() for path in paths):
@@ -3124,6 +3139,7 @@ def _commit_landing_writes(
                 run_id=run_id, verdict=verdict, checkout=checkout, paths=paths,
                 subject=subject, body=body, store_row_written=store_row_written,
                 plan_text_edits=plan_text_edits,
+                expected_contents=expected_contents,
             )
         finally:
             _release_branch_write()
@@ -3139,6 +3155,7 @@ def _commit_branch_writes(
     body: str | None = None,
     store_row_written: bool = False,
     plan_text_edits: Mapping[Path, str] | None = None,
+    expected_contents: Mapping[Path, bytes] | None = None,
 ) -> dict[str, Any]:
     """Commit promotion's own store writes in one landing commit.
 
@@ -3213,6 +3230,7 @@ def _commit_branch_writes(
             checkout,
             targets,
             on_stale_removed=_landing_record_stale_removal(run_id),
+            expected_contents=expected_contents,
         )
         if store_row_written:
             _discard_run_store_row(run_id)
@@ -3317,6 +3335,7 @@ def _commit_branch_writes(
             checkout,
             targets,
             on_stale_removed=_landing_record_stale_removal(run_id),
+            expected_contents=expected_contents,
         )
         if store_row_written:
             _discard_run_store_row(run_id)

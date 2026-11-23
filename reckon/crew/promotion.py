@@ -2540,7 +2540,9 @@ def _commit_with_plan_snapshot(
     checkpoint.require_owned_index(current)
     checkpoint.commit_attempted = True
     try:
-        return _commit_landing_writes(**kwargs)
+        return _commit_landing_writes(
+            **kwargs, expected_contents={checkpoint.path: current}
+        )
     except BaseException as exc:
         rollback = getattr(exc, LANDING_ROLLBACK_ATTRIBUTE, {})
         if (
