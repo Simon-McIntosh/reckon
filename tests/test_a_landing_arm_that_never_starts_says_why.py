@@ -158,6 +158,47 @@ def test_a_submission_that_starts_no_job_records_what_refused_it(
     assert "Invalid partition name specified" in reason
 
 
+def test_a_runner_that_cannot_launch_records_the_launch_failure(
+    project, tmp_path, monkeypatch
+):
+    """An arm whose runner raises OSError names the failure, not an absence.
+
+    The runner never returns for this arm, so the measurement records no exit
+    status and no job id, and the launch failure is the only fact there is.
+    """
+    real_submission = landing_measure.partition_submission
+    real_run = subprocess.run
+    pending: list[Path] = []
+
+    def submission(**options):
+        selected, argv, env = real_submission(**options)
+        pending.append(Path(options["log_path"]))
+        return selected, argv, env
+
+    def run(argv, **options):
+        if not argv or argv[0] != "sbatch":
+            return real_run(argv, **options)
+        pending.pop(0)
+        raise OSError(7, "Argument list too long")
+
+    monkeypatch.setattr(landing_measure, "partition_submission", submission)
+    monkeypatch.setattr(landing_measure, "_RUN", run)
+
+    measured = _measure(project, tmp_path)
+
+    refusal = measured.unreadable
+    assert "did not run" not in refusal, f"refusal read: {refusal!r}"
+    assert "could not be launched" in refusal
+    assert "Argument list too long" in refusal
+
+    arm = measured.suite["base"]
+    assert arm["exit_status"] is None
+    assert arm["job_id"] == ""
+    assert arm["submission_failed"] is False
+    assert "OSError" in arm["unreadable_reason"]
+    assert "Argument list too long" in arm["unreadable_reason"]
+
+
 def test_an_arm_whose_job_starts_and_fails_is_recorded_as_before(
     project, tmp_path, monkeypatch
 ):

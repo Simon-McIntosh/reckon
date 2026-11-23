@@ -1416,6 +1416,16 @@ def measure_run(
                     f"the {name} arm never reached the scheduler: "
                     f"{arm.unreadable_reason}"
                 )
+            elif arm.unreadable_reason and arm.exit_status is None:
+                # A runner that could not be launched at all (a too-long argv,
+                # a missing program) leaves no status, no job, no id and no
+                # log, so the absence is again all a bare "did not run" could
+                # report. The launch failure is the only fact the arm
+                # recorded, and it is the one a reader can act on.
+                unreadable = (
+                    f"the {name} arm could not be launched: "
+                    f"{arm.unreadable_reason}"
+                )
             else:
                 unreadable = f"the {name} arm did not run"
             break
