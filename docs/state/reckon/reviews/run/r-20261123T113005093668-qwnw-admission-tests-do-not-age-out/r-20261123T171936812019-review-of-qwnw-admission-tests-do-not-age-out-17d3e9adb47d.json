@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_launch_queued",
+    "reckon/crew/dispatch_admission.py:_store_brief",
+    "reckon/crew/runs.py:run_dir",
+    "reckon/crew/admission/holds.py:retired-lost-session",
+    "reckon/crew/recovery.py:dispatch_review_for_run",
+    "reckon/crew/dispatch.py:_launch_dispatch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T17:20:09Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_launch_never_classifies_the_fleet.py",
+      "line": 148,
+      "severity": "non-blocking",
+      "text": "the fixture pre-sets dispatch_options['dispatch_width'] on the request so both the current and pinned-reference arms receive it, which removes the recorded default out of the launch-input comparison: a change to the default width would now pass silently, since neither side can differ on a value the test supplied to both."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 1a01424ccd: cbcae1b912 dates the two live fixtures and aligns the two code-drift assertions, 4ce8955712/1beb472967/17d3e9adb4 add and then cite the evidence fragment; all five paths are in scope.",
+    "done_when": "The done_when asks for five passing at head, five passing with the clock advanced one year, each test's own base failure named, and base and head arms on all_debug with no head-only failure; the manifest records head 19 passed, clock-ahead 19 passed, base 5 failed with the named causes, and the two base clock probes that isolate the date fuse (logs/base-clock-window.log, logs/base-clock-prior.log).",
+    "goal": "The node goal is that the five admission tests pass on any date against current code; the diff dates the live fixtures with datetime.now(UTC) at import and realigns the two tests whose assertions postdated their pinned reference, at tests/test_a_queued_launch_never_classifies_the_fleet.py:148 and tests/test_composed_review_waits_for_a_roster_slot.py:162.",
+    "manifest": "Read; it records status complete, the four commits, the head and base gate results, and the two base clock probes, and its per-dimension rubric lines are answered.",
+    "write_paths": "Read the reviewed node's declared paths; all five delivered paths (four test files plus docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-admission-tests-do-not-age-out.html) are inside them, and tests/conftest.py was declared but not needed."
+  },
+  "justifications": {
+    "durability": "The composed-review assertion at tests/test_composed_review_waits_for_a_roster_slot.py:162 and the launch-equality assertion at tests/test_a_queued_launch_never_classifies_the_fleet.py:188 redden on a production regression, but the date-fixture change itself is unguarded: re-hardcoding a fixed timestamp would pass on the day it was written and only fail later, so the one-year clock arm is recorded evidence rather than a test.",
+    "evidence": "The recorded head arm reports 19 passed EXIT=0 at code revision cbcae1b912, the clock-ahead arm 19 passed EXIT=0, and the base arm 5 failed/14 passed EXIT=1 with the five ids the done_when names; the two later commits are docs-only so the code gate still covers head (logs/head.log, logs/head-clock-ahead.log, logs/base.log).",
+    "fit": "The change matches the established idiom -- datetime.now(UTC).isoformat() is used in 96 test occurrences across tests/ -- and the added comments state the mechanism (why a live fixture is dated when the test runs).",
+    "goal_fidelity": "The five tests named in the goal pass at head 17d3e9adb47d6f470831bfa6f9afb42b21413c5d and again with the clock advanced one year, so the admission fixtures no longer age past the lost-session window (tests/test_a_new_plan_review_is_a_first_attempt.py:61 derives LIVE_AT at import).",
+    "reuse": "The diff adds no function, class or module; the only new definitions are module-level timestamp constants and a local reference_dispatch wrapper, so nothing duplicates a repository capability.",
+    "scope_discipline": "Every path in the diff (four test files and one evidence fragment) is inside the declared write paths; the fragment is named qwnw-admission-tests-do-not-age-out.html rather than the stale s45.html the plan text spells, matching the qwnw- fragment convention used throughout docs/evidence/fragments/queued-work-needs-no-workaround/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the five admission tests pass on any date against current code; tests/test_a_new_plan_review_is_a_first_attempt.py:61 now derives LIVE_AT at import, and the head arm passes 19 at 2026-11-23 and 19 again with the clock advanced a year.\nVERDICT done_when: the done_when asks for five passing at head, five passing with the clock advanced one year, each test's own base failure named, and base and head arms on all_debug with no head-only failure; the manifest and logs record head 19 passed EXIT=0, clock-ahead 19 passed EXIT=0, base 5 failed/14 passed EXIT=1 with those five ids, plus two base clock probes isolating the date fuse.\nVERDICT write_paths: read the node's declared paths; every diffed path (four test files and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-admission-tests-do-not-age-out.html) is inside them.\nVERDICT manifest: read; status complete, commits and gate results recorded, and every dimension has an answered rubric line.\nVERDICT diff: read commit by commit against 1a01424ccd; four test files and one evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/queue_admission.py:_launch_queued, reckon/crew/dispatch_admission.py:_store_brief, reckon/crew/runs.py:run_dir, reckon/crew/admission/holds.py:retired-lost-session, reckon/crew/recovery.py:dispatch_review_for_run, reckon/crew/dispatch.py:_launch_dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the five tests pass at head and with the clock advanced one year, as tests/test_a_new_plan_review_is_a_first_attempt.py:61 derives LIVE_AT at import.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head.log records 19 passed EXIT=0 at cbcae1b912 and logs/base.log records 5 failed/14 passed EXIT=1 with the five named ids.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every diffed path is inside the declared write paths listed in the manifest.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_composed_review_waits_for_a_roster_slot.py:162 reddens on a production regression, but re-hardcoding a fixture date would pass today and only fail later, so the clock-ahead arm is evidence rather than a test.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the datetime.now(UTC).isoformat() idiom used throughout tests/ and its comments state the mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds only constants and a local wrapper, no capability the repository already owns.\nFINDING tests/test_a_queued_launch_never_classifies_the_fleet.py:148 non-blocking: the fixture pre-sets dispatch_width on both arms, so a change to that recorded default would pass the comparison silently.",
+  "review_run_id": "r-20261123T171936812019-review-of-qwnw-admission-tests-do-not-age-out-17d3e9adb47d",
+  "reviewed_base_sha": "1a01424ccd7e14d3b80e55db55c63fbbeca8854f",
+  "reviewed_head_sha": "17d3e9adb47d6f470831bfa6f9afb42b21413c5d",
+  "reviewed_run_id": "r-20261123T113005093668-qwnw-admission-tests-do-not-age-out",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T17:50:14.560304+00:00",
+  "total": 107
+}
