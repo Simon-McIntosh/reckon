@@ -379,6 +379,178 @@ def test_unread_request_bytes_defer_the_reload_until_they_are_handled(
     assert host.reload_count() == 1, host.record()
 
 
+def _reloader_environ(tmp_path: Path) -> dict[str, str]:
+    """An environment the reloader can build in, with no operator state in it."""
+    return {
+        "XDG_RUNTIME_DIR": str(tmp_path / "run"),
+        "RECKON_SESSION_HOST_STATE_DIR": str(tmp_path / "state"),
+    }
+
+
+def test_the_host_reloader_takes_a_commit_through_the_station_reloader(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A host does not own a second materialise-prove-exec sequence.
+
+    The host's reloader wraps the station's, and a commit is taken through it.
+    Anything else duplicates a sequence with side effects that are hard to test
+    twice: the proof, the pin's lifetime and the exec's environment. This case
+    substitutes the station's replacement step and asserts the host reached it,
+    so a host that grew its own copy again would not call it.
+    """
+    from reckon.crew import station as station_module
+
+    calls: list[str] = []
+
+    def _record(self, current: str) -> None:
+        calls.append(current)
+
+    monkeypatch.setattr(station_module.StationReloader, "_replace", _record)
+    reloader = _module()._HostReloader(REPO_ROOT, environ=_reloader_environ(tmp_path))
+
+    reloader.replace("f" * 40, {})
+
+    assert calls == ["f" * 40]
+    assert reloader.source_root == reloader._station.source_root
+
+
+def test_the_identity_read_is_held_only_for_the_tree_this_process_runs_from(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The held reading answers for the checkout, and only when it is ours.
+
+    Holding an identity against a checkout's HEAD stats is sound for the tree
+    this process imported from and unsound for one a caller names, so the flag
+    must distinguish the two. Compared with itself it is always true, which
+    makes the named-root read dead code and the hold a claim about a tree the
+    process does not run.
+    """
+    module = _module()
+    environ = _reloader_environ(tmp_path)
+    own = module._HostReloader(REPO_ROOT, environ=environ)
+    assert own._held_reads is True
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.setenv("RECKON_FOLLOWER_SOURCE_ROOT", str(elsewhere))
+    environ = _reloader_environ(tmp_path)
+    environ["RECKON_FOLLOWER_SOURCE_ROOT"] = str(elsewhere)
+    named = module._HostReloader(REPO_ROOT, environ=environ)
+    assert named._held_reads is False
+    assert named.source_root == elsewhere.resolve()
+
+
+class RecordingReloader:
+    """A reloader the host can drive without executing anything.
+
+    The host's own rule is under test, not the materialise-prove-exec sequence:
+    this records what the host asked for and never returns from an exec, so a
+    case can tell a reload the host took from one it deferred.
+    """
+
+    def __init__(self, *, identity: str, current: str) -> None:
+        self.identity = identity
+        self.current_identity = current
+        self.replacements: list[str] = []
+        self.deferrals: list[str] = []
+
+    def current(self) -> str:
+        return self.current_identity
+
+    def due(self, current: str) -> bool:
+        return current != self.identity
+
+    def replace(self, current: str, environ) -> None:
+        self.replacements.append(current)
+
+    def defer(self, current: str, reason: str) -> None:
+        self.deferrals.append(reason)
+
+
+def _host_for_driving(module, tmp_path: Path, reloader) -> object:
+    """One host over a temporary state directory, owned by this process."""
+    environ = {"RECKON_SESSION_HOST_STATE_DIR": str(tmp_path / "state")}
+    owner = {
+        "pid": os.getpid(),
+        "start_time": module.process_start_time(os.getpid()),
+    }
+    return module.SessionHost(owner=owner, environ=environ, reloader=reloader)
+
+
+def test_a_child_mid_start_defers_the_reload_by_one_tick(tmp_path: Path) -> None:
+    """A child spawned since the last tick is seen running once before the exec.
+
+    The host clears every child's mid-start mark at the top of a pass, so a
+    child spawned during a pass keeps it until the next one. A reload that is
+    due at the end of that pass must wait: taking it would replace the image
+    that started the child before that image has observed it running. With the
+    mark cleared, the same reload is taken -- which is what shows the deferral
+    is the mark and not some other reason to hold.
+    """
+    module = _module()
+    reloader = RecordingReloader(identity="a" * 40, current="b" * 40)
+    host = _host_for_driving(module, tmp_path, reloader)
+    child = module._Child(
+        project="alpha", session="sess", pid=os.getpid(), starting=True
+    )
+    host._children[child.key] = child
+
+    host.maybe_reload()
+    assert reloader.replacements == [], (
+        "the host re-executed before the child it had just spawned was seen"
+    )
+    assert not host._handover_path.exists(), "a deferred reload left a handover"
+
+    # The next pass's first action is to clear the mark, which is the tick the
+    # deferral waits for.
+    child.starting = False
+    host.maybe_reload()
+    assert reloader.replacements == [reloader.current_identity]
+
+
+def test_a_handover_child_whose_pid_was_reused_is_not_adopted(
+    tmp_path: Path,
+) -> None:
+    """A pid alone is reused, so adoption compares the kernel start time too.
+
+    Both entries name a live pid; only the one whose recorded start time still
+    matches the process is adopted. A host that adopted by pid alone would
+    supervise a stranger in the dead child's place, so the mismatched entry is
+    the case and the matching one beside it is the control that shows the
+    refusal is the start time rather than anything else in the record.
+    """
+    module = _module()
+    reloader = RecordingReloader(identity="f" * 40, current="f" * 40)
+    host = _host_for_driving(module, tmp_path, reloader)
+    live_start = module.process_start_time(os.getpid())
+    payload = {
+        "owner": host.owner,
+        "identity": reloader.identity,
+        "reload_count": 1,
+        "children": [
+            {
+                "project": "alpha",
+                "session": "reused",
+                "pid": os.getpid(),
+                "pid_start": "0",
+            },
+            {
+                "project": "beta",
+                "session": "same",
+                "pid": os.getpid(),
+                "pid_start": live_start,
+            },
+        ],
+    }
+    host._handover_path.parent.mkdir(parents=True, exist_ok=True)
+    host._handover_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    host.adopt_handover()
+
+    assert set(host._children) == {("beta", "same")}, host._children
+    assert not host._handover_path.exists()
+
+
 def test_a_pending_handover_is_never_read_as_a_census_record(
     tmp_path: Path,
 ) -> None:

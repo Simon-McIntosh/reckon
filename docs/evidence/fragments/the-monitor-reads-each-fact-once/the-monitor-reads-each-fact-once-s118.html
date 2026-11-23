@@ -45,12 +45,12 @@
         <td>4 passed in 29.31s, <code>EXIT=0</code></td>
       </tr>
       <tr>
-        <td>head — tests importing the changed module</td>
+        <td>head — nine importing test files</td>
         <td><code>6ea55237ee</code></td>
         <td>60 passed in 188.24s (0:03:08), <code>EXIT=0</code></td>
       </tr>
       <tr>
-        <td>base — tests importing the changed module</td>
+        <td>base — nine importing test files</td>
         <td><code>bd0d2051db</code></td>
         <td>60 passed in 162.42s (0:02:42), <code>EXIT=0</code></td>
       </tr>
@@ -60,30 +60,37 @@
         <td>1 failed in 242.67s (0:04:02), <code>EXIT=1</code></td>
       </tr>
       <tr>
-        <td>merge head — new test and importing tests</td>
+        <td>merge head — reload test and nine importing files</td>
         <td><code>3b58fd2f78</code></td>
         <td>62 passed in 74.30s (0:01:14), <code>EXIT=0</code></td>
       </tr>
       <tr>
-        <td>base — importing tests</td>
+        <td>base — two importing test files</td>
         <td><code>bd0d2051db</code></td>
         <td>58 passed in 42.66s, <code>EXIT=0</code></td>
       </tr>
     </tbody>
   </table>
   <p>
+    Two importing sets are run, and each row names which one it is. The nine
+    pre-existing test files that import <code>reckon.crew.session_host</code>
+    are 60 passes at both revisions. The two-file set
+    (<code>tests/test_staged_write_inventory.py</code> at one file,
+    <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> at the
+    other) is the fast arm each manifest records as
+    <code>baseline_suite</code>: 58 passes at the base revision, and the reload
+    test beside it at the after revision. A row that said only "importing
+    tests" for both would report two different counts for one revision without
+    saying which set produced which.
+  </p>
+  <p>
     The reload shares its constructor with the host's live-work reading, so the
     merge that brought the station's answer into the host met that parameter
     list. The resolution keeps both: the seam takes the wider answer type and
     the reloader stays beside it. The merge head's arm runs the reload test
-    with the importing tests at <code>3b58fd2f78</code> and the same importing
-    tests at the base revision, so the zero-delta reading is taken again at the
-    merged code rather than carried over from before it.
-  </p>
-  <p>
-    The nine pre-existing test files that import
-    <code>reckon.crew.session_host</code> are the same 60 passes at both
-    revisions, so the change adds no failure against the base arm.
+    with the nine importing files at <code>3b58fd2f78</code> and the same
+    importing files at the base revision, so the zero-delta reading is taken
+    again at the merged code rather than carried over from before it.
   </p>
   <p id="the-monitor-reads-each-fact-once-s118-negative">
     Negative control, as declared: at the base revision the first case fails

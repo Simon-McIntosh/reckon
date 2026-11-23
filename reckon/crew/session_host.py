@@ -126,11 +126,6 @@ RECORD_SUFFIX = ".json"
 # record it does not describe is worse than no record.
 RELOAD_SUFFIX = ".reload"
 
-# How long a reload that did not happen is waited out before it is retried: an
-# image that will not import, or an exec that failed, is not proved again on
-# every tick.
-RELOAD_RETRY_SECONDS = 60.0
-
 # Why a host stopped, recorded in its final census so a later reader can bound
 # the gap between the owner ending and the last child stopping from disk alone.
 _OWNER_ENDED_REASON = "owner ended"
@@ -348,15 +343,27 @@ class _HostReloader:
     descriptor and the children (which are this pid's own children) survive; the
     host hands its child state over separately.
 
+    The sequence that takes a moved checkout -- carry an identity, hold an
+    image that will not import, materialise and prove it, then exec in place --
+    is the standing service's, and it is not restated here:
+    :class:`~reckon.crew.station.StationReloader` owns it and this class wraps
+    one. Two things differ, and only these are local. A host reads the carried
+    identity from the environment it hands its children, so a follower never
+    inherits a claim about an image it is not running. And a host may run from a
+    checkout outside Git, whose identity is a content stamp of the tree it
+    imported rather than a commit to materialise.
+
     The identity is the package-and-scripts content id, the same one the
     followers and the station compare, so a commit that changes no file under
-    ``reckon/`` or ``skills/`` reloads nothing. A carried identity in the
-    environment is the one a reload already landed on; it is read and removed so
-    no child this host starts inherits a claim about an image it is not running.
+    ``reckon/`` or ``skills/`` reloads nothing.
     """
 
     def __init__(self, import_root: Path, *, environ: Mapping[str, str]) -> None:
-        from reckon import checkout_trust
+        # Imported here rather than at module scope: the follower commands
+        # import this module, and the station imports them back, so a module
+        # level import of the station would close a cycle.
+        from reckon.crew import station_store
+        from reckon.crew.station import StationReloader
         from reckon.crew_follow_commands import (
             _FOLLOWER_IMAGE_COMMIT_ENV,
             _FOLLOWER_IMAGE_PIN_ENV,
@@ -364,44 +371,45 @@ class _HostReloader:
         )
 
         self.import_root = import_root
-        self.source_root = Path(
-            environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))
-        ).resolve()
-        # The identity read is held against the checkout's own HEAD reading when
-        # this host interrogates the checkout it runs from, which costs a stat
-        # pair per tick instead of a git spawn. After a reload the host runs
-        # from an image and names the checkout explicitly, and that read is
-        # answered from the tree rather than held.
-        self._held_reads = (
-            Path(os.environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))).resolve()
-            == self.source_root
+        # The station's reloader owns the carried identity, the materialised
+        # image's pin and the root it watches. The node runtime root is the
+        # boundary the station itself runs under, so a host and a station
+        # materialise from one cache and neither can exec an image outside it.
+        root, _source = station_store.runtime_root_source(environ=environ)
+        self._station = StationReloader(
+            root if root is not None else import_root,
         )
-        carried = str(environ.pop(_FOLLOWER_IMAGE_COMMIT_ENV, "") or "")
-        self.identity = (
-            carried
-            if re.fullmatch(r"[0-9a-f]{40}", carried) is not None
-            else checkout_trust.running_code_identity(import_root / "reckon")
-        )
-        self.image_pin: int | None = None
-        carried_pin = str(environ.pop(_FOLLOWER_IMAGE_PIN_ENV, "") or "")
-        if carried_pin:
-            try:
-                candidate = int(carried_pin)
-                if checkout_trust.pin_matches_materialized_tree(candidate, import_root):
-                    os.set_inheritable(candidate, False)
-                    self.image_pin = candidate
-            except (OSError, ValueError):
-                self.image_pin = None
-        # An image proved unimportable, or an exec that failed: held until this
-        # instant so the same image is not materialised and proved every tick.
-        self.deferred_identity: str | None = None
-        self.retry_at: float | None = None
+        self.source_root = self._station.source_root
+        # A reading is held only against the tree this process runs from: that
+        # checkout's HEAD stats answer for a read about it, costing a stat pair
+        # per tick rather than a git spawn. A host running from an image
+        # differs here and names the checkout instead, so every read is
+        # answered from the tree. The comparison is between the import root and
+        # the watched root, which differ exactly when a reload has happened;
+        # comparing the watched root with itself would always hold.
+        self._held_reads = self._station.import_root == self.source_root
+        # The carried claim belongs to the replacement image, not to the one
+        # this host runs: removing it from the mapping the host hands its
+        # children keeps a follower from recording an identity it is not
+        # running. The station's reloader already removed the same names from
+        # ``os.environ``; this covers the copy the children are given.
+        for name in (
+            _FOLLOWER_IMAGE_COMMIT_ENV,
+            _FOLLOWER_IMAGE_PIN_ENV,
+            _FOLLOWER_SOURCE_ROOT_ENV,
+        ):
+            environ.pop(name, None)
+
+    @property
+    def identity(self) -> str:
+        """The identity of the image this host is running."""
+        return self._station.identity
 
     def current(self) -> str:
         """The identity of the code the checkout holds now."""
         from reckon import checkout_trust
 
-        package = self.import_root / "reckon"
+        package = self.source_root / "reckon"
         if self._held_reads:
             return checkout_trust.source_code_identity(package)
         return checkout_trust.source_code_identity(
@@ -410,70 +418,60 @@ class _HostReloader:
 
     def due(self, current: str) -> bool:
         """Whether ``current`` names an image this host has not taken."""
+        if re.fullmatch(r"[0-9a-f]{40}", current) is not None:
+            return self._station._reload_owed(current)
+        # A checkout outside Git is identified by its content stamp, which the
+        # station's rule refuses because a station is always told a checkout. A
+        # stamp that has moved is owed the way a moved commit is, and a held one
+        # is released on the same proof clock.
         from reckon import checkout_trust
 
         if current in (checkout_trust.IDENTITY_UNKNOWN, self.identity):
             return False
-        held = current == self.deferred_identity and (
-            self.retry_at is None or time.monotonic() < self.retry_at
-        )
-        return not held
+        if current == self._station.deferred_identity:
+            return time.monotonic() >= self._station._deferred_proof_at
+        return True
 
     def defer(self, current: str, reason: str) -> None:
-        """Hold an image back, naming why, until its retry instant."""
-        self.deferred_identity = current
-        self.retry_at = time.monotonic() + RELOAD_RETRY_SECONDS
+        """Hold an image back, naming why, until its proof is retried."""
+        self._station.deferred_identity = current
+        self._station._arm_deferred_proof()
         _log(f"deferred its reload: {reason}; keeping the current image")
 
     def replace(self, current: str, environ: Mapping[str, str]) -> None:
         """Re-execute this process onto ``current``; returns only on failure."""
+        if re.fullmatch(r"[0-9a-f]{40}", current) is not None:
+            # A commit: the station's own materialise-prove-exec sequence.
+            self._station._replace(current)
+            return
         from reckon import checkout_trust
         from reckon.crew import dispatch_claims, follower_reload
 
-        pin: int | None = None
-        commit: str | None = None
-        if re.fullmatch(r"[0-9a-f]{40}", current) is not None:
-            root, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
-                self.source_root, current, active_root=self.import_root
-            )
-            commit = current
-        else:
-            # A checkout outside Git is identified by its package content, so
-            # its current image is the tree it was imported from: an exec onto
-            # it reads the same content with no materialisation.
-            dirty, detail = checkout_trust.tracked_reckon_tree_is_dirty(
-                self.import_root
-            )
-            if dirty:
-                self.defer(
-                    current, f"tracked files are modified against HEAD ({detail})"
-                )
-                return
-            root = self.import_root
-        imports, reason = checkout_trust.reckon_imports(root)
+        # A checkout outside Git is identified by its package content, so its
+        # current image is the tree it was imported from: an exec onto it reads
+        # the same content with no materialisation. Tracked edits are held back
+        # for the same reason a station holds them: the identity names the
+        # committed content, and an exec would run something else under it.
+        dirty, detail = checkout_trust.tracked_reckon_tree_is_dirty(self.import_root)
+        if dirty:
+            self.defer(current, f"tracked files are modified against HEAD ({detail})")
+            return
+        imports, reason = checkout_trust.reckon_imports(self.import_root)
+        # No image is materialised for a content identity, so no pin is closed.
         if not imports:
-            if pin is not None:
-                os.close(pin)
             self.defer(current, f"the new image does not import ({reason})")
             return
         environment = follower_reload.image_reexec_environment(
-            self.import_root if commit is None else self.source_root,
-            commit,
-            pin,
-            environment=environ,
+            self.import_root, None, None, environment=environ
         )
         # A dispatch this process is between claiming and launching would lose
         # its thread to the replacement, so the replacement waits it out first.
         dispatch_claims.wait_for_dispatches_in_flight()
-        try:
-            os.execve(  # noqa: S606 - replacement keeps this host's pid
-                sys.executable,
-                follower_reload.image_reexec_argv(root),
-                environment,
-            )
-        finally:
-            if pin is not None:
-                os.close(pin)
+        os.execve(  # noqa: S606 - replacement keeps this host's pid
+            sys.executable,
+            follower_reload.image_reexec_argv(self.import_root),
+            environment,
+        )
 
 
 def parse_request(line: str) -> tuple[str, str, bool] | None:
