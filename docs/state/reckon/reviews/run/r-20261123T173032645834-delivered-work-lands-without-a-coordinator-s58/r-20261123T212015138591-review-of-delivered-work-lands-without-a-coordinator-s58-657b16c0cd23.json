@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_repair_arm",
+    "reckon/crew/promotion.py:_require_gate_log_agrees",
+    "reckon/crew/promotion_evidence.py:_receipt_mismatches",
+    "reckon/crew/promotion_evidence.py:_arm_without_completion",
+    "reckon/crew/reports.py:_validate_suite_observation"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:19:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-delivered-work-lands-without-a-coordinator-s58-657b16c0cd23",
+      "recorded_at": "2026-11-23T23:23:47.012749+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3530",
+      "severity": "blocking",
+      "text": "the observation branch rewrites exit_status, failure_ids and completed but leaves the arm's delivered failure_count, so promotion_evidence._receipt_mismatches refuses the repaired arm against the very log it now cites: reproduced with the landed test's own fixture, a two-process log of 3 failures leaves failure_count 0 and _require_gate_log_agrees raises 'its failure_count records 0 and the log names 3 failed or errored test(s)', the same class of refusal this node exists to remove."
+    },
+    {
+      "file": "tests/test_a_repointed_arm_records_its_completion.py",
+      "line": "154",
+      "severity": "non-blocking",
+      "text": "the landing case runs _zero_added_against_a_red_base and _require_verdict_matches_exit_status only, skipping _require_gate_log_agrees which promotion.py:1461 runs in the real promotion path and which refuses the same repaired arm, so the test's landing claim is narrower than the promotion it stands for."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s58.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "the fragment and the manifest state the base arm ran on all_debug, but gate-s58.sh runs pytest directly in a /tmp scratch tree with no srun or sbatch and gate-base.log records no partition, so the partition named in the landing record is not evidence."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the four commits from bee04f7fb92b to 657b16c0cd; one code commit adds the observation and its plumbing, one adds the test, two record evidence.",
+    "done_when": "gate logs show base 164 passed and head 169 passed at their revisions with no added failure, and the negative control fails at the base, but the landing clause is asserted without the promotion receipt check that refuses the repaired arm.",
+    "goal": "plan section 58 states the plan goal (node.json carries no goal field); reckon/crew/review.py:3073 and reckon/crew/runs.py:3591 derive the three fields from the cited log.",
+    "manifest": "the source manifest reads status complete with its commits, tests, logs and artifacts, and its base-arm all_debug claim is unrecorded in gate-base.log.",
+    "write_paths": "the six declared paths were read; every one of the five changed paths is inside them and none lies outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_repointed_arm_records_its_completion.py:118 fails at the base revision and passes at the head, but no test guards the stale failure_count that promotion_evidence.py:1780 reads.",
+    "evidence": "gate-base.log (164 passed) and gate-head.log (169 passed) carry their revisions and EXIT= lines, but the base arm's claimed all_debug partition is recorded nowhere.",
+    "fit": "reckon/crew/review.py:3073 follows the surrounding gate-log reader idiom and reuses its regexes and summary readers.",
+    "goal_fidelity": "reckon/crew/runs.py:3530 re-derives exit_status, failure_ids and completed from the cited log, so the plan section 58 deliverable is delivered but leaves the arm's failure_count stale.",
+    "reuse": "reckon/crew/review.py:3073 composes the existing gate_log_failure_ids, _gate_log_format and per_file_gate_runs rather than adding a second log reader.",
+    "scope_discipline": "every changed path in the diff is inside the declared write paths, though reckon/crew/runs.py:368 reformats node_field with no behavioural change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 58 names the deliverable and reckon/crew/review.py:3073 with reckon/crew/runs.py:3591 re-derive exit status, failure ids and completion from the cited log.\nVERDICT done_when: gate-base.log shows 164 passed and gate-head.log 169 passed at their revisions, but the landing clause is asserted without the receipt check that refuses the repaired arm.\nVERDICT write_paths: the six declared paths were read and all five changed paths are inside them.\nVERDICT manifest: read; it records commits, tests, logs and artifacts but claims an all_debug base arm the logs do not record.\nVERDICT diff: read the four commits commit by commit; one code commit, one test commit, two evidence commits.\nCALL_SITES: reckon/crew_run_commands.py:crew_repair_arm, reckon/crew/promotion.py:_require_gate_log_agrees, reckon/crew/promotion_evidence.py:_receipt_mismatches, reckon/crew/promotion_evidence.py:_arm_without_completion, reckon/crew/reports.py:_validate_suite_observation\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3530 re-derives exit_status, failure_ids and completed from the cited log, so the plan section 58 deliverable is delivered but leaves the arm's failure_count stale.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-base.log (164 passed) and gate-head.log (169 passed) carry their revisions and EXIT= lines, but the base arm's claimed all_debug partition is recorded nowhere.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path in the diff is inside the declared write paths, though reckon/crew/runs.py:368 reformats node_field with no behavioural change.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_repointed_arm_records_its_completion.py:118 fails at the base revision and passes at the head, but no test guards the stale failure_count that promotion_evidence.py:1780 reads.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review.py:3073 follows the surrounding gate-log reader idiom and reuses its regexes and summary readers.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/review.py:3073 composes the existing gate_log_failure_ids, _gate_log_format and per_file_gate_runs rather than adding a second log reader.\nFINDING reckon/crew/runs.py:3530 blocking: the observation branch rewrites exit_status, failure_ids and completed but leaves the arm's delivered failure_count, so promotion_evidence._receipt_mismatches refuses the repaired arm against the very log it now cites: reproduced with the landed test's own fixture, a two-process log of 3 failures leaves failure_count 0 and _require_gate_log_agrees raises 'its failure_count records 0 and the log names 3 failed or errored test(s)', the same class of refusal this node exists to remove.\nFINDING tests/test_a_repointed_arm_records_its_completion.py:154 non-blocking: the landing case runs _zero_added_against_a_red_base and _require_verdict_matches_exit_status only, skipping _require_gate_log_agrees which promotion.py:1461 runs in the real promotion path and which refuses the same repaired arm, so the test's landing claim is narrower than the promotion it stands for.\nFINDING docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s58.html:29 non-blocking: the fragment and the manifest state the base arm ran on all_debug, but gate-s58.sh runs pytest directly in a /tmp scratch tree with no srun or sbatch and gate-base.log records no partition, so the partition named in the landing record is not evidence.\n",
+  "review_run_id": "r-20261123T212015138591-review-of-delivered-work-lands-without-a-coordinator-s58-657b16c0cd23",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "657b16c0cd23154e61428d4398e7c927ca1cfaf7",
+  "reviewed_run_id": "r-20261123T173032645834-delivered-work-lands-without-a-coordinator-s58",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:32:30.090740+00:00",
+  "total": 94
+}
