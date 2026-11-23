@@ -355,9 +355,6 @@ class _HostReloader:
         )
 
         self.import_root = import_root
-        self._identity_env = _FOLLOWER_IMAGE_COMMIT_ENV
-        self._pin_env = _FOLLOWER_IMAGE_PIN_ENV
-        self._source_root_env = _FOLLOWER_SOURCE_ROOT_ENV
         self.source_root = Path(
             environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))
         ).resolve()
