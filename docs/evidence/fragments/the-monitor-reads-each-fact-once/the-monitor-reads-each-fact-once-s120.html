@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s120">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-23">
+  <meta name="evidence-commit" content="f5bd2cba91">
+  <title>An unchanged sweep reads no plan and walks no tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="an-unchanged-sweep-reads-no-plan-and-walks-no-tree">
+  <h2>An unchanged sweep reads no plan and walks no tree</h2>
+
+  <p><strong>The defect.</strong> Each obligations sweep of the watch producer
+  re-parsed every candidate plan to read its section duties, and it walked the
+  project's state tree recursively statting every file under it, and its plan
+  changed since the last one, both costs were spent to learn that nothing moved.
+  On this project's state tree that is eight thousand files against four
+  thousand directories, spent to learn that nothing had moved.</p>
+
+  <p><strong>What landed.</strong> The change check now records one stat per
+  directory under the trees it watches. Every writer that changes these trees
+  replaces a file rather than editing it in place &mdash; plans and review
+  records are written to a temporary and renamed over the original &mdash; so a
+  change still moves the containing directory's own stat, and a directory's stat
+  is one call however many files it holds. That reading is handed to a plan-state
+  cache, keyed on the directory identity and the plan file's own signature. While
+  the directory holding a plan is unchanged the cache returns its stored parse
+  with no stat and no parse; when the directory has moved it re-parses exactly
+  the plan whose file changed.</p>
+
+  <p>A stat identity reused from the previous sweep can be up to ten seconds
+  old, so it is handed to the plan cache as unknown rather than as proof that no
+  plan moved; the cache then falls back to each plan's own file signature. That
+  is correct and pays the per-file cost only on the sweep that reused a checked
+  identity.</p>
+
+  <p><strong>The test.</strong>
+  <code>tests/test_an_unchanged_sweep_reads_no_plan_and_walks_no_tree.py</code>
+  drives full sweeps: the in-process sweep memory is cleared and the clock is
+  advanced past both the stat-identity interval and the floor tick, so neither
+  shortcut answers the second sweep on the first one's behalf. The fixture is a
+  project of four plans, each with a live run whose section duty makes the plan a
+  candidate, and one thousand state files across two hundred directories. The
+  cases are:</p>
+
+  <ul>
+    <li>the second of two full sweeps parses no plan, stats no file of the state
+      population, and stats no directory beyond the watched tree but the ledger's
+      own rows directory;</li>
+    <li>a sweep after one plan's file is replaced parses that plan alone;</li>
+    <li>a sweep after a state file changes publishes the change;</li>
+    <li>a sweep after a review record is added publishes the change;</li>
+    <li>in every case the published obligations equal those of a from-scratch
+      sweep over the same state, compared row for row.</li>
+  </ul>
+
+  <p><strong>Negative control.</strong> At the base revision the first case fails
+  with all four plans parsed and all one thousand state files stat'ed on the
+  second sweep; the second case fails with all four plans parsed after one plan's
+  file changed. Base and head population gate logs are held under the run
+  directory with each arm's revision, its literal command, and a closing
+  <code>EXIT=</code> line.</p>
+</section>
+</main>
+</body>
+</html>
