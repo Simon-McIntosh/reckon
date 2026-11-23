@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="610">
+<meta name="plan-version" content="611">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -1294,8 +1294,14 @@ staged paths.</p>
 <div class="r-comment" data-section="s116" data-id="c-close-s116" data-who="reckon-build" data-when="2026-11-22T22:28:10.304215+00:00">
     <div class="r-comment-body"><p>Landed r-20261122T143232125878-the-monitor-reads-each-fact-once-s116 on the measured suite pair; <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#the-monitor-reads-each-fact-once-s116">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s117" data-id="c-run-r-20261123T094919761047-review-of-the-monitor-reads-each-fact-once-s117-32b5ddf2bace" data-who="reckon-build" data-when="2026-11-23T10:00:44.641Z">
+    <div class="r-comment-body"><p>review of r-20261123T085311321764-the-monitor-reads-each-fact-once-s117 at 32b5ddf2 recorded parsed: goal_fidelity 19, evidence 17, scope_discipline 20, durability 12, fit 17, reuse 18; added_failure_count 0; two non-blocking findings; no blocker.</p></div>
+</div>
 <div class="r-comment" data-section="s119" data-id="c-run-r-20261123T094630137301-review-of-the-monitor-reads-each-fact-once-s119-37a07da0a467" data-who="reckon-build" data-when="2026-11-23T09:59:09.100Z">
     <div class="r-comment-body"><p>§119 reviewed at head 37a07da0 — six scores 18/19/20/15/17/19, two non-blocking findings (an untested unknown-liveness branch in _delivery_in_flight and a fixture-tautological assertion), zero added suite failures derived from the reviewed run's own base/head arm logs.</p></div>
+</div>
+<div class="r-comment" data-section="s119" data-id="c-run-r-20261123T090829128666-the-monitor-reads-each-fact-once-s119" data-who="reckon-build" data-when="2026-11-23T09:40:02.089Z">
+    <div class="r-comment-body"><p>§119: a delivered run whose resumed repair attempt is still working no longer raises a sweep-failed duty for its withheld review (the census reports it as in flight), a resumed attempt that ended without delivering still raises, and one stored failure raises one station row however many sweep authors reported it. Gate 3 passed; importer arms identical with zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20261118T053316322150" data-who="reckon-96" data-when="2026-11-18">
     <div class="r-comment-body"><p>The cutover node measured at head over 141 live pointers on 2026-11-18. The station with three subscribers read 481.8 MB/min at 33.5% of one core, with no D-state sample in six. The three old followers read 4,215.0 MB/min at 89.0%, with two D-state waits on the file server. Reads miss the 20 MB/min bound by 24x and CPU misses the 5% bound by 6.7x, so the producer seats, producer units and follower snapshot path were not retired. The windows are in the RCA, committed at <code>ad0db7776c</code>, which lands as a partial. Separately, a station tick on s90's code (05:31Z) took 42 s: per-project refresh 25.4, classify 14.9, store-tick 1.8, against 69 s at 03:29Z on older code and 252 s the day before. §12 stays implementable and now also waits on s91 and s92, the station's two largest remaining readers. It is re-dispatched once they land.</p></div>
@@ -2196,9 +2202,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
-</div>
-<div class="r-comment" data-section="s117" data-id="c-run-r-20261123T094919761047-review-of-the-monitor-reads-each-fact-once-s117-32b5ddf2bace" data-who="reckon-build" data-when="2026-11-23T10:00:44.641Z">
-    <div class="r-comment-body"><p>review of r-20261123T085311321764-the-monitor-reads-each-fact-once-s117 at 32b5ddf2 recorded parsed: goal_fidelity 19, evidence 17, scope_discipline 20, durability 12, fit 17, reuse 18; added_failure_count 0; two non-blocking findings; no blocker.</p></div>
 </div>
 </section>
 </main>
