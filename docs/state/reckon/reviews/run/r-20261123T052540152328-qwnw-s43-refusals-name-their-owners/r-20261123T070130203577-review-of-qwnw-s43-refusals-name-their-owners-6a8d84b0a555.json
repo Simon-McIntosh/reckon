@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:632",
+    "reckon/crew_dispatch_commands.py:2341",
+    "reckon/crew_dispatch_commands.py:2642",
+    "reckon/crew_dispatch_commands.py:3427",
+    "reckon/crew_run_commands.py:3110",
+    "reckon/crew/dispatch_sessions.py:1350"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T07:07:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1000",
+      "severity": "non-blocking",
+      "text": "non-blocking: the run owner's session is read only from live pointers, so a terminal run's scratch, the days-old other-session case the section measured, is reported with an empty session and the coordinator still needs a census; the test writes live pointers for both runs so this case is untested."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "985",
+      "severity": "non-blocking",
+      "text": "non-blocking: held = bool(holders) reads _processes_holding's None, which its docstring calls a scan failure that proves nothing either way, as nobody holds it, so a lander tree can be reported reclaimable when /proc was unreadable."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "923",
+      "severity": "non-blocking",
+      "text": "non-blocking: the detail line's reclaimable-bytes figure sums every owner's bytes, including held lander trees and live runs' scratch, so it overstates what a coordinator can reclaim now."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "901",
+      "severity": "non-blocking",
+      "text": "non-blocking: LANDER_TREE_PREFIX = \"landing-base\" restates landing_measure.py:1731 BASE_TREE_PREFIX = \"landing-base-\"; if the owner's prefix changes, the refusal silently stops recognising lander trees and files them as generic paths."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "2087",
+      "severity": "non-blocking",
+      "text": "non-blocking: garbage_collect_scratch already enumerates the same scratch children with run_id and bytes, and gc.py:1607 already carries a ledger session, so the new function is a second enumerator of one population rather than an extension of that owner."
+    },
+    {
+      "file": "tests/test_dispatch_refuses_without_tmp_headroom.py",
+      "line": "102",
+      "severity": "non-blocking",
+      "text": "non-blocking: the existing test that already drives this refusal through crew dispatch was in neither the baseline nor the after arm, though the done_when asks for arms for every tests/ file reaching the changed modules."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "981",
+      "severity": "non-blocking",
+      "text": "non-blocking: tree_size_bytes is called with no limit for every scratch child on a refusal that fires exactly when /tmp is full, so the refusal can walk a whole git worktree of tens of thousands of files each time."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit (82e71063 the owners payload and the three doors; 682320c4 and 6a8d84b0 the evidence fragment's revision and summary lines); the change is the refusal payload, the resume-door headroom check, the review and resume JSON handlers, the conftest exclusion and the three-refusal test.",
+    "done_when": "the done_when names tests/test_the_scratch_floor_is_announced_with_its_owners.py building the section's scratch root and asserting all three refusals; the manifest records the scoped gate at 61 passed and the negative control at 3 failed, EXIT=1.",
+    "goal": "the node goal, the refusal half of plan section 43, is that a dispatch, a crew resume and a review dispatch refused at the scratch floor each answer with JSON naming the free bytes, the floor and the reclaimable bytes by owner; reckon/crew/dispatch_launch.py:939 reclaimable_scratch_by_owner builds the breakdown and dispatch_launch.py:1026 attaches it to the refusal.",
+    "manifest": "read; it states 58 passed at 8953532a (baseline), 61 passed at 82e71063 (scoped gate, 38.13s) and 61 at head (after suite, 38.99s), names its logs, and records an outside_scope note that the scratch-tree header lines lack module.__file__ and the resolved cwd.",
+    "write_paths": "the diff 8953532a..6a8d84b0 changes seven paths, all inside the eight declared write paths; the declared figure directory is unused and nothing outside the declared scope is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_the_scratch_floor_is_announced_with_its_owners.py:102 fails with KeyError when reclaimable_by_owner is removed, as the recorded negative control shows, but no assertion covers a terminal run's owning session.",
+    "evidence": "the scoped gate log records 61 passed and EXIT=0 at 82e71063 and the negative control records 3 failed and EXIT=1, but neither suite arm ran tests/test_dispatch_refuses_without_tmp_headroom.py:102, the existing test of this same refusal.",
+    "fit": "reckon/crew/dispatch_launch.py:939 follows the module's lazy-import and best-effort idiom and carries no plan or ticket label, though line 901 restates landing_measure.py:1731 BASE_TREE_PREFIX.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:1000 reads a run's owning session only from live pointers, so a terminal run's scratch carries an empty session, which is the days-old other-session population the section measured.",
+    "reuse": "reckon/crew/dispatch_launch.py:939 reuses tree_size_bytes, gc._processes_holding and runs.list_live but re-enumerates the scratch population reckon/crew/gc.py:2087 garbage_collect_scratch already owns rather than extending that owner with a session field.",
+    "scope_discipline": "every one of the seven changed paths lies within the declared write paths listed in the manifest, and no out-of-scope path appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal, the refusal half of plan section 43, is that a dispatch, a crew resume and a review dispatch refused at the scratch floor each answer with JSON naming the free bytes, the floor and the reclaimable bytes by owner; reckon/crew/dispatch_launch.py:939 reclaimable_scratch_by_owner builds the breakdown and dispatch_launch.py:1026 attaches it to the refusal.\nVERDICT done_when: the done_when names tests/test_the_scratch_floor_is_announced_with_its_owners.py building the section's scratch root and asserting all three refusals; the manifest records the scoped gate at 61 passed and the negative control at 3 failed, EXIT=1.\nVERDICT write_paths: the diff 8953532a..6a8d84b0 changes seven paths, all inside the eight declared write paths; the declared figure directory is unused and nothing outside the declared scope is touched.\nVERDICT manifest: read; it states 58 passed at 8953532a (baseline), 61 passed at 82e71063 (scoped gate, 38.13s) and 61 at head (after suite, 38.99s), names its logs, and records an outside_scope note that the scratch-tree header lines lack module.__file__ and the resolved cwd.\nVERDICT diff: read commit by commit (82e71063 the owners payload and the three doors; 682320c4 and 6a8d84b0 the evidence fragment's revision and summary lines); the change is the refusal payload, the resume-door headroom check, the review and resume JSON handlers, the conftest exclusion and the three-refusal test.\nCALL_SITES: reckon/crew/dispatch_plan.py:632, reckon/crew_dispatch_commands.py:2341, reckon/crew_dispatch_commands.py:2642, reckon/crew_dispatch_commands.py:3427, reckon/crew_run_commands.py:3110, reckon/crew/dispatch_sessions.py:1350\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:1000 reads a run's owning session only from live pointers, so a terminal run's scratch carries an empty session, which is the days-old other-session population the section measured.\nSCORE evidence: 14\nJUSTIFICATION evidence: the scoped gate log records 61 passed and EXIT=0 at 82e71063 and the negative control records 3 failed and EXIT=1, but neither suite arm ran tests/test_dispatch_refuses_without_tmp_headroom.py:102, the existing test of this same refusal.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the seven changed paths lies within the declared write paths listed in the manifest, and no out-of-scope path appears in the diff.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_scratch_floor_is_announced_with_its_owners.py:102 fails with KeyError when reclaimable_by_owner is removed, as the recorded negative control shows, but no assertion covers a terminal run's owning session.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:939 follows the module's lazy-import and best-effort idiom and carries no plan or ticket label, though line 901 restates landing_measure.py:1731 BASE_TREE_PREFIX.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:939 reuses tree_size_bytes, gc._processes_holding and runs.list_live but re-enumerates the scratch population reckon/crew/gc.py:2087 garbage_collect_scratch already owns rather than extending that owner with a session field.\nFINDING reckon/crew/dispatch_launch.py:1000 non-blocking: the run owner's session is read only from live pointers, so a terminal run's scratch, the days-old other-session case the section measured, is reported with an empty session and the coordinator still needs a census; the test writes live pointers for both runs so this case is untested.\nFINDING reckon/crew/dispatch_launch.py:985 non-blocking: held = bool(holders) reads _processes_holding's None, which its docstring calls a scan failure that proves nothing either way, as nobody holds it, so a lander tree can be reported reclaimable when /proc was unreadable.\nFINDING reckon/crew/dispatch_launch.py:923 non-blocking: the detail line's reclaimable-bytes figure sums every owner's bytes, including held lander trees and live runs' scratch, so it overstates what a coordinator can reclaim now.\nFINDING reckon/crew/dispatch_launch.py:901 non-blocking: LANDER_TREE_PREFIX = \"landing-base\" restates landing_measure.py:1731 BASE_TREE_PREFIX = \"landing-base-\"; if the owner's prefix changes, the refusal silently stops recognising lander trees and files them as generic paths.\nFINDING reckon/crew/gc.py:2087 non-blocking: garbage_collect_scratch already enumerates the same scratch children with run_id and bytes, and gc.py:1607 already carries a ledger session, so the new function is a second enumerator of one population rather than an extension of that owner.\nFINDING tests/test_dispatch_refuses_without_tmp_headroom.py:102 non-blocking: the existing test that already drives this refusal through crew dispatch was in neither the baseline nor the after arm, though the done_when asks for arms for every tests/ file reaching the changed modules.\nFINDING reckon/crew/dispatch_launch.py:981 non-blocking: tree_size_bytes is called with no limit for every scratch child on a refusal that fires exactly when /tmp is full, so the refusal can walk a whole git worktree of tens of thousands of files each time.\nreviewed_base_sha: 8953532a6f2d54dd570a8f77387e5aa429659a44\nreviewed_head_sha: 6a8d84b0a555a1dea657e5e6e9a86e20ebfd1429",
+  "review_run_id": "r-20261123T070130203577-review-of-qwnw-s43-refusals-name-their-owners-6a8d84b0a555",
+  "reviewed_base_sha": "8953532a6f2d54dd570a8f77387e5aa429659a44",
+  "reviewed_head_sha": "6a8d84b0a555a1dea657e5e6e9a86e20ebfd1429",
+  "reviewed_run_id": "r-20261123T052540152328-qwnw-s43-refusals-name-their-owners",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T07:32:12.073955+00:00",
+  "total": 93
+}
