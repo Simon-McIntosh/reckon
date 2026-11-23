@@ -259,8 +259,15 @@ def _write(kind: str, repository: Path) -> dict[str, Any]:
     _current, version = _store.read_plan(
         PROJECT, PLAN, repository, artifact_type="plan"
     )
-    ops, _holds = WRITES[kind]
-    return _edit_plan(PROJECT, PLAN, ops, version, checkout_path=str(repository))
+    ops, holds = WRITES[kind]
+    result = _edit_plan(PROJECT, PLAN, ops, version, checkout_path=str(repository))
+    assert result.get("ok") is True, result
+    written, written_version = _store.read_plan(
+        PROJECT, PLAN, repository, artifact_type="plan"
+    )
+    assert result["new_version"] == written_version
+    assert holds(written), f"the {kind} write did not reach the file"
+    return result
 
 
 def _assert_answered_and_held(
@@ -272,6 +279,13 @@ def _assert_answered_and_held(
     path = run["repository"] / PLAN_PATH
     on_disk = path.read_text(encoding="utf-8")
     assert holds(_state(on_disk)), f"the landed {kind} write was reverted"
+    assert _git(run["repository"], "show", "HEAD:reviewed.txt") == "the reviewed change"
+    assert _git(run["origin"], "show", "main:reviewed.txt") == "the reviewed change"
+    assert any(
+        row.get("id") == f"c-run-{RUN_ID}"
+        for rows in _state(on_disk)["comments"].values()
+        for row in rows
+    ), "the promotion's landing comment did not reach the checkout"
     # A write the landing committed is in HEAD; one it did not is still an
     # uncommitted change in the checkout. Either is a survival.
     if not _git(run["repository"], "status", "--porcelain", "--", PLAN_PATH):
@@ -292,16 +306,20 @@ def test_a_state_write_made_before_the_landing_survives(
 
 
 @pytest.mark.parametrize("kind", sorted(WRITES))
+@pytest.mark.parametrize("boundary", ["before-comment", "after-comment"])
 def test_a_state_write_made_during_the_landing_survives(
-    run: dict[str, Any], kind: str, monkeypatch: pytest.MonkeyPatch
+    run: dict[str, Any], kind: str, boundary: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     real = promotion._record_comment_with_snapshot
     outcomes: dict[str, Any] = {}
 
     def wrapper(snapshot, **kwargs):
-        if snapshot is not None and not outcomes:
+        if boundary == "before-comment" and snapshot is not None and not outcomes:
             outcomes["write"] = _write(kind, run["repository"])
-        return real(snapshot, **kwargs)
+        comment = real(snapshot, **kwargs)
+        if boundary == "after-comment" and snapshot is not None and not outcomes:
+            outcomes["write"] = _write(kind, run["repository"])
+        return comment
 
     monkeypatch.setattr(promotion, "_record_comment_with_snapshot", wrapper)
     landing = _complete_land(run)
@@ -317,3 +335,41 @@ def test_a_state_write_made_after_the_landing_survives(
     assert landing.exit_code == 0, landing.output
     result = _write(kind, run["repository"])
     _assert_answered_and_held(run, kind, result)
+
+
+def test_an_unrecorded_prose_edit_after_a_state_write_still_refuses(
+    run: dict[str, Any],
+) -> None:
+    _write("section-append", run["repository"])
+    path = run["repository"] / PLAN_PATH
+    document = path.read_text(encoding="utf-8")
+    assert "Appended while a landing was in flight." in document
+    edited = document.replace(
+        "Appended while a landing was in flight.", "Uncommitted prose stays separate."
+    )
+    path.write_text(edited, encoding="utf-8")
+
+    landing = _complete_land(run)
+
+    assert landing.exit_code != 0, landing.output
+    assert "authored content outside those store-owned regions" in landing.output
+    assert path.read_text(encoding="utf-8") == edited
+    assert _section_appended(_state(edited))
+    assert not (run["repository"] / "reviewed.txt").exists()
+
+
+def test_a_state_write_whose_provenance_cannot_be_saved_rolls_back(
+    run: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = run["repository"] / PLAN_PATH
+    before = path.read_bytes()
+
+    def refuse_receipt(*args, **kwargs):
+        raise OSError("the provenance destination is unavailable")
+
+    monkeypatch.setattr(_store, "_record_plan_text_write", refuse_receipt)
+
+    with pytest.raises(OSError, match="provenance destination is unavailable"):
+        _write("section-append", run["repository"])
+
+    assert path.read_bytes() == before
