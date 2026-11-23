@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-report-is-kept-only-when-persisted">
+  <meta name="plan-section" content="s3">
+  <title>Persisting is one action from the CLI, MCP and HTTP</title>
+</head>
+<body>
+<main class="plan-doc">
+  <h2 id="a-report-is-kept-only-when-persisted-s3-what-changed">What changed</h2>
+  <p id="a-report-is-kept-only-when-persisted-s3-surfaces">The persist operation that copies a report item outside the crew home and records it now has three callers over one Python function. <code>reckon crew persist</code> takes a figure and repeated <code>--data</code> paths; <code>POST /crew/&lt;project&gt;/reports</code> is a sub-path of the existing crew route; and the existing <code>records</code> view carries a <code>persisted</code> field rather than a new view, because the MCP crew tool is read-only and its argument model carries no action field.</p>
+  <h2 id="a-report-is-kept-only-when-persisted-s3-listing">The listing reads the one classifier</h2>
+  <p id="a-report-is-kept-only-when-persisted-s3-classifier"><code>GET /crew/&lt;project&gt;/reports?plan=&lt;slug&gt;</code> answers each of the plan's report items with its retention class and, for working material, the date it expires. Both come from <code>reckon.crew.report_retention.classify_item</code>, the function the retention sweep calls, so a listing cannot show an item as kept while the sweep would remove it.</p>
+  <h2 id="a-report-is-kept-only-when-persisted-s3-evidence">Evidence</h2>
+  <p id="a-report-is-kept-only-when-persisted-s3-agreement">One synthetic figure and its data file are persisted through the CLI and through the HTTP sub-route, each against its own temporary store, and the two records compare equal apart from the store's own root and the moment of the write. A control routes the HTTP endpoint through a second implementation that drops the data records and the same comparison fails, so the agreement case is known to see its subject.</p>
+</main>
+</body>
+</html>
