@@ -1,0 +1,57 @@
+<section id="delivered-work-lands-without-a-coordinator-s64-landing">
+  <h2>A plan holding a request on its review is never recorded as settled</h2>
+
+  <p>At the pinned base <code>d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e</code>,
+  the owed-plan-review reflex skips any plan whose edit stamp it already
+  recorded (<em>no plan was edited inside the authoring burst</em>). An
+  admission pass holds a request on <code>plan-review-owed</code> when a plan
+  unit the request reads carries no stored review, and nothing composes that
+  review unless the reflex weighs the plan again. So a plan weighed once while
+  a unit was uncovered kept its request held across every later pass, even
+  though nothing had ever answered it. The node's first case reproduces this
+  exactly at the base revision: the pass reports <code>composed: []</code> and
+  <code>skipped: [{'reason': 'no plan was edited inside the authoring
+  burst'}]</code>.</p>
+
+  <p><strong>What changed.</strong> The pass now reads the live pointers once
+  and identifies the plans holding a request on its review — phase
+  <code>held</code>, an automatic hold whose reason is
+  <code>plan-review-owed</code>. Such a plan is taken out of the
+  already-weighed set before the pass judges anything, and it is never accepted
+  into the settled set after composing: a held plan is written back as
+  unsettled, so the next pass weighs it again rather than answering its
+  unchanged stamp. Each pass therefore does one of two things for it: it
+  composes the owed review when a unit is uncovered and under its review cap,
+  or it records why it did not.</p>
+
+  <p><strong>The recorded reason.</strong> When the pass cannot compose, it
+  writes an obligation under the reflex state's <code>__obligations__</code>
+  map, keyed by plan, naming the plan, its version and the reason — a unit at
+  its review cap with the refusal text, or the ids of the unanswered findings
+  against the plan's contributing reviews — and the session that owns the held
+  request. The map is rewritten whole on every pass, so a reason drops out the
+  moment the plan stops holding a request. The obligations view reads it beside
+  the <code>plan-review-owed</code> row, so the owning session is told why the
+  review is still owed rather than only that it is.</p>
+
+  <p><strong>What does not change.</strong> A plan holding no such request
+  keeps today's fast skip: the fourth case runs the pass over a plan already
+  weighed at its unchanged edit, and asserts the pass reads nothing, composes
+  nothing and leaves the plan recorded as weighed. A second pass over the same
+  held plan composes no second review for a version a stored review already
+  covers.</p>
+
+  <p><strong>Measure.</strong> Nine files that import the changed modules were
+  run on <code>all_debug</code>, with the node's own test copied into the base
+  tree. At the head <code>41e436f16c74659b35cd5a636d28cd9a558f8e24</code> the
+  run reports <code>2 failed, 63 passed in 38.19s</code>. At the base
+  <code>d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e</code> the same set reports
+  <code>6 failed, 59 passed in 70.22s</code>. The four extra base failures are
+  this node's own test running against the base source, which is the negative
+  control; the two failures present at both revisions are
+  <code>test_a_pass_reads_one_plans_evidence_once_for_three_requests</code>
+  (three coverage reads where the test asserts one) and
+  <code>test_obligations_reads_scoring_without_observing_or_dispatching</code>
+  (a watcher lock file observed in a directory it does not expect), and the
+  <code>head</code> run adds none.</p>
+</section>
