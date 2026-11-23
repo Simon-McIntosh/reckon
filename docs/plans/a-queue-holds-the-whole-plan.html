@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S28">
-<meta name="plan-version" content="395">
+<meta name="plan-version" content="396">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -991,6 +991,9 @@
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261122T235314827060-review-of-aqh-the-verdict-log-covers-a-week-036231597986" data-who="reckon-build" data-when="2026-11-23T00:24:41.214Z">
     <div class="r-comment-body"><p>Reviewed the increment 230b937e05..0362315979 of aqh-the-verdict-log-covers-a-week: the seven-day admission-verdict read now has a production caller through _recent_pass_reading, the append goes through the crew's one shared log writer, and the week fixture is written at the live rate and row size so the byte ceiling holds it — scores 108/120 (goal_fidelity 15, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20), four non-blocking findings, the largest being that drain_measure's week default is bypassed by scripts/measure_queue_drain.py, which still passes the current-file reader's passes.</p></div>
 </div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261122T112412580752-aqh-the-verdict-log-covers-a-week" data-who="reckon-build" data-when="2026-11-22T22:14:02Z">
+    <div class="r-comment-body"><p>The admission verdict log is partitioned by UTC day and retained seven days plus the current day, so a read returns the week a drain is measured over: on the live log 54 rows span 4,380.5 s at 1,065.1 passes/day and 19,259.6 bytes/row, so a day costs 20.51 MB against the 41.03 MB ceiling (twice one copy) and eight retained days hold about 164 MB; read_pass_verdicts returns every row in [since, until], reports the bytes per day and the covered span, and answers an older request with the covered span; the verdict-gap instrument now reports a measured seven-day week instead of a log that opened 602,505 s after its window; and the read, the per-pass lookup and the append each have one owner rather than a copy.</p></div>
+</div>
 <div class="r-comment" data-section="s48" data-id="c-run-r-20261122T212348524699-review-of-aqh-the-order-measure-counts-work-runs-7b1f38bb5743" data-who="reckon-build" data-when="2026-11-22T21:47:42.980Z">
     <div class="r-comment-body"><p>Independent review of r-20261122T112304067121 at head 7b1f38bb5743 against base 9ed4c9ee2e01 scores 12/13/19/11/16/5 (total 76): the review-run exclusion is real and its base arm is red, but the waiver and edited-wait reporting reads section_wait_waiver and dispatched_waits, keys no record produces, so every early work launch is still reported as a defect; 1 blocking and 3 non-blocking findings.</p></div>
 </div>
@@ -1041,6 +1044,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261024T132744738140-queue-edit-keeps-its-manifest-path" data-who="reckon-build" data-when="2026-10-24T13:42:27Z">
     <div class="r-comment-body"><p>Queue edit validates with the request manifest path; 17 focused tests pass and importer failures fall from 2 at base to 1 at head, with 0 added.</p></div>
+</div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261122T212907053667-review-of-a-queue-holds-the-whole-plan-s50-bd4162aba459" data-who="reckon-build" data-when="2026-11-23T00:26:26.143Z">
+    <div class="r-comment-body"><p>independent review of r-20261122T143041845943-a-queue-holds-the-whole-plan-s50 at head bd4162aba459a22a6376219eab868ab31b8e8ff6 against base 9ed4c9ee2e01533b4e68d56dc381075e437da704 — parsed record, six dimensions scored (goal_fidelity 18, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 18), added_failure_count 0 with no added failure ids, three non-blocking findings, no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261122T213004899001-review-of-a-queue-holds-the-whole-plan-s51-57356aca9541" data-who="reckon-build" data-when="2026-11-23T00:25:11.263Z">
+    <div class="r-comment-body"><p>Reviewed r-20261122T143044262378-a-queue-holds-the-whole-plan-s51 (head 57356aca95413a52d6945f177a1a1ba846ec7519) and stored a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 18 (total 112/120) with added_failure_count 0 (arms 58-&gt;61 passed, 0 failures) and one non-blocking finding on readiness.py:435.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20261023-s6-driver" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v1 on 2026-10-23, finding reasoning-2, declined for the first wave: §6 says a delivered run lands mechanically but names no process that performs the landing or wakes on its conditions. Which process does it is the author's design choice. Name it before dispatching §6.</p></div>
@@ -1113,12 +1122,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s50" data-id="c-run-r-20261122T212907053667-review-of-a-queue-holds-the-whole-plan-s50-bd4162aba459" data-who="reckon-build" data-when="2026-11-23T00:26:26.143Z">
-    <div class="r-comment-body"><p>independent review of r-20261122T143041845943-a-queue-holds-the-whole-plan-s50 at head bd4162aba459a22a6376219eab868ab31b8e8ff6 against base 9ed4c9ee2e01533b4e68d56dc381075e437da704 — parsed record, six dimensions scored (goal_fidelity 18, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 18), added_failure_count 0 with no added failure ids, three non-blocking findings, no blocking finding</p></div>
-</div>
-<div class="r-comment" data-section="s51" data-id="c-run-r-20261122T213004899001-review-of-a-queue-holds-the-whole-plan-s51-57356aca9541" data-who="reckon-build" data-when="2026-11-23T00:25:11.263Z">
-    <div class="r-comment-body"><p>Reviewed r-20261122T143044262378-a-queue-holds-the-whole-plan-s51 (head 57356aca95413a52d6945f177a1a1ba846ec7519) and stored a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 18 (total 112/120) with added_failure_count 0 (arms 58-&gt;61 passed, 0 failures) and one non-blocking finding on readiness.py:435.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
