@@ -304,28 +304,22 @@ CONTRACT — LANDING YOUR RECORD
   A node is small when its diff has at most 50 changed lines (added plus
   deleted), or when it changes no product source or tests and has at most
   300 changed lines. A small node writes one `landing:` line in its manifest,
-  stating what changed and its measure's figure. Its landing fragment is
-  always permitted at its scope path; beyond that fragment the node writes
-  no figure and no evidence prose unless its done-when names that artifact;
-  naming one does not permit the other. Any single data file above 300,000
-  bytes belongs in the run directory, not the repository.
+  stating what changed and its measure's figure. Any single data file above
+  300,000 bytes belongs in the run directory, not the repository.
   Nothing splices a fragment into the plan's landed record: that record is
   synthesized once at closure and links the fragment from your node's row
   without reproducing its text.
   Every element id in the fragment begins with the node id, so sibling
   fragments composed into one record cannot claim the same anchor.
-  Use a figure wherever a spatial, plotted or sequential relationship is clearer
-  shown than described, under your own docs/figures/<plan>/<node-id>/ with the
-  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image
-  of what is naturally a table. Name each figure you keep on a `figures:`
-  line in your manifest, giving the path the run commits under the plan's
-  figure directory docs/figures/<plan>/; a node with nothing to show names
-  none, and the manifest check holds a named figure to a file the run's
-  commits carry there.
   Do not edit the plan-version or plan-modified meta lines: every worker
   touching them makes every merge conflict there.
-  Your done-when names no artifact, so this node writes no figure and no
-  evidence prose outside the landing fragment, which is always permitted.
+EVIDENCE — WHAT A RESULT OWES
+  Keep evidence prose to the landing line, and write an evidence fragment
+  only for a negative result; the landing fragment is always permitted at
+  its scope path.
+  Your done-when states no measure, so this node has no figure to draw.
+  A figure goes under the topic directory docs/figures/<plan>/<node-id>/ with the
+  project-absolute src /<project>/figures/<plan>/<node-id>/; never an image of what is naturally a table.
 
 
 CONTRACT — WHO CLOSES THE NODE

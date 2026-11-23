@@ -227,10 +227,7 @@ LAND_OWN_FRAGMENT = (
 LAND_EVIDENCE_ANCHOR = "your evidence anchor to your scope's fragment under"
 LAND_FRAGMENT_PATH = "docs/evidence/fragments/<plan>/<node-id>.html"
 LAND_IN_COMMIT = "The fragment goes into your final commit"
-FIGURE_WHEN_SHOWN = (
-    "Use a figure wherever a spatial, plotted or sequential relationship is clearer"
-    " shown than described"
-)
+FIGURE_WHEN_SHOWN = "A figure goes under the topic directory"
 FIGURES_DIRECTORY = "docs/figures/<plan>/<node-id>/"
 PROJECT_ABSOLUTE_SRC = "src /<project>/figures/"
 NO_IMAGE_OF_A_TABLE = "never an image of what is naturally a table"

@@ -8,13 +8,9 @@ prompt for a small implement node with the existing builder and asserts the
 three clauses by their own wording: the size test, what a small node writes,
 and where a large data file belongs. It asserts them again for a brief-carrier
 prompt, which has no plan section and so keeps its `landing:` line on the run's
-own record. Because the rule withholds a figure on a condition the worker
-cannot resolve from inside its own node, it also asserts that the clause
-stating which side of that condition the node is on is composed from the
-node's own done-when: a figure-naming done-when is told the figure is permitted
-and the prose outside the landing fragment is not, and a done-when naming none
-is told both are withheld outside it.
-Finally it asserts that the rule sits beside the landing sentence rather than
+own record. It also asserts that the evidence rule composed beside the
+landing sentence asks for a figure only where the node's own done-when states
+a measure, and for none where it states none. Finally it asserts that the rule sits beside the landing sentence rather than
 somewhere else in the prompt, and that it is a pure insertion.
 """
 
@@ -24,8 +20,8 @@ from dataclasses import replace
 
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import (
-    ARTIFACT_NAMED_CLAUSE,
-    ARTIFACT_UNNAMED_CLAUSE,
+    EVIDENCE_FIGURE_ANNOUNCED,
+    EVIDENCE_FIGURE_WITHHELD,
     SMALL_NODE_RULE,
     compose_prompt,
 )
@@ -42,10 +38,10 @@ WHAT_A_SMALL_NODE_WRITES = (
     "A small node writes one `landing:` line in its manifest, stating what "
     "changed and its measure's figure"
 )
-NO_PROSE_OR_FIGURE_UNLESS_NAMED = (
-    "beyond that fragment the node writes no figure and no evidence prose "
-    "unless its done-when names that artifact; naming one does not permit "
-    "the other"
+EVIDENCE_RULE = (
+    "Keep evidence prose to the landing line, and write an evidence fragment "
+    "only for a negative result; the landing fragment is always permitted at "
+    "its scope path"
 )
 LARGE_DATA_FILE_BELONGS_IN_RUN_DIRECTORY = (
     "Any single data file above 300,000 bytes belongs in the run directory, "
@@ -129,30 +125,28 @@ def test_prompt_states_what_a_small_node_writes():
     assert WHAT_A_SMALL_NODE_WRITES in _flat(_prompt())
 
 
-def test_prompt_states_that_prose_and_figure_need_a_done_when_naming_them():
+def test_prompt_states_the_evidence_rule_and_its_figure_side():
     prompt = _flat(_prompt())
 
-    assert NO_PROSE_OR_FIGURE_UNLESS_NAMED in prompt
-    # Naming one artifact does not permit the other: the figure clause carries
-    # its own limit, stated as a separate clause from the prose it sits beside.
-    assert "naming one does not permit the other" in prompt
+    assert EVIDENCE_RULE in prompt
+    # The figure is asked for only where the done-when states a measure,
+    # and this node's states none.
+    assert _flat(EVIDENCE_FIGURE_WITHHELD) in prompt
 
 
 def test_prompt_places_a_large_data_file_in_the_run_directory():
     assert LARGE_DATA_FILE_BELONGS_IN_RUN_DIRECTORY in _flat(_prompt())
 
 
-# ── The artifact clause is composed from the node's own done-when ───────────
+# ── The evidence rule is composed from the node's own done-when ─────────────
 #
-# The rule withholds a figure on a condition the worker cannot resolve from
-# inside its own node, so the prompt states which side of that condition this
-# node is on. The two clauses are asserted against each other: a done-when
-# naming a figure must read the named clause and not the unnamed one, and a
-# done-when naming none must read the reverse, so neither case can pass by
-# carrying a constant.
+# The figure clause is composed from the node's own done-when, rather than the
+# worker applying a conditional to a node it cannot see from the inside. The two
+# sides are asserted against each other, so neither case can pass by carrying a
+# constant.
 
 
-def test_a_done_when_naming_a_figure_permits_the_figure_but_not_the_prose():
+def test_the_evidence_rule_is_composed_from_the_nodes_own_done_when():
     named = _flat(
         _prompt(
             done_when=(
@@ -167,13 +161,13 @@ def test_a_done_when_naming_a_figure_permits_the_figure_but_not_the_prose():
         )
     )
 
-    # The general rule withholds the prose either way; the node-specific clause
-    # decides the figure, and says so on the side this node's done-when is on.
-    assert NO_PROSE_OR_FIGURE_UNLESS_NAMED in named
-    assert _flat(ARTIFACT_NAMED_CLAUSE) in named
-    assert _flat(ARTIFACT_UNNAMED_CLAUSE) not in named
-    assert _flat(ARTIFACT_UNNAMED_CLAUSE) in unnamed
-    assert _flat(ARTIFACT_NAMED_CLAUSE) not in unnamed
+    # The prose obligation holds either way; the node's own done-when decides
+    # the figure, and the prompt states the side this node is on.
+    assert EVIDENCE_RULE in named
+    assert _flat(EVIDENCE_FIGURE_ANNOUNCED) in named
+    assert _flat(EVIDENCE_FIGURE_WITHHELD) not in named
+    assert _flat(EVIDENCE_FIGURE_WITHHELD) in unnamed
+    assert _flat(EVIDENCE_FIGURE_ANNOUNCED) not in unnamed
 
 
 def test_a_word_merely_containing_a_figure_word_does_not_count_as_naming_one():
@@ -181,8 +175,8 @@ def test_a_word_merely_containing_a_figure_word_does_not_count_as_naming_one():
         _prompt(done_when="rewrite the paragraph describing the landing rule")
     )
 
-    assert _flat(ARTIFACT_UNNAMED_CLAUSE) in prompt
-    assert _flat(ARTIFACT_NAMED_CLAUSE) not in prompt
+    assert _flat(EVIDENCE_FIGURE_WITHHELD) in prompt
+    assert _flat(EVIDENCE_FIGURE_ANNOUNCED) not in prompt
 
 
 # ── A brief carrier reads the same three rules ──────────────────────────────
@@ -193,7 +187,7 @@ def test_a_brief_run_prompt_states_the_three_rules():
 
     assert SIZE_TEST in prompt
     assert WHAT_A_SMALL_NODE_WRITES in prompt
-    assert NO_PROSE_OR_FIGURE_UNLESS_NAMED in prompt
+    assert EVIDENCE_RULE in prompt
     assert LARGE_DATA_FILE_BELONGS_IN_RUN_DIRECTORY in prompt
     assert prompt.count(_flat(SMALL_NODE_RULE)) == 1
 
@@ -204,7 +198,7 @@ def test_a_brief_run_is_told_its_landing_line_stays_on_the_run_record():
     assert BRIEF_LANDING_SENTENCE in prompt
     # The clause that decides the figure is composed for a brief node too, from
     # the same done-when, so the withholding reaches this carrier as well.
-    assert _flat(ARTIFACT_UNNAMED_CLAUSE) in prompt
+    assert _flat(EVIDENCE_FIGURE_WITHHELD) in prompt
 
 
 # ── The rule sits beside the landing sentence, appears once, and is pure ─────
