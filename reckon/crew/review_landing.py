@@ -177,8 +177,35 @@ def record_refusal(pointer: Mapping[str, Any], head: str, reason: str) -> None:
     )
 
 
-def finish_landing(pointer: Mapping[str, Any], run_id: str) -> str:
-    """Commit and publish the section declaration after the measured merge."""
+#: Distinguishes "the caller read no row" from "the caller passed None".
+_UNREAD_LEDGER_ROW = object()
+
+
+def finish_landing(
+    pointer: Mapping[str, Any],
+    run_id: str,
+    row: Mapping[str, Any] | object | None = _UNREAD_LEDGER_ROW,
+    primary: str = "",
+) -> str:
+    """Commit and publish the section declaration after the measured merge.
+
+    Nothing is written until the run's head is on the primary branch and its
+    ledger row is written: a landing that published on a refused merge would
+    close a section on work the branch does not carry, and release a pointer
+    whose run keeps no record. ``row`` is the promotion row the caller already
+    read; the default reads it here, and None states that there is none.
+    """
+    from reckon.crew import pending_landing
+
+    guard = pending_landing.landed_record_refusal(
+        pointer,
+        run_id,
+        row=(pending_landing._UNREAD_ROW if row is _UNREAD_LEDGER_ROW else row),
+        primary=primary,
+    )
+    if guard:
+        return guard
+
     from reckon import _store, evidence
     from reckon.crew import queue_landing
     from reckon.crew.promotion_scope import _commit_landing_writes

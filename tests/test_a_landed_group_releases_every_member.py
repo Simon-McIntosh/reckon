@@ -17,6 +17,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from reckon import ledger
 from reckon.crew import (
     pending_landing,
     promotion,
@@ -193,6 +194,23 @@ def _land_the_group(group, run_ids=None) -> None:
             "-m",
             f"test: integrate {run_id}",
             group.members[run_id]["head"],
+        )
+        # Every member was promoted before the group landed: its ledger row
+        # names the head the group's merge carried onto the primary branch.
+        head = group.members[run_id]["head"]
+        path = ledger.run_path(PROJECT, run_id, group.repo)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "repo": str(group.repo),
+                    "commits": [head],
+                    "promoted_revision": head,
+                    "gate": "passed",
+                }
+            ),
+            encoding="utf-8",
         )
     git(group.repo, "push", "-q", "origin", "main")
     outcome = {

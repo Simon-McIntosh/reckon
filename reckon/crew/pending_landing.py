@@ -213,6 +213,14 @@ def _release_integrated_pointer(
                 + ", ".join(changed)
             )
             return False
+        # A landed record is published only once the run's head is on the
+        # primary branch and its ledger row is written, so a run with no row
+        # keeps its plan, its declaration and its pointer where they are.
+        refusal = landed_record_refusal(
+            current, run_id, row=row, repository=repository, primary=primary
+        )
+        if refusal:
+            return False
         refusal = landed_workspace_refusal(current, repository, primary)
         if refusal:
             return False
@@ -242,7 +250,7 @@ def _release_integrated_pointer(
                 outcome.get("worktree_withheld") or "workspace release withheld"
             )
             return False
-        refusal = finish_landing(current, run_id)
+        refusal = finish_landing(current, run_id, row, primary)
         return not refusal
 
     retired = retire_pointer_if(run_id, release)
@@ -1577,6 +1585,151 @@ def landed_workspace_refusal(
     return ""
 
 
+#: Distinguishes "the caller passed no row" from "the caller passed None".
+_UNREAD_ROW = object()
+
+
+def landed_record_refusal(
+    pointer: Mapping[str, Any],
+    run_id: str,
+    *,
+    row: Mapping[str, Any] | object | None = _UNREAD_ROW,
+    repository: Path | None = None,
+    primary: str = "",
+    integration: bool = True,
+) -> str:
+    """Why this run's landed record may not be written yet, or "" when it may.
+
+    A landing writes its close comment, its section declaration and the release
+    of the run's pointer only once the run's head is on the primary branch and
+    its ledger row is written. A section closed on work the branch does not
+    carry tells every reader a node landed that did not, and a pointer released
+    without its row leaves every recovery path reading nothing.
+
+    ``integration`` is false for a caller asking before it merges, such as the
+    landing pass: there the branch test would refuse the very merge that puts
+    the head on the branch, so only the ledger row is required of it and the
+    branch test runs on the publication that ``finish_landing`` makes after it.
+    """
+    from reckon.crew import merge, queue_landing
+
+    if row is _UNREAD_ROW:
+        try:
+            row = queue_landing._ledger_row(pointer, run_id)
+        except (runs.CrewError, OSError, ValueError) as exc:
+            return f"the run's ledger row could not be read: {exc}"
+    if row is None:
+        return (
+            "the run has no ledger row, so no landed record is written: "
+            "promote the run, or record the merge that carried it"
+        )
+    head = _reviewed_head(row)
+    if not head:
+        return "the run's ledger row names no revision, so nothing records what landed"
+    if not integration:
+        return ""
+    path = Path(str(repository or pointer.get("repo") or ""))
+    if not path.is_dir():
+        return f"the repository the landed record names cannot be read: {path}"
+    top = str(primary).strip() or queue_landing._primary_revision(pointer)
+    if not top:
+        return (
+            "the primary branch revision cannot be read, so no landed record is written"
+        )
+    try:
+        on_branch = merge._is_ancestor(path, head, top)
+    except OSError as exc:
+        return f"the run's head could not be compared with the primary branch: {exc}"
+    if not on_branch:
+        return (
+            f"the run's head {head[:12]} is not on the primary branch, so no "
+            "landed record is written"
+        )
+    return ""
+
+
+def record_a_carried_delivery(
+    pointer: Mapping[str, Any], run_id: str
+) -> tuple[Mapping[str, Any] | None, str]:
+    """Write the ledger row naming the commit that carries an already-landed run.
+
+    A delivery the primary branch already holds can reach the landing pass with
+    no ledger row behind it: the branch carries the work and the run carries no
+    record of it, so ``crew complete`` later finds neither a live run nor a row.
+    The row written here names the primary branch commit that carries the run's
+    head, and it is committed before anything is released. Returns the written
+    row and "" or ``(None, refusal)``.
+    """
+    from reckon import ledger
+    from reckon.crew import merge
+    from reckon.crew.promotion_scope import _commit_landing_writes
+    from reckon.crew.recovery_review_dispatch import _review_head_and_tree
+    from reckon.crew.run_paths import _utc_now
+
+    project = str(pointer.get("project") or "")
+    repository = Path(str(pointer.get("repo") or ""))
+    if not project or not repository.is_dir():
+        return None, (
+            "the run names no project and repository, so the delivery the "
+            "primary branch carries cannot be recorded"
+        )
+    head, _tree = _review_head_and_tree(pointer)
+    if not head:
+        return None, "the run records no delivered head to record"
+    try:
+        primary = merge._rev_parse(repository, "HEAD")
+        resolved = merge._rev_parse(repository, head)
+    except (OSError, ValueError, merge.MergeError) as exc:
+        return None, f"the run's delivery could not be resolved: {exc}"
+    if not merge._is_ancestor(repository, resolved, primary):
+        return None, (
+            f"the run's head {head[:12]} is not on the primary branch, so no "
+            "carried delivery is recorded"
+        )
+    node = pointer.get("node") if isinstance(pointer.get("node"), Mapping) else {}
+    row = ledger.build_record(
+        run_id=run_id,
+        project=project,
+        plan=str(node.get("plan") or ""),
+        section=str(node.get("section") or ""),
+        node=str(node.get("id") or ""),
+        node_definition=node,
+        role=str(pointer.get("role") or ""),
+        spec_level=str(node.get("spec_level") or ""),
+        gate="passed",
+        commits=[primary],
+        promoted_by="landing-pass",
+        completed_at=_utc_now(),
+        outcome=f"the primary branch already carried {head[:12]} in {primary[:12]}",
+        base_sha=str(pointer.get("base_sha") or ""),
+        session=str(pointer.get("session") or "") or None,
+    )
+    row["promoted_revision"] = primary
+    try:
+        written = ledger.append_run(project, row, root=repository)
+    except (OSError, ValueError, ledger.LedgerError) as exc:
+        return None, f"the run's ledger row could not be written: {exc}"
+    paths = [
+        Path(str(path)) for path in written.get("commit_paths") or [written["path"]]
+    ]
+    try:
+        _commit_landing_writes(
+            run_id=run_id,
+            verdict="passed",
+            checkout=repository,
+            paths=paths,
+            subject="docs: record a delivery the primary branch already carried",
+            body=(
+                "Record the run whose reviewed head the primary branch holds, "
+                "so the delivery keeps a ledger row naming the commit that "
+                "carries it."
+            ),
+        )
+    except (runs.CrewError, OSError, ValueError) as exc:
+        return None, f"the run's ledger row could not be committed: {exc}"
+    return _promoted_row(project, run_id, root=repository), ""
+
+
 def _recorded_process_proved_dead(pointer: Mapping[str, Any]) -> bool:
     """Whether the process a promoted run records is proved to have stopped.
 
@@ -2010,6 +2163,33 @@ def finish_pending_landings(
         if not head:
             continue
         repository = merge.project_repository(project)
+        # A landing publishes only once the run's head is on the primary branch
+        # and its ledger row is written. A run whose promotion was refused at
+        # its gate replay has neither, so its pending record merges nothing,
+        # writes no close comment and keeps the live pointer a recovery path
+        # reads. The refusal is reported here rather than left as a pass that
+        # quietly did nothing.
+        try:
+            primary = merge._rev_parse(repository, "HEAD")
+        except merge.MergeError:
+            primary = ""
+        row_refusal_missing = landed_record_refusal(
+            pointer or record.get("pointer") or {},
+            run_id,
+            row=row,
+            repository=repository,
+            primary=primary,
+            integration=False,
+        )
+        if row_refusal_missing:
+            results.append(
+                {
+                    "run_id": run_id,
+                    "status": "landing-row-refused",
+                    "error": row_refusal_missing,
+                }
+            )
+            continue
         if conflict:
             try:
                 repaired = (
@@ -2169,6 +2349,23 @@ def finish_pending_landings(
                 path.write_text(json.dumps(record), encoding="utf-8")
             results.append({"run_id": run_id, "status": "failed", "error": str(exc)})
             continue
+        # A landing publishes its declaration before it releases the pointer. A
+        # refused declaration then leaves the run where a later pass can finish
+        # it, rather than retiring the only record of a delivery whose section
+        # was never closed.
+        if automatic_gate:
+            from reckon.crew.review_landing import finish_landing
+
+            refusal = finish_landing(record["pointer"], run_id, row)
+            if refusal:
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "declaration-refused",
+                        "error": refusal,
+                    }
+                )
+                continue
         # A delivered repair is compared with the pointer the reader accepted;
         # a retained promotion pointer is compared with its existing mark.
         retired = False
@@ -2187,19 +2384,6 @@ def finish_pending_landings(
             merge.release_landed_worktrees(
                 repository, str(landed["commit"]), head=head, projects=[project]
             )
-        if automatic_gate:
-            from reckon.crew.review_landing import finish_landing
-
-            refusal = finish_landing(record["pointer"], run_id)
-            if refusal:
-                results.append(
-                    {
-                        "run_id": run_id,
-                        "status": "declaration-refused",
-                        "error": refusal,
-                    }
-                )
-                continue
         clear_pending(run_id)
         results.append(
             {
