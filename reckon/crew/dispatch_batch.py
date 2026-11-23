@@ -499,14 +499,6 @@ _SPEC_LEVEL_FROM_AUTONOMY = {"guided": "guided", "autonomous": "open"}
 #: worker implements, so its section dispatches guided rather than undeclared.
 DEFAULT_SECTION_SPEC_LEVEL = "guided"
 
-#: The sentence a done-when closes with that names the mutation its own check
-#: must fail against. It is the negative control the dispatch owes for a node
-#: that writes a check.
-_NEGATIVE_CONTROL_MARKER = re.compile(
-    r"\bnegative control\b\s*[:.—-]?\s*", re.IGNORECASE
-)
-
-
 def section_time_budget(effort_hours: Any) -> str:
     """The wall-clock budget a section's effort estimate buys.
 
@@ -535,16 +527,6 @@ def section_spec_level(capability: Mapping[str, Any] | None) -> str:
     return _SPEC_LEVEL_FROM_AUTONOMY.get(autonomy, DEFAULT_SECTION_SPEC_LEVEL)
 
 
-def negative_control_sentence(done_when: str) -> str:
-    """The mutation the done-when says its own check must fail against."""
-    match = _NEGATIVE_CONTROL_MARKER.search(done_when or "")
-    if match is None:
-        return ""
-    rest = done_when[match.end() :]
-    stop = _SENTENCE_END.search(rest)
-    if stop is not None:
-        rest = rest[: stop.start()]
-    return " ".join(rest.split()).strip()
 
 
 def section_derivation(
@@ -580,10 +562,6 @@ def section_derivation(
         if budget:
             values["time_budget"] = budget
     values["spec_level"] = section_spec_level(record.get("capability"))
-    if "done_when" in values:
-        control = negative_control_sentence(values["done_when"])
-        if control:
-            values["negative_control"] = control
     return {name: (value, _digest(value)) for name, value in values.items()}
 
 

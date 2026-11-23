@@ -288,7 +288,7 @@ def _placeholder_context(text: str, token: re.Match[str]) -> str:
 
 
 def _placeholder_gap(*texts: str) -> str | None:
-    """Return an unresolved placeholder in a goal or done-where text, if any."""
+    """Return an unresolved placeholder in a goal or done-when text, if any."""
     for text in texts:
         searchable = _QUOTED_STRING.sub(" ", text)
         for token in _PLACEHOLDER_TOKEN.finditer(searchable):

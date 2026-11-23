@@ -1,10 +1,11 @@
 """A dispatch takes every field it omits from the section it names.
 
 A node that names a plan section names its authority, and the section already
-states the measure, the sizing, the specification level and the mutation its
-check must fail against. Asking a coordinator to repeat them is what refused a
-section-only batch entry for "no time budget is set; no specification level is
-declared", and left a single dispatch without the section's done-when.
+states the measure, the sizing and the specification level. Asking a coordinator
+to repeat them is what refused a section-only batch entry for "no time budget is
+set; no specification level is declared", and left a single dispatch without the
+section's done-when. The negative control is read from the section's prose by
+the plan reader, which owns that reading; this file does not derive it again.
 
 The second half is the placeholder rule. A bracketed token is a placeholder only
 when it stands alone: one embedded in a filename pattern, or an HTML element
@@ -164,14 +165,12 @@ def test_a_section_only_batch_entry_takes_every_field_from_its_section(
     assert stored["time_budget"] == SECTION_BUDGET
     assert stored["time_budget"] != CONFIG["backends"]["worker"]["time_budget"]
     assert stored["spec_level"] == SECTION_SPEC_LEVEL
-    assert stored["negative_control"] == NEGATIVE_CONTROL
     # The section's own values are recorded as the ones it supplied, so a
     # release re-derives the same four fields rather than the entry's.
     assert set(stored["section_derived"]) >= {
         "done_when",
         "time_budget",
         "spec_level",
-        "negative_control",
     }
 
 
@@ -200,7 +199,6 @@ def test_a_single_dispatch_that_omits_the_done_when_takes_the_sections(
     assert "pf<n>-terminal-edge.json" in node.done_when
     assert node.time_budget == SECTION_BUDGET
     assert node.spec_level == SECTION_SPEC_LEVEL
-    assert node.negative_control == NEGATIVE_CONTROL
 
 
 def _verdict(done_when: str):
