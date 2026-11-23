@@ -108,7 +108,10 @@ def _rebuild_record_from_run_directory(
     worktree = str(supervisor.get("worktree") or repo)
     manifest = directory / "manifest.md"
     manifest_path = str(manifest) if manifest.is_file() else ""
+    identity = _prompt_identity(directory)
     project = _project_for_repository(Path(repo)) if repo else ""
+    if not project:
+        project = identity.get("project", "")
     record: dict[str, Any] = {
         "run_id": run_id,
         "project": project,
@@ -138,6 +141,18 @@ def _rebuild_record_from_run_directory(
         declared = list(_changed_paths_inside_repository(manifest_data, record))
         if declared:
             record["node"] = {"write_paths": declared}
+    # The plan section a promotion delivered is what the landed comment and the
+    # waiters of that section name, and the pointer that carried it is gone. The
+    # dispatch prompt in the run directory states the same plan pointer, so it
+    # is the surviving declaration of which section the run delivered.
+    node = dict(record.get("node") or {})
+    if identity.get("node"):
+        node.setdefault("id", identity["node"])
+    if identity.get("plan"):
+        node.setdefault("plan", identity["plan"])
+    if identity.get("section"):
+        node.setdefault("section", identity["section"])
+    record["node"] = node
     attempt = attempt_record.get("attempt") or worker.get("attempt")
     if attempt is not None:
         record["attempt"] = attempt
@@ -147,6 +162,39 @@ def _rebuild_record_from_run_directory(
     if "backend" in worker:
         record["backend"] = worker.get("backend")
     return record
+
+
+def _prompt_identity(directory: Path) -> dict[str, str]:
+    """The project, plan, section and node a surviving dispatch prompt names.
+
+    A dispatch prompt's header carries the plan pointer the worker was given —
+    ``PLAN     <project>:<plan> <section>`` — beside its ``NODE`` line, and it
+    is the only run-directory artifact that names the plan section once the
+    live pointer is gone. A brief-only dispatch carries no plan pointer, so an
+    absent line yields no identity rather than a guessed one.
+    """
+    try:
+        text = (directory / "prompt.txt").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    identity: dict[str, str] = {}
+    for line in text.splitlines():
+        key, _, rest = line.partition(" ")
+        rest = rest.strip()
+        if not rest:
+            continue
+        if key == "NODE":
+            identity.setdefault("node", rest.split()[0])
+        elif key == "PLAN":
+            project, _, target = rest.partition(":")
+            target = target.strip()
+            if project and target:
+                identity.setdefault("project", project.strip())
+                parts = target.split()
+                identity.setdefault("plan", parts[0])
+                if len(parts) > 1:
+                    identity.setdefault("section", parts[1])
+    return identity
 
 
 def _read_pointer_or_rebuild(run_id: str, *, root: str | Path | None) -> dict[str, Any]:
