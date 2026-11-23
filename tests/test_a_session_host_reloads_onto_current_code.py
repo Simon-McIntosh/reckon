@@ -42,7 +42,9 @@ BACKOFF_SECONDS = "0.2"
 START_BOUND = 15.0
 # The reload materialises this checkout's package and proves it imports in a
 # throwaway interpreter: seconds of git and import work, bounded generously.
-RELOAD_BOUND = 300.0
+# It stays under the project's 300 s per-test timeout, so a host that never
+# reloads fails on this bound and its own message rather than being killed.
+RELOAD_BOUND = 240.0
 
 STALE_IDENTITY = "0" * 40
 FOLLOWER_LINE = "FAKE-FOLLOWER-LINE"
