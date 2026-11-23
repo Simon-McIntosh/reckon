@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T13:12:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "1426",
+      "severity": "non-blocking",
+      "text": "the f-string is split across two lines that ruff format rejoins, so the f-string at :1426 adds a formatting divergence beside a branch whose neighbours are formatted; `ruff format --check` on the reviewed revision reports '1 file would be reformatted'."
+    },
+    {
+      "file": "tests/test_a_landing_arm_that_never_starts_says_why.py",
+      "line": "171",
+      "severity": "non-blocking",
+      "text": "the new case builds a `pending` list whose entries are popped at :181 and never asserted, and re-implements the sbatch stub that _scheduler at :82 already provides, so the file now carries two copies of one fixture mechanism."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a landing arm which never reaches the scheduler says why; the diff adds the launch-failure branch at reckon/crew/landing_measure.py:1419-1428, which quotes the reason the arm recorded when the runner returned no status at all, closing the one arm the earlier submission_failed branch did not cover.\nVERDICT done_when: the done_when names tests/test_a_landing_arm_that_never_starts_says_why.py; the manifest records gate-repair-head.log (77 passed at 9d8bcd0e41) and gate-repair-base.log (73 passed at 398a0d09), and gate-launch-negative.log shows the new case failing at 5b1109a24d; both arms ran the same five focused files in place on 98dci4-clu-3051 rather than on all_debug.\nVERDICT write_paths: read the declared six; the net diff 5b1109a24d..9009e5da08 touches three -- reckon/crew/landing_measure.py, the new test and the evidence fragment -- all declared, and the two intermediate test-file edits revert in the same diff so the shipped tree carries nothing undeclared.\nVERDICT manifest: read; it records the literal gate command, six test logs, negative_control_log gate-launch-negative.log, status complete, and four failing ids under outside_scope.\nVERDICT diff: read both commits -- 9d8bcd0e41 (+10 landing_measure.py, +41 test) and 9009e5da08 (+21 fragment); the branch is gated on arm.unreadable_reason and arm.exit_status is None, and _arm sets a reason with a null status only in its OSError branch at landing_measure.py:847-858, so it cannot misfire on a receipt-less arm, whose status is 3.\nCALL_SITES: reckon/crew/queue_landing.py:1288 measure_run call, reckon/crew/queue_landing.py:1552 _measure_guard, reckon/crew/queue_landing.py:1556 measured.unreadable reader, reckon/crew/queue_landing.py:1999, :2026, :2412, :2932 _measure_guard callers, reckon/crew/review_landing.py:128 arm.unreadable_reason reader\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1419-1428 quotes the recorded launch reason in the refusal, so an arm that never launched names why instead of reading \"did not run\".\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-repair-base.log and gate-repair-head.log carry their revisions, literal commands, imported module paths and closing EXIT=0 lines (73 and 77 passed), and gate-launch-negative.log records EXIT=1 with the new case failing, though both arms ran in place on the allocation host rather than on all_debug as the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths in the net diff are all inside the declared write paths, and the fragment change is pure insertion at delivered-work-lands-without-a-coordinator-s56.html:34-43 and :65-75.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_landing_arm_that_never_starts_says_why.py:190 reddens at 5b1109a24d on \"refusal read: 'the base arm did not run'\" (gate-launch-negative.log), so removing the branch at landing_measure.py:1419 reinstates that failure.\nSCORE fit: 18\nJUSTIFICATION fit: the added comment and field reuse match the timed_out and submission_failed branches above them, though ruff format would join the split f-string at landing_measure.py:1425-1427 onto one line.\nSCORE reuse: 18\nJUSTIFICATION reuse: the branch extends the existing unreadable-arm chain in measure_run rather than adding a second mechanism, but tests/test_a_landing_arm_that_never_starts_says_why.py:165-185 re-implements the _scheduler stub at :82 instead of extending it.\nFINDING reckon/crew/landing_measure.py:1426 non-blocking: the f-string is split across two lines that ruff format rejoins, so the commit adds a formatting divergence beside a branch whose neighbours are formatted; `ruff format --check` on the reviewed revision reports \"1 file would be reformatted\".\nFINDING tests/test_a_landing_arm_that_never_starts_says_why.py:171 non-blocking: the new case builds a `pending` list whose entries are popped at :181 and never asserted, and re-implements the sbatch stub that _scheduler at :82 already provides, so the file now carries two copies of one fixture mechanism.\n",
+  "review_run_id": "r-20261123T131206833294-review-of-delivered-work-lands-without-a-coordinator-s56-9009e5da0820",
+  "reviewed_base_sha": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "reviewed_head_sha": "9009e5da082028754d9e155ae0b4e9114aceb8b9",
+  "reviewed_run_id": "r-20261123T112733158377-delivered-work-lands-without-a-coordinator-s56",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T13:29:45.592507+00:00",
+  "total": 112
+}
