@@ -20,6 +20,16 @@ silence that follows one. The host never exits on its own -- Claude Code would
 not restart it -- and ends only when its owner is gone or when it is signalled,
 in both of which it stops every child first.
 
+The host loads its code once, when the session starts, and would otherwise keep
+that image for the session's whole life -- days, while ``main`` moves. So a host
+whose checkout's code has moved re-executes itself onto the current code at its
+next idle tick: ``os.execve`` keeps the process (and therefore its pid and its
+request descriptor), and the children it was running are carried across the
+handover record so the replacement adopts and supervises them rather than
+spawning a second follower beside each. A host with a child mid-start, or with
+unread request bytes on its descriptor, defers to a later tick: the bytes are
+already in this image's buffer and would be lost by an exec.
+
 A child that exits with the settle status is one that found its session's work
 drained and printed its idle line. It is not restarted on the backoff, but it
 is re-armed as soon as its session owns work again -- a run published by an
@@ -45,6 +55,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import select
 import signal
 import subprocess
@@ -105,6 +116,17 @@ PR_SET_PDEATHSIG = 1
 # and the encoding are the follower's own, imported from ``runs`` so the two
 # are the same bytes rather than two spellings that agree today.
 RECORD_SUFFIX = ".json"
+
+# The record a reloading host writes beside its census before it execs, and
+# which its replacement reads to adopt the children it was supervising. It is
+# separate from the census because it describes one handover, not the fleet: a
+# reader of the census must not see a half-finished exec as a state of the host.
+RELOAD_SUFFIX = ".reload.json"
+
+# How long a reload that did not happen is waited out before it is retried: an
+# image that will not import, or an exec that failed, is not proved again on
+# every tick.
+RELOAD_RETRY_SECONDS = 60.0
 
 # Why a host stopped, recorded in its final census so a later reader can bound
 # the gap between the owner ending and the last child stopping from disk alone.
@@ -229,6 +251,10 @@ class _Child:
     # census, so a later host adopting its predecessor's record can tell the
     # owner's own pairs from a foreign one that host kept.
     owner_checked: bool = False
+    # Set when this child was spawned since the last completed supervision tick.
+    # A host with a child mid-start defers its own re-execution by one tick, so
+    # the child is not replaced before it has been observed running once.
+    starting: bool = False
 
     @property
     def key(self) -> tuple[str, str]:
@@ -252,6 +278,184 @@ def _child_entry(child: _Child) -> dict[str, Any]:
     if child.owner_checked:
         entry["owner_checked"] = True
     return entry
+
+
+def _reload_child_entry(child: _Child) -> dict[str, Any]:
+    """One child's supervision state, carried across a host's own exec.
+
+    The census says a child exists; the handover says how to supervise it. The
+    schedule fields live here rather than in the census because they describe
+    this host's private bookkeeping, and the kernel start time is carried so a
+    pid reused between the handover and the replacement's adoption is not
+    mistaken for the child that was running.
+    """
+    return {
+        "project": child.project,
+        "session": child.session,
+        "pid": child.pid,
+        "pid_start": process_start_time(child.pid) if child.pid else "",
+        "delay": child.delay,
+        "next_attempt": child.next_attempt,
+        "started_at": child.started_at,
+        "settled": child.settled,
+        "settled_at": child.settled_at,
+        "wanted": child.wanted,
+        "rearmed_for": child.rearmed_for,
+        "owner_checked": child.owner_checked,
+    }
+
+
+def _child_from_reload_entry(entry: Mapping[str, Any]) -> _Child | None:
+    """Rebuild one supervised child from a handover entry, or refuse it."""
+    project = str(entry.get("project") or "")
+    session = str(entry.get("session") or "")
+    if not project or not session:
+        return None
+    pid = entry.get("pid")
+    if pid is not None and not isinstance(pid, int):
+        return None
+    child = _Child(project=project, session=session, pid=pid)
+    child.delay = float(entry.get("delay") or fleet_supervisor.FIRST_BACKOFF_SECONDS)
+    for attribute in ("next_attempt", "started_at", "settled_at"):
+        value = entry.get(attribute)
+        if isinstance(value, (int, float)):
+            setattr(child, attribute, float(value))
+    child.settled = bool(entry.get("settled"))
+    child.wanted = bool(entry.get("wanted"))
+    child.owner_checked = entry.get("owner_checked") is True
+    rearmed_for = entry.get("rearmed_for")
+    child.rearmed_for = str(rearmed_for) if rearmed_for else None
+    return child
+
+
+class _HostReloader:
+    """Replace this host with an image of the checkout's current code.
+
+    The host runs from whatever image its session started it on; without a
+    reload it keeps that image for the whole session while ``main`` moves. The
+    reloader carries the identity it started on, compares it with the checkout's
+    on each idle tick, and re-executes this process onto the current code when it
+    differs. ``os.execve`` keeps the pid and every descriptor, so the request
+    descriptor and the children (which are this pid's own children) survive; the
+    host hands its child state over separately.
+
+    The identity is the package-and-scripts content id, the same one the
+    followers and the station compare, so a commit that changes no file under
+    ``reckon/`` or ``skills/`` reloads nothing. A carried identity in the
+    environment is the one a reload already landed on; it is read and removed so
+    no child this host starts inherits a claim about an image it is not running.
+    """
+
+    def __init__(self, import_root: Path, *, environ: Mapping[str, str]) -> None:
+        from reckon import checkout_trust
+        from reckon.crew_follow_commands import (
+            _FOLLOWER_IMAGE_COMMIT_ENV,
+            _FOLLOWER_IMAGE_PIN_ENV,
+            _FOLLOWER_SOURCE_ROOT_ENV,
+        )
+
+        self.import_root = import_root
+        self._identity_env = _FOLLOWER_IMAGE_COMMIT_ENV
+        self._pin_env = _FOLLOWER_IMAGE_PIN_ENV
+        self._source_root_env = _FOLLOWER_SOURCE_ROOT_ENV
+        self.source_root = Path(
+            environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))
+        ).resolve()
+        carried = str(environ.pop(_FOLLOWER_IMAGE_COMMIT_ENV, "") or "")
+        self.identity = (
+            carried
+            if re.fullmatch(r"[0-9a-f]{40}", carried) is not None
+            else checkout_trust.running_code_identity(import_root / "reckon")
+        )
+        self.image_pin: int | None = None
+        carried_pin = str(environ.pop(_FOLLOWER_IMAGE_PIN_ENV, "") or "")
+        if carried_pin:
+            try:
+                candidate = int(carried_pin)
+                if checkout_trust.pin_matches_materialized_tree(candidate, import_root):
+                    os.set_inheritable(candidate, False)
+                    self.image_pin = candidate
+            except (OSError, ValueError):
+                self.image_pin = None
+        # An image proved unimportable, or an exec that failed: held until this
+        # instant so the same image is not materialised and proved every tick.
+        self.deferred_identity: str | None = None
+        self.retry_at: float | None = None
+
+    def current(self) -> str:
+        """The identity of the code the checkout holds now."""
+        from reckon import checkout_trust
+
+        return checkout_trust.source_code_identity(
+            self.import_root / "reckon", source_root=self.source_root
+        )
+
+    def due(self, current: str) -> bool:
+        """Whether ``current`` names an image this host has not taken."""
+        from reckon import checkout_trust
+
+        if current in (checkout_trust.IDENTITY_UNKNOWN, self.identity):
+            return False
+        held = current == self.deferred_identity and (
+            self.retry_at is None or time.monotonic() < self.retry_at
+        )
+        return not held
+
+    def defer(self, current: str, reason: str) -> None:
+        """Hold an image back, naming why, until its retry instant."""
+        self.deferred_identity = current
+        self.retry_at = time.monotonic() + RELOAD_RETRY_SECONDS
+        _log(f"deferred its reload: {reason}; keeping the current image")
+
+    def replace(self, current: str, environ: Mapping[str, str]) -> None:
+        """Re-execute this process onto ``current``; returns only on failure."""
+        from reckon import checkout_trust
+        from reckon.crew import dispatch_claims, follower_reload
+
+        pin: int | None = None
+        commit: str | None = None
+        if re.fullmatch(r"[0-9a-f]{40}", current) is not None:
+            root, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
+                self.source_root, current, active_root=self.import_root
+            )
+            commit = current
+        else:
+            # A checkout outside Git is identified by its package content, so
+            # its current image is the tree it was imported from: an exec onto
+            # it reads the same content with no materialisation.
+            dirty, detail = checkout_trust.tracked_reckon_tree_is_dirty(
+                self.import_root
+            )
+            if dirty:
+                self.defer(
+                    current, f"tracked files are modified against HEAD ({detail})"
+                )
+                return
+            root = self.import_root
+        imports, reason = checkout_trust.reckon_imports(root)
+        if not imports:
+            if pin is not None:
+                os.close(pin)
+            self.defer(current, f"the new image does not import ({reason})")
+            return
+        environment = follower_reload.image_reexec_environment(
+            self.import_root if commit is None else self.source_root,
+            commit,
+            pin,
+            environment=environ,
+        )
+        # A dispatch this process is between claiming and launching would lose
+        # its thread to the replacement, so the replacement waits it out first.
+        dispatch_claims.wait_for_dispatches_in_flight()
+        try:
+            os.execve(  # noqa: S606 - replacement keeps this host's pid
+                sys.executable,
+                follower_reload.image_reexec_argv(root),
+                environment,
+            )
+        finally:
+            if pin is not None:
+                os.close(pin)
 
 
 def parse_request(line: str) -> tuple[str, str, bool] | None:
@@ -540,6 +744,7 @@ class SessionHost:
         clock: Callable[[], float] = time.monotonic,
         now: Callable[[], float] = time.time,
         live_view: Callable[[str, str], str | None] | None = None,
+        reloader: _HostReloader | None = None,
     ) -> None:
         self._environ = dict(os.environ if environ is None else environ)
         # The work a settled pair is re-armed over: given the project and
@@ -575,6 +780,14 @@ class SessionHost:
         # the stop path never removes a later session's FIFO from this path.
         self._fifo_identity = _fifo_identity(self._fifo_path)
         self._owner_lock: Any | None = None
+        # None leaves the host on the image it started on, which is what a
+        # harness driving one supervision tick wants. The entry point supplies
+        # a reloader, and the handover it may have left is adopted before the
+        # first tick so the children it was running keep being supervised.
+        self._reloader = reloader
+        self._reload_count = 0
+        self._handover_adopted = False
+        self._handover_path = self._record_path.with_suffix(RELOAD_SUFFIX)
 
     # -- identity -----------------------------------------------------------
 
@@ -644,6 +857,12 @@ class SessionHost:
             "waiting_for_dispatch": self._waiting_for_dispatch,
             "updated_at": self._now(),
         }
+        if self._reloader is not None:
+            # The image this host runs and how many times it has replaced
+            # itself: a census with a stale identity is how a reader sees a host
+            # that never reloaded, which otherwise looks like one that did.
+            payload["identity"] = self._reloader.identity
+            payload["reload_count"] = self._reload_count
         if self._stopped:
             # The final census names when the host stopped and why, so a reader
             # can bound the gap between the owner ending and the last child
@@ -738,6 +957,125 @@ class SessionHost:
         self._children[key] = child
         self._waiting_for_dispatch = False
         self._write_record()
+
+    # -- replacing the image ------------------------------------------------
+
+    def adopt_handover(self) -> None:
+        """Adopt the children a predecessor image handed over, once.
+
+        A replacement is the same process, so the children are still its direct
+        children; what it lacks after an exec is the in-memory bookkeeping that
+        says which pids it started and on what schedule to restart them. The
+        handover carries exactly that. It is read only when it names the image
+        this process is running, so a handover left by an exec that failed --
+        the process still on its old image -- cannot adopt children under the
+        wrong identity.
+
+        A recorded pid is adopted only while it is still alive and still the
+        process the handover named: a pid is reused, and a reused one would let
+        the replacement supervise a stranger. A settled child has no pid and is
+        adopted as it stands.
+        """
+        if self._handover_adopted:
+            return
+        self._handover_adopted = True
+        payload = self._read_handover()
+        if payload is None:
+            return
+        reloader = self._reloader
+        if reloader is None or payload.get("identity") != reloader.identity:
+            self._drop_handover()
+            return
+        count = payload.get("reload_count")
+        if isinstance(count, int) and count >= 0:
+            self._reload_count = count
+        for entry in payload.get("children") or []:
+            if not isinstance(entry, Mapping):
+                continue
+            child = _child_from_reload_entry(entry)
+            if child is None:
+                continue
+            if child.pid is not None:
+                if process_alive(child.pid) is not True:
+                    continue
+                if process_start_time(child.pid) != entry.get("pid_start"):
+                    continue
+                self._waiting_for_dispatch = False
+            self._children[child.key] = child
+        self._drop_handover()
+
+    def _read_handover(self) -> Mapping[str, Any] | None:
+        try:
+            payload = json.loads(self._handover_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        if not isinstance(payload, Mapping):
+            return None
+        owner = payload.get("owner")
+        if not isinstance(owner, Mapping) or not self._same_owner(owner):
+            return None
+        return payload
+
+    def _write_handover(self, identity: str) -> None:
+        """Record the child state the replacement image must adopt, then exec."""
+        payload = {
+            "owner": dict(self._owner),
+            "identity": identity,
+            "reload_count": self._reload_count + 1,
+            "children": [
+                _reload_child_entry(child) for child in self._children.values()
+            ],
+            "written_at": self._now(),
+        }
+        self._record_path.parent.mkdir(parents=True, exist_ok=True)
+        write_json_atomically(
+            self._handover_path, payload, fsync=False, create_parents=True
+        )
+        # Publish the census as well, so a reader that cannot see the handover
+        # still sees the children this host was running at the moment it left.
+        self._write_record(force=True)
+
+    def _drop_handover(self) -> None:
+        with contextlib.suppress(OSError):
+            self._handover_path.unlink(missing_ok=True)
+
+    def _children_mid_start(self) -> bool:
+        """Whether any child was spawned since the last completed tick."""
+        return any(
+            child.starting and not child.settled for child in self._children.values()
+        )
+
+    def maybe_reload(self) -> None:
+        """Re-execute onto the checkout's current code when it has moved.
+
+        Called at an idle tick, when nothing is waiting on the request
+        descriptor and no child is mid-start. An exec that fails leaves this
+        image running: the handover is withdrawn so the next replacement cannot
+        adopt a state this one never reached, and the image is held for its
+        retry instant rather than re-proved on every tick.
+        """
+        reloader = self._reloader
+        if reloader is None or self._stopping:
+            return
+        try:
+            current = reloader.current()
+        except (OSError, RuntimeError):
+            return
+        if not reloader.due(current):
+            return
+        if self._children_mid_start():
+            return
+        self._write_handover(current)
+        try:
+            reloader.replace(current, self._environ)
+        except (OSError, RuntimeError) as exc:
+            self._drop_handover()
+            reloader.defer(current, f"the replacement failed ({exc})")
+        else:
+            # The replacement returned without exec: it deferred the image
+            # (a dirty tree, or one that does not import), so nothing handed
+            # over is to be adopted and the record must not claim a reload.
+            self._drop_handover()
 
     # -- start-up -----------------------------------------------------------
 
@@ -946,6 +1284,7 @@ class SessionHost:
         except OSError as exc:
             _log(f"follower for {child.project}/{child.session} failed: {exc}")
             return None
+        child.starting = True
         return process.pid
 
     # -- supervision --------------------------------------------------------
@@ -1151,7 +1490,10 @@ class SessionHost:
         # A host is re-armed by a monitor that expired, not by a request, so it
         # starts by following whatever its owner's sessions already own. The
         # scan reads the predecessor's census, so it runs before the write below
-        # replaces it.
+        # replaces it. A host that has just reloaded adopts the children its
+        # previous image handed over before anything else, or it would start a
+        # second follower beside each one still running.
+        self.adopt_handover()
         self.adopt_live_work()
         if self._fifo_identity is None:
             # The FIFO can appear between the host being built and the read
@@ -1171,6 +1513,13 @@ class SessionHost:
         reason: str | None = None
         try:
             while not self._stopping:
+                # A child spawned during the previous pass has now been seen
+                # through a whole pass, so it is no longer mid-start. One
+                # spawned during this pass keeps the mark until the next pass,
+                # which is what defers the reload past a child's first tick.
+                for child in self._children.values():
+                    if child.starting:
+                        child.starting = False
                 ready, _w, _x = select.select(
                     [requests, wake_read], [], [], _poll_seconds(self._environ)
                 )
@@ -1204,6 +1553,10 @@ class SessionHost:
                     reason = _OWNER_ENDED_REASON
                     break
                 self.tick()
+                if not buffer:
+                    # Idle only when nothing is waiting to be parsed: bytes
+                    # already read into this image's buffer are lost by an exec.
+                    self.maybe_reload()
         finally:
             # A named break sets its own reason; the loop condition seeing a
             # bare request_stop() with no wake-pipe write leaves it null with
@@ -1233,7 +1586,17 @@ def run(
     already read off that descriptor and passes in beside it.
     """
     environ = os.environ if environ is None else environ
-    host = SessionHost(owner=owner, follower_argv=follower_argv, environ=environ)
+    # The reloader reads and removes the carried image identity from the
+    # environment, so the host and every child it starts hold the environment a
+    # replacement would run with, without a claim about an image they are not on.
+    held = dict(environ)
+    reloader = _HostReloader(Path(__file__).resolve().parents[2], environ=held)
+    host = SessionHost(
+        owner=owner,
+        follower_argv=follower_argv,
+        environ=held,
+        reloader=reloader,
+    )
     if not host.acquire_owner_lock():
         # Say why on stderr and leave everything the first host owns in place:
         # its FIFO, its census and its children. A second host that went on
