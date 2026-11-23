@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-finished-plan-closes">
+  <meta name="plan-evidence-for" content="reckon:a-finished-plan-closes">
+  <meta name="plan-verifies" content="reckon:a-finished-plan-closes#s6">
+  <meta name="plan-verdict" content="fail">
+  <title>Every finished plan is closed or kept open for a stated reason | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-finished-plan-closes-s6-landing" data-node="a-finished-plan-closes-s6" data-reckon="landed" data-when="2026-11-23">
+  <h2 id="a-finished-plan-closes-s6-title">Every finished plan is closed or kept open for a stated reason</h2>
+
+  <p id="a-finished-plan-closes-s6-measure">
+    The §1 census re-run with the §2 readiness, over every mount, on 2026-11-23
+    at base revision <code>893e18cc82</code>. It asks the section's two
+    questions of every live plan the roadmap reports:
+  </p>
+  <ul>
+    <li id="a-finished-plan-closes-s6-q1"><strong>At 1.0 progress and still open.</strong>
+      A plan whose declared work is resolved (no deferred remainder, progress
+      100&nbsp;%) and whose status is not terminal must either carry a
+      plan-terminal gate whose measure states why it stays open, or be closed.
+      One that carries neither is the census's violation.</li>
+    <li id="a-finished-plan-closes-s6-q2"><strong>Blocked on finished work.</strong>
+      A finished plan must not read <code>blocked</code> on a gate. After §3 the
+      readiness ladder cannot produce it — <code>blocked</code> is
+      <code>bool(blocking) and not is_closable(plan)</code>, and a finished plan
+      is closable — so a nonzero count here would be the defect §3 named.</li>
+  </ul>
+
+  <p id="a-finished-plan-closes-s6-result">
+    <strong>18 mounts, 226 live plan rows scanned.</strong>
+    <strong>Q1: 17 plans at 1.0 progress and open — 1 holding a plan-terminal
+    gate that states why, 16 holding nothing.</strong>
+    <strong>Q2: 0.</strong>
+    The 3 plans §1 reported blocked at 100&nbsp;% no longer read blocked:
+    <code>nova:cut-cell-current-attribution</code> is <code>superseded</code>,
+    while <code>imas-codex:signal-search-finds-the-measured-signal</code> and
+    <code>reckon:the-fleet-node-stays-in-service</code> each read
+    <code>closable</code> with an empty <code>gate_blockers</code> and
+    <code>section_gate_blockers</code>, so §3 removed the hold. The 5 §1
+    reported deferred at 100&nbsp;% no longer read as finished: 27 live rows
+    carry a deferred remainder and read <em>N deferred, not closable</em>
+    (§4), so they are kept open by their deferral and are not counted here.
+  </p>
+
+  <p id="a-finished-plan-closes-s6-stated">
+    The one plan kept open on purpose is <code>reckon:open-work-is-capped</code>:
+    it holds <code>g-open-work-is-capped-weekly</code>, whose measure reads
+    &ldquo;two consecutive complete ISO weeks in which the project closes at
+    least as many plans as it opens, read from the velocity view&rdquo;. That is
+    the shape §2 prescribes for a finished plan that should stay open.
+  </p>
+
+  <h3 id="a-finished-plan-closes-s6-handoff">The 16 finished plans that need their owners</h3>
+  <p id="a-finished-plan-closes-s6-handoff-note">
+    Each row names the project that owns the plan and the ops its own
+    <code>closure_blockers</code> already offer. This node runs no close: a
+    worker may not set a plan's terminal status, and reckon does not close
+    another project's plans for it. The reconcile step belongs to each project's
+    coordinator, which receives these rows from its roadmap unchanged.
+  </p>
+  <table id="a-finished-plan-closes-s6-table">
+    <thead><tr><th>project</th><th>plan</th><th>status</th><th>ops left</th><th>open followups</th></tr></thead>
+    <tbody>
+      <tr><td>imas-ambix</td><td><code>jt60sa-tokamap-from-generated-maps</code></td><td>active</td><td>close</td><td></td></tr>
+      <tr><td>imas-codex</td><td><code>icp-api-access</code></td><td>active</td><td>close</td><td></td></tr>
+      <tr><td>imas-codex</td><td><code>figure-scripts-use-the-shared-save-function</code></td><td>in-progress</td><td>close</td><td></td></tr>
+      <tr><td>imas-efit</td><td><code>equilibrium-fit-provenance</code></td><td>active</td><td>close</td><td></td></tr>
+      <tr><td>imas-efit</td><td><code>startup-ramp-reconstruction-fidelity</code></td><td>active</td><td>close</td><td></td></tr>
+      <tr><td>nova</td><td><code>dd-cocos-ingest</code></td><td>in-progress</td><td>close, resolve</td><td><code>f-ddc-007</code></td></tr>
+      <tr><td>nova</td><td><code>dual-branch-selection</code></td><td>active</td><td>close</td><td></td></tr>
+      <tr><td>nova</td><td><code>iter-passive-plasma-circuit</code></td><td>in-progress</td><td>close, resolve</td><td><code>f-ippc-004</code></td></tr>
+      <tr><td>reckon</td><td><code>a-review-dies-where-nobody-is-looking</code></td><td>active</td><td>close, resolve</td><td><code>f-ardwnil-005</code></td></tr>
+      <tr><td>reckon</td><td><code>authoring-exemplar</code></td><td>draft</td><td>close</td><td></td></tr>
+      <tr><td>reckon</td><td><code>dispatch-admission-and-landing-take-seconds</code></td><td>active</td><td>close, resolve</td><td><code>f-daalts-001</code>, <code>f-daalts-s28</code></td></tr>
+      <tr><td>reckon</td><td><code>every-plan-write-goes-through-edit-plan</code></td><td>active</td><td>close, resolve</td><td><code>f-epw-001</code></td></tr>
+      <tr><td>reckon</td><td><code>history-persists-as-detail-washes-out</code></td><td>active</td><td>close</td><td></td></tr>
+      <tr><td>reckon</td><td><code>the-crew-does-its-own-bookkeeping</code></td><td>active</td><td>close, resolve</td><td><code>f-tcdiob-001</code>, <code>f-tcdiob-008</code>, <code>f-tcdiob-015</code>, <code>f-tcdiob-016b</code>, <code>f-tcdiob-017</code></td></tr>
+      <tr><td>reckon</td><td><code>the-fleet-node-stays-inside-its-memory</code></td><td>active</td><td>close, resolve</td><td><code>f-tfnsim-s14</code></td></tr>
+      <tr><td>reckon</td><td><code>the-monitor-tells-the-truth-under-load</code></td><td>active</td><td>close, resolve</td><td><code>f-mttu-004</code></td></tr>
+    </tbody>
+  </table>
+  <p id="a-finished-plan-closes-s6-counts">
+    By project: reckon 8, nova 3, imas-codex 2, imas-efit 2, imas-ambix 1.
+  </p>
+
+  <h3 id="a-finished-plan-closes-s6-instrument">The instrument and its control</h3>
+  <p id="a-finished-plan-closes-s6-instrument-note">
+    The census reads the roadmap's own row rather than re-parsing declarations:
+    <code>pending_work[].readiness</code>, <code>progress_pct</code>,
+    <code>closure_blockers</code> and <code>deferred_remainder</code> — the §2,
+    §4 and §5 payload. Each row is classified by one function into
+    <code>violation</code>, <code>stated</code>,
+    <code>blocked-on-finished-gate</code>, or <code>not-finished</code>
+    (terminal, deferred or incomplete). The script and its full census output
+    live in the run directory, not the repository.
+  </p>
+  <p id="a-finished-plan-closes-s6-control">
+    The classifier's control is five constructed rows, run as
+    <code>--self-check</code>: a closable plan with only the close op reads
+    <code>violation</code>; the same plan holding a plan-terminal gate with a
+    measure reads <code>stated</code>; a deferred-only plan, a shipped plan and
+    a live plan still admitting work read <code>not-finished</code>; a finished
+    plan reading <code>blocked</code> on a gate reads
+    <code>blocked-on-finished-gate</code>. All five matched, so the predicate
+    both fires on the defect and stays silent on the three acceptable shapes.
+    The live corpus exercises the same discrimination on real rows:
+    <code>open-work-is-capped</code> is the passing stated case, and 27
+    deferred-only and 182 still holds are excluded.
+  </p>
+
+  <p id="a-finished-plan-closes-s6-verdict">
+    This node's change is the census record; it moves no product source or
+    test. Its measure reports that the section's target is <strong>not yet
+    met</strong>: 16 finished plans across five projects are open with nothing
+    stated. Q2 is met at 0. The 16 are returned to their owning coordinators;
+    closing them is their call, not this node's.
+  </p>
+</article>
+</body>
+</html>
