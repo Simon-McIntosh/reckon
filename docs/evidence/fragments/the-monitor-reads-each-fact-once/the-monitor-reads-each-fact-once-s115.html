@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s115">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-22">
+  <meta name="evidence-commit" content="744b9e91b4">
+  <title>The signature mirror survives a removal | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-monitor-reads-each-fact-once-s115">
+  <h2>The signature mirror survives a removal</h2>
+
+  <p><strong>The defect.</strong> A read answered from the payload-free mirror
+  falls back to measuring every payload once the mirror and the store disagree.
+  A row removed by a path that does not write the mirror — the direct table
+  delete a refused landing performs — leaves its mirror row marked present, so
+  the disagreement never clears. The mirror also compared only row counts, and
+  one stale mirror row beside one stored row no signature describes leaves both
+  counts equal.</p>
+
+  <p><strong>The disagreement was live.</strong> Two of the thirteen projects in
+  the live store were in it, and they were the two busiest: <code>reckon</code>
+  (64 stored rows against 21 present mirror rows) and <code>imas-efit</code>
+  (1,550 stored against 1,548 present). A cold signature read of
+  <code>imas-efit</code> cost 62,332,849 bytes and of <code>reckon</code>
+  16,300,648 bytes, against 1.0 MB and 2.1 MB for projects whose mirror
+  agreed.</p>
+
+  <p><strong>The repair.</strong> A cold read now compares run ids rather than
+  counts and repairs the difference once. A stored row the mirror does not
+  describe is measured from that row alone; a present signature the store no
+  longer holds is retired to a tombstone; nothing that already agrees is read or
+  rewritten. The read after the repair is answered from the mirror. Archiving a
+  run whose mirror row was missing also gave the new signature the caller's
+  project instead of the row's, leaving it answering under no project; the
+  signature now takes the project from the row.</p>
+
+  <h3 id="the-monitor-reads-each-fact-once-s115-measure">The measure</h3>
+
+  <p>Every removal path the store offers — a delete, an archive, a wholesale
+  rebuild, and a direct row discard — leaves the mirror's present ids equal to
+  the store's rows. A store holding a discarded run's mirror row and a stored
+  run with no mirror row is reconciled by one signature read, and the read after
+  it costs under 5 MB on a store whose payloads total more than 200 MB, counted
+  from the process's own read counter. The signature moves when a row is
+  rewritten in place, archived or deleted, and not otherwise.</p>
+
+  <p>The same probe that recorded the two disagreements, run over a copy of the
+  live store on a compute node, answers every project from its mirror at this
+  revision: <strong>13 of 13</strong>, against <strong>11 of 13</strong> at the
+  base (the arms measured <code>f021e0fedf</code> at the base and <code>261122dfe6</code> at this revision). <code>imas-efit</code>'s repair read 19,952,677 bytes and
+  <code>reckon</code>'s 1,061,943; the read after each is answered from the
+  mirror.</p>
+
+  <p>The gate and suite arms ran at <code>afa7d9795c</code>: the declared gate summarized “61 passed in 47.38s”, the head suite arm “61 passed in 53.75s”, and the base arm “58 passed in 49.11s”.</p>
+
+  <p><strong>Negative control.</strong> At the base revision the first case
+  fails with the discarded run still marked present in the mirror.</p>
+</section>
+</main>
+</body>
+</html>
