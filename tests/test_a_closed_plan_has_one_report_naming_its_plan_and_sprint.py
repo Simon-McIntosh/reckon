@@ -308,14 +308,11 @@ def test_closing_a_plan_composes_one_report_naming_the_plan_and_sprint(
     assert cli.exit_code == 0, cli.output
 
 
-def test_no_landing_composes_a_report_for_an_open_plan(repo: Path) -> None:
-    _write_frame(repo)
-    frame = _record_path(repo).read_text(encoding="utf-8")
-
+def _append_comment(root: Path) -> dict:
     from reckon import _store
 
-    _data, version = _store.read_plan(PROJECT, PLAN, str(repo))
-    result = _edit_plan_tool(
+    _data, version = _store.read_plan(PROJECT, PLAN, str(root))
+    return _edit_plan_tool(
         PROJECT,
         PLAN,
         expected_version=version,
@@ -332,12 +329,56 @@ def test_no_landing_composes_a_report_for_an_open_plan(repo: Path) -> None:
                 },
             }
         ],
-        checkout_path=str(repo),
+        checkout_path=str(root),
     )
+
+
+def test_no_landing_composes_a_report_for_an_open_plan(repo: Path) -> None:
+    _write_frame(repo)
+    frame = _record_path(repo).read_text(encoding="utf-8")
+
+    result = _append_comment(repo)
 
     assert result.get("ok") is True, json.dumps(result, indent=2)
     assert _record_path(repo).read_text(encoding="utf-8") == frame, (
         "a landing on an open plan rewrote the record"
+    )
+
+
+def test_no_landing_on_an_open_plan_creates_no_report(repo: Path) -> None:
+    assert _evidence_files(repo) == [], "the fixture started with a record"
+
+    result = _append_comment(repo)
+
+    assert result.get("ok") is True, json.dumps(result, indent=2)
+    assert _evidence_files(repo) == [], (
+        "a landing on an open plan composed a report where none existed"
+    )
+
+
+def test_both_links_are_derived_from_the_one_address_rule(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon import evidence
+
+    original = evidence._served_href
+    monkeypatch.setattr(
+        evidence,
+        "_served_href",
+        lambda project, resource: original(project, resource).replace(
+            f"/{PROJECT}/", "/marked/"
+        ),
+    )
+
+    result = _close(repo)
+
+    assert result.get("ok") is True, json.dumps(result, indent=2)
+    first = _record(repo).find("main").find("h1").find_next("p", recursive=False)
+    plan_link = first.find("a", href="/marked/plans/demo-plan.html")
+    sprint_link = first.find("a", href=f"/marked/sprints/{SPRINT}.html")
+    assert plan_link is not None, first
+    assert sprint_link is not None, (
+        "the sprint link does not come from the record's one address rule"
     )
 
 

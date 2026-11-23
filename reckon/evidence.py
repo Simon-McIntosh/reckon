@@ -15,7 +15,7 @@ from bs4.element import Doctype
 
 from reckon import _plan_html, ledger
 from reckon.figures import figure_row
-from reckon.resources import ResourceCollision, resolve_resource
+from reckon.resources import ResourceCollision, identify_resource, resolve_resource
 
 
 class EvidenceSynthesisError(RuntimeError):
@@ -1225,16 +1225,41 @@ def sprint_page_path(docs_dir: Path, sprint_id: str) -> Path:
     return docs_dir / "evidence" / "archive" / f"{stem}{_SPRINT_PAGE_SUFFIX}.html"
 
 
-def _plan_page_href(project: str, resource: Any) -> str:
-    """The served address of a plan document, or the empty string without one.
+def _served_href(project: str, resource: Any) -> str:
+    """The served address of a docs resource, or the empty string without one.
 
     The address names the file rather than the SPA's extensionless route, so
-    every link the page writes resolves to a document in the repository.
+    every link the record writes resolves to a document in the repository. A
+    caller passes the resource it resolved, or ``None`` for a document that is
+    not there; the address convention is stated here once, for every link.
     """
     relative = getattr(resource, "relative_path", None)
-    if relative is None:
-        return ""
-    return f"/{project}/{relative}"
+    if relative is not None:
+        return f"/{project}/{relative}"
+    return ""
+
+
+def _sprint_resource(docs_dir: Path, project: str, sprint_id: Any) -> Any:
+    """The sprint document a plan names, or ``None`` when there is no page.
+
+    A plan states its sprint by id; the page that id is written to is a
+    project resource, so the id resolves through the resource path convention
+    and is then classified like any other document. An id with no document
+    beside it answers ``None``, and the record states the sprint without a
+    link rather than writing one into a page that is not there.
+    """
+    from reckon import project_state
+
+    identifier = str(sprint_id or "").strip()
+    if not identifier:
+        return None
+    try:
+        path = project_state.resource_path(docs_dir, project, "sprint", identifier)
+    except ValueError:
+        return None
+    if not path.is_file():
+        return None
+    return identify_resource(docs_dir, path, project)
 
 
 def _headline_result(landings: Sequence[SectionLanding], summary: str) -> str:
@@ -1298,7 +1323,7 @@ def read_sprint_plan_row(docs_dir: Path, project: str, slug: str) -> SprintPlanR
         slug=slug,
         title=str(plan.get("title") or slug),
         status=str(plan.get("status") or "unrecorded"),
-        href=_plan_page_href(project, resource),
+        href=_served_href(project, resource),
         sections_landed=len(landed),
         runs=len(records),
         worker_seconds=sum(
@@ -1914,18 +1939,14 @@ def report_identity(
     worse than the bare identifier. A plan carrying no sprint states it belongs
     to none rather than leaving the statement out.
     """
-    from reckon import project_state
-
     sprint_id = str(plan.get("sprint") or "").strip()
     return ReportIdentity(
         plan_slug=str(plan.get("slug") or ""),
         plan_title=str(plan.get("title") or ""),
-        plan_href=_plan_page_href(project, resource),
+        plan_href=_served_href(project, resource),
         sprint_id=sprint_id,
-        sprint_href=(
-            project_state.plan_sprint_href(docs_dir, project, sprint_id)
-            if sprint_id
-            else ""
+        sprint_href=_served_href(
+            project, _sprint_resource(docs_dir, project, sprint_id)
         ),
     )
 

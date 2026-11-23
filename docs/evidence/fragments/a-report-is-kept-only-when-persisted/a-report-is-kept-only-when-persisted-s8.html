@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-report-is-kept-only-when-persisted">
+  <meta name="plan-section" content="s8">
+  <title>A closed plan's report names its plan and sprint | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<main class="evidence-doc">
+  <h1 id="a-report-is-kept-only-when-persisted-s8-title">A plan's report is written once, at closure</h1>
+  <p id="a-report-is-kept-only-when-persisted-s8-summary">The store composes a plan's landed record
+  in its write tail, on the one transition where a plan reaches a landed terminal status. The
+  record names the plan and the sprint it ran in, links both from its first block, and embeds each
+  node's figures beneath that node's row.</p>
+
+  <h2 id="a-report-is-kept-only-when-persisted-s8-what-landed">What landed</h2>
+  <ul id="a-report-is-kept-only-when-persisted-s8-changes">
+    <li><code>reckon/_store.py</code> — <code>_write_state_locked</code> calls
+      <code>evidence.compose_closed_plan_report</code> after a plan moves from a non-terminal
+      status to <code>shipped</code> or <code>done</code>. A composition failure warns; it never
+      refuses the write, so closure gains no new refusal.</li>
+    <li><code>reckon/evidence.py</code> — <code>ReportIdentity</code> and <code>_identity_block</code>
+      render the plan and sprint links; <code>_served_href</code> is the record's one address rule,
+      applied to the plan resource and to the sprint document alike;
+      <code>compose_closed_plan_report</code> composes with <code>require_runs=False</code>, so a
+      plan with no committed runs can still close.</li>
+    <li><code>tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py</code> — five
+      cases: closing in a sprint with two figures, a landing on an open plan with no record present
+      and with a record present, both links deriving from the one address rule, and closing with no
+      sprint.</li>
+  </ul>
+
+  <h2 id="a-report-is-kept-only-when-persisted-s8-measure">Measure</h2>
+  <table id="a-report-is-kept-only-when-persisted-s8-table">
+    <thead><tr><th>Case</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr><td>Close in sprint S9</td><td>one record; metadata names the plan and S9; first block links both; both figures sit beneath their nodes' rows; <code>audit-doc</code> accepts it</td></tr>
+      <tr><td>Landing on an open plan, record present</td><td>the record is byte-identical afterwards</td></tr>
+      <tr><td>Landing on an open plan, no record present</td><td>no record is created</td></tr>
+      <tr><td>Close with no sprint</td><td>metadata reads <code>none</code> and the first block says the plan belongs to no sprint</td></tr>
+      <tr><td>Both links</td><td>the plan link and the sprint link both carry a marked address, so neither is built beside the rule</td></tr>
+      <tr><td>Gate</td><td>five cases pass at the repair head; the first case fails at the base revision on the absent sprint</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="a-report-is-kept-only-when-persisted-s8-repair">Repair round</h2>
+  <ul id="a-report-is-kept-only-when-persisted-s8-repair-list">
+    <li>The sprint link no longer rebuilds the served-address rule. The plan-state module's own
+      <code>plan_sprint_href</code> is gone; the sprint document resolves through the resource path
+      convention and the record derives both links from <code>_served_href</code>, so the address
+      convention has one definition.</li>
+    <li>The open-plan case now covers the state a plan that never landed a record is in: an append
+      with no record present asserts that none is created, because the earlier case could only show
+      that an existing record was not rewritten.</li>
+  </ul>
+
+  <h2 id="a-report-is-kept-only-when-persisted-s8-control">Negative control</h2>
+  <p id="a-report-is-kept-only-when-persisted-s8-control-text">At the base revision the first case
+  fails with the sprint absent from the record. With the store's status guard removed so that every
+  landing composes, the new no-record case fails because a report appears where none existed.</p>
+</main>
+</body>
+</html>
