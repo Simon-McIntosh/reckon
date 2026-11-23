@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T13:24:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/manifest_faults.py",
+      "line": "225",
+      "severity": "non-blocking",
+      "text": "_program_fault re-implements the no-program judgement the repository already owns in reckon/crew/promotion_gate.py:647 with a second _SHELL_ASSIGNMENT regex and a first-word-only walk, so the shape is implemented twice and the two readers disagree on 'PYTHONPATH=x -m pytest tests/a.py', which this rule accepts and promotion_gate.py:697 refuses."
+    },
+    {
+      "file": "reckon/crew/manifest_faults.py",
+      "line": "246",
+      "severity": "non-blocking",
+      "text": "the all-assignments branch of _program_fault has no test, so a regression in that arm would leave every test green."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "3202",
+      "severity": "non-blocking",
+      "text": "_run_gate_reading repeats the pointer-read block already in _run_was_armed_a_suite at reports.py:3193 (the same read_pointer on manifest_path.expanduser().parent.name)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T112705941571-delivered-work-lands-without-a-coordinator-s53/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the baseline_suite and after_suite command fields carry placeholders instead of the literal command that ran (that literal sits in importer-arms.sh), so a promotion reading them cannot re-run the pair."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:1426 and reckon/crew_run_commands.py:1698.",
+    "diff": "read commit by commit 1cde073926..d467796542 against 398a0d0970; five files, all in scope.",
+    "done_when": "tests/test_a_gate_command_names_its_program.py covers the three named cases; gate-head.log records 3 passed at d4677965 and the manifest records both importer arms.",
+    "goal": "the node goal is that a gate command naming no program is refused at delivery; reckon/crew/manifest_faults.py:225 refuses an option first word, reached at delivery through reckon/crew/reports.py:3307.",
+    "manifest": "read; head gate 3 passed, base arm 2 failed 1 passed, both importer arms 22 failed 1153 passed; its suite-arm command fields are placeholders.",
+    "write_paths": "every path in the diff is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a gate command naming no program is refused at delivery; reckon/crew/manifest_faults.py:225 refuses an option first word, reached at delivery through reckon/crew/reports.py:3307.\nVERDICT done_when: the done_when names tests/test_a_gate_command_names_its_program.py with three cases plus an importer base arm; gate-head.log records 3 passed at d4677965 and the manifest records both importer arms.\nVERDICT write_paths: read the declared write paths; all five diff paths (four modules and one test file) lie inside them.\nVERDICT manifest: read; it reports the head gate at 3 passed, the base arm at 2 failed 1 passed, and both importer arms at 22 failed 1153 passed, though its suite-arm command fields carry placeholders.\nVERDICT diff: read commit by commit 1cde073926..d467796542 against 398a0d0970; five files, all in scope, each a conventional commit with a body.\nCALL_SITES: reckon/crew/promotion.py:1426, reckon/crew_run_commands.py:1698\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/manifest_faults.py:225-255 refuses an option first word and an assignments-only line, and the refusal at :157 names the recorded text and the declare-gate remedy.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log and gate-base.log carry their revisions, literal commands and closing EXIT lines, but the manifest's suite-arm commands are placeholders rather than the literal command.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the report-side reading follows from the delivery goal.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_gate_command_names_its_program.py:101 fails at the base revision (reproduced: 2 failed, 1 passed) and the file is 3 passed at the head, though the assignment-only branch has no test.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/manifest_faults.py:97-125 names the substitution and the role by mechanism with no plan label, matching the surrounding module.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/manifest_faults.py:225 duplicates the no-program judgement owned by reckon/crew/promotion_gate.py:647 and its tokeniser at :466 rather than extending it, so the shape is implemented twice.\nFINDING reckon/crew/manifest_faults.py:225 non-blocking: _program_fault re-implements the no-program judgement the repository already owns in reckon/crew/promotion_gate.py:647 with a second _SHELL_ASSIGNMENT regex and a first-word-only walk, so the shape is implemented twice and the two readers disagree on 'PYTHONPATH=x -m pytest tests/a.py', which this rule accepts and promotion_gate.py:697 refuses.\nFINDING reckon/crew/manifest_faults.py:246 non-blocking: the all-assignments branch of _program_fault has no test, so a regression in that arm would leave every test green.\nFINDING reckon/crew/reports.py:3202 non-blocking: _run_gate_reading repeats the pointer-read block already in _run_was_armed_a_suite at reports.py:3193 (the same read_pointer on manifest_path.expanduser().parent.name).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T112705941571-delivered-work-lands-without-a-coordinator-s53/manifest.md:12 non-blocking: the baseline_suite and after_suite command fields carry placeholders instead of the literal command that ran (that literal sits in importer-arms.sh), so a promotion reading them cannot re-run the changes's pair.\n",
+  "review_run_id": "r-20261123T132407939123-review-of-delivered-work-lands-without-a-coordinator-s53-d46779654281",
+  "reviewed_base_sha": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "reviewed_head_sha": "d467796542813cd7d0aa20c2da2ddd95520f3ec4",
+  "reviewed_run_id": "r-20261123T112705941571-delivered-work-lands-without-a-coordinator-s53",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T13:40:56.152824+00:00",
+  "total": 97
+}
