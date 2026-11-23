@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:24:19Z",
+  "findings": [
+    {
+      "path": "reckon/crew/landing_measure.py:1315",
+      "severity": "non-blocking",
+      "text": "`_partition_runner` reads `arm_excluded_paths(config)` with `config` defaulting to None, but only `measure_run` (queue_landing.py:1310) passes a config. Its other two partitioned callers, reckon/crew/review_landing.py:98 and reckon/crew/standing_suite.py:232, construct the runner with no `config=`, so `arm_excluded_paths(None)` returns () and a project's declared `landing.arm_excluded_paths` is silently ignored on those partitioned arms. Those arms still unpack the whole revision into the node's local disk, so the disk-filling this section prevents can still happen on a review-landing or standing-suite arm. Repairing it means editing review_landing.py/standing_suite.py, which are outside this node's declared write paths; recorded for the coordinator to fold."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261123T221829981080-review-of-delivered-work-lands-without-a-coordinator-s63-5430d25e99f3",
+  "reviewed_base_sha": "bf5ff985a74aa4a5e3634a1423d646553740edaf",
+  "reviewed_head_sha": "5430d25e99f30dcd58957568635ae0fd9759f2fb",
+  "reviewed_run_id": "r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63",
+  "reviewer_notes": {
+    "call_sites": [
+      "reckon/crew/queue_landing.py:1310 (measure_run on the landing gate path, config passed)",
+      "reckon/crew/landing_measure.py:1619, :1948, :2091 (_partition_runner internal callers)",
+      "reckon/crew/review_landing.py:98 (_partition_runner, no config -> exclusion not applied)",
+      "reckon/crew/standing_suite.py:232 (_partition_runner, no config -> exclusion not applied)",
+      "reckon/flight.py:1767 validate_layer -> _validate_landing (config validation entry)"
+    ],
+    "durability_independence": "No added assertion compares the code's output against a value the test itself supplied as the expected answer: the archive assertion checks a literal `:(exclude)docs/figures` pathspec the code composes, and the setup assertion checks a refusal string the code composes from a synthetic log.",
+    "durability_reading": "tests/test_a_partitioned_arm_unpacks_what_it_needs.py:140-163 and :199-215 unpack the real submitted archive line and assert the excluded tree lacks docs/figures while carrying the test; :166-197 feeds a header-only setup log and asserts the refusal quotes the node and 'No space left on device' and does not say 'did not run'. Reinstating the base behaviour reddens case 2 with 'the base arm did not run' (gate-base.log:90) and case 1 on the undeclared flight key, so the assertions bind to behaviour, not to values the test handed in.",
+    "reuse_reading": "Searched reckon/ by capability for an existing arm archive/ exclusion owner: checkout_trust.py:536 only resolves a revision's subtree to archive and crew/routing.py:611 mentions plain `git archive` extractions; neither builds an arm's unpack step or owns an exclusion path list, so _archive_step extends the existing inline step in the module that already runs the partition and arm_excluded_paths is the first owner of the declaration."
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:32:56.148618+00:00",
+  "total": 114,
+  "verdicts": {
+    "diff": "Read commit by commit against bf5ff985a74a: 1d26d43925 adds the exclusion and archive step, 37e40bc66e/6518701a19/5430d25e99 record the evidence, and 9683d8b1d9 makes setup-failure detection read only a log carrying the arm header; only the four in-scope paths changed.",
+    "done_when": "The done_when names tests/test_a_partitioned_arm_unpacks_what_it_needs.py; gate-head.log records `3 passed in 1.60s` / `EXIT=0` at 9683d8b1d9 and gate-base.log records `2 failed, 1 passed in 0.54s` / `EXIT=1` at bf5ff985a74a with the second case reading exactly 'the base arm did not run' (gate-base.log:90), and the importer population (importer-base.log 24 failed, importer-head.log 20 failed) adds no failure id.",
+    "goal": "The node goal is 'a partitioned arm unpacks only what its tests need, and a setup failure is named'; reckon/crew/landing_measure.py:800-838 and the `setup_failed` detection at :1432-1490 implement both halves for a landing measure's arms, and the no-declaration path at :835 keeps the archive step every arm ran before.",
+    "manifest": "Read; it records status complete, the five commits, gate-head.log/gate-base.log with revisions, commands and EXIT lines, and the 117-file importer population at job 1341410 whose added-failure set (comm -13 of failed-base.txt and failed-head.txt) is empty.",
+    "write_paths": "The manifest declares five paths and the diff touches four: docs/evidence/fragments/.../s63.html, reckon/crew/landing_measure.py, reckon/flight.py, tests/test_a_partitioned_arm_unpacks_what_it_needs.py \u2014 all inside the declared set; the declared figure directory carried no figure because none was needed."
+  }
+}
