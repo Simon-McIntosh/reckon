@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A single dispatch refuses what its batch refuses</title>
+</head>
+<body>
+<h1 id="qwnw-a-section-dispatch-refuses-as-its-batch-does-title">A single dispatch refuses what its batch refuses</h1>
+
+<p id="qwnw-a-section-dispatch-refuses-as-its-batch-does-mechanism">
+<code>apply_section_defaults</code> suppressed the write-paths derivation's
+refusal and fell back to the default landing scope. It now derives the sentence
+through the same <code>section_derivation</code> call the batch entry uses, so a
+described test the done-when does not single out, or a token carrying a
+parent-directory segment, refuses the single dispatch with the batch entry's own
+reason. The write paths are named in <code>SECTION_SUPPLIED_NODE_FIELDS</code>,
+with an empty path list reading as unsaid on the same rule an empty string is, so
+the other section-supplied fields fill exactly as before.
+</p>
+
+<table id="qwnw-a-section-dispatch-refuses-as-its-batch-does-arms">
+<caption>Arms over the node's test file and the tests importing dispatch_batch</caption>
+<thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+<tbody>
+<tr><td>base, head test file overlaid</td><td>78972b6f60</td><td>2 failed, 4 passed, EXIT=1</td></tr>
+<tr><td>head test file</td><td>2d13d5ade2</td><td>6 passed, EXIT=0</td></tr>
+<tr><td>30 importing tests, base</td><td>78972b6f60</td><td>8 failed, 143 passed</td></tr>
+<tr><td>30 importing tests, head</td><td>2d13d5ade2</td><td>7 failed, 146 passed, no head-only failure id</td></tr>
+</tbody>
+</table>
+</body>
+</html>
