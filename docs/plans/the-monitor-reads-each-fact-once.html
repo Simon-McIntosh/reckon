@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="598">
+<meta name="plan-version" content="599">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -1258,6 +1258,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s114" data-id="c-close-s114" data-who="reckon-build" data-when="2026-11-22T10:41:15.535137+00:00">
     <div class="r-comment-body"><p>Landed r-20261122T092150461624-mrfo-a-store-signature-reads-no-payloads on the measured suite pair; <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#mrfo-a-store-signature-reads-no-payloads">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s115" data-id="c-run-r-20261122T143207503593-the-monitor-reads-each-fact-once-s115" data-who="reckon-build" data-when="2026-11-22T21:20:29.999Z">
+    <div class="r-comment-body"><p>The signature read now compares run ids rather than counts and repairs a disagreeing mirror once — measuring only the stored rows the mirror lacks and retiring the mirror rows the store no longer holds — so the read after it is answered from the mirror; the per-project probe over a copy of the live store records 13 of 13 projects answered from their mirror, against 11 of 13 at the base.</p></div>
+</div>
+<div class="r-comment" data-section="s115" data-id="c-run-r-20261122T213119160442-review-of-the-monitor-reads-each-fact-once-s115-7fb1eba24897" data-who="reckon-build" data-when="2026-11-23T00:43:45.529Z">
+    <div class="r-comment-body"><p>none</p></div>
+</div>
 <div class="r-comment" data-section="s116" data-id="c-run-r-20261122T213407325451-review-of-the-monitor-reads-each-fact-once-s116-88510c5e16d2" data-who="reckon-build" data-when="2026-11-22T22:01:00.717Z">
     <div class="r-comment-body"><p>Review of r-20261122T143232125878-the-monitor-reads-each-fact-once-s116 at 88510c5e16: 13 files change to open bounded or post-seek binary reads unbuffered, plus one AST-discovery test; reviewed independently at 5 passed in 7.96s and the base arm's trace reproduced from logs/bounded-reads-base.trace (8,454,146 bytes vs 73,794 at head); scores 19/19/20/20/17/20 with one non-blocking docstring-duplication finding.</p></div>
 </div>
@@ -2154,9 +2160,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
-</div>
-<div class="r-comment" data-section="s115" data-id="c-run-r-20261122T143207503593-the-monitor-reads-each-fact-once-s115" data-who="reckon-build" data-when="2026-11-22T21:20:29.999Z">
-    <div class="r-comment-body"><p>The signature read now compares run ids rather than counts and repairs a disagreeing mirror once — measuring only the stored rows the mirror lacks and retiring the mirror rows the store no longer holds — so the read after it is answered from the mirror; the per-project probe over a copy of the live store records 13 of 13 projects answered from their mirror, against 11 of 13 at the base.</p></div>
 </div>
 </section>
 </main>

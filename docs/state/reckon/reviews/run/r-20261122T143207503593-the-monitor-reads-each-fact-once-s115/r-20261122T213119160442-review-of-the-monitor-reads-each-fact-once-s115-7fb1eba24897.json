@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/ledger.py:1892 stored_history cold/incremental signature read",
+    "reckon/ledger.py:1921 stored_history whole-signature re-read when the generation moved",
+    "reckon/run_store.py:1386 _reconcile_mirror invokes RunStore.reconcile_signatures"
+  ],
+  "completed_at": "2026-11-23T00:52:00Z",
+  "dispatched_at": "2026-11-23T00:25:24Z",
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "id": "f02b7a1606a",
+      "line": 550,
+      "severity": "non-blocking",
+      "text": "_signature_counts_agree is now dead: its only caller was the cold-read guard the diff replaced with _signature_ids_agree at run_store.py:1446, yet the diff still rewrote its body to add a BEGIN/commit pair, so the change carries a function nothing calls and an untested transaction change inside it (git grep at 7fb1eba248 finds only the definition)."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "id": "febd4fdd45b",
+      "line": 585,
+      "severity": "non-blocking",
+      "text": "_signature_ids_agree reads every stored run_id and every present mirror run_id on every cold read, where the count check it replaced read two index counts; the node's own probe records the cost on projects that already agreed (probe-project-mirror.log: imas-codex 2,101,668 bytes at base against 13,824,397 at head, nova 2,052,517 against 13,365,655), which raises the monitor's per-process cold-read cost 3-6x on eleven of thirteen projects - acceptable against the 62 MB scan it removes, but a direction the done_when's 5 MB bound on a 50-row test store cannot see."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s115.html",
+      "id": "f7955f019d8",
+      "line": 61,
+      "severity": "non-blocking",
+      "text": "The fragment states the probe arms measured 261122dfe6 at this revision, but the log it cites records revision_head=744b9e91b4ab5fa63fc3802e894d1a8b0292fce5 (probe-project-mirror.log:2) and the head arm's module path is the worktree, not that sha; the trees are identical because 261122dfe6 is docs-only, so the conclusion holds, but the citation names a revision the receipt does not."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "id": "f043871d766",
+      "line": 2169,
+      "severity": "non-blocking",
+      "text": "_signature_from_row restates the row-to-signature projection and the hardcoded positional slices (_rebuild_signatures at run_store.py:2107 builds the same LENGTH(payload), LENGTH(detail), QUERY_KEYS, ROW_REVISION, activity_seconds tuple with row[4:10]/row[10]/row[11]); a change to QUERY_KEYS must now be made in two places, and the second copy is reached only by the reconciliation path the gate exercises indirectly."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Three production call sites reach the change: both stored_run_signature calls in reckon/ledger.py:1892 and :1921, and the reconcile entry reckoned at reckon/run_store.py:1386; no other production module calls stored_run_signature or reconcile_signatures.",
+    "diff": "Read all four commits against f021e0fedf: 744b9e91b4 is the code (id comparison, one-shot repair, _row_project attribution, _signature_from_row), 261122dfe6 adds the 70-line fragment, afa7d9795c corrects the fragment's arm revisions, 7fb1eba248 adds the gate/suite summary paragraph.",
+    "done_when": "The done_when names tests/test_the_signature_mirror_survives_removal.py covering each removal path, one-read reconciliation under a 5 MB second read on a 200 MB store, and a signature that moves only on rewrite/archive/delete, plus an all_debug per-project probe beside the base's 11 of 13 with each arm's log carrying revision, command and EXIT=; the manifest records the file green and the probe pair, but the log header names no partition or job id.",
+    "goal": "The section goal is that after a run leaves a project's store by any path, the mirror and store name the same runs, a disagreeing mirror is reconciled once at a cost bounded by the rows that differ, the next read answers from it, and no project stays on the whole-store scan; reckon/run_store.py:1446-1462 replaces the count check with an id comparison and repairs once on a cold read, and the probe log records 13 of 13 projects answered from the mirror at head against 11 of 13 at the base.",
+    "manifest": "Read in full; it names the four commits, the scoped gate and its EXIT=0 at afa7d9795c, the base and after suite arms, the base revision's failing negative control, the probe arms' 11/13 and 13/13, and records the promotion_scope.py discard under outside_scope.",
+    "write_paths": "The declared paths are reckon/run_store.py, reckon/ledger.py, tests/test_the_signature_mirror_survives_removal.py, the s115 evidence fragment and its figures directory; the delivered diff touches exactly reckon/run_store.py, the new test and the fragment, all inside that scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section goal is that any removal leaves the mirror naming the store's runs, a disagreement is repaired once at a cost bounded by the rows that differ and the next read answers from the mirror with no project left on the whole-store scan; reckon/run_store.py:1446-1462 does exactly that, and probe-project-mirror.log records ANSWERED_FROM_MIRROR=13 of 13 at head against 11 of 13 at the base.\nVERDICT done_when: the done_when's file tests/test_the_signature_mirror_survives_removal.py covers the four removal paths, the one-read repair with a sub-5 MB second read on a 200 MB store and the signature-moves-only cases, all 3 passing at head (re-probed here, 3 passed in 10.43s) with the negative control recorded red at the base; the all_debug per-project probe is recorded but the log names no partition.\nVERDICT write_paths: declared reckon/run_store.py, reckon/ledger.py, tests/test_the_signature_mirror_survives_removal.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s115.html and its figures directory; the diff touches reckon/run_store.py, the new test and the fragment and nothing else.\nVERDICT manifest: read; it names 744b9e91b4, 261122dfe6, afa7d9795c and 7fb1eba248, the scoped gate's 61 passed EXIT=0 at afa7d9795c, the base arm's 58 passed and the after arm's 61 passed, the base-revision negative control and the 11/13 vs 13/13 probe, and records the promotion_scope.py discard as out of scope.\nVERDICT diff: read commit by commit against f021e0fedf; 744b9e91b4 adds _signature_ids_agree, _reconcile_mirror, _row_project, _reconcile_signatures, _signature_row_schemas and _signature_from_row in reckon/run_store.py plus the 337-line test, and the three later commits are the fragment and its two revisions.\nCALL_SITES: reckon/ledger.py:1892, reckon/ledger.py:1921, reckon/run_store.py:1386\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1446 replaces the count comparison with an id comparison and repairs once via _reconcile_mirror, and the node's own probe records 13 of 13 projects answered from the mirror at head against 11 of 13 at the base.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log scoped-gate-1795381992750059170.log records '# revision: afa7d9795c...' and '61 passed in 47.38s' ending EXIT=0, but the fragment's head-arm revision (docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s115.html:61) disagrees with probe-project-mirror.log:2 and no log names the all_debug partition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f021e0fedf..7fb1eba248 reports only reckon/run_store.py, tests/test_the_signature_mirror_survives_removal.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control is a real red arm (negative-control-log.txt records 'EXIT=1' with the base failing at tests/test_the_signature_mirror_survives_removal.py:167 on the discarded run staying present), and test 2's _assert_agrees at :167 also reddens if _row_project stops taking the archive row's project.\nSCORE fit: 16\nJUSTIFICATION fit: reconcile_signatures at reckon/run_store.py:2214 follows the module's 'with self._conn: BEGIN IMMEDIATE' idiom and mechanism-only docstrings, but the change leaves _signature_counts_agree at run_store.py:550 with no caller.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/run_store.py:2169 restates the row-measuring projection run_store.py:2107 already owns rather than extending it, so a QUERY_KEYS change must be made in two places.\nFINDING reckon/run_store.py:550 non-blocking: _signature_counts_agree is dead - its only caller was replaced at run_store.py:1446 - yet its body was rewritten with a new BEGIN/commit pair.\nFINDING reckon/run_store.py:585 non-blocking: the id-set comparison raises cold-read bytes on already-agreeing projects 3-6x (probe: imas-codex 2,101,668 -> 13,824,397), a direction the 50-row test store's 5 MB bound cannot see.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s115.html:61 non-blocking: the fragment names 261122dfe6 as the head the arms measured while the cited probe-project-mirror.log records revision_head=744b9e91b4.\nFINDING reckon/run_store.py:2169 non-blocking: _signature_from_row duplicates the row-to-signature projection and positional slices that _rebuild_signatures at run_store.py:2107 already holds.",
+  "review_run_id": "r-20261122T213119160442-review-of-the-monitor-reads-each-fact-once-s115-7fb1eba24897",
+  "reviewed_base_sha": "f021e0fedf33764dc1d62b1811f5b46421148e7f",
+  "reviewed_base_sha_note": "f021e0fedf33764dc1d62b1811f5b46421148e7f",
+  "reviewed_head_sha": "7fb1eba2489745bcf295eed6061eab957fe7f78c",
+  "reviewed_run_id": "r-20261122T143207503593-the-monitor-reads-each-fact-once-s115",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:43:49.578161+00:00",
+  "total": 100
+}
