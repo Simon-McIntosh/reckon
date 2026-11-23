@@ -46,4 +46,12 @@ against the composed directory). Head arm, revision cbcae1b912:
 cbcae1b912 with <code>datetime</code> advanced 365 days process-wide:
 <code>19 passed in 24.87s</code>, <code>EXIT=0</code>. No failure id appears at
 head that the base does not show.</p>
+<p id="qwnw-admission-tests-do-not-age-out-p5">Two probes on the base code isolate which cause owns which test. With the
+clock set eight days back so the named-lane fixture date sits inside the
+lost-session window, both date-fused tests in that file pass and the arm reports
+<code>3 failed, 16 passed in 11.09s</code>. With the clock set back to the
+seeded prior run's own date, all three date-fused tests pass and the arm
+reports <code>2 failed, 17 passed in 12.66s</code>: only the
+reference-comparison test and the composed-review test still fail, each on its
+own code drift. The clock alone flips the three; the code drift alone stays.</p>
 </section>
