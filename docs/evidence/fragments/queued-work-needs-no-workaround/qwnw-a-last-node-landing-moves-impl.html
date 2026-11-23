@@ -1,0 +1,49 @@
+<section id="qwnw-a-last-node-landing-moves-impl-landing">
+  <h2>Landing a section's last node records the section done</h2>
+
+  <p><strong>What changed.</strong> A plan's impl moves only when a section's
+  declaration moves, so a landing that did not write a declaration could never
+  move impl — and the promotion's own guard then refused with
+  <code>impl did not move</code> for the movement the landing was about to make.
+  Two reviewed runs hit that on 2026-11-23 and both needed
+  <code>--no-impl-change</code> with a reason that said exactly this.</p>
+
+  <p>Three changes. <code>reckon/crew/promotion_scope.py</code> decides, once per
+  landing, whether the run landing is the last open node of its section: an open
+  node is another executable run of the same plan section still holding a live
+  pointer, and this run's own pointer must be present, so a re-promotion cannot
+  re-declare a section a coordinator has since reopened. When it is the last,
+  the landing's single versioned write records
+  <code>section_declarations.&lt;id&gt; = done</code>, moving the typed section
+  record beside it, so the plan's derived impl advances as the comment lands.
+  <code>reckon/crew/promotion.py</code> carries that decision into both the
+  snapshot's preview of the write and the write itself, so the two cannot
+  disagree. <code>reckon/crew/promotion_checks.py</code> stops refusing an
+  implement or test run whose own section still reads implementable, because a
+  section's impl cannot move until its last node lands; a plan run naming no
+  section, or a section already declared done, is still held to the movement the
+  guard exists to require.</p>
+
+  <p>A refused landing writes no declaration: every precondition is judged
+  before the landing path runs, so a landing that is refused leaves the plan
+  exactly as it read. A run that leaves siblings open lands with the section
+  untouched, so impl does not move and no override is recorded.</p>
+
+  <h3 id="qwnw-a-last-node-landing-moves-impl-measured">Measured</h3>
+
+  <p>The gate is
+  <code>tests/test_landing_a_sections_last_node_moves_impl.py</code>, three
+  cases against a temporary two-section plan driven through the project's real
+  <code>crew complete</code>: the only node of an implementable section, which
+  reads back with the section done in both the declaration map and the typed
+  record and with impl moving from 0.5 to 1.0; one of two nodes, which lands
+  with the section still implementable, impl still 0.5, and the sibling's
+  pointer untouched; and a last node whose landing is refused by the gate-check
+  precondition, which leaves the declaration map and impl exactly as before.</p>
+
+  <p>The negative control extracts the unchanged base revision into a scratch
+  tree and runs the same file there: the first case is refused with
+  <code>impl did not move: 0.5 at dispatch and 0.5 at completion</code>, and the
+  sibling case with the same wording. The third case passes there, because it
+  expects a refusal.</p>
+</section>

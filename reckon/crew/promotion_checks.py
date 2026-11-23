@@ -2293,6 +2293,23 @@ def _landed_sections(state: Mapping[str, Any]) -> set[str]:
     return landed
 
 
+def _section_declaration(state: Mapping[str, Any], section: Any) -> str:
+    """The declaration a plan entry reads for one section, or ``""``.
+
+    The declaration map may spell a section with an anchor or a section sign,
+    so every key resolves through the one identity derivation before it is
+    compared to the identity the run names.
+    """
+    wanted = section_record_id(section)
+    declarations = state.get("section_declarations")
+    if not wanted or not isinstance(declarations, Mapping):
+        return ""
+    for key, value in declarations.items():
+        if section_record_id(key) == wanted:
+            return str(value or "").strip().lower()
+    return ""
+
+
 def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
     """Return the plan's sections that still have work to land.
 
@@ -2469,6 +2486,20 @@ def _require_impl_moved(
         return check
     if current != recorded_value:
         check["verdict"] = "moved"
+        return check
+    # A section's impl moves when its declaration moves, and the declaration
+    # moves at landing: the last open node of a section closes it, so its impl
+    # moves as that landing is written rather than before the check reads. A
+    # node that leaves siblings open cannot move impl either, and lands with the
+    # section still implementable. Both therefore land without an override; a
+    # section already declared done, or a plan run naming no section, is still
+    # held to the movement this check exists to require.
+    declared = _section_declaration(
+        plan_state, node.get("section") or record.get("section")
+    )
+    if declared == "implementable":
+        check["verdict"] = "section-open"
+        check["reason"] = "section-implementable"
         return check
     if str(no_impl_change).strip():
         check["verdict"] = "waived"

@@ -25,7 +25,7 @@ from reckon import (
     ledger,
     shadow_reads,
 )
-from reckon._plan_html import _strip_tags, section_anchor
+from reckon._plan_html import _strip_tags, section_anchor, section_record_id
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew.node import (
     STALL_BUDGET_MULTIPLE,
@@ -61,6 +61,7 @@ from reckon.crew.runs import (
     list_live,
     run_dir,
 )
+from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
 _ZERO_COUNT = re.compile(r"0+")
 _BRANCH_WRITES: ContextVar[dict | None] = ContextVar("promotion_branch_writes", default=None)
@@ -1574,6 +1575,81 @@ def _worker_authored_landing_record(
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
+def _section_identity(value: object) -> str:
+    """The one identity every spelling of a plan section resolves to."""
+    return section_record_id(str(value or "").strip())
+
+
+def _landing_closes_its_section(
+    *, project: str, plan: str, section: str, run_id: str
+) -> bool:
+    """Whether this landing is the last open node of its plan section.
+
+    A section's impl moves when its declaration moves to ``done``, and a
+    coordinator declares it done after its last node lands — so the landing
+    that should move impl is the one that can record the declaration. Whether
+    it may is a fact about the fleet, not about this run: the section is
+    closed only when no other open node of it remains.
+
+    An open node is another executable run of the same plan section still
+    holding a live pointer — queued, running or delivered; a pointer is removed
+    at landing, so a landed sibling is not open. A review of the same node is
+    not a node, and this run's own pointer is what proves it is one of the
+    section's nodes at all: a run whose pointer is already gone closes
+    nothing, so a re-promotion cannot re-declare a section a coordinator has
+    since reopened.
+    """
+    if not (project and plan and section and run_id):
+        return False
+    wanted = _section_identity(section)
+    try:
+        pointers = list_live(project=project)
+    except (OSError, ValueError):
+        return False
+    ours = False
+    others = 0
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        node = pointer.get("node")
+        node = node if isinstance(node, Mapping) else {}
+        role = str(node.get("role") or pointer.get("role") or "implement")
+        if role not in EXECUTABLE_SECTION_ROLES:
+            continue
+        if str(node.get("plan") or pointer.get("plan") or "") != plan:
+            continue
+        if _section_identity(node.get("section") or pointer.get("section")) != wanted:
+            continue
+        if str(pointer.get("run_id") or "") == run_id:
+            ours = True
+        else:
+            others += 1
+    return ours and others == 0
+
+
+def _close_section_declaration(payload: dict[str, Any], *, section: str) -> bool:
+    """Record the landed node's section done, moving the record beside it.
+
+    A declaration and the typed record are one statement in two places, so a
+    declaration written without its record lands a plan the next typed read
+    refuses. Only an ``implementable`` section is closed: a deferred, descoped
+    or already-done section is not this landing's to move.
+    """
+    declarations = payload.get("section_declarations")
+    if not isinstance(declarations, dict):
+        return False
+    wanted = _section_identity(section)
+    for key, value in declarations.items():
+        if _section_identity(key) != wanted:
+            continue
+        if str(value or "").strip().lower() != "implementable":
+            return False
+        declarations[key] = "done"
+        _store._move_section_record(payload, key, "done")
+        return True
+    return False
+
+
 def _landing_comment_update(
     state: Mapping[str, Any],
     *,
@@ -1582,6 +1658,7 @@ def _landing_comment_update(
     narrative: str,
     author: str,
     when: str,
+    close_section: bool = False,
 ) -> tuple[dict[str, Any], str, dict[str, str], dict[str, Any] | None]:
     """Prepare one idempotent comment append without changing the input state."""
     anchor = section_anchor(section)
@@ -1606,6 +1683,18 @@ def _landing_comment_update(
     ):
         items[items.index(existing)] = {**existing, **comment}
     payload = {**state, "comments": comments}
+    if close_section:
+        # The declaration and its typed record are copied before either moves,
+        # so a caller's state mapping is not changed by a preview of the write.
+        declarations = payload.get("section_declarations")
+        if isinstance(declarations, Mapping):
+            payload["section_declarations"] = dict(declarations)
+        records = payload.get("sections")
+        if isinstance(records, list):
+            payload["sections"] = [
+                dict(item) if isinstance(item, Mapping) else item for item in records
+            ]
+        _close_section_declaration(payload, section=section)
     if str(state.get("status") or "").strip().lower() in {"draft", "pending"}:
         payload["status"] = "in-progress"
     return payload, anchor, comment, existing
@@ -1624,6 +1713,7 @@ def _record_landing_comment(
     worker_tree: Path | None = None,
     worker_commits: Iterable[str] = (),
     landing: str = "",
+    close_section: bool = False,
 ) -> dict[str, Any]:
     """Append one idempotent section comment for a promoted run.
 
@@ -1644,6 +1734,13 @@ def _record_landing_comment(
     plan that was never started stops reading as unstarted the moment work
     lands on it. ``status`` is a metadata scalar, so the flip never re-stales
     a design review.
+
+    ``close_section`` records the landed node's section done in the same write.
+    A section's impl moves only when its declaration does, and a coordinator
+    declares a section done after its last node lands — so without this the
+    landing that should move impl is refused for not having moved it. The
+    caller sets it only for a section's last open node, so a section whose
+    siblings are still open stays implementable.
     """
     landing = str(landing).strip()
     narrative = str(narrative).strip()
@@ -1662,6 +1759,7 @@ def _record_landing_comment(
             narrative=body_text,
             author=author,
             when=when,
+            close_section=close_section,
         )
         comment_id = comment["id"]
         desired_body = comment["body"]

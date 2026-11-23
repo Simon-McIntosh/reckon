@@ -2456,6 +2456,17 @@ def _adopt_a_plan_edited_after_the_snapshot(
 def _record_comment_with_snapshot(
     snapshot: _PlanWriteSnapshot | None, **kwargs: Any
 ) -> dict:
+    # The closure is decided once for this landing and carried into both the
+    # snapshot's preview of the write and the write itself, so the two cannot
+    # disagree about whether the section moves to done.
+    from reckon.crew.promotion_scope import _landing_closes_its_section
+
+    kwargs["close_section"] = _landing_closes_its_section(
+        project=str(kwargs.get("project") or ""),
+        plan=str(kwargs.get("plan") or ""),
+        section=str(kwargs.get("section") or ""),
+        run_id=str(kwargs.get("run_id") or ""),
+    )
     if snapshot is not None:
         from reckon import _plan_html
 
@@ -2476,10 +2487,13 @@ def _record_comment_with_snapshot(
                 narrative=narrative,
                 author=kwargs["author"],
                 when=kwargs["when"],
+                close_section=bool(kwargs.get("close_section")),
             )
             snapshot.comment_id = str(_comment["id"])
             snapshot.comment_anchor = _anchor
-            if payload.get("comments") != state.get("comments"):
+            if payload.get("comments") != state.get("comments") or payload.get(
+                "section_declarations"
+            ) != state.get("section_declarations"):
                 payload = {
                     **payload,
                     "version": int(state.get("version") or 0) + 1,
