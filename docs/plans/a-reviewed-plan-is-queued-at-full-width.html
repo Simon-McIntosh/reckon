@@ -25,7 +25,7 @@
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -203,6 +203,15 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261122T035743985722-rpfw-a-request-records-its-dispatch-width" data-who="reckon-build" data-when="2026-11-22T04:59:47.269Z">
     <div class="r-comment-body"><p>Every queued request now records the width it was dispatched at — plan from a whole-plan call, batch from a batch file, section from a single-section call — on the request pointer, on the ledger row promotion writes and in the live queue view, which also filters by that field; the scoped gate ran 60 passed at 0ecf1e4e75 and on base 68413ae8 the same test file fails with the field absent.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261123T113531542642-review-of-rpfw-one-read-says-what-may-be-queued-cc2887040a9b" data-who="reckon-build" data-when="2026-11-23T11:55:16.699Z">
+    <div class="r-comment-body"><p>Independent review of r-20261122T035907479454-rpfw-one-read-says-what-may-be-queued at cc2887040a: parsed record scoring all six dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 19, reuse 16, total 110) over base c11f250a and head cc2887040a, added_failure_count 0 from the run's baseline (58 passed) and after (63 passed) arms, and two non-blocking findings; the record passes the review check.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261122T035907479454-rpfw-one-read-says-what-may-be-queued" data-who="reckon-build" data-when="2026-11-23T12:34:37Z">
+    <div class="r-comment-body"><p>One read answers per section whether a plan's work may be queued and why, taking each reason from the gate that already computes it, and both dispatch surfaces report its own words; tests/test_one_read_says_what_may_be_queued.py is green with the review-owed, open-decision and coordinated-plan cases and a 300-plan read measured at 0.806 s against a 2 s bound.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261123T123505545107-review-of-rpfw-one-read-says-what-may-be-queued-70302895213c" data-who="reckon-build" data-when="2026-11-23T12:45:15.845Z">
+    <div class="r-comment-body"><p>Independent review of commits cc2887040a..7030289521 records all six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 18), added_failure_count 0, and no finding: the gained commit at reckon/crew/dispatch_batch.py:1438-1464 restores the per-row coordinator sentence, which tests/test_a_plan_dispatch_queues_every_section.py:133 independently guards (failing at the pre-repair landing head, passing at 7030289521).</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261122T050305093431-review-of-rpfw-the-queue-view-counts-waits-by-cause-2001dd49d7fe" data-who="reckon-build" data-when="2026-11-22T05:11:31.178Z">
     <div class="r-comment-body"><p>Review of r-20261122T035912179260-rpfw-the-queue-view-counts-waits-by-cause at head 2001dd49d7fe (base 68413ae856fe): scores goal_fidelity 13, evidence 17, scope_discipline 20, durability 14, fit 15, reuse 5; one blocking finding — ticker.py:968 queue_pane_row has no production call site, so no pane renders the four-part waiting row or the no-work-running fault — plus four non-blocking findings (duplicated in-flight phase set, held phase counted as a slot wait, counts.waiting duplicating counts.requests, part names restated in the renderer); added_failure_count 0 over the reviewed run's own suite arms.</p></div>
 </div>
@@ -211,12 +220,6 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261122T035912179260-rpfw-the-queue-view-counts-waits-by-cause" data-who="reckon-build" data-when="2026-11-22T05:31:32Z">
     <div class="r-comment-body"><p>The queue view's waiting count is given in four parts with each part's oldest age, the last three read from the wait_class the admission pass already stamps and never recomputed, and a request parked behind a hold counted as held rather than as a slot wait. The view decides the fault itself and carries the rendered pane row on the document every queue reader loads, so the row and the fault have a production caller and cannot disagree with the counts; the renderer reads each part's name and letter from the document and the view reads the pane's in-flight phase set, so neither restates the other's vocabulary.</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20261123T113531542642-review-of-rpfw-one-read-says-what-may-be-queued-cc2887040a9b" data-who="reckon-build" data-when="2026-11-23T11:55:16.699Z">
-    <div class="r-comment-body"><p>Independent review of r-20261122T035907479454-rpfw-one-read-says-what-may-be-queued at cc2887040a: parsed record scoring all six dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 19, reuse 16, total 110) over base c11f250a and head cc2887040a, added_failure_count 0 from the run's baseline (58 passed) and after (63 passed) arms, and two non-blocking findings; the record passes the review check.</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20261122T035907479454-rpfw-one-read-says-what-may-be-queued" data-who="reckon-build" data-when="2026-11-23T12:34:37Z">
-    <div class="r-comment-body"><p>One read answers per section whether a plan&#x27;s work may be queued and why, taking each reason from the gate that already computes it, and both dispatch surfaces report its own words; tests/test_one_read_says_what_may_be_queued.py is green with the review-owed, open-decision and coordinated-plan cases and a 300-plan read measured at 0.806 s against a 2 s bound.</p></div>
 </div>
 </section>
   </main>
