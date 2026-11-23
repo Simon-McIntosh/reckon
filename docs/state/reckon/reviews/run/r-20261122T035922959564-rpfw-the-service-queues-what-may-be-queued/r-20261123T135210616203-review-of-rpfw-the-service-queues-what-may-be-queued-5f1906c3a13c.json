@@ -1,0 +1,105 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "11d1229dde4cc7b2ca70a3fc8a7084071d21c8c5",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:129 admit_once -> queueing.fill_queue",
+    "reckon/crew/dispatch_batch.py:1212 _QueueReads.answers -> live-coordinator owner",
+    "reckon/crew/dispatch_batch.py:1439 queue_plan -> live-coordinator owner and queued_by",
+    "reckon/crew_run_commands.py:3540 _queue_hold_change -> queue_edit.hold/release",
+    "reckon/flight.py:1797 validate_layer -> service_queues_plans"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "goal_fidelity": {
+      "kind": "folded",
+      "node": "rpfw-the-service-queues-what-may-be-queued",
+      "recorded_at": "2026-11-23T14:11:28.248475+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-23T13:53:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/queueing.py",
+      "line": "132",
+      "severity": "blocking",
+      "text": "with config_for absent \u2014 the only way the admit CLI reaches this pass (reckon/crew_run_commands.py:6663 calls admit_until_stopped(lane=..., once=...) and :6661 admit_once(lane=..., run_id=...); neither passes config_for) \u2014 resolve_config is _default_config, declared at :56 as (project, root) and called here with the project alone. The TypeError is swallowed at :133-134, so every mounted project reports 'config: _default_config() missing 1 required positional argument: root' and the service files no request at all. Reproduced by importing this revision's queueing.py and calling PlanQueue().fill(projects=...) with no config_for: {\"projects\": [{\"project\": \"proj\", \"plans\": [], \"error\": \"config: _default_config() missing 1 required positional argument: 'root'\"}], \"queued\": 0, \"filed\": []}. Pass root at the call, and add a test that drives fill or admit_once with no config_for."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "1192",
+      "severity": "non-blocking",
+      "text": "release_plan is handed _plan_hold_target(run_id, project) with the plan argument omitted (hold at :1113 does the same), so the plan-only branch at :1152 is unreachable and `crew queue hold --plan X` with no --project raises the error whose text offers that branch ('or a plan name registered in mounts.json'); the feature works when --project is named, but the documented fallback cannot run."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "142",
+      "severity": "non-blocking",
+      "text": "the comment line \"section's refs moves to ``queued`` the moment the last ref lands and\" appears at :141 and again at :142, leaving the paragraph garbled in a file this node edited."
+    },
+    {
+      "file": "tests/test_the_service_queues_what_may_be_queued.py",
+      "line": "230",
+      "severity": "non-blocking",
+      "text": "assert hold[\"plan\"][\"plan\"] == PLAN (and the same shape at :236 for release) compares the record the test's own plan argument produced against that same argument, so it holds whatever the stored hold says; the pass assertions at :232 and :238 are the independent guard, and this one should be dropped or compared against the stored hold file instead."
+    },
+    {
+      "file": "reckon/crew/admission/queueing.py",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "mounted_projects re-implements the project-to-docs resolution the repository owns at reckon/serve.py:1156 (mounts_for_snapshot, memoised) and reckon/capabilities.py:37 (_mounted_docs), so mounts.json now has a third reader with a third filtering rule."
+    },
+    {
+      "file": "reckon/crew/admission/queueing.py",
+      "line": "143",
+      "severity": "non-blocking",
+      "text": "the timing clause cannot fail: the off arm returns before doing anything and nine of the ten on-arm passes are short-circuited by the identity cache here, so both medians are 0.000 s whatever the stage costs. The one pass that parses plans cost 41.823 s (queue-pass-timing.log), twenty times the two-second bound the clause exists to enforce, and the median hides it. Measure the uncached pass, or state the clause as a first-pass bound."
+    }
+  ],
+  "head_log_revision": "5f1906c3a13c9cb025407dab71ffb2783280c948",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites: the service pass, the queue read, the whole-plan dispatch, the queue hold/release CLI and flight validation.",
+    "diff": "read the three commits against 11d1229dde: 639491d61f adds queueing.py, wires fill_queue into selection.py:126-138, threads queued_by through requests.py and dispatch_batch.py:1407-1837, adds plan-hold storage and the --plan hold/release form to queue_edit.py, and adds SERVICE_QUEUE_KEY with its validator to flight.py and schema/flight-defaults.yaml, plus the new test file; 5208fe6854 declares the hold writer in the staged-write census; 5f1906c3a1 is lint only.",
+    "done_when": "the done_when names tests/test_the_service_queues_what_may_be_queued.py and a ten-pass timing comparison; the manifest records 5 passed EXIT=0 (log at revision 5208fe6854, each of the five functional done-when cases present) and queue-pass-timing.log records median 0.000 s on against 0.000 s off, delta 0.000 s, so the gate asserts the done_when's letters even though the timing arm cannot fail.",
+    "goal": "the node's goal is 'queue from the admit service every section that may be queued'; reckon/crew/admission/queueing.py:104-216 implements exactly that over the plan read, but with config_for absent \u2014 the only way the admit CLI reaches it \u2014 queueing.py:132 raises TypeError and :134 skips every project, so the landed change files no request in production.",
+    "manifest": "read; status complete, commits 639491d61f 5208fe6854 5f1906c3a1, the gate at 5 passed EXIT=0, negative-control.log at EXIT=1 showing 0 == 3 with no request filed, baseline_suite 11d1229dde with 0 failures and after_suite 5f1906c3a1 with 0 failures, and evidence_inputs disclosing the 41.8 s first pass.",
+    "write_paths": "the declared paths were reckon/crew/admission, reckon/crew/dispatch_batch.py, reckon/crew/queue_edit.py, reckon/flight.py, reckon/_flight_schema.py, reckon/schema, reckon/crew/dispatching/requests.py, tests/test_the_service_queues_what_may_be_queued.py, tests/test_staged_write_inventory.py and the evidence and figures directories. All nine changed paths in 11d1229dde..5f1906c3a1 lie inside them."
+  },
+  "justifications": {
+    "durability": "the assertions at tests/test_the_service_queues_what_may_be_queued.py:189-196 read the stored pointers and would redden if queued_by were dropped, but no test calls selection.py:admit_once or fill without config_for, so the blocking defect sits untested, and the assertions at :230 and :236 compare a value the test itself passed in.",
+    "evidence": "the functional gate is recorded (5 passed EXIT=0) but the timing clause is measured against an off-arm that skips the stage and nine on-arm passes that queueing.py:143 short-circuits, so both medians are 0.000 s by construction and hide the 41.823 s pass that does the work.",
+    "fit": "the module follows the admission package's idiom and words its comments by mechanism, but reckon/crew/admission/selection.py:140-142 repeats its own comment line verbatim.",
+    "goal_fidelity": "the mechanism works only when a caller supplies config_for, and reckon/crew/admission/selection.py:129 passes the pass's config_for through while reckon/crew_run_commands.py:6663 supplies none, so queueing.py:132 raises and :134 skips every project.",
+    "reuse": "reckon/crew/admission/queueing.py:39 mounted_projects re-reads mounts.json instead of extending the owner at reckon/serve.py:1156 (mounts_for_snapshot), and :205 _plan_slugs repeats reckon/crew/plan_coordinator.py:200 _plans_and_owners's listing.",
+    "scope_discipline": "all nine changed paths in the diff lie inside the declared write paths, and the owner-live change at dispatch_batch.py:1213 is the deliverable's own 'under the plan's coordinator when the existing resolution names a live one' rather than a stray change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'queue from the admit service every section that may be queued'; reckon/crew/admission/queueing.py:104-216 implements exactly that over the plan read, but with config_for absent \u2014 the only way the admit CLI reaches it \u2014 queueing.py:132 raises TypeError and :134 skips every project, so the landed change files no request in production.\nVERDICT done_when: the done_when names tests/test_the_service_queues_what_may_be_queued.py and a ten-pass timing comparison; the manifest records 5 passed EXIT=0 (log at revision 5208fe6854, each of the five functional done-when cases present) and queue-pass-timing.log records median 0.000 s on against 0.000 s off, delta 0.000 s, so the gate asserts the done_when's letters even though the timing arm cannot fail.\nVERDICT write_paths: the declared paths were reckon/crew/admission, reckon/crew/dispatch_batch.py, reckon/crew/queue_edit.py, reckon/flight.py, reckon/_flight_schema.py, reckon/schema, reckon/crew/dispatching/requests.py, tests/test_the_service_queues_what_may_be_queued.py, tests/test_staged_write_inventory.py and the evidence and figures directories. All nine changed paths in 11d1229dde..5f1906c3a1 lie inside them.\nVERDICT manifest: read; status complete, commits 639491d61f 5208fe6854 5f1906c3a1, the gate at 5 passed EXIT=0, negative-control.log at EXIT=1 showing 0 == 3 with no request filed, baseline_suite 11d1229dde with 0 failures and after_suite 5f1906c3a1 with 0 failures, and evidence_inputs disclosing the 41.8 s first pass.\nVERDICT diff: read the three commits against 11d1229dde: 639491d61f adds queueing.py, wires fill_queue into selection.py:126-138, threads queued_by through requests.py and dispatch_batch.py:1407-1837, adds plan-hold storage and the --plan hold/release form to queue_edit.py, and adds SERVICE_QUEUE_KEY with its validator to flight.py and schema/flight-defaults.yaml, plus the new test file; 5208fe6854 declares the hold writer in the staged-write census; 5f1906c3a1 is lint only.\nCALL_SITES: reckon/crew/admission/selection.py:129 admit_once -> queueing.fill_queue, reckon/crew/dispatch_batch.py:1212 _QueueReads.answers -> live-coordinator owner, reckon/crew/dispatch_batch.py:1439 queue_plan -> live-coordinator owner and queued_by, reckon/crew_run_commands.py:3540 _queue_hold_change -> queue_edit.hold/release, reckon/flight.py:1797 validate_layer -> service_queues_plans\nSCORE goal_fidelity: 7\nJUSTIFICATION goal_fidelity: the mechanism works only when a caller supplies config_for, and reckon/crew/admission/selection.py:129 passes the pass's config_for through while reckon/crew_run_commands.py:6663 supplies none, so queueing.py:132 raises and :134 skips every project.\nSCORE evidence: 11\nJUSTIFICATION evidence: the functional gate is recorded (5 passed EXIT=0) but the timing clause is measured against an off-arm that skips the stage and nine on-arm passes that queueing.py:143 short-circuits, so both medians are 0.000 s by construction and hide the 41.823 s pass that does the work.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all nine changed paths in the diff lie inside the declared write paths, and the owner-live change at dispatch_batch.py:1213 is the deliverable's own 'under the plan's coordinator when the existing resolution names a live one' rather than a stray change.\nSCORE durability: 8\nJUSTIFICATION durability: the assertions at tests/test_the_service_queues_what_may_be_queued.py:189-196 read the stored pointers and would redden if queued_by were dropped, but no test calls selection.py:admit_once or fill without config_for, so the blocking defect sits untested, and the assertions at :230 and :236 compare a value the test itself passed in.\nSCORE fit: 16\nJUSTIFICATION fit: the module follows the admission package's idiom and words its comments by mechanism, but reckon/crew/admission/selection.py:140-142 repeats its own comment line verbatim.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/admission/queueing.py:39 mounted_projects re-reads mounts.json instead of extending the owner at reckon/serve.py:1156 (mounts_for_snapshot), and :205 _plan_slugs repeats reckon/crew/plan_coordinator.py:200 _plans_and_owners's listing.\nFINDING reckon/crew/admission/queueing.py:132 blocking: with config_for absent \u2014 the only way the admit CLI reaches this pass (reckon/crew_run_commands.py:6663 calls admit_until_stopped(lane=..., once=...) and :6661 admit_once(lane=..., run_id=...); neither passes config_for) \u2014 resolve_config is _default_config, declared at :56 as (project, root) and called here with the project alone. The TypeError is swallowed at :133-134, so every mounted project reports 'config: _default_config() missing 1 required positional argument: root' and the service files no request at all. Reproduced by importing this revision's queueing.py and calling PlanQueue().fill(projects=...) with no config_for: {\"projects\": [{\"project\": \"proj\", \"plans\": [], \"error\": \"config: _default_config() missing 1 required positional argument: 'root'\"}], \"queued\": 0, \"filed\": []}. Pass root at the call, and add a test that drives fill or admit_once with no config_for.\nFINDING reckon/crew/queue_edit.py:1192 non-blocking: release_plan is handed _plan_hold_target(run_id, project) with the plan argument omitted (hold at :1113 does the same), so the plan-only branch at :1152 is unreachable and `crew queue hold --plan X` with no --project raises the error whose text offers that branch ('or a plan name registered in mounts.json'); the feature works when --project is named, but the documented fallback cannot run.\nFINDING reckon/crew/admission/selection.py:142 non-blocking: the comment line \"section's refs moves to ``queued`` the moment the last ref lands and\" appears at :141 and again at :142, leaving the paragraph garbled in a file this node edited.\nFINDING tests/test_the_service_queues_what_may_be_queued.py:230 non-blocking: assert hold[\"plan\"][\"plan\"] == PLAN (and the same shape at :236 for release) compares the record the test's own plan argument produced against that same argument, so it holds whatever the stored hold says; the pass assertions at :232 and :238 are the independent guard, and this one should be dropped or compared against the stored hold file instead.\nFINDING reckon/crew/admission/queueing.py:39 non-blocking: mounted_projects re-implements the project-to-docs resolution the repository owns at reckon/serve.py:1156 (mounts_for_snapshot, memoised) and reckon/capabilities.py:37 (_mounted_docs), so mounts.json now has a third reader with a third filtering rule.\nFINDING reckon/crew/admission/queueing.py:143 non-blocking: the timing clause cannot fail: the off arm returns before doing anything and nine of the ten on-arm passes are short-circuited by the identity cache here, so both medians are 0.000 s whatever the stage costs. The one pass that parses plans cost 41.823 s (queue-pass-timing.log), twenty times the two-second bound the clause exists to enforce, and the median hides it. Measure the uncached pass, or state the clause as a first-pass bound.",
+  "review_run_id": "r-20261123T135210616203-review-of-rpfw-the-service-queues-what-may-be-queued-5f1906c3a13c",
+  "reviewed_base_sha": "11d1229dde4cc7b2ca70a3fc8a7084071d21c8c5",
+  "reviewed_head_sha": "5f1906c3a13c9cb025407dab71ffb2783280c948",
+  "reviewed_run_id": "r-20261122T035922959564-rpfw-the-service-queues-what-may-be-queued",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T135210616203-review-of-rpfw-the-service-queues-what-may-be-queued-5f1906c3a13c"
+  },
+  "reviewer_run_id": "r-20261123T135210616203-review-of-rpfw-the-service-queues-what-may-be-queued-5f1906c3a13c",
+  "scores": {
+    "durability": 8,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 7,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T14:11:27.057729+00:00",
+  "total": 65
+}
