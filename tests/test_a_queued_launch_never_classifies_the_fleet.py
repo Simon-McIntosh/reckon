@@ -142,6 +142,10 @@ def test_the_launch_inputs_equal_the_base_except_for_backlog(
     config, _ = _config_for()
     request = _queue(repository, node_id="queued", run_id="r-queued")
     request["dispatch_options"]["wave"] = "comparison"
+    # The request records the width it was queued at. The frozen reference
+    # predates that recorded default, so stating it here lets both arms compare
+    # the launch handoff itself rather than that one metadata default.
+    request["dispatch_options"]["dispatch_width"] = "section"
     runs.queue_dispatch(request)
     original_request = copy.deepcopy(runs.read_pointer("r-queued"))
     original_detail = runs.read_dispatch_detail(original_request)
@@ -165,7 +169,16 @@ def test_the_launch_inputs_equal_the_base_except_for_backlog(
         request, config_for=lambda _: config, launcher=launcher
     )
     reset_request()
-    monkeypatch.setattr(dispatch_module, "dispatch", reference.dispatch)
+
+    def reference_dispatch(**kwargs):
+        # The pinned reference predates ``seats_in_flight``, a seat-accounting
+        # hint admission passes before launch. It is not part of the launch
+        # handoff this comparison reads, so dropping it lets the frozen
+        # reference run under today's call without changing a launch input.
+        kwargs.pop("seats_in_flight", None)
+        return reference.dispatch(**kwargs)
+
+    monkeypatch.setattr(dispatch_module, "dispatch", reference_dispatch)
     queue_admission._launch_queued(
         request, config_for=lambda _: config, launcher=launcher
     )

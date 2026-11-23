@@ -155,9 +155,11 @@ def test_a_composed_review_on_a_full_roster_leaves_a_queued_pointer(
     assert [pointer["run_id"] for pointer in queued] == [result["queued"]["run_id"]]
     pointer = queued[0]
     assert pointer["backend"] == "worker"
-    # The queued pointer launches from the brief this composition wrote, so the
-    # composed directory must survive the hold that queued it.
-    assert Path(str((pointer.get("node") or {}).get("brief") or "")).parent == directory
+    # The queued pointer carries the brief its launch reads: the stored copy's
+    # path under the request's own run directory. The composed directory the
+    # text was written from must survive the hold that queued it.
+    brief_path = Path(str((pointer.get("node") or {}).get("brief_path") or ""))
+    assert brief_path.parent == runs.run_dir(str(pointer["run_id"])), pointer
     assert (directory / "brief.md").is_file()
 
 
