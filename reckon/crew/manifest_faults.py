@@ -18,12 +18,18 @@ What belongs here is a fault judged from the manifest alone, with no repository
 measurement: whether the two readers agree is the whole point, and a rule that
 had to run git would refuse differently depending on where it was called from.
 
-Two rules live here, and each reason names the repair:
+Three rules live here, and each reason names the repair:
 
 * a suite arm whose revision is prose or an abbreviation, which cannot be
   compared with the base;
 * a gate command naming an absolute path under the temporary directory, which
-  is cleared before the run's record is ever read.
+  is cleared before the run's record is ever read;
+* a gate command whose first program word is an option rather than a program,
+  which a shell cannot start, so the landing's replay stalls before measuring.
+
+A gate command the run's own gate declaration supplies is judged in place of
+the recorded line: the declaration states what the arms actually ran, and a
+worker that recorded an option there has that declaration as its repair.
 
 A commit entry is not judged here. Both readers resolve an entry to the ids it
 carries, so a citation written as ``<sha> <subject>`` reads as the revision it
@@ -80,10 +86,24 @@ def manifest_faults(manifest: Mapping[str, Any]) -> list[Any]:
         for name in SUITE_ARMS
         if (fault := _arm_revision_fault(name, manifest.get(name))) is not None
     )
-    gate = _gate_command_fault(manifest)
-    if gate is not None:
-        faults.append(gate)
+    faults.extend(_gate_command_faults(manifest))
     return faults
+
+
+def with_declared_gate(manifest: Mapping[str, Any], declared_command: str = "") -> Any:
+    """The manifest as the rules should judge it, its gate command declared
+    through ``crew declare-gate`` standing in place of the recorded line.
+
+    A declaration states the command the run's arms actually ran, so it is the
+    command the lander replays; a recorded line that names no program is the
+    worker's to repair by recording the literal command or by declaring the one
+    that ran. Calling the rules on the substituted mapping keeps them judging
+    one gate command, whichever surface supplied it.
+    """
+    declared = str(declared_command or "").strip()
+    if not declared:
+        return manifest
+    return {**manifest, "tests": declared}
 
 
 def arm_revision_reason(name: str, revision: str) -> str:
@@ -105,6 +125,19 @@ def gate_command_reason(path: str) -> str:
         "before any later reader re-runs the command. Name the test paths "
         "repository-relatively, or record the command that ran at the base "
         "revision"
+    )
+
+
+def gate_program_reason(command: str, detail: str) -> str:
+    """The refusal for a gate command naming no program a shell can start."""
+    return (
+        f"the recorded gate command {command!r} names no program a shell can "
+        f"start: {detail}. The lander replays this text through a shell, which "
+        "cannot start it, so the landing stalls without running the check. "
+        "Record the literal command that ran, naming the program as well as its "
+        "arguments (for example `.venv/bin/python -m pytest tests/test_a.py`), "
+        "or declare the command that ran with `crew declare-gate --command "
+        "'<the literal command>'`"
     )
 
 
@@ -149,15 +182,68 @@ def _is_prose(revision: str) -> bool:
     return len(revision.split()) > 1 or any(char in revision for char in "()[]")
 
 
-def _gate_command_fault(manifest: Mapping[str, Any]) -> Fault | None:
+def _gate_command_faults(manifest: Mapping[str, Any]) -> list[Fault]:
+    """The refusals one gate command earns: a temp-tree path, then no program."""
     command = str(manifest.get("tests") or "")
     if not command.strip():
-        return None
+        return []
+    faults = []
     root = tempfile.gettempdir()
     for word in _command_words(command):
         if word.startswith(os.sep) and resolves_under(word, root):
-            return Fault(field="tests", reason=gate_command_reason(word))
-    return None
+            faults.append(Fault(field="tests", reason=gate_command_reason(word)))
+            break
+    program = _program_fault(command)
+    if program is not None:
+        faults.append(program)
+    return faults
+
+
+def _program_fault(command: str) -> Fault | None:
+    """The refusal for a gate command whose first word is an option, not a program.
+
+    The lander hands the recorded text to a shell, and a shell reads a leading
+    option as an argument list with no program to receive it: it exits without
+    running any check. What is judged here is only that shape, because the
+    manifest alone cannot say which programs a tree holds — whether a word that
+    does look like a program resolves to an executable is the promotion's own
+    question, answered against the run's checkout.
+    """
+    words, detail = _startable_words(command)
+    if words is None:
+        return Fault(field="tests", reason=gate_program_reason(command, detail))
+    from reckon.crew.promotion_gate import _program_token_index
+
+    index = _program_token_index(words)
+    if index is None:
+        return Fault(
+            field="tests",
+            reason=gate_program_reason(
+                command,
+                "it carries only variable assignments, so no program is left to start",
+            ),
+        )
+    program = words[index]
+    if not program.startswith("-"):
+        return None
+    return Fault(
+        field="tests",
+        reason=gate_program_reason(
+            command,
+            f"its first program word {program!r} is an option rather than the "
+            "program that ran the check",
+        ),
+    )
+
+
+def _startable_words(command: str) -> tuple[list[str] | None, str]:
+    """The command's words as a shell splits them, or None and why it cannot."""
+    import shlex
+
+    try:
+        return shlex.split(command), ""
+    except ValueError as unparseable:
+        return None, f"it does not tokenise as a shell command ({unparseable})"
 
 
 def _command_words(command: str) -> list[str]:

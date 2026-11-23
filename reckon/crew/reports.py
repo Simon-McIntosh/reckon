@@ -3199,6 +3199,27 @@ def _run_was_armed_a_suite(manifest_path: Path | None) -> bool:
     return bool(str(record.get("suite_command_resolved") or "").strip())
 
 
+def _run_gate_declaration(manifest_path: Path | None) -> str:
+    """The command the run's own gate declared, read from its live pointer.
+
+    A declaration states what the run's arms actually ran, so it stands in
+    place of the manifest's ``tests`` line where the two disagree. The run's
+    manifest directory names its run, the same way the suite arming is reached
+    from the file the audit reads. An unreadable pointer answers no
+    declaration, and the manifest's own line is judged as written.
+    """
+    if manifest_path is None:
+        return ""
+    from reckon.crew.promotion_records import gate_declaration
+    from reckon.crew.runs import read_pointer
+
+    try:
+        record = read_pointer(manifest_path.expanduser().parent.name)
+    except (CrewError, OSError, ValueError):
+        return ""
+    return gate_declaration(record).get("command", "")
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -3278,7 +3299,14 @@ def audit_manifest(
     # The faults promotion refuses with its own words hours later, read here
     # while the worker still holds the turn that can repair them. The rules and
     # their reasons live in one module so the two readers cannot drift apart.
-    findings.extend(fault.reason for fault in manifest_faults.manifest_faults(manifest))
+    findings.extend(
+        fault.reason
+        for fault in manifest_faults.manifest_faults(
+            manifest_faults.with_declared_gate(
+                manifest, _run_gate_declaration(resolved_manifest_path)
+            )
+        )
+    )
     if status == "complete" and suite_armed:
         for name in ("baseline_suite", "after_suite"):
             observation = manifest.get(name)

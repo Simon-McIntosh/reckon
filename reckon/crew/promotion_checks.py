@@ -602,9 +602,18 @@ def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
     to the arms that read its absence.
     """
     manifest = _fresh_manifest(record)
+
     if manifest is None:
         return
-    reasons = [fault.reason for fault in manifest_faults.manifest_faults(manifest)]
+    from reckon.crew.promotion_records import gate_declaration
+
+    declared = gate_declaration(record).get("command", "")
+    reasons = [
+        fault.reason
+        for fault in manifest_faults.manifest_faults(
+            manifest_faults.with_declared_gate(manifest, declared)
+        )
+    ]
     if not reasons:
         return
     raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(reasons))
