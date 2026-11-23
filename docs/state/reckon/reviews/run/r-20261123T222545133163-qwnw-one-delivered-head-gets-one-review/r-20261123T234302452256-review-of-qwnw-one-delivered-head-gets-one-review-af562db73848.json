@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:4138 dispatch_review_for_run",
+    "reckon/crew/recovery_watch.py:4560",
+    "reckon/crew/review.py:5005",
+    "reckon/crew/pending_landing.py:1258",
+    "reckon/crew/plan_review.py:5244",
+    "reckon/crew_dispatch_commands.py:3418"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:43:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "4474",
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim family duplicates the exclusive-claim family in reckon/crew/dispatch_claims.py (_read_node_dispatch_claim:730, _empty_claim_is_stale:794, _reclaim_stale_node_dispatch_claim:813, _claim_node_dispatch:950) almost verbatim, and opens a second claim directory (review-head-claims) that gc's sweep_exec_identities does not reach"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record says the eight concurrent-dispatch errors reproduce in an unmodified base extraction, but no recorded arm runs that file at the base revision, so the claim is stated rather than measured"
+    },
+    {
+      "file": "tests/test_one_delivered_head_gets_one_review.py",
+      "line": "316",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert _review_pointers() == [winner] compares the live pointers against the id the test's own stand-in launcher wrote, so it cannot fail once line 311 passes"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call sites: dispatch_review_for_run, the station sweep, the coordinator command, pending landing, the plan-review reflex and the dispatch command surface",
+    "diff": "four commits from 6223efd28c to af562db738 across the claim implementation, its test, and the evidence fragment",
+    "done_when": "all three cases the done_when names are implemented and green, and the base revision fails the concurrent case with eight review run ids",
+    "goal": "the landed change takes an exclusive claim per reviewed run, head and review kind, so one delivered head receives exactly one review of each kind",
+    "manifest": "read; it records the commits, the three gate logs, the negative-control log, and the outside-scope attribution of the eight setup errors",
+    "write_paths": "the delivered diff touches only three of the five declared write paths, and nothing outside them"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read \u00a749's endpoint and the landed change; reckon/crew/recovery_review_dispatch.py:4371 takes an exclusive claim per (reviewed run, head, kind), and the three cases show one review per head where the base revision made eight.\nVERDICT done_when: tests/test_one_delivered_head_gets_one_review.py implements all three named cases (eight-at-once, dead winner, code+figure), and the manifest records 3 passed with the gate arms logged. write_paths: the manifest declares the five \u00a749 paths; the delivered diff touches three of them and nothing else.\nVERDICT manifest: read; it records the four commits, the three logs plus the negative-controls log, and states added failures 0 with the eight concurrent-dispatch setup errors named as outside scope.\nVERDICT diff: read commit by commit from 6223efd28c to af562db738; four commits, three files \u2014 the claim implementation, its test, and the evidence fragment.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:4138 dispatch_review_for_run, reckon/crew/recovery_watch.py:4560, reckon/crew/review.py:5005, reckon/pending_landing.py:1258, reckon/crew/plan_review.py:5244, reckon/crew_dispatch_commands.py:3418\nSCORE goal_fidelity: 18\nSCORE evidence: 15\nSCORE scope_discipline: 18\nSCORE durability: 16\nSCORE fit: 16\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:4371 wraps the composed launch in _take_review_head_claim, so every surface reaching dispatch_review_for_run arbitrates on the same (run, head, kind) key.\nJUSTIFICATION evidence: the gate logs quote both arms and a genuine red negative control, but the head arm's eight errors have no matching base arm (gate-base.log ran 43 files without test_concurrent_dispatch_of_one_node.py).\nJUSTIFICATION scope_discipline: every path in the delivered diff is one of the five declared write paths for \u00a749; no file outside them changed.\nJUSTIFICATION durability: the eight-at-once case fails at the base revision with assert 8 == 1, but tests/test_one_delivered_head_gets_one_review.py:316 asserts the pointer listing against the id the test's own stand-in launcher wrote.\nJUSTIFICATION fit: the helpers follow the surrounding private-helper and commented-constant style of reckon/crew/recovery_review_dispatch.py:4440, and no name carries a plan or ticket label.\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:4474 re-implements the exclusive-claim family reckon/crew/dispatch_claims.py:730 already owns, rather than extending it.\nFINDING reckon/crew/recovery_review_dispatch.py:4474 non-blocking: the claim family duplicates reckon/crew/dispatch_claims.py:730 _read_node_dispatch_claim, :794 _empty_claim_is_stale, :813 _reclaim_stale_node_dispatch_claim and :950 _claim_node_dispatch almost verbatim, and opens a second claim directory (review-head-claims) that gc's sweep_exec_identities does not reach, so a fix or a sweep added to the owner does not cover the copy.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html:91 non-blocking: the landing record says the eight concurrent-dispatch errors reproduce in an unmodified base extraction, but no recorded arm runs that file at the base revision, so the claim is stated rather than measured.\nFINDING tests/test_one_delivered_head_gets_one_review.py:316 non-blocking: assert _review_pointers() == [winner] compares the live pointers against the id the test's own stand-in launcher minted and wrote, so it cannot fail once line 311 passes and protects nothing a regression could break.\n",
+  "review_run_id": "r-20261123T234302452256-review-of-qwnw-one-delivered-head-gets-one-review-af562db73848",
+  "reviewed_base_sha": "6223efd28c0931606552b570ec4a5a799fa75fde",
+  "reviewed_head_sha": "af562db738485ebe7c0512ba570d711285d15f75",
+  "reviewed_run_id": "r-20261123T222545133163-qwnw-one-delivered-head-gets-one-review",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:59:18.595231+00:00",
+  "total": 88
+}
