@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_finding_count": 2,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_measure_delivery",
+    "reckon/crew/landing_measure.py:measure_run",
+    "reckon/crew/landing_measure.py:armed_observations",
+    "reckon/crew/delivery_scope.py:changed_test_files",
+    "reckon/crew/promotion_records.py:_scoped_suite_command",
+    "reckon/crew/promotion_records.py:_measure_missing_arms"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-23T20:18:21Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "597",
+      "severity": "non-blocking",
+      "text": "non-blocking: _NAMED_TEST_PATH is a second rule for \"a test path a text names\", whose owner _TEST_PATH_PATTERN lives at reckon/crew/recovery_repair_dispatch.py:814 and is already reached by reckon/crew/node.py:1206 _done_when_test_paths, whose docstring says a second rule would drift; this one also admits any .py token rather than only tests/ paths. Raised by the prior review of d0740256 and still present."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "1328",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when= argument passed into reckon/crew/landing_measure.py:measure_run is exercised by no test and is redundant on this path, because _measure_delivery always passes the derived[\"test_files\"] that resolve_landing_tests already resolved from the same done-when and changed paths; removing the line leaves every test green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "both commits read against base 31eda5cd; the gained commit replaces every direct node.done_when read with runs.node_field and adds the slim-listing case at tests/test_a_landing_measures_the_tests_its_done_when_names.py:214.",
+    "done_when": "the done-when names tests/test_a_landing_measures_the_tests_its_done_when_names.py; the manifest records the scoped gate at 63 passed, the after arm at 63 passed against base 31eda5cd at 58 passed, and two negative controls (base 4 failed EXIT=1; repair extraction d0740256 1 failed 4 passed EXIT=1).",
+    "goal": "the node's goal is that a landing measures the tests a run's done-when names when the run writes no test file; reckon/crew/landing_measure.py:resolve_landing_tests adds the done-when and importer sources, and reckon/crew/queue_landing.py:1328 now reads the done-when through runs.node_field, so the source fires on the production slim pointer.",
+    "manifest": "read; status complete, commits d074025635a141f9ee24bd7af8c5c505c60f1dc5 and 44d630e6a91ad3ea50e7296912eeeca0bfd5ac01, zero added failures, and its 63/58/63 figures match the gate logs.",
+    "write_paths": "eight paths declared and five touched, all inside the declaration; docs/evidence/fragments/queued-work-needs-no-workaround/s47.html and the figure directory are declared but absent from the diff."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_measures_the_tests_its_done_when_names.py:214 reddens when the answering commit is reverted (negative-control-repair.log EXIT=1), but the done_when argument wired at reckon/crew/queue_landing.py:1328 into reckon/crew/landing_measure.py:measure_run is exercised by no test.",
+    "evidence": "tests/test_a_landing_measures_the_tests_its_done_when_names.py drives armed_observations over a real git tree and real pytest, and the recorded logs show 63/58/63 plus two firing negative controls.",
+    "fit": "the repair routes every done-when read through reckon/crew/promotion_records.py:_done_when_text, which calls runs.node_field, matching the accessor the run store already owns for the node-body shape.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:resolve_landing_tests adds both prose sources and reckon/crew/queue_landing.py:1328 now reads the done-when through runs.node_field, so the source the goal names fires on the production slim pointer.",
+    "reuse": "no owner for \"a landing measure's test resolution\" predates this change; reckon/crew/delivery_scope.py:changed_test_files delegates to the new resolver rather than forking it, so the capability is extended at its existing owner.",
+    "scope_discipline": "every path in the diff is inside the eight declared write paths; the declared s47.html evidence fragment and figure directory are simply absent."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a landing measures the tests a run's done-when names when the run writes no test file; reckon/crew/landing_measure.py:resolve_landing_tests tries the fenced scope, then the done-when's named tests, then the importers, and reckon/crew/queue_landing.py:1328 now reads the done-when through runs.node_field, so the slim live-listing pointer resolves it from the node body file.\nVERDICT done_when: the done-when names tests/test_a_landing_measures_the_tests_its_done_when_names.py; the manifest records the scoped gate at 63 passed, the after arm at 63 passed against the base arm at 58 passed, and two negative controls (base 31eda5cd 4 failed EXIT=1; repair extraction d0740256 1 failed 4 passed EXIT=1), and all three gate logs carry the summary lines the manifest quotes.\nVERDICT write_paths: the run declares eight paths and the diff touches five - reckon/crew/delivery_scope.py, reckon/crew/landing_measure.py, reckon/crew/promotion_records.py, reckon/crew/queue_landing.py and tests/test_a_landing_measures_the_tests_its_done_when_names.py - all inside the declaration; docs/evidence/fragments/queued-work-needs-no-workaround/s47.html and the figure directory are declared but absent from the diff.\nVERDICT manifest: read; status complete, commits d074025635a141f9ee24bd7af8c5c505c60f1dc5 and 44d630e6a91ad3ea50e7296912eeeca0bfd5ac01, zero added failures, negative_control_log negative-control-repair.log at EXIT=1 with 1 failed and 4 passed, and its 63/58/63 figures match the gate logs.\nVERDICT diff: read both commits against base 31eda5cd; the gained commit is 44d630e6 over d0740256, five files, +421 -20, replacing every direct pointer[\"node\"][\"done_when\"] read with runs.node_field and adding the slim-listing case at tests/test_a_landing_measures_the_tests_its_done_when_names.py:214.\nCALL_SITES: reckon/crew/queue_landing.py:_measure_delivery, reckon/crew/landing_measure.py:measure_run, reckon/crew/landing_measure.py:armed_observations, reckon/crew/delivery_scope.py:changed_test_files, reckon/crew/promotion_records.py:_scoped_suite_command, reckon/crew/promotion_records.py:_measure_missing_arms\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:resolve_landing_tests adds both prose sources and reckon/crew/queue_landing.py:1328 now reads the done-when through runs.node_field, so the source the goal names fires on the production slim pointer.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_landing_measures_the_tests_its_done_when_names.py drives armed_observations over a real git tree and real pytest, and the recorded logs show 63/58/63 plus two firing negative controls.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the eight declared write paths; the declared s47.html evidence fragment and figure directory are simply absent.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_landing_measures_the_tests_its_done_when_names.py:214 reddens when the answering commit is reverted (negative-control-repair.log EXIT=1) because its named test imports nothing the change touches, but the done_when argument wired at reckon/crew/queue_landing.py:1328 into reckon/crew/landing_measure.py:measure_run is exercised by no test.\nSCORE fit: 17\nJUSTIFICATION fit: the repair routes every done-when read through reckon/crew/promotion_records.py:_done_when_text, which calls runs.node_field, matching the accessor the run store already owns for the node-body shape.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for \"a landing measure's test resolution\" predates this change; reckon/crew/delivery_scope.py:changed_test_files delegates to the new resolver rather than forking it, so the one capability is extended at its existing owner.\nFINDING reckon/crew/landing_measure.py:597 non-blocking: _NAMED_TEST_PATH is a second rule for \"a test path a text names\", whose owner _TEST_PATH_PATTERN lives at reckon/crew/recovery_repair_dispatch.py:814 and is already reached by reckon/crew/node.py:1206 _done_when_test_paths, whose docstring says a second rule would drift; this one also admits any .py token rather than only tests/ paths. Raised by the prior review of d0740256 and still present.\nFINDING reckon/crew/queue_landing.py:1328 non-blocking: the done_when= argument passed into reckon/crew/landing_measure.py:measure_run is exercised by no test and is redundant on this path, because _measure_delivery always passes the derived[\"test_files\"] that resolve_landing_tests already resolved from the same done-when and changed paths; removing the line leaves every test green.\n",
+  "review_run_id": "r-20261123T195607349890-review-of-qwnw-a-landing-measures-the-named-tests-44d630e6a91a",
+  "reviewed_base_sha": "31eda5cd1f4e52346def5d1d484bd1c9f4de514d",
+  "reviewed_head_sha": "44d630e6a91ad3ea50e7296912eeeca0bfd5ac01",
+  "reviewed_run_id": "r-20261123T182726060389-qwnw-a-landing-measures-the-named-tests",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T20:52:26.287343+00:00",
+  "total": 108
+}

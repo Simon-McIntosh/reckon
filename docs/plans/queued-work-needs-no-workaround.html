@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1183">
+<meta name="plan-version" content="1184">
 <meta name="plan-modified" content="2026-11-23">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3679,6 +3679,9 @@
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261123T191045767210-review-of-qwnw-a-landing-measures-the-named-tests-d074025635a1" data-who="reckon-build" data-when="2026-11-23T19:28:09.137Z">
     <div class="r-comment-body"><p>Review of d074025635a141f9ee24bd7af8c5c505c60f1dc5 against base 31eda5cd1f4e52346def5d1d484bd1c9f4de514d; stored parsed record scoring all six dimensions with one blocking finding, that every done-when read is taken from pointer["node"], which the slim live-listing pointer never carries, so the done-when source is inert in the landing pass.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261123T195607349890-review-of-qwnw-a-landing-measures-the-named-tests-44d630e6a91a" data-who="reckon-build" data-when="2026-11-23T20:47:44.930Z">
+    <div class="r-comment-body"><p>Reviewed the commit gained since the prior review (44d630e6a9 over d0740256) at base 31eda5cd: it replaces every direct node.done_when read with runs.node_field across queue_landing, delivery_scope and promotion_records, and adds a slim-listing test whose negative control fires; scores 18/18/19/16/17/20 with zero added failures and two non-blocking findings, record status parsed.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T200845603829-qwnw-dispatch-prints-one-json-document-and-a-fresh-re" data-who="reckon-build" data-when="2026-11-14T21:26:23.637Z">
     <div class="r-comment-body"><p>not attempted; the coordinator merges this commit, and nothing was pushed</p></div>
