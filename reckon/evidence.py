@@ -6,7 +6,7 @@ import html
 import json
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -921,23 +921,74 @@ def landings_that_landed(
     return [landing for landing in landings if landing.landed]
 
 
-def _figure_blocks(landings: Sequence[SectionLanding]) -> list[str]:
-    """One figure per named path, with its caption and its own source."""
+def _figure_markup(figure: LandedFigure) -> str:
+    """One figure: the image at its project-absolute address, its caption, its source."""
+    return (
+        '    <figure class="landed-figure">'
+        f'<img src="{_escape(figure.src)}" alt="{_escape(figure.caption)}">'
+        f"<figcaption>{_escape(figure.caption)} "
+        f"{_source('figure', figure.path, figure.path)}</figcaption>"
+        "</figure>"
+    )
+
+
+def _figure_blocks(
+    landings: Sequence[SectionLanding], *, seen: set[str] | None = None
+) -> list[str]:
+    """One figure per named path, with its caption and its own source.
+
+    ``seen`` is shared with a caller that has already rendered some of these
+    paths, so a figure appears in a record once wherever the record shows it.
+    """
     blocks: list[str] = []
-    seen: set[str] = set()
+    rendered = seen if seen is not None else set()
     for landing in landings:
         for figure in landing.figures:
-            if figure.path in seen:
+            if figure.path in rendered:
                 continue
-            seen.add(figure.path)
-            blocks.append(
-                '    <figure class="landed-figure">'
-                f'<img src="{_escape(figure.src)}" alt="{_escape(figure.caption)}">'
-                f"<figcaption>{_escape(figure.caption)} "
-                f"{_source('figure', figure.path, figure.path)}</figcaption>"
-                "</figure>"
-            )
+            rendered.add(figure.path)
+            blocks.append(_figure_markup(figure))
     return blocks
+
+
+def _node_figure_groups(
+    landings: Sequence[SectionLanding], *, seen: set[str]
+) -> list[str]:
+    """Each landed node's figures, grouped under the node its row names.
+
+    The record pairs a node with what it drew: the figures a node saved sit
+    beneath the table that lists it, in the node's own group, so a reader
+    following a row down finds that node's images rather than a paragraph about
+    them. A figure whose run names no node row is left for the record's figures
+    section, and ``seen`` records what was rendered here so it is not written
+    twice.
+    """
+    groups: list[str] = []
+    for landing in landings_that_landed(landings):
+        node_of_run = {
+            str(record.get("run_id") or ""): str(
+                record.get("node") or record.get("run_id") or ""
+            ).strip()
+            for record in landing.runs
+        }
+        figures_by_node: dict[str, list[LandedFigure]] = {}
+        for figure in landing.figures:
+            node = node_of_run.get(figure.run_id, "")
+            if not node:
+                continue
+            figures_by_node.setdefault(node, []).append(figure)
+        for node, figures in figures_by_node.items():
+            blocks = _figure_blocks(
+                [replace(landing, figures=tuple(figures))], seen=seen
+            )
+            if blocks:
+                groups.append(
+                    '    <div class="node-figures" '
+                    f'data-node="{_escape(node)}">\n'
+                    + "\n".join(blocks)
+                    + "\n    </div>"
+                )
+    return groups
 
 
 @dataclass(frozen=True, slots=True)
@@ -1081,7 +1132,9 @@ def _overview_block(
     plan_slug = str(plan.get("slug") or "").strip()
     paragraphs = [_section_paragraph(landing, plan_slug) for landing in landings]
     rows = _node_rows(landings, plan_slug=plan_slug, project=project, root=root)
-    figures = _figure_blocks(landings)
+    rendered_figures: set[str] = set()
+    node_figures = _node_figure_groups(landings, seen=rendered_figures)
+    figures = _figure_blocks(landings, seen=rendered_figures)
     origin = f'{APPEND_ORIGIN_ATTRIBUTE}="{OVERVIEW_ORIGIN_VALUE}"'
     header = (
         "      <thead><tr><th>Node</th><th>Section</th><th>Attempts</th>"
@@ -1101,7 +1154,15 @@ def _overview_block(
         if rows
         else ["    <p>No node landed.</p>"]
     )
-    figures_block = figures or ["    <p>No run named a figure.</p>"]
+    figures_block = figures or [
+        "    <p>"
+        + (
+            "Every figure sits beneath its node's row "
+            if node_figures
+            else "No run named a figure. "
+        )
+        + f"{_source('ledger', project or plan_slug, 'ledger')}.</p>"
+    ]
     return "\n".join(
         [
             f'  <section id="overview" {origin}>',
@@ -1111,6 +1172,7 @@ def _overview_block(
             f'  <section id="landed-nodes" {origin}>',
             "    <h2>Landed nodes</h2>",
             *table,
+            *node_figures,
             "  </section>",
             f'  <section id="figures" {origin}>',
             "    <h2>Figures</h2>",
@@ -1379,6 +1441,51 @@ def write_sprint_page(
     return destination
 
 
+@dataclass(frozen=True, slots=True)
+class ReportIdentity:
+    """What a closing plan's report names: the plan it records, and its sprint.
+
+    ``plan_href`` and ``sprint_href`` are the served addresses of the two
+    documents; either is empty when the document it would address is not on
+    disk, and the block then states the fact without a link rather than writing
+    a reference a reader cannot follow.
+    """
+
+    plan_slug: str
+    plan_title: str
+    plan_href: str = ""
+    sprint_id: str = ""
+    sprint_href: str = ""
+
+
+def _identity_block(identity: ReportIdentity) -> str:
+    """The report's first block: the plan it documents and the sprint it ran in."""
+    plan_label = identity.plan_title or identity.plan_slug
+    plan_link = (
+        f'<a href="{_escape(identity.plan_href)}">{_escape(plan_label)}</a>'
+        if identity.plan_href
+        else _escape(plan_label)
+    )
+    sprint_id = identity.sprint_id
+    if not sprint_id:
+        sprint_sentence = "The plan belongs to no sprint"
+        sprint_source = _source("plan", identity.plan_slug, "plan")
+    elif identity.sprint_href:
+        sprint_sentence = (
+            "The plan ran in sprint "
+            f'<a href="{_escape(identity.sprint_href)}">{_escape(sprint_id)}</a>'
+        )
+        sprint_source = _source("sprint", sprint_id, sprint_id)
+    else:
+        sprint_sentence = f"The plan ran in sprint {_escape(sprint_id)}"
+        sprint_source = _source("sprint", sprint_id, sprint_id)
+    return (
+        f'  <p class="report-identity">This record documents {plan_link} '
+        f"{_source('plan', identity.plan_slug, 'plan')}. "
+        f"{sprint_sentence} {sprint_source}.</p>"
+    )
+
+
 def _render_document(
     project: str,
     plan: Mapping[str, Any],
@@ -1387,6 +1494,7 @@ def _render_document(
     root: Path,
     created_by_append: bool = False,
     carried_sections: Sequence[str] = (),
+    identity: ReportIdentity | None = None,
 ) -> str:
     """Render a landed record.
 
@@ -1521,7 +1629,19 @@ def _render_document(
         meta_lines.append(
             f'  <meta name="plan-commits" content="{_escape(",".join(commits))}">'
         )
+    if identity is not None:
+        # The same two facts the first block states, written where a reader
+        # that never renders the page still has them.
+        meta_lines.append(
+            f'  <meta name="plan-sprint" content="'
+            f'{_escape(identity.sprint_id or "none")}">'
+        )
+        if identity.plan_href:
+            meta_lines.append(
+                f'  <meta name="plan-href" content="{_escape(identity.plan_href)}">'
+            )
 
+    identity_paragraph = _identity_block(identity) + "\n" if identity else ""
     return (
         "<!doctype html>\n"
         '<html lang="en">\n'
@@ -1536,6 +1656,7 @@ def _render_document(
         "<body>\n"
         ' <main class="plan-doc">\n'
         f"  <h1>{_escape(plan_title)} — landed record</h1>\n"
+        f"{identity_paragraph}"
         f"{summary_paragraph}"
         "\n" + overview + "\n\n".join(sections) + "\n </main>\n"
         "</body>\n"
@@ -1783,13 +1904,45 @@ def _carried_sections(
     return carried, lost
 
 
+def report_identity(
+    docs_dir: Path, project: str, resource: Any, plan: Mapping[str, Any]
+) -> ReportIdentity:
+    """The plan a record documents and the sprint it ran in, as served links.
+
+    A sprint's page is the resource a sprint record writes; the identity names
+    it only when that page exists, because a link a reader cannot follow is
+    worse than the bare identifier. A plan carrying no sprint states it belongs
+    to none rather than leaving the statement out.
+    """
+    from reckon import project_state
+
+    sprint_id = str(plan.get("sprint") or "").strip()
+    return ReportIdentity(
+        plan_slug=str(plan.get("slug") or ""),
+        plan_title=str(plan.get("title") or ""),
+        plan_href=_plan_page_href(project, resource),
+        sprint_id=sprint_id,
+        sprint_href=(
+            project_state.plan_sprint_href(docs_dir, project, sprint_id)
+            if sprint_id
+            else ""
+        ),
+    )
+
+
 def synthesize_landed_record(
     docs_dir: Path,
     project: str,
     plan_slug: str,
+    *,
+    require_runs: bool = True,
 ) -> EvidenceSynthesisResult:
-    """Replace the canonical landed record from plan comments and ledger runs."""
+    """Replace the canonical landed record from plan comments and ledger runs.
 
+    ``require_runs`` refuses a plan that landed no committed run. A report
+    composed at closure sets it false: the close itself is what the record
+    documents, and a plan may have landed its sections through comments alone.
+    """
     docs_dir = docs_dir.resolve()
     try:
         resource = resolve_resource(
@@ -1808,7 +1961,7 @@ def synthesize_landed_record(
         records = ledger.runs(project, root=docs_dir.parent, plan=plan_slug)
     except ledger.LedgerError as exc:
         raise EvidenceSynthesisError(str(exc)) from exc
-    if not records:
+    if not records and require_runs:
         raise EvidenceSynthesisError(
             f"plan {plan_slug!r} has no committed landed runs; "
             "cannot synthesize a closure evidence record"
@@ -1831,8 +1984,15 @@ def synthesize_landed_record(
     carried, lost = _carried_sections(existing, rendered_anchors, reserved_anchors)
 
     rendered = _render_document(
-        project, plan, source, records, docs_dir.parent, carried_sections=carried
+        project,
+        plan,
+        source,
+        records,
+        docs_dir.parent,
+        carried_sections=carried,
+        identity=report_identity(docs_dir, project, resource, plan),
     )
+
     destination.parent.mkdir(parents=True, exist_ok=True)
     from reckon._store import write_atomically
 
@@ -1857,3 +2017,22 @@ def synthesize_landed_record(
     return EvidenceSynthesisResult(
         destination, len(records), comments, commits, lost_anchors=lost
     )
+
+
+def compose_closed_plan_report(
+    docs_dir: Path, project: str, plan_slug: str
+) -> EvidenceSynthesisResult | None:
+    """Write the report a closing plan keeps, at the address its record already has.
+
+    Run when a plan reaches a landed status. A superseded or archived plan is
+    closed without one: its closure is not a landing. A plan that landed no run still
+    gets a report: the closure itself is the fact it records, and a plan's
+    sections may land through comments rather than through the ledger. Nothing
+    here refuses — the caller has already passed the guards the close runs, and
+    a report is the record of a decision that has been taken, so a composition
+    failure is reported to the caller rather than undoing the close.
+
+    The record is written once, here, and never appended to by a landing: a
+    plan that stays open composes none.
+    """
+    return synthesize_landed_record(docs_dir, project, plan_slug, require_runs=False)

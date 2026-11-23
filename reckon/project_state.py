@@ -299,6 +299,32 @@ def resource_path(
     raise ValueError(f"unsupported project resource type {resource_type!r}")
 
 
+def plan_sprint_href(docs_dir: Path, project: str, sprint_id: str) -> str:
+    """The served address of the sprint document a plan declares, or ``""``.
+
+    A plan names its sprint in its own state; the document that sprint is
+    recorded in is a project resource. A reader of a plan's report needs to
+    follow that link, so the address is resolved here from the resource path
+    rather than rebuilt: an id with no document beside it answers the empty
+    string, and a caller states the sprint without a link rather than writing
+    one into a page that is not there.
+    """
+    identifier = str(sprint_id or "").strip()
+    if not identifier:
+        return ""
+    try:
+        path = resource_path(docs_dir, project, "sprint", identifier)
+    except ValueError:
+        return ""
+    if not path.is_file():
+        return ""
+    try:
+        relative = path.relative_to(docs_dir)
+    except ValueError:
+        return ""
+    return f"/{project}/{relative.as_posix()}"
+
+
 @contextmanager
 def _resource_lock(
     docs_dir: Path,
