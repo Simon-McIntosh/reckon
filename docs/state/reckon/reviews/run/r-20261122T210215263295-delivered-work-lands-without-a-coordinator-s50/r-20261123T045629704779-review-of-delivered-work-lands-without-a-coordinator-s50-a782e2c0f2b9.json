@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1260",
+    "reckon/crew/delivery_scope.py:142"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T05:46:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "596",
+      "severity": "non-blocking",
+      "text": "non-blocking: targets_named_once duplicates _distinct_files at reckon/crew/landing_measure.py:566, which landed on main as commit 6edf4917 before this node's commit but after its base, so a merge leaves two population-dedup mechanisms that the coordinator must reconcile."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit a782e2c against base f1c0851; it adds targets_named_once, applies it to population_command and adds a two-test file, all inside the declared scope.",
+    "done_when": "done_when names tests/test_a_landing_population_names_each_file_once.py covering a node whose armed test also imports the changed module in base and head arms; tests/test_a_landing_population_names_each_file_once.py:66 asserts both population calls name the file once and the manifest records the run.",
+    "goal": "section 50's goal is that a landing arm's command names each test file once however it reached the population; reckon/crew/landing_measure.py:596 adds targets_named_once and applies it to [*argv, *files] before the population arm is built.",
+    "manifest": "read; it records the scoped gate (60 passed), both suite arms (58 and 60 passed, exit 0) and the negative control (2 failed), each log under the run directory.",
+    "write_paths": "the declared paths are reckon/crew/landing_measure.py and the new test file; the diff touches only those two."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_population_names_each_file_once.py:76 asserts argv.count(NODE_TEST)==1 on the argv the runner received, so reinstating [*argv,*files] reddens it as negative-control-base.log shows.",
+    "evidence": "negative-control-base.log records the base failing with the file named twice (EXIT=1) and after_suite-1795409372049899662.log records 60 passed with EXIT=0.",
+    "fit": "targets_named_once reuses _target_name and follows the typed-helper idiom already used at reckon/crew/landing_measure.py:558.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1237 wraps the population command in targets_named_once so a file reaching it twice is named once.",
+    "reuse": "targets_named_once at reckon/crew/landing_measure.py:596 re-implements the population-dedup capability already owned by _distinct_files.",
+    "scope_discipline": "the diff at a782e2c touches only reckon/crew/landing_measure.py and tests/test_a_landing_population_names_each_file_once.py, both declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 50's goal is that a landing arm's command names each test file once however it reached the population; reckon/crew/landing_measure.py:596 adds targets_named_once and applies it to [*argv, *files] before the population arm is built.\nVERDICT done_when: done_when names tests/test_a_landing_population_names_each_file_once.py covering a node whose armed test also imports the changed module in base and head arms; tests/test_a_landing_population_names_each_file_once.py:66 asserts both population calls name the file once and the manifest records the run.\nVERDICT write_paths: the declared paths are reckon/crew/landing_measure.py and the new test file; the diff touches only those two.\nVERDICT manifest: read; it records the scoped gate (60 passed), both suite arms (58 and 60 passed, exit 0) and the negative control (2 failed), each log under the run directory.\nVERDICT diff: read commit a782e2c against base f1c0851; it adds targets_named_once, applies it to population_command and adds a two-test file, all inside the declared scope.\nCALL_SITES: reckon/crew/queue_landing.py:1260, reckon/crew/delivery_scope.py:142\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1237 wraps the population command in targets_named_once so a file reaching it twice is named once.\nSCORE evidence: 18\nJUSTIFICATION evidence: negative-control-base.log records the base failing with the file named twice (EXIT=1) and after_suite-1795409372049899662.log records 60 passed with EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff at a782e2c touches only reckon/crew/landing_measure.py and tests/test_a_landing_population_names_each_file_once.py, both declared.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_population_names_each_file_once.py:76 asserts argv.count(NODE_TEST)==1 on the argv the runner received, so reinstating [*argv,*files] reddens it as negative-control-base.log shows.\nSCORE fit: 17\nJUSTIFICATION fit: targets_named_once reuses _target_name and follows the typed-helper idiom already used at reckon/crew/landing_measure.py:558.\nSCORE reuse: 5\nJUSTIFICATION reuse: targets_named_once at reckon/crew/landing_measure.py:596 re-implements the population-dedup capability already owned by _distinct_files.\nFINDING reckon/crew/landing_measure.py:596 non-blocking: targets_named_once duplicates _distinct_files at reckon/crew/landing_measure.py:566, which landed on main as commit 6edf4917 before this node's commit but after its base, so a merge leaves two population-dedup mechanisms that the coordinator must reconcile.",
+  "review_run_id": "r-20261123T045629704779-review-of-delivered-work-lands-without-a-coordinator-s50-a782e2c0f2b9",
+  "reviewed_base_sha": "f1c085116f2e6fb67c3903b90c1ee4d024e7bb83",
+  "reviewed_head_sha": "a782e2c0f2b9001b9d596b0e984980913011c867",
+  "reviewed_run_id": "r-20261122T210215263295-delivered-work-lands-without-a-coordinator-s50",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T06:11:22.448759+00:00",
+  "total": 95
+}
