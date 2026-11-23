@@ -4540,20 +4540,19 @@ def _held_worktree_records_read(
             # read attributes to an earlier one. A row carrying no run id is a
             # row neither reader can hold — the store is keyed by run identity —
             # so it is filed from the aggregate whichever reader answered.
-            if fresh is None or from_store:
-                delivered = {str(row.get("run_id") or "") for row in rows}
-                for ordinals in aggregate_order.values():
-                    for ordinal in ordinals:
-                        row = aggregate_rows[ordinal]
-                        run_id = str(row.get("run_id") or "")
-                        if run_id and run_id in delivered:
-                            # Filed above; filing the aggregate's copy would
-                            # put one row in the index twice.
-                            continue
-                        if run_id and not from_store:
-                            # The merged reader answers the project's history.
-                            continue
-                        index.replace((0, ordinal), row, _retained_worktree(row))
+            delivered = {str(row.get("run_id") or "") for row in rows}
+            for ordinals in aggregate_order.values():
+                for ordinal in ordinals:
+                    row = aggregate_rows[ordinal]
+                    run_id = str(row.get("run_id") or "")
+                    if run_id and run_id in delivered:
+                        # Filed above; filing the aggregate's copy would
+                        # put one row in the index twice.
+                        continue
+                    if run_id and not from_store:
+                        # The merged reader answers the project's history.
+                        continue
+                    index.replace((0, ordinal), row, _retained_worktree(row))
             affected = set(inspected)
         else:
             _stamp, old_identities, index = previous
