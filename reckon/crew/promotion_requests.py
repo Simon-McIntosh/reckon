@@ -991,7 +991,7 @@ def _defer_to_a_queued_review(
         reviewed == run_id
         for _other, reviewed in _reviewed_request_runs(
             request
-            for request in map(_read, _requests_dir().glob("*.json"))
+            for request in map(_request_record, _requests_dir().glob("*.json"))
             if request.get("phase") in QUEUED
         )
     ):
@@ -1269,7 +1269,10 @@ class PromotionService:
         if self._draining:
             return []
         for path in _requests_dir().glob("*.json"):
-            request = _read(path)
+            # Decoded once per version of the file: this loop runs every refill
+            # tick over the whole directory, settled requests included, and an
+            # uncached read re-reads every request file from shared storage.
+            request = dict(_request_record(path))
             if _refusal_uses_replaced_code(request):
                 try:
                     request_promotion(str(request["run_id"]))
@@ -1603,7 +1606,7 @@ def settle_requests_for(run_id: str, *, settled_as: str = "promoted") -> list[st
     """
     settled: list[str] = []
     for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+        request = dict(_request_record(path))
         if str(request.get("run_id") or "") != run_id:
             continue
         if request.get("phase") == SETTLED:
