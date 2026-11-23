@@ -1517,6 +1517,7 @@ def complete(
                 waiver_reason=suite_delta_waiver,
                 gate_verdict=verdict,
                 dry_run=dry_run,
+                gate_cited=not ledger.gate_check_missing_fields(gate_check),
             )
             if dry_run:
                 return _dry_run_report(

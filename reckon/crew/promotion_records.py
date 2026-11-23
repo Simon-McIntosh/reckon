@@ -1789,6 +1789,7 @@ def _evaluate_suite_delta(
     waiver_reason: str,
     gate_verdict: str = "",
     dry_run: bool = False,
+    gate_cited: bool = False,
 ) -> dict[str, Any] | None:
     """Validate an armed run's paired suite evidence and calculate its delta.
 
@@ -1811,12 +1812,19 @@ def _evaluate_suite_delta(
     """
     suite_command = _scoped_suite_command(record)
     recorded_merge = str(record.get("recorded_merge") or "").strip()
-    if recorded_merge:
+    if recorded_merge and (gate_cited or not suite_command):
         # The reviewed head is already carried by a merge on the primary
         # branch, landed by hand on the branch itself, so there is no delivery
         # left for a suite pair to compare: measuring one would re-run a suite
         # over a change the branch already carries. The row records the merge
         # that carried it and names the measurement as one it did not take.
+        #
+        # A gate the recording cites is itself the evidence for this run, so
+        # the arms it recorded are not read in that gate's place. A run armed
+        # with no suite command recorded no arm to judge, so the merge's own
+        # account of carrying the head stands. An armed recording that cites
+        # no gate has nothing better to fall back on than its arms, and they
+        # are judged below as they are for any other promotion.
         return {
             "status": "not-run",
             "suite_command": suite_command,
