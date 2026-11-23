@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 720" width="1400" height="720" font-family="system-ui, sans-serif" font-size="14">
+<title>What a fenced worker can write</title>
+<defs>
+<marker id="r" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#929292"/></marker>
+<marker id="g" markerWidth="10" markerHeight="10" refX="10" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 z" fill="#2e8b57"/></marker>
+</defs>
+
+<text x="70" y="86" font-size="16" fill="#2b2b2b">everything else - mounted read-only</text>
+<rect x="70" y="110" width="500" height="470" rx="10" fill="none" stroke="#929292" stroke-width="1.2"/>
+<text x="94" y="156" fill="#5b5b5b">a sibling checkout</text>
+<text x="94" y="246" fill="#5b5b5b">the operator's home</text>
+<text x="94" y="336" fill="#5b5b5b">a shared project root</text>
+<text x="94" y="426" fill="#5b5b5b">the node's /tmp, outside the scratch</text>
+<text x="94" y="500" fill="#929292">a write or a recursive removal here fails</text>
+<text x="94" y="524" fill="#929292">with Read-only file system, whether or not</text>
+<text x="94" y="548" fill="#929292">anybody listed the path</text>
+
+<rect x="628" y="292" width="150" height="106" rx="10" fill="#2b2b2b"/>
+<text x="703" y="336" text-anchor="middle" fill="#fbfaf7" font-size="16">worker</text>
+<text x="703" y="362" text-anchor="middle" fill="#fbfaf7">process</text>
+
+<line x1="626" y1="322" x2="576" y2="200" stroke="#929292" stroke-width="2.4" marker-end="url(#r)"/>
+<line x1="626" y1="332" x2="548" y2="250" stroke="#929292" stroke-width="2.4" marker-end="url(#r)"/>
+<line x1="626" y1="360" x2="548" y2="340" stroke="#929292" stroke-width="2.4" marker-end="url(#r)"/>
+<line x1="626" y1="388" x2="576" y2="430" stroke="#929292" stroke-width="2.4" marker-end="url(#r)"/>
+
+<line x1="780" y1="316" x2="856" y2="196" stroke="#2e8b57" stroke-width="3" marker-end="url(#g)"/>
+<line x1="780" y1="336" x2="856" y2="320" stroke="#2e8b57" stroke-width="3" marker-end="url(#g)"/>
+<line x1="780" y1="360" x2="856" y2="430" stroke="#2e8b57" stroke-width="3" marker-end="url(#g)"/>
+<line x1="780" y1="380" x2="856" y2="540" stroke="#2e8b57" stroke-width="3" marker-end="url(#g)"/>
+
+<text x="880" y="86" font-size="16" fill="#2b2b2b">granted - bound writable after the root</text>
+<rect x="880" y="110" width="450" height="470" rx="10" fill="none" stroke="#2e8b57" stroke-width="1.2"/>
+<text x="904" y="156" fill="#1f5c3a">the run's worktree, its git directory</text>
+<text x="904" y="178" fill="#1f5c3a">and the shared object store</text>
+<text x="904" y="290" fill="#1f5c3a">the run directory its manifest lands in</text>
+<text x="904" y="424" fill="#1f5c3a">the run's own scratch on the node tmp</text>
+<text x="904" y="548" fill="#1f5c3a">each declared grant, and never its parent</text>
+<text x="70" y="626" fill="#929292">a declared grant naming a filesystem root or a project root is refused by name</text>
+<text x="70" y="650" fill="#929292">before any mount is composed, so no worker starts against that boundary</text>
+</svg>
