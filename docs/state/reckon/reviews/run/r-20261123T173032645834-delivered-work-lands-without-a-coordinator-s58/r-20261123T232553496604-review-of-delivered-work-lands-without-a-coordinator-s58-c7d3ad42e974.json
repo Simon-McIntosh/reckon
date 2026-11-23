@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3632",
+    "reckon/crew/promotion.py:1461",
+    "reckon/crew/promotion_evidence.py:_receipt_mismatches",
+    "reckon/crew/promotion_evidence.py:_arm_without_completion",
+    "reckon/crew/promotion_evidence.py:_zero_added_against_a_red_base",
+    "reckon/crew/reports.py:_validate_suite_observation"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:26:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "3041",
+      "severity": "non-blocking",
+      "text": "TERMINAL_EXIT_RE re-implements the terminal EXIT-record reader the module already owns at reckon/crew/review.py:2877 (_EXIT_RECORD_LINE_RE); it duplicates rather than extends the owner (adding a capture group to that pattern would serve both callers), and it is the sixth EXIT-record pattern in reckon beside landing_measure.py:94, standing_suite.py:72, promotion_gate.py:55 and reports.py:1544, so the same notation now has one more reader free to drift."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s58.html",
+      "line": "51",
+      "severity": "non-blocking",
+      "text": "the final base and head arms (58 and 64 passed, gate-base.log and gate-head.log) run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py plus the node's own test, and neither static-analysis file imports the changed modules, so the done_when's population (the tests that import the changed modules) was measured at 9806f9da8c7844b64329cbabec06fe02934eb9b8 (164/169 passed) but not at the landed code head bda475d2ec6e2300dc06a7bdc3bf6fc4c0a73daa; the sole pre-existing importer that calls the repair verb, tests/test_a_suite_arm_is_repointed_keeping_the_delivered_file.py, records an unreadable log path so the new observation branch returns None and leaves it unchanged, which is why the gap is low-risk rather than a live regression."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s58.html",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "the fragment states that all three arms ran on all_debug, but gate-s58-repair.sh runs pytest directly in place with no srun or sbatch and gate-base.log, gate-head.log and gate-negative-control.log carry no partition line, so the partition is a claim the cited logs do not evidence."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the six commits bee04f7f..c7d3ad commit by commit; 9806f9da adds the observation and its plumbing, 8ac06e39 records evidence, 48abaa/657b16c record gate revisions and summaries, bda475d adds the one-line failure_count derivation that answers the prior review's blocking finding, and c019aa/c7d3ad record the repair and quote the negative control's summary line whole.",
+    "done_when": "tests/test_a_repointed_arm_records_its_completion.py covers the two-process union that then lands (lines 118-164), the stopped process left incomplete and named (166-196), the single-process log's own exit status and ids (198-216), an unreadable named log refused (218-231) and the CLI path (233-258), and the manifest records base 58 passed and head 64 passed with EXIT=0 lines; the head population, however, omits the tests that import the changed modules that the done_when names, and the all_debug partition is not in the logs.",
+    "goal": "plan section 58 ('A re-pointed suite arm records the completion its new log shows') is delivered: reckon/crew/runs.py:3597 _arm_log_observation re-derives exit status, failure ids, failure count and completed from the log the repair names or the arm recorded, and reckon/crew/review.py:3073 arm_log_observation reads a multi-process log per process-exit header, unions the ids, requires each process's summary and the terminal EXIT record to agree, and names any process that stopped before its summary.",
+    "manifest": "read the delivered manifest; it states status complete, the seven commits ending at c7d3ad42e974, the base and head arm commands and logs, a negative control log at gate-negative-control.log, and rubric lines for all six dimensions; its all_debug partition claim is not recorded in any cited gate log.",
+    "write_paths": "read the six declared paths and the five changed paths in the diff; every changed path (docs/evidence/fragments/.../s58.html, reckon/crew/reports.py, reckon/crew/review.py, reckon/crew/runs.py, tests/test_a_repointed_arm_records_its_completion.py) is inside them and none lies outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_repointed_arm_records_its_completion.py:201 asserts the re-derived count independently of the log the code reads (the log's three FAILED ids versus 0), and gate-negative-control.log shows that assertion failing 0 against 3 with the answering commit reverted.",
+    "evidence": "gate-base.log (58 passed, EXIT=0) and gate-head.log (64 passed, EXIT=0) carry their revisions, module paths and commands, and gate-negative-control.log fails 1 case with EXIT=1, but the head population omits the importing tests the done_when names and the all_debug partition is not recorded.",
+    "fit": "reckon/crew/review.py:3073 follows the surrounding gate-log reader idiom, reuses PER_FILE_MARKER_RE and gate_log_failure_ids, and carries no plan, sprint or ticket identifier in its names or comments.",
+    "goal_fidelity": "reckon/crew/runs.py:3534 now derives failure_count with the ids, so all four fields the red-base rule and receipt check read are re-derived from the cited log rather than carried over.",
+    "reuse": "arm_log_observation composes the existing gate_log_failure_ids, _gate_log_format and per_file_gate_runs, but reckon/crew/review.py:3041 TERMINAL_EXIT_RE duplicates review.py:2877 _EXIT_RECORD_LINE_RE instead of extending it, which the rubric scores at most 5.",
+    "scope_discipline": "all five changed paths sit inside the six declared write paths, with only a one-line node_field reformat in reckon/crew/runs.py:368 carried over from the earlier round."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 58 is delivered by reckon/crew/runs.py:3597 _arm_log_observation and reckon/crew/review.py:3073 arm_log_observation, which re-derive exit status, failure ids, failure count and completed from the cited log per process-exit header.\nVERDICT done_when: tests/test_a_repointed_arm_records_its_completion.py covers the two-process union that lands, the stopped process named, the single-process log, an unreadable log refused and the CLI path, and the manifest records base 58 / head 64 passed with EXIT=0, but the head population omits the importing tests the done_when names.\nVERDICT write_paths: the six declared paths were read and all five changed paths are inside them.\nVERDICT manifest: read; it records status complete, seven commits to c7d3ad42e974, the base and head arms with logs and a negative control, but its all_debug claim is in no cited log.\nVERDICT diff: read the six commits from bee04f7f to c7d3ad commit by commit; bda475d is the one-line failure_count repair that answers the prior blocking finding, the rest are evidence.\nCALL_SITES: reckon/crew_run_commands.py:3632, reckon/crew/promotion.py:1461, reckon/crew/promotion_evidence.py:_receipt_mismatches, reckon/crew/promotion_evidence.py:_arm_without_completion, reckon/crew/promotion_evidence.py:_zero_added_against_a_red_base, reckon/crew/reports.py:_validate_suite_observation\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3534 now derives failure_count with the ids, so all four fields the red-base rule and receipt check read come from the cited log.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-base.log (58 passed, EXIT=0) and gate-head.log (64 passed, EXIT=0) carry revisions and commands, and gate-negative-control.log fails 1 case with EXIT=1, but the head population omits the importing tests the done_when names and the all_debug partition is unrecorded.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all five changed paths sit inside the six declared write paths, with only a one-line node_field reformat in reckon/crew/runs.py:368.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_repointed_arm_records_its_completion.py:201 asserts the re-derived count against the log's three ids, and gate-negative-control.log shows that assertion failing 0 against 3 with the answering commit reverted.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/review.py:3073 follows the surrounding gate-log reader idiom and carries no plan, sprint or ticket identifier in its names or comments.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/review.py:3041 TERMINAL_EXIT_RE duplicates review.py:2877 _EXIT_RECORD_LINE_RE rather than extending it, though arm_log_observation otherwise composes gate_log_failure_ids and per_file_gate_runs.\nFINDING reckon/crew/review.py:3041 non-blocking: TERMINAL_EXIT_RE re-implements the terminal EXIT-record reader the module already owns at reckon/crew/review.py:2877 (_EXIT_RECORD_LINE_RE); it duplicates rather than extends the owner, and is the sixth EXIT-record pattern in reckon, so the same notation gains another reader free to drift.\nFINDING docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s58.html:51 non-blocking: the final base and head arms (58/64 passed) run only the two static-analysis tests plus the node's own test, neither of which imports the changed modules, so the done_when's importing-test population was measured at 9806f9da8c7844b64329cbabec06fe02934eb9b8 but not at the landed head bda475d2ec6e2300dc06a7bdc3bf6fc4c0a73daa; the sole pre-existing importer that calls the repair verb uses an unreadable log path and is unaffected, so the gap is low-risk.\nFINDING docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s58.html:54 non-blocking: the fragment states all three arms ran on all_debug, but gate-s58-repair.sh runs pytest in place with no srun or sbatch and the cited gate logs carry no partition line, so the partition is unevidenced.\n",
+  "review_run_id": "r-20261123T232553496604-review-of-delivered-work-lands-without-a-coordinator-s58-c7d3ad42e974",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "c7d3ad42e9746b297187bbd7c83ce42cd6a11d53",
+  "reviewed_run_id": "r-20261123T173032645834-delivered-work-lands-without-a-coordinator-s58",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:59:36.880820+00:00",
+  "total": 88
+}
