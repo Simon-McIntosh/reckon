@@ -69,6 +69,16 @@
         <td><code>bd0d2051db</code></td>
         <td>58 passed in 42.66s, <code>EXIT=0</code></td>
       </tr>
+      <tr>
+        <td>after — reload test and two importing files</td>
+        <td><code>c91f8b6ba4</code></td>
+        <td>66 passed in 65.19s (0:01:05), <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>base — two importing test files (reuse arm)</td>
+        <td><code>bd0d2051db</code></td>
+        <td>58 passed in 38.20s, <code>EXIT=0</code></td>
+      </tr>
     </tbody>
   </table>
   <p>
@@ -92,6 +102,20 @@
     importing files at the base revision, so the zero-delta reading is taken
     again at the merged code rather than carried over from before it.
   </p>
+  <p>
+    The host does not own a second copy of that replacement sequence. Carrying
+    the identity, holding an image that will not import, materialising and
+    proving it, then exec'ing in place is the standing service's sequence, and
+    the host's reloader wraps a
+    <code>StationReloader</code> and supplies only what a session host does
+    differently: the carried claim is removed from the environment the
+    children inherit, and a checkout outside Git is identified by its content
+    stamp rather than a commit. Four cases pin the parts no case held before: a
+    commit is taken through the station's replacement step, the held identity
+    read distinguishes the tree this process runs from one a caller names, a
+    child spawned since the last tick defers the reload by one tick, and a
+    handover child whose pid has been reused is not adopted.
+  </p>
   <p id="the-monitor-reads-each-fact-once-s118-negative">
     Negative control, as declared: at the base revision the first case fails
     after its 240 s bound with
@@ -99,6 +123,17 @@
     The base host is still alive and still logging its follower, because it is
     still running the image it started on — it has no reload behaviour to
     exercise, which is exactly the defect the head arm closes.
+  </p>
+  <p>
+    Three further controls undo one answering change each, keeping the case
+    that names it. Reversing the reuse half of the source change fails both
+    pins: the host has no station to delegate to, and the held identity read
+    answers <code>True</code> for a checkout the process does not run from.
+    Removing the mid-start guard makes the host re-execute before the child it
+    had just spawned was seen. Removing the start-time comparison adopts a
+    child whose pid has been reused. Each log is in the run directory's
+    <code>gate/</code> as <code>neg-refactor.log</code>,
+    <code>neg-mid-start.log</code> and <code>neg-pid-start.log</code>.
   </p>
   <p>
     The cases drive a real host process against a fake follower and read files,
