@@ -2297,16 +2297,23 @@ def _section_declaration(state: Mapping[str, Any], section: Any) -> str:
     """The declaration a plan entry reads for one section, or ``""``.
 
     The declaration map may spell a section with an anchor or a section sign,
-    so every key resolves through the one identity derivation before it is
-    compared to the identity the run names.
+    so every key resolves through the ledger's normal form — the same one a
+    dispatch reads this declaration through — before it is compared to the
+    identity the run names. A declaration written as a status mapping reads
+    its status, as a dispatch reads it.
     """
-    wanted = section_record_id(section)
+    from reckon.ledger import normalize_section
+
+    wanted = normalize_section(str(section or ""))
     declarations = state.get("section_declarations")
     if not wanted or not isinstance(declarations, Mapping):
         return ""
     for key, value in declarations.items():
-        if section_record_id(key) == wanted:
-            return str(value or "").strip().lower()
+        if normalize_section(str(key)) != wanted:
+            continue
+        if isinstance(value, Mapping):
+            value = value.get("status") or ""
+        return str(value or "").strip().lower()
     return ""
 
 

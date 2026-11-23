@@ -200,7 +200,7 @@ def test_a_node_whose_section_still_has_an_open_sibling_lands_untouched(
     state = _state(repository)
     assert state["section_declarations"]["s2"] == "implementable"
     assert state["impl"] == 0.5
-    assert result.get("impl_move", {}).get("verdict") in {None, "section-open"}
+    assert result.get("impl_move", {}).get("verdict") == "section-open"
     # The sibling is still the section's open node, so it is untouched.
     assert pointer_path(second).exists()
 
@@ -235,6 +235,15 @@ def test_a_sibling_pointer_for_the_same_node_does_not_hold_it_open(
     state = _state(repository)
     assert state["section_declarations"]["s2"] == "done"
     assert state["impl"] == 1.0
+
+
+def test_a_declaration_written_as_a_status_mapping_reads_its_status() -> None:
+    """The guard reads the declaration form a dispatch reads."""
+    from reckon.crew.promotion_checks import _section_declaration
+
+    state = {"section_declarations": {"s2": {"status": "implementable"}}}
+
+    assert _section_declaration(state, "§2") == "implementable"
 
 
 def test_a_refused_landing_writes_no_declaration(
