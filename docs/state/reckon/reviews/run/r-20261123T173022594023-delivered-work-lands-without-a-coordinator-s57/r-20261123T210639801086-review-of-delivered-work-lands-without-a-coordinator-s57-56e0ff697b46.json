@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "call_sites": [
+    "reckon/crew/promotion.py:1460"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:20:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "561",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment reads \"charges the lead's untracked files\", a role reference that rots when roles change; state the mechanism (the integration checkout's own untracked files) instead."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173022594023-delivered-work-lands-without-a-coordinator-s57/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed manifest reports its base and head arms through test_logs and artifacts rather than the structured baseline_suite/after_suite blocks, so added-failure figures must be re-derived from the two logs."
+    }
+  ],
+  "head_log_revision": "56e0ff697b4650c269e24e1ae0dd51cdb525b782",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified one production call site: reckon/crew/promotion.py:1460 runs _require_commits_beyond_base on the promotion path.",
+    "diff": "read the single commit 56e0ff69 against base bee04f7f; reckon/crew/promotion_evidence.py adds an early return when the run's own worktree is absent and switches _declared_repository_roots and _uncommitted_paths from the fallback tree to that worktree (+20/-2), and a new 176-line test file pins both directions.",
+    "done_when": "the done_when names tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py with a gone-worktree acceptance and a live-worktree refusal, and the node's base and head gate logs under its run directory carry the revision, literal command and closing EXIT line; both are present and the added-failure delta is zero.",
+    "goal": "the node's goal is that a run whose worktree is gone is never charged the integration checkout's files; reckon/crew/promotion_evidence.py:564-570 returns early when _record_worktree(record) is None and otherwise measures _uncommitted_paths in the run's own worktree, so a missing worktree yields no evidence and a live worktree is read exactly as before.",
+    "manifest": "read; status complete, commits 56e0ff697b46, changed_paths the two landed files, tests and test_logs naming s57-base-gate.log and s57-head-gate.log, negative_control_log the base arm, and the delta recorded in artifacts; the structured baseline_suite/after_suite blocks are absent and the arms are reported via test_logs instead.",
+    "write_paths": "the declared write paths are reckon/crew/promotion_evidence.py, tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py, an evidence fragment and a figures directory; the diff touches only the first two, both inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py:142 fails at bee04f7f with the declared CrewError (s57-base-gate.log:200) and :169 fails with DID NOT RAISE if the early return is over-applied, so the pair bounds the change.",
+    "evidence": "the manifest's test_logs name s57-base-gate.log (bee04f7f, 7 failed) and s57-head-gate.log (56e0ff69, 6 failed), each carrying a # revision, a literal # command and a closing EXIT=1, and the set difference of FAILED ids is empty; the structured baseline_suite/after_suite blocks are absent.",
+    "fit": "the added comment at reckon/crew/promotion_evidence.py:561 names \"the lead's untracked files\", a role reference rather than the mechanism, beside an otherwise mechanism-toned comment block.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:564-570 measures the run's own worktree or nothing, so a reclaimed worktree no longer reads the integration checkout in its place while a live worktree is measured as before.",
+    "reuse": "the change calls the existing reckon/crew/promotion_release.py:1300 _record_worktree plus the existing _declared_repository_roots and _uncommitted_paths owners, adding no second tree resolver or dirty-tree reader.",
+    "scope_discipline": "git show --stat 56e0ff69 lists only reckon/crew/promotion_evidence.py (+20/-2) and tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py (+176), both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run whose worktree is gone is never charged the integration checkout's files; reckon/crew/promotion_evidence.py:564-570 returns early when _record_worktree(record) is None and otherwise measures _uncommitted_paths in the run's own worktree, so a missing worktree yields no evidence and a live worktree is read exactly as before.\nVERDICT done_when: the done_when names tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py with a gone-worktree acceptance and a live-worktree refusal, and the node's base and head gate logs under its run directory carry the revision, literal command and closing EXIT line; both are present and the added-failure delta is zero.\nVERDICT write_paths: the declared write paths are reckon/crew/promotion_evidence.py, tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py, an evidence fragment and a figures directory; the diff touches only the first two, both inside the fence.\nVERDICT manifest: read; status complete, commits 56e0ff697b46, changed_paths the two landed files, tests and test_logs naming s57-base-gate.log and s57-head-gate.log, negative_control_log the base arm, and the delta recorded in artifacts; the structured baseline_suite/after_suite blocks are absent and the arms are reported via test_logs instead.\nVERDICT diff: read the single commit 56e0ff69 against base bee04f7f; reckon/crew/promotion_evidence.py adds an early return when the run's own worktree is absent and switches _declared_repository_roots and _uncommitted_paths from the fallback tree to that worktree (+20/-2), and a new 176-line test file pins both directions.\nCALL_SITES: reckon/crew/promotion.py:1460\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:564-570 measures the run's own worktree or nothing, so a reclaimed worktree no longer reads the integration checkout in its place while a live worktree is measured as before.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's test_logs name s57-base-gate.log (bee04f7f, 7 failed) and s57-head-gate.log (56e0ff69, 6 failed), each carrying a # revision, a literal # command and a closing EXIT=1, and the set difference of FAILED ids is empty; the structured baseline_suite/after_suite blocks are absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 56e0ff69 lists only reckon/crew/promotion_evidence.py (+20/-2) and tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py (+176), both inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_gone_worktree_is_not_charged_the_checkouts_files.py:142 fails at bee04f7f with the declared CrewError (s57-base-gate.log:200) and :169 fails with DID NOT RAISE if the early return is over-applied, so the pair bounds the change.\nSCORE fit: 17\nJUSTIFICATION fit: the added comment at reckon/crew/promotion_evidence.py:561 names \"the lead's untracked files\", a role reference rather than the mechanism, beside an otherwise mechanism-toned comment block.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change calls the existing reckon/crew/promotion_release.py:1300 _record_worktree plus the existing _declared_repository_roots and _uncommitted_paths owners, adding no second tree resolver or dirty-tree reader.\nFINDING reckon/crew/promotion_evidence.py:561 non-blocking: the comment reads \"charges the lead's untracked files\", a role reference that rots when roles change; state the mechanism (the integration checkout's own untracked files) instead.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173022594023-delivered-work-lands-without-a-coordinator-s57/manifest.md:13 non-blocking: the reviewed manifest reports its base and head arms through test_logs and artifacts rather than the structured baseline_suite/after_suite blocks, so added-failure figures must be re-derived from the two logs.",
+  "review_run_id": "r-20261123T210639801086-review-of-delivered-work-lands-without-a-coordinator-s57-56e0ff697b46",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "56e0ff697b4650c269e24e1ae0dd51cdb525b782",
+  "reviewed_run_id": "r-20261123T173022594023-delivered-work-lands-without-a-coordinator-s57",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T210639801086-review-of-delivered-work-lands-without-a-coordinator-s57-56e0ff697b46"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:31:59.043468+00:00",
+  "total": 116
+}
