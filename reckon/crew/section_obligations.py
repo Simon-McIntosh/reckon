@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import contextvars
+import copy
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
-from reckon import _store, ledger
+from reckon import _store, file_memo, ledger
 from reckon._plan_html import section_record_id
 from reckon._schema import parse_plan_ref
 from reckon._timestamps import parse_utc
@@ -22,6 +27,130 @@ DECLARATION_DUTY_KIND = "section-declaration-owed"
 # ordinary plan writer. The run id scopes that judgement to this delivery, so
 # another merged node in the same section still owes its own accounting.
 PARTIAL_DELIVERY_COMMENT_PREFIX = "c-partial-"
+
+#: A watched directory's stat identity: its inode and modification time, which
+#: move whenever a file is added to, removed from or renamed over in it.
+DirectoryIdentity = dict[str, tuple[int, int]]
+
+#: The directory identity one obligations sweep read for the plan tree, or
+#: ``None`` when the caller is not a sweep. The cache below answers a plan from
+#: its parsed state while the directory holding it reports the same identity, so
+#: an unchanged sweep parses and stats no plan. A caller outside a sweep, and a
+#: sweep reusing an identity it did not recompute, gets ``None`` and therefore
+#: validates each plan against its own file signature.
+_PLAN_DIRECTORY_IDENTITY: contextvars.ContextVar[DirectoryIdentity | None] = (
+    contextvars.ContextVar("plan_directory_identity", default=None)
+)
+
+
+@contextmanager
+def plan_directory_identity(identity: DirectoryIdentity | None) -> Iterator[None]:
+    """Publish one sweep's plan-tree directory identity to the plan cache."""
+    token = _PLAN_DIRECTORY_IDENTITY.set(identity)
+    try:
+        yield
+    finally:
+        _PLAN_DIRECTORY_IDENTITY.reset(token)
+
+
+@dataclass
+class _PlanRead:
+    """One plan's parsed state and the evidence its reuse is valid under."""
+
+    directory_identity: tuple[int, int] | None
+    file_signature: tuple[int, ...] | None
+    state: dict
+    version: int
+
+
+@dataclass
+class _PlanReads:
+    """The parsed plans one project's checkout has served, keyed by file path."""
+
+    paths: dict[str, Path] = field(default_factory=dict)
+    reads: dict[str, _PlanRead] = field(default_factory=dict)
+
+
+#: Keyed by ``(project, checkout)``. Held for the life of the process, as the
+#: producer is; a test that wants a cold read clears it.
+_PLAN_READS: dict[tuple[str, str], _PlanReads] = {}
+
+
+def clear_plan_reads() -> None:
+    """Drop every parsed plan, so a later read parses from disk again."""
+    _PLAN_READS.clear()
+
+
+def _read_plan_reusing(project: str, plan: str, checkout: Path) -> tuple[dict, int]:
+    """Read one plan's state, re-parsing it only while it has changed.
+
+    The state a plan file yields is a pure function of its bytes, so a reader
+    that has parsed it keeps the result until the file moves. A sweep tells this
+    cache which directories of the plan tree moved since its last read: while
+    the plan's own directory reports the same identity, the stored parse is
+    returned with no stat and no parse at all. When the directory has moved --
+    or when no sweep identity is available -- the plan is validated against its
+    own file signature, so exactly the plan that changed is parsed again and its
+    unchanged neighbours are not.
+
+    A caller receives its own copy, so one reader changing the state it was
+    given cannot reach the next reader's answer.
+    """
+    store = _PLAN_READS.setdefault((project, str(checkout)), _PlanReads())
+    identity = _PLAN_DIRECTORY_IDENTITY.get()
+    path = store.paths.get(plan)
+    if path is not None and identity is not None:
+        directory = str(path.parent)
+        current = identity.get(directory)
+        read = store.reads.get(str(path))
+        if (
+            current is not None
+            and read is not None
+            and read.directory_identity == current
+        ):
+            return copy.deepcopy(read.state), read.version
+    if path is None:
+        path = _store._resolve_html_file(project, plan, checkout, "plan")
+        if path is None:
+            store.reads.pop(plan, None)
+            return _store.read_plan(project, plan, checkout)
+        store.paths[plan] = path
+    key = str(path)
+    directory = str(path.parent)
+    try:
+        signature: tuple[int, ...] | None = file_memo.file_signature(path)
+    except OSError:
+        # The file the last read settled has gone or been renamed: resolve again
+        # rather than serving a parse of bytes that are no longer there.
+        store.paths.pop(plan, None)
+        store.reads.pop(key, None)
+        resolved = _store._resolve_html_file(project, plan, checkout, "plan")
+        state, version = _store.read_plan(project, plan, checkout)
+        if resolved is not None:
+            store.paths[plan] = resolved
+            try:
+                settled = file_memo.file_signature(resolved)
+            except OSError:
+                settled = None
+            store.reads[str(resolved)] = _PlanRead(
+                directory_identity=(identity or {}).get(str(resolved.parent)),
+                file_signature=settled,
+                state=copy.deepcopy(state),
+                version=version,
+            )
+        return state, version
+    read = store.reads.get(key)
+    if read is not None and read.file_signature == signature:
+        read.directory_identity = (identity or {}).get(directory)
+        return copy.deepcopy(read.state), read.version
+    state, version = _store.read_plan(project, plan, checkout)
+    store.reads[key] = _PlanRead(
+        directory_identity=(identity or {}).get(directory),
+        file_signature=signature,
+        state=copy.deepcopy(state),
+        version=version,
+    )
+    return state, version
 
 
 def merged_section_items_by_session(
@@ -68,7 +197,7 @@ def merged_section_items_by_session(
         if role not in EXECUTABLE_SECTION_ROLES:
             continue
         if plan not in plans:
-            plans[plan] = _store.read_plan(project, plan, checkout)
+            plans[plan] = _read_plan_reusing(project, plan, checkout)
         state, _version = plans[plan]
         declaration = next(
             (
