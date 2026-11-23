@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -168,6 +168,18 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261117T111120978029-a-service-over-its-limit-restarts-alone" data-who="reckon-build" data-when="2026-11-17T11:36:33Z">
     <div class="r-comment-body"><p>Optional memory_limit_bytes now applies per-process RLIMIT_AS before service exec with fail-closed refusal and existing isolated restart backoff; 70 scoped checks passed (1 dedicated-allocation check skipped), a 768 MiB service restarted in a 2 GiB all_debug job with peer PID unchanged and oom_kill 0→0, while the unbounded control killed both stand-ins and raised oom_kill 0→2; importer comparison added zero failure IDs. Aggregate child-tree memory is not bounded.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T192852489949-review-of-the-fleet-node-stays-inside-its-memory-s11-7d9fef96901b-figure" data-who="reckon-build" data-when="2026-11-22T20:11:26.629Z">
+    <div class="r-comment-body"><p>Figure review of run r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11 at head 7d9fef96901b: six rubric items pass, three non-blocking findings recorded, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T192550047142-review-of-the-fleet-node-stays-inside-its-memory-s11-7d9fef96901b" data-who="reckon-build" data-when="2026-11-22T20:40:45.549Z">
+    <div class="r-comment-body"><p>Review of r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11 at 1d23967b383e..7d9fef96901b: scores goal_fidelity 13, evidence 9, scope_discipline 18, durability 6, fit 16, reuse 20; one blocking finding (the record's "/dev/shm" row reports the node-local-disk session-scratch column, not /dev/shm) and two non-blocking (cited 72h block does not match the quoted 72h figures; the 4,000-sample assertion is applied to the whole job rather than the delivered window).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T235118603601-review-of-the-fleet-node-stays-inside-its-memory-s11-30e88c13e4f9" data-who="reckon-build" data-when="2026-11-23T01:23:09.508Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11 at head 30e88c13e4f9 against base 1d23967b383e: a documentation-and-figure evidence record that stays inside its fence; the record's figures reconcile with its pinned logs (series-metrics.log 7 passed EXIT=0, 3,524 samples, 23 kills, 0.043 h &gt;=90 %, 191 of 3,200 test samples), the figure redraws both jobs on one axis, and two non-blocking findings record a /dev/shm timestamp that contradicts its own receipt and a stale commit count.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T235156546050-review-of-the-fleet-node-stays-inside-its-memory-s11-30e88c13e4f9-figure" data-who="reckon-build" data-when="2026-11-23T01:21:38.786Z">
+    <div class="r-comment-body"><p>Figure review of r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11 at head 30e88c13: all six rubric items pass on the rendered PNG, three non-blocking findings (grey baseline renders as a dense picket at its ceiling, only the right OOM marker is annotated, the plot runs ~12 h past the last sample), no blocking finding, status parsed.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-11-18T04:46:00Z">
     <div class="r-comment-body"><p>§12 landed by direct merge (head <code>646561afbc</code>), on the lead's instruction. After the supervisor re-executes on moved code the running sampler is the one started from the checkout's current script, with at most one sampler at a time and the series carried over; a previous sampler is found whatever path it was started from; every interpreter fallback in the script defaults to the repository environment; and a reader with no published disk sample names its owner and says launches are held only when admission holds them. Merged candidate gate: 88 passed in 28.88s.</p></div>
@@ -354,12 +366,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111352964502-the-admission-service-holds-steady-memory" data-who="reckon-build" data-when="2026-11-17T13:01:27Z">
     <div class="r-comment-body"><p>Each section verdict now reads only its own plan's runs: readiness._ledger_run_rows calls ledger.load(project, plan=slug) and caches under (project, plan), so the store narrows in SQL before any row is decoded. On a copy of the live crew home, 100 consecutive admission passes at 13b1d2bdc8 held resident at 1304825856 B after the hundredth against 1304825856 B after the tenth (growth_ratio 1.0, within_twenty_percent true, under_four_gib true, peak_resident_bytes 2045972480 in 656.0 s), decoding 441.9 run_store rows per pass where the base revision decoded 21148.7 on the same input over three passes, at a resident peak of 4619415552 B against the head's 2009300992 B.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T192852489949-review-of-the-fleet-node-stays-inside-its-memory-s11-7d9fef96901b-figure" data-who="reckon-build" data-when="2026-11-22T20:11:26.629Z">
-    <div class="r-comment-body"><p>Figure review of run r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11 at head 7d9fef96901b: six rubric items pass, three non-blocking findings recorded, no blocking finding.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T192550047142-review-of-the-fleet-node-stays-inside-its-memory-s11-7d9fef96901b" data-who="reckon-build" data-when="2026-11-22T20:40:45.549Z">
-    <div class="r-comment-body"><p>Review of r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11 at 1d23967b383e..7d9fef96901b: scores goal_fidelity 13, evidence 9, scope_discipline 18, durability 6, fit 16, reuse 20; one blocking finding (the record's "/dev/shm" row reports the node-local-disk session-scratch column, not /dev/shm) and two non-blocking (cited 72h block does not match the quoted 72h figures; the 4,000-sample assertion is applied to the whole job rather than the delivered window).</p></div>
 </div>
 </section>
 </main>
