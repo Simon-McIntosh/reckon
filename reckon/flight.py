@@ -1823,7 +1823,9 @@ def validate_layer(
         raise FlightConfigError(source, unknown[0], UNKNOWN_KEY_CONSTRAINT)
 
     schema_layer = {
-        key: value for key, value in data.items() if key not in RECKON_OWNED_SCHEMA_KEYS
+        key: value
+        for key, value in data.items()
+        if key not in RECKON_OWNED_SCHEMA_KEYS
     }
     try:
         FlightConfig.model_validate(_inject_map_keys(_schema_view(schema_layer)))
@@ -1999,7 +2001,9 @@ def unknown_key_paths(data: Mapping[str, Any]) -> list[str]:
     from reckon._flight_schema import FlightConfig
 
     schema_layer = {
-        key: value for key, value in data.items() if key not in RECKON_OWNED_SCHEMA_KEYS
+        key: value
+        for key, value in data.items()
+        if key not in RECKON_OWNED_SCHEMA_KEYS
     }
     return sorted(
         set(

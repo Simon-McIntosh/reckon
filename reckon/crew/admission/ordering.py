@@ -322,9 +322,16 @@ def priorities_first(
             pointer, config_for
         ) <= (points or 0)
 
-    # A critical request is already placed by the ordering at the head of the
-    # lane, ahead of the reviews; excluding it here keeps this hoist from
-    # rebuilding the review's lead over a request the ordering raised above it.
+    # Critical work leads the lane: a request at or above its project's critical
+    # level is hoisted to the very front, ahead of the reviews, so that the
+    # order this pass launches by agrees with the ordering's own head. The
+    # remaining raised requests still follow the leading reviews, because a
+    # review lets a delivered run land and those requests are below the
+    # critical level.
+    criticals = sorted(
+        (pointer for pointer in order if _critical(pointer)),
+        key=lambda pointer: -queue_order._priority(pointer),
+    )
     raised = sorted(
         (
             pointer
@@ -336,14 +343,16 @@ def priorities_first(
         ),
         key=lambda pointer: -queue_order._priority(pointer),
     )
-    if not raised:
+    if not raised and not criticals:
         return list(order)
-    hoisted = {id(pointer) for pointer in raised}
+    hoisted = {id(pointer) for pointer in raised} | {
+        id(pointer) for pointer in criticals
+    }
     rest = [pointer for pointer in order if id(pointer) not in hoisted]
     lead = 0
     while lead < len(rest) and (_is_review_run(rest[lead]) or _aged(rest[lead])):
         lead += 1
-    return rest[:lead] + raised + rest[lead:]
+    return criticals + rest[:lead] + raised + rest[lead:]
 
 
 def fair_share_admission_order(

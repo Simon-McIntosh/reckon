@@ -15,6 +15,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from reckon import flight
 from reckon.crew import queue_order
 from reckon.crew.admission import ordering as admission_ordering
@@ -128,3 +130,80 @@ def test_a_project_critical_level_of_fifty_lets_an_override_of_fifty_lead(
         )
         == "review-of-delivered"
     )
+
+
+def test_the_admission_pass_puts_critical_first_then_reviews_then_the_rest() -> None:
+    """The pass the admit service runs, not only the raw ordering.
+
+    ``fair_share_admission_order`` adds a role-share pass and a priority hoist
+    over the ordering; with a lower request present, that hoist once rebuilt the
+    review's lead and pushed the critical request below it.
+    """
+    review = _review(age_seconds=600)
+    critical = _implement(priority=100)
+    lower = _pointer("lower-implement", role="implement", priority=10, age_seconds=30)
+
+    order = admission_ordering.fair_share_admission_order(
+        [review, critical, lower], [], now=NOW, config_for=None
+    )
+    assert [str(row["run_id"]) for row in order] == [
+        "critical-implement",
+        "review-of-delivered",
+        "lower-implement",
+    ]
+
+
+def test_the_promotion_order_honours_a_project_critical_level_of_fifty(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The promotion queue's only external ordering call reads the project level.
+
+    ``promotion_requests._pending_requests`` is the sole external caller of
+    ``fair_queue_order_details``. Its config reader must reach the project's
+    resolved config so a project setting of 50 lets an override of 50 lead,
+    rather than falling back to the shipped default of 100.
+    """
+    import json
+
+    def _write(name: str, *, priority: int | None, node: str) -> None:
+        record = {
+            "run_id": name,
+            "project": PROJECT,
+            "session": f"session-{name}",
+            "node": node,
+            "phase": "promotion-requested",
+            "requested_at": (NOW - timedelta(minutes=5)).isoformat(),
+        }
+        if priority is not None:
+            record["priority_override"] = priority
+        (tmp_path / f"{name}.json").write_text(json.dumps(record), encoding="utf-8")
+
+    _write("review-of-delivered", priority=None, node="review-of-node-x")
+    _write("critical-at-fifty", priority=50, node="critical-at-fifty")
+    _write("lower-at-forty-nine", priority=49, node="lower-at-forty-nine")
+
+    from reckon.crew import promotion_requests, queue_admission
+
+    monkeypatch.setattr(promotion_requests, "_requests_dir", lambda: tmp_path)
+    monkeypatch.setattr(promotion_requests, "_recent_drained", lambda *a, **k: [])
+    monkeypatch.setattr(
+        promotion_requests,
+        "_reviewed_request_runs",
+        lambda requests, **k: (
+            (request, str(request["run_id"]))
+            for request in requests
+            if str(request.get("node") or "").startswith("review-of-")
+        ),
+    )
+    monkeypatch.setattr(
+        queue_admission,
+        "_resolve_lane_config",
+        lambda request, **k: {"queue": {"critical_priority": 50}},
+    )
+
+    order = promotion_requests._pending_requests(now=NOW)
+    assert [str(row["run_id"]) for row in order] == [
+        "critical-at-fifty",
+        "review-of-delivered",
+        "lower-at-forty-nine",
+    ]
