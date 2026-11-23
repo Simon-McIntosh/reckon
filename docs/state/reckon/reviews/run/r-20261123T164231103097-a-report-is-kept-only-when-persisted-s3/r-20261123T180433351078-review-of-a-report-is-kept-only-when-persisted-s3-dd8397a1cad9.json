@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3a81cbdd00f90d500c7c468b54b44b236284ad5a",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:3385 GET /crew/<project>/reports -> crew_plan_reports",
+    "reckon/serve.py:4301 _handle_crew_post -> crew_persist_from_reports",
+    "reckon/mcp_views.py:4951 records view -> persisted_items",
+    "reckon/crew_run_commands.py:2627 crew_persist -> persist.persist_item"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T18:15:31Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "864",
+      "severity": "non-blocking",
+      "text": "non-blocking: _newest_write re-implements reckon/crew/routing.py:1893 _newest_mtime, the newest-write computation the retention sweep feeds to classify_item; the two differ in symlink resolution and in counting directory mtimes, so the listing can compute a different expiry from the sweep for the same item, the disagreement the plan forbids the listing and the sweep from having."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "4283",
+      "severity": "non-blocking",
+      "text": "non-blocking: _handle_crew_post re-inlines the Content-Length bound and JSON body read that the existing Handler._read_body at reckon/serve.py:3936 already provides, a second copy of a helper the repository owns."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "959",
+      "severity": "non-blocking",
+      "text": "non-blocking: crew_persist_from_reports accepts payload data of any type and calls list(data), so a request whose data is a non-iterable raises TypeError out of the handler rather than answering a 400, an unvalidated boundary that turns a malformed request into a 500."
+    }
+  ],
+  "head_log_revision": "6888e9a8c31356494bb3d9d7725c903237ed338c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production call sites: reckon/serve.py:3385 (GET listing), reckon/serve.py:4301 (POST persist), reckon/mcp_views.py:4951 (records view) and reckon/crew_run_commands.py:2627 (CLI verb).",
+    "diff": "read the four commits against base 3a81cbdd: 6888e9a8 adds the crew persist verb, the persisted_items helper and its records-view field, the newest-write, plan-report and persist-from-reports helpers and the /crew/<project>/reports GET and POST handlers plus the 310-line test file; the three later commits are the evidence fragment and its two reconciliation edits.",
+    "done_when": "the done_when names tests/test_persist_surfaces_agree.py persisting one synthetic figure through both surfaces into separate stores and comparing records apart from timestamps, the records-view case, the persisted/cited/working listing with expiry, a declared negative control and ruff clean; the manifest records 63 passed EXIT=0 and tests/test_persist_surfaces_agree.py's control, but no recorded arm ran the two changed test files the done_when also requires to keep their base results.",
+    "goal": "the node's goal is that the section 2 persist operation is reachable from the CLI, the HTTP sub-route and the MCP records view over one function; reckon/crew_run_commands.py:2615, reckon/serve.py:935 and reckon/mcp_views.py:4045 all end in persist.persist_item, and the served listing at reckon/serve.py:885 classes each item with report_retention.classify_item.",
+    "manifest": "read; status complete, commits 6888e9a8c3, e441244d0d, 26c357689d, dd8397a1ca; changed_paths the seven landed files; tests the three-file scoped gate; baseline_suite at 3a81cbdd 58 passed 0 failures and after_suite at 6888e9a8 63 passed 0 failures; negative-control.log 2 failed, 3 passed EXIT=1.",
+    "write_paths": "the node's fence was reckon/crew_run_commands.py, reckon/mcp_views.py, reckon/serve.py, tests/test_persist_surfaces_agree.py, the evidence fragment, the figures directory, tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py; git diff 3a81cbdd..dd8397a1 touches seven of those and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the agreement case at tests/test_persist_surfaces_agree.py:196 fails if the HTTP route omits a record, shown by the in-file second-implementation control at :293 and the recorded 2-failed mutation log, though the records-view case asserts no count and the listing case checks expiry is non-None rather than its value.",
+    "evidence": "the scoped-gate log reads 63 passed in 40.74s EXIT=0 and the negative control reads 2 failed, 3 passed EXIT=1, but the two changed test files tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py were run by no recorded arm, so the done_when clauses about CLI help and the verb registry rest on the manifest's unlogged claim.",
+    "fit": "the added symbols _newest_write, crew_plan_reports, crew_persist_from_reports and persisted_items name mechanism and carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2615, reckon/serve.py:935 and reckon/mcp_views.py:4045 give the CLI, the HTTP sub-route and the records view over the one persist.persist_item and the one report_retention.classify_item, matching the three surfaces the section names.",
+    "reuse": "reckon/serve.py:864 re-implements reckon/crew/routing.py:1893 _newest_mtime and reckon/serve.py:4283 re-inlines the body read that reckon/serve.py:3936 _read_body already provides, two capabilities the repository owns.",
+    "scope_discipline": "git diff --stat 3a81cbdd..dd8397a1 touches the seven declared paths only, with one unrelated ruff reformat of the parity check at reckon/serve.py:1667."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the section 2 persist operation is reachable from the CLI, the HTTP sub-route and the MCP records view over one function; reckon/crew_run_commands.py:2615, reckon/serve.py:935 and reckon/mcp_views.py:4045 all end in persist.persist_item, and the served listing at reckon/serve.py:885 classes each item with report_retention.classify_item.\nVERDICT done_when: the done_when names tests/test_persist_surfaces_agree.py persisting one synthetic figure through both surfaces into separate stores and comparing records apart from timestamps, the records-view case, the persisted/cited/working listing with expiry, a declared negative control and ruff clean; the manifest records 63 passed EXIT=0 and tests/test_persist_surfaces_agree.py's control, but no recorded arm ran the two changed test files the done_when also requires to keep their base results.\nVERDICT write_paths: the node's fence was reckon/crew_run_commands.py, reckon/mcp_views.py, reckon/serve.py, tests/test_persist_surfaces_agree.py, the evidence fragment, the figures directory, tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py; git diff 3a81cbdd..dd8397a1 touches seven of those and nothing outside them.\nVERDICT manifest: read; status complete, commits 6888e9a8c3, e441244d0d, 26c357689d, dd8397a1ca; changed_paths the seven landed files; tests the three-file scoped gate; baseline_suite at 3a81cbdd 58 passed 0 failures and after_suite at 6888e9a8 63 passed 0 failures; negative-control.log 2 failed, 3 passed EXIT=1.\nVERDICT diff: read the four commits against base 3a81cbdd: 6888e9a8 adds the crew persist verb, the persisted_items helper and its records-view field, the newest-write, plan-report and persist-from-reports helpers and the /crew/<project>/reports GET and POST handlers plus the 310-line test file; the three later commits are the evidence fragment and its two reconciliation edits.\nCALL_SITES: reckon/serve.py:3385 GET /crew/<project>/reports -> crew_plan_reports, reckon/serve.py:4301 _handle_crew_post -> crew_persist_from_reports, reckon/mcp_views.py:4951 records view -> persisted_items, reckon/crew_run_commands.py:2627 crew_persist -> persist.persist_item\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2615, reckon/serve.py:935 and reckon/mcp_views.py:4045 give the CLI, the HTTP sub-route and the records view over the one persist.persist_item and the one report_retention.classify_item, matching the three surfaces the section names.\nSCORE evidence: 13\nJUSTIFICATION evidence: the scoped-gate log reads 63 passed in 40.74s EXIT=0 and the negative control reads 2 failed, 3 passed EXIT=1, but the two changed test files tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py were run by no recorded arm, so the done_when clauses about CLI help and the verb registry rest on the manifest's unlogged claim.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff --stat 3a81cbdd..dd8397a1 touches the seven declared paths only, with one unrelated ruff reformat of the parity check at reckon/serve.py:1667.\nSCORE durability: 16\nJUSTIFICATION durability: the agreement case at tests/test_persist_surfaces_agree.py:196 fails if the HTTP route omits a record, shown by the in-file second-implementation control at :293 and the recorded 2-failed mutation log, though the records-view case asserts no count and the listing case checks expiry is non-None rather than its value.\nSCORE fit: 18\nJUSTIFICATION fit: the added symbols _newest_write, crew_plan_reports, crew_persist_from_reports and persisted_items name mechanism and carry no plan, sprint or ticket identifier.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/serve.py:864 re-implements reckon/crew/routing.py:1893 _newest_mtime and reckon/serve.py:4283 re-inlines the body read that reckon/serve.py:3936 _read_body already provides, two capabilities the repository owns.\nFINDING reckon/serve.py:864 non-blocking: _newest_write re-implements reckon/crew/routing.py:1893 _newest_mtime, the newest-write computation the retention sweep feeds to classify_item; the two differ in symlink resolution and in counting directory mtimes, so the listing can compute a different expiry from the sweep for the same item, the disagreement the plan forbids the listing and the sweep from having.\nFINDING reckon/serve.py:4283 non-blocking: _handle_crew_post re-inlines the Content-Length bound and JSON body read that the existing Handler._read_body at reckon/serve.py:3936 already provides, a second copy of a helper the repository owns.\nFINDING reckon/serve.py:959 non-blocking: crew_persist_from_reports accepts payload data of any type and calls list(data), so a request whose data is a non-iterable raises TypeError out of the handler rather than answering a 400, an unvalidated boundary that turns a malformed request into a 500.",
+  "review_run_id": "r-20261123T180433351078-review-of-a-report-is-kept-only-when-persisted-s3-dd8397a1cad9",
+  "reviewed_base_sha": "3a81cbdd00f90d500c7c468b54b44b236284ad5a",
+  "reviewed_head_sha": "dd8397a1cad99f5f9328972b6dc1327895c07580",
+  "reviewed_run_id": "r-20261123T164231103097-a-report-is-kept-only-when-persisted-s3",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T180433351078-review-of-a-report-is-kept-only-when-persisted-s3-dd8397a1cad9"
+  },
+  "reviewer_run_id": "r-20261123T180433351078-review-of-a-report-is-kept-only-when-persisted-s3-dd8397a1cad9",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T18:37:15.036288+00:00",
+  "total": 87
+}
