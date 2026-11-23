@@ -159,8 +159,8 @@ def gate_program_reason(command: str, detail: str) -> str:
         "cannot start it, so the landing stalls without running the check. "
         "Record the literal command that ran, naming the program as well as its "
         "arguments (for example `.venv/bin/python -m pytest tests/test_a.py`), "
-        "or declare the command that ran with `crew declare-gate --command "
-        "'<the literal command>'`"
+        "or declare the command that ran with `crew declare-gate --run <run> "
+        "--command '<the literal command>'`"
     )
 
 
