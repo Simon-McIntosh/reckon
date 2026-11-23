@@ -331,12 +331,14 @@ _EDITABLE_CONTRACT_PROPERTIES: Mapping[str, str] = {
 # The ``crew queue edit`` option that sets each editable field, with the value
 # its reader has to supply. The refusal names a property; the field behind it is
 # what a coordinator changes, so the row publishes the flag that sets it rather
-# than a verb that would leave the field as it is.
+# than a verb that would leave the field as it is. The placeholder is quoted so a
+# session that copies the command out of a terminal passes the text through
+# instead of handing the shell a redirect.
 _QUEUE_EDIT_FIELD_FLAGS: Mapping[str, str] = {
-    "steering": "--brief <file>",
-    "done-when": "--done-when <measure>",
-    "write-paths": "--write-path <path>",
-    "time-budget": "--time-budget <budget>",
+    "steering": "--brief '<file>'",
+    "done-when": "--done-when '<measure>'",
+    "write-paths": "--write-path '<path>'",
+    "time-budget": "--time-budget '<budget>'",
 }
 
 # Each node-contract finding is rendered as ``<property>: <detail>``, the first
@@ -1805,13 +1807,11 @@ def _queued_contract_refusal(
     failure = pointer.get("failure")
     if not failure:
         return None
-    text = queue_admission._failure_text(failure)
-    if queue_admission._NODE_CONTRACT_REFUSAL not in text:
-        return None
-    if queue_admission._CAPACITY_REFUSAL_REMEDY in text:
+    if not queue_admission._is_node_contract_refusal(failure):
         # A full lane names the same condition in its opening words, but an
         # occupying run finishing clears it: that one is a wait, not a repair.
         return None
+    text = queue_admission._failure_text(failure)
     passes = int(pointer.get(queue_admission.CONTRACT_REFUSAL_PASSES_FIELD) or 0)
     if passes < queue_admission.CONTRACT_REFUSAL_CONFIRMATIONS:
         return None

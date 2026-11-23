@@ -162,9 +162,12 @@ def test_an_editable_refusal_names_the_queue_edit(mounted_home: Path) -> None:
     # The row names the field behind each property, so the edit is actionable.
     assert "steering" in reason
     assert "write-paths" in reason
-    # The command names the flag for each field, so running it sets them.
+    # The command names the flag for each field, so running it sets them. The
+    # placeholders are quoted so the shell hands them over as text rather than
+    # reading the angle brackets as a redirect.
     assert str(row["next_command"]) == (
-        f"reckon crew queue edit --run {REFUSED_RUN} --brief <file> --write-path <path>"
+        f"reckon crew queue edit --run {REFUSED_RUN}"
+        " --brief '<file>' --write-path '<path>'"
     )
 
 

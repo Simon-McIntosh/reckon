@@ -992,12 +992,11 @@ def _is_until_changed_failure(failure: Any) -> bool:
     opening words, but it is cured by an occupying run finishing, so it is
     excluded and left on the back-off.
     """
-    text = _failure_text(failure)
-    if "CompetenceLimit:" in text:
+    if "CompetenceLimit:" in _failure_text(failure):
         return True
-    if _NODE_CONTRACT_REFUSAL not in text:
-        return False
-    return _CAPACITY_REFUSAL_REMEDY not in text
+    # What counts as a node-contract refusal is ``_is_node_contract_refusal``'s
+    # to decide, so a change there reaches every reader through one edit.
+    return _is_node_contract_refusal(failure)
 
 
 def _review_record_refusal_subject(pointer: Mapping[str, Any]) -> str:
@@ -1559,13 +1558,19 @@ def _stamp_failure(
     """Record one attempt's failure and when the request may be retried."""
     attempts = int(record.get("failure_attempts") or 0) + 1
     if _is_node_contract_refusal(failure):
-        # Count only passes that agree with each other: an intervening attempt
-        # that failed some other way is a different reading of the request.
+        # Count only passes that agree with each other about the same contract:
+        # an intervening attempt that failed some other way, or one that refused
+        # the request before a repair changed its contract, is a different
+        # reading and starts the count again.
+        contract = _node_contract_stamp(record)
         agreed = int(record.get(CONTRACT_REFUSAL_PASSES_FIELD) or 0)
         record[CONTRACT_REFUSAL_PASSES_FIELD] = (
-            agreed + 1 if _is_node_contract_refusal(record.get("failure")) else 1
+            agreed + 1
+            if _is_node_contract_refusal(record.get("failure"))
+            and record.get(CONTRACT_REFUSAL_STAMP_FIELD) == contract
+            else 1
         )
-        record[CONTRACT_REFUSAL_STAMP_FIELD] = _node_contract_stamp(record)
+        record[CONTRACT_REFUSAL_STAMP_FIELD] = contract
     else:
         record.pop(CONTRACT_REFUSAL_PASSES_FIELD, None)
         # A stamp kept from an earlier contract refusal would release this

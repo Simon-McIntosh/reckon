@@ -255,3 +255,83 @@ def test_repairing_the_measure_releases_the_parked_request(
 
     assert "r-repaired" in after["launched"], after
     assert _refusal_rows() == []
+
+
+def _park_measureless(
+    run_id: str, repository: Path, config, resolve, recorded: list
+) -> None:
+    """Queue one request with no done-when and let two agreeing passes park it."""
+    runs.queue_dispatch(
+        _queue_implementation(repository, node_id=f"parked-{run_id}", run_id=run_id)
+    )
+    _strip_done_when(run_id)
+    for _ in range(2):
+        _one_pass(config, resolve, recorded)
+    assert len(_refusal_rows()) == 1
+
+
+def test_one_predicate_decides_what_a_contract_refusal_is(
+    admit_repo: Path,  # noqa: F811 - imported fixture
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The retry reader and the obligation row read one predicate, not a copy."""
+    from reckon.crew.admission import holds as holds_module
+
+    refusal = (
+        "CrewError: node is not dispatchable — fully-specified: no plan or brief "
+        "is named"
+    )
+    assert holds_module._is_until_changed_failure(refusal) is True
+
+    config, resolve = _two_slot_lane(tmp_path)
+    recorded: list = []
+    _park_measureless("r-owned", admit_repo, config, resolve, recorded)
+
+    monkeypatch.setattr(
+        holds_module, "_is_node_contract_refusal", lambda failure: False
+    )
+
+    # Both readings move together with the one predicate: the retry reader no
+    # longer calls it a change-cured failure, and the row goes with it.
+    assert holds_module._is_until_changed_failure(refusal) is False
+    assert _refusal_rows() == []
+
+
+def test_the_remedy_quotes_the_value_a_session_must_supply(
+    admit_repo: Path,  # noqa: F811 - imported fixture
+    tmp_path: Path,
+) -> None:
+    """A copied command passes the placeholder through instead of redirecting."""
+    import shlex
+
+    config, resolve = _two_slot_lane(tmp_path)
+    recorded: list = []
+    _park_measureless("r-quoted", admit_repo, config, resolve, recorded)
+
+    command = str(_refusal_rows()[0]["next_command"])
+
+    assert "--done-when '<measure>'" in command, command
+    assert shlex.split(command)[-1] == "<measure>", command
+
+
+def test_a_changed_contract_starts_the_agreement_count_again(
+    admit_repo: Path,  # noqa: F811 - imported fixture
+    tmp_path: Path,
+) -> None:
+    """A pass that refused a different contract is a first reading, not a second."""
+    config, resolve = _two_slot_lane(tmp_path)
+    recorded: list = []
+    _park_measureless("r-recount", admit_repo, config, resolve, recorded)
+
+    _restore_done_when("r-recount", "do a good job")
+    first = _one_pass(config, resolve, recorded)
+
+    assert sorted(first["failed"]) == ["r-recount"], first
+    pointer = runs.read_pointer("r-recount")
+    assert pointer[queue_admission.CONTRACT_REFUSAL_PASSES_FIELD] == 1, pointer
+    assert _refusal_rows() == []
+
+    _one_pass(config, resolve, recorded)
+
+    assert len(_refusal_rows()) == 1
