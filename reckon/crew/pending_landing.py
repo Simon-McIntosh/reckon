@@ -1678,10 +1678,9 @@ def record_a_carried_delivery(
         return None, "the run records no delivered head to record"
     try:
         primary = merge._rev_parse(repository, "HEAD")
-        resolved = merge._rev_parse(repository, head)
     except (OSError, ValueError, merge.MergeError) as exc:
         return None, f"the run's delivery could not be resolved: {exc}"
-    if not merge._is_ancestor(repository, resolved, primary):
+    if not merge._is_ancestor(repository, head, primary):
         return None, (
             f"the run's head {head[:12]} is not on the primary branch, so no "
             "carried delivery is recorded"
