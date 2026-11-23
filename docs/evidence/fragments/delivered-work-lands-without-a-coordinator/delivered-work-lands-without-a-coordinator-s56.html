@@ -1,0 +1,49 @@
+<section id="delivered-work-lands-without-a-coordinator-s56-landing">
+  <h2>A landing arm that never reached the scheduler now says why</h2>
+
+  <p>At the pinned base <code>398a0d09708dda09bec869b7a512404cf9eb2902</code>,
+  an arm whose <code>sbatch --wait</code> submission exits non-zero before
+  printing a job id leaves <code>landing-measure/measurement.json</code> with
+  <code>elapsed_seconds</code> near <code>0.01</code>, no <code>job_id</code>,
+  <code>exit_status</code> null and an empty log. The landing then refuses with
+  <em>the base arm did not run</em>, which names the absence and nothing that
+  could be acted on. The new test reproduces exactly that reading at the base
+  revision: <code>AssertionError: refusal read: 'the base arm did not run'</code>.</p>
+
+  <p><strong>What changed.</strong> The partitioned arm runner in
+  <code>reckon/crew/landing_measure.py</code> now distinguishes a submission
+  that never started a job from a job whose submission reported its status. A
+  job writes the arm's log, so a receipt, a truncated log or the script's own
+  tree-build refusal is evidence a job ran. When the submission returns
+  non-zero with no job id printed before the wait and an empty log, the arm is
+  recorded as <code>submission_failed</code> with an
+  <code>unreadable_reason</code> naming the submitted command, its exit status
+  and its own output, and the arm's status is 3. The measurement's refusal then
+  reads <em>the base arm never reached the scheduler: its submission never
+  started a scheduler job: sbatch … exited 1 with …</em>, quoting the
+  submission's output.</p>
+
+  <p><strong>Both landing paths read the same sentence.</strong> The lander's
+  pass and <code>crew complete --land</code> both judge
+  a stored measurement through <code>queue_landing._measure_guard</code>, and
+  the reason is serialised in the measurement record it reads, so the refusal
+  text is identical whichever entry point asks. The test asserts the pass's
+  guard text and the stored-record guard text are the same string, and that
+  the stored record carries the arm's <code>submission_failed</code> flag.</p>
+
+  <p><strong>What does not change.</strong> An arm whose job starts and fails is
+  recorded from its receipt as before: its exit status and failing ids come
+  from the arm's own <code>EXIT=</code> line, and the case that asserts this
+  passes at the base revision unchanged. An arm killed at its time limit keeps
+  its timeout reading. The two fixtures that stub the scheduler were left as
+  they are: their logs already carry the evidence that a job ran.</p>
+
+  <p><strong>Measure.</strong> The importer population of
+  <code>reckon/crew/landing_measure.py</code> — 41 files plus the node's own
+  test — was run on <code>all_debug</code> at the base and at the head. The
+  base arm reports <code>6 failed, 399 passed</code> (two of the failures are
+  the node's own new test running against the base source, and four are
+  environment-dependent tests that fail identically at both revisions). The
+  head arm reports <code>4 failed, 401 passed</code>, whose four failures are
+  the same four the base arm carries: no failure is added.</p>
+</section>
