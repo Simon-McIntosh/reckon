@@ -1,0 +1,76 @@
+<section id="delivered-work-lands-without-a-coordinator-s56-landing">
+  <h2>A landing arm that never reached the scheduler now says why</h2>
+
+  <p>At the pinned base <code>398a0d09708dda09bec869b7a512404cf9eb2902</code>,
+  an arm whose <code>sbatch --wait</code> submission exits non-zero before
+  printing a job id leaves <code>landing-measure/measurement.json</code> with
+  <code>elapsed_seconds</code> near <code>0.01</code>, no <code>job_id</code>,
+  <code>exit_status</code> null and an empty log. The landing then refuses with
+  <em>the base arm did not run</em>, which names the absence and nothing that
+  could be acted on. The new test reproduces exactly that reading at the base
+  revision: <code>AssertionError: refusal read: 'the base arm did not run'</code>.</p>
+
+  <p><strong>What changed.</strong> The partitioned arm runner in
+  <code>reckon/crew/landing_measure.py</code> now distinguishes a submission
+  that never started a job from a job whose submission reported its status. A
+  job writes the arm's log, so a receipt, a truncated log or the script's own
+  tree-build refusal is evidence a job ran. When the submission returns
+  non-zero with no job id printed before the wait and an empty log, the arm is
+  recorded as <code>submission_failed</code> with an
+  <code>unreadable_reason</code> naming the submitted command, its exit status
+  and its own output, and the arm's status is 3. The measurement's refusal then
+  reads <em>the base arm never reached the scheduler: its submission never
+  started a scheduler job: sbatch … exited 1 with …</em>, quoting the
+  submission's output.</p>
+
+  <p><strong>Both landing paths read the same sentence.</strong> The lander's
+  pass and <code>crew complete --land</code> both judge
+  a stored measurement through <code>queue_landing._measure_guard</code>, and
+  the reason is serialised in the measurement record it reads, so the refusal
+  text is identical whichever entry point asks. The test asserts the pass's
+  guard text and the stored-record guard text are the same string, and that
+  the stored record carries the arm's <code>submission_failed</code> flag.</p>
+
+  <p><strong>The arm whose runner cannot launch at all.</strong> A different
+  arm records no exit status either: the runner raises before any process
+  exists, so the arm is recorded with <code>exit_status</code> null and no job
+  id, and its <code>unreadable_reason</code> holds the exception. That arm's
+  reading was also discarded and refused as <em>the base arm did not run</em>.
+  It is now quoted: the refusal reads <em>the base arm could not be
+  launched: OSError: [Errno 7] Argument list too long</em>. The branch matches
+  on a recorded reason beside a null status, so an arm whose job ran but left
+  no receipt keeps its own reading, unchanged.</p>
+
+  <p><strong>What does not change.</strong> An arm whose job starts and fails is
+  recorded from its receipt as before: its exit status and failing ids come
+  from the arm's own <code>EXIT=</code> line, and the case that asserts this
+  passes at the base revision unchanged. An arm killed at its time limit keeps
+  its timeout reading. The two fixtures that stub the scheduler were left as
+  they are: their logs already carry the evidence that a job ran.</p>
+
+  <p><strong>Measure.</strong> The importer population of
+  <code>reckon</code>'s landing measure — 41 files plus the node's own test —
+  was run on <code>all_debug</code> at both revisions. At the base
+  <code>398a0d09708dda09bec869b7a512404cf9eb2902</code> the population reports
+  <code>6 failed, 399 passed in 197.10s (0:03:17)</code>; two of those failures
+  are the node's own new test running against the base source, and four are
+  environment-dependent tests that fail the same
+  way at both revisions. At the same base
+  <code>398a0d09708dda09bec869b7a512404cf9eb2902</code>, running only the
+  node's test reports <code>2 failed, 1 passed in 0.53s</code>: the two cases
+  that read the new reason fail, and the case whose job starts passes. At the
+  head <code>100851f91471887b26b0d4637a64b461a1060d26</code> the population
+  reports <code>4 failed, 401 passed in 329.14s (0:05:29)</code>, whose four
+  failures are the same four the base arm carries: no failure is added.</p>
+
+  <p><strong>Repair measure.</strong> The landing-measure and shared-writer
+  suites, run over a tree built from the base
+  <code>398a0d09708dda09bec869b7a512404cf9eb2902</code>, report
+  <code>73 passed in 45.32s</code>. Over the tree that carries this change,
+  <code>9d8bcd0e41580bb1633a5f75050e5e975a141cda</code>, the same suites plus
+  the node's own test report <code>77 passed in 43.45s</code>. Run against the
+  previous revision <code>5b1109a24dab077a330a9887e78750216e64eb43</code>, the
+  node's test reports <code>1 failed, 3 passed in 0.78s</code>: the
+  launch-failure case refuses with <em>the base arm did not run</em> while that
+  arm already carries the launch failure as its reason.</p>
+</section>
