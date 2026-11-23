@@ -2874,7 +2874,10 @@ def _ctest_block_failure_ids(log_text: str) -> set[str] | None:
     return blocks if found else None
 
 
-_EXIT_RECORD_LINE_RE = re.compile(r"^\s*EXIT=-?\d+\s*$", re.MULTILINE)
+# The terminal ``EXIT=<n>`` record a capture writes. The status group is for the arm
+# observation, which records the figure; a reader that only needs the position
+# reads the match itself.
+_EXIT_RECORD_LINE_RE = re.compile(r"^\s*EXIT=(-?\d+)\s*$", re.MULTILINE)
 
 # The header a per-file gate runner writes before each file's own run, as
 # ``# file: tests/test_x.py``. The same header names the file a mutation is
@@ -3037,9 +3040,6 @@ PROCESS_EXIT_RE = re.compile(
     re.MULTILINE,
 )
 
-# The terminal ``EXIT=<n>`` capture record, with its status captured.
-TERMINAL_EXIT_RE = re.compile(r"^[ \t]*EXIT=(-?\d+)[ \t]*$", re.MULTILINE)
-
 
 def _process_label(text: str, ordinal: int) -> str:
     """What a process in a multi-process log is called in a record.
@@ -3093,10 +3093,12 @@ def arm_log_observation(
 
     ``exit_status`` is the terminal record when one is present, else the last
     process's own status so a log whose capture omitted the record still says
-    what it holds.
+    what it holds. Both readings use the one pattern the module owns for that
+    record, so the observation and the run-cutter cannot disagree about which
+    line is the capture's own status.
     """
     headers = list(PROCESS_EXIT_RE.finditer(log_text))
-    terminal = TERMINAL_EXIT_RE.findall(log_text)
+    terminal = [match.group(1) for match in _EXIT_RECORD_LINE_RE.finditer(log_text)]
     exit_status = int(terminal[-1]) if terminal else None
 
     ids: set[str] = set()
@@ -3117,7 +3119,7 @@ def arm_log_observation(
     for ordinal, (segment, code) in enumerate(segments, start=1):
         # The only segment of a log without process headers carries the
         # terminal EXIT= record, which is the log's and not the process's.
-        body = TERMINAL_EXIT_RE.sub("", segment) if code is None else segment
+        body = _EXIT_RECORD_LINE_RE.sub("", segment) if code is None else segment
         # Text before the first file header is the gate's own preamble rather
         # than a process's output, and only a leading segment can be that.
         if (
