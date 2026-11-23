@@ -2,9 +2,10 @@
   <h2>§48 — Landing a section's last node moves the plan's impl</h2>
 
   <p>A plan's impl moves when a section's declaration moves, and a coordinator
-  declares a section done after its last node lands. The landing now writes
-  that declaration in its own versioned write when it is the section's last
-  open node, so impl moves as the work lands and the promotion passes with no
+  declares a section done after its last node lands. When the run landing is
+  the section's last open node, the landing records that declaration once its
+  own plan write has committed, as its own commit, so impl moves as the work
+  that closed the section lands and the promotion passes with no
   <code>--no-impl-change</code>. A node that leaves siblings open lands with
   the section still implementable and records no override.</p>
 
