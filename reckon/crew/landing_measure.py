@@ -371,6 +371,11 @@ class Arm:
     #: a log with no receipt, or one whose receipt disagrees with the status
     #: the scheduler returned. Empty when the arm simply has no status.
     unreadable_reason: str = ""
+    #: Whether the arm's submission exited before the scheduler accepted a job,
+    #: so the arm never ran at all. ``unreadable_reason`` then names the
+    #: submission command, its status and its own output, which is what the
+    #: landing's refusal quotes rather than reporting a silent absence.
+    submission_failed: bool = False
     #: Wall-clock seconds the arm took, and how many files its population
     #: read. The pair is what a later arm's bound is sized from, so an arm
     #: that took 900 s is not judged again under a bound that ignores it.
@@ -403,6 +408,8 @@ class Arm:
             "failure_ids": list(self.failure_ids),
             "log_path": self.log_path,
             "timed_out": self.timed_out,
+            "unreadable_reason": self.unreadable_reason,
+            "submission_failed": self.submission_failed,
             "elapsed_seconds": self.elapsed_seconds,
             "file_count": self.file_count,
             "job_id": self.job_id,
@@ -863,6 +870,7 @@ def _arm(
             failing_ids(output),
             str(log_path),
             unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
+            submission_failed=bool(getattr(finished, "submission_failed", False)),
             elapsed_seconds=elapsed,
             file_count=file_count,
             # A partitioned runner that read the scheduler's own cancel line
@@ -1141,6 +1149,12 @@ exit "$status"
             named = _SCHEDULER_JOB.search(output)
             if named:
                 job_id = job_id or named.group(1)
+        # sbatch prints a job's id before it waits on it, so a submission that
+        # reads non-zero while naming no job never got as far as a job: the
+        # arm did not fail its tests, its submission was refused. Record what
+        # refused it, because an arm that ends in hundredths of a second with
+        # no id and an empty log otherwise says nothing about why.
+        submission_failed = not timed_out and bool(finished.returncode) and not job_id
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
         # The scheduler appends lines of its own to the job's log after the
@@ -1148,13 +1162,24 @@ exit "$status"
         # line rather than as the log's last one; the last such line is the
         # trap's, since the trap prints after everything the arm itself ran.
         receipts = _EXIT_RECEIPT.findall(output)
-        status = int(receipts[-1]) if receipts and not timed_out else 3
+        status = (
+            int(receipts[-1])
+            if receipts and not timed_out and not submission_failed
+            else 3
+        )
         reason = ""
         refusal = _TREE_BUILD_REFUSAL.search(output)
         if timed_out:
             reason = (
                 f"the scheduler cancelled job {job_id or 'unknown'} at its "
                 f"{limit} time limit"
+            )
+        elif submission_failed:
+            spoken = f"{finished.stdout or ''}{finished.stderr or ''}".strip()
+            reason = (
+                "its submission never started a scheduler job: "
+                f"{shlex.join(str(token) for token in argv)} exited "
+                f"{finished.returncode} with {spoken or 'no output'}"
             )
         elif refusal:
             # The arm's own sentence names the path and the revision, so it is
@@ -1175,8 +1200,9 @@ exit "$status"
             "",
         )
         returned.unreadable_reason = reason
-        returned.timed_out = timed_out
+        returned.submission_failed = submission_failed
         returned.job_id = job_id
+        returned.timed_out = timed_out
         returned.time_limit = limit
         return returned
 
@@ -1375,6 +1401,15 @@ def measure_run(
                 unreadable = (
                     f"the {name} arm{scheduler} exceeded its "
                     f"{arm_bound_seconds:g}s bound"
+                )
+            elif arm.submission_failed:
+                # The arm never reached the scheduler, so the reason is the
+                # submission's own, not a bare absence: an arm that ends in
+                # hundredths of a second with an empty log says nothing a
+                # reader can act on unless its submission is quoted.
+                unreadable = (
+                    f"the {name} arm never reached the scheduler: "
+                    f"{arm.unreadable_reason}"
                 )
             else:
                 unreadable = f"the {name} arm did not run"
