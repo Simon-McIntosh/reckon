@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:24:59Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": 1957,
+      "severity": "non-blocking",
+      "summary": "the composition hook runs on every plan close, yet the gate ran three test files while thirteen modules in tests/ close plans through _write_state_locked"
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": 1973,
+      "severity": "non-blocking",
+      "summary": "the catch names only EvidenceSynthesisError and OSError, so an unanticipated composition exception arrives after the plan file is written and is not covered by any test"
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": 2043,
+      "severity": "non-blocking",
+      "summary": "compose_closed_plan_report is annotated EvidenceSynthesisResult | None but never returns None"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that closing a plan composes one report naming its plan and sprint, with each node's figures beneath its row; reckon/_store.py:1957-1977 fires the composition on the landed transition and reckon/evidence.py:1932-1959 builds the identity.\nVERDICT done_when: the done_when names tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py; its five cases assert the sprint and plan metadata, both links in the first block, both figures beneath their nodes' rows, audit-doc acceptance, the two open-plan cases and the no-sprint case.\nVERDICT write_paths: the declared paths are reckon/project_state.py, reckon/evidence.py, the new test, the evidence fragment, the figures directory and reckon/_store.py; every path in the delivered diff lies inside that set.\nVERDICT manifest: the reviewed manifest records status complete, five commits, the head arm at 0a524223e8a4 (63 passed) and the base arm at 91f8d8d63be0 (58 passed), with both arms' logs named and a repair control log.\nVERDICT diff: read commit by commit from 91f8d8d6 to 26ff8e87; five commits touch four paths, and project_state.py's 26 added lines were removed again by a40d70c3 so its net change is zero.\nCALL_SITES: reckon/_store.py:_write_state_locked, reckon/project_maintenance_commands.py:1483, reckon/evidence.py:write_sprint_page, reckon/evidence.py:synthesize_landed_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/evidence.py:1486-1511 and :1932-1959 state the plan and sprint identity in the first block and in metadata, and :954-998 places each node's figures beneath its row.\nSCORE evidence: 15\nJUSTIFICATION evidence: the head arm logged 63 passed at 0a524223e8a4 in after_suite-repair-1795472148.log, but the reviewed head 26ff8e87 carries two later doc-only commits and thirteen test modules that close plans were not in the gate.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four delivered paths are all inside the declared write paths, and project_state.py's added helper was removed by a40d70c3 leaving no net out-of-scope change.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py:300-360 monkeypatches evidence._served_href and requires both links to carry the mark, and the base-revision control log shows the first case red on the absent sprint.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/evidence.py:924-998 follows the module's existing block-builder idiom and introduce no plan, sprint or gate identifiers in symbols or comments in the diff.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/evidence.py:1242-1265 resolves the sprint through project_state.resource_path and identify_resource rather than rebuilding the address rule, and the repair deleted the parallel plan_sprint_href clone that a9df8ea7 had added.\nFINDING reckon/_store.py:1957 non-blocking: the composition hook runs on every plan close, yet the gate ran three test files while thirteen modules in tests/ close plans through _write_state_locked, so a regression in any of them would land unseen.\nFINDING reckon/_store.py:1973 non-blocking: the catch names only EvidenceSynthesisError and OSError, so an unanticipated composition exception arrives after the plan file is already written and surfaces to the caller, which the plan's \"adds no new refusal\" clause does not contemplate and no test exercises.\nFINDING reckon/evidence.py:2043 non-blocking: compose_closed_plan_report is annotated EvidenceSynthesisResult | None but never returns None, so a caller may guard against a state the function cannot produce.\n",
+  "review_run_id": "r-20261123T222220781496-review-of-a-report-is-kept-only-when-persisted-s8-26ff8e87de49",
+  "reviewed_base_sha": "91f8d8d63be0104bfa1308fb508fdce6e189ca83",
+  "reviewed_head_sha": "26ff8e87de49bd0224d3bb1e3995ca8c2ea715dd",
+  "reviewed_run_id": "r-20261123T164239430306-a-report-is-kept-only-when-persisted-s8",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:33:49.353501+00:00",
+  "total": 107
+}
