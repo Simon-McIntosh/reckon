@@ -1295,6 +1295,38 @@ def waiting_decision_rows(report: Mapping[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def queue_holding_decisions(
+    plan: Mapping[str, Any],
+    sections_map: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """The sections an unsettled decision holds, as a queue read states it.
+
+    A reader answering whether a plan's sections may be queued needs the same
+    judgment the roadmap already makes: an open decision is a wait, and a
+    decision scoped to named sections holds only those. ``holds_whole_plan``
+    names an unscoped decision, which holds every section, and ``sections``
+    names the ones a scoped decision holds. The decision ids are carried so a
+    caller can report which decision the answer came from.
+    """
+
+    rows = [
+        row
+        for row in _decision_rows(dict(plan), sections_map)
+        if row["status"] in ("open", "gated")
+    ]
+    sections: list[str] = []
+    for row in rows:
+        for section in row.get("sections") or ():
+            identity = str(section).strip()
+            if identity and identity not in sections:
+                sections.append(identity)
+    return {
+        "holds_whole_plan": any(not row.get("sections") for row in rows),
+        "sections": sections,
+        "decisions": [str(row["id"]) for row in rows],
+    }
+
+
 def plan_level_decisions(
     decisions: list[dict[str, Any]], statuses: tuple[str, ...] = ("open",)
 ) -> list[dict[str, Any]]:

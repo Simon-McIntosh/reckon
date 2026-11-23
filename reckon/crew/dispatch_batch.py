@@ -1071,6 +1071,322 @@ def _plan_history(project: str, plan: str, root: str | Path) -> list[dict[str, A
     ]
 
 
+#: The fixed answers a plan's queue read gives, one per implementable section.
+#: Every caller that answers "may this be queued" — the whole-plan dispatch,
+#: the single-section dispatch and the admission service — reports one of
+#: these, so a reader comparing two surfaces compares one vocabulary.
+QUEUE_ANSWER_MAY = "may be queued"
+QUEUE_ANSWER_REVIEW = "review owed"
+QUEUE_ANSWER_DECISION = "an open decision holds the plan"
+QUEUE_ANSWER_HOLD = "a coordinator's hold covers it"
+
+
+def _coordinated_answer(session: str) -> str:
+    """The answer a section of another session's plan carries."""
+    return f"plan coordinated by session {session}"
+
+
+class _QueueReads:
+    """One read answering, per section, whether a plan's work may be queued.
+
+    Each reason is taken from the place that already computes it: the
+    coordinator resolution names another session's plan, a stored request's
+    ``queue_hold`` covers it, the roadmap's decision rows hold it, and the
+    dispatch's own plan-review gate says whether a review is owed. The plan is
+    parsed once and its review evidence is judged once per section, so a
+    whole-plan dispatch, a batch beside it and the service's pass all read one
+    answer rather than three derivations that can drift.
+
+    ``config_for`` answers a project's flight configuration, which is where the
+    review gate's enforce-or-report mode lives: in report-only mode a missing
+    review does not hold work, so the read answers ``may be queued`` exactly as
+    the dispatch would proceed.
+    """
+
+    def __init__(
+        self,
+        *,
+        session: str,
+        repo_root: str | Path,
+        config_for,
+        allow_unreviewed: bool = False,
+        live: Sequence[Mapping[str, Any]] | None = None,
+        plans: _Plans | None = None,
+    ) -> None:
+        self.session = session
+        self.config_for = config_for
+        self.allow_unreviewed = allow_unreviewed
+        self._plans = plans or _Plans(Path(repo_root).expanduser().resolve())
+        self._live = list(live) if live is not None else None
+        self._ownership: dict[str, Mapping[str, Any]] = {}
+        self._authority: dict[tuple[str, str], Mapping[str, Any]] = {}
+        self._answers: dict[
+            tuple[str, str, bool], dict[str, dict[str, Any]]
+        ] = {}
+
+    def live(self, project: str) -> list[Mapping[str, Any]]:
+        if self._live is not None:
+            return self._live
+        from reckon.crew import runs
+
+        try:
+            self._live = list(runs.list_live(project=project))
+        except Exception:  # noqa: BLE001 - an unreadable live set holds nothing
+            self._live = []
+        return self._live
+
+    def ownership(self, project: str, repo_root: str | Path) -> Mapping[str, Any]:
+        if project not in self._ownership:
+            from reckon.crew.plan_coordinator import resolve_plan_coordinators
+
+            self._ownership[project] = resolve_plan_coordinators(
+                project, root=repo_root, pointers=self.live(project)
+            )
+        return self._ownership[project]
+
+    def _authority_for(self, project: str, repo_root: str | Path) -> Mapping[str, Any]:
+        key = (project, str(repo_root))
+        if key not in self._authority:
+            from reckon.crew import routing
+
+            self._authority[key] = routing.resolve_dispatch_authority(
+                project, repo_root
+            )
+        return self._authority[key]
+
+    def answers(
+        self,
+        project: str,
+        plan: str,
+        *,
+        allow_unreviewed: bool | None = None,
+    ) -> dict[str, dict[str, Any]]:
+        """Every implementable section of one plan, with its answer."""
+        waived = (
+            self.allow_unreviewed if allow_unreviewed is None else allow_unreviewed
+        )
+        key = (project, plan, bool(waived))
+        if key not in self._answers:
+            self._answers[key] = self._read(
+                project, plan, allow_unreviewed=bool(waived)
+            )
+        return self._answers[key]
+
+    def answer(
+        self,
+        project: str,
+        plan: str,
+        section: str,
+        *,
+        allow_unreviewed: bool | None = None,
+    ) -> dict[str, Any] | None:
+        """One section's answer, or ``None`` when the plan does not declare it."""
+        from reckon.crew.node import normalize_section
+
+        wanted = normalize_section(section)
+        for identity, row in self.answers(
+            project, plan, allow_unreviewed=allow_unreviewed
+        ).items():
+            if normalize_section(identity) == wanted:
+                return row
+        return None
+
+    def _read(
+        self, project: str, plan: str, *, allow_unreviewed: bool
+    ) -> dict[str, dict[str, Any]]:
+        from reckon import _plan_html
+        from reckon.crew.node import normalize_section
+
+        read = self._plans.read(project, plan)
+        sections = [
+            todo
+            for todo in _plan_html.derive_section_todos(read.document, read.state)
+            if todo.get("declaration") == "implementable"
+        ]
+        answers = {
+            todo["id"]: {"section": todo["id"], "may": True, "reason": QUEUE_ANSWER_MAY}
+            for todo in sections
+        }
+        if not answers:
+            return answers
+        ownership = self.ownership(project, read.repo_root)
+        owner = str(
+            ((ownership.get("plans") or {}).get(plan) or {}).get("coordinator") or ""
+        )
+        if owner and owner != self.session:
+            for row in answers.values():
+                row.update(
+                    may=False, reason=_coordinated_answer(owner), session=owner
+                )
+            return answers
+        held_whole, held = self._held_sections(project, plan)
+        if held_whole or held:
+            for identity, row in answers.items():
+                if held_whole or normalize_section(identity) in held:
+                    row.update(may=False, reason=QUEUE_ANSWER_HOLD)
+        decisions = self._decisions(read, plan)
+        for identity, row in answers.items():
+            if not row["may"]:
+                continue
+            if decisions["holds_whole_plan"] or (
+                normalize_section(identity) in decisions["sections"]
+            ):
+                row.update(may=False, reason=QUEUE_ANSWER_DECISION)
+        config = self.config_for(project) if self.config_for is not None else None
+        if not self._review_gate_enforces(config):
+            return answers
+        for identity, row in answers.items():
+            if row["may"] and self._review_owed(
+                project, plan, identity, read, allow_unreviewed=allow_unreviewed
+            ):
+                row.update(may=False, reason=QUEUE_ANSWER_REVIEW)
+        return answers
+
+    def _held_sections(self, project: str, plan: str) -> tuple[bool, set[str]]:
+        """The sections a coordinator's queue hold covers, and whether it is whole.
+
+        A hold lives on the stored request it was written to and names the
+        section that request builds; one that names no section, or is written
+        against the plan itself, covers every section of the plan.
+        """
+        from reckon.crew.node import normalize_section
+
+        whole = False
+        sections: set[str] = set()
+        for pointer in self.live(project):
+            if str(pointer.get("project") or "") != project:
+                continue
+            if not (pointer.get("queue_hold") or {}):
+                continue
+            node = pointer.get("node")
+            node = node if isinstance(node, Mapping) else {}
+            pointer_plan = str(pointer.get("plan") or node.get("plan") or "")
+            if pointer_plan != plan:
+                continue
+            section = pointer.get("section") or node.get("section")
+            if str(section or "").strip():
+                sections.add(normalize_section(section))
+            else:
+                whole = True
+        return whole, sections
+
+    def _decisions(self, read: _PlanRead, plan: str) -> dict[str, Any]:
+        """The sections an unsettled decision of this plan holds."""
+        from reckon import roadmap
+
+        return roadmap.queue_holding_decisions(
+            {
+                "slug": plan,
+                "decisions": read.state.get("decisions") or {},
+                "gates": read.state.get("gates") or [],
+            }
+        )
+
+    @staticmethod
+    def _review_gate_enforces(config: Mapping[str, Any] | None) -> bool:
+        """Whether the resolved config holds work for an owed plan review."""
+        from reckon import flight
+
+        return flight.plan_review_gate_enforces(config)
+
+    def _review_owed(
+        self,
+        project: str,
+        plan: str,
+        section: str,
+        read: _PlanRead,
+        *,
+        allow_unreviewed: bool,
+    ) -> bool:
+        """Whether the plan's review holds this section.
+
+        A plan with no stored review at all covers nothing, so every section of
+        it is owed one and the store is never walked for coverage. Otherwise
+        the dispatch's own gate is asked, narrowed to the units a dispatch of
+        this section reads, so a finding anchored on another section does not
+        hold this one.
+        """
+        from reckon.crew import plan_review, routing
+        from reckon.crew.node import PlanReviewMissingError, TaskNode
+
+        if allow_unreviewed:
+            return False
+        try:
+            records = plan_review.list_plan_reviews(project, plan)
+            if not records and (
+                plan_review.newest_design_review(project, plan, records=records)
+                is None
+            ):
+                return True
+            routing.require_plan_reviewed(
+                node=TaskNode(
+                    id=f"{plan}-{section}",
+                    goal="",
+                    plan=plan,
+                    section=section,
+                    role="implement",
+                ),
+                project=project,
+                repo=read.repo_root,
+                authority=self._authority_for(project, read.repo_root),
+                enforce=True,
+                units=routing.plan_review_units(section),
+            )
+        except PlanReviewMissingError:
+            return True
+        except Exception:  # noqa: BLE001 - unreadable evidence is held, not waved
+            return True
+        return False
+
+
+def plan_queue_answers(
+    project: str,
+    plan: str,
+    *,
+    session: str,
+    repo_root: str | Path,
+    config: Mapping[str, Any] | None = None,
+    allow_unreviewed: bool = False,
+    live: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """What the read answers for each implementable section of one plan."""
+    reads = _QueueReads(
+        session=session,
+        repo_root=repo_root,
+        config_for=lambda _project: config or {},
+        allow_unreviewed=allow_unreviewed,
+        live=live,
+    )
+    return reads.answers(project, plan)
+
+
+def project_queue_answers(
+    project: str,
+    *,
+    session: str,
+    repo_root: str | Path,
+    config: Mapping[str, Any] | None = None,
+    allow_unreviewed: bool = False,
+    plans_dir: str | Path | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """The read over every plan of one project, keyed by plan then section.
+
+    The coordinator resolution is derived once for the project rather than once
+    per plan, which is what makes a read over a project of hundreds of plans
+    cost the plans' own parsing rather than a resolution each.
+    """
+    root = Path(repo_root).expanduser().resolve()
+    directory = Path(plans_dir) if plans_dir is not None else root / "docs" / "plans"
+    slugs = sorted(path.stem for path in directory.glob("*.html"))
+    reads = _QueueReads(
+        session=session,
+        repo_root=root,
+        config_for=lambda _project: config or {},
+        allow_unreviewed=allow_unreviewed,
+    )
+    return {slug: reads.answers(project, slug) for slug in slugs}
+
+
 def queue_plan(
     project: str,
     plan: str,
@@ -1105,14 +1421,24 @@ def queue_plan(
     from reckon import _plan_html, ledger
     from reckon.crew import runs
     from reckon.crew.node import normalize_section
-    from reckon.crew.plan_coordinator import resolve_plan_coordinators
     from reckon.crew.routing import resolved_time_ceiling
 
-    read = _Plans(Path(repo_root).expanduser().resolve()).read(project, plan)
+    plans = _Plans(Path(repo_root).expanduser().resolve())
+    read = plans.read(project, plan)
     sections = _plan_html.derive_section_todos(read.document, read.state)
     live = list(runs.list_live(project=project))
-    ownership = resolve_plan_coordinators(project, root=read.repo_root, pointers=live)
-    owner = (ownership.get("plans", {}).get(plan) or {}).get("coordinator")
+    reads = _QueueReads(
+        session=session,
+        repo_root=repo_root,
+        config_for=config_for,
+        live=live,
+        plans=plans,
+    )
+    answers = reads.answers(project, plan)
+    ownership = reads.ownership(project, read.repo_root)
+    owner = str(
+        ((ownership.get("plans") or {}).get(plan) or {}).get("coordinator") or ""
+    )
     history = _plan_history(project, plan, read.repo_root)
     entries: list[dict[str, Any]] = []
     rows: dict[str, dict[str, Any]] = {}
@@ -1130,7 +1456,19 @@ def queue_plan(
         }
         rows[identity] = row
         if owner and owner != session:
-            row.update(reason=f"plan coordinated by session {owner}", session=owner)
+            # Every authored row names the coordinating session, including the
+            # ones the read does not answer for: a caller enumerating a plan it
+            # does not own needs the owner on each row it is told to leave.
+            coordinated = _coordinated_answer(owner)
+            row.update(reason=coordinated, session=owner, queue_answer=coordinated)
+            continue
+        answer = answers.get(identity)
+        if answer is not None:
+            row["queue_answer"] = answer["reason"]
+        if answer is not None and not answer["may"]:
+            row["reason"] = answer["reason"]
+            if answer.get("session"):
+                row["session"] = answer["session"]
             continue
         declaration = section.get("declaration")
         if declaration != "implementable":
@@ -1191,6 +1529,7 @@ def queue_plan(
             local=local,
             dispatch_width="plan",
             dry_run=dry_run,
+            queue_answers={(project, plan): answers},
         )
         if entries
         else {"ok": True, "queued": 0, "refused": 0, "results": []}
@@ -1235,6 +1574,9 @@ def queue_batch(
     priority: int | None = None,
     dispatch_width: str = "",
     dry_run: bool = False,
+    queue_answers: Mapping[
+        tuple[str, str], Mapping[str, Mapping[str, Any]]
+    ] | None = None,
 ) -> dict[str, Any]:
     """Queue each entry on its own — see :func:`_queue_batch`.
 
@@ -1271,6 +1613,7 @@ def queue_batch(
             priority=priority,
             dispatch_width=dispatch_width,
             dry_run=dry_run,
+            queue_answers=queue_answers,
         )
 
 
@@ -1287,6 +1630,9 @@ def _queue_batch(
     priority: int | None = None,
     dispatch_width: str = "",
     dry_run: bool = False,
+    queue_answers: Mapping[
+        tuple[str, str], Mapping[str, Mapping[str, Any]]
+    ] | None = None,
 ) -> dict[str, Any]:
     """Queue each entry on its own and report one row per entry.
 
@@ -1350,6 +1696,40 @@ def _queue_batch(
         "local": local,
         "priority": priority,
     }
+    reads = _QueueReads(
+        session=session,
+        repo_root=root,
+        config_for=config_for,
+        live=live_pointers,
+        plans=plans,
+    )
+
+    def _answer(project: str, node: TaskNode, entry: Mapping[str, Any]) -> Any:
+        """The read's answer for one entry's section, or ``None`` when absent."""
+        if not node.plan.strip() or not str(node.section or "").strip():
+            return None
+        supplied = (queue_answers or {}).get((project, node.plan))
+        waived = bool(entry.get("allow_unreviewed_plan"))
+        if supplied is not None:
+            from reckon.crew.node import normalize_section
+
+            for identity, row in supplied.items():
+                if normalize_section(identity) != normalize_section(node.section):
+                    continue
+                if waived and row.get("reason") == QUEUE_ANSWER_REVIEW:
+                    # The entry carries the review waiver, and the waiver is
+                    # the answer to a review question: the read's own answer
+                    # for any other reason stands.
+                    return {"section": identity, "may": True, "reason": QUEUE_ANSWER_MAY}
+                return row
+            return None
+        return reads.answer(
+            project,
+            node.plan,
+            node.section,
+            allow_unreviewed=waived,
+        )
+
     for index in ordered:
         entry = entries[index]
         try:
@@ -1485,6 +1865,21 @@ def _queue_batch(
                 status = (
                     "awaiting-upstream" if phase in WAITING_UPSTREAM_PHASES else phase
                 )
+            answer = _answer(project, node, entry)
+            reported = {
+                key: row[key]
+                for key in ("reason", "detail", "plan_reviews")
+                if key in row
+            }
+            if answer is not None:
+                # The read's answer is reported on every row, in its own
+                # words, so a caller comparing a single-section dispatch with
+                # the whole-plan dispatch and with the read itself compares one
+                # vocabulary. A section the read says may not be queued says so
+                # in ``reason``, where a reader looks for the refusal.
+                reported["queue_answer"] = answer["reason"]
+                if not answer["may"]:
+                    reported["reason"] = answer["reason"]
             results.append(
                 {
                     "index": index,
@@ -1502,11 +1897,7 @@ def _queue_batch(
                     # to queue.
                     "would_phase": would_phase,
                     "wait_holds": findings,
-                    **{
-                        key: row[key]
-                        for key in ("reason", "detail", "plan_reviews")
-                        if key in row
-                    },
+                    **reported,
                 }
             )
         except (BatchEntryRefusedError, CrewError) as exc:
