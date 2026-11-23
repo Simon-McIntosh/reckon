@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:2485",
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:884",
+    "reckon/crew/pending_landing.py:933"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T21:54:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": 193,
+      "severity": "non-blocking",
+      "text": "reuse: _pointer_ownership adds a second pointer-comparison normaliser beside the existing _changed_pointer_fields at pending_landing.py:165, which already owns the capability of treating a listing-versus-by-id shape difference as no change; the addition could have been expressed as _changed_pointer_fields(pointer_as_read(x), pointer_as_read(y)) and does not extend that owner."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "evidence: the manifest's baseline_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.crew.pending_landing or reckon.crew.runs, so the done_when's 'the tests that import the changed modules add no failure against a base arm' is not measured by the recorded arm; the importing population is only covered by a head run (related-tests-head.log, 278 passed, 1 pre-existing failure) with a base spot-check of that one failure, and that head log carries no revision header or EXIT= line."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 7ef523e33f against 4fa07b80a8: three files, +36/-7 and +7/-3 in production plus a 277-line test; both release passes now normalise before comparing and the ownerless pass keeps a live worker.",
+    "done_when": "tests/test_a_release_pass_ignores_the_listing_shape.py covers the slim-retirement, rewritten-pointer and live-worker cases plus a 22-pointer half-slim/half-whole census; its log records 5 passed at 7ef523e33f and the negative control records 4 failed with the pointer held at 4fa07b80a8.",
+    "goal": "the node goal is that both release passes retire a promoted pointer with a dead worker whatever listing shape it was read in; reckon/crew/pending_landing.py:624 and :764 and runs.pointer_as_read at reckon/crew/runs.py:1914 are the change.",
+    "manifest": "read the source manifest; it states status complete, both suite arms green (58 -> 63 passed, 0 failed), and the negative control failing at base, with log paths under the run directory.",
+    "write_paths": "the delivered diff touches only reckon/crew/pending_landing.py, reckon/crew/runs.py and the new test, every path inside the declared set; the declared evidence-fragment and figure paths were not written and are not required by the done_when."
+  },
+  "justifications": {
+    "durability": "tests/test_a_release_pass_ignores_the_listing_shape.py:172 and :187 fail at the base revision (negative-control.log) and the retirement assertions check pointer-file absence, an independent side effect.",
+    "evidence": "the new test covers all three done_when cases and the 22-pointer census with a negative control at 4fa07b80a8 that fails with the pointer held (negative-control.log EXIT=1), though the recorded base arm runs tests that do not import the changed modules.",
+    "fit": "the helper, its docstrings and the public pointer_as_read rename follow the surrounding style of reckon/crew/pending_landing.py:193 and reckon/crew/runs.py:1914, with no forbidden name.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:624 and :764 compare each record through _pointer_ownership, so a promoted dead-worker pointer listed slim is retired while a rewritten or live-worker one is kept.",
+    "reuse": "the addition reuses runs.pointer_as_read and _OBSERVATION_FIELDS but adds _pointer_ownership at reckon/crew/pending_landing.py:193 beside the existing _changed_pointer_fields at :165 rather than expressing it through :165.",
+    "scope_discipline": "the diff touches only reckon/crew/pending_landing.py, reckon/crew/runs.py and tests/test_a_release_pass_ignores_the_listing_shape.py, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261123T202415027816-review-of-a-claim-nobody-is-working-is-released-s8-7ef523e33fad",
+  "reviewed_base_sha": "4fa07b80a8d5335def32b0297d595958115ae7e4",
+  "reviewed_head_sha": "7ef523e33fadd2a78e2f3507c3e4e4f278784340",
+  "reviewed_run_id": "r-20261122T191524103010-a-claim-nobody-is-working-is-released-s8",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T22:15:46.953470+00:00",
+  "total": 102
+}
