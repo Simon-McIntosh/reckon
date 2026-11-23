@@ -4506,9 +4506,15 @@ def _held_worktree_records_read(
             # filed from the aggregate's own position. Otherwise a row only the
             # aggregate carries names no tree, and a rebuild over a rewritten
             # aggregate would drop the duties its older rows still owe.
+            delivered = {str(row.get("run_id") or "") for row in rows}
             for ordinals in aggregate_order.values():
                 for ordinal in ordinals:
                     row = aggregate_rows[ordinal]
+                    run_id = str(row.get("run_id") or "")
+                    if run_id and run_id in delivered:
+                        # Filed above from the store's own copy; filing the
+                        # aggregate's would put one row in the index twice.
+                        continue
                     index.replace((0, ordinal), row, _retained_worktree(row))
             affected = set(inspected)
         else:
