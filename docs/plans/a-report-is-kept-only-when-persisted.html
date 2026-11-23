@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s9&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s9&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;],&quot;s10&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -209,6 +209,13 @@
     <p><strong>Deliverable.</strong> The sprint closing page names the sprint's theme, links each member plan's row to that plan's evidence report where one exists and to the plan document otherwise, and lists a member plan still open as carried, with the sprint it moves to when it has one. Everything the page does today is unchanged.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_closed_sprint_has_a_report_naming_its_plans.py</code> passes, covering: closing a sprint of three plans, two closed with evidence reports and one still open and moved to another sprint, yields a page that states the theme, links the two plans' rows to their evidence reports, and lists the third as carried to the named sprint; and the page's existing rows, figures and single-file overwrite are unchanged. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/evidence.py</code> and the new test. It adds no new public definition.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case must fail, with each plan's row linking the plan document rather than its evidence report.</p>
+
+    <h2 id="s10">§10 — A failed report composition at plan close never leaves a half-written close</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The review of §8's head (<code>r-20261123T222220781496-review-of-a-report-is-kept-only-when-persisted-s8-26ff8e87de49</code>) found that the report composition run at plan close catches only two named errors. Any other exception from the composition arrives after the plan file has already been written, so the close is committed with no report and no record of why, and no test covers that path.</p>
+    <p><strong>Deliverable.</strong> A composition at plan close that fails for any reason leaves the close recorded together with a record of the failure, naming the plan and the error, and the close is not reported as having composed a report.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_failed_close_composition_is_recorded.py</code> passes, covering: a composition that raises an error outside the two named ones leaves the plan closed and a failure record naming the plan and the error; a composition that succeeds leaves its report as today; and the close's own result says no report was composed when one failed. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. The node's base and head gate logs sit under its run directory, and each carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
+    <p><strong>Negative control.</strong> At main after §8 lands, the first case fails: the unexpected error escapes after the plan file is written and no failure is recorded.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
