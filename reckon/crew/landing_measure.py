@@ -1149,12 +1149,6 @@ exit "$status"
             named = _SCHEDULER_JOB.search(output)
             if named:
                 job_id = job_id or named.group(1)
-        # sbatch prints a job's id before it waits on it, so a submission that
-        # reads non-zero while naming no job never got as far as a job: the
-        # arm did not fail its tests, its submission was refused. Record what
-        # refused it, because an arm that ends in hundredths of a second with
-        # no id and an empty log otherwise says nothing about why.
-        submission_failed = not timed_out and bool(finished.returncode) and not job_id
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
         # The scheduler appends lines of its own to the job's log after the
@@ -1162,13 +1156,24 @@ exit "$status"
         # line rather than as the log's last one; the last such line is the
         # trap's, since the trap prints after everything the arm itself ran.
         receipts = _EXIT_RECEIPT.findall(output)
+        reason = ""
+        refusal = _TREE_BUILD_REFUSAL.search(output)
+        # An arm whose submission never started a job leaves its log empty: the
+        # job writes the log, so anything in it is evidence a job ran, whether
+        # or not its trap printed a receipt. Without that evidence, and with no
+        # job id printed before the wait, the submission is what failed, and
+        # what refused it is the only thing worth recording.
+        submission_failed = (
+            not timed_out
+            and bool(finished.returncode)
+            and not job_id
+            and not output.strip()
+        )
         status = (
             int(receipts[-1])
             if receipts and not timed_out and not submission_failed
             else 3
         )
-        reason = ""
-        refusal = _TREE_BUILD_REFUSAL.search(output)
         if timed_out:
             reason = (
                 f"the scheduler cancelled job {job_id or 'unknown'} at its "

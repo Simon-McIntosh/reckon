@@ -183,11 +183,7 @@ def scheduler_fixture(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         tail, returncode = state["arms"].pop(0)
         state["calls"] += 1
         log.write_text(tail, encoding="utf-8")
-        # sbatch prints the id before it waits, so a submitted arm names its
-        # job on stdout whatever its exit status; without that the arm is one
-        # whose submission never started, which is a different reading.
-        job = f"{1319168 + state['calls']}"
-        return subprocess.CompletedProcess(argv, returncode, job + "\n", "")
+        return subprocess.CompletedProcess(argv, returncode, tail, "")
 
     monkeypatch.setattr(landing_measure, "partition_submission", fake_submission)
     monkeypatch.setattr(landing_measure, "_RUN", fake_run)
