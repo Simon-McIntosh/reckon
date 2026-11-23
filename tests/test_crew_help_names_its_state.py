@@ -41,6 +41,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("merge",): "a reviewed head on the primary branch",
     ("observe",): "live run record",
     ("path",): "one kind of file",
+    ("persist",): "one report item outside the crew home",
     ("pick",): "live routing state",
     ("placement",): "one reservation a project places its workers into",
     ("promotions",): "promotion queue",

@@ -4042,6 +4042,32 @@ def crew_view_names() -> tuple[str, ...]:
     return CREW_VIEWS
 
 
+def persisted_items(project: str | None, *, plan: str | None = None) -> list[dict]:
+    """A project's persisted-item records, optionally for one plan.
+
+    The records view lists them beside the run rows a report is derived from, so
+    a reader seeing a run's report also sees what was deliberately kept out of
+    it. A project that is not mounted has no records to read and answers with
+    none rather than failing the whole view.
+    """
+
+    if not names_one_project(project):
+        return []
+    from reckon import flight as flight_module
+    from reckon.crew import persist
+
+    try:
+        docs = flight_module.mounted_project_docs().get(project)
+    except (OSError, ValueError):
+        return []
+    if docs is None:
+        return []
+    try:
+        return persist.read_persisted(project, plan=plan, docs_dir=docs)
+    except (OSError, ValueError):
+        return []
+
+
 def crew_view_refusal_detail() -> str:
     """The refusal for a view outside :data:`CREW_VIEWS`, naming every view served.
 
@@ -4922,6 +4948,7 @@ def serve_crew_view(
                 "version": version,
                 "path": str(ledger_module.ledger_path(project, checkout_path)),
                 "runs": runs,
+                "persisted": persisted_items(project, plan=plan),
             }
         if view == "review-need":
             # The shadow records what each further code review was predicted to

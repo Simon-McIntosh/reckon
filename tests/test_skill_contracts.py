@@ -1337,6 +1337,11 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "published schedule, and service supervision is the operator's and the "
         "supervisor's, never an orchestration step"
     ),
+    ("crew", "persist"): (
+        "a person's deliberate decision to keep one report item, taken from the "
+        "SPA or a terminal rather than from an orchestration step; an "
+        "orchestrator reads what was kept through the records view"
+    ),
     ("crew", "retention-sweep"): (
         "an operator-run maintenance surface, for a hand-run sweep or for "
         "installing the hourly timer; the installed timer runs the module "
