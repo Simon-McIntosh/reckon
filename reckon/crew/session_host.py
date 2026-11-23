@@ -361,6 +361,15 @@ class _HostReloader:
         self.source_root = Path(
             environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))
         ).resolve()
+        # The identity read is held against the checkout's own HEAD reading when
+        # this host interrogates the checkout it runs from, which costs a stat
+        # pair per tick instead of a git spawn. After a reload the host runs
+        # from an image and names the checkout explicitly, and that read is
+        # answered from the tree rather than held.
+        self._held_reads = (
+            Path(os.environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))).resolve()
+            == self.source_root
+        )
         carried = str(environ.pop(_FOLLOWER_IMAGE_COMMIT_ENV, "") or "")
         self.identity = (
             carried
@@ -386,8 +395,11 @@ class _HostReloader:
         """The identity of the code the checkout holds now."""
         from reckon import checkout_trust
 
+        package = self.import_root / "reckon"
+        if self._held_reads:
+            return checkout_trust.source_code_identity(package)
         return checkout_trust.source_code_identity(
-            self.import_root / "reckon", source_root=self.source_root
+            package, source_root=self.source_root
         )
 
     def due(self, current: str) -> bool:
