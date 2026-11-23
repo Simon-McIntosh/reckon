@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1288",
+    "reckon/crew/promotion_records.py:1313",
+    "reckon/crew/promotion_evidence.py:1650",
+    "reckon/crew/crew_run_commands.py:4721",
+    "reckon/crew/standing_suite.py:266"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "delivered-work-lands-without-a-coordinator-s60",
+      "recorded_at": "2026-11-23T13:54:06.288516+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-23T13:39:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "730",
+      "severity": "non-blocking",
+      "text": "non-blocking: parse_gate_duration duplicates the duration parsing owned by reckon/crew/placement.py:611 _duration_seconds and reckon/crew/node.py:961 parse_duration, so the landing path gains a fourth duration parser instead of reusing an existing one."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s51.html",
+      "line": "78",
+      "severity": "non-blocking",
+      "text": "non-blocking: the merge-head re-measurement is the scoped five-file suite pair only, so the done_when's importer clause is still evidenced only by the 429c4854b3 logs while the merge adds s54 tests that import landing_measure without re-measuring that population."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "807",
+      "severity": "non-blocking",
+      "text": "non-blocking: _UNSET is defined once and referenced nowhere in the repository, dead code carried onto the landed surface by the merge."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read 4fbd875294..8424096afa commit by commit; cc67c90de4 resolves landing_measure.py and promotion_records.py keeping arm_test_files while adding the declared-duration and partition-config threading, and 8424096afa adds only the merge paragraph to the fragment.",
+    "done_when": "the done_when names tests/test_a_landing_arm_measures_only_files_its_tree_holds.py with three cases; scoped-gate-1795440504118036327.log records 67 passed in 56.43s at cc67c90de4 with that file in its command, and baseline_suite and after_suite record 64 and 67 passed at EXIT=0.",
+    "goal": "the node's goal is that each landing arm measures only the files its own tree holds, and the increment since the prior review is the merge at cc67c90de4 plus the fragment at 8424096afa; reckon/crew/landing_measure.py:682 arm_test_files and its uses at :1509, :1549 and :1814 survive the merge with the same structure, so the rule the goal states still holds at 8424096afa.",
+    "manifest": "read; it records the merge cc67c90de4 and the head 8424096afa, names the three merge-head gate logs and the negative control, and its baseline_suite and after_suite both carry failure_count 0 and EXIT=0.",
+    "write_paths": "the increment's own commit 8424096afa changes only docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s51.html, inside the declared paths; the reckon/crew/landing_measure.py and promotion_records.py changes in the range arrive through the primary-branch merge cc67c90de4 and stay on the declared product surface."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_arm_measures_only_files_its_tree_holds.py:88 and :90 name independent expectations (base arm names only KEPT and names DELETED as left out) and still pass at the merge head, so a reinstated carry-forward rule reddens them.",
+    "evidence": "scoped-gate-1795440504118036327.log records 67 passed in 56.43s at cc67c90de4, but the done_when's importer clause is evidenced only by the 429c4854b3 logs, not by any arm re-run at the merge head.",
+    "fit": "the new helpers at reckon/crew/landing_measure.py:730-905 follow the module's private-helper and mechanism-docstring idiom with no plan or stage label, though _UNSET at :807 is dead.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1509 and :1814 still resolve each arm's files over its own tree, and the merge threads config and the new partition arguments through both call sites without disturbing that resolution.",
+    "reuse": "reckon/crew/landing_measure.py:730 parse_gate_duration re-implements the clock-and-suffix duration parsing already owned by reckon/crew/placement.py:611 and reckon/crew/node.py:961 rather than extending either.",
+    "scope_discipline": "8424096afa changes only the declared fragment, and every product line in the range reaches the landing through the primary-branch merge rather than being authored by this node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that each landing arm measures only the files its own tree holds, and the increment since the prior review is the merge at cc67c90de4 plus the fragment at 8424096afa; reckon/crew/landing_measure.py:682 arm_test_files and its uses at :1509, :1549 and :1814 survive the merge with the same structure, so the rule the goal states still holds at 8424096afa.\nVERDICT done_when: the done_when names tests/test_a_landing_arm_measures_only_files_its_tree_holds.py with three cases; scoped-gate-1795440504118036327.log records 67 passed in 56.43s at cc67c90de4 with that file in its command, and baseline_suite and after_suite record 64 and 67 passed at EXIT=0.\nVERDICT write_paths: the increment's own commit 8424096afa changes only docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s51.html, inside the declared paths; the reckon/crew/landing_measure.py and promotion_records.py changes in the range arrive through the primary-branch merge cc67c90de4 and stay on the declared product surface.\nVERDICT manifest: read; it records the merge cc67c90de4 and the head 8424096afa, names the three merge-head gate logs and the negative control, and its baseline_suite and after_suite both carry failure_count 0 and EXIT=0.\nVERDICT diff: read 4fbd875294..8424096afa commit by commit; cc67c90de4 resolves landing_measure.py and promotion_records.py keeping arm_test_files while adding the declared-duration and partition-config threading, and 8424096afa adds only the merge paragraph to the fragment.\nCALL_SITES: reckon/crew/queue_landing.py:1288, reckon/crew/promotion_records.py:1313, reckon/crew/promotion_evidence.py:1650, reckon/crew/crew_run_commands.py:4721, reckon/crew/standing_suite.py:266\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1509 and :1814 still resolve each arm's files over its own tree, and the merge threads config and the new partition arguments through both call sites without disturbing that resolution.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795440504118036327.log records 67 passed in 56.43s at cc67c90de4, but the done_when's importer clause is evidenced only by the 429c4854b3 logs, not by any arm re-run at the merge head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: 8424096afa changes only the declared fragment, and every product line in the range reaches the landing through the primary-branch merge rather than being authored by this node.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_arm_measures_only_files_its_tree_holds.py:88 and :90 name independent expectations (base arm names only KEPT and names DELETED as left out) and still pass at the merge head, so a reinstated carry-forward rule reddens them.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers at reckon/crew/landing_measure.py:730-905 follow the module's private-helper and mechanism-docstring idiom with no plan or stage label, though _UNSET at :807 is dead.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:730 parse_gate_duration re-implements the clock-and-suffix duration parsing already owned by reckon/crew/placement.py:611 and reckon/crew/node.py:961 rather than extending either.\nFINDING reckon/crew/landing_measure.py:730 non-blocking: parse_gate_duration duplicates the duration parsing owned by reckon/crew/placement.py:611 _duration_seconds and reckon/crew/node.py:961 parse_duration, so the landing path gains a fourth duration parser instead of reusing an existing one.\nFINDING docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s51.html:78 non-blocking: the merge-head re-measurement is the scoped five-file suite pair only, so the done_when's importer clause is still evidenced only by the 429c4854b3 logs while the merge adds s54 tests that import landing_measure without re-measuring that population.\nFINDING reckon/crew/landing_measure.py:807 non-blocking: _UNSET is defined once and referenced nowhere in the repository, dead code carried onto the landed surface by the merge.",
+  "review_run_id": "r-20261123T133842610404-review-of-delivered-work-lands-without-a-coordinator-s51-8424096afa7b",
+  "reviewed_base_sha": "4fbd87529477f610ed4e6318f114bb4d023b96ee",
+  "reviewed_head_sha": "8424096afa7b8bc10fd8563f23989f897af93a5e",
+  "reviewed_run_id": "r-20261123T112602282657-delivered-work-lands-without-a-coordinator-s51",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T13:59:11.943678+00:00",
+  "total": 90
+}
