@@ -2999,6 +2999,7 @@ def crew_resume(
     crew_module, flight_module = _crew_modules()
     from reckon.crew import runs as runs_module
     from reckon.crew.dispatch import LanePaused
+    from reckon.crew.dispatch_launch import TmpHeadroomError
 
     try:
         record = crew_module.read_pointer(run_id)
@@ -3106,6 +3107,12 @@ def crew_resume(
             pretty,
         )
         raise click.exceptions.Exit(3) from exc
+    except TmpHeadroomError as exc:
+        # A resume writes to the node-local scratch a dispatch does, so it meets
+        # the same floor and answers on the same JSON channel, naming the free
+        # bytes, the floor and the reclaimable bytes by owner.
+        _emit({"ok": False, "run_id": run_id, **exc.as_refusal()}, pretty)
+        raise click.exceptions.Exit(75) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     plan = result["plan"]

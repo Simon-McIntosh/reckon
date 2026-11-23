@@ -1340,6 +1340,14 @@ def resume_plan(
     withheld for. It is still held at a genuinely spent quota — a resume into one
     fails anyway, and reporting the reset time is more use than the rejection.
     """
+    # A resumed worker writes to the same node-local scratch a dispatch does, so
+    # the resume is held at the same floor, before any run state is touched. The
+    # check is read through the dispatch plan module so a caller that answers it
+    # for the dispatch door answers it here too, and the refusal names whose
+    # bytes could be reclaimed rather than only how many are free.
+    from reckon.crew import dispatch_plan as _dispatch_plan_module
+
+    _dispatch_plan_module.require_worker_scratch_headroom(config or {})
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")

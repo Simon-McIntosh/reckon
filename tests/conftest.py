@@ -1089,7 +1089,12 @@ def _publish_worker_scratch_root(tmp_path_factory):
 # population fails on the host rather than the code. The check is answered for
 # every test except the module that drives it with a fabricated filesystem.
 # A dispatch a test drives through a subprocess still reads the real disk.
-_HEADROOM_SUBJECT_MODULES = frozenset({"test_dispatch_refuses_without_tmp_headroom"})
+_HEADROOM_SUBJECT_MODULES = frozenset(
+    {
+        "test_dispatch_refuses_without_tmp_headroom",
+        "test_the_scratch_floor_is_announced_with_its_owners",
+    }
+)
 
 
 @pytest.fixture(autouse=True)
