@@ -160,6 +160,7 @@ def test_a_child_settled_over_a_working_run_is_spawned_again(tmp_path: Path) -> 
             "pid": child.pid,
             "settled_at": None,
             "rearmed_for": WORKING_RUN,
+            "live_work_source": "classified",
             "owner_checked": True,
         }
     ], "the census the fleet reads must carry the run that re-armed the pair"
