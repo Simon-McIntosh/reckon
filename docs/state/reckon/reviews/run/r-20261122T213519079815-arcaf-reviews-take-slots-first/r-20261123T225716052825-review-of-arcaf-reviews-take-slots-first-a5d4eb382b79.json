@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/ordering.py:383 (priorities_first from fair_share_admission_order)",
+    "reckon/crew/admission/selection.py:393 (fair_share_admission_order, the admit pass order)",
+    "reckon/crew/queue_order.py:567 (admission_order_details)",
+    "reckon/crew/promotion_requests.py:980 (_pending_requests -> _request_config -> fair_queue_order_details)",
+    "reckon/crew/dispatching/requests.py:564 (admission_order, position preview)",
+    "reckon/crew/queue_view.py:363 (queued_placements, published position)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:57:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/ordering.py",
+      "line": 319,
+      "severity": "non-blocking",
+      "summary": "priorities_first's local _critical re-expresses the rule queue_order._precedence already owns (points >= the project's critical level), so the two definitions can drift silently.",
+      "text": "queue_order._precedence (queue_order.py:356-358) decides criticality as `points is not None and points >= critical`; admission/ordering.py:319-323 decides it again as `points is not None and _critical_level(...) <= points`. Today they agree; a later change to one leaves the pass's hoist and the ordering's rank disagreeing, which is the same class of divergence the blocking finding on the previous head recorded. A single predicate in queue_order exposed to both would remove the risk.",
+      "title": "the criticality predicate is written twice"
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1414,
+      "severity": "non-blocking",
+      "summary": "runs.py:1414 and the other position readers call admission_order without config_for, so they rank at the shipped 100 while the launch pass ranks at the project's level.",
+      "text": "The launch path is right: admission/selection.py:393 passes config_for into fair_share_admission_order. The position/preview readers do not \u2014 runs.py:1414 (admission_order), dispatching/requests.py:564 (admission_order), queue_view.py:363 and query.py:471 (queued_placements) all take the default None, so _critical_level returns the shipped 100. A project whose flight layer sets queue.critical_priority to 50 would be told its override-50 request sits behind a review while the admit pass launches it first. No effect at the shipped default of 100, so it is recorded rather than held.",
+      "title": "published queue positions ignore a project's retuned critical level"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261123T225716052825-review-of-arcaf-reviews-take-slots-first-a5d4eb382b79",
+  "reviewed_base_sha": "e04648c6c1a8c4b8015051ae71806bca93e7616c",
+  "reviewed_head_sha": "a5d4eb382b790b8ac5bc790a471bb19fedb8b54e",
+  "reviewed_run_id": "r-20261122T213519079815-arcaf-reviews-take-slots-first",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:33:29.310473+00:00",
+  "total": 103,
+  "verdicts": {
+    "diff": "Read the delta e04648c6..a5d4eb38 and the full 4fa07b80..a5d4eb38 commit by commit: 24beaa01 adds the setting and the class, 8c1aa274 repairs the fair-share hoist and threads config_for into promotion_requests, e04648c6 and a5d4eb38 record the evidence arms.",
+    "done_when": "done_when names tests/test_a_critical_request_takes_a_slot_before_reviews.py and the shipped-defaults test; the after arm carries 66 passed EXIT=0 over that file plus tests/test_the_shipped_flight_defaults_validate.py, and the negative control at 4fa07 shows 2 failed (the two cases the delta repairs included) with the review leading the override-100 request.",
+    "goal": "The goal is that a request at or above its project's critical level takes a freed slot ahead of a delivered run's waiting review; the delta reads it in queue_order.py:356 (a (-1, -points) class ahead of reviews) and in admission/ordering.py:331 (criticals hoisted to the very front of the fair-share pass), and both paths now place it there.",
+    "manifest": "Read the reviewed manifest; it records the scoped gate and both suite arms on all_debug at 8c1aa274 with the four cited log paths, and its baseline_suite/after_suite entries name 0 failures and empty failure ids, which the logs confirm (59 passed and 66 passed).",
+    "write_paths": "Read the node's declared paths; the delta touches only reckon/crew/admission/ordering.py, reckon/crew/promotion_requests.py, reckon/flight.py, the test file, and the evidence fragment, all inside the declared set (flight.py's four-line comprehension revert is the previous review's third finding answered)."
+  }
+}
