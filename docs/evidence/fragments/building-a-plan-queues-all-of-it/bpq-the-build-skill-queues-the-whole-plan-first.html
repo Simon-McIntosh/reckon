@@ -1,0 +1,22 @@
+<section id="bpq-the-build-skill-queues-the-whole-plan-first-landing">
+  <h2>The build skill queues the whole plan first</h2>
+  <p>The build loop now queues the whole plan as its first act, before any review is composed or answered, then answers reviews as they land, then steers the queue. The one-call plan-width dispatch is named before every review command in the skill, and the retired rule — choose each section, load no plan wholesale, or queue only after the review round — is gone from the skill, its orchestration reference and the repository guidance.</p>
+  <ul>
+    <li><code>skills/reckon-build/SKILL.md</code>: new <code>## Queue the whole plan</code> section before <code>## Answer reviews as they land</code>; the review gate now holds a section in the queue with <code>plan-review-owed</code> instead of refusing at dispatch.</li>
+    <li><code>skills/reckon-build/references/sprint-orchestration.md</code>: the queue subsection is retitled and states the plan queues first, its sections held while reviews are answered.</li>
+    <li><code>AGENTS.md</code>: the orchestration bullet queues every plan you own as the first act, before any review is composed or answered.</li>
+  </ul>
+  <table>
+    <thead><tr><th>Check</th><th>Observed</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Ordering test on the head skill</td>
+        <td>plan-width dispatch at offset before the first <code>reckon crew review</code> command; 4 passed</td>
+      </tr>
+      <tr>
+        <td>Negative control against the base revision's skill</td>
+        <td>4 failed, including the ordering test (<code>assert 9817 &lt; 5816</code>); <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+</section>

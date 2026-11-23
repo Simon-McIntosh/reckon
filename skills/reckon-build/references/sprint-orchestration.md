@@ -770,14 +770,20 @@ forward by changing runtime, member, scope, node shape, advice, or experiment,
 repoint and continue. Stop only when progress needs new authority: an external
 prerequisite, user-owned decision, excess spend, or consent for an outward effect.
 
-### Queue the chosen work after the review round
+### Queue the whole plan first, then answer its reviews
 
-**Queue every implementable section of each plan whose review round is
-answered, and queue all of them in one beat, naming no lane.** The whole-plan
-call `reckon crew dispatch --project <project> --plan <slug> --session <session>`
+**Queue every implementable section of each plan you own at full width as the
+first act, and queue all of them in one beat, naming no lane** — before any
+review is composed or answered. A plan whose review is owed is not held back
+from the queue: its sections queue held with the `plan-review-owed` reason and
+are released by the admission pass once their review is stored, exactly as the
+dispatch gate would have refused them. Queueing is therefore never deferred to
+after a review round; the reviews are answered as they land, while the work
+waits. The whole-plan call
+`reckon crew dispatch --project <project> --plan <slug> --session <session>`
 with no `--section` queues them all, each section's done-when, write paths and
 waits taken from the plan, and reports one row per section (queued,
-awaiting-upstream, already queued, or refused) without a refused section
+awaiting-upstream, already queued, held or refused) without a refused section
 stopping the rest. The picker routes each request. Use
 `reckon crew dispatch --batch <file>` only to add what a section does not carry,
 such as a node split or a time budget. The set may include sections whose
