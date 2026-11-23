@@ -51,19 +51,22 @@
   <h3 id="qwnw-a-last-node-landing-moves-impl-measured">Measured</h3>
 
   <p>The gate is
-  <code>tests/test_landing_a_sections_last_node_moves_impl.py</code>, three
+  <code>tests/test_landing_a_sections_last_node_moves_impl.py</code>: seven
   cases against a temporary two-section plan driven through the project's real
-  <code>crew complete</code>: the only node of an implementable section, which
+  <code>crew complete</code> for the landing cases, plus the declaration and
+  delegation cases that read the guard's own answer. The landing cases are the
+  only node of an implementable section, which
   reads back with the section done in both the declaration map and the typed
   record and with impl moving from 0.5 to 1.0; one of two nodes, which lands
   with the section still implementable, impl still 0.5, and the sibling's
   pointer untouched; and a last node whose landing is refused by the gate-check
   precondition, which leaves the declaration map and impl exactly as before.
-  The scoped gate reads <code>6 passed in 4.20s</code>.</p>
+  The scoped gate reads <code>7 passed in 5.52s</code> at
+  <code>dd5b11ffeb</code>.</p>
 
   <p>The concurrency measure is unchanged and passes again:
   <code>tests/test_every_landed_state_write_survives_a_promotion.py</code> reads
-  <code>41 passed in 52.07s</code> at this head.</p>
+  <code>41 passed in 47.01s</code> at <code>dd5b11ffeb</code>.</p>
 
   <p>The negative control extracts the unchanged base revision into a scratch
   tree and runs the same file there: the first case is refused with
@@ -81,19 +84,38 @@
   landing that is the section's last. The scoped gate, now six cases, is
   measured again below.</p>
 
-  <p>The impl guard reads a section's declaration through the ledger's normal
-  form, the same one a dispatch reads it through, and reads a declaration
-  written as a status mapping by its status. A case pins that form across two
-  spellings of the section id. The sibling case requires the
-  <code>section-open</code> verdict rather than accepting its absence, so a
-  guard that skips the exemption instead of reading the declaration fails the
-  test.</p>
+  <p>The impl guard asks a section's declaration of the dispatch path's own
+  reader, <code>dispatching/measurement._section_declaration</code>, passing the
+  project, the plan, the repository the run was dispatched against and the
+  section the node holds. That reader already resolves a section through the
+  ledger's normal form and unwraps a declaration written as a status mapping,
+  so the guard holds no second copy of either rule. The plan root the impl
+  comparison resolves is computed once and given to both reads, so a promotion
+  cannot read a declaration from one tree and an impl from another. Two cases
+  pin this: one reads a status-mapping declaration through the owner, and one
+  records that the guard passes its repository and section through and takes
+  the owner's <code>implementable</code> answer as the section-open exemption.
+  The sibling case requires the <code>section-open</code> verdict rather than
+  accepting its absence, so a guard that skips the exemption instead of reading
+  the declaration fails the test.</p>
 
   <p>The before and after arms ran on the <code>all_debug</code> partition,
   excluding the nodes whose <code>/tmp</code> is full. The baseline arm reads
   <code>58 passed in 47.50s</code> at <code>31eda5cd1f4e</code>; the after arm
-  reads <code>64 passed in 41.97s</code> at <code>5b5fdafd80</code>. Neither arm
+  reads <code>65 passed in 43.38s</code> at <code>dd5b11ffeb</code>. Neither arm
   records a failure id.</p>
+
+  <p>The delegation is held by a control that reverts the answering commit's
+  <code>promotion_checks.py</code> hunk in a scratch tree of the same head. Run
+  against the delegation case it fails, reading
+  <code>1 failed, 6 deselected in 0.42s</code> at <code>dd5b11ffeb</code>,
+  because the guard no longer accepts the repository it reads the declaration
+  through. A second control keeps that parameter and restores a local lookup
+  over the plan state: the same case fails there as well, reading
+  <code>1 failed, 6 deselected in 0.45s</code>, because the local read answers
+  nothing where the owner answers <code>implementable</code>, so the run is
+  refused with <code>impl did not move</code> instead of landing on the
+  owner's answer.</p>
 
   <p>Reverting the repair's own hunk in a scratch tree of the same head and
   running the two cases it adds reads
@@ -104,7 +126,7 @@
   declaration written as a status mapping reads back as its text, so the
   section-open exemption cannot fire for it.</p>
 
-  <p>Revisions: the change is committed at <code>5b5fdafd80</code>, following
-  <code>f1577fdd19f</code>, and the base revision the arms compare against is
+  <p>Revisions: the change is committed at <code>dd5b11ffeb</code>, following
+  <code>09a5538303</code>, and the base revision the arms compare against is
   <code>31eda5cd1f4e</code>.</p>
 </section>
