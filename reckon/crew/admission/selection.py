@@ -129,7 +129,9 @@ def admit_once(
             # configuration turns this off is skipped by the stage itself.
             with _service._read_tally() as queue_reads:
                 started = time.monotonic()
-                result["plan_queue"] = _queueing.fill_queue(config_for=config_for)
+                # The stage resolves each project's own configuration: the pass
+                # config callable below answers a request pointer, not a project.
+                result["plan_queue"] = _queueing.fill_queue()
                 result["queue_seconds"] = round(time.monotonic() - started, 3)
             _service._record_stage_reads(result, "plan queue", queue_reads)
             refilled = int((result.get("plan_queue") or {}).get("queued") or 0)
