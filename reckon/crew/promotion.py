@@ -2456,17 +2456,6 @@ def _adopt_a_plan_edited_after_the_snapshot(
 def _record_comment_with_snapshot(
     snapshot: _PlanWriteSnapshot | None, **kwargs: Any
 ) -> dict:
-    # The closure is decided once for this landing and carried into both the
-    # snapshot's preview of the write and the write itself, so the two cannot
-    # disagree about whether the section moves to done.
-    from reckon.crew.promotion_scope import _landing_closes_its_section
-
-    kwargs["close_section"] = _landing_closes_its_section(
-        project=str(kwargs.get("project") or ""),
-        plan=str(kwargs.get("plan") or ""),
-        section=str(kwargs.get("section") or ""),
-        run_id=str(kwargs.get("run_id") or ""),
-    )
     if snapshot is not None:
         from reckon import _plan_html
 
@@ -2487,13 +2476,10 @@ def _record_comment_with_snapshot(
                 narrative=narrative,
                 author=kwargs["author"],
                 when=kwargs["when"],
-                close_section=bool(kwargs.get("close_section")),
             )
             snapshot.comment_id = str(_comment["id"])
             snapshot.comment_anchor = _anchor
-            if payload.get("comments") != state.get("comments") or payload.get(
-                "section_declarations"
-            ) != state.get("section_declarations"):
+            if payload.get("comments") != state.get("comments"):
                 payload = {
                     **payload,
                     "version": int(state.get("version") or 0) + 1,
@@ -3579,6 +3565,22 @@ def _complete_locked(
             )
         )
 
+        # The landing's own plan write is committed, so a section whose last
+        # node this run is records done. It is recorded here rather than inside
+        # that write: a refused landing never reaches this step and so records
+        # no declaration, and a declaration a coordinator wrote while the
+        # landing was in flight is not rolled back with the landing's comment.
+        from reckon.crew.promotion_scope import _close_a_landed_section
+
+        section_closure = _close_a_landed_section(
+            project=project,
+            plan=str(node.get("plan") or ""),
+            section=str(node.get("section") or ""),
+            run_id=run_id,
+            checkout=checkout,
+            verdict=str(gate).strip().lower(),
+        )
+
         # Return capture metadata while the pointer still exists. Session
         # ownership has already been copied onto the committed ledger row.
         _stop_at_stage_boundary("the release")
@@ -3636,6 +3638,7 @@ def _complete_locked(
             "already_promoted": already_promoted,
             "stacked_descendants": stacked_descendants_still_live(record),
             "session_capture": capture,
+            "plan_closure": section_closure,
             "plan_comment": comment,
             "release": release,
             "store": store_outcome,

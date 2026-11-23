@@ -1627,27 +1627,86 @@ def _landing_closes_its_section(
     return ours and others == 0
 
 
-def _close_section_declaration(payload: dict[str, Any], *, section: str) -> bool:
-    """Record the landed node's section done, moving the record beside it.
+def _close_a_landed_section(
+    *,
+    project: str,
+    plan: str,
+    section: str,
+    run_id: str,
+    checkout: Path,
+    verdict: str,
+) -> dict[str, Any]:
+    """Record the landed run's section done now that its landing has committed.
 
-    A declaration and the typed record are one statement in two places, so a
-    declaration written without its record lands a plan the next typed read
-    refuses. Only an ``implementable`` section is closed: a deferred, descoped
-    or already-done section is not this landing's to move.
+    The declaration is written after the landing's own commit rather than
+    inside it. A landing's plan write is rolled back when the landing is
+    refused, and a declaration carried in that write is byte-identical to the
+    one a coordinator's own declaration write produces — rolling it back would
+    take the coordinator's accepted write with it, and keeping it would leave a
+    refused landing having recorded a declaration. Writing it after the commit
+    removes the plan write from that collision: a refused landing writes no
+    declaration because it never reaches this step, and a coordinator who wrote
+    the declaration while the landing was in flight keeps it.
+
+    The write goes through the same edit surface a coordinator uses, so it
+    passes the ordinary version check and records the receipt a later landing
+    reads, and it is committed as its own commit naming the run.
     """
-    declarations = payload.get("section_declarations")
-    if not isinstance(declarations, dict):
-        return False
+    from reckon.mcp_edit_plan import _edit_plan
+
+    if not (project and plan and section and run_id):
+        return {"closed": False, "reason": "no_section"}
+    if not _landing_closes_its_section(
+        project=project, plan=plan, section=section, run_id=run_id
+    ):
+        return {"closed": False, "reason": "section_still_open"}
+    try:
+        state, version = _store.read_plan(project, plan, checkout, artifact_type="plan")
+    except (OSError, ValueError):
+        return {"closed": False, "reason": "plan_unreadable"}
     wanted = _section_identity(section)
-    for key, value in declarations.items():
-        if _section_identity(key) != wanted:
-            continue
-        if str(value or "").strip().lower() != "implementable":
-            return False
-        declarations[key] = "done"
-        _store._move_section_record(payload, key, "done")
-        return True
-    return False
+    declarations = state.get("section_declarations")
+    key = ""
+    if isinstance(declarations, Mapping):
+        for candidate, value in declarations.items():
+            if _section_identity(candidate) != wanted:
+                continue
+            key = str(candidate)
+            if str(value or "").strip().lower() != "implementable":
+                return {"closed": False, "reason": "not_implementable"}
+            break
+    if not key:
+        return {"closed": False, "reason": "no_declaration"}
+    try:
+        _edit_plan(
+            project,
+            plan,
+            [{"op": "set", "path": f"section_declarations.{key}", "value": "done"}],
+            version,
+            checkout_path=str(checkout),
+        )
+    except (OSError, ValueError) as exc:
+        return {"closed": False, "reason": f"write refused: {exc}"}
+    path = _store._resolve_html_file(project, plan, checkout, artifact_type="plan")
+    try:
+        commit = _commit_landing_writes(
+            run_id=run_id,
+            verdict=verdict,
+            checkout=checkout,
+            paths=[path],
+            subject=f"close({run_id}): section {key} done",
+            body=(
+                "Record the section done once its last node's landing has "
+                "committed, so the plan's impl moves with the run that closed it."
+            ),
+        )
+    except CrewError as exc:
+        return {"closed": True, "committed": False, "reason": str(exc)}
+    return {
+        "closed": True,
+        "section": key,
+        "committed": bool(commit.get("committed")),
+    }
 
 
 def _landing_comment_update(
@@ -1658,7 +1717,6 @@ def _landing_comment_update(
     narrative: str,
     author: str,
     when: str,
-    close_section: bool = False,
 ) -> tuple[dict[str, Any], str, dict[str, str], dict[str, Any] | None]:
     """Prepare one idempotent comment append without changing the input state."""
     anchor = section_anchor(section)
@@ -1683,18 +1741,6 @@ def _landing_comment_update(
     ):
         items[items.index(existing)] = {**existing, **comment}
     payload = {**state, "comments": comments}
-    if close_section:
-        # The declaration and its typed record are copied before either moves,
-        # so a caller's state mapping is not changed by a preview of the write.
-        declarations = payload.get("section_declarations")
-        if isinstance(declarations, Mapping):
-            payload["section_declarations"] = dict(declarations)
-        records = payload.get("sections")
-        if isinstance(records, list):
-            payload["sections"] = [
-                dict(item) if isinstance(item, Mapping) else item for item in records
-            ]
-        _close_section_declaration(payload, section=section)
     if str(state.get("status") or "").strip().lower() in {"draft", "pending"}:
         payload["status"] = "in-progress"
     return payload, anchor, comment, existing
@@ -1713,7 +1759,6 @@ def _record_landing_comment(
     worker_tree: Path | None = None,
     worker_commits: Iterable[str] = (),
     landing: str = "",
-    close_section: bool = False,
 ) -> dict[str, Any]:
     """Append one idempotent section comment for a promoted run.
 
@@ -1734,13 +1779,6 @@ def _record_landing_comment(
     plan that was never started stops reading as unstarted the moment work
     lands on it. ``status`` is a metadata scalar, so the flip never re-stales
     a design review.
-
-    ``close_section`` records the landed node's section done in the same write.
-    A section's impl moves only when its declaration does, and a coordinator
-    declares a section done after its last node lands — so without this the
-    landing that should move impl is refused for not having moved it. The
-    caller sets it only for a section's last open node, so a section whose
-    siblings are still open stays implementable.
     """
     landing = str(landing).strip()
     narrative = str(narrative).strip()
@@ -1759,7 +1797,6 @@ def _record_landing_comment(
             narrative=body_text,
             author=author,
             when=when,
-            close_section=close_section,
         )
         comment_id = comment["id"]
         desired_body = comment["body"]
