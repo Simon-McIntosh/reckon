@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -183,6 +183,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-23T01:30:20.574399+00:00">
     <div class="r-comment-body"><p>Landed r-20261122T235118603601-review-of-the-fleet-node-stays-inside-its-memory-s11-30e88c13e4f9 on the measured suite pair; <a href="/reckon/evidence/archive/the-fleet-node-stays-inside-its-memory-landed.html#review-of-the-fleet-node-stays-inside-its-memory-s11-30e88c13e4f9">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11" data-who="reckon-build" data-when="2026-11-22T21:47:09Z">
+    <div class="r-comment-body"><p>The record&#x27;s 72-hour reading of job 1319168 (2026-11-19T18:40:11Z to 2026-11-22T18:39:34Z, 3,524 samples, 144 GiB limit) carries 23 OOM kills all dated 2026-11-20T08:06:56Z, so the section&#x27;s closure condition is UNMET and it stays open; the second condition holds at 0.043 h at or above 90 % against 23.23 h of 64.35 h for the baseline. The row that reported the series&#x27; session_scratch_bytes under a /dev/shm heading is corrected: that column samples /tmp (SESSION_TMP_ROOT = /tmp, and _scratch_disk refuses memory-backed paths), peaking at 564 KiB, and the section&#x27;s /dev/shm item is answered by a dated direct reading of /dev/shm/39486-fleet-1319168 — 1.32 GiB across 41 entries at 2026-11-22T21:04:39Z, 0.97 GiB of it last written inside the window — which is the session tooling&#x27;s scratch, not the supervisor&#x27;s, so §4&#x27;s zero-byte clause is recorded as not met. Other window readings: hours at or above 80 % fell from 37.79 to 0.551; 191 of 3,200 samples carried a test process; lowest free space on the node-local disk 3.54 GiB at 2026-11-22T00:03:11Z; largest resident dispatch 4.47 GiB, admission 15.51 GiB and station 10.13 GiB. Two limits are recorded: no 72-hour window after the memory fixes landed exists yet (they landed 2026-11-22), and a strict 72-hour window holds 3,524 samples, under the section&#x27;s 4,000-sample floor, because the sampler&#x27;s median interval is 72 s not 60 s.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-11-18T04:46:00Z">
     <div class="r-comment-body"><p>§12 landed by direct merge (head <code>646561afbc</code>), on the lead's instruction. After the supervisor re-executes on moved code the running sampler is the one started from the checkout's current script, with at most one sampler at a time and the series carried over; a previous sampler is found whatever path it was started from; every interpreter fallback in the script defaults to the repository environment; and a reader with no published disk sample names its owner and says launches are held only when admission holds them. Merged candidate gate: 88 passed in 28.88s.</p></div>
