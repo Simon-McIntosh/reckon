@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S28">
-<meta name="plan-version" content="397">
+<meta name="plan-version" content="398">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -1051,6 +1051,12 @@
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261122T213004899001-review-of-a-queue-holds-the-whole-plan-s51-57356aca9541" data-who="reckon-build" data-when="2026-11-23T00:25:11.263Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T143044262378-a-queue-holds-the-whole-plan-s51 (head 57356aca95413a52d6945f177a1a1ba846ec7519) and stored a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 18 (total 112/120) with added_failure_count 0 (arms 58-&gt;61 passed, 0 failures) and one non-blocking finding on readiness.py:435.</p></div>
 </div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261122T143044262378-a-queue-holds-the-whole-plan-s51" data-who="reckon-build" data-when="2026-11-22T21:07:39.748Z">
+    <div class="r-comment-body"><p>A dispatch now holds only the requests whose wait names an unreadable plan in another project: the wait is stored awaiting-upstream with a finding naming the plan and its validation error, sibling entries in the same batch queue untouched, the dry run reports the same rows, and repairing the upstream plan releases the held request on the next admission pass. Three new cases pass at the head (3 passed) and all three fail at the base revision on the validation error (3 failed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s52" data-id="c-run-r-20261122T213040931484-review-of-a-queue-holds-the-whole-plan-s52-a6b412cf7294" data-who="reckon-build" data-when="2026-11-23T00:43:14.391Z">
+    <div class="r-comment-body"><p>n/a</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-20261023-s6-driver" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v1 on 2026-10-23, finding reasoning-2, declined for the first wave: §6 says a delivered run lands mechanically but names no process that performs the landing or wakes on its conditions. Which process does it is the author's design choice. Name it before dispatching §6.</p></div>
 </div>
@@ -1122,9 +1128,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s52" data-id="c-run-r-20261122T213040931484-review-of-a-queue-holds-the-whole-plan-s52-a6b412cf7294" data-who="reckon-build" data-when="2026-11-23T00:43:14.391Z">
-    <div class="r-comment-body"><p>n/a</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
