@@ -11,21 +11,18 @@
   "findings": [
     {
       "file": "reckon/_worker_fence.py",
-      "id": "f7bcf529141",
       "line": 2352,
       "severity": "non-blocking",
       "text": "the comment claims a grant naming the shared crew runs root is refused, but declared_grant_refusal at reckon/_worker_fence.py:1554 refuses only a filesystem root, a git checkout and a registered project root; no ancestor or peer-run overlap is checked, so a dispatch declaring the shared crew runs root composes a writable grant over every peer run directory, which the plan's deliverable says a grant must never cover."
     },
     {
       "file": "reckon/_backends.py",
-      "id": "fd063b5c565",
       "line": 305,
       "severity": "non-blocking",
       "text": "removing the workspace-write tier's grant of the main checkout is a behaviour change with no added test; tests/test_fence_never_binds_the_main_checkout.py composes only the worktree-full tier, so re-adding roots.add(Path(repository)) for workspace-write would pass every test in the suite."
     },
     {
       "file": "reckon/_worker_fence.py",
-      "id": "f07f5ed126b",
       "line": 2259,
       "severity": "non-blocking",
       "text": "the fence_argv docstring narrates the replaced implementation and dates the incident, and tests/test_a_worker_can_write_only_what_it_was_granted.py:3 repeats it; the repository's comment-hygiene rule keeps changelog and provenance prose out of source because the mechanism sentence stands alone."
@@ -55,6 +52,6 @@
   },
   "status": "parsed",
   "times_source": "run-record",
-  "timestamp": "2026-11-23T22:55:48.608424+00:00",
+  "timestamp": "2026-11-23T23:34:55.797638+00:00",
   "total": 103
 }
