@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="601">
+<meta name="plan-version" content="602">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -988,8 +988,8 @@ staged paths.</p>
     <h2 id="s119">§119 — A run mid-repair is not raised as a failed sweep, and a failure is raised once</h2>
 <section data-reckon="section" data-id="s119" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>On 23 November §48 of <code>delivered-work-lands-without-a-coordinator</code> was resumed for a repair round. For the next hour its coordinator's obligations carried three identical <code>sweep-failed</code> rows: "the review pass requested no review for this delivered run within 600 s: the resumed attempt has not delivered; no review is composed". Withholding the review was the correct decision, because the run was still working. The rows asked the coordinator to inspect a run with nothing wrong, and each stop of the session repeated them.</p>
-    <p><strong>Deliverable.</strong> A sweep that withholds a review because the run's resumed attempt has not delivered records no failure. The run appears, if at all, as work in flight. A real sweep failure on one run is raised as one obligation row, however many sweep authors stored it.</p>
-    <p><strong>Done when.</strong> <code>tests/test_a_run_mid_repair_raises_no_sweep_failure.py</code> passes, covering: a delivered run whose resume is working, and whose review pass therefore composes nothing, yields no <code>sweep-failed</code> row; and one failure stored by three sweep authors for one run yields one row. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>.</p>
+    <p><strong>Deliverable.</strong> A sweep that withholds a review because the run's resumed attempt is still working (its worker process alive and its turn not ended) records no failure. The run appears, if at all, as work in flight. A resumed attempt that ended without delivering is still raised as a failure, because nothing is working on it. A real sweep failure on one run is raised as one obligation row, however many sweep authors stored it.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_run_mid_repair_raises_no_sweep_failure.py</code> passes, covering: a delivered run whose resumed attempt is working, and whose review pass therefore composes nothing, yields no <code>sweep-failed</code> row; a run whose resumed attempt ended without delivering still yields one; and one failure stored by three sweep authors for one run yields one row. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. The node's base and head gate logs sit under its run directory, and each carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case fails with a <code>sweep-failed</code> row, and the second yields three rows.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
