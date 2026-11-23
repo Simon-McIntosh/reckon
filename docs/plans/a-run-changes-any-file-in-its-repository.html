@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="concurrent-edits-meet-at-the-merge">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-run-changes-any-file-in-its-repository#s1&quot;,&quot;a-run-changes-any-file-in-its-repository#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-run-changes-any-file-in-its-repository#s1&quot;,&quot;a-run-changes-any-file-in-its-repository#s2&quot;],&quot;s5&quot;:[&quot;a-run-changes-any-file-in-its-repository#s1&quot;]}">
   <title>A run changes any file in its repository | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -58,6 +58,13 @@
     <p><strong>Deliverable.</strong> A request whose priority override is at or above the project's critical level is offered a freed slot ahead of waiting reviews of delivered runs. The critical level is the flight setting <code>queue.critical_priority</code>, default 100. Every other request keeps today's order, with delivered reviews first.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_critical_request_takes_a_slot_before_reviews.py</code> passes, covering: with one slot free, one queued review of a delivered run and one implement request at override 100, the implement request launches first; at override 99 the review launches first; with no override set the review launches first; and a project flight setting <code>queue.critical_priority</code> to 50 lets an override of 50 launch first. The shipped flight defaults validate with the new setting. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case fails, with the review offered the slot ahead of the override-100 request.</p>
+
+    <h2 id="s5">§5 — The write-time audit and promotion refuse one set of paths by one rule</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The review of §1's head <code>e849b54202</code> (<code>r-20261123T215447120427-review-of-arcaf-no-fence-inside-the-repository-e849b54202ea</code>) scored reuse 5 and found three gaps. The containment rule that maps a worktree path to its repository exists twice in one module, once for the write-time audit and once for resolving declarations, so the two copies can drift. Promotion's acceptance check stops at the exclusive kinds and never applies the outside-repository kind §1 added, so the write-time audit and promotion still refuse different paths for that kind. And §1's outside-repository case tests the classifying helper, not the audit, so dropping that kind from the audit would leave it green.</p>
+    <p><strong>Deliverable.</strong> One containment rule decides whether a path lies inside the run's repository, and both the write-time audit and promotion use it. The two refuse exactly the same paths: the exclusive kinds and paths outside the repository. Each refusal names the path and its kind.</p>
+    <p><strong>Done when.</strong> <code>tests/test_the_audit_and_promotion_refuse_one_set.py</code> passes, covering: a run whose commits touch a path outside its repository is refused by the write-time audit and by promotion, each naming the outside-repository kind; a run touching an exclusive path is refused by both naming the exclusive kind; a run touching only ordinary paths in its repository is refused by neither; and the audit case is asserted through the audit's own verdict, not through the classifying helper. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
+    <p><strong>Negative control.</strong> At main after §1 lands, the first case fails: promotion accepts the outside-repository path the audit refuses.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
