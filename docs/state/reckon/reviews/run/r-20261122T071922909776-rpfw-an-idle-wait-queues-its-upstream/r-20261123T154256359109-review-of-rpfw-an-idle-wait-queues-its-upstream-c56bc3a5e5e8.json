@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T071922909776-rpfw-an-idle-wait-queues-its-upstream/baseline_suite-1795447540653717863.log",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T071922909776-rpfw-an-idle-wait-queues-its-upstream/after_suite-1795447615734628610.log"
+  },
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T15:43:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/release.py",
+      "line": 569,
+      "severity": "non-blocking",
+      "summary": "_project_config duplicates queueing._default_config in the same package",
+      "text": "reckon/crew/admission/release.py:569: _project_config has the same two-line body as reckon/crew/admission/queueing.py:50 _default_config (from reckon import flight; return flight.resolve(project, checkout_path=str(root)).config), and because no production caller supplies config_for the duplicate is the path every admit pass takes; it duplicates an owner that sits in the same package rather than importing or composing it, so the config resolution can drift between the service's queue stage and the pass that now files for it."
+    },
+    {
+      "file": "tests/test_an_idle_wait_queues_its_upstream.py",
+      "line": 260,
+      "severity": "non-blocking",
+      "summary": "chain assertion reads an absent wait_class as the expected value",
+      "text": "tests/test_an_idle_wait_queues_its_upstream.py:260: `str(middle.get(\"wait_class\") or \"progressing\") == \"progressing\"` treats an absent or empty wait_class as the expected answer, so a regression that files the middle request but never re-read it against the store -- leaving wait_class unstamped -- passes this line; the chain is actually held by the loop assertion at line 254, and this line should assert the field is present before comparing it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The pass is reached in production through reckon/crew/admission/release.py:463 (_release_tick) and reckon/crew/admission/selection.py:149 (the admit pass's release stage), and the changed duty text is read through reckon/crew/obligations.py:5342-5365 in _obligations_view; both production callers invoke advance_waiting_requests without config_for, so production resolves each project's configuration through the module's own default.",
+    "diff": "Read the single commit against dcfb49b07b: reckon/crew/admission/release.py adds _FILED_STATUSES, _project_config, _file_idle_upstreams and the idle-filing branch, obligations.py replaces the idle duty's next_command when upstream_unqueued is present, and the test file adds the five cases above.",
+    "done_when": "The done_when names tests/test_an_idle_wait_queues_its_upstream.py with five cases; each is present (single upstream at line 210, three-deep chain at 242, service queueing off at 264, refused upstream at 280, blocked-upstream phase at 308) and the recorded after arm is 63 passed against a 58-passed base, the 5-case difference being the new file.",
+    "goal": "The node goal is that a wait classed idle files its upstream section's request through the whole-plan dispatch and the rule follows that request's wait; reckon/crew/admission/release.py:735-770 does exactly that: _file_idle_upstreams files through reckon.crew.dispatch_batch.queue_plan, appends the filed pointers to live and candidates, and re-runs _resolve_and_move against the extended store.",
+    "manifest": "Read; it states status complete, cites commit c56bc3a5e5e8efd657b950f2dc27109a2ecb3e95, records baseline 58 passed and after 63 passed with both EXIT=0, and names the negative-control log, whose recorded failure is the declared one.",
+    "write_paths": "Read the six declared paths against the three-path diff: reckon/crew/admission/release.py is inside reckon/crew/admission, reckon/crew/obligations.py is declared, and tests/test_an_idle_wait_queues_its_upstream.py is declared; no path outside the scope was touched, and no evidence fragment or figure was delivered although both were declared and neither is required by the done_when."
+  },
+  "justifications": {
+    "durability": "The negative control is genuinely red at base: negative-control.log records tests/test_an_idle_wait_queues_its_upstream.py:223 failing with assert [] == ['s1'] at dcfb49b07b, so reverting release.py's filing reddens case 1, and reverting obligations.py's branch reddens the line 304 negative assertion; the one weak line is the absence-swallowing check at line 260.",
+    "evidence": "Both arms of the recorded gate are complete receipts: baseline_suite-1795447540653717863.log closes 58 passed with EXIT=0 at dcfb49b07b and after_suite-1795447615734628610.log closes 63 passed with EXIT=0 at c56bc3a5e5e, each naming its revision and literal command.",
+    "fit": "The addition follows the module's existing idiom of module-private helpers with docstrings, lazy imports at the call site, and reuse of _wait_refs' existing helpers (release.py:621 already uses _wait_refs._docs_for_project); no plan, sprint or ticket identifier appears, though the new config_for parameter is threaded through two functions that no production caller supplies.",
+    "goal_fidelity": "reckon/crew/admission/release.py:735-770 files the idle wait's upstream through queue_plan and re-reads the waiter against the requests just filed, so a chain reaches its root and the waiter is released when it lands, which is the goal in full.",
+    "reuse": "reckon/crew/admission/release.py:569 _project_config repeats reckon/crew/admission/queueing.py:50 _default_config verbatim in the same package instead of importing that owner, so one of the two added definitions duplicates a capability the repository already owns.",
+    "scope_discipline": "Every path in the diff (reckon/crew/admission/release.py, reckon/crew/obligations.py, tests/test_an_idle_wait_queues_its_upstream.py) is inside the declared write paths, and the change carries nothing the goal does not imply."
+  },
+  "plan": "reckon:a-reviewed-plan-is-queued-at-full-width",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a wait classed idle files its upstream section's request through the whole-plan dispatch and the rule follows that request's wait; reckon/crew/admission/release.py:735-770 does exactly that: _file_idle_upstreams files through reckon.crew.dispatch_batch.queue_plan, appends the filed pointers to live and candidates, and re-runs _resolve_and_move against the extended store.\nVERDICT done_when: The done_when names tests/test_an_idle_wait_queues_its_upstream.py with five cases; each is present (single upstream at line 210, three-deep chain at 242, service queueing off at 264, refused upstream at 280, blocked-upstream phase at 308) and the recorded after arm is 63 passed against a 58-passed base, the 5-case difference being the new file.\nVERDICT write_paths: Read the six declared paths against the three-path diff: reckon/crew/admission/release.py is inside reckon/crew/admission, reckon/crew/obligations.py is declared, and tests/test_an_idle_wait_queues_its_upstream.py is declared; no path outside the scope was touched, and no evidence fragment or figure was delivered although both were declared and neither is required by the done_when.\nVERDICT manifest: Read; it states status complete, cites commit c56bc3a5e5e8efd657b950f2dc27109a2ecb3e95, records baseline 58 passed and after 63 passed with both EXIT=0, and names the negative-control log, whose recorded failure is the declared one.\nVERDICT diff: Read the single commit against dcfb49b07b: reckon/crew/admission/release.py adds _FILED_STATUSES, _project_config, _file_idle_upstreams and the idle-filing branch, obligations.py replaces the idle duty's next_command when upstream_unqueued is present, and the test file adds the five cases above.\nCALL_SITES: reckon/crew/admission/release.py:463 _release_tick, reckon/crew/admission/selection.py:149 admit pass release stage, reckon/crew/obligations.py:5342 _obligations_view\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/release.py:735-770 files the idle wait's upstream through queue_plan and re-reads the waiter against the requests just filed, so a chain reaches its root and the waiter is released when it lands, which is the goal in full.\nSCORE evidence: 19\nJUSTIFICATION evidence: Both arms of the recorded gate are complete receipts: baseline_suite-1795447540653717863.log closes 58 passed with EXIT=0 at dcfb49b07b and after_suite-1795447615734628610.log closes 63 passed with EXIT=0 at c56bc3a5e5e, each naming its revision and literal command.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: Every path in the diff (reckon/crew/admission/release.py, reckon/crew/obligations.py, tests/test_an_idle_wait_queues_its_upstream.py) is inside the declared write paths, and the change carries nothing the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: The negative control is genuinely red at base: negative-control.log records tests/test_an_idle_wait_queues_its_upstream.py:223 failing with assert [] == ['s1'] at dcfb49b07b, so reverting release.py's filing reddens case 1, and reverting obligations.py's branch reddens the line 304 negative assertion; the one weak line is the absence-swallowing check at line 260.\nSCORE fit: 17\nJUSTIFICATION fit: The addition follows the module's existing idiom of module-private helpers with docstrings, lazy imports at the call site, and reuse of _wait_refs' existing helpers (release.py:621 already uses _wait_refs._docs_for_project); no plan, sprint or ticket identifier appears, though the new config_for parameter is threaded through two functions that no production caller supplies.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/admission/release.py:569 _project_config repeats reckon/crew/admission/queueing.py:50 _default_config verbatim in the same package instead of importing that owner, so one of the two added definitions duplicates a capability the repository already owns.\nFINDING reckon/crew/admission/release.py:569 non-blocking: _project_config has the same two-line body as reckon/crew/admission/queueing.py:50 _default_config in the same package, and since no production caller supplies config_for the duplicate is the path every admit pass takes, so config resolution can drift between the service's queue stage and the pass that now files for it.\nFINDING tests/test_an_idle_wait_queues_its_upstream.py:260 non-blocking: `str(middle.get(\"wait_class\") or \"progressing\") == \"progressing\"` reads an absent or empty wait_class as the expected answer, so a regression that files the middle request but never re-reads it -- leaving the field unstamped -- passes this line; the chain is held by the loop assertion at line 254 instead.\n",
+  "review_run_id": "r-20261123T154256359109-review-of-rpfw-an-idle-wait-queues-its-upstream-c56bc3a5e5e8",
+  "reviewed_base_sha": "dcfb49b07b4b1f22295a721d5a69d65e5f519b50",
+  "reviewed_head_sha": "c56bc3a5e5e8efd657b950f2dc27109a2ecb3e95",
+  "reviewed_run_id": "r-20261122T071922909776-rpfw-an-idle-wait-queues-its-upstream",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "section": "s8",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T16:52:00+00:00",
+  "total": 93,
+  "verdicts": {
+    "call_sites": "The pass is reached in production through reckon/crew/admission/release.py:463 (_release_tick) and reckon/crew/admission/selection.py:149 (the admit pass's release stage), and the changed duty text is read through reckon/crew/obligations.py:5342-5365 in _obligations_view; both production callers invoke advance_waiting_requests without config_for, so production resolves each project's configuration through the module's own default.",
+    "diff": "Read the single commit against dcfb49b07b: reckon/crew/admission/release.py adds _FILED_STATUSES, _project_config, _file_idle_upstreams and the idle-filing branch, obligations.py replaces the idle duty's next_command when upstream_unqueued is present, and the test file adds the five cases above.",
+    "done_when": "The done_when names tests/test_an_idle_wait_queues_its_upstream.py with five cases; each is present (single upstream at line 210, three-deep chain at 242, service queueing off at 264, refused upstream at 280, blocked-upstream phase at 308) and the recorded after arm is 63 passed against a 58-passed base, the 5-case difference being the new file.",
+    "goal": "The node goal is that a wait classed idle files its upstream section's request through the whole-plan dispatch and the rule follows that request's wait; reckon/crew/admission/release.py:735-770 does exactly that: _file_idle_upstreams files through reckon.crew.dispatch_batch.queue_plan, appends the filed pointers to live and candidates, and re-runs _resolve_and_move against the extended store.",
+    "manifest": "Read; it states status complete, cites commit c56bc3a5e5e8efd657b950f2dc27109a2ecb3e95, records baseline 58 passed and after 63 passed with both EXIT=0, and names the negative-control log, whose recorded failure is the declared one.",
+    "write_paths": "Read the six declared paths against the three-path diff: reckon/crew/admission/release.py is inside reckon/crew/admission, reckon/crew/obligations.py is declared, and tests/test_an_idle_wait_queues_its_upstream.py is declared; no path outside the scope was touched, and no evidence fragment or figure was delivered although both were declared and neither is required by the done_when."
+  }
+}
