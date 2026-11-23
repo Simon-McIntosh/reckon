@@ -3821,6 +3821,30 @@ def _run_namings(
     return namings, rows
 
 
+def _rows_naming_trees(
+    project: str, repository: Path, trees: Iterable[Path]
+) -> list[Mapping[str, Any]]:
+    """The stored rows that still name any of ``trees``, one per tree.
+
+    A pass that reuses its index files the rows a fresh read screened in, so a
+    tree registered after that read has no row filed against it even though the
+    store holds one. This asks the store for exactly those trees' rows, which
+    is what keeps a new registration a duty without a second whole-ledger read.
+    A reader that cannot answer returns nothing rather than failing the
+    derivation; the tree then joins the held set on the next fresh build.
+    """
+    try:
+        from reckon.crew import open_run_index
+
+        if open_run_index.pointers() is None:
+            return []
+        return open_run_index.rows_naming_trees(
+            project, tuple(sorted(trees)), _ledger_read_root(project, repository)
+        )
+    except Exception:  # noqa: BLE001 — a screen must never fail the derivation
+        return []
+
+
 def _run_file_rows(project: str, repository: Path) -> list[Mapping[str, Any]]:
     """Every row the run documents carry, read without the merged reader.
 
@@ -4475,20 +4499,14 @@ def _held_worktree_records_read(
                     key = (1, run_id)
                     index.extra.add(run_id)
                 index.replace(key, row, retained)
-            # The merged reader answers from the run store, whose identity is a
-            # run id, so a row the aggregate carries without one is not a run it
-            # can return even though the ledger still holds that row. The
-            # aggregate is read here anyway, and the ordinals still pending are
-            # the rows it kept and the read above did not deliver; one of those
-            # without a run id is filed from the aggregate's own position, so a
-            # tree only such a row names stays held rather than being lost to
-            # which reader answered. A pending row that does carry a run id is a
-            # disagreement between the aggregate and the store, which the store's
-            # own refresh settles; filing it here would answer for a row the
-            # store retired or has yet to take.
-            for (run_id, _order), ordinals in aggregate_order.items():
-                if run_id:
-                    continue
+            # The merged reader answers from the run store, and its projection
+            # narrows to the rows it can still serve: one per tree, latest
+            # first. The aggregate is the ledger's own record of what landed,
+            # so every row it carries that the read above did not deliver is
+            # filed from the aggregate's own position. Otherwise a row only the
+            # aggregate carries names no tree, and a rebuild over a rewritten
+            # aggregate would drop the duties its older rows still owe.
+            for ordinals in aggregate_order.values():
                 for ordinal in ordinals:
                     row = aggregate_rows[ordinal]
                     index.replace((0, ordinal), row, _retained_worktree(row))
@@ -4524,6 +4542,21 @@ def _held_worktree_records_read(
                         _retained_worktree(row) if row is not None else None,
                     )
                 )
+            # A tree registered since the last read was not among the trees the
+            # fresh build asked the store about, so the row naming it was never
+            # filed: the row names no tree that existed then. Asking the store
+            # for the rows naming just the trees that appeared files that duty
+            # without reading the whole history again.
+            new_trees = inspected - index.inspected
+            if new_trees:
+                for row in _rows_naming_trees(project, repository, new_trees):
+                    run_id = str(row.get("run_id") or "")
+                    if not run_id or run_id in index.aggregate:
+                        continue
+                    index.extra.add(run_id)
+                    affected.update(
+                        index.replace((1, run_id), row, _retained_worktree(row))
+                    )
             if had_extra != bool(index.extra):
                 affected.update(inspected)
         index.records.order_key = ledger.promotion_order_key if index.extra else None

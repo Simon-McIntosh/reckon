@@ -1307,18 +1307,31 @@ def _answer_key(
 
 
 def _cached_answer(key: tuple[Any, ...]) -> list[dict[str, Any]] | None:
-    """The answer held for ``key``, as a copy the caller may change freely."""
+    """The answer held for ``key``, as a copy the caller may change freely.
+
+    A caller inside a :func:`reckon.file_memo.read_only_region` has promised to
+    change nothing it is handed, so it is given the held answer itself rather
+    than a copy of it. A derivation that reads many rows once pays that copy
+    per handout otherwise, which is the cost the region exists to remove.
+    """
     held = _HELD_ANSWERS.get(key)
     if held is None:
         return None
-    return copy.deepcopy(held)
+    return held if file_memo.sharing_reads() else copy.deepcopy(held)
 
 
 def _remember_answer(key: tuple[Any, ...], records: list[Any]) -> None:
-    """Keep one answer, unless it is larger than the map may hold at all."""
+    """Keep one answer, unless it is larger than the map may hold at all.
+
+    Inside a read-only region the caller has promised not to change what it is
+    handed, so the answer is kept as the list just decoded rather than copied
+    into a second one.
+    """
     if len(records) > _ROW_ANSWER_ROWS:
         return
-    _HELD_ANSWERS.put(key, copy.deepcopy(records))
+    _HELD_ANSWERS.put(
+        key, records if file_memo.sharing_reads() else copy.deepcopy(records)
+    )
 
 
 def _decode_run_row(payload: str, detail: str | None) -> dict[str, Any]:

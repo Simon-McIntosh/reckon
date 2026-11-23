@@ -370,6 +370,18 @@ def read_only_region() -> Iterator[None]:
         _REGION.reset(token)
 
 
+def sharing_reads() -> bool:
+    """Whether the caller is inside a :func:`read_only_region`.
+
+    A memo of the caller's own — one that stores its answers outside this
+    module — asks this to decide whether it may hand out the value it holds
+    rather than a copy of it. The region's contract is that the caller changes
+    nothing it is handed, which is what makes the share safe.
+    """
+
+    return _REGION.get() is not None
+
+
 def file_signature(path: Path | str) -> _Signature:
     """Return the stat identity that any write to ``path`` changes."""
 
