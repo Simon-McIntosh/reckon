@@ -1,9 +1,12 @@
 """A base arm that cannot collect the node's new test is a reading, not a gap.
 
-A node whose new test imports a symbol the node adds cannot have that test
-collected at the base revision: pytest exits 2 and names the file on an
-``ERROR`` line. That is the expected base result, and the lander must read it
-as the base failing that id rather than refuse with "the base arm did not run".
+A node whose test imports a symbol the node adds cannot have that test
+collected at a revision that lacks the symbol: pytest exits 2 and names the
+file on an ``ERROR`` line. That is a reading, and the lander must read it as
+the arm failing that id rather than refuse with "the arm did not run". A
+landing pair does not hand a file absent from the base tree to the base arm at
+all, so the pair's base never reports one: the file is named as left out of
+the base instead.
 """
 
 from __future__ import annotations
@@ -48,14 +51,16 @@ def _trees(tmp_path: Path) -> tuple[Path, Path]:
     return base, head
 
 
-def test_a_base_collection_error_on_the_new_test_measures_cleanly(
-    tmp_path: Path,
-) -> None:
+def test_the_base_arm_runs_none_of_the_new_test_file(tmp_path: Path) -> None:
+    """A file the base tree lacks is left out of the base arm, not collected.
+
+    The base arm names only the files its own tree holds, so the new test is
+    not handed to it at all: the pair names the file as left out of the base
+    rather than carrying the head's copy across and reading a collection error.
+    """
     base_tree, head_tree = _trees(tmp_path)
 
     def run(argv, *, cwd, **_kwargs):
-        if Path(cwd) == base_tree:
-            return subprocess.CompletedProcess(argv, 2, COLLECTION_ERROR, "")
         return subprocess.CompletedProcess(argv, 0, "1 passed in 0.01s\n", "")
 
     measured = landing_measure.measure_run(
@@ -71,7 +76,10 @@ def test_a_base_collection_error_on_the_new_test_measures_cleanly(
     )
 
     assert measured.unreadable == ""
-    assert measured.suite["base"]["failure_ids"] == [NEW_TEST]
+    assert measured.suite["base"]["file_count"] == 0
+    assert measured.suite["base"]["failure_ids"] == []
+    assert measured.suite["head"]["file_count"] == 1
+    assert measured.suite["left_out"] == {NEW_TEST: ["base"]}
     assert measured.real == ()
 
 

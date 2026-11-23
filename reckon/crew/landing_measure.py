@@ -662,6 +662,93 @@ def _carry_missing_tests(
             continue
 
 
+def _tree_holds(tree: Path, relative: str) -> bool:
+    """Whether one arm's own checkout holds the file this path names.
+
+    A tree that is not there is not evidence of absence: dropping every file it
+    would have run would turn a base or head checkout that failed to build into
+    a clean empty measurement. The arm runs and reports its own failure.
+    """
+    root = Path(tree)
+    try:
+        if not root.is_dir():
+            return True
+        return (root / relative).is_file()
+    except OSError:
+        return True
+
+
+def arm_test_files(
+    test_files: Iterable[str], *, base_tree: Path, tree: Path
+) -> tuple[list[str], list[str], dict[str, list[str]]]:
+    """The test files each landing arm runs, and every file left out.
+
+    A landing arm runs only those of the node's files the tree it measures
+    holds. A file the base tree does not carry is new to the delivery, so it
+    runs at the head that adds it and is left out of the base; a file the head
+    tree does not carry was deleted, so it runs in neither arm even though the
+    base still holds it. Naming a file a tree does not carry stops the whole
+    arm on pytest's unmatched-pathspec error, which reads as an unreadable
+    measurement rather than as the file's absence.
+
+    Every file left out is returned with the arms it was left out of, so a
+    reader sees what the pair did not measure.
+    """
+    base: list[str] = []
+    head: list[str] = []
+    left_out: dict[str, list[str]] = {}
+    for relative in test_files:
+        in_base = _tree_holds(base_tree, relative)
+        in_head = _tree_holds(tree, relative)
+        if in_head:
+            head.append(relative)
+        if in_base and in_head:
+            base.append(relative)
+        omitted = [
+            arm for arm, held in (("base", in_base), ("head", in_head)) if not held
+        ]
+        if omitted:
+            left_out[relative] = omitted
+    return base, head, left_out
+
+
+def _scoped_arm_argv(
+    command: str, run_files: Sequence[str], all_files: Sequence[str]
+) -> list[str]:
+    """One arm's command, resolved to the test files its own tree holds.
+
+    A scoped command takes the arm's own files in the placeholder's place. A
+    declaration naming its test files literally keeps only those this arm's
+    tree holds, so an arm never hands the runner a path it cannot open.
+    """
+    _environment, argv = armed_argv(command, run_files)
+    if _SCOPED_PLACEHOLDER in (command or ""):
+        return argv
+    omitted = [name for name in all_files if name not in set(run_files)]
+    return runner_argv(argv, omitted)
+
+
+def _names_test(run_files: Iterable[str], test_id: str) -> bool:
+    """Whether one arm's file list covers the file a test id belongs to."""
+    return _target_name(test_id.partition("::")[0]) in set(run_files)
+
+
+def _command_text(environment: Mapping[str, str], argv: Sequence[str]) -> str:
+    """One arm's command as the shell text the arm ran and its log names."""
+    assignments = [f"{name}={value}" for name, value in environment.items()]
+    return shlex.join([*assignments, *argv])
+
+
+def _empty_arm(command: Sequence[str]) -> Arm:
+    """An arm whose own tree holds none of the files it would have run.
+
+    A scoped command whose placeholder resolves to nothing would start the
+    whole suite, so the arm is not run at all. It records no failure because no
+    test could fail, which is the same reading an empty file list states.
+    """
+    return Arm(tuple(command), 0, (), "")
+
+
 def _link_environment(repo: Path, tree: Path) -> None:
     """Give a base tree the ``.venv`` link a provisioned worktree carries.
 
@@ -1278,71 +1365,115 @@ def measure_run(
             head_sha=head_sha,
             partition=partition,
             long_partition=str(landing.get("measure_long_partition") or "rigel"),
-            test_files=[*node_tests, *files],
+            # A partitioned arm builds its own tree from its own revision, so
+            # it already holds every file that revision carries. Carrying the
+            # head's copies into the base arm is what made a base arm run a
+            # file its own revision does not have.
+            test_files=[],
         )
         runner.partitioned = True
-    if not partition:
-        # A partitioned arm's job carries the node's own files into the tree it
-        # builds; the base directory this node hands it is only a name.
-        _carry_missing_tests(base_tree, tree, node_tests)
+    scoped = _SCOPED_PLACEHOLDER in (command or "")
+    base_tests, head_tests, left_out = arm_test_files(
+        node_tests, base_tree=base_tree, tree=tree
+    )
+    base_argv = _scoped_arm_argv(command, base_tests, node_tests)
+    head_argv = _scoped_arm_argv(command, head_tests, node_tests)
     from reckon.crew.promotion_gate import _unused_log_path
 
     logs = Path(logs_dir)
-    suite_bound = bound(len(node_tests))
-    suite_base = _arm(
-        argv,
-        base_tree,
-        _unused_log_path(logs / "suite-base.log"),
-        runner,
-        suite_bound,
-        environment,
-        file_count=len(node_tests),
+    base_suite_bound = bound(len(base_tests))
+    head_suite_bound = bound(len(head_tests))
+    suite_base = (
+        _arm(
+            base_argv,
+            base_tree,
+            _unused_log_path(logs / "suite-base.log"),
+            runner,
+            base_suite_bound,
+            environment,
+            file_count=len(base_tests),
+        )
+        if base_tests or not scoped
+        else _empty_arm(base_argv)
     )
-    suite_head = _arm(
-        argv,
-        tree,
-        _unused_log_path(logs / "suite-head.log"),
-        runner,
-        suite_bound,
-        environment,
-        file_count=len(node_tests),
+    suite_head = (
+        _arm(
+            head_argv,
+            tree,
+            _unused_log_path(logs / "suite-head.log"),
+            runner,
+            head_suite_bound,
+            environment,
+            file_count=len(head_tests),
+        )
+        if head_tests or not scoped
+        else _empty_arm(head_argv)
     )
-    if not partition:
-        # A partitioned arm's job carries the node's own files into the tree it
-        # builds; the base directory this node hands it is only a name.
-        _carry_missing_tests(base_tree, tree, files)
     # The population runs the armed command extended with the importers, so an
     # importer the armed command already names is not named again: a file run
-    # twice reads the same tests twice under one bound.
-    population_files = _distinct_files(files, exclude=argv)
-    population_command = [*argv, *population_files, "-n", str(POPULATION_WORKERS)]
-    population_bound = bound(len(files))
+    # twice reads the same tests twice under one bound. Each arm's own tree
+    # decides which importers it runs, exactly as for the node's own files.
+    pop_base_tests, pop_head_tests, _population_left_out = arm_test_files(
+        files, base_tree=base_tree, tree=tree
+    )
+    pop_base_files = _distinct_files(pop_base_tests, exclude=base_argv)
+    pop_head_files = _distinct_files(pop_head_tests, exclude=head_argv)
+    population_base_command = [
+        *base_argv,
+        *pop_base_files,
+        "-n",
+        str(POPULATION_WORKERS),
+    ]
+    population_head_command = [
+        *head_argv,
+        *pop_head_files,
+        "-n",
+        str(POPULATION_WORKERS),
+    ]
+    population_base_bound = bound(len(pop_base_tests))
+    population_head_bound = bound(len(pop_head_tests))
+    population_base_runs = bool(pop_base_files or base_tests or not scoped)
+    population_head_runs = bool(pop_head_files or head_tests or not scoped)
     if files:
-        population_base = _arm(
-            population_command,
-            base_tree,
-            _unused_log_path(logs / "population-base.log"),
-            runner,
-            population_bound,
-            environment,
-            file_count=len(files),
+        population_base = (
+            _arm(
+                population_base_command,
+                base_tree,
+                _unused_log_path(logs / "population-base.log"),
+                runner,
+                population_base_bound,
+                environment,
+                file_count=len(pop_base_tests),
+            )
+            if population_base_runs
+            else _empty_arm(population_base_command)
         )
-        population_head = _arm(
-            population_command,
-            tree,
-            _unused_log_path(logs / "population-head.log"),
-            runner,
-            population_bound,
-            environment,
-            file_count=len(files),
+        population_head = (
+            _arm(
+                population_head_command,
+                tree,
+                _unused_log_path(logs / "population-head.log"),
+                runner,
+                population_head_bound,
+                environment,
+                file_count=len(pop_head_tests),
+            )
+            if population_head_runs
+            else _empty_arm(population_head_command)
         )
     else:
-        population_base = Arm(tuple(population_command), None, (), "")
-        population_head = Arm(tuple(population_command), None, (), "")
+        population_base = Arm(tuple(population_base_command), None, (), "")
+        population_head = Arm(tuple(population_head_command), None, (), "")
+    # Every file one arm ran, so an added failure from either the suite or the
+    # importer population is re-run where it was seen and only a file the arm
+    # never named is left without a reading.
+    base_run_files = [*base_tests, *pop_base_files]
+    head_run_files = [*head_tests, *pop_head_files]
     suite = {
         "command": command,
         "base": suite_base.as_dict(),
         "head": suite_head.as_dict(),
+        "left_out": left_out,
     }
     population = {
         "files": list(files),
@@ -1350,18 +1481,17 @@ def measure_run(
         "head": population_head.as_dict(),
     }
     unreadable = ""
-    for name, arm, arm_bound_seconds in (
-        ("base", suite_base, suite_bound),
-        ("head", suite_head, suite_bound),
-        *(
-            (
-                ("population base", population_base, population_bound),
-                ("population head", population_head, population_bound),
-            )
-            if files
-            else ()
-        ),
-    ):
+    judged: list[tuple[str, Arm, float]] = []
+    if base_tests or not scoped:
+        judged.append(("base", suite_base, base_suite_bound))
+    if head_tests or not scoped:
+        judged.append(("head", suite_head, head_suite_bound))
+    if files:
+        if population_base_runs:
+            judged.append(("population base", population_base, population_base_bound))
+        if population_head_runs:
+            judged.append(("population head", population_head, population_head_bound))
+    for name, arm, arm_bound_seconds in judged:
         if not arm.readable:
             if arm.timed_out:
                 # The job and its limit are named inside the guard so a reader
@@ -1388,8 +1518,17 @@ def measure_run(
     isolated: dict[str, dict[str, list[bool]]] = {}
 
     def narrowed(test_id: str, arm_tree: Path, arm: str, n: int) -> tuple[bool, str]:
+        run_files, arm_argv = (
+            (base_run_files, base_argv)
+            if arm == "base"
+            else (head_run_files, head_argv)
+        )
+        if not _names_test(run_files, test_id):
+            # This arm's tree does not carry the id's file, so it never ran the
+            # test: no reading of it exists here, rather than a failed one.
+            return False, ""
         return _fails(
-            isolated_command(argv, test_id, node_tests),
+            isolated_command(arm_argv, test_id, run_files),
             test_id,
             arm_tree,
             _unused_log_path(logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log"),
@@ -1427,15 +1566,22 @@ def measure_run(
 
 
 def arm_observation(
-    command: str, revision: str, arm: Arm, *, measured_by: str = "landing"
+    command: str,
+    revision: str,
+    arm: Arm,
+    *,
+    measured_by: str = "landing",
+    left_out: Iterable[str] = (),
 ) -> dict[str, Any]:
     """One arm as the suite-observation record a run's manifest carries.
 
     The shape is the one promotion already reads for ``baseline_suite`` and
     ``after_suite``, so an arm the landing measured is judged by the same code
-    and the same refusal as an arm the run recorded.
+    and the same refusal as an arm the run recorded. ``left_out`` names the
+    files this arm's tree does not hold, so a reader sees what the arm did not
+    run rather than inferring it from a shorter command.
     """
-    return {
+    observation = {
         "revision": revision,
         "command": command,
         "exit_status": arm.exit_status,
@@ -1445,6 +1591,10 @@ def arm_observation(
         "log_path": arm.log_path,
         "measured_by": measured_by,
     }
+    named = list(left_out)
+    if named:
+        observation["left_out"] = named
+    return observation
 
 
 @_handoff_measurement
@@ -1513,30 +1663,47 @@ def armed_observations(
             head_sha=head_sha,
             partition=partition,
             long_partition=long_partition,
-            test_files=node_tests,
+            # A partitioned arm builds its own tree from its own revision, so
+            # it already holds every file that revision carries. Carrying the
+            # head's copies into the base arm is what made a base arm run a
+            # file its own revision does not have.
+            test_files=[],
         )
         runner.partitioned = True
-    _carry_missing_tests(base_tree, tree, node_tests)
+    scoped = _SCOPED_PLACEHOLDER in (command or "")
+    base_tests, head_tests, left_out = arm_test_files(
+        node_tests, base_tree=base_tree, tree=tree
+    )
+    base_argv = _scoped_arm_argv(command, base_tests, node_tests)
+    head_argv = _scoped_arm_argv(command, head_tests, node_tests)
     from reckon.crew.promotion_gate import _unused_log_path
 
     logs = Path(logs_dir)
-    base_arm = _arm(
-        argv,
-        base_tree,
-        _unused_log_path(logs / "armed-baseline.log"),
-        runner,
-        timeout,
-        environment,
-        file_count=len(node_tests),
+    base_arm = (
+        _arm(
+            base_argv,
+            base_tree,
+            _unused_log_path(logs / "armed-baseline.log"),
+            runner,
+            timeout,
+            environment,
+            file_count=len(base_tests),
+        )
+        if base_tests or not scoped
+        else _empty_arm(base_argv)
     )
-    head_arm = _arm(
-        argv,
-        tree,
-        _unused_log_path(logs / "armed-after.log"),
-        runner,
-        timeout,
-        environment,
-        file_count=len(node_tests),
+    head_arm = (
+        _arm(
+            head_argv,
+            tree,
+            _unused_log_path(logs / "armed-after.log"),
+            runner,
+            timeout,
+            environment,
+            file_count=len(head_tests),
+        )
+        if head_tests or not scoped
+        else _empty_arm(head_argv)
     )
     unreadable = ""
     for name, arm in (("baseline", base_arm), ("after", head_arm)):
@@ -1550,9 +1717,31 @@ def armed_observations(
             )
     if unreadable:
         return {"unreadable": unreadable}
+
+    def left_out_of(arm_name: str) -> list[str]:
+        return [name for name, arms in left_out.items() if arm_name in arms]
+
+    # An empty base arm is the complete measurement of a scope whose tests the
+    # change creates, and promotion reads it as the explicit ``none`` it
+    # already accepts rather than as an arm with no log to prove it ran.
+    baseline: Any = (
+        arm_observation(
+            _command_text(environment, base_argv),
+            base_sha,
+            base_arm,
+            left_out=left_out_of("base"),
+        )
+        if base_tests or not scoped
+        else "none"
+    )
     return {
-        "baseline_suite": arm_observation(command, base_sha, base_arm),
-        "after_suite": arm_observation(command, head_sha, head_arm),
+        "baseline_suite": baseline,
+        "after_suite": arm_observation(
+            _command_text(environment, head_argv),
+            head_sha,
+            head_arm,
+            left_out=left_out_of("head"),
+        ),
     }
 
 
