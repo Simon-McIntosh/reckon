@@ -81,6 +81,18 @@ PLAN_REVIEW_GATE_KEY = "plan_review_gate"
 PLAN_REVIEW_GATE_MODES = ("report", "enforce")
 PLAN_REVIEW_GATE_DEFAULT = "report"
 
+# Whether the admission service files the requests for a project's reviewed
+# plans. The queue is what keeps a lane full after coordinators stop, so the
+# service filling it is the shipped behaviour and a project opts out here rather
+# than in. Reckon-owned for the same reason the plan-review gate's mode is: the
+# provider-neutral schema describes how work is routed, not who fills a queue.
+SERVICE_QUEUE_KEY = "service_queues_plans"
+SERVICE_QUEUE_DEFAULT = True
+
+# The keys reckon owns that the generated schema does not declare, held out of
+# the schema check and validated by this module instead.
+RECKON_OWNED_SCHEMA_KEYS = (PLAN_REVIEW_GATE_KEY, SERVICE_QUEUE_KEY)
+
 # How far back a closed sprint still appears beside the open ones in a
 # discovery or roadmap summary. A reader deciding what to pick up next wants the
 # work that just finished next to the work that is still open, and no further
@@ -920,6 +932,22 @@ def _validate_plan_review_gate(data: Mapping[str, Any], source: str | Path) -> N
         )
 
 
+def _validate_service_queue(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the reckon-owned queue-filling switch, which the schema omits.
+
+    A string or a number would read as true by truthiness while meaning
+    something else entirely, so anything but a boolean is refused by name.
+    """
+    if SERVICE_QUEUE_KEY not in data:
+        return
+    if not isinstance(data[SERVICE_QUEUE_KEY], bool):
+        raise FlightConfigError(
+            source,
+            SERVICE_QUEUE_KEY,
+            "must be true or false",
+        )
+
+
 def _validate_sprint_recent_days(data: Mapping[str, Any], source: str | Path) -> None:
     """Check the reckon-owned recent-closed window, which the schema omits.
 
@@ -1183,6 +1211,19 @@ def plan_review_gate_enforces(config: Mapping[str, Any] | None) -> bool:
     """
     mode = (config or {}).get(PLAN_REVIEW_GATE_KEY) or PLAN_REVIEW_GATE_DEFAULT
     return str(mode) == "enforce"
+
+
+def service_queues_plans(config: Mapping[str, Any] | None) -> bool:
+    """Whether the admission service files requests for a project's plans.
+
+    Absence is the shipped default rather than a missing fact, for the same
+    reason the plan-review gate's mode is: a config assembled by hand should
+    answer the shipped behaviour rather than the permissive one.
+    """
+    value = (config or {}).get(SERVICE_QUEUE_KEY)
+    if value is None:
+        return SERVICE_QUEUE_DEFAULT
+    return bool(value)
 
 
 def plan_review_change_threshold(config: Mapping[str, Any] | None) -> float:
@@ -1753,7 +1794,9 @@ def validate_layer(
         raise FlightConfigError(source, unknown[0], UNKNOWN_KEY_CONSTRAINT)
 
     schema_layer = {
-        key: value for key, value in data.items() if key != PLAN_REVIEW_GATE_KEY
+        key: value
+        for key, value in data.items()
+        if key not in RECKON_OWNED_SCHEMA_KEYS
     }
     try:
         FlightConfig.model_validate(_inject_map_keys(_schema_view(schema_layer)))
@@ -1768,6 +1811,7 @@ def validate_layer(
     _validate_project_weights(data, source)
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
+    _validate_service_queue(data, source)
     _validate_reports(data, source)
     review = data.get(REVIEW_KEY)
     if isinstance(review, Mapping):
@@ -1928,7 +1972,9 @@ def unknown_key_paths(data: Mapping[str, Any]) -> list[str]:
     from reckon._flight_schema import FlightConfig
 
     schema_layer = {
-        key: value for key, value in data.items() if key != PLAN_REVIEW_GATE_KEY
+        key: value
+        for key, value in data.items()
+        if key not in RECKON_OWNED_SCHEMA_KEYS
     }
     return sorted(
         set(

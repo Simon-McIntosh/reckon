@@ -168,6 +168,14 @@ review:
 # project layer sets `enforce` once its authors review plans as they write them.
 plan_review_gate: report
 
+# The admission service files a request for every section of a reviewed plan
+# that may be queued, so a lane keeps filling after coordinators stop. A project
+# that wants its queue to hold only what its own sessions dispatch sets this to
+# false. Reckon-owned: the generated schema does not carry it, and the flight
+# module's own validator checks its shape. A plan a coordinator wants left out
+# is held with `reckon crew queue hold --plan` rather than by this switch.
+service_queues_plans: true
+
 # The ceiling sits at full utilisation, so only a backend that actually reported
 # being spent holds a wave; the reserves are what stop a dispatch spending the
 # last of a quota and leaving no way to answer a worker that asks for help.

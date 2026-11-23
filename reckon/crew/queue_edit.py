@@ -27,7 +27,9 @@ steering a run.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import re
 from collections.abc import Mapping, MutableMapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -133,6 +135,102 @@ def _read_request(run_id: str, project: str | None) -> dict[str, Any]:
             f"{str(record.get('project') or '')!r}, not {project!r}"
         )
     return record
+
+
+def plan_hold_path(project: str) -> Path:
+    """The file one project's plan-level holds are recorded in.
+
+    A plan hold is steering state rather than a request, so it lives beside the
+    live pointers under the crew home and is never committed. One file per
+    project keeps a hold and a release of two plans from rewriting each other
+    and gives a reader one stat to decide whether anything is held.
+    """
+    from reckon.crew import runs as runs_module
+
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
+    digest = hashlib.sha256(project.encode()).hexdigest()[:12]
+    return runs_module.crew_home() / "plan_holds" / f"{readable}-{digest}.json"
+
+
+def plan_holds(project: str) -> dict[str, dict[str, Any]]:
+    """Every plan of one project a coordinator has held, keyed by plan slug.
+
+    An unreadable file answers no holds rather than an error: the file is
+    written atomically, so a reader that cannot parse it is looking at
+    something nobody wrote, and holding work on that basis would keep a plan
+    out of the queue for a reason no coordinator gave.
+    """
+    path = plan_hold_path(project)
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(loaded, dict):
+        return {}
+    return {
+        str(slug): record for slug, record in loaded.items() if isinstance(record, dict)
+    }
+
+
+def plan_hold(project: str, plan: str) -> dict[str, Any] | None:
+    """The hold covering one plan, or ``None`` when nothing holds it."""
+    return plan_holds(project).get(str(plan))
+
+
+def _write_plan_holds(project: str, holds: Mapping[str, Any]) -> None:
+    path = plan_hold_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(f".{os.getpid()}.tmp")
+    temporary.write_text(
+        json.dumps(dict(holds), sort_keys=True, indent=2) + "\n", encoding="utf-8"
+    )
+    os.replace(temporary, path)
+
+
+def hold_plan(
+    project: str, plan: str, *, reason: str, session: str = ""
+) -> dict[str, Any]:
+    """Keep a plan's work out of the service's queue, request or none.
+
+    A plan hold is what a coordinator uses when the plan has no request to hold
+    yet: it covers every waiting request the plan already has and every request
+    filed for it later, and the queue read answers it as the plan-level hold it
+    is. Written under the file's own lock so two coordinators holding two plans
+    of one project do not lose each other's record.
+    """
+    from reckon.node_exclusive_lock import exclusive_lock
+
+    path = plan_hold_path(project)
+    with exclusive_lock(path.with_suffix(".lock")):
+        holds = plan_holds(project)
+        record = {
+            "plan": plan,
+            "project": project,
+            "reason": reason,
+            "session": session,
+            "held_at": _now(),
+        }
+        holds[str(plan)] = record
+        _write_plan_holds(project, holds)
+    return record
+
+
+def release_plan(project: str, plan: str, *, reason: str = "") -> dict[str, Any] | None:
+    """Remove a plan hold, returning the record it removed.
+
+    ``None`` means the plan was not held, which a caller reports rather than
+    treating as a release.
+    """
+    from reckon.node_exclusive_lock import exclusive_lock
+
+    path = plan_hold_path(project)
+    with exclusive_lock(path.with_suffix(".lock")):
+        holds = plan_holds(project)
+        removed = holds.pop(str(plan), None)
+        if removed is None:
+            return None
+        _write_plan_holds(project, holds)
+    return {**removed, "released_at": _now(), "release_reason": reason}
 
 
 def steering_path(run_id: str) -> Path:
@@ -824,6 +922,7 @@ def _selected_requests(
     project: str | None,
     *,
     release: bool,
+    allow_none: bool = False,
 ) -> list[str]:
     from reckon.crew import runs
 
@@ -848,7 +947,7 @@ def _selected_requests(
         and (not session or str(pointer.get("session") or "") == session)
         and _phase_of(pointer) in (("held",) if release else WAITING_PHASES)
     ]
-    if not selected:
+    if not selected and not allow_none:
         raise CrewError(f"no waiting requests found for {plan or session!r}")
     return selected
 
@@ -998,9 +1097,26 @@ def hold(
     A hold that names the lead as what it waits on is refused unless it cites a
     complete decision record, and the check runs before any pointer is written
     so a refused hold holds nothing. Every other hold is unchanged.
+
+    A ``--plan`` hold also writes the plan-level record, whether or not the plan
+    has a waiting request: the service must not queue a plan a coordinator has
+    kept out, and it decides that from the plan rather than from whatever
+    requests happen to exist at the moment it passes. A plan with no waiting
+    request is otherwise the case a hold could not reach at all, which is the
+    gap that left an unreviewed plan's sections queued with nothing to stop
+    them.
     """
     identifier = _lead_hold_record(awaiting, decision)
-    ids = _selected_requests(run_id, plan, session, project, release=False)
+    held_plan = None
+    if plan:
+        held_plan = hold_plan(
+            _plan_hold_target(run_id, project, plan),
+            plan,
+            reason=reason,
+        )
+    ids = _selected_requests(
+        run_id, plan, session, project, release=False, allow_none=bool(plan)
+    )
     changed = [
         _change_hold(
             request,
@@ -1011,7 +1127,51 @@ def hold(
         )
         for request in ids
     ]
-    return {"held": changed, "count": len(changed)}
+    result: dict[str, Any] = {"held": changed, "count": len(changed)}
+    if held_plan is not None:
+        result["plan"] = held_plan
+    return result
+
+
+def _plan_hold_target(
+    run_id: str | None, project: str | None, plan: str | None = None
+) -> str:
+    """The project a plan hold is recorded under.
+
+    A hold is filed under the project its requests name, so a caller that names
+    only one request still records the plan hold where the service reads it. A
+    caller naming only the plan is answered from the mounts, which is what lets
+    a coordinator hold a plan that has no request to name a project from.
+    """
+    if project:
+        return str(project)
+    if run_id:
+        record = _read_request(run_id, None)
+        along = str(record.get("project") or "")
+        if along:
+            return along
+    if plan:
+        registered = _project_of_plan(plan)
+        if registered:
+            return registered
+    raise CrewError(
+        "holding a plan needs --project, or --run whose request names its "
+        "project, or a plan name registered in mounts.json"
+    )
+
+
+def _project_of_plan(plan: str) -> str:
+    """The mounted project whose plans directory holds this plan, if any."""
+    try:
+        from reckon._store import _mounts_path
+
+        registered = json.loads(_mounts_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    for project, docs_dir in (registered or {}).items():
+        if (Path(str(docs_dir)) / "plans" / f"{plan}.html").is_file():
+            return str(project)
+    return ""
 
 
 def release(
@@ -1026,10 +1186,21 @@ def release(
 
     Like a hold, a release writes only the pointer it changes and takes no
     admission lock, so a coordinator can return work to the queue while a pass
-    runs.
+    runs. A ``--plan`` release also removes the plan-level hold, which is what
+    lets the service queue the plan on its next pass.
     """
-    ids = _selected_requests(run_id, plan, session, project, release=True)
+    released_plan = None
+    if plan:
+        released_plan = release_plan(
+            _plan_hold_target(run_id, project, plan), plan, reason=reason
+        )
+    ids = _selected_requests(
+        run_id, plan, session, project, release=True, allow_none=bool(plan)
+    )
     changed = [
         _change_hold(identifier, release=True, reason=reason) for identifier in ids
     ]
-    return {"released": changed, "count": len(changed)}
+    result: dict[str, Any] = {"released": changed, "count": len(changed)}
+    if released_plan is not None:
+        result["plan"] = released_plan
+    return result

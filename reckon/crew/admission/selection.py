@@ -5,13 +5,14 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Sequence
 
-from .. import lost_sessions as _lost_sessions
-from .. import queue_order
 from reckon.crew.open_run_index import operational_read
 
+from .. import lost_sessions as _lost_sessions
+from .. import queue_order
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
+from . import queueing as _queueing
 from . import readiness as _readiness
 from . import release as _release
 from . import reviews as _reviews
@@ -122,6 +123,20 @@ def admit_once(
             )
             if result["released_stranded"]:
                 live = runs.list_live()
+            # The queue refills here, before anything is ordered, so a request
+            # fills and drains in one pass and a lane a coordinator left empty
+            # is not seen empty by the ordering that follows. A project whose
+            # configuration turns this off is skipped by the stage itself.
+            with _service._read_tally() as queue_reads:
+                started = time.monotonic()
+                # The stage resolves each project's own configuration: the pass
+                # config callable below answers a request pointer, not a project.
+                result["plan_queue"] = _queueing.fill_queue()
+                result["queue_seconds"] = round(time.monotonic() - started, 3)
+            _service._record_stage_reads(result, "plan queue", queue_reads)
+            refilled = int((result.get("plan_queue") or {}).get("queued") or 0)
+            if refilled:
+                live = runs.list_live()
             # Readiness is re-read here, on every pass: a request waiting on its
             # section's refs moves to ``queued`` the moment the last ref lands and
             # to ``blocked-upstream`` the moment one is closed as abandoned or
@@ -137,8 +152,8 @@ def admit_once(
                 )
                 from ..lead_decisions import release_withdrawn_holds
 
-                result["released_plan_review"] = (
-                    _reviews._release_plan_review_holds(live, config_for=config_for)
+                result["released_plan_review"] = _reviews._release_plan_review_holds(
+                    live, config_for=config_for
                 )
                 try:
                     result["released_withdrawn"] = release_withdrawn_holds(live)
@@ -276,13 +291,20 @@ def admit_once(
                 identifier = str(pointer.get("run_id") or "")
                 result["held"].append(identifier)
                 _holds._record_pass_hold(
-                    pointer, {"verdict": "held-by-gate", "reason": reason},
-                    live=live, moment=moment,
+                    pointer,
+                    {"verdict": "held-by-gate", "reason": reason},
+                    live=live,
+                    moment=moment,
                 )
-                result["verdicts"].append(_verdicts._verdict_row(
-                    pointer, allowance=0, allowance_source="node disk reserve",
-                    verdict="held-by-gate", detail=reason,
-                ))
+                result["verdicts"].append(
+                    _verdicts._verdict_row(
+                        pointer,
+                        allowance=0,
+                        allowance_source="node disk reserve",
+                        verdict="held-by-gate",
+                        detail=reason,
+                    )
+                )
             result["action"] = "gated"
             return result
         if local_gated and run_id and queued:

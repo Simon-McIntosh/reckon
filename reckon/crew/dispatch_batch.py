@@ -1252,9 +1252,12 @@ class _QueueReads:
         if not answers:
             return answers
         ownership = self.ownership(project, read.repo_root)
-        owner = str(
-            ((ownership.get("plans") or {}).get(plan) or {}).get("coordinator") or ""
-        )
+        owned = (ownership.get("plans") or {}).get(plan) or {}
+        # Only a session still dispatching holds a plan out of the queue. A
+        # coordinator whose runs have all ended names no one who could be
+        # building the plan now, and the service is what takes a plan on once
+        # its coordinator has stopped.
+        owner = str(owned.get("coordinator") or "") if owned.get("live") else ""
         if owner and owner != self.session:
             for row in answers.values():
                 row.update(
@@ -1329,10 +1332,15 @@ class _QueueReads:
 
         A hold lives on the stored request it was written to and names the
         section that request builds; one that names no section, or is written
-        against the plan itself, covers every section of the plan.
+        against the plan itself, covers every section of the plan. A plan-level
+        hold covers the whole plan whether or not it has a request yet, which is
+        the hold a coordinator places before the service has queued anything.
         """
+        from reckon.crew import queue_edit
         from reckon.crew.node import normalize_section
 
+        if queue_edit.plan_hold(project, plan) is not None:
+            return True, set()
         whole = False
         sections: set[str] = set()
         for pointer in self.live(project):
@@ -1481,6 +1489,7 @@ def queue_plan(
     comment: str = "",
     local: bool = False,
     dry_run: bool = False,
+    queued_by: str = "",
 ) -> dict[str, Any]:
     """Queue a plan's implementable sections, reporting every authored section.
 
@@ -1518,9 +1527,8 @@ def queue_plan(
     )
     answers = reads.answers(project, plan)
     ownership = reads.ownership(project, read.repo_root)
-    owner = str(
-        ((ownership.get("plans") or {}).get(plan) or {}).get("coordinator") or ""
-    )
+    owned = (ownership.get("plans") or {}).get(plan) or {}
+    owner = str(owned.get("coordinator") or "") if owned.get("live") else ""
     history = _plan_history(project, plan, read.repo_root)
     entries: list[dict[str, Any]] = []
     rows: dict[str, dict[str, Any]] = {}
@@ -1612,6 +1620,7 @@ def queue_plan(
             dispatch_width="plan",
             dry_run=dry_run,
             queue_answers={(project, plan): answers},
+            queued_by=queued_by,
         )
         if entries
         else {"ok": True, "queued": 0, "refused": 0, "results": []}
@@ -1670,6 +1679,7 @@ def queue_batch(
     queue_answers: Mapping[
         tuple[str, str], Mapping[str, Mapping[str, Any]]
     ] | None = None,
+    queued_by: str = "",
 ) -> dict[str, Any]:
     """Queue each entry on its own — see :func:`_queue_batch`.
 
@@ -1707,6 +1717,7 @@ def queue_batch(
             dispatch_width=dispatch_width,
             dry_run=dry_run,
             queue_answers=queue_answers,
+            queued_by=queued_by,
         )
 
 
@@ -1726,6 +1737,7 @@ def _queue_batch(
     queue_answers: Mapping[
         tuple[str, str], Mapping[str, Mapping[str, Any]]
     ] | None = None,
+    queued_by: str = "",
 ) -> dict[str, Any]:
     """Queue each entry on its own and report one row per entry.
 
@@ -1915,6 +1927,7 @@ def _queue_batch(
                 # of the call that named the batch.
                 dispatch_width=str(entry.get("dispatch_width") or dispatch_width),
                 dry_run=dry_run,
+                queued_by=str(entry.get("queued_by") or queued_by),
             )
             if not dry_run:
                 for stored_id in stored:
