@@ -75,8 +75,9 @@ def changed_test_files(
     measured tree are named, so a fixture is not handed to the runner and a
     deleted test is not passed to it.
     """
+    from reckon.crew.landing_measure import resolve_landing_tests
     from reckon.crew.node import is_collectible_test_path
-    from reckon.crew.promotion_records import _node_test_files
+    from reckon.crew.promotion_records import _done_when_text, _node_test_files
 
     named = _node_test_files(record)
     if named:
@@ -87,7 +88,19 @@ def changed_test_files(
         if is_collectible_test_path(path)
         and (path in present if present is not None else (Path(tree) / path).is_file())
     ]
-    return sorted(candidates)
+    if candidates:
+        return sorted(candidates)
+    # The diff delivered no test file, which is a node that changed source
+    # only. Its done-when still names the test it was written to satisfy, and
+    # failing that, the tests importing the modules it changed are the tests
+    # its landing can measure.
+    resolved, _refusal = resolve_landing_tests(
+        (),
+        done_when=_done_when_text(record),
+        changed=_as_paths(changed),
+        tree=tree,
+    )
+    return resolved
 
 
 def review_neighbourhood(

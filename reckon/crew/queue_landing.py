@@ -1325,6 +1325,7 @@ def _measure_delivery(
                     declared_duration=declared_duration,
                     declared_partition=declared_partition,
                     declared_long_partition=declared_long_partition,
+                    done_when=str(runs.node_field(pointer, "done_when") or ""),
                 )
                 measured = replace(
                     measured,
