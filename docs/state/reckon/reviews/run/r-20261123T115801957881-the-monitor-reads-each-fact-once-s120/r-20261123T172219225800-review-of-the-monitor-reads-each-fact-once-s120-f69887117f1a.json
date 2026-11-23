@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T115801957881-the-monitor-reads-each-fact-once-s120/gates/base-importer-01-all_debug.log",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T115801957881-the-monitor-reads-each-fact-once-s120/gates/head-importer-01-all_debug.log"
+  },
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T17:23:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 3844,
+      "severity": "non-blocking",
+      "summary": "a failed held-tree lookup is never retried and drops the duty",
+      "text": "reckon/crew/obligations.py:3844: _rows_naming_trees swallows every exception and returns no rows, but the caller records the new tree in index.inspected at line 4556 regardless, so a transient store failure permanently drops that tree's held duty; the new_trees set is computed as inspected - index.inspected and will not offer the tree again, and the docstring's promise that it 'joins the held set on the next fresh build' waits on an unrelated aggregate rewrite. Retrying a lookup that failed, or not recording the inspected set on failure, would keep a held tree from silently disappearing from the duty view."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_fleet_state_reuses_its_reads_between_ticks.py:342-382 fails if 4c4bf5a45c regresses and tests/test_held_worktrees_are_read_once_per_change.py:186 fails if the new_trees path regresses; both are red at base and green at head.",
+    "evidence": "the head importer arm's failure ids are a subset of the base arm's (44 vs 63, zero head-only), so added_failure_count is 0, and the two negative-control cases appear as base-only FAILED ids in gates/base-importer-01-all_debug.log.",
+    "fit": "reckon/crew/obligations.py:3824 follows the module's private-helper idiom with a mechanism docstring and adds no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/obligations.py:4556-4573 files a tree registered after the last read by asking the store only for that tree's rows, which is the repair the goal states: a tree registered after a sweep has no row filed against it otherwise.",
+    "reuse": "reckon/crew/obligations.py:3839 calls the existing open_run_index.rows_naming_trees owner, reckon/file_memo.py:373 extends the module that owns the read-only region, and reckon/run_store.py:1309 stays the module that owns the answer cache.",
+    "scope_discipline": "the gained diff's five paths are exactly the five the goal names, and no path outside them changed."
+  },
+  "plan": "reckon:the-monitor-reads-each-fact-once",
+  "project": "reckon",
+  "review_run_id": "r-20261123T172219225800-review-of-the-monitor-reads-each-fact-once-s120-f69887117f1a",
+  "reviewed_base_sha": "a1d432530d26ac6e29482e185094e2a20b5b599c",
+  "reviewed_head_sha": "f69887117f1aedffdfe40b2e5992b83576c9ea09",
+  "reviewed_run_id": "r-20261123T115801957881-the-monitor-reads-each-fact-once-s120",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "section": "s120",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T17:50:47.478897+00:00",
+  "total": 113,
+  "verdicts": {
+    "diff": "read commit by commit over a1d432530d..f69887117f: f5bd2cba91 replaces the per-file stat walk with obligations/_directory_identity and adds the plan cache; d6dc8c6041 and 4c4bf5a45c fix the held-tree index; the remaining five commits change only the evidence fragment's quoted gate figures.",
+    "done_when": "the node's done_when names tests/test_an_unchanged_sweep_reads_no_plan_and_walks_no_tree.py; the head fence log at revision 6ede4dd00a records 75 passed and the base fence log at a1d432530d records 2 failed 69 passed, each with revision, literal command and a closing EXIT= line.",
+    "goal": "the commits gained since the prior review repair the held-worktree index the sweep feeds: reckon/crew/obligations.py:3824 adds _rows_naming_trees and :4427 _held_worktree_records_read files every aggregate row and every newly registered tree's row, and :1323 run_store and :373 file_memo stop copying rows inside a read-only region.",
+    "manifest": "read; it records status complete, eight commits, the fence and importer gate logs, and artifacts reconciling the arms, but it carries no baseline_suite or after_suite JSON block, so the added-failure figures had to be derived from gates/{base,head}-importer-0*-all_debug.log and the fence pair rather than read off the manifest.",
+    "write_paths": "the gained diff touches only docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s120.html, reckon/crew/obligations.py, reckon/file_memo.py, reckon/run_store.py and tests/test_held_worktrees_are_read_once_per_change.py, all inside the node's declared write paths."
+  }
+}
