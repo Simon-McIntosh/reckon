@@ -257,7 +257,9 @@ def _signalled_runner(landing, real, outcome: dict[str, object]):
         first[0] = False
         scratch_id = hashlib.sha256(str(log.absolute()).encode()).hexdigest()[:12]
         prefix = f"{getpass.getuser()}-landing-{scratch_id}-"
-        root = Path(tempfile.gettempdir())
+        # The job builds its tree under the node-local root its script exports,
+        # which is not necessarily this process's own temp directory.
+        root = Path(landing_measure.NODE_LOCAL_TEMP_ROOT)
         process = subprocess.Popen(
             ["bash", "-c", inner],
             cwd=options.get("cwd"),
