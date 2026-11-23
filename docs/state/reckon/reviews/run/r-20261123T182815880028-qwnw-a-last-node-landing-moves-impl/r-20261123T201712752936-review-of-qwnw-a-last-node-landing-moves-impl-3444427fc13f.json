@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion_checks.py:_require_impl_moved",
+    "reckon/crew/queue_landing.py:_landing_beat"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T20:20:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "1583",
+      "severity": "non-blocking",
+      "text": "non-blocking: _landing_closes_its_section re-implements pending_landing.nodes_awaiting_landing (reckon/crew/pending_landing.py:78) rather than extending it, dropping the owner's UNLANDED_NODE_PHASES filter and its same-node-id exclusion, so a failed or stopped sibling's live pointer (node.py:36 terminal phases) counts as an open node and the section is never closed, leaving impl unmoved for a landing that is the section's last open node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all six commits against base 31eda5cd1f: bba1d13a records the closure inside the landing's plan write, fb996f11cb moves it after the landing commit, and the last four commits are evidence documents only.",
+    "done_when": "The done_when names tests/test_landing_a_sections_last_node_moves_impl.py with three cases (lone node closes and moves impl, sibling open lands untouched, refused landing writes no declaration); that file implements all three, and I re-ran it at the reviewed head: 3 passed in 2.27s.",
+    "goal": "The goal is that a landing which is its section's last open node records the section done so impl moves; reckon/crew/promotion.py:3575 calls _close_a_landed_section, which sets section_declarations.<key> to done and commits it as its own commit, so impl advances with the run that closed the section.",
+    "manifest": "The manifest records the scoped gate (3 passed at fb996f11cb), the concurrency suite (41 passed), the base arm (58 passed at 31eda5cd1f) and the head arm (61 passed at fb996f11cb), each with its log path, plus the negative control (2 failed, 1 passed at base).",
+    "write_paths": "The diff touches six files (promotion.py, promotion_checks.py, promotion_scope.py, the test, and two evidence fragments), every one inside the declared write paths, and the manifest states that promotion.py and promotion_checks.py were explicitly added to the node's scope by the coordinator's ruling."
+  },
+  "justifications": {
+    "durability": "Reverting the closure call at promotion.py:3575 reddens tests/test_landing_a_sections_last_node_moves_impl.py:174 (the declaration stays implementable and impl stays 0.5), but the refused-landing case at :213 refuses on a gate-check and would also pass at the base revision, so it measures no part of this change.",
+    "evidence": "tests/test_landing_a_sections_last_node_moves_impl.py:174 drives crew.complete against a temporary git-backed plan and asserts the declaration, the typed section record and the plan's impl; the file passes 3/3 at the reviewed head.",
+    "fit": "promotion_scope.py:1583 follows the module's private-helper and lazy-import idiom, and no added name (lines 1578-1720) carries a plan, sprint, or ticket identifier.",
+    "goal_fidelity": "promotion.py:3575 writes the section's declaration after the landing commits, and tests/test_landing_a_sections_last_node_moves_impl.py:174 shows impl moving from 0.5 to 1.0 on that landing.",
+    "reuse": "promotion_scope.py:1583 duplicates the open-sibling predicate owned by pending_landing.nodes_awaiting_landing (reckon/crew/pending_landing.py:78) and the section closure already performed by queue_landing.py:1854, dropping the owner's phase filter.",
+    "scope_discipline": "git diff --stat over 31eda5cd1f..3444427fc1 names only the six declared paths, and no hunk reaches anything the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that a landing which is its section's last open node records the section done so impl moves; reckon/crew/promotion.py:3575 calls _close_a_landed_section, which sets section_declarations.<key> to done and commits it as its own commit, so impl advances with the run that closed the section.\nVERDICT done_when: The done_when names tests/test_landing_a_sections_last_node_moves_impl.py with three cases (lone node closes and moves impl, sibling open lands untouched, refused landing writes no declaration); that file implements all three, and I re-ran it at the reviewed head: 3 passed in 2.27s.\nVERDICT write_paths: The diff touches six files (promotion.py, promotion_checks.py, promotion_scope.py, the test, and two evidence fragments), every one inside the declared write paths, and the manifest states that promotion.py and promotion_checks.py were explicitly added to the node's scope by the coordinator's ruling.\nVERDICT manifest: The manifest records the scoped gate (3 passed at fb996f11cb), the concurrency suite (41 passed), the base arm (58 passed at 31eda5cd1f) and the head arm (61 passed at fb996f11cb), each with its log path, plus the negative control (2 failed, 1 passed at base).\nVERDICT diff: Read all six commits against base 31eda5cd1f: bba1d13a records the closure inside the landing's plan write, fb996f11cb moves it after the landing commit, and the last four commits are evidence documents only.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion_checks.py:_require_impl_moved, reckon/crew/queue_landing.py:_landing_beat\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: promotion.py:3575 writes the section's declaration after the landing commits, and tests/test_landing_a_sections_last_node_moves_impl.py:174 shows impl moving from 0.5 to 1.0 on that landing.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_landing_a_sections_last_node_moves_impl.py:174 drives crew.complete against a temporary git-backed plan and asserts the declaration, the typed section record and the plan's impl; the file passes 3/3 at the reviewed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat over 31eda5cd1f..3444427fc1 names only the six declared paths, and no hunk reaches anything the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: Reverting the closure call at promotion.py:3575 reddens tests/test_landing_a_sections_last_node_moves_impl.py:174 (the declaration stays implementable and impl stays 0.5), but the refused-landing case at :213 refuses on a gate-check and would also pass at the base revision, so it measures no part of this change.\nSCORE fit: 16\nJUSTIFICATION fit: promotion_scope.py:1583 follows the module's private-helper and lazy-import idiom, and no added name (lines 1578-1720) carries a plan, sprint, or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: promotion_scope.py:1583 duplicates the open-sibling predicate owned by pending_landing.nodes_awaiting_landing (reckon/crew/pending_landing.py:78) and the section closure already performed by queue_landing.py:1854, dropping the owner's phase filter.\nFINDING reckon/crew/promotion_scope.py:1583 non-blocking: _landing_closes_its_section re-implements pending_landing.nodes_awaiting_landing (reckon/crew/pending_landing.py:78) rather than extending it, dropping the owner's UNLANDED_NODE_PHASES filter and its same-node-id exclusion, so a failed or stopped sibling's live pointer (node.py:36 terminal phases) counts as an open node and the section is never closed, leaving impl unmoved for a landing that is the section's last open node.",
+  "review_run_id": "r-20261123T201712752936-review-of-qwnw-a-last-node-landing-moves-impl-3444427fc13f",
+  "reviewed_base_sha": "31eda5cd1f4e52346def5d1d484bd1c9f4de514d",
+  "reviewed_head_sha": "3444427fc13f0a2494b86815e032d92f9a69bfca",
+  "reviewed_run_id": "r-20261123T182815880028-qwnw-a-last-node-landing-moves-impl",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T22:18:08.725159+00:00",
+  "total": 89
+}
