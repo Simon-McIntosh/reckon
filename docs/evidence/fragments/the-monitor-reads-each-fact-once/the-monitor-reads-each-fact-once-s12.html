@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s12">
   <meta name="evidence-verdict" content="fail">
   <meta name="evidence-date" content="2026-11-22">
-  <meta name="evidence-commit" content="790a380eb7">
+  <meta name="evidence-commit" content="a2bf0d8d5a">
   <title>The cutover window on the fleet node: the bound is not met | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -28,6 +28,10 @@ not met either: measured on the fleet node the station alone reads
 <strong>11,645&ndash;13,622 MB/min</strong> against a bound of 20, and the
 twelve producers together read a further
 <strong>10,702&ndash;6,469 MB/min</strong>.</p>
+
+<p><strong>Re-measured after the store-signature change.</strong> The station
+alone reads <strong>16,779&ndash;18,953 MB/min</strong>, so the verdict is
+unchanged; the re-measurement is below.</p>
 
 <h3 id="the-monitor-reads-each-fact-once-s12-measure">The measure, and the two windows</h3>
 
@@ -146,6 +150,116 @@ the signature read re-scanning 1.166&nbsp;GB per call on every change, and
 changed, the plan's condition is not met and the producers are what keeps the
 fleet watched.</p>
 
+<h3 id="the-monitor-reads-each-fact-once-s12-remeasure">Re-measured after the store-signature change</h3>
+
+<p>The windows above were taken before the store-signature change landed, and the
+change was made to answer exactly the store cost they name. So the same
+instrument was run again, twice, on the same node and the same job
+(<code>98dci4-clu-3026</code>, job <code>1319168</code>), at base revision
+<code>a2bf0d8d5a</code>, with 62 and 61 live pointers. Both windows are recorded
+in full beside this fragment as <code>window-3.txt</code> and
+<code>window-4.txt</code>.</p>
+
+<table>
+  <thead><tr><th>Window</th><th>Station</th><th>Producers</th><th>Followers</th><th>All three</th><th>CPU, all three</th></tr></thead>
+  <tbody>
+    <tr><td>3, 13:00:18Z, 62 live pointers</td><td>16,779 MB/min</td><td>7,188 MB/min</td><td>63 MB/min</td><td>24,030 MB/min</td><td>194.95&nbsp;% of one core</td></tr>
+    <tr><td>4, 13:04:19Z, 61 live pointers</td><td>18,953 MB/min</td><td>6,840 MB/min</td><td>74 MB/min</td><td>25,867 MB/min</td><td>202.72&nbsp;% of one core</td></tr>
+  </tbody>
+</table>
+
+<figure>
+  <img src="/reckon/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/cutover-window-after-the-signature-mirror.svg"
+       alt="Read volume and CPU of the station, the producers and the followers against the cutover bound, in two 60 s windows taken after the store-signature change">
+  <figcaption>Two 60&nbsp;s windows on the fleet node with 62 and 61 live
+  pointers, measured 2026-11-22 after the store-signature change. Read volume is
+  <code>rchar</code>; <code>read_bytes</code> was 0.000&nbsp;MB in every arm. The
+  bound of 20&nbsp;MB/min and 5&nbsp;% of one core over all monitor processes
+  together is drawn dotted. The form repeats the earlier figure's, so the two
+  readings compare like with like.</figcaption>
+</figure>
+
+<p>The change did not move the fleet figure. Both later windows are <em>outside</em>
+the bound and slightly worse than the earlier pair: the station alone reads
+16,779 and 18,953&nbsp;MB/min against 11,645 and 13,622, at 92.07 and 89.35&nbsp;%
+of one core. The D-state clause fails in both: a monitor process appears in state
+D in four of window 3's six samples and five of window 4's six samples &mdash; the station
+itself among them in one and two of those samples &mdash; and window 4's last sample
+holds a nineteen-process stall at <code>D:open_last_lookups</code>. Both windows
+open with the same positive control as the earlier pair, a 197-byte file reading
+<code>rchar_delta=294</code> with <code>sees_it=True</code>, so the counters were
+working.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-signature-mirror">Why: the mirror answers for eleven projects, not thirteen</h3>
+
+<p>The store-signature change keeps a payload-free mirror in the store, and
+<code>stored_run_signature</code> answers from it only when the mirror's row count
+agrees with the project's stored run count; otherwise it falls back to
+<code>_legacy_run_signature</code>, which measures every payload. A probe of the
+live store at this revision asks that question through the module's own functions
+and then times one call per project (<code>signature-probe.txt</code>). The mirror
+is present and answers for eleven of the thirteen projects, each for between
+0.045&nbsp;MB and 2.09&nbsp;MB: <code>nova</code> 2,027,933&nbsp;B,
+<code>imas-codex</code> 2,093,468&nbsp;B, <code>power_convertor</code>
+1,450,397&nbsp;B, <code>imas-ambix</code> 1,044,892&nbsp;B, and the rest under
+0.2&nbsp;MB.</p>
+
+<p>Two projects disagree, and each one's call still scans its whole stored
+payload. <code>reckon</code> has 21 stored runs against 34 mirror rows marked
+present, and one call reads <strong>12,681,155</strong> bytes; <code>imas-efit</code>
+has 1,549 stored runs against 1,548 mirror rows, and one call reads
+<strong>62,280,070</strong> bytes. The station's tick reads the run signature of
+every mounted project, so those two calls are the whole-store scans the earlier
+census measured, and the eleven cheap answers do not reduce the total.</p>
+
+<figure>
+  <img src="/reckon/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/signature-mirror-per-project.svg"
+       alt="Bytes read by one stored_run_signature call for each project, with the eleven projects answered from the signature mirror in grey and the two that fall back to the whole-store scan highlighted">
+  <figcaption>Bytes read by one <code>stored_run_signature</code> call, per
+  project, on the live store at revision <code>a2bf0d8d5a</code>. The eleven
+  projects whose mirror row count agrees with their stored run count are answered
+  from the mirror and cost under 2.1&nbsp;MB. The two highlighted projects
+  disagree, fall back to the whole-store scan, and cost two to three decades more;
+  their stored and mirrored counts are printed beside their bars.</figcaption>
+</figure>
+
+<p>The disagreement is not a stale-cache artefact, and its cause is in the
+rebuild path: that path deletes <code>runs</code> rows with raw SQL and never
+writes the mirror's tombstone, while <code>_retire_signature</code> is called only
+from <code>retire</code> and <code>delete_run</code>. So every rebuild that removes
+a run leaves a <code>present=1</code> mirror row behind. <code>reckon</code>'s
+thirteen surplus rows include this plan's own sessions from today, which is why
+its disagreement grows exactly as fast as the plan is worked. The repair belongs
+to <code>run_store</code>'s rebuild path, outside this node's declared paths, and
+is reported as out of scope rather than made here.</p>
+
+<h3 id="the-monitor-reads-each-fact-once-s12-actions">The rows, replayed through the station</h3>
+
+<p>The earlier section recorded the pane replay as unmeasured. This node ran it:
+one recorded hour of today's producer log, 2026-11-22T07:00&ndash;08:00Z, is
+carried verbatim through <code>station_store.record_tick</code> and read back
+through the store's own query, then drawn by the pane's own line composer,
+<code>Ticker.render</code>, across the ordered hour. The hour holds
+<strong>191 rows</strong> from two sessions. Every check passes: each row carried
+once, in order and under a unique ordered id; every row keeping the facts a pane
+draws. The pane draws <strong>173</strong> of the 191 lines; the other 18 are
+suppressed by the composer's own same-word rule, because their destination word
+repeats the word the pane already shows for that run &mdash; a
+<code>dispatched &rarr; working</code> row both of whose states read as the word
+<code>working</code>. No run and no row family present in the hour is left
+undrawn. Per-session scoping holds exactly: 182 rows expected and 182 visible for
+one session, 9 and 9 for the other.</p>
+
+<p>Today's hour carries no broadcast row, no declared wait, no blocking finding
+and no manifest rewrite, so those families are not evidenced by it. They are
+evidenced by the committed harness
+<code>tests/test_the_station_carries_every_row.py</code>, run at this revision:
+<code>6 passed</code>. That module replays a different recorded hour
+(2026-10-23 17:00&ndash;18:00Z, 100 transitions and 13 baseline rows) and asserts
+the broadcast family reaches the session it lifts, rows are carried once and in
+one ordered sequence, and the pane facts survive. Together the two hours cover
+the row families the RCA's section 5 lists.</p>
+
 <h3 id="the-monitor-reads-each-fact-once-s12-artifacts">Artifacts</h3>
 
 <ul>
@@ -165,11 +279,25 @@ fleet watched.</p>
   superseded gate citation in this bullet reddens it now
   (<code>1 failed, 5 passed</code>, <code>EXIT=1</code>), which is the gate
   seen failing on each defect it was written for.</li>
+  <li>That gate was extended at this revision to hold the two later windows and
+  the store probe to their captures: <code>10 passed</code>. Its new
+  assertions were also seen failing: masking <code>24,030</code>,
+  <code>62,280,070</code> and the first later window's D-state count out of this
+  fragment's text in turn reddened the assertion that names each.</li>
   <li>The two captures are committed beside that test
   (<code>captures/window-1.txt</code>, <code>captures/window-2.txt</code>). The
   measuring instrument, the census and the store probe live in the run directory
   <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>, as
   does the earlier run-directory gate this one replaces.</li>
+  <li>Re-measurement captures: <code>captures/window-3.txt</code> and
+  <code>captures/window-4.txt</code>, drawn by
+  <code>plot_remeasurement.py</code> as
+  <code>cutover-window-after-the-signature-mirror.svg</code>.</li>
+  <li>Store probe at this revision: <code>captures/signature-probe.txt</code>,
+  drawn as <code>signature-mirror-per-project.svg</code>.</li>
+  <li>Row replay: <code>captures/replay-hour.txt</code>, produced by
+  <code>replay_an_hour.py</code>; the row-coverage harness is
+  <code>tests/test_the_station_carries_every_row.py</code>.</li>
 </ul>
 </section>
 </main>
