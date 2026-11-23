@@ -666,10 +666,16 @@ def apply_section_defaults(
     """Fill every node field this section supplies and the node left unsaid.
 
     A dispatch that names a plan section names its authority, and the section
-    already states the measure, the sizing and the mutation its check must fail
-    against. Requiring the caller to repeat them is how a section-only request
-    gets refused for fields the plan owns. Only an empty field is filled: a
-    value the caller gave always wins.
+    already states the measure, the sizing, the write paths and the mutation its
+    check must fail against. Requiring the caller to repeat them is how a
+    reminder of the section's own fields refuses the request, and leaving the
+    write paths to the caller is how a single dispatch ran a worker whose
+    committed files fell outside the scope the section had already stated.
+
+    Only an empty field is filled: a value the caller gave always wins, and a
+    dispatch naming its own write paths keeps exactly those. A section stating
+    no write paths leaves the node's list empty, so the default landing scope
+    stands as it does for any node that declares none.
 
     A plan or section that cannot be read is left alone rather than refused
     here, because the dispatch paths already name that failure (plan visibility,
@@ -684,7 +690,13 @@ def apply_section_defaults(
         for name in SECTION_SUPPLIED_NODE_FIELDS
         if not str(getattr(node, name, "") or "").strip()
     ]
-    if not omitted:
+    # A write-path list is a sequence rather than a scalar, so an empty one
+    # compares truthy as text; it takes its default from the section on the same
+    # rule as an empty string field.
+    needs_write_paths = not [
+        str(path).strip() for path in (getattr(node, "write_paths", None) or ())
+    ]
+    if not omitted and not needs_write_paths:
         return []
     try:
         read = _PlanRead(project, plan, Path(repo_root))
@@ -697,6 +709,15 @@ def apply_section_defaults(
             continue
         setattr(node, name, derivation[name][0])
         filled.append(name)
+    if needs_write_paths:
+        # Derived on its own so a sentence that names a file only by
+        # description, and cannot resolve it, leaves the other fields already
+        # filled rather than discarding them with the write paths.
+        with contextlib.suppress(BatchEntryRefusedError, OSError):
+            paths = read.write_paths(section)
+            if paths:
+                node.write_paths = list(paths)
+                filled.append("write_paths")
     return filled
 
 
