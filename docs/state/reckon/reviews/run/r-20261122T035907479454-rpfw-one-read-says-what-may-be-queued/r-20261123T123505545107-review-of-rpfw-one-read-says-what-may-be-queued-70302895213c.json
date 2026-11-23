@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1225",
+    "reckon/crew/dispatch_batch.py:1521",
+    "reckon/crew/dispatch_batch.py:1868"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T12:35:52Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "three production call sites reach the change: the CLI selecting queue_plan at crew_dispatch_commands.py:1225, queue_plan's call into queue_batch at dispatch_batch.py:1521, and the batch report path at dispatch_batch.py:1868-1882. plan_queue_answers and project_queue_answers have no production caller yet, only the tests.",
+    "diff": "read commit by commit: cc2887040a adds the read, its two entry points and the roadmap helper; 7030289521 adds 11 lines at dispatch_batch.py:1438-1464 that resolve ownership before the per-section loop and answer every row with the coordinator sentence.",
+    "done_when": "the done_when names tests/test_one_read_says_what_may_be_queued.py with the review-owed, open-decision and coordinated-plan cases plus a 300-plan bound; the manifest records that file green in the after_suite arm at 7030289521 (63 passed, EXIT=0) against a baseline at c11f250a (58 passed, EXIT=0), and the scoped gate measured 0.806 s for 300 plans against the 2 s bound.",
+    "goal": "the node goal is to answer per section whether a plan's work may be queued; reckon/crew/dispatch_batch.py:1390 queue_plan reports one row per authored section, and the gained commit at :1458-1464 restores the owner sentence on the rows the read does not answer for.",
+    "manifest": "read; status complete, commits cc2887040a and 7030289521, changed_paths the three landed files, test_logs naming the scoped gate and both suite arms, negative_control_log at logs/negative-control.txt, and a recorded baseline/after pair of 0 failures each.",
+    "write_paths": "seven paths were declared; the full diff c11f250a..7030289521 touches reckon/crew/dispatch_batch.py, reckon/roadmap.py and tests/test_one_read_says_what_may_be_queued.py, all declared, and the gained commit touches only reckon/crew/dispatch_batch.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_dispatch_queues_every_section.py:133 test_the_resolved_plan_coordinator_owns_the_whole_call is the guard: landing-measure/isolated/...-head-*.log records it failing at the pre-repair landing head while ...-base-*.log records it passing, and the scoped gate at 7030289521 shows it passing again.",
+    "evidence": "the scoped gate at 7030289521 (scoped-gate-1795436785262069963.log) runs the 30 dispatch_batch importer files and its five failures all appear in the base arm at c11f250a (logs/expanded-base-arm.log), while the declared after_suite at 7030289521 exits 0 with 63 passed.",
+    "fit": "reckon/crew/dispatch_batch.py:1458-1464 reuses the module's existing _coordinated_answer helper and its row-update idiom, and the added comment names the mechanism without a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:1458-1464 places the coordinator branch ahead of the declaration test, so every authored row of a plan another session owns carries the read's own sentence, which is the per-section surface parity the goal states.",
+    "reuse": "the gained commit adds no definition; it calls the _QueueReads.ownership resolver at dispatch_batch.py:1438 that the earlier commit already introduced, so this change forks no capability.",
+    "scope_discipline": "the gained commit cc2887040a..7030289521 touches only reckon/crew/dispatch_batch.py (11 inserted lines), and every path in the full diff c11f250a..7030289521 lies within the seven declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to answer per section whether a plan's work may be queued; the gained commit at reckon/crew/dispatch_batch.py:1458-1464 places the coordinator branch ahead of the declaration test so every authored row of another session's plan carries the owner sentence, completing the per-section surface parity the goal states.\nVERDICT done_when: the done_when names tests/test_one_read_says_what_may_be_queued.py with the review-owed, open-decision and coordinated-plan cases and a 300-plan bound; the manifest records the scoped gate at 7030289521 (5 failed, 196 passed, all five ids also failing at base c11f250a) and the declared after_suite at 7030289521 (63 passed, EXIT=0) against the baseline at c11f250a (58 passed, EXIT=0).\nVERDICT write_paths: seven paths were declared; the full diff c11f250a..7030289521 touches only reckon/crew/dispatch_batch.py, reckon/roadmap.py and tests/test_one_read_says_what_may_be_queued.py, all declared, and the gained commit touches only reckon/crew/dispatch_batch.py.\nVERDICT manifest: read; status complete, commits cc2887040a and 7030289521, changed_paths the three landed files, test_logs naming the read and both suite arms, and a negative control at logs/negative-control.txt whose first case reddens with section s1 reading held instead of skipped.\nVERDICT diff: read commit by commit; cc2887040a adds _QueueReads, its two entry points and roadmap.queue_holding_decisions, and 7030289521 adds 11 lines at dispatch_batch.py:1438-1464 restoring per-row ownership reporting for a plan another session coordinates.\nCALL_SITES: reckon/crew_dispatch_commands.py:1225, reckon/crew/dispatch_batch.py:1521, reckon/crew/dispatch_batch.py:1868\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:1458-1464 answers every authored row of a foreign plan with the read's own coordinator sentence.\nSCORE evidence: 18\nJUSTIFICATION evidence: the scoped-gate log at 7030289521 records the repaired head's result and its five failures are a subset of the base arm's six at logs/expanded-base-arm.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit at reckon/crew/dispatch_batch.py:1438-1464 is the only edit in cc2887040a..7030289521 and lies inside the declared path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_plan_dispatch_queues_every_section.py:133 reddens at the pre-repair landing head and passes at 7030289521, which is the regression this commit repairs.\nSCORE fit: 19\nJUSTIFICATION fit: dispatch_batch.py:1462 reuses the module's _coordinated_answer helper and row idiom and carries no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: dispatch_batch.py:1438 calls the existing _QueueReads.ownership resolver rather than adding a second coordinator resolution.",
+  "review_run_id": "r-20261123T123505545107-review-of-rpfw-one-read-says-what-may-be-queued-70302895213c",
+  "reviewed_base_sha": "cc2887040a9b6447343f0ddf9679efa86c96d076",
+  "reviewed_head_sha": "70302895213cba125b87d87ebf1ad70901a50145",
+  "reviewed_run_id": "r-20261122T035907479454-rpfw-one-read-says-what-may-be-queued",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T12:45:18.462490+00:00",
+  "total": 112
+}

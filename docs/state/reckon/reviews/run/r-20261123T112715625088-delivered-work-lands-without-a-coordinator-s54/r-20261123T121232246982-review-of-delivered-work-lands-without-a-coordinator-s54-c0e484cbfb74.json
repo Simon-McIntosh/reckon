@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/landing_measure.py:1279 measure_run",
+    "reckon/crew/promotion_records.py:1229 _measure_missing_arms",
+    "reckon/crew_run_commands.py:4640 crew_declare_gate"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-delivered-work-lands-without-a-coordinator-s54-c0e484cbfb74",
+      "recorded_at": "2026-11-23T12:42:18.838959+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-23T12:13:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "779",
+      "severity": "non-blocking",
+      "text": "admitting_partition duplicates partition_for_bound (:973) and the two can disagree: a configured partition_max_seconds below 3600 (say all_debug 1800) lets a declared 2400 be accepted, while partition_for_bound submits it to all_debug with --time=00:40:00, over that partition's maximum, so the arm is ended mid-run despite the declaration check passing."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "754",
+      "severity": "non-blocking",
+      "text": "partition_max_seconds reads a configured limit that parse_gate_duration cannot parse as unbounded, so a typo in landing.partition_max_seconds silently removes the ceiling instead of being refused."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54/s54-head-gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the head gate log's revision line names 398a0d09, the base sha, because the arm ran against the worktree before its commit; a reader comparing it to the promoted head cannot tell the head arm measured the change, though my re-run at c0e484cb gives 4 passed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "3 production call sites verified",
+    "diff": "read the single commit 398a0d09..c0e484cb commit by commit; it changes reckon/crew/landing_measure.py (+121/-5), reckon/crew/promotion_records.py (+23/-2), reckon/crew/queue_landing.py (+16/-0), reckon/crew_run_commands.py (+66/-3) and adds 218 test lines, all inside scope.",
+    "done_when": "tests/test_a_declared_gate_duration_bounds_its_arms.py:150-171 asserts both arms carry --time at least 4500 on a partition whose table maximum admits it, :173-190 keeps an undeclared run at the project's 600s floor, and :191-210 refuses a 20000s declaration naming 04:00:00 and long_pool; the manifest records 4 passed at head, and I reproduced 4 passed at c0e484cb in a scratch extraction.",
+    "goal": "the goal is to let a run declare how long its gate takes and floor its landing arms by it; reckon/crew_run_commands.py:4625 adds crew declare-gate --duration and reckon/crew/landing_measure.py:1342 raises measure_run's timeout floor with it.",
+    "manifest": "read; it records the literal gate command, both gate logs, measurement_module=/tmp/mcintos-s54-qgG31V/base/reckon/crew/landing_measure.py, measurement_cwd, the negative control and status complete.",
+    "write_paths": "read the node's declared list; the single commit touches five paths and every one is among them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_declared_gate_duration_bounds_its_arms.py:167 asserts each submitted --time is at least the declared 4500, and the base arm reddens it with 'assert 600.0 >= 4500.0' on --time=00:10:00, so reinstating the regression fails the guard.",
+    "evidence": "the head arm's first line at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54/s54-head-gate.log:1 records revision 398a0d09 (the base) although it ran from the worktree, so the receipt names a revision it did not run at; added failures are 0, derived from 10 base ids and 4 head ids with all 4 head ids present at base.",
+    "fit": "reckon/crew/landing_measure.py:710-800 follows the module's regex-plus-helper idiom with mechanism comments and no plan or ticket labels.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1342 and :1621 floor every arm's timeout with declared_duration, and reckon/crew/queue_landing.py:1203 reads the declaration from the run's own pointer so only that run moves.",
+    "reuse": "admitting_partition at reckon/crew/landing_measure.py:779 re-implements the partition-selection capability partition_for_bound owns at :973 without extending it, so it scores at the rubric ceiling.",
+    "scope_discipline": "every changed path (reckon/crew/landing_measure.py, reckon/crew/promotion_records.py, reckon/crew/queue_landing.py, reckon/crew_run_commands.py, tests/test_a_declared_gate_duration_bounds_its_arms.py) lies inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to let a run declare how long its gate takes and floor its landing arms by it; reckon/crew_run_commands.py:4625 adds crew declare-gate --duration and reckon/crew/landing_measure.py:1342 raises measure_run's timeout floor with it.\nVERDICT done_when: tests/test_a_declared_gate_duration_bounds_its_arms.py:150-171 asserts both arms carry --time at least 4500 on a partition whose table maximum admits it, :173-190 keeps an undeclared run at the project's 600s floor, and :191-210 refuses a 20000s declaration naming 04:00:00 and long_pool; the manifest records 4 passed at head, and I reproduced 4 passed at c0e484cb in a scratch extraction.\nVERDICT write_paths: read the node's declared list; the single commit touches five paths and every one is among them.\nVERDICT manifest: read; it records the literal gate command, both gate logs, measurement_module=/tmp/mcintos-s54-qgG31V/base/reckon/crew/landing_measure.py, measurement_cwd, the negative control and status complete.\nVERDICT diff: read the single commit 398a0d09..c0e484cb commit by commit; it changes reckon/crew/landing_measure.py (+121/-5), reckon/crew/promotion_records.py (+23/-2), reckon/crew/queue_landing.py (+16/-0), reckon/crew_run_commands.py (+66/-3) and adds 218 test lines, all inside scope.\nCALL_SITES: reckon/crew/landing_measure.py:1279 measure_run, reckon/crew/promotion_records.py:1229 _measure_missing_arms, reckon/crew_run_commands.py:4640 crew_declare_gate\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1342 and :1621 floor every arm's timeout with declared_duration, and reckon/crew/queue_landing.py:1203 reads the declaration from the run's own pointer so only that run moves.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head arm's first line at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54/s54-head-gate.log:1 records revision 398a0d09 (the base) although it ran from the worktree, so the receipt names a revision it did not run at; added failures are 0, derived from 10 base ids and 4 head ids with all 4 head ids present at base.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path (reckon/crew/landing_measure.py, reckon/crew/promotion_records.py, reckon/crew/queue_landing.py, reckon/crew_run_commands.py, tests/test_a_declared_gate_duration_bounds_its_arms.py) lies inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_declared_gate_duration_bounds_its_arms.py:167 asserts each submitted --time is at least the declared 4500, and the base arm reddens it with 'assert 600.0 >= 4500.0' on --time=00:10:00, so reinstating the regression fails the guard.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/landing_measure.py:710-800 follows the module's regex-plus-helper idiom with mechanism comments and no plan or ticket labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: admitting_partition at reckon/crew/landing_measure.py:779 re-implements the partition-selection capability partition_for_bound owns at :973 without extending it, so it scores at the rubric ceiling.\nFINDING reckon/crew/landing_measure.py:779 non-blocking: admitting_partition duplicates partition_for_bound (:973) and the two can disagree: a configured partition_max_seconds below 3600 (say all_debug 1800) lets a declared 2400 be accepted, while partition_for_bound submits it to all_debug with --time=00:40:00, over that partition's maximum, so the arm is ended mid-run despite the declaration check passing.\nFINDING reckon/crew/landing_measure.py:754 non-blocking: partition_max_seconds reads a configured limit that parse_gate_duration cannot parse as unbounded, so a typo in landing.partition_max_seconds silently removes the ceiling instead of being refused.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54/s54-head-gate.log:1 non-blocking: the head gate log's revision line names 398a0d09, the base sha, because the arm ran against the worktree before its commit; a reader comparing it to the promoted head cannot tell the head arm measured the change, though my re-run at c0e484cb gives 4 passed.\n",
+  "review_run_id": "r-20261123T121232246982-review-of-delivered-work-lands-without-a-coordinator-s54-c0e484cbfb74",
+  "reviewed_base_sha": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "reviewed_head_sha": "c0e484cbfb74d0bdf005d2d276f871bdd32a761b",
+  "reviewed_run_id": "r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T12:27:14.001697+00:00",
+  "total": 93
+}

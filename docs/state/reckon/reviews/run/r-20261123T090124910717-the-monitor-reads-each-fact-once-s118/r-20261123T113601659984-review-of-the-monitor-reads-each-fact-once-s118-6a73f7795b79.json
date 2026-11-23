@@ -1,0 +1,108 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bd0d2051dbe94c9232f5e64986364fdc12a65b24",
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3311 crew_host -> session_host.run",
+    "reckon/crew/session_host.py:1723 run -> _HostReloader",
+    "reckon/crew/session_host.py:1689 supervise -> maybe_reload -> reloader.replace",
+    "reckon/crew/session_host.py:1626 supervise -> adopt_handover",
+    "reckon/crew/directory.py:587 _census_facts -> session_host.live_census",
+    "reckon/crew/lost_sessions.py:126 live_pairs -> _session_host.live_census",
+    "reckon/crew/dispatch_watch.py:1084 -> session_host.live_census"
+  ],
+  "completed_at": "",
+  "delta_base_sha": "a50cdb5d7305ea6ab2b520c0ab635fe80650b5ac",
+  "dispatched_at": "2026-11-23T11:36:17Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-23T12:02:39.307777+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261123T090124910717-the-monitor-reads-each-fact-once-s118",
+      "section": "\u00a7118"
+    },
+    "1": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-23T12:02:39.307777+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261123T090124910717-the-monitor-reads-each-fact-once-s118",
+      "section": "\u00a7118"
+    },
+    "2": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-23T12:02:39.307777+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261123T090124910717-the-monitor-reads-each-fact-once-s118",
+      "section": "\u00a7118"
+    },
+    "3": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-23T12:02:39.307777+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261123T090124910717-the-monitor-reads-each-fact-once-s118",
+      "section": "\u00a7118"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s118.html",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "the merge-head row is relabelled \"reload test and nine importing files\" but gate/repair-head.log at 3b58fd2f78 ran the reload test plus only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py (62 = 58 + 4); the nine-file set reads 60 without the reload test and 64 with it, and no nine-file log exists at that revision, so the row records an arm that was not run and the paragraph at :128 repeats it."
+    },
+    {
+      "file": "tests/test_a_session_host_reloads_onto_current_code.py",
+      "line": "417",
+      "severity": "non-blocking",
+      "text": "assert reloader.source_root == reloader._station.source_root compares two sides that move together, because __init__ assigns the left from the right (session_host.py:382), so the line holds whatever the constructor does and cannot fail on the regression it appears to guard; the delegation guard is the preceding line, which does fail in neg-refactor.log."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "378",
+      "severity": "non-blocking",
+      "text": "StationReloader is constructed with a runtime root only and reads the carried image identity and source root from os.environ, so a host run with an explicit environ (the public run(environ=...) argument) ignores it, and the new positive arm at tests/test_a_session_host_reloads_onto_current_code.py:434 passes only while RECKON_FOLLOWER_SOURCE_ROOT is absent from the real process environment."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "422",
+      "severity": "non-blocking",
+      "text": "the wrapper drives StationReloader through its private members (_reload_owed, _deferred_proof_at, _arm_deferred_proof at :432 and :438, _replace at :445) rather than through a published step, so a refactor inside the owner silently changes the host's deferral and retry schedule."
+    }
+  ],
+  "head_log_revision": "c91f8b6ba460dff3d7bec542c431554dd5388a0c",
+  "item_verdicts": {
+    "diff": "read the gained commits 5f23f54cfa (module, test and fragment), c91f8b6ba4 (three test lines), ce37b5ec49 and 6a73f7795b (fragment only) against a50cdb5d73; the refactor replaces the host's own materialise-prove-exec with a wrap over StationReloader, fixes the always-true held-read comparison, and adds four cases whose deletion is shown to redden the gate.",
+    "done_when": "tests/test_a_session_host_reloads_onto_current_code.py carries the three required cases plus five more; gate/reuse-after.log at c91f8b6ba4 reads 66 passed EXIT=0 against gate/reuse-base.log at bd0d2051db with 58 passed EXIT=0, and gate/base-new.log carries the declared 1 failed EXIT=1.",
+    "goal": "the node's goal is \u00a7118, a session host that runs the checkout's current code; reckon/crew/session_host.py:1160 maybe_reload defers on a mid-start child or unread bytes and otherwise writes the handover and replaces the image, which is the deliverable and is unchanged in intent by the answering commits.",
+    "manifest": "read; status complete, thirteen commits, changed_paths the three landed files, eleven test_logs under gate/, baseline_suite and after_suite as JSON with zero failures each. complete; it also records the three undo experiments and their result lines.",
+    "write_paths": "the source node declared the s118 fragment, a figures directory, reckon/crew/session_host.py and the test; the four commits gained since a50cdb5d73 touch exactly the fragment, the module and the test and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_session_host_reloads_onto_current_code.py:434 and :442 fail if the held read loses the import-root/watch-root comparison, :505 fails if the mid-start guard is removed, and :553 fails if the pid start time is not compared, each shown red in neg-refactor.log, neg-mid-start.log and neg-pid-start.log.",
+    "evidence": "reuse-after.log at c91f8b6ba4 reads \"66 passed\" EXIT=0 against reuse-base.log at bd0d2051db with \"58 passed\" EXIT=0 (zero added failures), and the three undo logs each read EXIT=1, but the landing fragment relabels the merge-head arm at 3b58fd2f78 as nine importing files when repair-head.log ran the reload test plus two importing files.",
+    "fit": "the module keeps the surrounding dataclass-and-docstring idiom and names by mechanism, but reckon/crew/session_host.py:422 and :438 subject StationReloader to a wrapper that calls its private _reload_owed, _deferred_proof_at, _arm_deferred_proof and _replace.",
+    "goal_fidelity": "reckon/crew/session_host.py:390 decides the held read from the import root against the watched root, :422 delegates the due test to the station, and :445 delegates a commit's replacement, so the host still re-execs in place at an idle tick (:1689 calls maybe_reload when the buffer is empty) with the section's deferral rules, while carrying its identity from its own tree after a reload.",
+    "reuse": "reckon/crew/session_host.py:340 wraps reckon/crew/station.py:928 StationReloader instead of restating the carry-defer-materialise-prove-exec sequence, and only the content-stamp path at :441 stays local because the station refuses an identity that is not a commit.",
+    "scope_discipline": "the four commits gained since the prior reviewed head a50cdb5d73 touch only the s118 evidence fragment, tests/test_a_session_host_reloads_onto_current_code.py and reckon/crew/session_host.py, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \u00a7118, a session host that runs the checkout's current code; reckon/crew/session_host.py:1160 maybe_reload defers on a mid-start child or unread bytes and otherwise hands over and replaces the image, and the answering commits keep that deliverable while shortening it.\nVERDICT done_when: tests/test_a_session_host_reloads_onto_current_code.py carries the three required cases plus five more; gate/reuse-after.log at c91f8b6ba4 reads \"66 passed\" EXIT=0 against gate/reuse-base.log at bd0d2051db with \"58 passed\" EXIT=0, and gate/base-new.log carries the declared \"1 failed\" EXIT=1.\nVERDICT write_paths: the node declared the s118 fragment, a figures directory, reckon/crew/session_host.py and the test; the four gained commits touch exactly the fragment, the module and the test.\nVERDICT manifest: read; status complete, baseline_suite and after_suite carry zero failures at bd0d2051db and c91f8b6ba4, and eleven logs are named under gate/.\nVERDICT diff: read 5f23f54cfa, c91f8b6ba4, ce37b5ec49 and 6a73f7795b against a50cdb5d73; the host's reloader now wraps StationReloader, the always-true held read is replaced by an import-root/watch-root comparison, and four new cases pin the deferral, the pid start time, the held read and the delegation.\nCALL_SITES: reckon/crew_follow_commands.py:3311 crew_host -> session_host.run, reckon/crew/session_host.py:1723 run -> _HostReloader, reckon/crew/session_host.py:1689 supervise -> maybe_reload -> reloader.replace, reckon/crew/session_host.py:1626 supervise -> adopt_handover, reckon/crew/directory.py:587 _census_facts -> session_host.live_census, reckon/crew/lost_sessions.py:126 live_pairs -> _session_host.live_census, reckon/crew/dispatch_watch.py:1084 -> session_host.live_census\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:1160 maybe_reload defers and otherwise replaces, :390 replaces the always-true held read, and :445 delegates a commit's replacement to the station.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate/reuse-after.log reads \"66 passed\" EXIT=0 against reuse-base.log's \"58 passed\" EXIT=0 and the three undo logs read EXIT=1, but the fragment relabels the merge-head arm at 3b58fd2f78 as nine importing files when repair-head.log ran only two.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commits touch only the s118 fragment, tests/test_a_session_host_reloads_onto_current_code.py and reckon/crew/session_host.py.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_session_host_reloads_onto_current_code.py:442, :505 and :553 each redden in the matching undo log, so the held read, the mid-start deferral and the reused-pid refusal are guarded by assertions that fail when the code is reverted.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/session_host.py:422 and :438 reach into StationReloader's private _reload_owed, _deferred_proof_at, _arm_deferred_proof and _replace instead of a published step.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/session_host.py:340 wraps reckon/crew/station.py:928 StationReloader and keeps only the content-stamp path at :441 local, so the duplicate sequence the prior review found is gone.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s118.html:63 non-blocking: the merge-head row says \"nine importing files\" but repair-head.log at 3b58fd2f78 ran the reload test plus two importing files (62 = 58 + 4), and no nine-file log exists at that revision; the paragraph at :128 repeats the same claim.\nFINDING tests/test_a_session_host_reloads_onto_current_code.py:417 non-blocking: the assertion compares reloader.source_root with the same station attribute the constructor assigned it from, so the two sides move together and it cannot fail on the regression it appears to guard.\nFINDING reckon/crew/session_host.py:378 non-blocking: StationReloader is built without the host's environ and reads the carried identity and source root from os.environ, so an explicit run(environ=...) is ignored and the new positive held-read arm depends on the ambient environment being clear of RECKON_FOLLOWER_SOURCE_ROOT.\nFINDING reckon/crew/session_host.py:422 non-blocking: the wrapper drives the station through private members (_reload_owed, _deferred_proof_at, _arm_deferred_proof, _replace), so changes inside the owner silently change the host's retry schedule.",
+  "review_run_id": "r-20261123T113601659984-review-of-the-monitor-reads-each-fact-once-s118-6a73f7795b79",
+  "reviewed_base_sha": "bd0d2051dbe94c9232f5e64986364fdc12a65b24",
+  "reviewed_head_sha": "6a73f7795b79fed97746100abe52959a95578a07",
+  "reviewed_run_id": "r-20261123T090124910717-the-monitor-reads-each-fact-once-s118",
+  "reviewer_run_id": "r-20261123T113601659984-review-of-the-monitor-reads-each-fact-once-s118-6a73f7795b79",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T11:59:59.049772+00:00",
+  "total": 110
+}

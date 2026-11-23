@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "the reviewed run's own baseline_suite and after_suite records in its manifest and suite-arms.json: baseline at c11f250ad392e07055f4dbe9c53a9441804f8fa9 is 58 passed EXIT=0 with failure_ids [] and after at d8d806d262826b1d323f5acab6efa025e133e322 is 62 passed EXIT=0 with failure_ids [], so the added-failure set is empty (count 0)",
+  "base_log_revision": "c11f250ad392e07055f4dbe9c53a9441804f8fa9",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/shared.py:170",
+    "reckon/crew/obligations.py:5445",
+    "reckon/agent_context.py:533"
+  ],
+  "completed_at": "2026-11-23T11:33:43.751745+00:00",
+  "dispatched_at": "2026-11-23T11:23:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "measured by the coordinator: every test that reads AGENTS.md, SKILL.md or sprint-orchestration.md, 33 files including tests/test_skill_contracts.py, passes at head except the same two harness-home ids that fail at base (~/.cache/reckon-landing/bpq-s4-{base,head}.log)",
+      "recorded_at": "2026-11-23T11:54:06.118195+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_skills_load_full_width.py",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "the existing skill-contract assertion pins the phrase the change rewrites, but the node's recorded gate ran no existing skill contract test, so the sample the done-when names is absent rather than green"
+    },
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "119",
+      "severity": "non-blocking",
+      "text": "the printed-row enumeration omits the held state the same section introduces, so a coordinator reading only the skill's list will not recognise a plan-review-owed row"
+    }
+  ],
+  "head_log_revision": "d8d806d262826b1d323f5acab6efa025e133e322",
+  "item_verdicts": {
+    "diff": "read commit by commit; three guidance files, one test and one evidence fragment, no production module",
+    "done_when": "the ordering and retired-wording clauses are measured; the existing-contract-tests clause is not",
+    "goal": "the reviewed head names the plan-width dispatch at line 110, ahead of the first review command at 147",
+    "manifest": "read; four commits, gate 62 passed, two zero-failure suite arms, negative control 4 failed EXIT=1",
+    "write_paths": "every changed path is inside the seven declared paths"
+  },
+  "justifications": {
+    "durability": "tests/test_the_build_skill_queues_the_whole_plan_first.py:49 compares offsets within repository text, and the logged negative control reddens all four at the reviewed base with EXIT=1.",
+    "evidence": "the scoped gate log records 62 passed EXIT=0 at 9cf89ae72f, but its command runs no existing skill contract test, so the done-when's clause that they pass is unmeasured.",
+    "fit": "skills/reckon-build/SKILL.md:119 omits the held row state that the same section introduces.",
+    "goal_fidelity": "the new Queue the whole plan section at skills/reckon-build/SKILL.md:98 precedes Answer reviews as they land at :137, with the plan-width dispatch at :110 before the first review command at :147.",
+    "reuse": "the test reuses tests/test_skill_contracts.py:normalized and the plan-review-owed hold already exists at reckon/crew/admission/shared.py:170.",
+    "scope_discipline": "git diff base..head touches only the declared guidance, test and evidence paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the build skill and guidance carry a loop that queues the whole plan before any review is composed or answered, and skills/reckon-build/SKILL.md at the reviewed head names the plan-width dispatch at line 110, ahead of the first review command at line 147, with the queue section (line 98) before the review section (line 137).\nVERDICT done_when: the done_when names the ordering test, the retired-wording test and a logged base-revision negative control; the manifest records a scoped gate of 62 passed EXIT=0 and a negative control at c11f250 with 4 failed EXIT=1, but its gate command ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than any existing skill contract test, so one clause of the measure is unmeasured.\nVERDICT write_paths: the manifest declares seven paths (three guidance files, the new test, two evidence fragments and a figure directory); git diff c11f250ad392..c89c874945 changes exactly the five guidance/test/evidence files and I had the declared set checked for the figure directory, and every changed path is inside the declared set.\nVERDICT manifest: read; it names four commits (9cf89ae72f, d8d806d262, e625a82d18, c89c874945), states the scoped gate command and 62 passed, records the baseline and after suite arms as zero-failure JSON at c11f250 and d8d806d262, and names the negative control log with 4 failed EXIT=1.\nVERDICT diff: read commit by commit against c11f250ad392; 9cf89ae72f adds the queue-first loop, retitles the orchestration reference, updates AGENTS.md, adds the test and the landing fragment, then d8d806d262, e625a82d18 and c89c874945 revise only the fragment's revision and summary facts, and no production module is touched by any of the four.\nCALL_SITES: reckon/crew/admission/shared.py:170, reckon/crew/obligations.py:5445, reckon/agent_context.py:533\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the diff's new \"## Queue the whole plan\" section (skills/reckon-build/SKILL.md:98) precedes \"## Answer reviews as they land\" (:137) with the plan-width dispatch at :110 before the first review command at :147, and the retired \"once an owned plan's review round is answered\" rule is gone from all three files.\nSCORE evidence: 14\nJUSTIFICATION evidence: the done_when's ordering and retired-wording clauses are measured by a real gate (scoped gate 62 passed EXIT=0 at 9cf89ae72f, negative control 4 failed EXIT=1 at c11f250), but the gate named in the manifest's tests line runs no existing skill contract test, so its \"the skill's existing contract tests pass\" clause is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c11f250ad392..c89c874945 touches only AGENTS.md, skills/reckon-build/SKILL.md, skills/reckon-build/references/sprint-orchestration.md, the new test and the landing fragment, all inside the declared write paths, with no plan, index or sprint state written.\nSCORE durability: 19\nJUSTIFICATION durability: each added assertion in tests/test_the_build_skill_queues_the_whole_plan_first.py compares offsets within repository text (for example :49 asserts loop.index(PLAN_WIDTH) < loop.index(REVIEW_COMMAND)), not a value the test passed in, and the logged negative control reddens all four against the base revision's skill with EXIT=1.\nSCORE fit: 16\nJUSTIFICATION fit: the new test reuses tests/test_skill_contracts.py:normalized and the skill keeps its existing section idiom, but skills/reckon-build/SKILL.md:119 enumerates the printed row states as \"queued, awaiting-upstream, already queued, or refused\" and omits the \"held\" state the same section introduces.\nSCORE reuse: 20\nJUSTIFICATION reuse: the test extends the owner of the repo's skill-contract check (tests/test_skill_contracts.py) rather than cloning it, and the documented plan-review-owed hold already exists at reckon/crew/admission/shared.py:170 rather than being reimplemented here.\nFINDING tests/test_skills_load_full_width.py:23 non-blocking: this existing contract assertion pins the phrase the change rewrites, and the node's recorded gate ran none of the skill contract tests, so the sample is absent rather than green.\nFINDING skills/reckon-build/SKILL.md:119 non-blocking: the row enumeration omits \"held\" although the new queue section makes a plan-review-owed section report as held; the reference added the state and the skill did not, so a coordinator reading only the skill's list will not recognise a held row.",
+  "review_run_id": "r-20261123T112300448863-review-of-bpq-the-build-skill-queues-the-whole-plan-first-c89c874945e9",
+  "reviewed_base_sha": "c11f250ad392e07055f4dbe9c53a9441804f8fa9",
+  "reviewed_head_sha": "c89c874945e94b5a03e5a0227dd40eae49c4f287",
+  "reviewed_run_id": "r-20261121T220359027992-bpq-the-build-skill-queues-the-whole-plan-first",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T11:33:43.751745+00:00",
+  "total": 108
+}

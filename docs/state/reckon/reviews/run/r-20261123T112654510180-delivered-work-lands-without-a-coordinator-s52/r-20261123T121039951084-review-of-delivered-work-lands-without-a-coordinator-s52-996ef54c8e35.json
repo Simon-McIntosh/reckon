@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "call_sites": [
+    "reckon/crew_run_commands.py:4691 crew.command(name=\"record-merge\")",
+    "reckon/crew_run_commands.py:4733 crew_record_merge",
+    "reckon/crew/promotion.py:1046 complete",
+    "reckon/crew/promotion.py:1099 _read_pointer_or_rebuild call",
+    "reckon/crew/promotion_records.py:108 _rebuild_record_from_run_directory",
+    "reckon/crew/promotion_records.py:1647 _evaluate_suite_delta -> record[\"recorded_merge\"] at :1675"
+  ],
+  "completed_at": "",
+  "delta_base_sha": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "dispatched_at": "2026-11-23T12:11:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_merged_run_is_recorded_from_its_run_directory.py",
+      "id": "s52f1",
+      "line": "216",
+      "severity": "non-blocking",
+      "text": "assert payload[\"recorded_merge\"] == merge_sha compares against the value the test itself passed as --merge, and crew_run_commands.py:4828 prints that value back verbatim, so the line holds whatever the promotion actually recorded; the independent guards are :220-:225."
+    },
+    {
+      "file": "tests/test_a_merged_run_is_recorded_from_its_run_directory.py",
+      "id": "s52f2",
+      "line": "225",
+      "severity": "non-blocking",
+      "text": "no assertion checks that recording a pointerless run creates no live pointer, although the evidence fragment line 17 states a live pointer is never created for a pointerless run; the property is documented but unguarded."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s52.html",
+      "id": "s52f3",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "the importer arm is reported as the no-added-failure evidence, but importer-head.log and importer-base.log record no scheduler submission, while the section's done_when names an all_debug base arm."
+    }
+  ],
+  "head_log_revision": "4a96abb312b7d38c19b7a9fc15bea13c7ebc35e4",
+  "item_verdicts": {
+    "call_sites": "the production entry is reckon/crew_run_commands.py:4733 crew_record_merge, which reaches complete() and the recorded_merge consumer in promotion_records.py:1675; no test file was counted as a call site.",
+    "diff": "read all three commits against 398a0d09; 7401bf5b85 is the source change, 4a96abb312 adds the evidence fragment, 996ef54c8e quotes the gate figures; nothing outside the declared scope.",
+    "done_when": "the done_when names tests/test_a_merged_run_is_recorded_from_its_run_directory.py; the manifest records its head run (3 passed) and base run (3 failed, \"no live run\"), and the three required cases are present at :191, :228 and :250.",
+    "goal": "the node goal is to record a run whose live pointer is gone from its surviving run directory (ledger row naming the merge, waiters released) and to refuse a non-carrying merge and an already-recorded run; reckon/crew_run_commands.py:4740-4840 does exactly that.",
+    "manifest": "read; status complete, three commits, changed_paths the five landed files, tests the literal pytest command, and four gate logs under the run directory with revision, tree, module path, cwd and a closing EXIT=.",
+    "write_paths": "the source node declared six paths (the s52 evidence fragment, a figures dir, promotion.py, promotion_records.py, crew_run_commands.py, the new test); the five-path diff is inside them and the figures dir is simply unused."
+  },
+  "justifications": {
+    "durability": "base-arm.log reddens all three cases with \"no live run\" while the head passes, and tests/test_a_merged_run_is_recorded_from_its_run_directory.py:224 asserts the release names the section recovered from the fixture prompt rather than a caller value, so the recovery path is guarded.",
+    "evidence": "head-arm.log reads \"3 passed in 5.73s\" EXIT=0 at 4a96abb312 and base-arm.log reads \"3 failed in 1.08s\" EXIT=1, but the importer pair (importer-head.log / importer-base.log, 22 passed each) runs in the worktree and a scratch tree with no scheduler evidence of the all_debug partition the done_when names.",
+    "fit": "reckon/crew_run_commands.py:4763 imports the private _read_pointer_or_rebuild exactly as promotion.py:4319 already does, and reckon/crew/promotion_records.py:165 parses the prompt PLAN header emitted verbatim at reckon/crew/prompts.py:914 with no shared parser.",
+    "goal_fidelity": "reckon/crew_run_commands.py:4763 reads the run through _read_pointer_or_rebuild and :4828 passes the verified merge into complete(recorded_merge=...), so a pointerless run gets a ledger row naming the merge and its section's waiters (crew_run_commands.py:4820-4828).",
+    "reuse": "the change reuses promotion_records.py:152 _read_pointer_or_rebuild and promotion_records.py:1675's recorded_merge fact rather than adding a second reader; _prompt_identity at promotion_records.py:165 is new but no owner of prompt-header parsing exists (the only other reference is the emitter at prompts.py:914).",
+    "scope_discipline": "every path in the diff (reckon/crew/promotion.py, reckon/crew/promotion_records.py, reckon/crew_run_commands.py, the new test, the s52 evidence fragment) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to record a run whose live pointer is gone from its surviving run directory (ledger row naming the merge, waiters released) and to refuse a non-carrying merge and an already-recorded run; reckon/crew_run_commands.py:4740-4840 does exactly that.\nVERDICT done_when: the done_when names tests/test_a_merged_run_is_recorded_from_its_run_directory.py; the manifest records its head run (3 passed) and base run (3 failed, \"no live run\"), and the three required cases are present at :191, :228 and :250.\nVERDICT write_paths: the source node declared six paths (the s52 evidence fragment, a figures dir, promotion.py, promotion_records.py, crew_run_commands.py, the new test); the five-path diff is inside them and the figures dir is simply unused.\nVERDICT manifest: read; status complete, three commits, changed_paths the five landed files, tests the literal pytest command, and four gate logs under the run directory with revision, tree, module path, cwd and a closing EXIT=.\nVERDICT diff: read all three commits against 398a0d09; 7401bf5b85 is the source change, 4a96abb312 adds the evidence fragment, 996ef54c8e quotes the gate figures; nothing outside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:4691 crew.command(name=\"record-merge\"), reckon/crew/promotion.py:1046 complete (recorded_merge at :1100), reckon/crew/promotion.py:1099 _read_pointer_or_rebuild call, reckon/crew/promotion_records.py:108 _rebuild_record_from_run_directory, reckon/crew/promotion_records.py:1647 _evaluate_suite_delta reads record[\"recorded_merge\"] at :1675\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:4763 reads the run through _read_pointer_or_rebuild and :4828 passes the verified merge into complete(recorded_merge=...), so a pointerless run gets a ledger row naming the merge and its section's waiters (crew_run_commands.py:4820-4828).\nSCORE evidence: 17\nJUSTIFICATION evidence: head-arm.log reads \"3 passed in 5.73s\" EXIT=0 at 4a96abb312 and base-arm.log reads \"3 failed in 1.08s\" EXIT=1, but the importer pair (importer-head.log / importer-base.log, 22 passed each) runs in the worktree and a scratch tree with no scheduler evidence of the all_debug partition the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/promotion.py, reckon/crew/promotion_records.py, reckon/crew_run_commands.py, the new test, the s52 evidence fragment) is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: base-arm.log reddens all three cases with \"no live run\" while the head passes, and tests/test_a_merged_run_is_recorded_from_its_run_directory.py:224 asserts the release names the section recovered from the fixture prompt rather than a caller value, so the recovery path is guarded.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew_run_commands.py:4763 imports the private _read_pointer_or_rebuild exactly as promotion.py:4319 already does, and reckon/crew/promotion_records.py:165 parses the prompt PLAN header emitted verbatim at reckon/crew/prompts.py:914 with no shared parser.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses promotion_records.py:152 _read_pointer_or_rebuild and accounts.py:1675's recorded_merge fact rather than adding a second reader; _prompt_identity at promotion_records.py:165 is new but no owner of prompt-header parsing exists (the only other reference is the emitter at prompts.py:914).\nFINDING tests/test_a_merged_run_is_recorded_from_its_run_directory.py:216 non-blocking: assert payload[\"recorded_merge\"] == merge_sha compares against the value the test itself passed as --merge, and crew_run_commands.py:4828 prints that value back verbatim, so the line holds whatever the promotion actually recorded; the independent guards are :220-:225.\nFINDING tests/test_a_merged_run_is_recorded_from_its_run_directory.py:225 non-blocking: no assertion checks that recording a pointerless run creates no live pointer, although the evidence fragment (line 17) states \"a live pointer is never created for a pointerless run\"; the property is documented but unguarded.\nFINDING docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s52.html:23 non-blocking: the importer arm is reported as the no-added-failure evidence, but importer-head.log and importer-base.log record no scheduler submission, while the section's done_when names an all_debug base arm.\nVERDICT call_sites: the production entry is reckon/crew_run_commands.py:4733 crew_record_merge, which reaches complete() and the recorded_merge consumer in promotion_records.py:1675; no test file was counted as a call site.\n",
+  "review_run_id": "r-20261123T121039951084-review-of-delivered-work-lands-without-a-coordinator-s52-996ef54c8e35",
+  "reviewed_base_sha": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "reviewed_head_sha": "996ef54c8e357432e8d6e8663ae83b5b13a4324e",
+  "reviewed_run_id": "r-20261123T112654510180-delivered-work-lands-without-a-coordinator-s52",
+  "reviewer_run_id": "r-20261123T121039951084-review-of-delivered-work-lands-without-a-coordinator-s52-996ef54c8e35",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T12:18:14.820988+00:00",
+  "total": 110
+}

@@ -1191,6 +1191,19 @@ def _measure_delivery(
         else _measure_timeout(pointer)
     )
     logs = runs.run_dir(run_id) / "landing-measure"
+    # A run's own gate declaration raises this run's floor and may name the
+    # partition its arms are compared on; every other run keeps the project's
+    # bound, because the declaration lives on this run's pointer and nowhere
+    # else.
+    from reckon.crew.promotion_records import (
+        declared_gate_seconds,
+        gate_declaration,
+    )
+
+    declaration = gate_declaration(pointer)
+    declared_duration = declared_gate_seconds(pointer)
+    declared_partition = declaration.get("partition") or ""
+    declared_long_partition = declaration.get("long_partition") or ""
     if request is not None:
         logs = Path(str(request["logs_dir"]))
     elif promoted:
@@ -1287,6 +1300,9 @@ def _measure_delivery(
                     config=config,
                     population_files=population_files,
                     repo=repo,
+                    declared_duration=declared_duration,
+                    declared_partition=declared_partition,
+                    declared_long_partition=declared_long_partition,
                 )
                 measured = replace(
                     measured,

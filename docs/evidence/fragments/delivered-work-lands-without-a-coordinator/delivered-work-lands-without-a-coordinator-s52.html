@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A merged run is recorded from its run directory when its pointer is gone</title>
+</head>
+<body>
+  <main class="evidence-fragment">
+    <h2 id="delivered-work-lands-without-a-coordinator-s52--finding">A merged run is recorded from its run directory when its pointer is gone</h2>
+    <p>A coordinator can merge a run's reviewed head by hand: the merge measures the change, stores the review and releases the worktree. The run's live pointer may then be removed before any promotion or discard records it, and the run directory is all that survives — its dispatch prompt, supervisor record and durable manifest.</p>
+    <p><code>crew record-merge</code> already knew how to record a hand merge without measuring the suite again, but it read the live pointer first and refused a pointerless run with <code>no live run</code>. The landed work was left with no ledger row, no released waiters, and a run directory nobody could promote from.</p>
+    <p>Reproduction: a run whose worktree has been released, whose pointer has been removed, and whose head the primary branch carries through a merge. On the base revision the command refuses it with <code>Error: no live run 'r-…-a-merged-run' (looked in …/crew/live/…)</code>, and the ledger holds no row for it.</p>
+    <h3 id="delivered-work-lands-without-a-coordinator-s52--change">What changed</h3>
+    <ul>
+      <li>The command reads the run through the pointer-or-rebuild reader the promotion path already used: a surviving pointer is read as before, and an absent one is rebuilt from the run directory.</li>
+      <li>The rebuild recovers the plan section the run delivered from the surviving dispatch prompt's <code>PLAN</code> line, so the landing writes the section's comment and releases the waiters queued behind it. A brief-only dispatch carries no plan pointer and yields no section rather than a guessed one.</li>
+      <li>The verified hand merge is passed into the promotion as the run's recorded merge, so no suite pair is measured over a change the primary branch already carries. A run whose pointer is live is still mutated as before, and a live pointer is never created for a pointerless run.</li>
+      <li>A run the ledger already holds is refused naming the project ledger; the row the ledger holds already names what the landing recorded.</li>
+    </ul>
+    <h3 id="delivered-work-lands-without-a-coordinator-s52--evidence">Evidence</h3>
+    <p>Three cases pass at the head. A pointerless run with a released worktree is recorded with a row naming the merge, no suite delta, and the section's waiters released — the release names the plan section recovered from the fixture's prompt, not a section passed in by the caller. A merge that does not carry the recorded head is refused naming both commits and writes no row. A run the ledger already holds is refused and keeps one row.</p>
+    <p>Negative control: on the base revision the first case fails with <code>no live run</code>, and the other two fail behind the same refusal. Base and head gate logs sit under the run directory; each opens with its revision, tree, resolved working directory, the module under test as imported, and the literal command, and closes with a bare <code>EXIT=</code> line.</p>
+    <p>Results as recorded, quoted from the gate logs: the base arm at revision 398a0d09708d reports <code>3 failed in 1.08s</code> (exit 1); the head arm at revision 4a96abb312b7 reports <code>3 passed in 5.73s</code> (exit 0). The importer arm — the hand-merge, discarded-run, plan-review, withdrawn-run, reclaimed-head and blank-worktree suites — adds no failure: <code>22 passed in 6.52s</code> (exit 0) at the base revision and <code>22 passed in 12.75s</code> (exit 0) at the head revision.</p>
+  </main>
+</body>
+</html>

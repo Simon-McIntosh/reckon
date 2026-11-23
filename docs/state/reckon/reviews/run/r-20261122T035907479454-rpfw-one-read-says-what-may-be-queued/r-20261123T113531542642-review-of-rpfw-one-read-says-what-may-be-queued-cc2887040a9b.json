@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1225",
+    "reckon/crew/dispatch_batch.py:1510",
+    "reckon/crew/dispatch_batch.py:1609"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T11:35:53Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1312",
+      "severity": "non-blocking",
+      "text": "non-blocking: queue_holding_decisions re-implements the status filter that unsettled_decisions already performs at roadmap.py:1277, so the two can drift; it should call unsettled_decisions(plan, sections_map)."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "1462",
+      "severity": "non-blocking",
+      "text": "non-blocking: the coordinator branch was removed from the pre-declaration path, so a non-implementable section of another session's plan now reports its declaration instead of the coordinator sentence, a report-text change outside the goal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "three production call sites: the CLI dispatch selection at crew_dispatch_commands.py:1225, queue_plan's call into queue_batch at dispatch_batch.py:1510, and _queue_batch's report path at dispatch_batch.py:1609.",
+    "diff": "read the single commit cc2887040a against base c11f250a: dispatch_batch.py adds _QueueReads and its two entry points and wires it into queue_plan and _queue_batch; roadmap.py adds queue_holding_decisions; the test file adds five cases.",
+    "done_when": "the done_when names tests/test_one_read_says_what_may_be_queued.py with five cases; the manifest records the gate at cc2887040a with 63 passed EXIT=0 against a baseline of 58 passed EXIT=0, and the 300-plan measure prints elapsed=0.806s against the 2 s bound.",
+    "goal": "the node goal is to answer per section whether a plan's work may be queued; reckon/crew/dispatch_batch.py:1089 defines _QueueReads, whose _read at :1194 returns one entry per implementable section with may and reason, and roadmap.py:1298 adds queue_holding_decisions for the open-decision reason.",
+    "manifest": "read; status complete, commits cc2887040a, changed_paths the three landed files, tests and test_logs naming the scoped gate and both suite arms, both suites 0 failures.",
+    "write_paths": "the node declared seven paths; git diff c11f250a..cc2887040a touches only reckon/crew/dispatch_batch.py, reckon/roadmap.py and tests/test_one_read_says_what_may_be_queued.py, all declared."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.txt reddens the first case with rows of section s1 reading held instead of skipped (tests/test_one_read_says_what_may_be_queued.py:320), and the read assertions at :308-312 pin the literal review-owed text.",
+    "evidence": "the manifest's after_suite log (rev cc2887040a) states 63 passed EXIT=0 and the baseline log states 58 passed EXIT=0; tests/test_one_read_says_what_may_be_queued.py:398 records the 300-plan measure at 0.806 s against the 2 s bound at :399.",
+    "fit": "the constants and class added at reckon/crew/dispatch_batch.py:1074-1089 follow the module's screaming-constant and docstring idiom, and no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:1194-1243 answers each implementable section with a fixed reason drawn from the review gate, the decision rows, the coordinator resolution and the queue hold, which is the goal.",
+    "reuse": "the read delegates to routing.require_plan_reviewed, resolve_plan_coordinators and roadmap._decision_rows, but reckon/roadmap.py:1312 repeats the filter unsettled_decisions owns at roadmap.py:1277.",
+    "scope_discipline": "git diff --stat c11f250a..cc2887040a lists only reckon/crew/dispatch_batch.py, reckon/roadmap.py and tests/test_one_read_says_what_may_be_queued.py, each inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to answer per section whether a plan's work may be queued; reckon/crew/dispatch_batch.py:1089 defines _QueueReads, whose _read (dispatch_batch.py:1194) returns one entry per implementable section with may and reason, and roadmap.py:1298 adds queue_holding_decisions for the open-decision reason.\nVERDICT done_when: the done_when names tests/test_one_read_says_what_may_be_queued.py with five cases (review-owed per section, an open decision everywhere, another session's plan, a plan with nothing against it, and a 300-plan read under 2 s); the manifest records the gate at cc2887040a with 63 passed EXIT=0 against a baseline of 58 passed EXIT=0, and logs/tests.txt shows 5 passed; the 300-plan measure prints MEASURE: plans=300 elapsed=0.806s, under the 2 s bound.\nVERDICT write_paths: the node declared seven paths (dispatch_batch.py, dispatch_plan.py, routing.py, roadmap.py, the new test file, an evidence fragment and a figures directory); git diff c11f250a..cc2887040a touches only reckon/crew/dispatch_batch.py, reckon/roadmap.py and tests/test_one_read_says_what_may_be_queued.py, all declared.\nVERDICT manifest: read; status complete, commits cc2887040a, changed_paths the three landed files, tests and test_logs naming the scoped gate and both suite arms, baseline_suite (c11f250a, 0 failures) and after_suite (cc2887040a, 0 failures), and a negative_control_log at logs/negative-control.txt.\nVERDICT diff: read the read's single commit cc2887040a against base c11f250a: dispatch_batch.py adds _QueueReads, plan_queue_answers and project_queue_answers, wires the read into queue_plan's skip decision and into _queue_batch's reported reason/queue_answer, and removes the direct coordinator branch; roadmap.py adds queue_holding_decisions over _decision_rows; the test file adds five cases.\nCALL_SITES: reckon/crew_dispatch_commands.py:1225 (queue_plan or queue_batch selection for crew dispatch --plan/--batch), reckon/crew/dispatch_batch.py:1510 (queue_plan calls queue_batch carrying queue_answers), reckon/crew/dispatch_batch.py:1609 (_queue_batch reports the read's answer on every row)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:1194-1243 answers each implementable section with a fixed reason drawn from the review gate, the decision rows, the coordinator resolution and the queue hold, which is the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's after_suite log (rev cc2887040a) states 63 passed with EXIT=0 and the baseline log states 58 passed EXIT=0, and tests/test_one_read_says_what_may_be_queued.py:398 records the 300-plan measure at 0.806 s against the 2 s bound at :399.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat c11f250a..cc2887040a lists only reckon/crew/dispatch_batch.py, reckon/roadmap.py and tests/test_one_read_says_what_may_be_queued.py, each inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.txt reddens test_a_review_owed_holds_only_the_section_its_finding_is_anchored_on with rows[\"s1\"][\"status\"] reading held instead of skipped (tests/test_one_read_says_what_may_be_queued.py:320), and the read assertions at :308-312 pin the literal \"review owed\"; the whole-plan assertion at :319 compares the dispatch's queue_answer to the read's own output, so a drift inside _QueueReads moves both sides together.\nSCORE fit: 19\nJUSTIFICATION fit: the constants and class added at reckon/crew/dispatch_batch.py:1074-1089 follow the module's screaming-constant and docstring idiom, and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: the read delegates to routing.require_plan_reviewed, resolve_plan_coordinators and roadmap._decision_rows rather than re-deriving them, but reckon/roadmap.py:1312 repeats the open/gated filter that unsettled_decisions (roadmap.py:1277) already owns instead of calling it.\nFINDING reckon/roadmap.py:1312 non-blocking: queue_holding_decisions re-implements the status-in-open-or-gated filter that unsettled_decisions already performs at roadmap.py:1277, so the two can drift; it should call unsettled_decisions(plan, sections_map).\nFINDING reckon/crew/dispatch_batch.py:1462 non-blocking: the coordinator branch was removed from the pre-declaration path, so a non-implementable section of another session's plan now reports its declaration instead of the coordinator sentence, a report-text change outside the goal.",
+  "review_run_id": "r-20261123T113531542642-review-of-rpfw-one-read-says-what-may-be-queued-cc2887040a9b",
+  "reviewed_base_sha": "c11f250ad392e07055f4dbe9c53a9441804f8fa9",
+  "reviewed_head_sha": "cc2887040a9b6447343f0ddf9679efa86c96d076",
+  "reviewed_run_id": "r-20261122T035907479454-rpfw-one-read-says-what-may-be-queued",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T11:57:21.618280+00:00",
+  "total": 110
+}

@@ -20,7 +20,7 @@ allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon__read_plan mcp__re
 
 # reckon-build — the coordinator's loop
 
-You coordinate; you do not implement. This core is the six-step loop, the
+You coordinate; you do not implement. This core is the queue-first loop, the
 refusals the tool raises, and the three fences. The former skill body is kept
 whole at [references/coordinator-reference.md](references/coordinator-reference.md)
 for the detailed mechanics.
@@ -71,7 +71,7 @@ Detail: `crew(project, view="live")`, `crew(project, view="scopes")`,
 On `live`, `phase` keeps pointers in one phase and `mine` keeps only the rows
 the named `session` owns — the two filters `reckon crew view live` carries.
 
-The loop has six steps, in order.
+The loop runs in this order.
 
 ## Read
 
@@ -95,12 +95,53 @@ field to match the audit, because omitting it means the remainder is unknown,
 never zero. Audit plan currency against the code before cutting nodes. Read
 `view="summary"` before `view="raw"`; `raw` is for editing.
 
-## Review the design
+## Queue the whole plan
+
+Queue the whole plan first — before any review is composed or answered — then
+answer reviews as they land, then steer the queue. Queue every reviewed plan you
+are orchestrating at its full width, in one beat. Queue only the plans or
+sprints you own: those the lead assigned you or you authored and are building.
+Never queue another session's plan, an unowned or superseded plan, or a legacy
+sprint you were not asked to run; name it to the lead instead. With the
+whole-plan call, queue all of them in one beat, naming no lane so the picker
+routes each request:
+
+```bash
+reckon crew dispatch --project <project> --plan <slug> --session <session>
+```
+
+With no `--section`, that call queues every implementable section of the plan,
+each with the done-when, write paths and waits its section declares. It is the
+default form; do not size sections into nodes by hand or write a batch file to
+queue a plan. A section that already has an implement run for the same plan
+and section, live or landed, is skipped and named with that run, so a repeat
+never duplicates work; add `--dry-run` to read every row first without storing
+anything. The call prints one row per section: queued, awaiting-upstream,
+already queued, held or refused with its reason, and a refused section does not
+stop the rest. Repair the plan text a refusal names and run the same call again;
+sections already queued are not duplicated. A section the coordinator knows to
+be wrong is queued and held with `crew queue hold` and a reason, never left out.
+Reach for `reckon crew dispatch --batch <file>` only to supply a field a section
+does not carry (a node split, a time budget, a comment), one entry per such node,
+with every omitted field taken from the section. Never write one call per
+section. The set may include sections whose upstream has not landed. Do not
+ration (lead directive 2026-11-14): a deep queue keeps the lane full overnight
+and after coordinators stop, and the router holds work past its gate width off
+the cards. The DAG is the gate: a declared section wait parks its node
+`awaiting-upstream` until the upstream has passed its review and gate and
+landed, with no further coordinator dispatch, so nothing builds on work that has
+not passed. Bring urgent work to the top with
+`reckon crew queue reprioritise`, and steer the queue as earlier results come
+back. The queue orders only waits declared in `plan-section-depends-on`.
+
+## Answer reviews as they land
 
 A plan owes one design review — the prior-art and depth search of the codebase
-for machinery it could reuse — before its first implementation node, and the
-dispatch gate refuses an implementation node until one exists, at any version,
-with every finding answered. Compose it once per plan:
+for machinery it could reuse — before its first implementation node's work
+begins, and a dispatch whose plan lacks one queues that node held with the
+`plan-review-owed` reason until a stored review, at any version, has every
+finding answered. The review gate's rule is unchanged; the hold now sits in the
+queue rather than refusing at dispatch. Compose it once per plan:
 
 ```bash
 reckon crew review --project <project> --plan <slug> --rubric design --session <session>
@@ -119,10 +160,11 @@ threshold. A refusal names the exact command it is waiting for.
 **A coordinator does not compose that content review, and does not waive the
 gate.** When one is owed, hand the plan back to its writer, who holds the
 context to fix what a finding names; where the writer is unreachable, let the
-producer's backstop compose it. Dispatch waits for the answer — a section
-dispatched over an unanswered review is a gate bypassed, not a wave started.
+producer's backstop compose it. The sections stay queued and held meanwhile —
+an unanswered review holds a section, it does not hold the queue back — and the
+admission pass releases each one as soon as the review is stored.
 
-Answer the design review's findings before dispatching, acted on or declined
+Answer the design review's findings as they land, acted on or declined
 with a reason — an acted answer says what changed, so the next reviewer reads
 it rather than re-deriving the fix from the diff:
 `reckon crew review --project <project> --plan <slug> --answer <finding> --acted --note "<what changed>"`,
@@ -130,8 +172,9 @@ or `--declined "<reason>"` in place of `--acted --note "<what changed>"`.
 **Answer rather than edit.**
 Edit the plan only for findings about the sections you are about to build;
 answer a finding an existing section already meets `--acted`, naming it, and
-one on a landed section `--declined` with the honest reason; then dispatch at
-once. A landed section keeps the coverage it had, so land a covered wave before
+one on a landed section `--declined` with the honest reason; the held requests
+release as their review is stored, with no re-dispatch. A landed section keeps
+the coverage it had, so land a covered wave before
 the next review round rather than interleaving landings and reviews.
 
 The plan is the passing surface: work that changes a plan's product carries its
@@ -160,39 +203,8 @@ That reuse map stays in the brief. The plan states the endpoint and names no
 module, function or file to extend, so a plan that does is a review finding
 rather than something to implement.
 
-**Queue every reviewed plan you are orchestrating at its full width, in one
-beat.** Queue only the plans or sprints you own: those the lead assigned you or
-you authored and are building. Never queue another session's plan, an unowned
-or superseded plan, or a legacy sprint you were not asked to run; name it to
-the lead instead. Once an owned plan's review round is answered, queue
-all of them in one beat with the whole-plan call, naming no lane so the picker
-routes each request:
-
-```bash
-reckon crew dispatch --project <project> --plan <slug> --session <session>
-```
-
-With no `--section`, that call queues every implementable section of the plan,
-each with the done-when, write paths and waits its section declares. It is the
-default form; do not size sections into nodes by hand or write a batch file to
-queue a plan. A section that already has an implement run for the same plan
-and section, live or landed, is skipped and named with that run, so a repeat
-never duplicates work; add `--dry-run` to read every row first without storing
-anything. The call prints one row per section: queued, awaiting-upstream,
-already queued, or refused with its reason, and a refused section does not stop
-the rest. Repair the plan text a refusal names and run the same call again;
-sections already queued are not duplicated. Reach for
-`reckon crew dispatch --batch <file>` only to supply a field a section does not
-carry (a node split, a time budget, a comment), one entry per such node, with
-every omitted field taken from the section. Never write one call per section. The set may include sections whose upstream has not
-landed. Do not ration (lead directive 2026-11-14): a deep queue keeps the lane
-full overnight and after coordinators stop, and the router holds work past its
-gate width off the cards. The DAG is the gate: a declared section wait parks
-its node `awaiting-upstream` until the upstream has passed its review and gate
-and landed, with no further coordinator dispatch, so nothing builds on work
-that has not passed. Bring urgent work to the top with
-`reckon crew queue reprioritise`, and steer the queue as earlier results come back. The queue orders only waits declared in `plan-section-depends-on`.
-Read where the waiting work stands with `reckon crew view queue --project <project>`
+**Steer the queue rather than feeding it** once it is queued. Read where the
+waiting work stands with `reckon crew view queue --project <project>`
 (the same document as `crew(view="queue")`): every queued and awaiting-upstream
 request in the order admission launches by, with its place, its reason, its wait
 and the hold that stops it, beside each session's priority budget and the points
