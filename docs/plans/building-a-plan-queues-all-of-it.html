@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="building-a-plan-queues-all-of-it">
   <meta name="plan-title" content="Building a plan queues all of it">
   <meta name="plan-summary" content="One build call queues every implementable section of a plan, with its waits, at once; a plan whose review is owed queues held until the review lands.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="queued-work-needs-no-workaround">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;building-a-plan-queues-all-of-it#s2&quot;,&quot;building-a-plan-queues-all-of-it#s3&quot;]}">
   <title>Building a plan queues all of it | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -73,16 +73,17 @@
 <p>Negative control: the no-review call against the base revision refuses at dispatch with the review gate's refusal, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/building-a-plan-queues-all-of-it/s3.html</code>.</p>
 
     <h2 id="s4">§4 — The build skill queues the whole plan as its first act</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code>, its reference <code>skills/reckon-build/references/sprint-orchestration.md</code> (which still says to choose each section rather than load a plan wholesale) and <code>AGENTS.md</code> make the one-call full-width queue of an owned plan the first act of <code>/reckon-build &lt;slug&gt;</code>, before any review is composed or answered. Its loop reads: queue the plan, answer reviews as they land, then steer the queue with hold, edit, reprioritise and release. The skill's refusal table and the repository guidance (<code>AGENTS.md</code>) say the same. A section the coordinator knows to be wrong is queued and held with a reason, never left out.</p>
 <p><strong>Done when.</strong> The skill and guidance carry that loop. The skill's existing contract tests pass. A test reads the skill and finds the plan-width dispatch command named before any review command in the build loop, and finds no carrier of the retired rule ("choose each section", "never load a plan wholesale", or queueing only after the review round is answered) in any of the three files. Negative control: that test fails against the base revision's skill, and the failing run is logged.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-bpqa-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build building-a-plan-queues-all-of-it" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-bpqa-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build building-a-plan-queues-all-of-it" data-resolved-at="2026-11-23T17:21:56+00:00" data-resolved-by="reckon-28">
     <h4 class="r-fu-title">Priority work: build §2 and §3 on codex, then §4</h4>
     <div class="r-fu-body"><p>The lead marked this priority work on 2026-11-14 and directed the codex lane. §2 and §3 are independent; §4 waits on both.</p></div>
     <pre class="r-fu-prompt">/reckon-build building-a-plan-queues-all-of-it</pre>
+    <p class="r-fu-outcome"><p>Every section landed: section 3 (the owed-review queue change, through the coordinator merge 96b2263ef0, then the preparation-module split) and section 4 (the build skill queues a whole plan in one beat, 54ee16e656). No followup remains; the chain ends here.</p></p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -120,7 +121,7 @@
     <div class="r-comment-body"><p>The review of r-20261121T220359027992-bpq-the-build-skill-queues-the-whole-plan-first at c89c874945 is stored parsed: goal_fidelity 19, evidence 14, scope_discipline 20, durability 19, fit 16, reuse 20, added_failure_count 0, two non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261121T220359027992-bpq-the-build-skill-queues-the-whole-plan-first" data-who="reckon-build" data-when="2026-11-23T11:22:45.791Z">
-    <div class="r-comment-body"><p>The build skill, its sprint-orchestration reference and AGENTS.md now queue the whole plan as the first act, naming the one-call plan-width dispatch before every review command and holding each section in the queue while its review is answered; a new test measures that order and the absence of the retired rule, 4 passed on the head skill and 4 failed against the base revision&#x27;s skill as its negative control.</p></div>
+    <div class="r-comment-body"><p>The build skill, its sprint-orchestration reference and AGENTS.md now queue the whole plan as the first act, naming the one-call plan-width dispatch before every review command and holding each section in the queue while its review is answered; a new test measures that order and the absence of the retired rule, 4 passed on the head skill and 4 failed against the base revision's skill as its negative control.</p></div>
 </div>
 </section>
 </main>
