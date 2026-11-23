@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bd0d2051dbe94c9232f5e64986364fdc12a65b24",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3311 crew_host -> session_host.run",
+    "reckon/crew/session_host.py:1634 run -> host.supervise",
+    "reckon/crew/session_host.py:1508 supervise -> adopt_handover",
+    "reckon/crew/session_host.py:1571 supervise -> maybe_reload",
+    "reckon/crew/dispatch_watch.py:850 _session_host_runs_follower (reads the census the reload writes)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T10:18:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "369",
+      "severity": "non-blocking",
+      "text": "_held_reads compares Path(os.environ.get(...)) with self.source_root, which run() derives from dict(os.environ), so the two are identical whenever run() constructs the reloader and the flag is a constant True; the named-root branch at :399 is unreachable and the comment at :364-367 says the post-reload read is answered from the tree rather than held when it is in fact held."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "1054",
+      "severity": "non-blocking",
+      "text": "the mid-start deferral is part of the plan's Deliverable but no assertion fails if _children_mid_start is deleted, because a child survives an exec and is re-adopted from the handover or the census, so the gate cannot catch a regression there."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "1013",
+      "severity": "non-blocking",
+      "text": "the pid-start-time refinement that refuses a reused pid is untested; no case exercises a mismatched pid_start, so the guard that stops the replacement supervising a stranger is exercised only on the passing path."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": "928",
+      "severity": "non-blocking",
+      "text": "StationReloader is the repository's owner of replacing a long-running crew process with a proved image from the runtime root, and the new _HostReloader duplicates that orchestration instead of extending or wrapping it."
+    }
+  ],
+  "head_log_revision": "6ea55237eefcf02b2a8f32ddf6dbce76ef38351c",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all seven commits against base bd0d2051db; 7a34af86 adds the reloader, handover and deferral rules, 4893ebbb and 6c83679e tidy it, 30eab559f keeps the handover out of the census set, 6ea55237e holds the identity read, and the two docs commits add and correct the fragment; no behaviour outside the node's goal.",
+    "done_when": "tests/test_a_session_host_reloads_onto_current_code.py carries the three required cases; the gate logs record head 4 passed EXIT=0, head-pre 60 passed EXIT=0, base-pre 60 passed EXIT=0 and base-new 1 failed EXIT=1, so the gate asserts the measure including the declared negative control.",
+    "goal": "the node's goal is section 118, a session host that runs the checkout's current code; reckon/crew/session_host.py:1060 maybe_reload compares the host's identity with the checkout's on each idle tick and os.execve's onto the current image at reckon/crew/session_host.py:422, which is the deliverable.",
+    "manifest": "read; status complete, seven commits, changed_paths the three landed files, four test_logs under gate/ with the four results, and a landing line; it records base and head pass counts as prose rather than in the baseline_suite/after_suite JSON keys.",
+    "write_paths": "the node declared the fragment, a figures directory, reckon/crew/session_host.py and the test; git diff bd0d2051db..ca1fd849c6 touches exactly the fragment, the module and the test, every one inside the fence, and creates no figures directory."
+  },
+  "justifications": {
+    "durability": "tests/test_a_session_host_reloads_onto_current_code.py:313 fails if maybe_reload is removed (reload_count stays 0), but no test fails if _children_mid_start at reckon/crew/session_host.py:1054 is deleted, so the mid-start deferral the plan names is unguarded.",
+    "evidence": "gate/base-new.log (rev bd0d2051db) reads \"1 failed in 242.67s\" EXIT=1 with the declared \"timed out ... waiting for the host to reload\" signature, and gate/head-pre.log reads \"60 passed\" EXIT=0 against base-pre's \"60 passed\" EXIT=0, though the manifest records the pair as prose rather than in the baseline_suite/after_suite keys.",
+    "fit": "the module follows the surrounding style and names by mechanism, but reckon/crew/session_host.py:369 computes _held_reads from two expressions that are identical under run(), leaving the branch at :399 unreachable and the comment at :364-367 describing the opposite branch.",
+    "goal_fidelity": "reckon/crew/session_host.py:1060-1080 defers on a mid-start child or unread buffer bytes and otherwise writes the handover and execs at reckon/crew/session_host.py:422, so the host keeps its pid, owner and descriptor as the plan states.",
+    "reuse": "reckon/crew/session_host.py:334 _HostReloader re-implements the identity/defer/materialise/prove/execve sequence that reckon/crew/station.py:928 StationReloader already owns, rather than extending or wrapping it.",
+    "scope_discipline": "git diff --stat bd0d2051db..ca1fd849c6 lists only reckon/crew/session_host.py, tests/test_a_session_host_reloads_onto_current_code.py and the fragment, all three inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is section 118, a session host that runs the checkout's current code; reckon/crew/session_host.py:1060 maybe_reload compares the host's identity with the checkout's on each idle tick and os.execve's onto the current image at reckon/crew/session_host.py:422, which is exactly the deliverable.\nVERDICT done_when: tests/test_a_session_host_reloads_onto_current_code.py carries the three required cases; the four gate logs record head 4 passed EXIT=0, head-pre 60 passed EXIT=0, base-pre 60 passed EXIT=0 and base-new 1 failed EXIT=1, so the gate asserts the done_when's measure including the declared negative control.\nVERDICT write_paths: the node declared the fragment, a figures directory, reckon/crew/session_host.py and the test; git diff bd0d2051db..ca1fd849c6 touches exactly the fragment, the module and the test, every one inside the fence, and creates no figures directory.\nVERDICT manifest: read; status complete, seven commits, changed_paths the three landed files, four test_logs under gate/ with the four results, and a landing line; it records base and head pass counts as prose rather than in the baseline_suite/after_suite JSON keys.\nVERDICT diff: read all seven commits against base bd0d2051db; 7a34af86 adds the reloader, handover and deferral rules, 4893ebbb and 6c83679e tidy it, 30eab559f keeps the handover out of the census set, 6ea55237e holds the identity read, and the two docs commits add and correct the fragment; no behaviour outside the node's goal.\nCALL_SITES: reckon/crew_follow_commands.py:3311 crew_host -> session_host.run, reckon/crew/session_host.py:1634 run -> host.supervise, reckon/crew/session_host.py:1508 supervise -> adopt_handover, reckon/crew/session_host.py:1571 supervise -> maybe_reload, reckon/crew/dispatch_watch.py:850 _session_host_runs_follower (reads the census the reload writes)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:1060-1080 defers on a mid-start child or unread buffer bytes and otherwise writes the handover and execs at reckon/crew/session_host.py:422, so the host keeps its pid, owner and descriptor as the plan states.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate/base-new.log (rev bd0d2051db) reads \"1 failed in 242.67s\" EXIT=1 with the declared timeout signature, and gate/head-pre.log reads \"60 passed\" EXIT=0 against base-pre's \"60 passed\" EXIT=0, though the manifest records the pair as prose rather than in the baseline_suite/after_suite keys.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat bd0d2051db..ca1fd849c6 lists only reckon/crew/session_host.py, tests/test_a_session_host_reloads_onto_current_code.py and the fragment, all three inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_session_host_reloads_onto_current_code.py:313 fails if maybe_reload is removed (reload_count stays 0), but no test fails if _children_mid_start at reckon/crew/session_host.py:1054 is deleted, so the mid-start deferral the plan names is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the module follows the surrounding style and names by mechanism, but reckon/crew/session_host.py:369 computes _held_reads from two expressions that are identical under run(), leaving the branch at :399 unreachable and the comment at :364-367 describing the opposite branch.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/session_host.py:334 _HostReloader re-implements the identity/defer/materialise/prove/execve sequence that reckon/crew/station.py:928 StationReloader already owns, rather than extending or wrapping it.\nFINDING reckon/crew/session_host.py:369 non-blocking: _held_reads compares Path(os.environ.get(...)) with self.source_root, which run() derives from dict(os.environ), so the two are identical whenever run() constructs the reloader and the flag is a constant True; the named-root branch at :399 is unreachable and the comment at :364-367 says the post-reload read is answered from the tree rather than held when it is in fact held.\nFINDING reckon/crew/session_host.py:1054 non-blocking: the mid-start deferral is part of the plan's Deliverable but no assertion fails if _children_mid_start is deleted, because a child survives an exec and is re-adopted from the handover or the census, so the gate cannot catch a regression there.\nFINDING reckon/crew/session_host.py:1013 non-blocking: the pid-start-time refinement that refuses a reused pid is untested; no case exercises a mismatched pid_start, so the guard that stops the replacement supervising a stranger is exercised only on the passing path.\nFINDING reckon/crew/station.py:928 non-blocking: StationReloader is the repository's owner of replacing a long-running crew process with a proved image from the runtime root, and the new _HostReloader duplicates that orchestration instead of extending or wrapping it.",
+  "review_run_id": "r-20261123T101824448721-review-of-the-monitor-reads-each-fact-once-s118-ca1fd849c618",
+  "reviewed_base_sha": "bd0d2051dbe94c9232f5e64986364fdc12a65b24",
+  "reviewed_head_sha": "ca1fd849c618e3cc54727989f7f1c9f892d0675b",
+  "reviewed_run_id": "r-20261123T090124910717-the-monitor-reads-each-fact-once-s118",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T101824448721-review-of-the-monitor-reads-each-fact-once-s118-ca1fd849c618"
+  },
+  "reviewer_run_id": "r-20261123T101824448721-review-of-the-monitor-reads-each-fact-once-s118-ca1fd849c618",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T10:30:11.781373+00:00",
+  "total": 94
+}
