@@ -4759,14 +4759,14 @@ def _held_plan_obligation(
 ) -> dict[str, Any] | None:
     """Why the pass cannot compose a held plan's review, or ``None``.
 
-    A held request means the plan owes a review the reflex is responsible for.
-    When a unit is uncovered and under its review cap. When none is, or one
-    has had the reviews its edit allowed, the reason is recorded for the
-    request's session instead.
+    A held request means the plan owes a review the reflex is responsible for,
+    so ``None`` answers that the review is composable now and the caller
+    composes it. Otherwise the answer that is returned is the reason it could
+    not be: a unit at its review cap, or the ids of the unanswered findings
+    that are the plan's outstanding review business.
 
-    The answer is the obligation's shape and not its session: the caller adds
-    the session that owns the request. ``None`` means the review is composable
-    now, so no obligation is recorded for it.
+    The answer carries no session: the caller adds the session that owns the
+    request.
     """
     _contributing, uncovered, _change = review_coverage(
         project, plan_slug, plan=path, base_dir=base_dir
