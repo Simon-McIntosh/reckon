@@ -33,7 +33,7 @@ from tests.test_an_idle_wait_queues_its_upstream import (  # noqa: F401
 SECOND_WAITER_PLAN = "plan-wait-two"
 
 
-def _queue_second_waiter(repository: Path) -> None:
+def _queue_second_waiter(root: Path) -> None:
     queue_admission.queue_requests(
         [
             TaskNode(
@@ -49,7 +49,7 @@ def _queue_second_waiter(repository: Path) -> None:
         ],
         project=PROJECT,
         session=SESSION,
-        repo_root=repository,
+        repo_root=root,
         config=_config(),
         run_ids={"second-waiter": "r-second-waiter"},
     )
