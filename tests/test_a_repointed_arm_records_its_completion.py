@@ -23,6 +23,7 @@ from click.testing import CliRunner
 from reckon import crew
 from reckon.cli import main as cli_main
 from reckon.crew import promotion_evidence, reports, runs
+from reckon.crew import review as review_module
 
 RUN_ID = "r-repointed-arm-completion"
 BASE = "0a524ce6f8b1d3a4e5f60718293a4b5c6d7e8f90"
@@ -310,3 +311,20 @@ def test_the_command_records_the_completion_from_the_shell(
     arm = _parsed(run["manifest"])["after_suite"]
     assert arm["completed"] is True
     assert sorted(arm["failure_ids"]) == sorted(ALL_IDS)
+
+
+def test_the_terminal_exit_record_has_one_reader() -> None:
+    """The observation takes the status from the module's own record pattern.
+
+    The module already owns a pattern for the capture's terminal EXIT record,
+    the one that cuts a log at its last run. A second pattern for the same
+    notation would leave two readers free to pick different lines, so the
+    observation is held to the owner: the pattern states the status it reads,
+    the observation returns that same status, and the module carries no other
+    pattern for the record.
+    """
+    match = review_module._EXIT_RECORD_LINE_RE.search("output\nEXIT=3\n")
+    assert match is not None
+    assert match.group(1) == "3"
+    assert review_module.arm_log_observation("output\nEXIT=3\n")["exit_status"] == 3
+    assert not hasattr(review_module, "TERMINAL_EXIT_RE")
