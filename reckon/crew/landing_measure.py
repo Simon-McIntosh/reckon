@@ -236,6 +236,7 @@ scratch=
 trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\\n" "$status"' EXIT
 export TMPDIR={NODE_LOCAL_TEMP_ROOT}
 scratch=$(mktemp -d "$TMPDIR/$USER-landing-job-XXXXXX")
+trap 'exit 143' TERM INT
 export TMPDIR="$scratch" RECKON_WORKER_SCRATCH_ROOT="$scratch"
 export PYTHONPATH={shlex.quote(str(source))}
 {invocation}
@@ -1061,6 +1062,9 @@ scratch=
 trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\n" "$status"' EXIT
 export TMPDIR={NODE_LOCAL_TEMP_ROOT}
 scratch=$(mktemp -d "{NODE_LOCAL_TEMP_ROOT}/$USER-landing-{scratch_id}-XXXXXX")
+# A scheduler that ends the job by signal still releases the tree: the TERM
+# handler exits, which is what runs the EXIT trap above.
+trap 'exit 143' TERM INT
 export TMPDIR="$scratch"
 mkdir "$scratch/tree"
 {git} archive {quote(revision)} | tar -x -C "$scratch/tree"
@@ -1195,6 +1199,8 @@ def measure_run(
     project: str = "",
     changed: Iterable[str] | None = None,
     config: Mapping[str, Any] | None = None,
+    population_files: Iterable[str] | None = None,
+    repo: Path | None = None,
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
@@ -1207,7 +1213,10 @@ def measure_run(
     measurement without executing a real suite. ``changed`` optionally names
     the run's own changed modules independently of the compared revisions;
     the landing caller compares current primary with a merge candidate while
-    selecting importers of the delivered change.
+    selecting importers of the delivered change. ``population_files`` names an
+    importer population a caller already read from a tree it has since
+    released, so a measurement whose arms run elsewhere need not hold a tree on
+    this node to know which files they run.
     """
     runner = run or _RUN
     if config is None:
@@ -1252,13 +1261,18 @@ def measure_run(
             head=head_sha,
             project=project,
         )
-    files = importer_population(
-        changed_paths(tree, base_sha, head_sha) if changed is None else changed, tree
+    files = (
+        tuple(str(name) for name in population_files)
+        if population_files is not None
+        else importer_population(
+            changed_paths(tree, base_sha, head_sha) if changed is None else changed,
+            tree,
+        )
     )
     if partition:
         runner = _partition_runner(
             runner,
-            repo=tree,
+            repo=repo or tree,
             base_tree=base_tree,
             base_sha=base_sha,
             head_sha=head_sha,
@@ -1267,7 +1281,10 @@ def measure_run(
             test_files=[*node_tests, *files],
         )
         runner.partitioned = True
-    _carry_missing_tests(base_tree, tree, node_tests)
+    if not partition:
+        # A partitioned arm's job carries the node's own files into the tree it
+        # builds; the base directory this node hands it is only a name.
+        _carry_missing_tests(base_tree, tree, node_tests)
     from reckon.crew.promotion_gate import _unused_log_path
 
     logs = Path(logs_dir)
@@ -1290,7 +1307,10 @@ def measure_run(
         environment,
         file_count=len(node_tests),
     )
-    _carry_missing_tests(base_tree, tree, files)
+    if not partition:
+        # A partitioned arm's job carries the node's own files into the tree it
+        # builds; the base directory this node hands it is only a name.
+        _carry_missing_tests(base_tree, tree, files)
     # The population runs the armed command extended with the importers, so an
     # importer the armed command already names is not named again: a file run
     # twice reads the same tests twice under one bound.
@@ -1789,47 +1809,38 @@ def sweep_abandoned_base_trees(root: Path | None = None) -> list[dict[str, Any]]
 
 @contextlib.contextmanager
 def base_tree_for_measure(
-    repo: Path, base_sha: str, timeout: float, *, partitioned: bool
+    repo: Path,
+    base_sha: str,
+    timeout: float,
+    *,
+    partitioned: bool,
+    name: Path | None = None,
 ) -> Iterator[Path]:
     """The base tree a measurement's base arms run against.
 
     An arm submitted to a partition builds its own tree from the revision on
     the node that runs it, and the runner tells the base arm apart from the
-    head arm by the directory it is given, so a partitioned measurement needs
-    only an empty directory to name its base. A checkout there would be a full
-    tree on the fleet node that nothing reads. An in-place measurement runs in
-    the tree, so it still gets the real checkout.
+    head arm by the directory it is given. So a partitioned measurement creates
+    nothing on the fleet node: the directory it is handed is a name, never
+    read, never created and never removed, which is what keeps a landing's arms
+    from holding node-local disk while they wait for a job elsewhere. An
+    in-place measurement runs in the tree, so it still gets the real checkout.
     """
     if not partitioned:
         with base_checkout(repo, base_sha, timeout) as tree:
             yield tree
         return
-    holder: int | None = None
-    try:
-        root = worker_scratch_root()
-        root.mkdir(parents=True, exist_ok=True)
-        sweep_abandoned_base_trees(root)
-        placeholder = Path(tempfile.mkdtemp(prefix="landing-base-ref-", dir=root))
-    except OSError as exc:
-        raise BaseCheckoutError(
-            f"could not create the base placeholder for {base_sha}: "
-            f"{type(exc).__name__}: {exc}"
-        ) from exc
-    try:
-        # An open descriptor on the placeholder itself, with no file inside it,
-        # marks the directory held for as long as the measure uses it: a
-        # concurrent pass reads it through /proc and keeps it, and the tree
-        # still reads as the empty placeholder a partitioned arm expects.
-        holder = os.open(placeholder, os.O_RDONLY)
-    except OSError:
-        holder = None
-    try:
-        yield placeholder
-    finally:
-        if holder is not None:
-            with contextlib.suppress(OSError):
-                os.close(holder)
-        shutil_rmtree(placeholder)
+    # A partitioned measure builds nothing here, but a tree an earlier landing
+    # whose process was killed left under the scratch root is reclaimed on this
+    # pass: the fact that decides it is that its process is gone, not its age.
+    root = worker_scratch_root()
+    if root.is_dir():
+        with contextlib.suppress(OSError):
+            sweep_abandoned_base_trees(root)
+    if name is not None:
+        yield Path(name)
+        return
+    yield Path(tempfile.gettempdir()) / f"landing-base-ref-{base_sha}"
 
 
 @contextlib.contextmanager

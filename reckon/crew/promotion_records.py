@@ -1234,7 +1234,14 @@ def _measure_missing_arms(
     try:
         timeout = queue_landing._measure_timeout(record)
         config = queue_landing._measure_config(record)
-        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+        partitioned = landing_measure.measures_on_partition(config)
+        with landing_measure.base_tree_for_measure(
+            repo,
+            base_sha,
+            timeout,
+            partitioned=partitioned,
+            name=run_dir(run_id) / "landing-measure" / "armed" / "base-arm",
+        ) as base_tree:
             return landing_measure.armed_observations(
                 command=command,
                 tree=tree,

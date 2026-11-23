@@ -1213,6 +1213,7 @@ def _measure_delivery(
         changed = landing_measure.delivered_paths(repo, base_sha, head)
         # Only the checkout is inside this except: an error raised by the
         # measurement itself is a different failure and is reported as one.
+        partitioned = landing_measure.measures_on_partition(config)
         with ExitStack() as stack:
             measured_head, measured_tree = head, Path(tree)
             if primary != head:
@@ -1243,7 +1244,8 @@ def _measure_delivery(
                     repo,
                     primary,
                     timeout,
-                    partitioned=landing_measure.measures_on_partition(config),
+                    partitioned=partitioned,
+                    name=Path(logs) / "base-arm",
                 )
             )
             if not promoted and _landed_elsewhere(pointer, run_id):
@@ -1257,6 +1259,19 @@ def _measure_delivery(
                     tree=measured_tree,
                     revision=measured_head,
                 )
+                population_files = (
+                    landing_measure.importer_population(changed, measured_tree)
+                    if partitioned
+                    else None
+                )
+                if partitioned:
+                    # Every arm builds its own tree on the node that runs
+                    # it, so the landing releases both checkouts before
+                    # submitting them and the arms hold no node-local disk
+                    # while they wait. An in-place measurement runs in these
+                    # trees and keeps them until its arms have read them.
+                    measured_tree = Path(logs) / "head-arm"
+                    stack.close()
                 measured = landing_measure.measure_run(
                     command=command,
                     tree=measured_tree,
@@ -1270,6 +1285,8 @@ def _measure_delivery(
                     project=project,
                     changed=changed,
                     config=config,
+                    population_files=population_files,
+                    repo=repo,
                 )
                 measured = replace(
                     measured,
@@ -1282,6 +1299,9 @@ def _measure_delivery(
                     },
                 )
             except (OSError, ValueError) as exc:
+                # A checkout that could not be built is entered above this
+                # handler, so only a measurement's own error is reported as
+                # one.
                 measured = landing_measure.Measurement(
                     command=command,
                     suite={},
