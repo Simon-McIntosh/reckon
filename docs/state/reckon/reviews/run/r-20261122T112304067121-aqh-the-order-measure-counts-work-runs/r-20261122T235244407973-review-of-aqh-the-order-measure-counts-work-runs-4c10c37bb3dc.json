@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "scripts/measure_queue_drain.py:128",
+    "reckon/crew/drain_measure.py:109"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T23:53:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/drain_measure.py",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "the UNHELD_ROLES comment (and the measure_dag_order docstring at line 153) records the incident as history -- \"Counting it was the measure's first defect: twelve of fourteen reported launches\" and \"the measure's first reading counted twelve review launches as violations\" -- rather than stating the mechanism, so the source carries changelog prose the repository's naming rules ask to state as what the code does."
+    },
+    {
+      "file": "tests/test_the_order_measure_counts_work_runs.py",
+      "line": 90,
+      "severity": "non-blocking",
+      "text": "assert row[drain_measure.WAITS_ONLY_AFTER_FIELD] is True echoes the same flag the fixture set on node_definition at line 47, so it holds for any implementation that copies the field onto the row and does not independently guard the flag's reporting; the contrast test at line 97 is what actually guards the verdict."
+    },
+    {
+      "file": "tests/test_the_order_measure_counts_work_runs.py",
+      "line": 125,
+      "severity": "non-blocking",
+      "text": "assert row[\"queued_waits\"] == [f\"{PLAN}#s4\"] compares the row's echo of the pointer's own waits list (supplied at line 117) against the value the test passed in, so it moves with the input rather than against an independent source; the violations and edited_wait_launches assertions on lines 121-123 are the anchor."
+    }
+  ],
+  "justifications": {
+    "durability": "the negative control shows the reverted module declaring DISPATCHED_WAITS_FIELD and failing measure_dag_order(..., live_pointers=...) while the head module returns 0 violations on the pointer-omits-edge case and on the flag-true case, and test_two_reads_of_one_window_return_identical_sorted_rows:180 now asserts first[\"rows\"] is non-empty before the sort equality, so the sort has a failing guard.",
+    "evidence": "scoped-gate and after_suite-1795385258087802856.log:8 read 65 passed with a closing EXIT=0, baseline_suite-1795385182493442137.log:8 reads 58 passed at the base, and negative-control-repair.log shows the reverted module failing the pointer check outright and reporting the flag row as a violation.",
+    "fit": "the module follows the surrounding helper style, but reckon/crew/drain_measure.py:57 and :153 keep incident history in a comment and docstring rather than stating the mechanism, so the fit is not complete.",
+    "goal_fidelity": "reckon/crew/drain_measure.py:286-333 reads waits_only_after from the promoted row's node_definition (written by reckon/crew/dispatching/launch.py:397-453 and reckon/crew/node.py:843) and the request's waits through section_waits_for, so an early launch's release record is real rather than invented.",
+    "reuse": "the duplicate wait normalisation is gone: reckon/crew/drain_measure.py:311 calls section_waits_for from reckon/crew/admission/wait_refs.py:52, which owns the waits record, and _node_definition reads the ledger field rather than forking reckon/crew/runs.py:343 (which hydrates a pointer's node body from a different key), so no capability is duplicated.",
+    "scope_discipline": "every path in the diff is inside the declared write set, no plan or state file is edited, and nothing outside reckon/crew/drain_measure.py and its test changed; the two declared docs paths are undelivered but are not required by the done_when."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: node.json states the goal as counting only work runs and accounting for each early launch; reckon/crew/drain_measure.py:180-190 skips role \"review\" into review_runs_not_counted, and 286-333 reads the release record from the promoted row's dispatch flag and the live pointer's waits through section_waits_for, so the counted set is work runs.\nVERDICT done_when: the done_when names tests/test_the_order_measure_counts_work_runs.py; the manifest records 58 passed at base and 65 at head.\nVERDICT write_paths: the node declared reckon/crew/drain_measure.py, the new test, and a fragment and a figure directory; the diff touches only the first two, both inside the declared set, and delivers neither docs path.\nVERDICT manifest: read; it reports status complete, 58 to 65 passed (65 in 43.66s at after_suite-1795385258087802856.log:8 with EXIT=0), the s8 answer of 1 launch checked and 6 rows reading \"the waited-on section never landed\", and a negative control that shows the reverted module failing each guard.\nVERDICT diff: read both commits 7b1f38bb5743 and 4c10c37bb3dc against base 9ed4c9ee2e01 commit by commit; the first adds the role exclusion, the second replaces the two invented field constants with the real dispatch flag on node_definition and the pointer's waits read through section_waits_for, plus row sorting and the reworked tests.\nCALL_SITES: scripts/measure_queue_drain.py:128, reckon/crew/drain_measure.py:109\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/drain_measure.py:286-333 reads waits_only_after from the promoted row's node_definition (written at reckon/crew/dispatching/launch.py:397-453 and reckon/crew/node.py:843) and the request's waits through section_waits_for, so an early launch's release record is real rather than invented.\nSCORE evidence: 16\nJUSTIFICATION evidence: after_suite-1795385258087802856.log:8 reads 65 passed with EXIT=0, baseline_suite-1795385182493442137.log:8 reads 58 passed at base, and negative-control-repair.log shows the reverted module failing the pointer check and the flag row.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write set and no plan or state file is edited, though the two declared docs paths are undelivered.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control-repair.log shows the reverted module failing measure_dag_order(..., live_pointers=...) and reporting the flag row as a violation while the head returns the opposite, and test_two_reads_of_one_window_return_identical_sorted_rows:180 asserts rows are non-empty before the sort equality.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/drain_measure.py:57 and :153 keep incident history (\"twelve of fourteen\") in a comment and docstring rather than stating the mechanism.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/drain_measure.py:311 calls section_waits_for from reckon/crew/admission/wait_refs.py:52, the owner of the waits record, so the duplicate normalisation is gone and nothing is forked.\nFINDING reckon/crew/drain_measure.py:57 non-blocking: the UNHELD_ROLES comment and the :153 docstring record the incident as history (\"the measure's first defect: twelve of fourteen\") rather than the mechanism the naming rules ask for.\nFINDING tests/test_the_order_measure_counts_work_runs.py:90 non-blocking: the WAITS_ONLY_AFTER_FIELD assertion echoes the fixture's own input flag, so it holds for any implementation that copies the field; the contrast test at line 97 is the real guard.\nFINDING tests/test_the_order_measure_counts_work_runs.py:125 non-blocking: the queued_waits assertion compares the row's echo of the pointer's waits list against the same value the test supplied, so it moves with the input.\n",
+  "review_run_id": "r-20261122T235244407973-review-of-aqh-the-order-measure-counts-work-runs-4c10c37bb3dc",
+  "reviewed_base_sha": "9ed4c9ee2e01533b4e68d56dc381075e437da704",
+  "reviewed_head_sha": "4c10c37bb3dc3f28228b003ea8c08479c86b0046",
+  "reviewed_run_id": "r-20261122T112304067121-aqh-the-order-measure-counts-work-runs",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:11:09.947859+00:00",
+  "total": 102,
+  "verdicts": {
+    "diff": "read both commits 7b1f38bb5743 and 4c10c37bb3dc against base 9ed4c9ee2e01 commit by commit; the first adds the role exclusion, the second replaces the two invented field constants with the real dispatch flag on node_definition and the pointer's waits read through section_waits_for, plus row sorting and the reworked tests.",
+    "done_when": "the done_when names tests/test_the_order_measure_counts_work_runs.py; the manifest records 58 passed at base and 65 at head.",
+    "goal": "node.json states the goal as counting only work runs and accounting for each early launch; reckon/crew/drain_measure.py:180-190 skips role \"review\" into review_runs_not_counted, and 286-333 reads the release record from the flag the promoted row carries and the wait set through section_waits_for, so the counted set is work runs and an early launch is classified by a record a dispatcher writes.",
+    "manifest": "read; it reports status complete, 58 to 65 passed, the s8 answer of 1 launch checked and 6 violation rows all reading \"the waited-on section never landed\", and a negative control that shows the reverted module failing each guard.",
+    "write_paths": "the node declared reckon/crew/drain_measure.py, the new test, plus a fragment and a figure directory; the diff touches only the first two, both inside the declared set, and delivers neither docs path."
+  }
+}
