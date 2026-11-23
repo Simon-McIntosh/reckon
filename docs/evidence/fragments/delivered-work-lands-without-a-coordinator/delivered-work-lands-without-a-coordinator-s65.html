@@ -1,0 +1,58 @@
+<section id="delivered-work-lands-without-a-coordinator-s65-landing">
+  <h2>A partitioned arm judges a test file's presence against its own revision</h2>
+
+  <p>A partitioned landing arm runs in a scheduler job built from its own
+  revision, so no local base tree exists for the measurement to inspect. The
+  base arm's file selection nevertheless asked the local trees, and a
+  partitioned base tree is never created: every file the measurement named read
+  as present at the base revision. The base arm's command therefore named test
+  files the base revision does not hold, and a file added at head was charged to
+  the base arm as a failure it could not have had.</p>
+
+  <p><strong>What changed.</strong> Presence is now read from the revision
+  itself whenever a measurement is partitioned. The measurement resolves each
+  revision with <code>git rev-parse --verify --quiet &lt;rev&gt;^{commit}</code>
+  and asks <code>git cat-file -e &lt;rev&gt;:&lt;path&gt;</code> whether that
+  revision's own tree holds the file. A revision that cannot be resolved is not
+  read as absence: the file is kept, so the arm reports its own failure rather
+  than silently narrowing to nothing. A partitioned base arm left with no file
+  to run is recorded as an empty baseline — its command, a zero exit status and
+  an empty id list — which adds no base ids, so a case whose only node test file
+  is new at head lands on its head arm's own result. An unpartitioned
+  measurement still reads presence from the local base and head trees, which is
+  what <code>tests/test_a_landing_arm_measures_only_files_its_tree_holds.py</code>
+  already states.</p>
+
+  <p><strong>Measure.</strong> The base arm over the 43 test files that import
+  the changed modules ran on <code>all_debug</code> at
+  <code>d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e</code>:
+  <code>9 failed, 411 passed in 259.66s (0:04:20)</code>, <code>EXIT=1</code>.
+  The head arm over the same list plus the new file ran at
+  <code>6be79c28ce6a8a60ea9dc3306be1e10efb68d46f</code>:
+  <code>10 failed, 413 passed in 260.15s (0:04:20)</code>, <code>EXIT=1</code>.
+  The two failure sets are identical apart from one id,
+  <code>tests/test_the_drain_keeps_up_with_a_burst.py::test_a_commitless_promotion_finishes_beside_a_landing[False]</code>.
+  The base revision already had the same nine ids red, so no test that imports
+  the changed modules adds a failure.</p>
+
+  <p><strong>The one differing id does not reproduce.</strong> That file
+  references none of <code>arm_test_files</code>, <code>revision_holds</code> or
+  <code>partitioned</code>, so no path through the change reaches it, and its
+  assertion is a half-second event wait. Run alone at the head revision, built
+  at the head, the file gave <code>26 passed in 4.65s</code>; at a tree built
+  from the base revision, <code>26 passed in 4.04s</code>; and five further
+  runs at head gave <code>26 passed</code> each time, in 3.79&ndash;4.34s. It
+  failed once inside a 423-test arm on a busy node, which is a repetition
+  failure rather than a defect.</p>
+
+  <p><strong>Control.</strong> The negative control copies
+  <code>tests/test_a_partitioned_arm_judges_files_against_its_revision.py</code>
+  into a tree built from the base revision and runs it against that revision's
+  code: <code>2 failed, 1 passed in 1.00s</code>, <code>EXIT=1</code>. Both
+  partitioned cases fail — the first because the base arm's command names
+  <em>tests/test_added.py</em>, a file the base revision does not hold, and the
+  second because that file is charged to the baseline as an id instead of being
+  left out. The unpartitioned case passes, which is the half of the earlier
+  behaviour this change must not move. At the head revision the same file gives
+  <code>3 passed in 1.07s</code>, <code>EXIT=0</code>.</p>
+</section>
