@@ -1326,6 +1326,17 @@
                     ],
                     "description": "Per-session scratch bound and aggregate share of the local disk."
                 },
+                "settle": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SettleConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "When a run that holds a live-looking phase with no worker behind it is settled as a worker that ended without delivering. The block is declared here so a host or project layer retunes the bound without a code change; the classifier reads it from the resolved config."
+                },
                 "stranded_wait": {
                     "anyOf": [
                         {
@@ -3204,6 +3215,22 @@
             "title": "SessionScratchConfig",
             "type": "object"
         },
+        "SettleConfig": {
+            "additionalProperties": false,
+            "description": "How long a run with no worker behind it may stay quiet before it is read as ended. Settling is a conclusion that nothing will write again, so the bound is a layer's decision rather than a constant of the code.",
+            "properties": {
+                "quiet_after_hours": {
+                    "description": "Hours a run's stream must have been still, after its launch step has left the scheduler, before the run is settled. The bound is long because the reading concludes nothing will write again: a run that is slow or thinking without printing must never be settled. Defaults to 6.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "title": "SettleConfig",
+            "type": "object"
+        },
         "SpecificationRouting": {
             "additionalProperties": false,
             "description": "Routing overlays keyed by the closed specification-level vocabulary.",
@@ -3641,6 +3668,17 @@
                 }
             ],
             "description": "Per-session scratch bound and aggregate share of the local disk."
+        },
+        "settle": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/SettleConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "When a run that holds a live-looking phase with no worker behind it is settled as a worker that ended without delivering. The block is declared here so a host or project layer retunes the bound without a code change; the classifier reads it from the resolved config."
         },
         "stranded_wait": {
             "anyOf": [
