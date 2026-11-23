@@ -1948,7 +1948,8 @@ def newest_design_review(
     plan_slug: str,
     *,
     base_dir: str | Path | None = None,
-) -> dict[str, Any] | None:
+    records: Iterable[Mapping[str, Any]] | None = None,
+) -> Mapping[str, Any] | None:
     """The newest stored design review of a plan at any version, or None.
 
     A plan carries one prior-art and depth review before its first
@@ -1956,14 +1957,19 @@ def newest_design_review(
     is a revision of a design already searched against the codebase, which the
     content review that covers it reads. So any version counts here, while
     coverage of the content about to be built is judged separately.
+
+    ``records`` supplies reviews already read for this project. The selector
+    narrows them to this plan without reading the store again; an explicit
+    empty iterable selects nothing.
     """
-    records = [
-        record
-        for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
-        if is_design_review(record)
-    ]
+    if records is None:
+        records = list_plan_reviews(project, plan_slug, base_dir=base_dir)
+    else:
+        records = (record for record in records if record.get("plan_slug") == plan_slug)
     return max(
-        records, key=lambda record: int(record.get("plan_version") or 0), default=None
+        (record for record in records if is_design_review(record)),
+        key=lambda record: int(record.get("plan_version") or 0),
+        default=None,
     )
 
 
@@ -4674,6 +4680,7 @@ def _owed_review_skip_reason(
     authors: Mapping[str, Mapping[str, str]],
     status: str,
     pointers: Iterable[Mapping[str, Any]] | None = None,
+    include_design: bool = False,
 ) -> str | None:
     """Why the reflex must not compose this plan's review now, or ``None``.
 
@@ -4726,7 +4733,13 @@ def _owed_review_skip_reason(
     contributing, uncovered, _change = review_coverage(
         project, plan_slug, plan=path, base_dir=base_dir
     )
-    if contributing and not uncovered:
+    design = (
+        newest_design_review(project, plan_slug, base_dir=base_dir)
+        if include_design
+        else None
+    )
+    design_owed = include_design and (design is None or _review_is_incomplete(design))
+    if contributing and not uncovered and not design_owed:
         return "a stored review already covers the plan's current content"
     refusal = compose_burst_refusal(
         project, plan_slug, base_dir=base_dir, plan_path=path
@@ -4957,6 +4970,8 @@ def compose_owed_plan_reviews(
     project: str,
     *,
     config: Mapping[str, Any] | None = None,
+    only_plan: str | None = None,
+    include_design: bool = False,
     launcher: Callable[..., Any] | None = None,
     base_dir: str | Path | None = None,
     now_seconds: float | None = None,
@@ -4999,6 +5014,9 @@ def compose_owed_plan_reviews(
     }
     plans, failed = _project_plan_paths(project)
     report["failed"].extend(failed)
+    selected_plan = only_plan
+    if selected_plan is not None:
+        plans = [(slug, path) for slug, path in plans if slug == selected_plan]
     if not plans:
         return report
     # The reviews this reflex dispatched, carried across passes: a review's
@@ -5099,7 +5117,7 @@ def compose_owed_plan_reviews(
                 }
             )
             continue
-        if weighed.get(plan_slug) == edited:
+        if weighed.get(plan_slug) == edited and not include_design:
             # The plan has not been written since the pass last weighed it, so
             # it owes nothing new. This is what keeps the pass proportional to
             # the edits since the last sweep rather than to the project.
@@ -5178,6 +5196,7 @@ def compose_owed_plan_reviews(
                 authors=authors,
                 status=status,
                 pointers=pointers,
+                include_design=include_design,
             )
             if reason is not None:
                 report["skipped"].append({"plan": plan_slug, "reason": reason})
@@ -5207,36 +5226,48 @@ def compose_owed_plan_reviews(
                     }
                 )
                 continue
-            subject = recovery.plan_review_subject(
-                project, plan_slug, author["session"], rubric=CONTENT_RUBRIC
+            rubrics = [CONTENT_RUBRIC]
+            if include_design:
+                design = newest_design_review(project, plan_slug, base_dir=base_dir)
+                if design is None or _review_is_incomplete(design):
+                    rubrics.insert(0, DESIGN_RUBRIC)
+            contributing, uncovered, _changes = review_coverage(
+                project, plan_slug, plan=path, base_dir=base_dir
             )
-            result = recovery.dispatch_review_for_run(
-                subject, config=config, launcher=launcher
-            )
+            if include_design and contributing and not uncovered:
+                rubrics.remove(CONTENT_RUBRIC)
+            composed_all = True
+            for rubric in rubrics:
+                subject = recovery.plan_review_subject(
+                    project, plan_slug, author["session"], rubric=rubric
+                )
+                result = recovery.dispatch_review_for_run(
+                    subject, config=config, launcher=launcher
+                )
+                entry = {
+                    "plan": plan_slug,
+                    "session": author["session"],
+                    "rubric": rubric,
+                    "dispatched": bool(result.get("dispatched")),
+                    "queued": bool(result.get("queued")),
+                    "review_run_id": str(result.get("review_run_id") or ""),
+                }
+                if result.get("reason"):
+                    entry["reason"] = str(result["reason"])
+                report["composed"].append(entry)
+                composed_run = str(subject.get("run_id") or "")
+                if composed_run and (result.get("dispatched") or result.get("queued")):
+                    held[plan_slug] = sorted({*held.get(plan_slug, []), composed_run})
+                else:
+                    composed_all = False
+            if composed_all:
+                passed[plan_slug] = edited
         except Exception as exc:  # noqa: BLE001 — one plan's failure is that plan's
-            # One plan's failure is that plan's: a document the catalogue
-            # refuses must not stop the pass for every other plan.
             report["failed"].append(
                 {"plan": plan_slug, "error": f"{type(exc).__name__}: {exc}"}
             )
             continue
-        entry = {
-            "plan": plan_slug,
-            "session": author["session"],
-            "dispatched": bool(result.get("dispatched")),
-            "review_run_id": str(result.get("review_run_id") or ""),
-        }
-        if result.get("reason"):
-            entry["reason"] = str(result["reason"])
-        report["composed"].append(entry)
-        composed_run = str(subject.get("run_id") or "")
-        if composed_run and (result.get("dispatched") or result.get("queued")):
-            # Only a review that was really started settles the plan and joins
-            # the set whose notes this reflex answers. A hold that dispatched
-            # nothing leaves the plan owing its review, so the next pass tries
-            # it again instead of waiting for a new edit.
-            passed[plan_slug] = edited
-            held[plan_slug] = sorted({*held.get(plan_slug, []), composed_run})
+
     if not dry_run:
         _record_weighed_edits(
             project,

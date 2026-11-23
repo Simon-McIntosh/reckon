@@ -188,7 +188,7 @@ def queue_requests(
     per node, writing no pointer and no run directory: the preview answers what
     would be stored, and the validation is the same one a queued request meets.
     """
-    from reckon.crew import queue_admission
+    from reckon.crew import plan_review, queue_admission, runs
     from reckon.crew.dispatch_admission import (
         INPUTS_PROPERTY,
         _require_write_paths_in_authority,
@@ -359,6 +359,32 @@ def queue_requests(
             "position": position,
             "index": index,
         }
+    if dry_run:
+        # Preview rows have no stored pointers to hold or reviews to compose.
+        return stored
+    owed_plans: set[str] = set()
+    with queue_admission.plan_review_pass():
+        for run_id, row in stored.items():
+            pointer = runs.read_pointer(run_id)
+            detail = queue_admission._plan_review_owed(
+                pointer, config_for=lambda _: config
+            )
+            if detail is not None:
+                queue_admission._hold_for_plan_review(pointer, detail)
+                owed_plans.add(str(pointer.get("plan") or ""))
+                row["reason"] = queue_admission.PLAN_REVIEW_HELD_REASON
+                row["detail"] = detail
+                row["phase"] = runs.read_pointer(run_id)["phase"]
+    for plan in sorted(owed_plans):
+        report = plan_review.compose_owed_plan_reviews(
+            project,
+            only_plan=plan,
+            include_design=True,
+            config=config,
+        )
+        for row in stored.values():
+            if any(node.plan == plan and node.id == row["node"] for node in nodes):
+                row["plan_reviews"] = report
     return stored
 
 

@@ -1502,6 +1502,11 @@ def _queue_batch(
                     # to queue.
                     "would_phase": would_phase,
                     "wait_holds": findings,
+                    **{
+                        key: row[key]
+                        for key in ("reason", "detail", "plan_reviews")
+                        if key in row
+                    },
                 }
             )
         except (BatchEntryRefusedError, CrewError) as exc:

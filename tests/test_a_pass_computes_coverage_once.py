@@ -292,13 +292,13 @@ def test_each_requests_verdict_matches_the_reading_it_replaces(two_section_plan)
     assert removed == removed_two == _owed(pointer)
     assert removed == _fresh_dispatch(repo, "s2")
 
-    # A review of the same text that leaves one finding unanswered: admission's
-    # narrower question is unchanged, and the dispatch gate refuses the build.
+    # An unanswered finding on the same text holds both the queued request
+    # and a fresh dispatch of its section.
     _store_finding(path, "review-content-two", unit="s2")
     with queue_admission.plan_review_pass():
         answered = _owed(pointer)
     assert answered == _owed(pointer)
-    assert answered is None, "an unanswered finding is the gate's hold, not this one"
+    assert answered is not None, "an unanswered finding holds the queued request"
     refused = _fresh_dispatch(repo, "s2")
     assert refused is not None
     assert "unanswered" in refused

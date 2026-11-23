@@ -149,6 +149,7 @@ def _node(section: str = "s2") -> TaskNode:
         write_paths=[f"{section}.txt"],
         time_budget="20m",
         spec_level="exact",
+        manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
     )
 
 

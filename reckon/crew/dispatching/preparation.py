@@ -177,6 +177,76 @@ def _idle_member_reap_due(project: str, root: object) -> bool:
     return True
 
 
+def _queue_review_held_request(
+    *,
+    node,
+    project,
+    session,
+    repo_root,
+    config,
+    resolution,
+    dispatch_options,
+):
+    """Store the gate's debt using the admission hold, then compose its reviews."""
+    from reckon.crew import plan_review, queue_admission
+
+    refs, projects, _waiting = queue_admission.dispatch_waits(
+        node,
+        repo_root=repo_root,
+        project=project,
+        run_id=resolution.run_id,
+    )
+    queued, position, _phase = _queue_validated_waits(
+        _queued_request_record(
+            run_id=resolution.run_id,
+            project=project,
+            node=node,
+            repo_root=repo_root,
+            session=session,
+            backend_name=resolution.backend,
+            launch_kind=resolution.launch,
+            lane_allowance={},
+            dispatch_options=dispatch_options,
+            queued_at=_utc_now(),
+            local=resolution.local,
+        ),
+        refs=refs,
+        wait_projects=projects,
+        max_requests=flight.queue_max_requests(config),
+    )
+    detail = queue_admission._plan_review_owed(queued, config_for=lambda _: config)
+    if detail is not None:
+        queue_admission._hold_for_plan_review(queued, detail)
+    pointer = read_pointer(str(queued["run_id"]))
+    reviews = plan_review.compose_owed_plan_reviews(
+        project,
+        only_plan=node.plan,
+        include_design=True,
+        config=config,
+    )
+    hold = pointer.get("queue_hold") or {}
+    held = LaneHeld(
+        {"detail": hold.get("detail") or detail, "reason": hold.get("reason")}
+    )
+    held.queued = {
+        "run_id": pointer["run_id"],
+        "position": position,
+        "phase": pointer["phase"],
+        "queued": pointer["phase"]
+        in (
+            queue_admission.QUEUED_PHASE,
+            queue_admission.HELD_PHASE,
+            *queue_admission.WAITING_UPSTREAM_PHASES,
+        ),
+        "backend": resolution.backend,
+        "reason": hold.get("reason"),
+        "detail": hold.get("detail"),
+        "waits": list(refs),
+        "plan_reviews": reviews,
+    }
+    return held
+
+
 def _local_lane_reserve(
     is_local: bool,
     *,
@@ -629,6 +699,7 @@ def dispatch(
             default_backend_override=default_backend_override,
             member=member,
             allow_unreviewed_plan=unreviewed_plan_override,
+            queue_review_owed=True,
             repairs=repairs,
             session=session,
             route=route,
@@ -659,6 +730,44 @@ def dispatch(
                 for finding in resolution.validation.findings
             )
         )
+
+    # The plan's own declaration is read here, before any claim, run directory
+    # or worktree exists, so a refused dispatch leaves nothing behind and the
+    # coordinator's next call is the same call with the flag on it. A measured
+    # replay is the only dispatch an already-landed section permits.
+    measurement_refusal = _measurement_flag_refusal(
+        project,
+        str(node.plan or ""),
+        str(node.section or ""),
+        repo=repo_root,
+        measure_only=measure_only,
+        role=str(node.role or ""),
+    )
+    if measurement_refusal:
+        raise CrewError(measurement_refusal)
+
+    if resolution.plan_review_hold is not None:
+        options = {
+            **(dispatch_options or {}),
+            "allow_unreviewed_plan": unreviewed_plan_override,
+        }
+        stored = _queue_review_held_request(
+            node=node,
+            project=project,
+            session=session,
+            repo_root=repo_root,
+            config=config,
+            resolution=resolution,
+            dispatch_options=options,
+        )
+        _arrange_dispatch_follower(
+            project,
+            session,
+            resolution.launch,
+            watch_required=watch_required,
+            watch_override=watch_override,
+        )
+        raise stored
 
     # A backend resolved without a router answer is the configured default
     # standing in, and nothing has yet weighed it against the node's context
@@ -736,20 +845,6 @@ def dispatch(
         }
 
     _workspace_roots(repo_root)
-    # The plan's own declaration is read here, before any claim, run directory
-    # or worktree exists, so a refused dispatch leaves nothing behind and the
-    # coordinator's next call is the same call with the flag on it. A measured
-    # replay is the only dispatch an already-landed section permits.
-    measurement_refusal = _measurement_flag_refusal(
-        project,
-        str(node.plan or ""),
-        str(node.section or ""),
-        repo=repo_root,
-        measure_only=measure_only,
-        role=str(node.role or ""),
-    )
-    if measurement_refusal:
-        raise CrewError(measurement_refusal)
     candidate_scope = (
         ()
         if shadow_lineage
