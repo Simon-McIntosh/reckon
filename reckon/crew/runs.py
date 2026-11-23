@@ -3510,9 +3510,11 @@ def _arm_line_replaced(
     Only a line starting at column zero counts, so an arm nested under some
     other field is never the manifest's own. The arm's other fields are carried
     over as the worker recorded them, and an observation re-derived from the
-    log replaces the exit status, failure ids and completion the arm declared:
-    those are what the red-base rule reads, so a re-point that left them would
-    keep declaring a result the log no longer describes.
+    log replaces the exit status, failure count, failure ids and completion the
+    arm declared: those are what the red-base rule and the receipt check read,
+    so a re-point that left them would keep declaring a result the log no
+    longer describes. The count is the number of ids the log yields, which is
+    the same equation the manifest schema holds every arm to.
     """
     prefix = f"{arm}:"
     lines = text.splitlines()
@@ -3529,6 +3531,7 @@ def _arm_line_replaced(
         if observation is not None:
             record["exit_status"] = observation["exit_status"]
             record["failure_ids"] = list(observation["failure_ids"])
+            record["failure_count"] = len(record["failure_ids"])
             record["completed"] = bool(observation["completed"])
             if observation.get("incomplete_processes"):
                 record["incomplete_processes"] = list(

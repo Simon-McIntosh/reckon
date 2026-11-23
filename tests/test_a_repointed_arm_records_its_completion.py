@@ -59,6 +59,7 @@ def _arm(
     *,
     exit_status: Any,
     completed: bool = True,
+    log_path: str = "",
 ) -> dict[str, Any]:
     return {
         "revision": revision,
@@ -67,8 +68,20 @@ def _arm(
         "completed": completed,
         "failure_count": len(failure_ids),
         "failure_ids": list(failure_ids),
-        "log_path": "",
+        "log_path": log_path,
     }
+
+
+def _manifest_text(head_arm: dict[str, Any]) -> str:
+    return (
+        "node: repointed-arm-completion\n"
+        "status: complete\n"
+        f"commits: {HEAD}\n"
+        "changed_paths: reckon/crew/review.py\n"
+        "tests: python -m pytest -q tests/test_charge.py tests/test_discharge.py\n"
+        f"baseline_suite: {json.dumps(_arm(BASE, ALL_IDS, exit_status=1))}\n"
+        f"after_suite: {json.dumps(head_arm)}\n"
+    )
 
 
 @pytest.fixture(name="run")
@@ -79,13 +92,7 @@ def run_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, An
     monkeypatch.setenv("RECKON_HOME", str(home))
     manifest = tmp_path / "manifest.md"
     manifest.write_text(
-        "node: repointed-arm-completion\n"
-        "status: complete\n"
-        f"commits: {HEAD}\n"
-        "changed_paths: reckon/crew/review.py\n"
-        "tests: python -m pytest -q tests/test_charge.py tests/test_discharge.py\n"
-        f"baseline_suite: {json.dumps(_arm(BASE, ALL_IDS, exit_status=1))}\n"
-        f"after_suite: {json.dumps(_arm(HEAD, [], exit_status=0, completed=False))}\n",
+        _manifest_text(_arm(HEAD, [], exit_status=0, completed=False)),
         encoding="utf-8",
     )
     runs._write_json(
@@ -155,6 +162,48 @@ def test_the_union_of_the_processes_is_recorded_and_the_merge_lands(
     promotion_evidence._require_verdict_matches_exit_status(
         RUN_ID, record, gate, verdict="passed"
     )
+
+
+def test_the_repaired_arm_states_the_failure_count_its_log_reports(
+    run: dict[str, Any],
+) -> None:
+    """The repair re-derives the count as well as the ids.
+
+    A repair that re-pointed only the citation would leave the arm naming the
+    log while still declaring the previous run's count, so the receipt check
+    refuses it against the very log it now cites.
+    """
+    log = run["tmp"] / "head.log"
+    log.write_text(_two_process_log(), encoding="utf-8")
+    run["manifest"].write_text(
+        _manifest_text(
+            _arm(HEAD, [], exit_status=1, completed=False, log_path=str(log))
+        ),
+        encoding="utf-8",
+    )
+    gate = {"log_path": str(log), "exit_status": 1}
+
+    with pytest.raises(crew.CrewError) as refused:
+        promotion_evidence._require_gate_log_agrees(
+            RUN_ID, gate, _record(run["manifest"]), verdict="passed"
+        )
+    assert "failure_count records 0" in str(refused.value)
+
+    runs.repair_manifest_arm(
+        RUN_ID,
+        "after_suite",
+        revision=HEAD,
+        reason="re-pointed at the H200 log the merge is on",
+        log_path=str(log),
+    )
+
+    arm = _parsed(run["manifest"])["after_suite"]
+    assert arm["failure_count"] == len(ALL_IDS)
+    assert sorted(arm["failure_ids"]) == sorted(ALL_IDS)
+    promotion_evidence._require_gate_log_agrees(
+        RUN_ID, gate, _record(run["manifest"]), verdict="passed"
+    )
+    assert promotion_evidence._receipt_mismatches(arm, str(log), log.read_text()) == []
 
 
 def test_a_process_that_stopped_before_its_summary_leaves_the_arm_incomplete(
