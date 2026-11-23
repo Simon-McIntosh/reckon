@@ -19,19 +19,19 @@ abandoned test from reading as a clean one. A log with a single process takes
 its own terminal status and ids. The derived fields travel through the manifest
 reader, so a later reader sees the same completion and the same named process.</p>
 <p>Measure: <code>tests/test_a_repointed_arm_records_its_completion.py</code>
-passes 5 of 5, covering the two-process log (completed, union of ids, and a
+passes seven of seven, covering the two-process log (completed, union of ids, and a
 red-base merge whose head adds no id then landing), the stopped process
 (incomplete, named), the single-process log (exit 2 and its own id), a log the
 repair was told to read but cannot, and the same re-point through
 <code>crew repair</code>. The base arm over the test files importing the
 changed modules ran at <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code>
-and gave <code>164 passed in 3.07s</code> with <code>EXIT=0</code> on
+and gave 164 passed with <code>EXIT=0</code> on
 <code>all_debug</code>. The head arm ran at
 <code>9806f9da8c7844b64329cbabec06fe02934eb9b8</code> and gave
-<code>169 passed in 4.58s</code> with <code>EXIT=0</code>, the five added cases
+169 passed with <code>EXIT=0</code>, the five added cases
 and no added failure id. Negative control: with the same delivered test copied
-into a base-revision tree, the first case fails
-(<code>1 failed in 0.27s</code>, <code>EXIT=1</code>), because the base repair
+into a base-revision tree, the first case failed with
+<code>EXIT=1</code>, because the base repair
 leaves the arm's completion as the worker declared it and the red-base rule
 refuses the merge.</p>
 <p>The review found the repair still left one figure behind: it rewrote the exit
@@ -44,15 +44,24 @@ still leaves the count untouched. The case is pinned by a sixth test, which
 first reproduces the refusal against an arm that cites the log but still
 carries the previous run's count and then passes once the repair has rewritten
 it — the same case fails at the head with the answering commit reverted.</p>
+<p>A further review found the repair read the log's terminal
+<code>EXIT=&lt;n&gt;</code> record through a second pattern, beside the one the
+module already uses to cut a log at its last run. Two patterns for one notation
+can pick different lines, so the module's own pattern now captures the status
+and both readers take the figure from it; the case that pins this fails as soon
+as the second pattern is put back.</p>
 <p>Measure after the repair: base arm at
 <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code> gave
-<code>58 passed in 44.52s</code> with <code>EXIT=0</code>; head arm at
-<code>bda475d2ec6e2300dc06a7bdc3bf6fc4c0a73daa</code> gave
-<code>64 passed in 42.76s</code> with <code>EXIT=0</code>, the node's six
-cases and no added failure; and the negative control, the head tree with the
-answering commit reverted, gave <code>1 failed, 5 deselected in 1.38s</code> with
-<code>EXIT=1</code> on the count case. All three ran on <code>all_debug</code>
-over the same two shared test files, the base arm over a base-revision tree
-whose git objects are linked to the repository so the staged-write inventory
-test reads the tracked tree it expects.</p>
+<code>58 passed in 44.68s</code> with <code>EXIT=0</code>; head arm at
+<code>6e3ff0dfd1012144efc1f8fb1c2d62c6d2f4ed16</code> gave
+<code>65 passed in 42.91s</code> with <code>EXIT=0</code>, the node's seven
+cases and no added failure; the importer population the done-when names — every
+test file importing the changed modules — gave
+<code>171 passed in 6.81s</code> with <code>EXIT=0</code> at that head; and the
+negative control, the head tree with the single-reader commit reverted, gave
+<code>1 failed, 6 deselected in 0.95s</code> with <code>EXIT=1</code>. Each log
+opens with the partition, Slurm job and node that produced it
+(<code>all_debug</code>, one job id shared by the four), and the base arm ran
+in a base-revision tree whose git objects are linked to the repository, so the
+staged-write inventory test reads the tracked tree it expects.</p>
 </article>
