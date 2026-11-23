@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:_until_changed_hold",
+    "reckon/crew/admission/selection.py:_retry_backoff_hold",
+    "reckon/crew/admission/launching.py:_stamp_failure",
+    "reckon/crew/obligations.py:_queued_contract_refusal",
+    "reckon/crew/admission/verdicts.py:97 (renders the row's next_command as remedy text)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T02:40:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": 1570,
+      "severity": "non-blocking",
+      "text": "the agreed-pass count now advances when the contract fingerprint is equal, but a fingerprint taken from an empty node-body read equals the next empty read exactly as a real contract equals itself: _node_contract_stamp reads brief and done_when from the run's node.json, and a transient read that returns {} yields brief=None and done_when=None on both passes, so two consecutive empty reads reach two agreeing passes and park a request whose stored contract is intact. The one-pass negative control and the transient test cover one empty read; a second empty read is not covered. A reading that could not read the body should not count as an agreeing reading \u2014 e.g. refuse to count a fingerprint whose body-file fields are all None (holds.py:1565-1571)."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/selection.py:619 and :638 call _until_changed_hold and _retry_backoff_hold each admission pass; reckon/crew/admission/launching.py:775, :931, :1037, :1107 and :1112 call _stamp_failure; reckon/crew/obligations.py:1810 reads the predicate through the queue_admission facade in _queued_contract_refusal; reckon/crew/admission/verdicts.py:97 renders the row's next_command as remedy text (read as a string, never split or executed).",
+    "diff": "read the single commit e1bc1c66b450 against its parent 098238543a43 across four files (+61/-18): the until-changed reader delegates to _is_node_contract_refusal, the obligation row calls the same predicate through the admission facade, the queue-edit placeholders are single-quoted, the agreement count compares the contract stamp, and three per-finding tests are added.",
+    "done_when": "the source node's done_when names tests/test_a_stored_contract_is_not_parked_by_one_refusal.py plus ruff format --check; the manifest records after_suite-1795401017688374013.log at e1bc1c66 with 69 passed and EXIT=0, and ruff format --check and ruff check pass on all four staged paths as re-read here.",
+    "goal": "the source node's goal is 'park a queued contract refusal only after two agreeing passes'; this commit answers the three findings of its prior review so the predicate has one owner, the row's command is copyable, and agreement is judged on the same contract.",
+    "manifest": "read; it reports the base arm (9255ce2, 63 passed, EXIT=0) and head arm (e1bc1c66, 69 passed, EXIT=0), names neg-predicate.log as its negative control, and records the per-finding mutations in negative_control_note.",
+    "write_paths": "the manifest's declared paths include reckon/crew/admission, reckon/crew/obligations.py and both test files; every path in the e1bc1c66 diff is inside them and none outside."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261123T023906691164-review-of-qwnw-a-stored-contract-is-not-parked-by-one-refusal-e1bc1c66b450",
+  "reviewed_base_sha": "098238543a434e149411cb34b0fb70bb1b375744",
+  "reviewed_head_sha": "e1bc1c66b45076971a4c7be51cdef91588298814",
+  "reviewed_run_id": "r-20261121T205225660866-qwnw-a-stored-contract-is-not-parked-by-one-refusal",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T02:56:53.749362+00:00",
+  "total": 113
+}
