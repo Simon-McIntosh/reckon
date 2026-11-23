@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_measure_delivery",
+    "reckon/crew/promotion_records.py:_measure_missing_arms",
+    "reckon/crew/landing_measure.py:armed_observations"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T05:51:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 1279,
+      "severity": "blocking",
+      "text": "The restructured `except (OSError, ValueError)` now encloses the checkout context managers entered at lines 1213-1229. `BaseCheckoutError` subclasses `ValueError` (landing_measure.py:1592), so a base checkout that cannot be built is caught here and reported as \"the measurement raised BaseCheckoutError: could not create a scratch tree for ...\" instead of by the outer handler at line 1288 as \"the base checkout could not be built: ...\". Verified: tests/test_the_landing_pass_measures_and_lands.py::test_an_unusable_scratch_root_refuses_that_run_and_returns passes at dd1ff29 and fails at 366cfd21. The head reddens an existing test and a checkout failure is now attributed to the measurement, which is exactly the misattribution its sibling test (test_a_measurement_error_is_not_reported_as_a_checkout_failure) exists to prevent in the other direction."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 1015,
+      "severity": "non-blocking",
+      "text": "The added `trap 'exit 143' TERM INT` (here and at line 222) is the only path that removes a submitted job's tree when the scheduler ends the job by signal, and no test sends TERM or INT to the job script; the killed-process case in the new test covers the next-pass scratch sweep instead. A regression that dropped the trap would redden no assertion, so the commit's signal claim is unguarded."
+    }
+  ],
+  "notes": "Independent reproduction of the blocking finding: the reviewed head was extracted with `git archive 366cfd21665ccc1c64e8fb8ca3aee83efb23eea5` to a scratch tree and the base with dd1ff2909ce0bc420a93eac425c435f48b02cf76; `PYTHONPATH=<tree> <repo>/.venv/bin/python -B -m pytest -p no:cacheprovider` ran both files that import the changed modules. Head: 1 failed, 26 passed. Base: the failing case passed. Logs kept in this run's scratch directory. The reviewed run's baseline_suite and after_suite arms both record 0 failures over two overlapping sets of three files, so added_failure_count is 0 from those logs; the failing importer test was not in either arm and the done_when required it.",
+  "project": "reckon",
+  "review_run_id": "r-20261123T051028810306-review-of-delivered-work-lands-without-a-coordinator-s48-366cfd21665c",
+  "reviewed_base_sha": "dd1ff2909ce0bc420a93eac425c435f48b02cf76",
+  "reviewed_head_sha": "366cfd21665ccc1c64e8fb8ca3aee83efb23eea5",
+  "reviewed_run_id": "r-20261122T191836994460-delivered-work-lands-without-a-coordinator-s48",
+  "scores": {
+    "durability": 13,
+    "evidence": 6,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19,
+    "total": 93
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T06:17:24.094657+00:00",
+  "total": 93
+}
