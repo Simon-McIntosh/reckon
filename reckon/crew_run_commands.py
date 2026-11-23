@@ -4757,8 +4757,15 @@ def crew_record_merge(
 
     _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
+    from reckon.crew.promotion_records import _read_pointer_or_rebuild
+
+    pointer_exists = runs_module.pointer_path(run_id).exists()
+    # A run whose live pointer was removed before any promotion or discard still
+    # keeps its run directory, and that directory is enough to record the merge:
+    # it names the repository, the worktree, the plan section the prompt
+    # dispatched on and the head the manifest delivered.
     try:
-        pointer = runs_module.read_pointer(run_id)
+        pointer = _read_pointer_or_rebuild(run_id, root=checkout_path)
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
     repository = str(pointer.get("repo") or "").strip()
@@ -4767,6 +4774,17 @@ def crew_record_merge(
             f"run {run_id!r} names no repository to resolve the merge in"
         )
     repo = Path(repository).expanduser()
+    landing_project = str(pointer.get("project") or project or "").strip()
+    from reckon.crew.open_run_index import row_for_run
+
+    if (
+        landing_project
+        and row_for_run(landing_project, run_id, checkout_path) is not None
+    ):
+        raise click.ClickException(
+            f"run {run_id!r} is already recorded in the {landing_project!r} ledger; "
+            "a run the ledger holds is not recorded again — read its row instead"
+        )
     # The head a review read is the promoted revision where the run recorded
     # one; a run promoted only by hand has not recorded it yet, so the tree the run
     # delivers names its own head, which is the revision the merge must carry.
@@ -4799,14 +4817,15 @@ def crew_record_merge(
             f"merge {merge_revision} is not on the local primary branch; push "
             "or fetch it first"
         )
-    runs_module._mutate_pointer(
-        run_id,
-        lambda record: {
-            **record,
-            "recorded_merge": merge_revision,
-            "recorded_merge_reason": str(reason).strip(),
-        },
-    )
+    if pointer_exists:
+        runs_module._mutate_pointer(
+            run_id,
+            lambda record: {
+                **record,
+                "recorded_merge": merge_revision,
+                "recorded_merge_reason": str(reason).strip(),
+            },
+        )
     # The pending record a landing would write is retired before the promotion,
     # so a landing pass cannot resurrect a pointer this recording deletes.
     pending_landing.clear_pending(run_id)
@@ -4819,6 +4838,7 @@ def crew_record_merge(
             root=checkout_path,
             no_impl_change=no_impl_change,
             accepted_paths=dict(accepted_paths),
+            recorded_merge=merge_revision,
             require_gate_check=False,
         )
     except Exception as exc:

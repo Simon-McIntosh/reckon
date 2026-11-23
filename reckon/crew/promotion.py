@@ -1046,6 +1046,7 @@ def complete(
     live_run_waiver: str = "",
     plan_link: str = "",
     unplanned_reason: str = "",
+    recorded_merge: str = "",
     dry_run: bool = False,
     promoted_by: str = "",
     domain_waiver: str = "",
@@ -1098,6 +1099,13 @@ def complete(
                 _pointer_region.enter_context(_pointer_lock(run_id))
             record = _read_pointer_or_rebuild(run_id, root=root)
         record = {**record, **read_dispatch_detail(record)}
+        # A run recorded through a merge the lead made by hand names that merge,
+        # and the suite pair a promotion would otherwise measure is not measured
+        # because the primary branch already carries the change. A run whose
+        # live pointer is gone cannot carry that fact on a pointer, so the caller
+        # that verified the merge supplies it here.
+        if str(recorded_merge).strip():
+            record["recorded_merge"] = str(recorded_merge).strip()
         # A measurement run is one its dispatch marked: it replays work that has
         # already landed, so its row records a measurement rather than a landing
         # and nothing about it is ever reviewed or merged.
