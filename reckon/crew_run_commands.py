@@ -2599,6 +2599,49 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
     _emit_crew_result({"project": project, "waiver": str(path)}, pretty)
 
 
+@crew.command(name="persist")
+@click.argument("figure", type=click.Path(path_type=Path, exists=True))
+@click.option(
+    "--data",
+    "data_files",
+    multiple=True,
+    type=click.Path(path_type=Path, exists=True),
+    help="A data file behind the figure; repeat for several.",
+)
+@click.option("--project", required=True, help="Project the item belongs to.")
+@click.option("--plan", default=None, help="Plan the item is attributed to.")
+@click.option("--section", default=None, help="Plan section the item belongs to.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_persist(figure, data_files, project, plan, section, pretty):
+    """Persist one report item outside the crew home, figure only by default.
+
+    The figure, and any ``--data`` file named beside it, is copied into the
+    project's declared persist root, each copy is checked against its source,
+    and one record per copy is appended to the project's persisted-items
+    resource. A project with no persist root declared is refused and names the
+    setting.
+    """
+    from reckon.crew import persist as persist_module
+
+    try:
+        records = persist_module.persist_item(
+            figure,
+            data_files,
+            project=project,
+            plan=plan,
+            section=section,
+        )
+    except persist_module.PersistError as exc:
+        _emit_crew_result(
+            {"ok": False, "error": "persist_refused", "detail": str(exc)}, pretty
+        )
+        return
+    _emit_crew_result(
+        {"ok": True, "project": project, "records": records},
+        pretty,
+    )
+
+
 @crew.command(name="retention-sweep")
 @click.option(
     "--project",

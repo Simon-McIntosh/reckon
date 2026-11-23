@@ -861,6 +861,97 @@ def _waiting_decision_rows(
     return rows
 
 
+def crew_plan_reports(project: str, plan: str) -> list[dict]:
+    """One plan's report items, each with the retention class the sweep reads.
+
+    The class and expiry come from :mod:`reckon.crew.report_retention`'s
+    classifier, the one the retention pass calls, so a listing never shows an
+    item as retained while the pass would remove it. Nothing here re-derives
+    them: a working item's expiry is the date the pass would remove it, and a
+    persisted or cited item carries no expiry at all.
+    """
+
+    from reckon.crew import report_retention
+    from reckon.crew.routing import _newest_mtime
+    from reckon.crew.runs import reports_dir
+
+    reports_root = reports_dir()
+    plan_dir = reports_root / project / plan
+    if not plan_dir.is_dir():
+        return []
+    docs = load_mounts().get(project)
+    if docs is None:
+        return []
+    current = datetime.now(tz=UTC)
+    context = report_retention.build_context(
+        project=project,
+        docs_dir=docs,
+        reports_root=reports_root,
+        now=current,
+    )
+    items: list[dict] = []
+    for item in sorted(plan_dir.iterdir()):
+        if item.name == report_retention.PLAN_REVIEW_FOLDER:
+            continue
+        verdict = report_retention.classify_item(
+            context, item, newest_write=_newest_mtime(item)
+        )
+        items.append(
+            {
+                "item": str(item),
+                "name": item.name,
+                "class": verdict.cls,
+                "expires": (
+                    None
+                    if verdict.expires is None
+                    else verdict.expires.isoformat(timespec="seconds")
+                ),
+                "reason": verdict.reason,
+            }
+        )
+    return items
+
+
+def crew_persist_from_reports(project: str, payload: Mapping[str, object]) -> dict:
+    """Persist one item for an HTTP write, refusing a request naming no figure.
+
+    Both write surfaces end in the same :func:`reckon.crew.persist.persist_item`
+    call, so a figure persisted through the SPA and one persisted through the
+    CLI answer the same record shape.
+    """
+
+    from reckon.crew import persist
+
+    figure = str(payload.get("figure") or "").strip()
+    if not figure:
+        return {
+            "records": [],
+            "error": "persist_refused",
+            "detail": "a persist request must name a figure",
+        }
+    data = payload.get("data") or ()
+    if isinstance(data, str):
+        data = [data]
+    elif not isinstance(data, (list, tuple)):
+        return {
+            "records": [],
+            "error": "persist_refused",
+            "detail": "data must be a list of paths",
+        }
+    try:
+        return {
+            "records": persist.persist_item(
+                figure,
+                list(data),
+                project=project,
+                plan=payload.get("plan") or None,
+                section=payload.get("section") or None,
+            )
+        }
+    except persist.PersistError as exc:
+        return {"records": [], "error": "persist_refused", "detail": str(exc)}
+
+
 def _waiting_plan_state(docs: Path, slug: str, project: str) -> dict | None:
     """One plan's parsed state, named as the roadmap's derivation expects it."""
 
@@ -1559,8 +1650,8 @@ def edge_row(rec: Mapping[str, object]) -> dict[str, list]:
 #: last commit are display values there, and asking git for them costs up to a
 #: ten-second bound each on a large repository under load. Suppressing the
 #: queries answers the same inventory from the working tree's own times.
-_DISCOVERY_WITHOUT_GIT_DATES: contextvars.ContextVar[bool] = (
-    contextvars.ContextVar("discovery_without_git_dates", default=False)
+_DISCOVERY_WITHOUT_GIT_DATES: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "discovery_without_git_dates", default=False
 )
 
 #: Appended to a discovery cache key while history queries are suppressed, so
@@ -3233,8 +3324,9 @@ class Handler(BaseHTTPRequestHandler):
             project = parts[1] if len(parts) >= 2 else None
             finished = len(parts) in (3, 4) and parts[2] == "finished"
             routing = len(parts) == 3 and parts[2] == "routing"
+            reports = len(parts) == 3 and parts[2] == "reports"
             plan = parts[3] if len(parts) == 4 and finished else None
-            if len(parts) > 2 and not finished and not routing:
+            if len(parts) > 2 and not finished and not routing and not reports:
                 self._send(HTTPStatus.BAD_REQUEST, b"bad crew path")
                 return
             if project is not None and not SAFE_NAME.fullmatch(project):
@@ -3259,6 +3351,25 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(
                     HTTPStatus.OK,
                     {"project": project, "view": "routing", **report},
+                )
+                return
+            if reports:
+                requested = parse_qs(urlsplit(self.path).query).get("plan", [""])[0]
+                if not requested or not SAFE_NAME.fullmatch(requested):
+                    self._send_json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": "a reports listing names one plan as ?plan=<slug>."},
+                    )
+                    return
+                self._send_json(
+                    HTTPStatus.OK,
+                    {
+                        "ok": True,
+                        "project": project,
+                        "plan": requested,
+                        "view": "reports",
+                        "items": crew_plan_reports(project, requested),
+                    },
                 )
                 return
             if finished:
@@ -4133,10 +4244,55 @@ class Handler(BaseHTTPRequestHandler):
             # window for tree walks never spans one.
             _invalidate_discovery_signatures()
 
+    def _handle_crew_post(self, path: str) -> None:
+        """POST /crew/<project>/reports — persist one report item.
+
+        The request body names ``figure`` and any ``data`` paths beside it. The
+        write ends in the same Python function the CLI verb calls, so the two
+        surfaces answer the same record shape, and a refusal names the reason.
+        """
+        parts = path.strip("/").split("/")
+        if len(parts) != 3 or parts[2] != "reports":
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "POST /crew/<project>/reports"},
+            )
+            return
+        project = parts[1]
+        if not SAFE_NAME.fullmatch(project):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad project name"})
+            return
+        mounts = load_mounts()
+        if project not in mounts:
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": "project not found"})
+            return
+        ok, payload = self._read_body()
+        if not ok:
+            return
+        if not isinstance(payload, dict):
+            self._send_json(
+                HTTPStatus.BAD_REQUEST, {"error": "the body must be an object"}
+            )
+            return
+        result = crew_persist_from_reports(project, payload)
+        if result.get("error"):
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"ok": False, "project": project, **result},
+            )
+            return
+        self._send_json(
+            HTTPStatus.OK,
+            {"ok": True, "project": project, "records": result["records"]},
+        )
+
     def _handle_post(self) -> None:
         path = unquote(urlsplit(self.path).path)
         if path.startswith("/plan/"):
             self._handle_plan_write(path)
+            return
+        if path.startswith("/crew/"):
+            self._handle_crew_post(path)
             return
         if not path.startswith("/state/"):
             self._send_json(
