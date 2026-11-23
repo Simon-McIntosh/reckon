@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Sequence
 
-from .. import lost_sessions as _lost_sessions
-from .. import queue_order
 from reckon.crew.open_run_index import operational_read
 
+from .. import lost_sessions as _lost_sessions
+from .. import queue_order
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
