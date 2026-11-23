@@ -53,31 +53,29 @@
 
   <p><strong>Measure.</strong> The importer population of the changed modules —
   139 files plus the node's own test — was run on <code>all_debug</code> at
-  both revisions. At the base
+  both revisions, each arm with <code>TMPDIR</code> on node-local memory so the
+  two readings share one scratch policy. At the base
   <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code> the population reports
-  <code>26 failed, 1443 passed, 9 skipped</code> in 679 s. At the head
-  <code>0087fa7291f217c762719d36318986eb0aad1701</code> it reports
-  <code>27 failed, 1447 passed, 9 skipped</code> in 747 s.</p>
+  <code>31 failed, 1438 passed, 9 skipped in 685.36s (0:11:25)</code>. At the
+  head <code>0087fa7291f217c762719d36318986eb0aad1701</code> it reports
+  <code>27 failed, 1447 passed, 9 skipped in 747.06s (0:12:27)</code>.</p>
 
-  <p><strong>The one difference is the scratch filesystem.</strong> The head
-  arm ran with <code>TMPDIR</code> on node-local memory, where the base arm
-  ran with it on <code>/tmp</code>, and the six ids the head arm adds are all
-  tests of the <code>/tmp</code> scratch policy itself
-  (<code>tests/test_session_scratch_uses_bounded_node_tmp.py</code> and
-  <code>test_a_control_pass_profiles_without_live_writes.py::test_the_filesystem_fence_refuses_an_external_write</code>).
-  Re-run over the same head with <code>TMPDIR</code> on <code>/tmp</code>, those
-  files report <code>96 passed</code> and one failure,
-  <code>test_excess_reaches_only_its_conversation_in_both_obligation_views</code>
-  — which the base arm already carries. No failure is added by the
-  change.</p>
+  <p><strong>No failure is added.</strong> Every id the head arm reports is one
+  the base arm reports too. Four ids the base arm reports pass at the head
+  (<code>tests/test_fleet_health_records_node_tmp.py</code>'s disk and sampler
+  rows, and <code>test_health_sampler_calls_scratch_sampling_and_keeps_the_reading</code>),
+  which are host-sampler readings rather than code this node touched. The
+  node's own test exists only at the head, is named in that arm's command, and
+  passes there.</p>
 
-  <p><strong>The scratch runs are recorded too.</strong> Node-local
-  <code>/tmp</code> on <code>all_debug</code> exhausted twice while this node
-  was being measured (418 fixture errors creating pytest's own temporary
-  directories, with measurement passes unaffected), and a run with the scratch
-  on shared storage added 22 environment failures in the disk and store
-  suites. Both logs are kept beside the arm logs so the readings above can be
-  checked against what produced them.</p>
+  <p><strong>The scratch filesystem decides some of these ids, and the arms
+  were matched for it.</strong> Node-local <code>/tmp</code> on
+  <code>all_debug</code> exhausted twice while this node was measured (418
+  fixture errors creating pytest's own temporary directories, with the
+  measurement passes unaffected), and an arm with <code>TMPDIR</code> on
+  shared storage added 22 environment failures in the disk and store suites.
+  Those logs are kept beside the arm logs so a reader can see what produced
+  them; they are not the comparison above.</p>
 
   <p><strong>What does not change.</strong> A bare partition name keeps the
   shipped defaults — the population's CPU count, 32 GB and the bound the
