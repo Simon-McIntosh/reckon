@@ -1490,6 +1490,8 @@ def queue_plan(
     local: bool = False,
     dry_run: bool = False,
     queued_by: str = "",
+    live: Sequence[Mapping[str, Any]] | None = None,
+    ownership: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Queue a plan's implementable sections, reporting every authored section.
 
@@ -1508,6 +1510,11 @@ def queue_plan(
     stored row carries no phase, so a run whose own check failed is read from
     the gate and classification the row does carry: such a run is delivered
     only when its failure is recorded as one the node's work did not cause.
+
+    ``live`` and ``ownership`` let a caller queueing many plans of one project
+    pass the live pointers and the project's coordinator resolution it has
+    already read. Both answer for the whole project, so reading them again for
+    every plan repeats the same work once per plan.
     """
     from reckon import _plan_html, ledger
     from reckon.crew import runs
@@ -1517,7 +1524,7 @@ def queue_plan(
     plans = _Plans(Path(repo_root).expanduser().resolve())
     read = plans.read(project, plan)
     sections = _plan_html.derive_section_todos(read.document, read.state)
-    live = list(runs.list_live(project=project))
+    live = list(live) if live is not None else list(runs.list_live(project=project))
     reads = _QueueReads(
         session=session,
         repo_root=repo_root,
@@ -1525,6 +1532,8 @@ def queue_plan(
         live=live,
         plans=plans,
     )
+    if ownership is not None:
+        reads._ownership[project] = ownership
     answers = reads.answers(project, plan)
     ownership = reads.ownership(project, read.repo_root)
     owned = (ownership.get("plans") or {}).get(plan) or {}
