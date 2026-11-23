@@ -4587,6 +4587,16 @@ _REFLEX_COMPOSED_KEY = "__composed__"
 # never stopped would have.
 _REFLEX_OBSERVED_KEY = "__observed__"
 
+# The key the state file holds, per plan slug, why the pass could not compose
+# the review a held request is waiting on. A request an admission pass held on
+# ``plan-review-owed`` cannot be released until a review the plan owes is
+# composed, so a plan holding one is never recorded as settled: each pass either
+# composes the review or records here the plan, its version and the reason it
+# did not, for the session that owns the request. The map is rewritten whole on
+# every pass, so a reason drops out the moment the plan no longer holds a
+# request.
+_REFLEX_OBLIGATIONS_KEY = "__obligations__"
+
 
 def _reflex_state(project: str) -> dict:
     """The stored state of the last pass: plan mtimes and the rotation cursor."""
@@ -4624,6 +4634,22 @@ def _observed_edits(project: str) -> dict[str, float]:
     }
 
 
+def _reflex_obligations(project: str) -> dict[str, dict[str, Any]]:
+    """Why the pass could not compose each held plan's review, keyed by plan.
+
+    Read by the obligations view so the session that owns a held request is
+    told the reason its plan's review is still owed — a unit at its review cap,
+    or an unanswered finding with its id — rather than only that a review is
+    owed. A plan absent from the map owes nothing the pass could not compose.
+    """
+    stored = _reflex_state(project).get(_REFLEX_OBLIGATIONS_KEY)
+    if not isinstance(stored, Mapping):
+        return {}
+    return {
+        str(slug): dict(row) for slug, row in stored.items() if isinstance(row, Mapping)
+    }
+
+
 def _composed_reviews(project: str) -> dict[str, list[str]]:
     """The review runs the reflex dispatched, keyed by the plan they review."""
     stored = _reflex_state(project).get(_REFLEX_COMPOSED_KEY)
@@ -4642,6 +4668,7 @@ def _record_weighed_edits(
     cursor: str = "",
     composed: Mapping[str, Iterable[str]] | None = None,
     observed: Mapping[str, float] | None = None,
+    obligations: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> None:
     """Write the mtimes the pass weighed, the plan it stopped at, and its reviews."""
     path = _reflex_state_path(project)
@@ -4659,6 +4686,12 @@ def _record_weighed_edits(
         stored[_REFLEX_OBSERVED_KEY] = {
             str(slug): float(edit) for slug, edit in sorted(observed.items())
         }
+    if obligations is not None:
+        # Written whole, empty map included, so a plan that no longer holds a
+        # request drops its reason rather than keeping its last one.
+        stored[_REFLEX_OBLIGATIONS_KEY] = {
+            str(slug): dict(row) for slug, row in sorted(obligations.items())
+        }
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(stored, indent=2) + "\n", encoding="utf-8")
@@ -4668,6 +4701,101 @@ def _record_weighed_edits(
         # cannot record a review it dispatched answers nothing on that review
         # later, which is the safe direction: an unanswered finding waits.
         pass
+
+
+def _plan_review_holds(
+    pointers: Iterable[Mapping[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """The plans holding a request on ``plan-review-owed``, and its owner.
+
+    A request an admission pass held because a plan unit it reads carries no
+    stored review is held on ``plan-review-owed``, and no lane will release it
+    until the review it waits on is composed. Such a plan is the one the reflex
+    may not record as settled: its request outlives an unchanged edit, so a
+    pass that skipped it as already weighed would leave it held indefinitely.
+    One entry per plan; where several requests hold, the first named session
+    owns the obligation, because one composed review answers them all.
+    """
+    from reckon.crew import queue_admission
+
+    held: dict[str, dict[str, Any]] = {}
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        if str(pointer.get("phase") or "") != queue_admission.HELD_PHASE:
+            continue
+        hold = pointer.get("queue_hold")
+        if not isinstance(hold, Mapping) or not hold.get("automatic"):
+            continue
+        if str(hold.get("reason") or "") != queue_admission.PLAN_REVIEW_HELD_REASON:
+            continue
+        plan = _run_plan(pointer)
+        if not plan:
+            continue
+        row = held.setdefault(
+            plan,
+            {"session": "", "run_id": pointer.get("run_id")},
+        )
+        session = str(pointer.get("session") or "").strip()
+        if not row["session"] and session:
+            row["session"] = session
+    return held
+
+
+def _plan_version_of(path: Path) -> int:
+    """The plan's version integer, or 0 when it declares none."""
+    try:
+        return int(_plan_html.parse_meta(path).get("version") or 0)
+    except (OSError, TypeError, ValueError):
+        return 0
+
+
+def _held_plan_obligation(
+    project: str,
+    plan_slug: str,
+    path: Path,
+    *,
+    base_dir: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Why the pass cannot compose a held plan's review, or ``None``.
+
+    A held request means the plan owes a review the reflex is responsible for.
+    When a unit is uncovered and under its review cap. When none is, or one
+    has had the reviews its edit allowed, the reason is recorded for the
+    request's session instead.
+
+    The answer is the obligation's shape and not its session: the caller adds
+    the session that owns the request. ``None`` means the review is composable
+    now, so no obligation is recorded for it.
+    """
+    _contributing, uncovered, _change = review_coverage(
+        project, plan_slug, plan=path, base_dir=base_dir
+    )
+    if uncovered:
+        refusal = compose_burst_refusal(
+            project, plan_slug, base_dir=base_dir, plan_path=path
+        )
+        if refusal is None:
+            return None
+        return {
+            "plan": plan_slug,
+            "version": _plan_version_of(path),
+            "reason": "a unit at its review cap",
+            "detail": refusal,
+        }
+    open_ids: list[str] = []
+    for record in _contributing:
+        for finding_id in unanswered_findings(record):
+            if finding_id not in open_ids:
+                open_ids.append(str(finding_id))
+    if not open_ids:
+        return None
+    return {
+        "plan": plan_slug,
+        "version": _plan_version_of(path),
+        "reason": "an unanswered finding",
+        "finding_ids": open_ids,
+    }
 
 
 def _owed_review_skip_reason(
@@ -5011,6 +5139,7 @@ def compose_owed_plan_reviews(
         "failed": [],
         "read": [],
         "notes": [],
+        "obligations": [],
     }
     plans, failed = _project_plan_paths(project)
     report["failed"].extend(failed)
@@ -5070,10 +5199,23 @@ def compose_owed_plan_reviews(
         }
         held = {slug: run_ids for slug, run_ids in held.items() if run_ids}
     weighed = _weighed_edits(project) if not dry_run else {}
-    passed = dict(weighed)
+    # The plans whose requests are held on their review. They are the one set
+    # the reflex may not record as settled: a held request outlives an
+    # unchanged edit, so skipping such a plan as already weighed is what left
+    # it held forever. Read from the same live listing the authoring runs are,
+    # so a held request that shares a plan with its author is found for free.
+    live = list(runs.list_live(project=project)) if pointers is None else list(pointers)
+    review_holds = _plan_review_holds(live) if not dry_run else {}
+    # A held plan is carried over as weighed only when it no longer holds a
+    # request; otherwise every held plan would read as settled before the pass
+    # had composed anything, which is the record this change removes.
+    passed = {
+        slug: stamp for slug, stamp in weighed.items() if slug not in review_holds
+    }
+    obligations: dict[str, dict[str, Any]] = {}
     # One reading of each store for the whole pass, so the authoring run each
     # plan is dispatched under costs one lookup rather than one ledger load.
-    authors = plan_authoring_runs(project, now_seconds=now_seconds, pointers=pointers)
+    authors = plan_authoring_runs(project, now_seconds=now_seconds, pointers=live)
     # A plan's edit age is one stat, so the burst window is applied to the whole
     # project before anything is weighed. Only a plan inside the window can owe
     # a review, and the read slot is spent on one of those rather than on
@@ -5117,10 +5259,17 @@ def compose_owed_plan_reviews(
                 }
             )
             continue
-        if weighed.get(plan_slug) == edited and not include_design:
+        if (
+            weighed.get(plan_slug) == edited
+            and not include_design
+            and plan_slug not in review_holds
+        ):
             # The plan has not been written since the pass last weighed it, so
             # it owes nothing new. This is what keeps the pass proportional to
-            # the edits since the last sweep rather than to the project.
+            # the edits since the last sweep rather than to the project. A plan
+            # holding a request on its review is never passed over here: that
+            # request waits on a review the reflex must compose, not on an
+            # edit, so its unchanged stamp is not an answer to it.
             continue
         candidates.append((plan_slug, path, edited, observed.get(plan_slug) != edited))
     # A plan whose file has moved since the pass last read it goes first: it is
@@ -5200,6 +5349,22 @@ def compose_owed_plan_reviews(
             )
             if reason is not None:
                 report["skipped"].append({"plan": plan_slug, "reason": reason})
+                if plan_slug in review_holds:
+                    # A held request is answered by recording why the review it
+                    # waits on was not composed, for the session that owns it,
+                    # rather than by settling the plan. The plan stays out of
+                    # the fast path until the request is released, so each pass
+                    # either composes the review or restates the reason.
+                    obligation = _held_plan_obligation(
+                        project, plan_slug, path, base_dir=base_dir
+                    )
+                    if obligation is not None:
+                        obligation["session"] = str(
+                            review_holds[plan_slug].get("session") or ""
+                        )
+                        obligations[plan_slug] = obligation
+                        report["obligations"].append(dict(obligation))
+                    continue
                 if reason.startswith(
                     ("a stored review already covers", "the plan is ")
                 ):
@@ -5260,7 +5425,11 @@ def compose_owed_plan_reviews(
                     held[plan_slug] = sorted({*held.get(plan_slug, []), composed_run})
                 else:
                     composed_all = False
-            if composed_all:
+            if composed_all and plan_slug not in review_holds:
+                # A held plan is never recorded as settled: the request its
+                # review answers is still held until the review is stored and
+                # admission releases it, so the next pass must weigh it again
+                # rather than answer its unchanged stamp.
                 passed[plan_slug] = edited
         except Exception as exc:  # noqa: BLE001 — one plan's failure is that plan's
             report["failed"].append(
@@ -5275,6 +5444,7 @@ def compose_owed_plan_reviews(
             cursor=stopped_at,
             composed=held,
             observed=observations,
+            obligations=obligations,
         )
     return report
 
