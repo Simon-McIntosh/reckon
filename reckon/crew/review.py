@@ -3028,6 +3028,136 @@ def _gate_log_format(log_text: str) -> str | None:
     return None
 
 
+# A gate that runs several test processes into one log closes each process with
+# its own header carrying that child's status, as
+# ``# ---- process exit 1 rc=1``. The text between two headers is one process's
+# output, and the log's terminal ``EXIT=<n>`` record describes them all.
+PROCESS_EXIT_RE = re.compile(
+    r"^[ \t]*#[ \t]*-{2,}[ \t]*process exit\b[^\n]*?\brc=(-?\d+)[ \t]*$",
+    re.MULTILINE,
+)
+
+# The terminal ``EXIT=<n>`` capture record, with its status captured.
+TERMINAL_EXIT_RE = re.compile(r"^[ \t]*EXIT=(-?\d+)[ \t]*$", re.MULTILINE)
+
+
+def _process_label(text: str, ordinal: int) -> str:
+    """What a process in a multi-process log is called in a record.
+
+    A per-file gate writes ``# file: <path>`` before the file's own run, which
+    names the process as the file it ran. A log with no such header still names
+    each process by its position, so an incomplete one can be pointed at.
+    """
+    marker = PER_FILE_MARKER_RE.search(text)
+    if marker is not None:
+        return marker.group("file").strip()
+    return f"process {ordinal}"
+
+
+def _process_reports_summary(text: str) -> bool:
+    """Whether one process's output in a gate log reports its own result.
+
+    A pytest process is complete when its own summary line is present; a ctest
+    process is complete when its run summary is. A process that stopped before
+    its summary states no result at all, so its log is unmeasured rather than
+    clean.
+    """
+    log_format = _gate_log_format(text)
+    if log_format is None:
+        return False
+    if log_format == "ctest":
+        return _CTEST_SUMMARY_RE.search(text) is not None
+    return pytest_summary_failure_count(text) is not None
+
+
+def arm_log_observation(
+    log_text: str, arm_directory: str | Path | None = None
+) -> dict[str, Any]:
+    """The exit status, failure ids and completion a suite arm's log records.
+
+    A log of several test processes is read per process: each header closes one
+    process and the text since the previous header is that process's output.
+    The arm is complete when every process reports its own summary and the
+    log's terminal ``EXIT=<n>`` record agrees with the processes — a non-zero
+    record when some process failed, a zero one when none did. The failure ids
+    are the union of every process's ids, since each process belongs to the
+    one gate. A process that stopped without a summary leaves the arm
+    incomplete and is named, because a killed or abandoned process states no
+    result rather than a clean one.
+
+    A log with no process header is one process: its status is its own terminal
+    ``EXIT=<n>`` record and its ids are read from the whole log. A log whose
+    format is unrecognised is unmeasured in both directions, so its arm is left
+    incomplete rather than trusted. A ctest log reports its own result and is
+    read the same way.
+
+    ``exit_status`` is the terminal record when one is present, else the last
+    process's own status so a log whose capture omitted the record still says
+    what it holds.
+    """
+    headers = list(PROCESS_EXIT_RE.finditer(log_text))
+    terminal = TERMINAL_EXIT_RE.findall(log_text)
+    exit_status = int(terminal[-1]) if terminal else None
+
+    ids: set[str] = set()
+    measurable = True
+    incomplete: list[str] = []
+    process_codes: list[int] = []
+    if not headers:
+        segments = [(log_text, None)]
+    else:
+        segments = []
+        start = 0
+        for header in headers:
+            segments.append((log_text[start : header.start()], int(header.group(1))))
+            start = header.end()
+        # The tail after the last process header holds only the log's own
+        # closing record, never a process's output.
+    file_labelled = PER_FILE_MARKER_RE.search(log_text) is not None
+    for ordinal, (segment, code) in enumerate(segments, start=1):
+        # The only segment of a log without process headers carries the
+        # terminal EXIT= record, which is the log's and not the process's.
+        body = TERMINAL_EXIT_RE.sub("", segment) if code is None else segment
+        # Text before the first file header is the gate's own preamble rather
+        # than a process's output, and only a leading segment can be that.
+        if (
+            ordinal == 1
+            and file_labelled
+            and not PER_FILE_MARKER_RE.search(body)
+            and not _process_reports_summary(body)
+        ):
+            continue
+        if not _process_reports_summary(body):
+            incomplete.append(_process_label(body, ordinal))
+            continue
+        segment_ids = gate_log_failure_ids(body, arm_directory)
+        if segment_ids is None:
+            measurable = False
+            continue
+        ids |= segment_ids
+        if code is not None:
+            process_codes.append(code)
+
+    if exit_status is None and process_codes:
+        exit_status = process_codes[-1]
+    # The record and the children must tell one story: a non-zero closing
+    # record when a child failed, a zero one when none did.
+    if (
+        exit_status is not None
+        and process_codes
+        and (exit_status != 0) != any(code != 0 for code in process_codes)
+    ):
+        measurable = False
+
+    completed = measurable and not incomplete and exit_status is not None
+    return {
+        "exit_status": exit_status,
+        "failure_ids": sorted(ids) if measurable else [],
+        "completed": completed,
+        "incomplete_processes": incomplete,
+    }
+
+
 def _manifest_field_lines(manifest_text: str, field: str) -> list[str]:
     """Return a manifest field's value text and any block written beneath it.
 

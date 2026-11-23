@@ -54,7 +54,7 @@ import tokenize
 from collections.abc import Iterable, Iterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path, PurePath, PurePosixPath
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 import yaml
 
@@ -333,6 +333,7 @@ class SuiteObservation(TypedDict):
     completed: bool | None
     failure_count: int | None
     failure_ids: list[str] | None
+    incomplete_processes: NotRequired[list[str]]
 
 
 def parse_manifest(
@@ -1273,7 +1274,7 @@ def _validate_suite_observation(raw: dict[str, Any]) -> SuiteObservation:
         candidate = raw.get(name)
         return candidate.strip() if isinstance(candidate, str) else ""
 
-    return {
+    observation: SuiteObservation = {
         "revision": string_field("revision"),
         "command": string_field("command"),
         "exit_status": exit_status,
@@ -1283,6 +1284,14 @@ def _validate_suite_observation(raw: dict[str, Any]) -> SuiteObservation:
         "failure_count": failure_count,
         "failure_ids": failure_ids,
     }
+    incomplete = raw.get("incomplete_processes")
+    if (
+        isinstance(incomplete, list)
+        and incomplete
+        and all(isinstance(item, str) and item.strip() for item in incomplete)
+    ):
+        observation["incomplete_processes"] = [item.strip() for item in incomplete]
+    return observation
 
 
 # ── A suite record keyed by arm is refused where its author can fix it ───────
