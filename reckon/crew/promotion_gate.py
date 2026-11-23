@@ -1363,6 +1363,7 @@ def _rerun_gate_at_integrated_revision(
                     bound_seconds=bound_seconds,
                     chdir=checkout_root,
                     log_path=job_log,
+                    config={"landing": landing},
                 )
                 timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
             else:
