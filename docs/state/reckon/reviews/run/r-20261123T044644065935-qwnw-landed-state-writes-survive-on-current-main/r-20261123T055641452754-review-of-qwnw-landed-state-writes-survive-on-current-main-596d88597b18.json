@@ -1,0 +1,194 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_when": "Fixture declarations do not begin implementable; precondition only.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 441
+    },
+    {
+      "fails_when": "Real staging fails before injection, invalidating the intended timing boundary.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 451
+    },
+    {
+      "fails_when": "The injected staging or check-only commit-hook refusal is ignored and landing reports success.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 465
+    },
+    {
+      "fails_when": "Landing refuses at a different boundary or loses the injected refusal reason.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 469
+    },
+    {
+      "fails_when": "The late state write is never attempted or returns refusal rather than success.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 470
+    },
+    {
+      "fails_when": "Removing expected_contents propagation or its changed-byte check restores HEAD over the accepted write; all six state predicates then fail against independent disk state.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 479
+    },
+    {
+      "fails_when": "Rollback changes any byte from the actual post-write snapshot, including landing comments or other state; the snapshot is observed output, not a value fed into the rollback.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 480
+    },
+    {
+      "fails_when": "Rollback preservation ceases to be reported as an unrestored path in the refusal receipt.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 481
+    },
+    {
+      "fails_when": "The preserved plan leaves no staged or unstaged change, so the write is no longer visible as pending checkout work.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 482
+    },
+    {
+      "fails_when": "Refused promotion nonetheless merges the reviewed worker file into the checkout.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 483
+    }
+  ],
+  "assertion_independence": "No self-comparing regression assertion found: line 479 parses checkout contents independently of the requested operations; line 480 compares to bytes read after the accepted write. Fixture and boundary assertions receive no independent survival credit.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:2814",
+    "reckon/crew/promotion.py:3539",
+    "reckon/crew/promotion.py:2543",
+    "reckon/crew/promotion_scope.py:3137",
+    "reckon/crew/promotion_scope.py:3229",
+    "reckon/crew/promotion_scope.py:3334"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T05:57:08Z",
+  "findings": [],
+  "focused_gate_evidence": {
+    "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_landed_state_write_survives_a_promotion.py tests/test_a_failed_promotion_restores_its_plan.py tests/test_no_promotion_leaves_an_uncommitted_plan.py tests/test_a_landing_survives_a_plan_edit.py tests/test_a_text_mode_plan_edit_counts_as_a_store_write_at_promotion.py'",
+    "completed": true,
+    "exit_status": 0,
+    "failure_ids": [],
+    "log_digest": "b045f5c61b4a3ac5e016d0a9926c3beb15c42fc783f64ccd00df427e95c76d47",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/scoped-gate-1795412199282899584.log",
+    "revision": "596d88597b184b8cda76e6fecdbc24d16ffcf31a",
+    "summary": "110 passed in 76.29s (0:01:16)"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the sole added commit 596d88597b184b8cda76e6fecdbc24d16ffcf31a against the previously reviewed 0bc78bad883e8163004dc0d7f0b8ec0d6eb09285; its 77 insertions and one deletion thread an optional byte preimage through existing rollback owners and add 12 refusal cases.",
+    "done_when": "live docs/plans/queued-work-needs-no-workaround.html section s41 requires six write kinds and a base declaration-loss control; repair-control-base-1795412114671655779.log now records an accepted declaration reverting to implementable, and the head after_suite log records 99 passes.",
+    "goal": "source prompt.txt:38 requires every accepted plan state write to survive an in-flight promotion; reckon/crew/promotion.py:2543 now carries its owned preimage to rollback, preserving late accepted writes on refusal.",
+    "manifest": "source manifest.md records the original-base and repair-parent controls, baseline_suite and after_suite with readable logs, and supersedes its earlier unreproduced-loss statement with the late-staging reproduction.",
+    "write_paths": "the source manifest.md orientation_write_paths includes all three incremental paths, and commit 596d88597b184b8cda76e6fecdbc24d16ffcf31a changes only reckon/crew/promotion.py, reckon/crew/promotion_scope.py and tests/test_every_landed_state_write_survives_a_promotion.py."
+  },
+  "justifications": {
+    "durability": "tests/test_every_landed_state_write_survives_a_promotion.py:479 independently rereads persisted state and fails on all 12 base and repair-parent cases when the new preimage propagation or rollback comparison is absent.",
+    "evidence": "source repair-control-base-1795412114671655779.log records accepted_write.ok=true with declaration_after={s2:implementable}, while after_suite-1795412188916742743.log records 99 passes at the reviewed head and both suite arms carry no failing IDs.",
+    "fit": "reckon/crew/promotion_scope.py:2157 adds an optional typed argument to the existing rollback owner, retains its per-path receipt convention and default callers, and tests/test_every_landed_state_write_survives_a_promotion.py:433 uses mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:2207 preserves a plan changed since the owned preimage, so the inner rollback cannot erase the accepted write before the outer snapshot checks it.",
+    "reuse": "reckon/crew/promotion_scope.py:2207 extends the existing rollback owner using the preimage already held by reckon/crew/promotion.py:2060, while the added test delegates real landing to tests/helpers/landing_repository.py:220 rather than implementing another driver.",
+    "scope_discipline": "commit 596d88597b184b8cda76e6fecdbc24d16ffcf31a changes only the three requested source and test paths, all declared in the source manifest.md."
+  },
+  "negative_control_evidence": {
+    "acceptance_precondition": "The shared _write helper at test lines 265-270 asserts success, rereads disk and asserts the requested state before rollback; declaration predicate requires done.",
+    "original_base": {
+      "command": "env PYTHONPATH=. sh -c 'cp /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/repair-regression-test.py tests/test_every_landed_state_write_survives_a_promotion.py && PYTHONPATH=. .venv/bin/python -c '\"'\"'import os,importlib; print(\"measurement_cwd:\",os.getcwd()); print(\"measurement_module:\",importlib.import_module(\"reckon.crew.promotion\").__file__)'\"'\"' && PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_landed_state_write_survives_a_promotion.py -k accepted_after_staging'",
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-decision-lock]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-declaration-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-followup-append]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-followup-resolve]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-scalar-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-section-append]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-decision-lock]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-declaration-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-followup-append]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-followup-resolve]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-scalar-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-section-append]"
+      ],
+      "log_digest": "f955cf688c83365ea76fefd4dbba90047c593b2f9f6280ef77a962958f24fccc",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/repair-control-base-1795412114671655779.log",
+      "revision": "a60da69f51eca65d76bafd0167445b865cf4d6c9",
+      "summary": "12 failed, 29 deselected in 11.15s"
+    },
+    "previous_blocker": "The new original-base loss reproduction answers the prior review finding fb5a5dfb6ee; no acceptance criterion was changed.",
+    "quote": "accepted_write.ok=true; new_version=3; declaration_before={s2:implementable}; declaration_after={s2:implementable}; promotion_exit=1",
+    "repair_parent": {
+      "command": "env PYTHONPATH=. sh -c 'cp /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/repair-regression-test.py tests/test_every_landed_state_write_survives_a_promotion.py && PYTHONPATH=. .venv/bin/python -c '\"'\"'import os,importlib; print(\"measurement_cwd:\",os.getcwd()); print(\"measurement_module:\",importlib.import_module(\"reckon.crew.promotion\").__file__)'\"'\"' && PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_landed_state_write_survives_a_promotion.py -k accepted_after_staging'",
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-decision-lock]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-declaration-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-followup-append]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-followup-resolve]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-scalar-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[commit-section-append]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-decision-lock]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-declaration-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-followup-append]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-followup-resolve]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-scalar-set]",
+        "tests/test_every_landed_state_write_survives_a_promotion.py::test_a_state_write_accepted_after_staging_survives_refusal[stage-section-append]"
+      ],
+      "log_digest": "ba075e46a6f80b573b8f91a911e6efc64879de370e1ead1a0338b5aaba545700",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/repair-control-parent-1795412158404961950.log",
+      "revision": "0bc78bad883e8163004dc0d7f0b8ec0d6eb09285",
+      "summary": "12 failed, 29 deselected in 8.58s"
+    }
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 requires every accepted plan state write to survive an in-flight promotion; reckon/crew/promotion.py:2543 now carries its owned preimage to rollback, preserving late accepted writes on refusal.\nVERDICT done_when: live docs/plans/queued-work-needs-no-workaround.html section s41 requires six write kinds and a base declaration-loss control; repair-control-base-1795412114671655779.log now records an accepted declaration reverting to implementable, and the head after_suite log records 99 passes.\nVERDICT write_paths: the source manifest.md orientation_write_paths includes all three incremental paths, and commit 596d88597b184b8cda76e6fecdbc24d16ffcf31a changes only reckon/crew/promotion.py, reckon/crew/promotion_scope.py and tests/test_every_landed_state_write_survives_a_promotion.py.\nVERDICT manifest: source manifest.md records the original-base and repair-parent controls, baseline_suite and after_suite with readable logs, and supersedes its earlier unreproduced-loss statement with the late-staging reproduction.\nVERDICT diff: read the sole added commit 596d88597b184b8cda76e6fecdbc24d16ffcf31a against the previously reviewed 0bc78bad883e8163004dc0d7f0b8ec0d6eb09285; its 77 insertions and one deletion thread an optional byte preimage through existing rollback owners and add 12 refusal cases.\nCALL_SITES: reckon/crew/promotion.py:2814, reckon/crew/promotion.py:3539, reckon/crew/promotion.py:2543, reckon/crew/promotion_scope.py:3137, reckon/crew/promotion_scope.py:3229, reckon/crew/promotion_scope.py:3334\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2207 preserves a plan changed since the owned preimage, so the inner rollback cannot erase the accepted write before the outer snapshot checks it.\nSCORE evidence: 20\nJUSTIFICATION evidence: source repair-control-base-1795412114671655779.log records accepted_write.ok=true with declaration_after={s2:implementable}, while after_suite-1795412188916742743.log records 99 passes at the reviewed head and both suite arms carry no failing IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 596d88597b184b8cda76e6fecdbc24d16ffcf31a changes only the three requested source and test paths, all declared in the source manifest.md.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_every_landed_state_write_survives_a_promotion.py:479 independently rereads persisted state and fails on all 12 base and repair-parent cases when the new preimage propagation or rollback comparison is absent.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:2157 adds an optional typed argument to the existing rollback owner, retains its per-path receipt convention and default callers, and tests/test_every_landed_state_write_survives_a_promotion.py:433 uses mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_scope.py:2207 extends the existing rollback owner using the preimage already held by reckon/crew/promotion.py:2060, while the added test delegates real landing to tests/helpers/landing_repository.py:220 rather than implementing another driver.\n",
+  "reuse_search": "Searched expected_contents, require_owned_content, restore and landing refusal injection in promotion.py, promotion_scope.py and existing failed-promotion tests; opened _PlanWriteSnapshot.require_owned_content/restore and tests/helpers/landing_repository.py. The production diff adds no definitions and extends the existing restore owner. The new test and stage_then_edit hook compose existing WRITES, _write, _stage_landing_writes and _complete_land capabilities; no duplicate owner is introduced.",
+  "review_run_id": "r-20261123T055641452754-review-of-qwnw-landed-state-writes-survive-on-current-main-596d88597b18",
+  "review_scope": "Incremental review only; _store.py and the original test cases were reviewed in the prior record and are not rescored as new implementation.",
+  "reviewed_base_sha": "0bc78bad883e8163004dc0d7f0b8ec0d6eb09285",
+  "reviewed_commits": [
+    "596d88597b184b8cda76e6fecdbc24d16ffcf31a"
+  ],
+  "reviewed_head_sha": "596d88597b184b8cda76e6fecdbc24d16ffcf31a",
+  "reviewed_run_id": "r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_landed_state_write_survives_a_promotion.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_digest": "e723d352594f5f9927083059898529de5936f039c258723e3b5d463bb078f6f5",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/after_suite-1795412188916742743.log",
+      "revision": "596d88597b184b8cda76e6fecdbc24d16ffcf31a",
+      "summary": "99 passed in 84.57s (0:01:24)"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_digest": "9274be85dbc19b8a7cca8cade4cf86c5cccf80a3ffce91191f4dcf5a9cf9a2c4",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/baseline_suite-1795412113730169722.log",
+      "revision": "a60da69f51eca65d76bafd0167445b865cf4d6c9",
+      "summary": "58 passed in 40.08s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T06:02:59.915862+00:00",
+  "total": 120
+}
