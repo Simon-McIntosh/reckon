@@ -3793,7 +3793,7 @@ def _namings_answer_from_store(project: str, repository: Path) -> bool:
 
 
 def _run_namings(
-    project: str, repository: Path
+    project: str, repository: Path, from_store: bool | None = None
 ) -> tuple[dict[str, tuple[str, Path | None]], list[dict[str, Any]]] | None:
     """Each run's node id and retained tree, with the rows, from one fresh read.
 
@@ -3824,7 +3824,9 @@ def _run_namings(
 
         root = _ledger_read_root(project, repository)
         signature = _HELD_SOURCE_SIGNATURE.get()
-        if _namings_answer_from_store(project, repository):
+        if from_store is None:
+            from_store = _namings_answer_from_store(project, repository)
+        if from_store:
             rows = ledger.open_runs(project, root)
             rows.extend(open_run_index.rows_naming_trees(project, signature[4], root))
         else:
@@ -4489,7 +4491,8 @@ def _held_worktree_records_read(
             # writers' own session projection instead.
             return _EMPTY_PASS
         if previous is None or previous[0] != aggregate_stamp:
-            fresh = _run_namings(project, repository)
+            from_store = _namings_answer_from_store(project, repository)
+            fresh = _run_namings(project, repository, from_store)
             rows = (
                 fresh[1] if fresh is not None else _run_file_rows(project, repository)
             )
@@ -4527,13 +4530,17 @@ def _held_worktree_records_read(
             # row is filed from the aggregate's own position, or a rebuild over
             # a rewritten aggregate drops the duty its older rows still owe.
             #
-            # Only the store's answer is completed this way. When the merged
-            # reader answers instead, it has already decided which aggregate
-            # rows are readable: a row the aggregate gained after the
+            # Two readers can answer the read, and they differ here. The store's
+            # projection answers the project's history once it holds the
+            # project, so a run it does not deliver is completed from the
+            # aggregate. The merged reader has instead already decided which
+            # aggregate rows are readable: a row the aggregate gained after the
             # projection was last completed reaches no reader through it, and
-            # filing it here would attribute a tree to a run the whole-ledger
-            # read attributes to an earlier one.
-            if fresh is None or _namings_answer_from_store(project, repository):
+            # filing that row would attribute a tree to a run the whole-ledger
+            # read attributes to an earlier one. A row carrying no run id is a
+            # row neither reader can hold — the store is keyed by run identity —
+            # so it is filed from the aggregate whichever reader answered.
+            if fresh is None or from_store:
                 delivered = {str(row.get("run_id") or "") for row in rows}
                 for ordinals in aggregate_order.values():
                     for ordinal in ordinals:
@@ -4542,6 +4549,9 @@ def _held_worktree_records_read(
                         if run_id and run_id in delivered:
                             # Filed above; filing the aggregate's copy would
                             # put one row in the index twice.
+                            continue
+                        if run_id and not from_store:
+                            # The merged reader answers the project's history.
                             continue
                         index.replace((0, ordinal), row, _retained_worktree(row))
             affected = set(inspected)
