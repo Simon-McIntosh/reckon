@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:393 (fair_share_admission_order, the admission pass order)",
+    "reckon/crew/queue_order.py:567 / admission_order_details",
+    "reckon/crew/queue_admission.py:155-157 (queued_placements re-export)",
+    "reckon/crew/dispatching/requests.py:564 (admission_order)",
+    "reckon/crew/promotion_requests.py:957 (fair_queue_order_details)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T21:54:35Z",
+  "findings": [
+    {
+      "evidence": "scratch probe printed admission_order ['crit','review','lower'] vs fair_share ['lower','crit','review']",
+      "file": "reckon/crew/admission/ordering.py",
+      "line": 346,
+      "severity": "blocking",
+      "summary": "priorities_first excludes the critical request from `raised` but still prepends every other hoisted override to `rest`, where the critical request sits at index 0 because it is neither a review nor aged, so the lead scan stops immediately; result: with a critical (=100) and a lower override (=10) queued beside a review, fair_share_admission_order returns [lower, crit, review], so the lower-priority request takes the freed slot and the critical request waits.",
+      "text": "Reproduced against e04648c6 in a scratch extraction: fair_share_admission_order([review, crit@100, lower@10]) -> ['lower','crit','review'], while admission_order gives the correct ['crit','review','lower']. This is the production admission path (admission/selection.py:393).",
+      "title": "a sub-critical override is hoisted ahead of a critical request"
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 957,
+      "severity": "non-blocking",
+      "summary": "fair_queue_order_details is called without config_for, so the project's retuned queue.critical_priority is ignored and the shipped default 100 applies there; a project that sets 50 gets 50 only in admission, not in promotion ordering.",
+      "text": "The optional config_for added to fair_queue_order_details defaults to None at its only external call site, so _critical_level always reads the shipped default 100 on that path.",
+      "title": "project critical level not threaded into the promotion-requests ordering"
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": 1826,
+      "severity": "non-blocking",
+      "summary": "Two dict-comprehension reflows in validate_layer and unknown_key_paths are unrelated to critical priority; harmless but out-of-goal churn inside a declared path.",
+      "text": "flight.py:1826 and flight.py:2002 collapse multi-line comprehensions to one line; neither relates to the critical level.",
+      "title": "unrelated formatting reflows in flight.py"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261123T203137193604-review-of-arcaf-reviews-take-slots-first-e04648c6c1a8",
+  "reviewed_base_sha": "4fa07b80a8d5335def32b0297d595958115ae7e4",
+  "reviewed_head_sha": "e04648c6c1a8c4b8015051ae71806bca93e7616c",
+  "reviewed_run_id": "r-20261122T213519079815-arcaf-reviews-take-slots-first",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 12,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T22:20:16.816058+00:00",
+  "total": 89,
+  "verdicts": {
+    "done_when": "done_when names tests/test_a_critical_request_takes_a_slot_before_reviews.py; the override-100/99/none and project-level-50 cases plus the shipped-defaults strict-resolution test all pass in after_suite (64 passed, EXIT=0), 0 added failures vs baseline (59 passed).",
+    "goal": "The node goal is a critical override takes a freed slot ahead of a delivered run's review; admission/ordering.py and queue_order.py add a (-1) critical class, but a sub-critical override is hoisted ahead of it in the fair-share path."
+  }
+}
