@@ -263,6 +263,20 @@ FIGURE_NAME_PATTERN = re.compile(
     r"\b(?:figures?|diagrams?|plots?|charts?|graphs?)\b", re.IGNORECASE
 )
 
+# The forms a done-when uses to state a measured quantity rather than name a
+# figure artifact: a number carrying a unit, a percentage or a count. A gate
+# that cuts runtime by 30 percent states a measure whether or not it says
+# "figure", and the clause composed from it has to read that way, or the node is
+# told it states no measure while its own done-when states one.
+MEASURE_PATTERN = re.compile(
+    r"\b\d+(?:[.,]\d+)?\s*(?:%|per\s?cent\b|percentage\s+points?\b|"
+    r"ms\b|milli\s?seconds?\b|µs\b|micro\s?seconds?\b|ns\b|"
+    r"nano\s?seconds?\b|seconds?\b|minutes?\b|hours?\b|days?\b|times\b|"
+    r"x\b|bytes?\b|[kmg]b\b|lines?\b|rows?\b|tests?\b|nodes?\b|"
+    r"runs?\b|points?\b)",
+    re.IGNORECASE,
+)
+
 
 def _evidence_figure_rule(done_when: str, *, directory: str, src: str) -> str:
     """Compose the evidence rule for this node's own done-when.
@@ -270,13 +284,15 @@ def _evidence_figure_rule(done_when: str, *, directory: str, src: str) -> str:
     The rule's text is stated once in the constants above; this function is the
     one producer every landing contract reads, so a change to the rule's wording
     changes it in every composed contract rather than in one of four copies. A
-    done-when stating a measure gets the figure asked for; one stating none is
-    told it has no figure to draw, and is asked for none. The node's done-when is
-    the only input, so the clause states which side this node is on rather than
-    asking the worker to apply a conditional to a node it cannot see from the
-    inside.
+    done-when stating a measure — naming a figure artifact, or stating a
+    measured quantity such as a percentage or a duration — gets the figure asked
+    for; one stating neither is told it has no figure to draw, and is asked for
+    none. The node's done-when is the only input, so the clause states which side
+    this node is on rather than asking the worker to apply a conditional to a
+    node it cannot see from the inside.
     """
-    if FIGURE_NAME_PATTERN.search(str(done_when or "")):
+    text = str(done_when or "")
+    if FIGURE_NAME_PATTERN.search(text) or MEASURE_PATTERN.search(text):
         figure = EVIDENCE_FIGURE_ANNOUNCED
     else:
         figure = EVIDENCE_FIGURE_WITHHELD
@@ -1010,7 +1026,7 @@ RUNTIME FILESYSTEM
         if run_record_carrier:
             landing_contract = BRIEF_LANDING_CONTRACT
             figure_directory = "docs/figures/<topic>/"
-            figure_src = "src /<project>/figures/"
+            figure_src = "src /<project>/figures/<topic>/"
         else:
             landing_contract = PLAN_LANDING_CONTRACT
             figure_directory = "docs/figures/<plan>/<node-id>/"
@@ -1168,7 +1184,8 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
 {commits_line}
   changed_paths: <explicit list>
   retry_failures: <failure ids for repeated runs of the same command, including unattributed failures; record each before applying the stop rule>
-{landing_key}  tests: <the gate command that actually ran — the literal text a shell was handed, never a description of it and never a template command carrying an unsubstituted placeholder>. Promotion fills its gate receipt from this line, so a sentence naming the suite rather than the command cannot be re-run and is refused; the log's own `# command:` header line is the fallback when this line is absent
+{landing_key}  figures: none | <each figure path the run commits, under docs/figures/<plan>/. A node with nothing to show names none; the composed evidence rule asks for a figure only where the done-when states a measure>
+  tests: <the gate command that actually ran — the literal text a shell was handed, never a description of it and never a template command carrying an unsubstituted placeholder>. Promotion fills its gate receipt from this line, so a sentence naming the suite rather than the command cannot be re-run and is refused; the log's own `# command:` header line is the fallback when this line is absent
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; its last line is a bare `EXIT=<code>` line, which is where promotion reads the gate's exit status — a log without one leaves the status unread. A gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>

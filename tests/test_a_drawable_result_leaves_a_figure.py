@@ -7,10 +7,17 @@ prose. A worker obeyed the withholding clause and wrote a fragment of prose,
 which is what the fleet did — hundreds of landings and a handful of figures.
 
 The rule is now stated once, in one producer that composes it from the node's
-own done-when, and every landing contract reads that one producer. This module
-asserts the four facts the plan's done-when names, and one more: that the rule's
-text has one home, so editing it there changes every composed contract rather
-than one of several copies.
+own done-when, and every landing contract reads that one producer. A done-when
+states a measure by naming a figure artifact or by stating a measured quantity,
+so a quantitative done-when that never says "figure" still asks for one. This
+module asserts the four facts the plan's done-when names, and one more: that the
+rule's text has one home, so editing it there changes every composed contract
+rather than one of several copies.
+
+The expected sentences below are written out rather than imported from the
+producer: an assertion that compares a constant with the same constant the
+producer inserted cannot tell whether the prompt asks a worker for a figure, and
+the fixtures state a measure without reusing the classifier's own words.
 """
 
 from __future__ import annotations
@@ -22,27 +29,42 @@ import pytest
 
 import reckon.crew.prompts as prompts_mod
 from reckon.crew.node import TaskNode
-from reckon.crew.prompts import (
-    EVIDENCE_FIGURE_ANNOUNCED,
-    EVIDENCE_FIGURE_RULE_COMMON,
-    EVIDENCE_FIGURE_WITHHELD,
-    compose_prompt,
-)
+from reckon.crew.prompts import compose_prompt
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL = REPO_ROOT / "skills/reckon-build/references/worker-protocol.md"
 
-# A done-when stating a measure, and one stating none: the two sides of the
-# classification the rule is composed from.
-DRAWABLE_DONE_WHEN = (
+# A done-when naming a figure artifact, and one stating a measured quantity
+# without the word "figure": the two ways a done-when states a measure.
+FIGURE_DONE_WHEN = (
     "the measure's figure shows the retained share and names its topic directory"
 )
+MEASURED_DONE_WHEN = "the gate cuts runtime by 30 percent"
 RENAME_DONE_WHEN = "rename the helper without changing its behaviour, and offer none"
 
-# The directory each carrier grants. The plan carrier names the node's own
-# directory; the brief carrier names the plan-wide topic a brief run writes into.
+# What the composed contract must say on each side, in its own words.
+EXPECTED_COMMON = (
+    "Keep evidence prose to the landing line, and write an evidence fragment "
+    "only for a negative result; the landing fragment is always permitted at "
+    "its scope path."
+)
+EXPECTED_ANNOUNCED = (
+    "Your done-when states a measure, so draw the figure that shows it — or an "
+    "animation where the result is a sequence in time — wherever the result is "
+    "one a figure shows more clearly than prose, and name it on the manifest's "
+    "`figures:` line."
+)
+EXPECTED_WITHHELD = (
+    "Your done-when states no measure, so this node has no figure to draw."
+)
+
+# The directory and project-absolute path each carrier grants. The plan carrier
+# names the node's own directory; the brief carrier names the plan-wide topic a
+# brief run writes into, leaf path included.
 PLAN_DIRECTORY = "docs/figures/<plan>/<node-id>/"
+PLAN_SRC = "src /<project>/figures/<plan>/<node-id>/"
 BRIEF_DIRECTORY = "docs/figures/<topic>/"
+BRIEF_SRC = "src /<project>/figures/<topic>/"
 
 BRIEF_TEXT = "Report what you found for the next reader."
 
@@ -77,7 +99,7 @@ def _node(*, done_when: str, brief: bool, role: str = "implement") -> TaskNode:
     )
 
 
-def _compose(done_when: str = DRAWABLE_DONE_WHEN, *, brief: bool = False) -> str:
+def _compose(done_when: str = FIGURE_DONE_WHEN, *, brief: bool = False) -> str:
     return compose_prompt(
         node=_node(done_when=done_when, brief=brief),
         project="proj",
@@ -94,18 +116,32 @@ def _compose(done_when: str = DRAWABLE_DONE_WHEN, *, brief: bool = False) -> str
 # ── A node whose done-when states a measure is asked for its figure ─────────
 
 
-def test_a_drawable_done_when_asks_for_the_figure_and_names_its_directory():
-    flat = _flat(_compose(DRAWABLE_DONE_WHEN))
+@pytest.mark.parametrize(
+    "done_when", [FIGURE_DONE_WHEN, MEASURED_DONE_WHEN], ids=["named", "measured"]
+)
+def test_a_drawable_done_when_asks_for_the_figure_and_names_its_directory(
+    done_when: str,
+) -> None:
+    flat = _flat(_compose(done_when))
 
-    assert _flat(EVIDENCE_FIGURE_ANNOUNCED) in flat
+    assert EXPECTED_COMMON in flat
+    assert EXPECTED_ANNOUNCED in flat
     assert PLAN_DIRECTORY in flat
+    assert PLAN_SRC in flat
+
+
+def test_a_measured_done_when_is_never_told_it_states_no_measure() -> None:
+    flat = _flat(_compose(MEASURED_DONE_WHEN))
+
+    assert EXPECTED_WITHHELD not in flat
 
 
 def test_a_drawable_brief_asks_for_the_figure_and_names_the_topic_directory():
-    flat = _flat(_compose(DRAWABLE_DONE_WHEN, brief=True))
+    flat = _flat(_compose(MEASURED_DONE_WHEN, brief=True))
 
-    assert _flat(EVIDENCE_FIGURE_ANNOUNCED) in flat
+    assert EXPECTED_ANNOUNCED in flat
     assert BRIEF_DIRECTORY in flat
+    assert BRIEF_SRC in flat
 
 
 # ── A node whose done-when states no measure is asked for none ──────────────
@@ -115,8 +151,8 @@ def test_a_rename_done_when_asks_for_no_figure():
     for brief in (False, True):
         flat = _flat(_compose(RENAME_DONE_WHEN, brief=brief))
 
-        assert _flat(EVIDENCE_FIGURE_ANNOUNCED) not in flat
-        assert _flat(EVIDENCE_FIGURE_WITHHELD) in flat
+        assert EXPECTED_ANNOUNCED not in flat
+        assert EXPECTED_WITHHELD in flat
 
 
 # ── No contract both withholds a figure and asks for one ────────────────────
@@ -124,7 +160,9 @@ def test_a_rename_done_when_asks_for_no_figure():
 
 @pytest.mark.parametrize("brief", [False, True], ids=["plan", "brief"])
 @pytest.mark.parametrize(
-    "done_when", [DRAWABLE_DONE_WHEN, RENAME_DONE_WHEN], ids=["drawable", "rename"]
+    "done_when",
+    [FIGURE_DONE_WHEN, MEASURED_DONE_WHEN, RENAME_DONE_WHEN],
+    ids=["named", "measured", "rename"],
 )
 def test_no_contract_both_withholds_a_figure_and_asks_for_one(
     brief: bool, done_when: str
@@ -136,14 +174,26 @@ def test_no_contract_both_withholds_a_figure_and_asks_for_one(
     assert not (asks and withholds), flat
 
 
+# ── The manifest template carries the `figures:` key the rule names ─────────
+
+
+def test_the_manifest_template_names_the_figures_line() -> None:
+    flat = _flat(_compose())
+
+    assert (
+        "figures: none | <each figure path the run commits, under "
+        "docs/figures/<plan>/" in flat
+    )
+
+
 # ── The reference states the same rule in the same words ────────────────────
 
 
 def test_the_worker_protocol_states_the_same_rule_in_the_same_words():
     flat = _flat(PROTOCOL.read_text(encoding="utf-8"))
 
-    assert _flat(EVIDENCE_FIGURE_RULE_COMMON) in flat
-    assert _flat(EVIDENCE_FIGURE_ANNOUNCED) in flat
+    assert _flat(EXPECTED_COMMON) in flat
+    assert _flat(EXPECTED_ANNOUNCED) in flat
     assert "has no figure to draw" in flat
 
 
@@ -154,14 +204,14 @@ def test_changing_the_rule_changes_every_composed_contract(monkeypatch):
     before = {
         (brief, done_when): _flat(_compose(done_when, brief=brief))
         for brief in (False, True)
-        for done_when in (DRAWABLE_DONE_WHEN, RENAME_DONE_WHEN)
+        for done_when in (FIGURE_DONE_WHEN, MEASURED_DONE_WHEN, RENAME_DONE_WHEN)
     }
     marker = "Every contract reads this one sentence about what a result owes."
 
     monkeypatch.setattr(
         prompts_mod,
         "EVIDENCE_FIGURE_RULE_COMMON",
-        EVIDENCE_FIGURE_RULE_COMMON + "  " + marker + "\n",
+        prompts_mod.EVIDENCE_FIGURE_RULE_COMMON + "  " + marker + "\n",
     )
 
     for (brief, done_when), originally in before.items():

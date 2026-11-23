@@ -145,7 +145,7 @@ def test_the_brief_landing_contract_keeps_the_figure_and_meta_rules() -> None:
 
     # The two landing contracts differ only in where the record goes.
     assert "docs/figures/<topic>/" in flat
-    assert "src /<project>/figures/" in flat
+    assert "src /<project>/figures/<topic>/" in flat
     assert "never an image of what is naturally a table" in flat
     assert "Do not edit the plan-version or plan-modified meta lines" in flat
 
@@ -400,6 +400,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   changed_paths: <explicit list>
   retry_failures: <failure ids for repeated runs of the same command, including unattributed failures; record each before applying the stop rule>
   landing: <exactly one line recording your landing record; promotion lands it as a comment on your plan section, so do not edit the plan>
+  figures: none | <each figure path the run commits, under docs/figures/<plan>/. A node with nothing to show names none; the composed evidence rule asks for a figure only where the done-when states a measure>
   tests: <the gate command that actually ran — the literal text a shell was handed, never a description of it and never a template command carrying an unsubstituted placeholder>. Promotion fills its gate receipt from this line, so a sentence naming the suite rather than the command cannot be re-run and is refused; the log's own `# command:` header line is the fallback when this line is absent
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; its last line is a bare `EXIT=<code>` line, which is where promotion reads the gate's exit status — a log without one leaves the status unread. A gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
