@@ -1,0 +1,89 @@
+<section id="delivered-work-lands-without-a-coordinator-s55-landing">
+  <h2>A landed record is written only once the run's row and its place on the primary branch exist</h2>
+
+  <p>At revision <code>398a0d09708dda09bec869b7a512404cf9eb2902</code> a
+  landing writes its close comment, its section declaration and the removal of
+  the run's live pointer whether or not anything recorded what had landed;
+  at head <code>af80e1240ff1a5750e309c950dbd1397b98374fc</code> each of those
+  writes is refused until the run's head is on the primary branch and its ledger
+  row is written.</p>
+
+  <figure>
+    <img src="/reckon/figures/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s55/write-order.svg"
+         alt="Two rows of boxes. At the base revision a landing closes the
+              comment and declaration, then releases the pointer, and the
+              ledger row may never be written. At the head revision the ledger
+              row is read or written first, then the declaration is published,
+              then the pointer is released.">
+    <figcaption>The order each landing write follows, before and after. A
+    refused replay at the base revision still closed the section and retired the
+    pointer, leaving neither a ledger row nor a recovery path.</figcaption>
+  </figure>
+
+  <p><strong>What changed.</strong> Two incidents had the same shape. In
+  <code>r-20261122T215439012216</code> a promotion was settled without a
+  promotion: the merged-head replay exited 3 and wrote no log, and a minute
+  later a close comment was written, the section was set to done, the pointer
+  was removed, and the run's head was not on the primary branch until a hand
+  merge forty-two minutes later. No ledger row was written.
+  In <code>r-20261121T205405910971-mast-known-state-carriers-rebuilt</code> a
+  hand-merged head went through the landing pass as a delivery the branch
+  already carried; the landed comment was written and the pointer removed, again
+  with no row, so a later <code>crew complete</code> found no record at all.</p>
+
+  <p>One precondition now sits in front of every write.
+  <code>landed_record_refusal</code> requires the run's ledger row, a head that
+  is an ancestor of the primary revision, and answers with the reason when
+  either is missing. <code>finish_landing</code> asks it before publishing and
+  accepts the row its caller already read, so a release path does not re-read
+  the store. The integrated release asks it before releasing a workspace, and
+  the record pass of the landing pass asks it before any merge that will
+  publish, then publishes before it retires the pointer. A refusal records
+  itself on the run (<code>landing-row-refused</code>,
+  <code>declaration-refused</code>) and leaves the plan file, the declaration
+  and the pointer where it found them.</p>
+
+  <p>A carried delivery with no row is recorded rather than settled into no
+  record: <code>record_a_carried_delivery</code> writes a passed row naming the
+  primary revision that carries the run's head, commits it under the landing
+  write lease, and hands the row to the release that follows.</p>
+
+  <p><strong>What does not change.</strong> A landing whose merge and row both
+  succeed writes the same close comment, the same declaration and the same
+  release as before, and a section still closes only through the one writer
+  that emits <code>c-close-&lt;section&gt;</code>. A row that is present and names a
+  head the branch carries passes every guard without a write.</p>
+
+  <h3 id="delivered-work-lands-without-a-coordinator-s55-measured">Measured</h3>
+
+  <p>The negative control runs the node's test file against the pinned base
+  revision. Two cases fail there and pass at head. The first fails with
+  <em>the landing published with no ledger row behind it</em>: a replay that
+  exited 3 and wrote no log still closed the section and removed the pointer.
+  The second fails with <em>the settled delivery kept no ledger row</em>: a
+  delivery the branch carries was settled with the pointer gone and no row
+  anywhere behind it. The third case, which requires a successful merge and row
+  to publish as before, passes at both revisions.</p>
+
+  <ul>
+    <li>Base arm at revision <code>398a0d09708dda09bec869b7a512404cf9eb2902</code>
+    (<code>gate-base.log</code>): <code>3 failed, 539 passed in 667.84s (0:11:07)</code>, <code>EXIT=1</code>:
+      the two negative-control cases above and one pre-existing failure in
+      <code>test_no_caller_waits_on_a_promotion.py</code>.</li>
+    <li>Head arm at revision <code>af80e1240ff1a5750e309c950dbd1397b98374fc</code>
+    (<code>gate-head-second.log</code>): <code>1 failed, 541 passed in 860.05s (0:14:20)</code>,
+    <code>EXIT=1</code>: the same pre-existing failure and nothing else, so the
+    arm adds no failure and the two negative-control cases now pass.</li>
+    <li>An earlier head arm at the code change alone, before the guard
+    was reduced to a single ancestry test
+    (<code>gate-head-first.log</code>): <code>6 failed, 536 passed in 744.20s (0:12:24)</code>;
+    five of those were this node's own cases failing on the ordering it had
+    not yet fixed, and they pass in the arm above.</li>
+    <li>Affected test files at head, run directly: 50 passed in 26.61s.</li>
+    <li>The single file <code>test_the_lander_never_waits_on_a_measurement.py</code>
+    carries a three-second wall-clock bound; measured alone three times at base
+    it took 1.97s, 2.48s and 3.39s (one run is past the bound), and at head
+    1.58s, 1.58s and 2.24s. The bound is the test's own, not a measure of this
+    test's subject.</li>
+  </ul>
+</section>

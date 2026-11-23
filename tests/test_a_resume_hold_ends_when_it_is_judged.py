@@ -310,6 +310,7 @@ def test_one_pass_judges_a_mixed_cohort(delivery, tmp_path) -> None:
         original["project"],
         {
             **promoted,
+            "node": "integrated",
             "commits": [delivery["head"]],
             "promoted_revision": delivery["head"],
             "gate": "passed",

@@ -132,18 +132,40 @@ def settle_a_carried_delivery(
     released through the same integrated release a completed merge uses, and
     only then is the pointer removed.
 
+    A carried delivery with no ledger row is recorded before anything is
+    released: the row names the commit on the primary branch that carries the
+    run's head, so a delivery the branch holds is never settled into no record
+    at all. A row that cannot be written holds the run and its pointer where
+    they are.
+
     ``("settled", "")`` means the pointer is gone. ``("held", reason)`` means
-    the delivery is carried but the workspace could not be released, so the
-    pointer stays and the caller reports the refusal it returns.
+    the delivery is carried but its ledger row or workspace could not be
+    written, so the pointer stays and the caller reports the refusal it returns.
     """
-    from reckon.crew import pending_landing
+    from reckon.crew import pending_landing, recovery
     from reckon.crew.stage_receipts import record_stage
 
     run_id = str(pointer["run_id"])
+    repository = Path(str(pointer.get("repo") or ""))
+    primary = _primary_revision(pointer)
+    if row is None:
+        head, _tree = recovery._review_head_and_tree(pointer)
+        row, recorded_refusal = pending_landing.record_a_carried_delivery(
+            pointer, run_id
+        )
+        if row is None:
+            _record_attempt(
+                run_id,
+                head=head,
+                guard=recorded_refusal,
+                status="refused",
+                previous=pointer.get("admission_landing"),
+            )
+            return CARRIED_HELD, recorded_refusal
     retired, _release, refusal = pending_landing._release_integrated_pointer(
         pointer,
-        Path(str(pointer.get("repo") or "")),
-        _primary_revision(pointer),
+        repository,
+        primary,
         row,
     )
     if retired != pending_landing.POINTER_RETIRED:
