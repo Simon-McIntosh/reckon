@@ -47,6 +47,7 @@ import shlex
 import shutil
 import statistics
 import subprocess
+import sys
 import tarfile
 import tempfile
 import threading
@@ -1725,6 +1726,67 @@ def measures_on_partition(config: Mapping[str, Any] | None) -> bool:
     return bool(str(landing.get("measure_partition") or "").strip())
 
 
+#: The prefix every tree and reference directory a landing measure builds under
+#: the node-local scratch root is named with.
+BASE_TREE_PREFIX = "landing-base-"
+
+
+def sweep_abandoned_base_trees(root: Path | None = None) -> list[dict[str, Any]]:
+    """Remove a measure's trees that no live process holds, and report each one.
+
+    A landing measure releases its own tree on every exit its process reaches.
+    A tree whose process was killed — by a signal, or by the scheduler — never
+    reaches that release, and the shared orphan sweep will not touch it until
+    two hours of ctime grace have passed. This closes that gap: the next landing
+    pass removes such a tree at once, because the fact that decides it is that
+    the process which built the tree is gone, not how old the tree is.
+
+    Only the trees this measure family builds are considered, and a tree a live
+    process still holds is kept — a concurrent measure's tree is read from the
+    process table the same way the orphan sweep reads it, so it is never
+    removed. Every removal is printed to stderr with the tree's path and bytes
+    so a reader can account for the space the pass reclaimed.
+    """
+    from reckon.crew.dispatch import tree_size_bytes
+
+    scratch_root = worker_scratch_root() if root is None else Path(root)
+    if not scratch_root.is_dir():
+        return []
+    candidates = sorted(
+        child
+        for child in scratch_root.iterdir()
+        if child.name.startswith(BASE_TREE_PREFIX)
+    )
+    if not candidates:
+        return []
+    # Imported here rather than at module load: the sweep shares the process
+    # table reader the orphan sweep uses, and gc reaches back into other crew
+    # modules that import this one.
+    from reckon.crew.gc import _scratch_process_holders
+
+    holders = _scratch_process_holders(scratch_root)
+    removed: list[dict[str, Any]] = []
+    for child in candidates:
+        if child.is_symlink() or not child.is_dir():
+            continue
+        if holders.get(child.name):
+            continue
+        try:
+            size = tree_size_bytes(child)
+        except OSError:
+            size = 0
+        shutil_rmtree(child)
+        if child.exists():
+            continue
+        removed.append({"path": str(child), "bytes": size})
+        print(
+            f"landing-base sweep: removed {child} ({size} bytes)",
+            file=sys.stderr,
+            flush=True,
+        )
+    return removed
+
+
 @contextlib.contextmanager
 def base_tree_for_measure(
     repo: Path, base_sha: str, timeout: float, *, partitioned: bool
@@ -1742,9 +1804,11 @@ def base_tree_for_measure(
         with base_checkout(repo, base_sha, timeout) as tree:
             yield tree
         return
+    holder: int | None = None
     try:
         root = worker_scratch_root()
         root.mkdir(parents=True, exist_ok=True)
+        sweep_abandoned_base_trees(root)
         placeholder = Path(tempfile.mkdtemp(prefix="landing-base-ref-", dir=root))
     except OSError as exc:
         raise BaseCheckoutError(
@@ -1752,8 +1816,19 @@ def base_tree_for_measure(
             f"{type(exc).__name__}: {exc}"
         ) from exc
     try:
+        # An open descriptor on the placeholder itself, with no file inside it,
+        # marks the directory held for as long as the measure uses it: a
+        # concurrent pass reads it through /proc and keeps it, and the tree
+        # still reads as the empty placeholder a partitioned arm expects.
+        holder = os.open(placeholder, os.O_RDONLY)
+    except OSError:
+        holder = None
+    try:
         yield placeholder
     finally:
+        if holder is not None:
+            with contextlib.suppress(OSError):
+                os.close(holder)
         shutil_rmtree(placeholder)
 
 
@@ -1794,6 +1869,7 @@ def base_checkout(
     try:
         root = worker_scratch_root()
         root.mkdir(parents=True, exist_ok=True)
+        sweep_abandoned_base_trees(root)
         scratch = Path(tempfile.mkdtemp(prefix="landing-base-", dir=root))
     except OSError as exc:
         # A full or unwritable scratch root is a checkout that cannot be built,
