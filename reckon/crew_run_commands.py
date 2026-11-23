@@ -108,7 +108,9 @@ class GateExitStatusType(click.ParamType):
 
     name = "gate_exit_status"
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None):
+    def convert(
+        self, value: Any, param: click.Parameter | None, ctx: click.Context | None
+    ):
         if value is None or value == "":
             return None
         status = gate_exit_status_integer(value)
@@ -764,9 +766,7 @@ def crew_decision_present(session, project, pretty):
     try:
         _emit(present(session=session, project=project), pretty)
     except (OSError, ValueError, TypeError) as exc:
-        _emit(
-            {"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty
-        )
+        _emit({"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty)
         raise click.exceptions.Exit(1) from exc
 
 
@@ -786,9 +786,7 @@ def crew_decision_choose(decision_id, option, session, note, pretty):
 
     try:
         _emit(
-            choose(
-                session=session, decision_id=decision_id, option=option, note=note
-            ),
+            choose(session=session, decision_id=decision_id, option=option, note=note),
             pretty,
         )
     except (OSError, ValueError, TypeError) as exc:
@@ -814,9 +812,7 @@ def crew_decision_release(session, decision_id, pretty):
     try:
         _emit(release(session=session, decision_id=decision_id), pretty)
     except (OSError, ValueError, TypeError) as exc:
-        _emit(
-            {"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty
-        )
+        _emit({"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty)
         raise click.exceptions.Exit(1) from exc
 
 
@@ -4904,7 +4900,11 @@ def crew_record_merge(
         result = crew_module.complete(
             run_id,
             gate="passed",
-            commits=(merge_revision,),
+            # The run's own commit is the reviewed head the merge carries. A
+            # --no-ff merge commit is never the revision a review read, so
+            # citing it would assert a revision no stored review covers; the
+            # merge is recorded beside the head as ``recorded_merge``.
+            commits=(head,),
             outcome=str(outcome).strip() or f"landed by hand in {merge_revision}",
             root=checkout_path,
             no_impl_change=no_impl_change,

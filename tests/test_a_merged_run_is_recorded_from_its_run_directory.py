@@ -217,7 +217,7 @@ def test_a_pointerless_merged_run_is_recorded_and_releases_its_waiters(
     row = json.loads(
         ledger.run_path(PROJECT, run["run_id"], root=run["repository"]).read_text()
     )
-    assert merge_sha in row["commits"]
+    assert run["head"] in row["commits"]
     assert row["suite_delta"]["status"] == "not-run"
     assert row["suite_delta"]["recorded_merge"] == merge_sha
     assert payload["released"]["candidates"] == ["r-waiter"]
