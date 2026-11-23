@@ -4864,12 +4864,36 @@ def crew_record_merge(
     from reckon.crew import merge as merge_module
     from reckon.crew import pending_landing
     from reckon.crew import runs as runs_module
+    from reckon.crew.open_run_index import row_for_run
 
-    _accept_a_matching_project(run_id, project)
+    recorded_project = (
+        _accept_a_matching_project(run_id, project) or str(project or "").strip()
+    )
     crew_module, _ = _crew_modules()
     from reckon.crew.promotion_records import _read_pointer_or_rebuild
 
     pointer_exists = runs_module.pointer_path(run_id).exists()
+
+    # A run the ledger already holds has been recorded once. Where its row cites
+    # a revision other than the head its merge carried, the citation is
+    # corrected rather than the call refused, and the run is resolved from the
+    # stored row alone: a misattributed row outlives both the live pointer and
+    # the run directory it was written from.
+    if recorded_project:
+        recorded_row = row_for_run(recorded_project, run_id, checkout_path)
+        if recorded_row is not None:
+            _emit_crew_result(
+                _correct_a_cited_head(
+                    recorded_row,
+                    project=recorded_project,
+                    run_id=run_id,
+                    merge_sha=str(merge_sha),
+                    reason=str(reason),
+                    checkout_path=checkout_path,
+                ),
+                pretty,
+            )
+            return
     # A run whose live pointer was removed before any promotion or discard still
     # keeps its run directory, and that directory is enough to record the merge:
     # it names the repository, the worktree, the plan section the prompt
@@ -4885,7 +4909,6 @@ def crew_record_merge(
         )
     repo = Path(repository).expanduser()
     landing_project = str(pointer.get("project") or project or "").strip()
-    from reckon.crew.open_run_index import row_for_run
 
     if (
         landing_project
@@ -4962,6 +4985,158 @@ def crew_record_merge(
         {"run_id": run_id, "recorded_merge": merge_revision, **result},
         pretty,
     )
+
+
+def _correct_a_cited_head(
+    row: Mapping[str, Any],
+    *,
+    project: str,
+    run_id: str,
+    merge_sha: str,
+    reason: str,
+    checkout_path: Path | None,
+) -> dict[str, Any]:
+    """Replace a stored row's wrong commit citation with the head its merge carried.
+
+    A landing pass once recorded a delivery the primary branch already carried
+    against the branch tip at the time of the pass rather than against the run's
+    head, so a row can cite an unrelated promotion. That row is corrected here
+    instead of rewritten away: the citation is replaced and the citation it
+    superseded is kept beside it, because what a promotion believed when it
+    landed is evidence of its own and a later reader has to see what was wrong.
+
+    The head is read from the merge, which carries it as its second parent — a
+    ``--no-ff`` merge's first parent is the branch tip it was merged onto. A
+    commit with no second parent carries no head, so it refuses rather than
+    guessing one. A row already citing that head is left unchanged and writes
+    no superseded record, so running the verb twice cannot append a second
+    correction.
+    """
+    from reckon import ledger
+    from reckon.crew import merge as merge_module
+    from reckon.crew.promotion_scope import _commit_landing_writes
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    explanation = str(reason or "").strip()
+    if not explanation:
+        raise click.ClickException(
+            "correcting a citation requires a non-empty --reason"
+        )
+    checkout = ledger.ledger_path(project, checkout_path).resolve().parents[2]
+    try:
+        merge_revision = merge_module._rev_parse(checkout, str(merge_sha))
+    except merge_module.MergeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if not merge_module._is_ancestor(checkout, merge_revision, "HEAD"):
+        raise click.ClickException(
+            f"merge {merge_revision} is not on the local primary branch; push "
+            "or fetch it first"
+        )
+    try:
+        head = merge_module._rev_parse(checkout, f"{merge_revision}^2")
+    except merge_module.MergeError as exc:
+        raise click.ClickException(
+            f"merge {merge_revision} carries no second parent, so it names no "
+            "reviewed head this row's citation can be corrected to"
+        ) from exc
+    if not merge_module._is_ancestor(checkout, head, merge_revision):
+        raise click.ClickException(
+            f"merge {merge_revision} does not carry {head}; record the merge "
+            "that merged that head"
+        )
+    cited = _reviewed_head_of(row)
+    cited_commit = _resolve_commit(checkout, cited) if cited else ""
+    if cited_commit and cited_commit == head:
+        return {
+            "ok": True,
+            "run_id": run_id,
+            "project": project,
+            "corrected": False,
+            "head": head,
+            "recorded_merge": merge_revision,
+            "reason": (
+                f"run {run_id!r} already cites {head}, the head the merge "
+                "carried, so the row is left unchanged"
+            ),
+        }
+
+    superseded = {
+        "time": datetime.now(UTC).isoformat(),
+        "reason": explanation,
+        "commits": [str(commit) for commit in (row.get("commits") or ())],
+        "promoted_revision": str(row.get("promoted_revision") or ""),
+        "corrected_head": head,
+        "recorded_merge": merge_revision,
+    }
+    updated = dict(row)
+    updated["commits"] = [head]
+    updated["promoted_revision"] = head
+    updated["recorded_merge"] = merge_revision
+    updated["recorded_merge_reason"] = explanation
+    updated["citation_superseded"] = superseded
+    if not _write_corrected_row(project, updated, checkout_path):
+        raise click.ClickException(
+            f"run {run_id!r} is in the {project!r} store but neither owns a run "
+            "file nor sits in the project's aggregate ledger, so its citation "
+            "cannot be corrected in place"
+        )
+    source = ledger.run_path(project, run_id, checkout_path)
+    paths = [ledger.ledger_path(project, checkout_path)]
+    if source.is_file():
+        paths.append(source)
+    landing = _commit_landing_writes(
+        run_id=run_id,
+        verdict="superseded",
+        checkout=checkout,
+        paths=paths,
+        subject=f"record-merge({run_id}): correct a row's commit citation",
+        body=(
+            "Replace a committed run row's commit citation with the head the "
+            "merge carried, keeping the citation it superseded beside it, so "
+            "readers of the run's reviewed head read the revision the review "
+            "actually covered."
+        ),
+    )
+    return {
+        "ok": True,
+        "run_id": run_id,
+        "project": project,
+        "corrected": True,
+        "head": head,
+        "recorded_merge": merge_revision,
+        "superseded": superseded,
+        "landing": landing,
+    }
+
+
+def _write_corrected_row(
+    project: str, row: Mapping[str, Any], root: Path | None
+) -> bool:
+    """Persist a corrected row where it is held, file or aggregate as before.
+
+    A row that owns a file is amended there, through the one encoder every run
+    file write goes through; a row the aggregate still carries is patched in
+    place and the aggregate rewritten. The two are mutually exclusive: the
+    ledger refuses a row held in both places.
+
+    Answers whether the row was written, so a run the store alone holds is
+    reported rather than silently unchanged.
+    """
+    from reckon import ledger
+
+    run_id = str(row.get("run_id") or "")
+    source = ledger.run_path(project, run_id, root)
+    if source.is_file():
+        ledger.write_run_file(project, row, root, mode=None)
+        return True
+    aggregate, version = ledger.load_aggregate(project, root)
+    rows = aggregate["runs"]
+    for position, item in enumerate(rows):
+        if isinstance(item, Mapping) and str(item.get("run_id") or "") == run_id:
+            rows[position] = dict(row)
+            ledger.write(project, aggregate, version)
+            return True
+    return False
 
 
 def _refuse_a_landing_without_its_pointer(run_id: str) -> None:
