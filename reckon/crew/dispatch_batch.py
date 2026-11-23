@@ -651,13 +651,30 @@ def section_derivation(
     return {name: (value, _digest(value)) for name, value in values.items()}
 
 
-#: The node fields a section supplies to a dispatch that omits them.
+#: The node fields a section supplies to a dispatch that omits them. The write
+#: paths are the one sequence among them, so "unsaid" for that field is an empty
+#: list rather than an empty string.
 SECTION_SUPPLIED_NODE_FIELDS = (
     "done_when",
     "time_budget",
     "spec_level",
     "negative_control",
+    "write_paths",
 )
+
+#: The section-supplied fields that carry a sequence rather than a scalar.
+_SEQUENCE_SECTION_FIELDS = frozenset({"write_paths"})
+
+
+def _section_field_unsaid(name: str, value: Any) -> bool:
+    """Whether a section-supplied node field holds nothing of its own.
+
+    An empty path list is unsaid exactly as an empty string is, so a node that
+    names no write paths takes the section's rather than none at all.
+    """
+    if name in _SEQUENCE_SECTION_FIELDS:
+        return not [str(item).strip() for item in (value or ())]
+    return not str(value or "").strip()
 
 
 def apply_section_defaults(
@@ -677,9 +694,12 @@ def apply_section_defaults(
     no write paths leaves the node's list empty, so the default landing scope
     stands as it does for any node that declares none.
 
-    A plan or section that cannot be read is left alone rather than refused
-    here, because the dispatch paths already name that failure (plan visibility,
-    routing evidence) with the flag the caller can correct.
+    A plan document that cannot be read is left alone rather than refused here,
+    because the dispatch paths already name that failure (plan visibility,
+    routing evidence) with the flag the caller can correct. A section's
+    write-paths sentence that cannot be resolved is refused, exactly as a batch
+    entry for the same section refuses it, rather than falling back to the
+    default landing scope the sentence was meant to widen.
     """
     plan = str(getattr(node, "plan", "") or "").strip()
     section = str(getattr(node, "section", "") or "").strip()
@@ -688,36 +708,26 @@ def apply_section_defaults(
     omitted = [
         name
         for name in SECTION_SUPPLIED_NODE_FIELDS
-        if not str(getattr(node, name, "") or "").strip()
+        if _section_field_unsaid(name, getattr(node, name, None))
     ]
-    # A write-path list is a sequence rather than a scalar, so an empty one
-    # compares truthy as text; it takes its default from the section on the same
-    # rule as an empty string field.
-    needs_write_paths = not [
-        str(path).strip() for path in (getattr(node, "write_paths", None) or ())
-    ]
-    if not omitted and not needs_write_paths:
+    if not omitted:
         return []
     try:
         read = _PlanRead(project, plan, Path(repo_root))
-        derivation = section_derivation(read, section, derive_write_paths=False)
     except (BatchEntryRefusedError, OSError):
         return []
+    # The write paths are derived through the same reader and the same rule a
+    # batch entry uses, so a sentence the batch refuses refuses here with its
+    # reason rather than leaving the default scope standing in its place.
+    derivation = section_derivation(
+        read, section, derive_write_paths="write_paths" in omitted
+    )
     filled: list[str] = []
     for name in omitted:
         if name not in derivation:
             continue
         setattr(node, name, derivation[name][0])
         filled.append(name)
-    if needs_write_paths:
-        # Derived on its own so a sentence that names a file only by
-        # description, and cannot resolve it, leaves the other fields already
-        # filled rather than discarding them with the write paths.
-        with contextlib.suppress(BatchEntryRefusedError, OSError):
-            paths = read.write_paths(section)
-            if paths:
-                node.write_paths = list(paths)
-                filled.append("write_paths")
     return filled
 
 

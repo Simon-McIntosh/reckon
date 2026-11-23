@@ -14,6 +14,13 @@ the same list would pass any one of them alone:
   landing fragment and figure directory every dispatch grants;
 - a section stating no write paths derives the defaults alone;
 - a dispatch that names its own write paths keeps exactly those.
+
+A sentence a batch entry cannot resolve is refused there rather than derived in
+a shortened form, and a single dispatch of the same section refuses with that
+same reason instead of falling back to the default landing scope. A described
+test the done-when does not single out, and a parent-directory token, are the
+two forms the batching reader refuses, so each is exercised on both paths and
+the two refusals are compared word for word.
 """
 
 from __future__ import annotations
@@ -65,6 +72,22 @@ WRITE_PATHS_SENTENCE = (
     + ".</p>"
 )
 
+#: A sentence naming a test only as "the new test", while the done-when names
+#: two tests under ``tests/``. The batching reader refuses the ambiguity rather
+#: than guessing which path the description stands for, and the single dispatch
+#: must refuse with the same reason rather than drop the sentence.
+AMBIGUOUS_DONE_WHEN = (
+    "<p><strong>Done when.</strong> tests/test_one.py and tests/test_two.py "
+    "both pass.</p>"
+)
+DESCRIBED_TEST_SENTENCE = (
+    "<p>Write paths: <code>reckon/one.py</code>, and the new test described above.</p>"
+)
+
+#: A token carrying a parent-directory segment, which the batching reader
+#: refuses rather than deriving it in a shortened form that resolves elsewhere.
+PARENT_SEGMENT_SENTENCE = "<p>Write paths: <code>../escape.py</code>.</p>"
+
 
 def _plan(slug: str, sections: dict[str, str]) -> str:
     quote = '"'
@@ -115,6 +138,8 @@ def checkout(tmp_path: Path, home: Path) -> Path:
                 "s1": DONE_WHEN + WRITE_PATHS_SENTENCE + NEGATIVE_CONTROL,
                 "s2": DONE_WHEN,
                 "s3": DONE_WHEN,
+                "s4": AMBIGUOUS_DONE_WHEN + DESCRIBED_TEST_SENTENCE + NEGATIVE_CONTROL,
+                "s5": DONE_WHEN + PARENT_SEGMENT_SENTENCE + NEGATIVE_CONTROL,
             },
         ),
         encoding="utf-8",
@@ -134,23 +159,21 @@ def checkout(tmp_path: Path, home: Path) -> Path:
     return repository
 
 
-def _dry_run(
+def _invoke_dry_run(
     repository: Path,
     section: str,
     node: str,
     monkeypatch: pytest.MonkeyPatch,
     *extra: str,
-) -> dict:
+):
     from click.testing import CliRunner
-
-    from tests import test_dispatch_names_its_backend as backend_tests
 
     monkeypatch.setattr(
         crew_dispatch_commands,
         "_dispatch_resolved_flight",
         lambda *_a, **_k: json.loads(json.dumps(CONFIG)),
     )
-    result = CliRunner().invoke(
+    return CliRunner().invoke(
         cli.main,
         [
             "crew",
@@ -176,10 +199,38 @@ def _dry_run(
             *extra,
         ],
     )
+
+
+def _dry_run(
+    repository: Path,
+    section: str,
+    node: str,
+    monkeypatch: pytest.MonkeyPatch,
+    *extra: str,
+) -> dict:
+    from tests import test_dispatch_names_its_backend as backend_tests
+
+    result = _invoke_dry_run(repository, section, node, monkeypatch, *extra)
     payload = backend_tests._payload(result)
     assert result.exit_code == 0, (result.output, payload)
     assert payload["dry_run"] is True, payload
     return payload
+
+
+def _refusal(
+    repository: Path,
+    section: str,
+    node: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> str:
+    """The reason a single dry run of ``section`` refuses, with no write path."""
+    from tests import test_dispatch_names_its_backend as backend_tests
+
+    result = _invoke_dry_run(repository, section, node, monkeypatch)
+    payload = backend_tests._payload(result)
+    assert result.exit_code != 0, (result.output, payload)
+    assert payload["ok"] is False, payload
+    return str(payload["detail"])
 
 
 def _defaults(node: str) -> set[str]:
@@ -190,19 +241,29 @@ def _defaults(node: str) -> set[str]:
     }
 
 
-def _batch_entry_write_paths(repository: Path) -> list[str]:
-    """What a batch entry for s1 derives, as the batch path builds it."""
+def _batch_entry(repository: Path, section: str = "s1"):
+    """The batch path's own answer for ``section``: its node, or its refusal."""
     entry = {
         "project": PROJECT,
         "plan": PLAN,
-        "section": "s1",
-        "node": "batch-s1",
+        "section": section,
+        "node": f"batch-{section}",
         "goal": "run the section as its batch entry does",
     }
-    _project, node, _derived = dispatch_batch._entry_node(
-        0, entry, plans=dispatch_batch._Plans(repository)
-    )
+    return dispatch_batch._entry_node(0, entry, plans=dispatch_batch._Plans(repository))
+
+
+def _batch_entry_write_paths(repository: Path, section: str = "s1") -> list[str]:
+    """What a batch entry for ``section`` derives, as the batch path builds it."""
+    _project, node, _derived = _batch_entry(repository, section)
     return list(node.write_paths)
+
+
+def _batch_refusal(repository: Path, section: str) -> str:
+    """The reason a batch entry for ``section`` refuses."""
+    with pytest.raises(dispatch_batch.BatchEntryRefusedError) as raised:
+        _batch_entry(repository, section)
+    return str(raised.value)
 
 
 def test_a_single_dry_run_takes_the_sections_write_paths_beside_the_defaults(
@@ -254,3 +315,27 @@ def test_a_dispatch_naming_its_own_write_paths_keeps_exactly_those(
     # whole of its section-derived scope and nothing is added from elsewhere.
     assert own in paths, paths
     assert set(paths) - _defaults(node) == {own}, paths
+
+
+def test_a_single_dispatch_refuses_an_ambiguous_described_test_as_the_batch_does(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    single = _refusal(checkout, "s4", "single-s4", monkeypatch)
+    batch = _batch_refusal(checkout, "s4")
+
+    # The single dispatch reports the batch entry's own reason, naming the
+    # sentence, rather than deriving the default scope in place of a sentence
+    # the batch refuses.
+    assert single == batch, (single, batch)
+    assert "the new test described above" in single, single
+
+
+def test_a_single_dispatch_refuses_a_parent_segment_as_the_batch_does(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    single = _refusal(checkout, "s5", "single-s5", monkeypatch)
+    batch = _batch_refusal(checkout, "s5")
+
+    assert single == batch, (single, batch)
+    assert "parent-directory segment" in single, single
+    assert "../escape.py" in single, single
