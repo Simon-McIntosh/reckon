@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="165">
+<meta name="plan-version" content="166">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -881,7 +881,7 @@
     <div class="r-comment-body"><p>A parsed review of r-20261122T191836994460-delivered-work-lands-without-a-coordinator-s48 over the commits gained since dbfbd62ebe9045de14b5ea56da01cccee9661350 — the merge 8261475dbd that brings primary ddf84d71cc into the landing repair, resolving only reckon/crew/landing_measure.py and reckon/crew/queue_landing.py — scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 14, fit 18, reuse 18 with added_failure_count 0 and two non-blocking findings: the partitioned-path scratch sweep has no test that reddens on its removal, and the importer-population dedupe is likewise unasserted.</p></div>
 </div>
 <div class="r-comment" data-section="s48" data-id="c-run-r-20261122T191836994460-delivered-work-lands-without-a-coordinator-s48" data-who="reckon-build" data-when="2026-11-23T07:49:42Z">
-    <div class="r-comment-body"><p>A partitioned landing creates nothing under the fleet scratch root (base_tree_for_measure yields a name, the importer population is read before release, both checkouts close before the arms submit) and each job builds and removes its own tree on its node; merged with primary, the partitioned path also sweeps a killed landing&#x27;s abandoned tree on the next pass and the head population names distinct importers only, with the gate and both arms green on all_debug at dd1ff29 and 8261475.</p></div>
+    <div class="r-comment-body"><p>A partitioned landing creates nothing under the fleet scratch root (base_tree_for_measure yields a name, the importer population is read before release, both checkouts close before the arms submit) and each job builds and removes its own tree on its node; merged with primary, the partitioned path also sweeps a killed landing's abandoned tree on the next pass and the head population names distinct importers only, with the gate and both arms green on all_debug at dd1ff29 and 8261475.</p></div>
 </div>
 <div class="r-comment" data-section="s49" data-id="c-run-r-20261123T010627953498-review-of-delivered-work-lands-without-a-coordinator-s49-6edf4917a1c8" data-who="reckon-build" data-when="2026-11-23T01:19:19.829Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T201111498540 at base b7b7e9fc978aff5874c6a77e8029dc712fb2520c and head 6edf4917a1c87213c5efe77f0b5993e38e36b70c: the landing timeout repair is goal-faithful, in scope and durable (3 of its 4 new cases reproduce the defect at base), with one non-blocking evidence gap namely the after_suite ran two census tests that do not import the changed module instead of the importer population.</p></div>
@@ -954,6 +954,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261116T233752526352-delivered-rows-say-what-is-owed" data-who="reckon-build" data-when="2026-11-17T01:05:40Z">
     <div class="r-comment-body"><p>Shared live classification separates 1 delivered run, 2 promotion requests and 1 landed leftover across pane and obligations/MCP reads; refusal rows now keep their complete remedy beside the new counters. The committed gate passes 74 tests versus 70 at the repair base and 58 at the original base; all 9 affected importer tests pass unchanged, and reversing the answering commit makes the review-named assertion fail (1 failed). Earlier importer observations remain outside scope.</p></div>
+</div>
+<div class="r-comment" data-section="s52" data-id="c-run-r-20261123T121039951084-review-of-delivered-work-lands-without-a-coordinator-s52-996ef54c8e35" data-who="reckon-build" data-when="2026-11-23T12:21:16.621Z">
+    <div class="r-comment-body"><p>the review for r-20261123T112654510180-delivered-work-lands-without-a-coordinator-s52 scores goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 16, reuse 19 over 398a0d09..996ef54c, with zero added failures and three non-blocking findings; the record is stored at the run&#x27;s review-records path and validates ok:true.</p></div>
 </div>
 </section>
   </main>
