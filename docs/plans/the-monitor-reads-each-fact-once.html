@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="620">
+<meta name="plan-version" content="621">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -2224,6 +2224,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s120" data-id="c-run-r-20261123T132500904075-review-of-the-monitor-reads-each-fact-once-s120-2bbf42e6b397" data-who="reckon-build" data-when="2026-11-23T13:37:29.077Z">
+    <div class="r-comment-body"><p>review of r-20261123T115801957881 at 2bbf42e6b3: 6 dimensions scored (total 102 of 120), 0 added failures, 4 non-blocking findings</p></div>
 </div>
 </section>
 </main>
