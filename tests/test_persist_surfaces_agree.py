@@ -308,3 +308,35 @@ def test_a_second_implementation_that_drops_data_records_fails_the_agreement(
 
     with pytest.raises(AssertionError):
         _agreement(tmp_path, monkeypatch)
+
+
+def test_a_data_field_that_is_not_a_list_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A malformed `data` answers 400 rather than raising out of the handler."""
+
+    store = _build_store(tmp_path, monkeypatch)
+    body = json.dumps(
+        {
+            "figure": str(store["figure"]),
+            "data": 7,
+            "plan": PLAN,
+            "section": SECTION,
+        }
+    ).encode("utf-8")
+    with _served() as port:
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        try:
+            connection.request(
+                "POST",
+                f"/crew/{PROJECT}/reports",
+                body=body,
+                headers={"Content-Type": "application/json"},
+            )
+            response = connection.getresponse()
+            assert response.status == 400
+            payload = json.loads(response.read())
+        finally:
+            connection.close()
+    assert payload.get("ok") is False, payload
+    assert payload.get("error") == "persist_refused", payload

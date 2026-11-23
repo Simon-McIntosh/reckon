@@ -861,27 +861,6 @@ def _waiting_decision_rows(
     return rows
 
 
-def _newest_write(item: Path) -> datetime | None:
-    """The latest modification time among the files inside one report item."""
-
-    try:
-        if item.is_file():
-            return datetime.fromtimestamp(item.stat().st_mtime, tz=UTC)
-    except OSError:
-        return None
-    newest: float | None = None
-    for path in item.rglob("*"):
-        try:
-            if not path.is_file():
-                continue
-            mtime = path.stat().st_mtime
-        except OSError:
-            continue
-        if newest is None or mtime > newest:
-            newest = mtime
-    return None if newest is None else datetime.fromtimestamp(newest, tz=UTC)
-
-
 def crew_plan_reports(project: str, plan: str) -> list[dict]:
     """One plan's report items, each with the retention class the sweep reads.
 
@@ -893,6 +872,7 @@ def crew_plan_reports(project: str, plan: str) -> list[dict]:
     """
 
     from reckon.crew import report_retention
+    from reckon.crew.routing import _newest_mtime
     from reckon.crew.runs import reports_dir
 
     reports_root = reports_dir()
@@ -914,7 +894,7 @@ def crew_plan_reports(project: str, plan: str) -> list[dict]:
         if item.name == report_retention.PLAN_REVIEW_FOLDER:
             continue
         verdict = report_retention.classify_item(
-            context, item, newest_write=_newest_write(item)
+            context, item, newest_write=_newest_mtime(item)
         )
         items.append(
             {
@@ -952,6 +932,12 @@ def crew_persist_from_reports(project: str, payload: Mapping[str, object]) -> di
     data = payload.get("data") or ()
     if isinstance(data, str):
         data = [data]
+    elif not isinstance(data, (list, tuple)):
+        return {
+            "records": [],
+            "error": "persist_refused",
+            "detail": "data must be a list of paths",
+        }
     try:
         return {
             "records": persist.persist_item(
@@ -4280,18 +4266,8 @@ class Handler(BaseHTTPRequestHandler):
         if project not in mounts:
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "project not found"})
             return
-        length = int(self.headers.get("Content-Length", "0"))
-        if length > MAX_POST_BYTES:
-            self._send_json(
-                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
-                {"error": f"body > {MAX_POST_BYTES} bytes"},
-            )
-            return
-        raw = self.rfile.read(length) if length else b""
-        try:
-            payload = json.loads(raw) if raw else {}
-        except json.JSONDecodeError as exc:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": f"json: {exc}"})
+        ok, payload = self._read_body()
+        if not ok:
             return
         if not isinstance(payload, dict):
             self._send_json(
