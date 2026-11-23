@@ -249,6 +249,7 @@ export PYTHONPATH={shlex.quote(str(source))}
         bound_seconds=bound,
         chdir=Path(request["pointer"]["repo"]),
         log_path=log,
+        config=config,
     )
     argv.remove("--wait")
     finished = _SCHEDULER_RUN(
@@ -716,6 +717,8 @@ DEFAULT_PARTITION_MAX_SECONDS: dict[str, float | None] = {
 
 _UNBOUNDED_SPELLINGS = frozenset({"unlimited", "unbounded", "none", "infinite"})
 
+_UNSET = object()
+
 
 def parse_gate_duration(value: Any) -> float | None:
     """A declared gate duration in seconds, or ``None`` when it cannot be read.
@@ -760,7 +763,10 @@ def partition_max_seconds(
     Read from the config key ``landing.partition_max_seconds``, a mapping of
     partition name to a number of seconds or an unbounded spelling. A partition
     the config does not name is read from the shipped table, and one neither
-    names is unbounded: an unknown ceiling admits, it never refuses.
+    names is unbounded: an unknown ceiling admits, it never refuses. A ceiling
+    the config does name but whose value cannot be read is refused, because a
+    typo there must not quietly remove the limit the declaration is checked
+    against.
     """
     landing = (config or {}).get("landing")
     declared = (
@@ -768,11 +774,18 @@ def partition_max_seconds(
     )
     if isinstance(declared, Mapping) and partition in declared:
         raw = declared[partition]
-        if raw is None:
+        if raw is None or (
+            isinstance(raw, str) and raw.strip().lower() in _UNBOUNDED_SPELLINGS
+        ):
             return None
-        if isinstance(raw, str) and raw.strip().lower() in _UNBOUNDED_SPELLINGS:
-            return None
-        return parse_gate_duration(raw)
+        seconds = parse_gate_duration(raw)
+        if seconds is None:
+            raise ValueError(
+                f"landing.partition_max_seconds[{partition!r}] is {raw!r}, which "
+                "is not a duration; write seconds (3600), a clock (01:00:00), a "
+                "suffix (1h), or one of " + ", ".join(sorted(_UNBOUNDED_SPELLINGS))
+            )
+        return seconds
     return DEFAULT_PARTITION_MAX_SECONDS.get(partition)
 
 
@@ -967,22 +980,28 @@ def _arm(
         )
 
 
-_LONG_PARTITION_BOUND_SECONDS = 3600.0
-
-
 def partition_for_bound(
     partition: str,
     long_partition: str,
     bound_seconds: float,
+    config: Mapping[str, Any] | None = None,
 ) -> str:
     """The partition a measure runs on, given its bound.
 
-    A bound past an hour takes the long partition, because the short
-    partitions end a job that outlives them rather than letting it finish.
+    The first of the measure partition and the long partition whose declared
+    maximum admits the bound, so the partition a declaration is checked against
+    and the partition its arm is submitted to are one decision. The shipped
+    table encodes the hour rule: a bound past an hour takes the long partition,
+    because the short partitions end a job that outlives them rather than
+    letting it finish. A bound no configured partition admits still goes to the
+    long one, so the scheduler's own refusal is the visible outcome rather than
+    a silent swap to a partition the measure did not name.
     """
-    if bound_seconds > _LONG_PARTITION_BOUND_SECONDS:
-        return long_partition or "rigel"
-    return partition
+    return (
+        admitting_partition(bound_seconds, partition, long_partition, config)
+        or long_partition
+        or "rigel"
+    )
 
 
 def time_limit_text(bound_seconds: float) -> str:
@@ -1001,6 +1020,7 @@ def partition_submission(
     bound_seconds: float,
     chdir: Path,
     log_path: Path,
+    config: Mapping[str, Any] | None = None,
 ) -> tuple[str, list[str], dict[str, str]]:
     """The one batch submission form every partitioned measure uses.
 
@@ -1026,7 +1046,7 @@ def partition_submission(
         pass
     with Path(f"{log_path}.scheduler").open("x", encoding="utf-8"):
         pass
-    selected = partition_for_bound(partition, long_partition, bound_seconds)
+    selected = partition_for_bound(partition, long_partition, bound_seconds, config)
     bound = time_limit_text(bound_seconds)
     step = (
         shlex.join(
@@ -1120,6 +1140,7 @@ def _partition_runner(
     partition: str,
     long_partition: str,
     test_files: Iterable[str],
+    config: Mapping[str, Any] | None = None,
 ):
     """Submit each arm as an independent job with its own revision checkout."""
     common = _git(
@@ -1182,6 +1203,7 @@ exit "$status"
             bound_seconds=timeout,
             chdir=shared_repo,
             log_path=log,
+            config=config,
         )
         try:
             finished = runner(
@@ -1389,6 +1411,7 @@ def measure_run(
             partition=partition,
             long_partition=long_partition,
             test_files=[*node_tests, *files],
+            config=config,
         )
         runner.partitioned = True
     if not partition:
@@ -1630,6 +1653,7 @@ def armed_observations(
             partition=partition,
             long_partition=long_partition,
             test_files=node_tests,
+            config=config,
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
@@ -1733,6 +1757,7 @@ def control_mutation_observation(
             partition=partition,
             long_partition=str(landing.get("measure_long_partition") or "rigel"),
             test_files=node_tests,
+            config=config,
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)

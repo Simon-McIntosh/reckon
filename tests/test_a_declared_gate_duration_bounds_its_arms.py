@@ -208,6 +208,63 @@ def test_a_duration_no_partition_admits_is_refused_at_declaration(landing, monke
     assert "long_pool" in result.output
 
 
+def test_a_configured_maximum_routes_the_declaration_and_its_arms_alike(
+    landing, monkeypatch
+):
+    config = {
+        "landing": {
+            "measure_partition": "all_debug",
+            "measure_long_partition": "long_pool",
+            "partition_max_seconds": {"all_debug": 1800, "long_pool": 7200},
+        }
+    }
+    monkeypatch.setattr(
+        flight, "resolve", lambda *a, **k: SimpleNamespace(config=config)
+    )
+    declared = CliRunner().invoke(
+        cli_main,
+        ["crew", "declare-gate", "--run", RUN_A, "--duration", "2400"],
+    )
+    assert declared.exit_code == 0, declared.output
+    pointer = json.loads(runs.pointer_path(RUN_A).read_text())
+    seen: list[list[str]] = []
+    runner = _recording_runner(landing_measure._RUN, seen)
+    monkeypatch.setattr(landing_measure, "_RUN", runner, raising=False)
+    queue_landing._measure_delivery(
+        pointer,
+        RUN_A,
+        landing.head,
+        str(landing.worktree),
+        (),
+        request=None,
+    )
+    assert seen
+    for argv in seen:
+        partition = _partition_of(argv)
+        maximum = landing_measure.partition_max_seconds(partition, config)
+        assert maximum is None or _time_limit_seconds(argv) <= maximum, argv
+        assert _time_limit_seconds(argv) >= 2400, argv
+
+
+def test_an_unreadable_configured_maximum_is_refused(landing, monkeypatch):
+    config = {
+        "landing": {
+            "measure_partition": "all_debug",
+            "partition_max_seconds": {"all_debug": "half an hour"},
+        }
+    }
+    monkeypatch.setattr(
+        flight, "resolve", lambda *a, **k: SimpleNamespace(config=config)
+    )
+    result = CliRunner().invoke(
+        cli_main,
+        ["crew", "declare-gate", "--run", RUN_A, "--duration", "2400"],
+    )
+    assert result.exit_code != 0, result.output
+    assert "partition_max_seconds" in result.output
+    assert "all_debug" in result.output
+
+
 def test_a_duration_a_partition_admits_is_kept_on_the_run(landing):
     result = CliRunner().invoke(
         cli_main,

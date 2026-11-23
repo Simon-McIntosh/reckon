@@ -4717,26 +4717,34 @@ def crew_declare_gate(
             or str(landing.get("measure_long_partition") or "")
             or "rigel"
         )
-        admitted_by = landing_measure.admitting_partition(
-            declared_seconds, partition_name, long_name, config
-        )
-        if admitted_by is None:
-            candidates = list(dict.fromkeys([partition_name, long_name]))
-            limits = [
-                (name, landing_measure.partition_max_seconds(name, config))
-                for name in candidates
-            ]
-            longest_name, longest_seconds = max(
-                ((name, seconds) for name, seconds in limits if seconds is not None),
-                key=lambda pair: pair[1],
+        try:
+            admitted_by = landing_measure.admitting_partition(
+                declared_seconds, partition_name, long_name, config
             )
-            available = landing_measure.time_limit_text(longest_seconds)
-            raise click.ClickException(
-                "a gate declared at "
-                f"{landing_measure.time_limit_text(declared_seconds)} is longer "
-                f"than any partition admits; the longest limit available is "
-                f"{available} on {longest_name or 'every configured partition'}"
-            )
+            if admitted_by is None:
+                candidates = list(dict.fromkeys([partition_name, long_name]))
+                limits = [
+                    (name, landing_measure.partition_max_seconds(name, config))
+                    for name in candidates
+                ]
+                longest_name, longest_seconds = max(
+                    (
+                        (name, seconds)
+                        for name, seconds in limits
+                        if seconds is not None
+                    ),
+                    key=lambda pair: pair[1],
+                )
+                available = landing_measure.time_limit_text(longest_seconds)
+                raise click.ClickException(
+                    "a gate declared at "
+                    f"{landing_measure.time_limit_text(declared_seconds)} is "
+                    f"longer than any partition admits; the longest limit "
+                    f"available is {available} on "
+                    f"{longest_name or 'every configured partition'}"
+                )
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
     runs_module._mutate_pointer(
         run_id, lambda record: {**record, GATE_DECLARATION_KEY: declaration}
     )
