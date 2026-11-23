@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:648 (dispatch calls _measurement_flag_refusal)",
+    "reckon/crew/dispatching/preparation.py:1897 (dispatch calls _mark_measurement_run)",
+    "reckon/crew_dispatch_commands.py:2211 (dry-run preview imports _measurement_flag_refusal from preparation)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T07:14:52Z",
+  "findings": [
+    {
+      "detail": "The repeated head selection was run twice at eda26ca8: /tmp/wide-head-3-g9NM produced '53 failed, 3128 passed, 5 skipped, 9 warnings, 408 errors' (suite-head.log, 461 ids in head-ids.txt), and /tmp/wide-head2-3-zsp0 produced the recorded 67-id arm (suite-head2.log). The manifest's retry_failures should have recorded the discarded arm's ids or its 'scaffolding:' attribution so the record reconciles with the logs on disk.",
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T055353101900-bpq-owed-review-preparation-fits-its-module-limit/manifest.md",
+      "line": 8,
+      "severity": "non-blocking",
+      "summary": "retry_failures is recorded as none while a leftover suite-head.log and head-ids.txt show an earlier head arm at the same revision eda26ca8 that produced 53 failed/408 errors and 461 ids before the recorded head2 arm replaced it; a reader comparing after_suite against the run directory finds an arm the manifest neither names nor attributes."
+    }
+  ],
+  "findings_note": "one non-blocking finding recorded under findings",
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T055353101900-bpq-owed-review-preparation-fits-its-module-limit/suite-head2.log",
+    "base_reproduction": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T055353101900-bpq-owed-review-preparation-fits-its-module-limit/base-reproduction.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T055353101900-bpq-owed-review-preparation-fits-its-module-limit/suite-base.log"
+  },
+  "item_verdicts": {
+    "call_sites": "Three production call sites resolve the moved names: preparation.py:648 and :1897 call them in dispatch, and reckon/crew_dispatch_commands.py:2211 imports _measurement_flag_refusal from preparation, and preparation re-exports it by importing it at preparation.py:77.",
+    "diff": "Read commit by commit: one commit (eda26ca8) moves MEASURE_ONLY_FLAG, MEASUREMENT_LANDING_ROLES, _section_declaration, _measurement_flag_refusal and _mark_measurement_run out of preparation.py unchanged into measurement.py, and adds one import line to preparation.py.",
+    "done_when": "The done_when asks that test_every_concern_fits_the_module_limit pass and that the wide dispatch/review/queue/plan selection show no head-only failure id; the manifest records both arms with literal commands and logs, and I verified the delta from the run's own id files.",
+    "goal": "The node goal is to move a coherent part of reckon/crew/dispatching/preparation.py into a new module so every module in the package is within the 2000-line limit, keeping the surface tests/test_dispatch_split_keeps_its_surface.py checks; the landed commit does exactly that at reckon/crew/dispatching/measurement.py:1-120.",
+    "manifest": "Read; status complete, commits eda26ca82855ab14c5a01ac9b5aa4db97403301c, changed_paths naming the two modules, baseline_suite 68 failure ids and after_suite 67 ids each with its log path, and an artifacts line quoting both EXIT=1 arms.",
+    "write_paths": "The declared scope is the reckon/crew/dispatching directory plus evidence/figures fragments; the diff touches only reckon/crew/dispatching/measurement.py (new) and reckon/crew/dispatching/preparation.py, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_split_keeps_its_surface.py:660 reddens if either module exceeds 2000 lines, and tests/test_a_measurement_run_never_lands.py:574 refuses a done section dispatched without the flag, so re-inlining or breaking the moved guard is caught; the identity-preservation claim in the manifest is not itself asserted.",
+    "evidence": "The manifest's baseline_suite and after_suite name the literal wide command and their logs end in EXIT=1; comm over the run's base-ids/head2-ids files reports the module-limit test as the only base-only id and zero head-only ids.",
+    "fit": "reckon/crew/dispatching/measurement.py:1 follows the package idiom of a module docstring plus from ._imports, mirrors fences.py:27's _FACADE_BINDINGS declaration, and introduces no plan label, version suffix or attribution.",
+    "goal_fidelity": "reckon/crew/dispatching/preparation.py falls from 2011 to 1898 lines and reckon/crew/dispatching/measurement.py is 120, so every module in the package is within the limit the goal names.",
+    "reuse": "No owner for the measurement-run dispatch guard exists: reckon/crew/drain_measure.py and landing_measure.py measure drains and landing jobs, and the moved _section_declaration still calls the repository's reckon._store.read_plan and reckon.ledger.normalize_section rather than re-deriving them.",
+    "scope_discipline": "Every changed line is one of the two files under reckon/crew/dispatching/ with no test, plan or config edit, so the diff carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to move a coherent part of reckon/crew/dispatching/preparation.py into a new module so every module in the package is within the 2000-line limit, keeping the surface tests/test_dispatch_split_keeps_its_surface.py checks; the landed commit does exactly that at reckon/crew/dispatching/measurement.py:1.\nVERDICT done_when: the done_when asks that test_every_concern_fits_the_module_limit pass and that the wide selection show no head-only failure id; the manifest records both arms with literal commands and logs; and comm over base-ids.txt against head2-ids.txt yields the module-limit test as the only base-only id and zero head-only ids.\nVERDICT write_paths: the declared scope is the reckon/crew/dispatching directory plus evidence and figure fragments; the diff touches only reckon/crew/dispatching/measurement.py (new) and reckon/crew/dispatching/preparation.py, both inside it.\nVERDICT manifest: read; status complete, commits eda26ca82855ab14c5a01ac9b5aa4db97403301c, baseline_suite 68 failure ids and after_suite 67 ids with their log paths, and an artifacts line quoting both arms.\nVERDICT diff: read commit by commit against c59320f52c; one commit moves MEASURE_ONLY_FLAG, MEASUREMENT_LANDING_ROLES, _section_declaration, _measurement_flag_refusal and _mark_measurement_run out of preparation.py unchanged into measurement.py and adds one import to preparation.py.\nCALL_SITES: reckon/crew/dispatching/preparation.py:648, reckon/crew/dispatching/preparation.py:1897, reckon/crew_dispatch_commands.py:2211\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/preparation.py falls from 2011 to 1898 lines and reckon/crew/dispatching/measurement.py is 120, so every module in the package is within the limit the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name the literal wide command and their logs end in EXIT=1, and comm over the run's base-ids/head2-ids files reports the module-limit test as the only base-only id and zero head-only ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed line is one of the two files under reckon/crew/dispatching/ with no test, plan or config edit, so the diff carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_split_keeps_its_surface.py fails if either module exceeds 2000 lines and tests/test_a_measurement_run_never_lands.py:574 refuses a done section dispatched without the flag, so re-inlining or breaking the moved guard is caught, but the manifest's identity-preservation claim is not itself asserted.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatching/measurement.py:1 follows the package idiom of a module docstring plus from ._imports, mirrors fences.py:27's _FACADE_BINDINGS declaration, and introduces no plan label, version suffix or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for the measurement-run dispatch guard exists, and the moved _section_declaration still calls reckon._store.read_plan and reckon.ledger.normalize_section rather than re-deriving them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T055353101900-bpq-owed-review-preparation-fits-its-module-limit/manifest.md:8 non-blocking: retry_failures records none while a leftover suite-head.log and head-ids.txt show an earlier head arm at eda26ca8 that produced 408 errors and 461 ids before the recorded head2 arm replaced it, so a reader comparing after_suite against the run directory finds an arm the manifest neither names nor attributes.\n",
+  "review_run_id": "r-20261123T071215152452-review-of-bpq-owed-review-preparation-fits-its-module-limit-eda26ca82855",
+  "reviewed_base_sha": "c59320f52c06af4831dc74336b91d51b346d2d30",
+  "reviewed_head_sha": "eda26ca82855ab14c5a01ac9b5aa4db97403301c",
+  "reviewed_run_id": "r-20261123T055353101900-bpq-owed-review-preparation-fits-its-module-limit",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T07:30:00.000000+00:00",
+  "total": 116
+}
