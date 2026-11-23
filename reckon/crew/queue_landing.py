@@ -1203,32 +1203,32 @@ def _measure_delivery(
         # Only the checkout is inside this except: an error raised by the
         # measurement itself is a different failure and is reported as one.
         partitioned = landing_measure.measures_on_partition(config)
-        try:
-            with ExitStack() as stack:
-                measured_head, measured_tree = head, Path(tree)
-                if primary != head:
-                    if not promoted and _landed_elsewhere(pointer, run_id):
-                        raise _LandedElsewhereError
-                    measured_head, measured_tree = stack.enter_context(
-                        landing_measure.candidate_checkout(repo, primary, head, timeout)
-                    )
-                elif request is not None:
-                    measured_tree = stack.enter_context(
-                        landing_measure.base_checkout(repo, head, timeout)
-                    )
+        with ExitStack() as stack:
+            measured_head, measured_tree = head, Path(tree)
+            if primary != head:
                 if not promoted and _landed_elsewhere(pointer, run_id):
                     raise _LandedElsewhereError
-                base_tree = stack.enter_context(
-                    landing_measure.base_tree_for_measure(
-                        repo,
-                        primary,
-                        timeout,
-                        partitioned=partitioned,
-                        name=Path(logs) / "base-arm",
-                    )
+                measured_head, measured_tree = stack.enter_context(
+                    landing_measure.candidate_checkout(repo, primary, head, timeout)
                 )
-                if not promoted and _landed_elsewhere(pointer, run_id):
-                    raise _LandedElsewhereError
+            elif request is not None:
+                measured_tree = stack.enter_context(
+                    landing_measure.base_checkout(repo, head, timeout)
+                )
+            if not promoted and _landed_elsewhere(pointer, run_id):
+                raise _LandedElsewhereError
+            base_tree = stack.enter_context(
+                landing_measure.base_tree_for_measure(
+                    repo,
+                    primary,
+                    timeout,
+                    partitioned=partitioned,
+                    name=Path(logs) / "base-arm",
+                )
+            )
+            if not promoted and _landed_elsewhere(pointer, run_id):
+                raise _LandedElsewhereError
+            try:
                 from reckon.crew import delivery_scope
 
                 derived = delivery_scope.derive(
@@ -1243,11 +1243,11 @@ def _measure_delivery(
                     else None
                 )
                 if partitioned:
-                    # Every arm builds its own tree on the node that runs it, so
-                    # the landing releases both checkouts before submitting them
-                    # and the arms hold no node-local disk while they wait. An
-                    # in-place measurement runs in these trees and keeps them
-                    # until its arms have read them.
+                    # Every arm builds its own tree on the node that runs
+                    # it, so the landing releases both checkouts before
+                    # submitting them and the arms hold no node-local disk
+                    # while they wait. An in-place measurement runs in these
+                    # trees and keeps them until its arms have read them.
                     measured_tree = Path(logs) / "head-arm"
                     stack.close()
                 measured = landing_measure.measure_run(
@@ -1276,15 +1276,18 @@ def _measure_delivery(
                         "candidate_sha": measured_head,
                     },
                 )
-        except (OSError, ValueError) as exc:
-            measured = landing_measure.Measurement(
-                command=command,
-                suite={},
-                population={},
-                unreadable=(f"the measurement raised {type(exc).__name__}: {exc}"),
-                head=head,
-                project=project,
-            )
+            except (OSError, ValueError) as exc:
+                # A checkout that could not be built is entered above this
+                # handler, so only a measurement's own error is reported as
+                # one.
+                measured = landing_measure.Measurement(
+                    command=command,
+                    suite={},
+                    population={},
+                    unreadable=(f"the measurement raised {type(exc).__name__}: {exc}"),
+                    head=head,
+                    project=project,
+                )
     except landing_measure.BaseCheckoutError as exc:
         measured = landing_measure.Measurement(
             command=command,
