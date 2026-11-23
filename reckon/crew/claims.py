@@ -6,13 +6,22 @@ checks peer claims before the pointer write. Narrowing and release require a
 proven-local, proven-dead worker because they remove protection from paths
 another worker may soon claim. Each operation preserves the pointer's other
 fields and reports the paths it changed.
+
+A claim keeps binding after its worker stops for the paths its worktree still
+holds unlanded. That reasoning assumes somebody will land the work. A delivered
+run whose dispatching session has ended and whose records nothing has touched
+for a day is one nobody will act on, so :func:`lapsed_claim_reason` sets its
+claim aside without touching the run: the pointer, manifest and worktree stay
+exactly as they were, and a later reader can still resume or promote it.
 """
 
 from __future__ import annotations
 
 import socket
+import time
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from reckon.crew.node import CrewError, unintegrated_claim_work
@@ -23,6 +32,7 @@ from reckon.crew.process_liveness import (
     LIVENESS_SESSION_WALK,
     record_process_liveness,
 )
+from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES, parse_manifest
 from reckon.crew.runs import (
     _write_json,
     pointer_path,
@@ -166,6 +176,17 @@ def widen_claim(
 
     return _mutate_pointer(run_id, amend), added
 
+
+#: The manifest statuses that count as a delivery: the worker finished its turn
+#: and wrote down what it did. The vocabulary is owned by the manifest reader,
+#: and a failed run has delivered nothing a coordinator can land, so its claim
+#: is judged by the settled rules alone.
+DELIVERED_MANIFEST_STATUSES = TERMINAL_MANIFEST_STATUSES - {"failed"}
+
+#: How long a delivered run's claim survives with no coordinator action. The
+#: worktree's unlanded work is still promotable after this and the run keeps its
+#: records; what ends is the claim's power to fence a peer's dispatch.
+DEFAULT_CLAIM_LAPSE_SECONDS = 24 * 60 * 60.0
 
 # The field a worker's fence is built from when its attempt is launched. A
 # widen rewrites exactly this, and the fence reads it once at launch, so a
@@ -340,7 +361,171 @@ def release_claim(
     return _amended(run_id, current, remaining, reason, pointer)
 
 
-# ── internals ────────────────────────────────────────────────────────────────
+def lapsed_claim_reason(
+    pointer: Mapping[str, Any],
+    *,
+    now: float | None = None,
+    after: float = DEFAULT_CLAIM_LAPSE_SECONDS,
+) -> str | None:
+    """Why a stopped delivered run's claim no longer fences its paths, or None.
+
+    A claim stops binding on its own in two ways that assume nothing further
+    happens to the run: its worker is alive, or its worktree is empty. A run
+    that delivered and then went quiet is the third, and the one the fleet
+    cannot otherwise clear: its manifest is terminal, so no pass will review or
+    land it unasked, and no session is left to ask. On 22 November two imas-ambix
+    requests waited a day ``held-on-claim`` behind such a run, whose figure
+    directory their evidence had to write.
+
+    The judgement is read-only. Every file it inspects is a record of the run,
+    and none is rewritten here, so the run stays readable and resumable: a
+    coordinator who later promotes or resumes it finds it exactly as delivered.
+
+    Each condition is proved rather than assumed, and an unprovable one keeps
+    the claim:
+
+    * the manifest is read through the pointer's attempt baseline, because a
+      resumed run's predecessor leaves a terminal manifest at the same path and
+      that verdict is not this attempt's;
+    * the session is read through the harness's own record, and a session with
+      no record at all answers neither live nor ended, which keeps the claim;
+    * activity is the latest write to the run's pointer, manifest, review
+      records or promotion request — the four places a coordinator, a landing
+      attempt or a review leaves a mark — and a record that cannot be read
+      keeps the claim rather than counting as quiet;
+    * the worker itself must be stopped. The caller reads liveness, so this
+      function never has to guess at it.
+    """
+    from reckon.crew import harness_sessions, review_records
+
+    run_id = str(pointer.get("run_id") or "")
+    session = str(pointer.get("session") or "").strip()
+    if not run_id or not session:
+        return None
+    status = _delivered_status(pointer)
+    if not status:
+        return None
+    address = harness_sessions.addresses({session}).get(
+        session, harness_sessions.NO_ADDRESS
+    )
+    if address.get("reachable") is not False:
+        return None
+    moment = time.time() if now is None else float(now)
+    quiet = _quiet_seconds(pointer, run_id, moment, review_records, after=after)
+    if quiet is None or quiet < after:
+        return None
+    hours = quiet / 3600.0
+    return (
+        f"run {run_id!r} delivered {status!r} and its session {session!r} has "
+        f"ended, with no pointer, manifest, review or promotion write for "
+        f"{hours:.1f} hours, so its claim is set aside; the run is kept and can "
+        "still be resumed or promoted"
+    )
+
+
+def _delivered_status(pointer: Mapping[str, Any]) -> str:
+    """The run's delivered manifest status, or empty when it has not delivered.
+
+    The fresh-manifest read is the same pair of steps
+    :func:`reckon.crew.dispatch_claims.stopped_with_terminal_manifest` composes,
+    and it is written the same way here — the pointer's attempt baseline, then
+    the parser — so both answer from one manifest vocabulary and one set of
+    failures. What differs is the accepted statuses, which is why the status
+    word is returned rather than a verdict, and why liveness is not judged here:
+    the caller has already read the dispatching session's own record.
+    """
+    from reckon.crew.runs import _manifest_freshness
+
+    present, fresh = _manifest_freshness(pointer)
+    if not present or not fresh:
+        return ""
+    manifest = Path(str(pointer.get("manifest_path") or ""))
+    try:
+        status = str(
+            parse_manifest(
+                manifest.read_text(encoding="utf-8"), path=str(manifest)
+            ).get("status")
+            or ""
+        )
+    except (OSError, ValueError):
+        return ""
+    return status if status in DELIVERED_MANIFEST_STATUSES else ""
+
+
+def _quiet_seconds(
+    pointer: Mapping[str, Any],
+    run_id: str,
+    moment: float,
+    review_records: Any,
+    *,
+    after: float,
+) -> float | None:
+    """Seconds since the latest record write, or None when one cannot be read.
+
+    The cheap records are read first, so the review store — an index read over
+    every round the run was reviewed in — is consulted only for a claim whose
+    pointer, manifest and promotion records are already quiet.
+    """
+    recent = _latest_write_mtime(_run_record_paths(pointer, run_id))
+    if recent is None:
+        return None
+    if moment - recent < after:
+        return None
+    reviews = _review_record_paths(pointer, run_id, review_records)
+    if reviews is None:
+        return None
+    newest = _latest_write_mtime(reviews)
+    latest = recent if newest is None else max(recent, newest)
+    return moment - latest
+
+
+def _run_record_paths(pointer: Mapping[str, Any], run_id: str) -> list[Path]:
+    """The pointer, manifest and promotion records a run's own writes land in."""
+    from reckon.crew import promotion_requests
+
+    paths = [pointer_path(run_id)]
+    manifest = str(pointer.get("manifest_path") or "")
+    if manifest:
+        paths.append(Path(manifest))
+    try:
+        paths.append(promotion_requests._request_path(run_id))
+        paths.append(promotion_requests._receipt_path(run_id))
+    except CrewError:
+        pass
+    return paths
+
+
+def _review_record_paths(
+    pointer: Mapping[str, Any], run_id: str, review_records: Any
+) -> list[Path] | None:
+    """Every review record a run carries, or None when the store cannot be read.
+
+    A store this cannot read is not evidence that no review happened, so it
+    answers None and the claim keeps binding: the review store is the one record
+    here whose reader reaches a whole project's history, and a failure in it must
+    never release a path.
+    """
+    project = str(pointer.get("project") or "")
+    if not project:
+        return []
+    try:
+        return [
+            path
+            for path, _record in review_records.stored_records_for_run(project, run_id)
+        ]
+    except Exception:  # noqa: BLE001 - an unreadable store keeps the claim, not fails the pass
+        return None
+
+
+def _latest_write_mtime(paths: Iterable[Path]) -> float | None:
+    """The newest mtime among ``paths`` that exist, or None when none does."""
+    seen: list[float] = []
+    for path in paths:
+        try:
+            seen.append(path.stat().st_mtime)
+        except OSError:
+            continue
+    return max(seen) if seen else None
 
 
 def _set_aside_on_acceptance(run_id: str, acceptance: bool) -> tuple[str, ...]:

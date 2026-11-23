@@ -745,6 +745,61 @@ def _live_claim_detail(
     return None
 
 
+def _set_aside_claim_details(
+    pointer: Mapping[str, Any],
+    live: Sequence[Mapping[str, Any]],
+    *,
+    dispositions: dict[str, Any],
+    shared_files: frozenset[str],
+) -> list[dict[str, Any]]:
+    """The lapsed claims this request's paths would otherwise have hit.
+
+    A claim that lapsed admits the request, and an admission that says only
+    "launched" leaves the run that held it unreadable in the log: a coordinator
+    reading the pass cannot tell a free path from one released from a delivered
+    run nobody landed. Each row names the run and its own lapse, so the record
+    of the pass says what the request walked past.
+    """
+    ours = _declared_scope_paths(pointer)
+    if not ours:
+        return []
+    here = str(pointer.get("run_id") or "")
+    repo = (
+        os.path.normpath(str(pointer.get("repo") or "")) if pointer.get("repo") else ""
+    )
+    found: list[dict[str, Any]] = []
+    for other in live:
+        if str(other.get("run_id") or "") == here:
+            continue
+        judged = _claim_disposition_of(other, dispositions)
+        if not judged.lapsed:
+            continue
+        if repo:
+            other_repo = str(other.get("repo") or "")
+            if other_repo and os.path.normpath(other_repo) != repo:
+                continue
+        collision = next(
+            (
+                path
+                for path in ours
+                for claim in _declared_scope_paths(other)
+                if runs._scopes_overlap(path, claim)
+                and not runs._claim_paths_share(shared_files, path, claim)
+            ),
+            None,
+        )
+        if collision is None:
+            continue
+        found.append(
+            {
+                "run_id": str(other.get("run_id") or ""),
+                "path": collision,
+                "reason": judged.reason,
+            }
+        )
+    return found
+
+
 def recorded_pass_hold(pointer: Mapping[str, Any]) -> dict[str, Any]:
     """Return the last admission hold stored on a queued request."""
     record = pointer.get(RECORDED_HOLD_FIELD)
