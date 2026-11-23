@@ -2353,6 +2353,7 @@ def crew_dispatch(
                         "detail": str(exc),
                         "free_bytes": exc.free_bytes,
                         "floor_bytes": exc.floor_bytes,
+                        "reclaimable_by_owner": exc.owners,
                     },
                     override_resolution,
                 ),
@@ -2669,6 +2670,7 @@ def crew_dispatch(
                 "detail": str(exc),
                 "free_bytes": exc.free_bytes,
                 "floor_bytes": exc.floor_bytes,
+                "reclaimable_by_owner": exc.owners,
             },
             pretty,
         )
@@ -3023,6 +3025,7 @@ def _run_review(
     contradictory command and composes the brief one way.
     """
     from reckon.crew import plan_review, recovery
+    from reckon.crew.dispatch import TmpHeadroomError
     from reckon.crew.node import CrewError
 
     # A command names exactly one subject: a plan (under the content or design
@@ -3444,6 +3447,13 @@ def _run_review(
         _emit(_one_run_to_complete(result), pretty)
         if result.get("refused") or result.get("awaiting_lane") or result.get("error"):
             raise click.exceptions.Exit(1)
+    except TmpHeadroomError as exc:
+        # A review is a dispatch, so it meets the same scratch floor. The
+        # refusal answers on the verb's JSON channel with the owner breakdown a
+        # bare crew_error document would drop, and with the exit code the
+        # dispatch doors use for this refusal.
+        _emit({"ok": False, **exc.as_refusal()}, pretty)
+        raise click.exceptions.Exit(75) from exc
     except (ValueError, OSError, CrewError) as exc:
         _emit({"error": "crew_error", "detail": str(exc)}, pretty)
         raise click.exceptions.Exit(1) from exc

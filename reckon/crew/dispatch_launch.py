@@ -895,17 +895,117 @@ WORKER_SCRATCH_ROOT_DEFAULT = "/tmp"  # noqa: S108 - the node's own tmp, never s
 WORKER_SCRATCH_BUDGET_BYTES = 2 * 1024**3
 
 
-class TmpHeadroomError(CrewError):
-    """The scratch filesystem cannot admit another worker."""
+#: The directory-name prefix a lander gives the base and reference trees it
+#: builds under the scratch root. Such a tree is held by the measuring process
+#: while it works and is reclaimable once no process holds it.
+LANDER_TREE_PREFIX = "landing-base"
 
-    def __init__(self, free_bytes: int, floor_bytes: int):
+
+class TmpHeadroomError(CrewError):
+    """The scratch filesystem cannot admit another worker.
+
+    The refusal carries the free bytes, the floor and a per-owner breakdown of
+    what sits under the scratch root, so a coordinator reading it can see whose
+    bytes it could reclaim instead of taking a hand census of the machine.
+    """
+
+    def __init__(
+        self,
+        free_bytes: int,
+        floor_bytes: int,
+        owners: Iterable[Mapping[str, Any]] = (),
+    ):
         self.free_bytes = free_bytes
         self.floor_bytes = floor_bytes
+        self.owners = [dict(owner) for owner in owners]
         super().__init__(
             f"tmp-headroom-refusal: {free_bytes} bytes free, floor "
-            f"{floor_bytes} bytes; run `reckon crew gc --project <project>` "
-            "to inspect reclaimable worker scratch"
+            f"{floor_bytes} bytes; {sum(int(owner.get('bytes') or 0) for owner in self.owners)} "
+            "reclaimable bytes are named by owner in this refusal; run "
+            "`reckon crew gc --project <project>` to reclaim worker scratch"
         )
+
+    def as_refusal(self) -> dict[str, Any]:
+        """The refusal fields a JSON answer carries, without the exit code."""
+        return {
+            "error": "tmp-headroom-refusal",
+            "detail": str(self),
+            "free_bytes": self.free_bytes,
+            "floor_bytes": self.floor_bytes,
+            "reclaimable_by_owner": [dict(owner) for owner in self.owners],
+        }
+
+
+def reclaimable_scratch_by_owner(
+    root: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Group the bytes under the scratch root by the owner that can reclaim them.
+
+    Three kinds are reported, each with the bytes it holds:
+
+    * ``lander-tree`` — a ``landing-base-*`` tree with no process holding it,
+      which is reclaimable now;
+    * ``run`` — a run's own scratch directory, named for its run id, carrying
+      the id and the session that owns it;
+    * ``path`` — anything else, grouped by its top-level path.
+
+    A lander tree a live process still holds is reported with ``held`` true so
+    a reader sees it and knows it is not reclaimable rather than finding it
+    silently absent. Read-only and best-effort: an unreadable root answers an
+    empty list, because this is a report and must never turn a refusal into a
+    traceback.
+    """
+    root = worker_scratch_root() if root is None else Path(root)
+    try:
+        children = sorted(
+            child
+            for child in root.iterdir()
+            if child.is_dir() and not child.is_symlink()
+        )
+    except OSError:
+        return []
+    from reckon.crew.gc import _processes_holding
+
+    owners: list[dict[str, Any]] = []
+    live_sessions: dict[str, str] = {}
+    try:
+        from reckon.crew.runs import list_live
+
+        live_sessions = {
+            str(record.get("run_id")): str(record.get("session") or "")
+            for record in list_live()
+        }
+    except Exception:  # noqa: BLE001 - a listing failure must not cost the refusal
+        live_sessions = {}
+    for child in children:
+        size = tree_size_bytes(child)
+        name = child.name
+        if name.startswith(LANDER_TREE_PREFIX):
+            holders = _processes_holding(child)
+            held = bool(holders)
+            owners.append(
+                {
+                    "kind": "lander-tree",
+                    "path": str(child),
+                    "bytes": size,
+                    "held": held,
+                    "holder_pids": [h.get("pid") for h in (holders or [])],
+                }
+            )
+        elif name in live_sessions or name.startswith("r-"):
+            owners.append(
+                {
+                    "kind": "run",
+                    "run_id": name,
+                    "session": live_sessions.get(name, ""),
+                    "path": str(child),
+                    "bytes": size,
+                    "held": name in live_sessions,
+                }
+            )
+        else:
+            owners.append({"kind": "path", "path": str(child), "bytes": size})
+    return owners
 
 
 def require_worker_scratch_headroom(config: Mapping[str, Any]) -> dict[str, int]:
@@ -923,7 +1023,7 @@ def require_worker_scratch_headroom(config: Mapping[str, Any]) -> dict[str, int]
         total * int(worktree.get("scratch_min_free_pct", 10)) // 100,
     )
     if free < floor:
-        raise TmpHeadroomError(free, floor)
+        raise TmpHeadroomError(free, floor, reclaimable_scratch_by_owner(root))
     return {"free_bytes": free, "floor_bytes": floor}
 
 
