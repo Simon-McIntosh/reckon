@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_the_drain_keeps_up_with_a_burst.py::test_a_commitless_promotion_finishes_beside_a_landing[False]"
+  ],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1310",
+    "reckon/crew/promotion_records.py:1381",
+    "reckon/crew/landing_measure.py:1673",
+    "reckon/crew/landing_measure.py:1718",
+    "reckon/crew/landing_measure.py:2013"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:24:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 790,
+      "severity": "non-blocking",
+      "text": "The unresolvable-revision branch returns True so an unreadable revision keeps the file, but no case in tests/test_a_partitioned_arm_judges_files_against_its_revision.py drives it: a regression flipping it to False would silently narrow a partitioned arm to an empty measurement and the suite would stay green."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 767,
+      "severity": "non-blocking",
+      "text": "revision_holds restates the 'does this commit hold this path' capability already carried by reckon/crew/promotion_checks.py:653 _commit_holds_path beside _revision_is_readable at :657, duplicating rather than extending it; the duplication is module-private and matches the inline idiom at promotion_scope.py:2219 and routing.py:1751, so no shared owner exists to consolidate into without a wider change."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The three in-module arm_test_files call sites and the two runtime entry points that reach them were read: queue_landing.py:1310 measure_run and promotion_records.py:1381 armed_observations.",
+    "diff": "Read commit by commit: 6be79c28ce changes landing_measure.py (+65/-6) and adds the 169-line test, 4e7a48a918 adds the 58-line fragment, 6f8da1cd63 corrects one summary figure in it.",
+    "done_when": "The done_when names tests/test_a_partitioned_arm_judges_files_against_its_revision.py with three cases; gate-newtest-head.log records 3 passed in 1.07s EXIT=0 and I re-ran the file at the head worktree to 3 passed in 1.46s.",
+    "goal": "The node's goal is that a partitioned arm judge a test file's presence against its own revision; reckon/crew/landing_measure.py:767 adds revision_holds and :822 switches the selection to it when a partition is in use, which is the deliverable.",
+    "manifest": "Read; it records the code commit 6be79c28ce, the doc commits, the base and head arm summaries, the negative control and the one differing id's six isolated re-runs.",
+    "write_paths": "The manifest declares four paths under docs/evidence/fragments/, docs/figures/, reckon/crew/landing_measure.py and tests/; every path in the diff d7f54a14d1..6f8da1cd63 is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_partitioned_arm_judges_files_against_its_revision.py:141 asserts the base arm names [KEPT] against an independent literal, and the negative control shows that assertion reddening at the base source (gate-negative-control.log: 2 failed, 1 passed), but the unresolvable-revision branch at reckon/crew/landing_measure.py:790 has no test.",
+    "evidence": "The base arm at d7f54a14 gives 9 failed / 411 passed EXIT=1 and the head arm at 6be79c28ce gives 10 failed / 413 passed EXIT=1 (gate-base.log, gate-head.log), and the one differing id tests/test_the_drain_keeps_up_with_a_burst.py::test_a_commitless_promotion_finishes_beside_a_landing[False] is argued a flake from six isolated re-runs in the manifest rather than shown to add no failure inside the arm itself.",
+    "fit": "revision_holds at reckon/crew/landing_measure.py:767 reads git through the module's own timeout-bound _git at :2207, follows the _tree_holds docstring idiom at :751, and introduces no plan label, version suffix or ticket reference.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:767 revision_holds asks the revision itself, and the partitioned call sites at :1673, :1718 and :2013 supply it only when a partition is used, so the base arm leaves out a file the base revision lacks while the unpartitioned path keeps _tree_holds at :832.",
+    "reuse": "The closest existing owner of 'does this revision hold this path' is reckon/crew/promotion_checks.py:653 _commit_holds_path beside _revision_is_readable at :657, a module-private helper; the search over reckon/ found the same one-liner also at promotion_scope.py:2219 and routing.py:1751, so the repository has no shared owner and the addition duplicates rather than extends a private one.",
+    "scope_discipline": "The three changed paths \u2014 reckon/crew/landing_measure.py, tests/test_a_partitioned_arm_judges_files_against_its_revision.py and the s65 evidence fragment \u2014 are exactly declared write paths, and the two later commits 4e7a48a918 and 6f8da1cd63 touch only the fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261123T232344628212-review-of-delivered-work-lands-without-a-coordinator-s65-6f8da1cd634b",
+  "reviewed_base_sha": "d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e",
+  "reviewed_head_sha": "6f8da1cd634bacedf9a05607af2d90e969f5a57f",
+  "reviewed_run_id": "r-20261123T190232214274-delivered-work-lands-without-a-coordinator-s65",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:35:52.503017+00:00",
+  "total": 106
+}
