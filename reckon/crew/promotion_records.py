@@ -458,9 +458,10 @@ def _default_gate_evidence_from_manifest(
     # is the command the replay executes where a declaration exists; the
     # manifest's ``tests`` line is the record of the same run and stands where
     # none was declared.
-    declared_command = gate_declaration(record).get(
-        "command", ""
-    ) or str(manifest.get("tests") or "").strip()
+    declared_command = (
+        gate_declaration(record).get("command", "")
+        or str(manifest.get("tests") or "").strip()
+    )
     # A review run's evidence is the record it stored, so its manifest's
     # ``tests`` line describes a check rather than naming one — it may be a
     # list of the checks the node's fence named rather than a command at all.

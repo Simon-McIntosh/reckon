@@ -596,7 +596,13 @@ def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
     own text is carried forward, with the run id in front of it. The faults this
     covers are the ones judged from the manifest alone — an arm revision that is
     prose or the beginning of an object id, and a gate command naming an
-    absolute path under the temporary directory.
+    absolute path under the temporary directory or no program a shell can
+    start.
+
+    The rules are asked through :func:`manifest_faults.judged_faults`, so the
+    run's own gate declaration stands in place of the recorded command and a
+    review run's line, which describes a stored record rather than a command, is
+    left unjudged — the same reading the delivery check takes.
 
     A manifest that is absent or not fresh has no verdict to judge and is left
     to the arms that read its absence.
@@ -609,8 +615,10 @@ def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
     declared = gate_declaration(record).get("command", "")
     reasons = [
         fault.reason
-        for fault in manifest_faults.manifest_faults(
-            manifest_faults.with_declared_gate(manifest, declared)
+        for fault in manifest_faults.judged_faults(
+            manifest,
+            role=str(record.get("role") or ""),
+            declared_gate_command=declared,
         )
     ]
     if not reasons:

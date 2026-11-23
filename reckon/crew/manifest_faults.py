@@ -24,8 +24,9 @@ Three rules live here, and each reason names the repair:
   compared with the base;
 * a gate command naming an absolute path under the temporary directory, which
   is cleared before the run's record is ever read;
-* a gate command whose first program word is an option rather than a program,
-  which a shell cannot start, so the landing's replay stalls before measuring.
+* a gate command whose first word is an option rather than a program, or which
+  carries only variable assignments, so a shell has nothing to start and the
+  landing's replay stalls before measuring.
 
 A gate command the run's own gate declaration supplies is judged in place of
 the recorded line: the declaration states what the arms actually ran, and a
@@ -64,6 +65,9 @@ _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
 # an assignment's prefix. A path is judged after these are stripped.
 _WORD_TRIM = "\"'`,;:()[]{}<>"
 
+# A shell variable assignment: a name, then `=`, then the value it sets.
+_SHELL_ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+
 
 @dataclass(frozen=True)
 class Fault:
@@ -88,6 +92,23 @@ def manifest_faults(manifest: Mapping[str, Any]) -> list[Any]:
     )
     faults.extend(_gate_command_faults(manifest))
     return faults
+
+
+def judged_faults(
+    manifest: Mapping[str, Any], *, role: str = "", declared_gate_command: str = ""
+) -> list[Any]:
+    """The faults of the manifest as this run's record says it should be read.
+
+    A gate command declared through ``crew declare-gate`` stands in place of the
+    recorded line. A review run records no gate at all: its ``tests`` line
+    describes the record it stored rather than a command, and promotion reads
+    the command from that record, so the line is left unjudged rather than
+    refused for a shape it was once written in.
+    """
+    judged = with_declared_gate(manifest, declared_gate_command)
+    if str(role or "").strip().lower() == "review":
+        judged = {**judged, "tests": ""}
+    return manifest_faults(judged)
 
 
 def with_declared_gate(
@@ -206,18 +227,30 @@ def _program_fault(command: str) -> Fault | None:
 
     The lander hands the recorded text to a shell, and a shell reads a leading
     option as an argument list with no program to receive it: it exits without
-    running any check. What is judged here is only that shape, because the
-    manifest alone cannot say which programs a tree holds — whether a word that
-    does look like a program resolves to an executable is the promotion's own
-    question, answered against the run's checkout.
-    """
-    words, detail = _startable_words(command)
-    if words is None:
-        return Fault(field="tests", reason=gate_program_reason(command, detail))
-    from reckon.crew.promotion_gate import _program_token_index
+    running any check. What is judged here is only that shape, taken from the
+    line's first word, because the manifest alone cannot say which programs a
+    tree holds — whether a word that does look like a program resolves to an
+    executable is the promotion's own question, answered against the checkout.
 
-    index = _program_token_index(words)
-    if index is None:
+    The judgement is deliberately the first word and nothing else. A recorded
+    line may carry a summary after the command, and a line recording one that
+    happens to open with an assignment is a description rather than a command
+    this rule can fault from the manifest alone. Both are left to the check the
+    lander runs, which has the tree to resolve them against.
+    """
+    words = [word for raw in command.split() if (word := raw.strip(_WORD_TRIM))]
+    if not words:
+        return None
+    if words[0].startswith("-"):
+        return Fault(
+            field="tests",
+            reason=gate_program_reason(
+                command,
+                f"its first word {words[0]!r} is an option rather than the "
+                "program that ran the check",
+            ),
+        )
+    if all(_SHELL_ASSIGNMENT.match(word) for word in words):
         return Fault(
             field="tests",
             reason=gate_program_reason(
@@ -225,27 +258,7 @@ def _program_fault(command: str) -> Fault | None:
                 "it carries only variable assignments, so no program is left to start",
             ),
         )
-    program = words[index]
-    if not program.startswith("-"):
-        return None
-    return Fault(
-        field="tests",
-        reason=gate_program_reason(
-            command,
-            f"its first program word {program!r} is an option rather than the "
-            "program that ran the check",
-        ),
-    )
-
-
-def _startable_words(command: str) -> tuple[list[str] | None, str]:
-    """The command's words as a shell splits them, or None and why it cannot."""
-    import shlex
-
-    try:
-        return shlex.split(command), ""
-    except ValueError as unparseable:
-        return None, f"it does not tokenise as a shell command ({unparseable})"
+    return None
 
 
 def _command_words(command: str) -> list[str]:
