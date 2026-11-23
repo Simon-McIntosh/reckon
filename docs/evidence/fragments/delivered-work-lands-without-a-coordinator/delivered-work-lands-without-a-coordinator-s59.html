@@ -77,6 +77,16 @@
   Those logs are kept beside the arm logs so a reader can see what produced
   them; they are not the comparison above.</p>
 
+  <p><strong>The replay waits for the bound its job runs under.</strong> The
+  replayed gate at the integrated revision is submitted through the same
+  builder, so a profile raises that job's <code>--time</code> above the bound
+  the replay resolved. The client wait follows the job's bound rather than the
+  resolved one, and the cut-short message names the bound the job actually
+  had: waiting for the shorter figure killed a job the scheduler was still
+  running and reported the kill as the gate's own timeout, which is the one
+  gate a long GPU profile exists to run. At the revision before this, the same
+  case reports a 720 s client wait for a job permitted 14400 s.</p>
+
   <p><strong>What does not change.</strong> A bare partition name keeps the
   shipped defaults — the population's CPU count, 32 GB and the bound the
   measure computed — and carries no reservation or gres. A profile's default
