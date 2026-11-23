@@ -59,11 +59,11 @@
   with the section still implementable, impl still 0.5, and the sibling's
   pointer untouched; and a last node whose landing is refused by the gate-check
   precondition, which leaves the declaration map and impl exactly as before.
-  The scoped gate reads <code>5 passed in 3.48s</code>.</p>
+  The scoped gate reads <code>6 passed in 4.20s</code>.</p>
 
   <p>The concurrency measure is unchanged and passes again:
   <code>tests/test_every_landed_state_write_survives_a_promotion.py</code> reads
-  <code>41 passed in 49.24s</code> at this head.</p>
+  <code>41 passed in 52.07s</code> at this head.</p>
 
   <p>The negative control extracts the unchanged base revision into a scratch
   tree and runs the same file there: the first case is refused with
@@ -78,21 +78,33 @@
   section and impl moves. A second pointer serving the landing's own dispatch
   node is not a second node either. Both would have held the section open when
   the closure counted any other executable pointer, leaving impl unmoved for a
-  landing that is the section's last. The scoped gate, now five cases, is
+  landing that is the section's last. The scoped gate, now six cases, is
   measured again below.</p>
+
+  <p>The impl guard reads a section's declaration through the ledger's normal
+  form, the same one a dispatch reads it through, and reads a declaration
+  written as a status mapping by its status. A case pins that form across two
+  spellings of the section id. The sibling case requires the
+  <code>section-open</code> verdict rather than accepting its absence, so a
+  guard that skips the exemption instead of reading the declaration fails the
+  test.</p>
 
   <p>The before and after arms ran on the <code>all_debug</code> partition,
   excluding the nodes whose <code>/tmp</code> is full. The baseline arm reads
   <code>58 passed in 47.50s</code> at <code>31eda5cd1f4e</code>; the after arm
-  reads <code>63 passed in 46.74s</code> at <code>f1577fdd19f</code>. Neither arm
+  reads <code>64 passed in 41.97s</code> at <code>5b5fdafd80</code>. Neither arm
   records a failure id.</p>
 
   <p>Reverting the repair's own hunk in a scratch tree of the same head and
   running the two cases it adds reads
   <code>2 failed, 3 deselected in 5.17s</code> at <code>f1577fdd19f</code>: the
-  section stays open and impl stays at 0.5 without the repair.</p>
+  section stays open and impl stays at 0.5 without the repair. Reverting the
+  declaration read the same way reads
+  <code>1 failed, 5 deselected in 0.46s</code> at <code>5b5fdafd80</code>: a
+  declaration written as a status mapping reads back as its text, so the
+  section-open exemption cannot fire for it.</p>
 
-  <p>Revisions: the change is committed at <code>f1577fdd19f</code>, following
-  <code>fb996f11cb</code>, and the base revision the arms compare against is
+  <p>Revisions: the change is committed at <code>5b5fdafd80</code>, following
+  <code>f1577fdd19f</code>, and the base revision the arms compare against is
   <code>31eda5cd1f4e</code>.</p>
 </section>
