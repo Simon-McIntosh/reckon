@@ -602,7 +602,6 @@ def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
     to the arms that read its absence.
     """
     manifest = _fresh_manifest(record)
-
     if manifest is None:
         return
     from reckon.crew.promotion_records import gate_declaration

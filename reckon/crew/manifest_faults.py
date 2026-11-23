@@ -90,7 +90,9 @@ def manifest_faults(manifest: Mapping[str, Any]) -> list[Any]:
     return faults
 
 
-def with_declared_gate(manifest: Mapping[str, Any], declared_command: str = "") -> Any:
+def with_declared_gate(
+    manifest: Mapping[str, Any], declared_command: str = ""
+) -> Mapping[str, Any]:
     """The manifest as the rules should judge it, its gate command declared
     through ``crew declare-gate`` standing in place of the recorded line.
 
