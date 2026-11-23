@@ -524,8 +524,15 @@ def _default_gate_evidence_from_manifest(
 GATE_DECLARATION_KEY = "gate_declaration"
 
 #: The keys a run's gate declaration may carry. A declaration names how the
-#: run's arms were run: the command they ran and the partition they ran on.
-_GATE_DECLARATION_FIELDS = ("command", "partition", "long_partition", "reason")
+#: run's arms were run: the command they ran, the partition they ran on and how
+#: long the gate itself takes.
+_GATE_DECLARATION_FIELDS = (
+    "command",
+    "partition",
+    "long_partition",
+    "duration",
+    "reason",
+)
 
 
 def gate_declaration(record: Mapping[str, Any]) -> dict[str, str]:
@@ -541,6 +548,19 @@ def gate_declaration(record: Mapping[str, Any]) -> dict[str, str]:
     if not isinstance(raw, Mapping):
         return {}
     return {key: str(raw.get(key) or "").strip() for key in _GATE_DECLARATION_FIELDS}
+
+
+def declared_gate_seconds(record: Mapping[str, Any]) -> float | None:
+    """The duration a run's gate declared, in seconds, or ``None``.
+
+    A gate that takes longer than the project's measurement floor says so at
+    declaration; this is the figure every landing arm for the run is floored by.
+    A declaration carrying no duration, or one that cannot be read, is
+    ``None``, which leaves the project's own floor to bound the arms.
+    """
+    from reckon.crew.landing_measure import parse_gate_duration
+
+    return parse_gate_duration(gate_declaration(record).get("duration") or "")
 
 
 def _declared_command_text(record: Mapping[str, Any]) -> str:
@@ -1255,6 +1275,7 @@ def _measure_missing_arms(
                 config=config,
                 partition=partition,
                 long_partition=long_partition,
+                declared_duration=declared_gate_seconds(record),
             )
     except (OSError, ValueError, landing_measure.BaseCheckoutError):
         return None

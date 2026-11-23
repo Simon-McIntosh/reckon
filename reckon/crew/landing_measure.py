@@ -705,6 +705,99 @@ def measure_timeout(config: Mapping[str, Any] | None) -> float:
     return float(value)
 
 
+#: The longest wall clock each partition admits, in seconds, with ``None``
+#: meaning the partition admits any length. A partition declared in neither this
+#: table nor ``landing.partition_max_seconds`` is unbounded, because an unread
+#: ceiling cannot justify refusing a declaration.
+DEFAULT_PARTITION_MAX_SECONDS: dict[str, float | None] = {
+    "all_debug": 3600.0,
+    "rigel": None,
+}
+
+_UNBOUNDED_SPELLINGS = frozenset({"unlimited", "unbounded", "none", "infinite"})
+
+
+def parse_gate_duration(value: Any) -> float | None:
+    """A declared gate duration in seconds, or ``None`` when it cannot be read.
+
+    A duration is written the way a scheduler states one — ``01:15:00`` — or as
+    a number with an ``s``/``m``/``h`` suffix, either a number of seconds, an
+    unsuffixed count, ``900``. Anything else is unread, so a malformed
+    declaration is refused rather than quietly treated as no duration at all.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value) if value > 0 else None
+    text = str(value).strip()
+    if not text:
+        return None
+    clock = re.fullmatch(r"(\d+):([0-5]\d)(?::([0-5]\d))?", text)
+    if clock:
+        hours = int(clock.group(1))
+        minutes = int(clock.group(2))
+        seconds = int(clock.group(3) or 0)
+        total = hours * 3600 + minutes * 60 + seconds
+        return float(total) if total > 0 else None
+    suffixed = re.fullmatch(r"(\d+)\s*([smh])", text, re.IGNORECASE)
+    if suffixed:
+        amount = int(suffixed.group(1))
+        total = amount * {"s": 1, "m": 60, "h": 3600}[suffixed.group(2).lower()]
+        return float(total) if total > 0 else None
+    plain = re.fullmatch(r"\d+", text)
+    if plain:
+        total = int(text)
+        return float(total) if total > 0 else None
+    return None
+
+
+def partition_max_seconds(
+    partition: str,
+    config: Mapping[str, Any] | None = None,
+) -> float | None:
+    """The longest wall clock one partition admits, in seconds.
+
+    Read from the config key ``landing.partition_max_seconds``, a mapping of
+    partition name to a number of seconds or an unbounded spelling. A partition
+    the config does not name is read from the shipped table, and one neither
+    names is unbounded: an unknown ceiling admits, it never refuses.
+    """
+    landing = (config or {}).get("landing")
+    declared = (
+        landing.get("partition_max_seconds") if isinstance(landing, Mapping) else None
+    )
+    if isinstance(declared, Mapping) and partition in declared:
+        raw = declared[partition]
+        if raw is None:
+            return None
+        if isinstance(raw, str) and raw.strip().lower() in _UNBOUNDED_SPELLINGS:
+            return None
+        return parse_gate_duration(raw)
+    return DEFAULT_PARTITION_MAX_SECONDS.get(partition)
+
+
+def admitting_partition(
+    bound_seconds: float,
+    partition: str,
+    long_partition: str,
+    config: Mapping[str, Any] | None = None,
+) -> str | None:
+    """The partition a bound is submitted on, or ``None`` when none admits it.
+
+    A bound longer than the short partition's maximum moves to the long one; a
+    bound longer than both is one no configured partition admits, so the caller
+    refuses rather than submitting a job the scheduler would end mid-run.
+    """
+    candidates = (partition, long_partition or "rigel")
+    for name in candidates:
+        if not name:
+            continue
+        maximum = partition_max_seconds(name, config)
+        if maximum is None or bound_seconds <= maximum:
+            return name
+    return None
+
+
 def _arm_records(record: Mapping[str, Any]) -> Iterator[Mapping[str, Any]]:
     """Every arm one stored measurement carries, in no particular order."""
     for section in ("suite", "population"):
@@ -1201,6 +1294,9 @@ def measure_run(
     config: Mapping[str, Any] | None = None,
     population_files: Iterable[str] | None = None,
     repo: Path | None = None,
+    declared_duration: float | None = None,
+    declared_partition: str = "",
+    declared_long_partition: str = "",
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
@@ -1216,7 +1312,12 @@ def measure_run(
     selecting importers of the delivered change. ``population_files`` names an
     importer population a caller already read from a tree it has since
     released, so a measurement whose arms run elsewhere need not hold a tree on
-    this node to know which files they run.
+    this node to read what files they run. ``declared_duration`` is the
+    duration a run's own gate declared, and it raises the floor every arm runs
+    above for that run alone: a gate that legitimately takes 54 minutes lands
+    under a bound that admits it, while every other run in the project keeps
+    the project's floor. ``declared_partition`` and ``declared_long_partition``
+    let a run whose arms are only comparable on one partition measure there.
     """
     runner = run or _RUN
     if config is None:
@@ -1224,13 +1325,22 @@ def measure_run(
 
         config = flight.resolve(project or None, checkout_path=str(tree)).config
     landing = config.get("landing") or {}
-    partition = str(landing.get("measure_partition") or "")
+    partition = str(declared_partition or landing.get("measure_partition") or "")
+    long_partition = str(
+        declared_long_partition or landing.get("measure_long_partition") or "rigel"
+    )
     execution = "slurm" if partition else "in-place"
     # A project that declares its measurement limit owns the floor every arm
     # runs above: a caller that omits the figure, or passes a smaller one, must
     # not submit an arm under a ceiling the project has said is too short for
-    # its own populations.
-    timeout = max(float(timeout), measure_timeout(config))
+    # its own populations. A run's declared gate duration raises that floor for
+    # this run: the gate has measured how long it takes, and an arm bounded
+    # below it is ended mid-run by the scheduler rather than read.
+    timeout = max(
+        float(timeout),
+        measure_timeout(config),
+        float(declared_duration or 0.0),
+    )
     node_tests = _distinct_files(
         str(path).strip() for path in test_files if str(path).strip()
     )
@@ -1277,7 +1387,7 @@ def measure_run(
             base_sha=base_sha,
             head_sha=head_sha,
             partition=partition,
-            long_partition=str(landing.get("measure_long_partition") or "rigel"),
+            long_partition=long_partition,
             test_files=[*node_tests, *files],
         )
         runner.partitioned = True
@@ -1463,6 +1573,7 @@ def armed_observations(
     config: Mapping[str, Any] | None = None,
     partition: str = "",
     long_partition: str = "",
+    declared_duration: float | None = None,
 ) -> dict[str, Any]:
     """Run the armed command at both revisions and return each as an observation.
 
@@ -1503,6 +1614,11 @@ def armed_observations(
     partition = str(partition or landing.get("measure_partition") or "")
     long_partition = str(
         long_partition or landing.get("measure_long_partition") or "rigel"
+    )
+    timeout = max(
+        float(timeout),
+        measure_timeout(config),
+        float(declared_duration or 0.0),
     )
     if partition:
         runner = _partition_runner(
