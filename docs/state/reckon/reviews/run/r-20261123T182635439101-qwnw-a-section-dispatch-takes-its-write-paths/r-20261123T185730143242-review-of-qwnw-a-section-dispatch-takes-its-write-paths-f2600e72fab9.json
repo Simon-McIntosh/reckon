@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "31eda5cd1f4e52346def5d1d484bd1c9f4de514d",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:653 apply_section_defaults (single dispatch and validating dry run)",
+    "reckon/crew/dispatching/requests.py:240 apply_section_defaults (queued single dispatch)",
+    "reckon/crew/dispatch_batch.py:772 _entry_node section_derivation (batch entry, compared)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T18:58:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "716",
+      "severity": "non-blocking",
+      "text": "suppressing BatchEntryRefusedError around read.write_paths makes a section whose sentence names a test only by description, or carries a parent-directory token, derive nothing and keep the default landing scope, while a batch entry for that same section refuses naming the sentence at dispatch_batch.py:444 and dispatch_batch.py:474; the single dispatch silently reproduces the failure the section describes, and the coordinator learns of this only when the worker's commit is refused as outside its scope."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "655",
+      "severity": "non-blocking",
+      "text": "SECTION_SUPPLIED_NODE_FIELDS is documented as the node fields a section supplies to a dispatch that omits them, but write paths now belong to that set and are not in the tuple, so a reader or later caller that enumerates the constant to decide which fields the section owns (as the batch writer does when it stamps section_derived marks at dispatch_batch.py:938) cannot see the new field."
+    }
+  ],
+  "head_log_revision": "f2600e72fab940545d69c72d520e4ccc9b68c6d2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified two production call sites (dispatch_plan.py:653 dry run and launch, dispatching/requests.py:240 queued single dispatch) and compared the batch path at dispatch_batch.py:772.",
+    "diff": "read the single commit f2600e72 against base 31eda5cd commit by commit; dispatch_batch.py gains 31 lines across the docstring, the needs_write_paths guard and the derivation branch, and the test file is 256 new lines, nothing else.",
+    "done_when": "the done_when names tests/test_a_section_dispatch_takes_its_write_paths.py and its four cases (three-path derivation, equality with a batch entry, no-sentence section, caller-named paths); the worker ran it at f2600e72 and the scoped gate log records 62 passed EXIT=0, with the base arm at 2 failed EXIT=1.",
+    "goal": "the goal is that a single-section dispatch takes the write paths its section states; reckon/crew/dispatch_batch.py:694-719 now derives them in apply_section_defaults, which both single-dispatch entry points call.",
+    "manifest": "read; status complete, commits f2600e72, changed_paths the two landed files, the tests line and the three gate logs it names all exist on disk, baseline_suite 58 passed and after_suite 62 passed, both EXIT=0.",
+    "write_paths": "the node declared six paths; the delivered diff touches two of them, reckon/crew/dispatch_batch.py and the new test file, and produces no evidence fragment or figure, neither of which the section's done-when requires."
+  },
+  "justifications": {
+    "durability": "the base arm reddens test_a_single_dry_run_takes_the_sections_write_paths_beside_the_defaults and test_the_derived_write_paths_equal_a_batch_entrys when the fix is removed, so those assertions fail on the regression they guard, while the suppressed-refusal branch at dispatch_batch.py:716 has no test.",
+    "evidence": "the four cases at tests/test_a_section_dispatch_takes_its_write_paths.py:207/221/234/241 measure each clause of the done_when, and the base arm at negative_control_base.log reads '2 failed, 2 passed' with EXIT=1, reproducing the declared negative control.",
+    "fit": "reckon/crew/dispatch_batch.py:655 still documents SECTION_SUPPLIED_NODE_FIELDS as every field a section supplies while write paths are now supplied and absent from the tuple, and the added comments at dispatch_batch.py:695-698 and 712-715 state the mechanism with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:694-719 fills node.write_paths from the section's paragraph when the node declares none and leaves a declared or absent list alone, which is the endpoint the section states.",
+    "reuse": "the branch at dispatch_batch.py:716-719 calls the existing owner _PlanRead.write_paths at dispatch_batch.py:414 rather than re-reading the paragraph, but restates section_derivation's 'if derive_write_paths: paths = read.write_paths(section)' branch at dispatch_batch.py:639-642 in a second place instead of extending it with a suppress flag.",
+    "scope_discipline": "git diff 31eda5cd..f2600e72 touches only reckon/crew/dispatch_batch.py and tests/test_a_section_dispatch_takes_its_write_paths.py, both inside the declared fence, and carries no change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a single-section dispatch takes the write paths its section states; reckon/crew/dispatch_batch.py:694-719 now derives them in apply_section_defaults, which both single-dispatch entry points call.\nVERDICT done_when: the done_when names tests/test_a_section_dispatch_takes_its_write_paths.py and its four cases; the worker ran it at f2600e72 and the scoped gate log records 62 passed EXIT=0, with the base arm at 2 failed EXIT=1.\nVERDICT write_paths: the node declared six paths; the delivered diff touches two of them, reckon/crew/dispatch_batch.py and the new test file, and produces no evidence fragment or figure, neither of which the section's done-when requires.\nVERDICT manifest: read; status complete, commits f2600e72, changed_paths the two landed files, the tests line and the three gate logs it names all exist on disk, baseline_suite 58 passed and after_suite 62 passed, both EXIT=0.\nVERDICT diff: read the single commit f2600e72 against base 31eda5cd commit by commit; dispatch_batch.py gains 31 lines across the docstring, the needs_write_paths guard and the derivation branch, and the test file is 256 new lines, nothing else.\nCALL_SITES: reckon/crew/dispatch_plan.py:653, reckon/crew/dispatching/requests.py:240, reckon/crew/dispatch_batch.py:772\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:694-719 fills node.write_paths from the section's paragraph when the node declares none and leaves a declared or absent list alone, which is the endpoint the section states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the four cases at tests/test_a_section_dispatch_takes_its_write_paths.py:207/221/234/241 measure each clause of the done_when, and the base arm reads 2 failed, 2 passed with EXIT=1, reproducing the declared negative control.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 31eda5cd..f2600e72 touches only reckon/crew/dispatch_batch.py and tests/test_a_section_dispatch_takes_its_write_paths.py, both inside the declared fence, and carries no change the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm reddens test_a_single_dry_run_takes_the_sections_write_paths_beside_the_defaults and test_the_derived_write_paths_equal_a_batch_entrys when the fix is removed, so those assertions fail on the regression they guard, while the suppressed-refusal branch at dispatch_batch.py:716 has no test.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py:655 still documents SECTION_SUPPLIED_NODE_FIELDS as every field a section supplies while write paths are now supplied and absent from the tuple, and the added comments state the mechanism with no plan, sprint or ticket identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: the branch at dispatch_batch.py:716-719 calls the existing owner _PlanRead.write_paths at dispatch_batch.py:414 rather than re-reading the paragraph, but restates section_derivation's derive branch at dispatch_batch.py:639-642 in a second place instead of extending it with a suppress flag.\nFINDING reckon/crew/dispatch_batch.py:716 non-blocking: suppressing BatchEntryRefusedError around read.write_paths makes a section whose sentence names a test only by description, or carries a parent-directory token, derive nothing and keep the default landing scope, while a batch entry for that same section refuses naming the sentence; the single dispatch silently reproduces the failure the section describes, and the coordinator learns of this only when the worker's commit is refused as outside its scope.\nFINDING reckon/crew/dispatch_batch.py:655 non-blocking: SECTION_SUPPLIED_NODE_FIELDS is documented as the node fields a section supplies to a dispatch that omits them, but write paths now belong to that set and are not in the tuple, so a reader or later caller that enumerates the constant to decide which fields the section owns cannot see the new field.\n",
+  "review_run_id": "r-20261123T185730143242-review-of-qwnw-a-section-dispatch-takes-its-write-paths-f2600e72fab9",
+  "reviewed_base_sha": "31eda5cd1f4e52346def5d1d484bd1c9f4de514d",
+  "reviewed_head_sha": "f2600e72fab940545d69c72d520e4ccc9b68c6d2",
+  "reviewed_run_id": "r-20261123T182635439101-qwnw-a-section-dispatch-takes-its-write-paths",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T185730143242-review-of-qwnw-a-section-dispatch-takes-its-write-paths-f2600e72fab9"
+  },
+  "reviewer_run_id": "r-20261123T185730143242-review-of-qwnw-a-section-dispatch-takes-its-write-paths-f2600e72fab9",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T19:14:07.141947+00:00",
+  "total": 105
+}
