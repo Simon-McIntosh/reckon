@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="606">
+<meta name="plan-version" content="607">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -1320,6 +1320,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261122T134524032116-review-of-the-monitor-reads-each-fact-once-s12-4108f0425a93-figure" data-who="reckon-build" data-when="2026-11-23T08:56:30.504Z">
     <div class="r-comment-body"><p>figure review of run r-20261122T123255337138-the-monitor-reads-each-fact-once-s12 at head 4108f04 — 2 figures judged, 2 non-blocking findings, status parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261122T134459832739-review-of-the-monitor-reads-each-fact-once-s12-4108f0425a93" data-who="reckon-build" data-when="2026-11-23T08:57:30.258Z">
+    <div class="r-comment-body"><p>Reviewed the three commits the run gained after its prior review (814b8bca3a..4108f0425a): both prior blocking findings are repaired — the fragment now attributes the fleet-wide D-state count to the monitor set with the station among them in one and two samples, and the gate derives both counts from window(path)[&#x27;dstate&#x27;] and [&#x27;dstate_station&#x27;], reddening on the reinstated defect (negative-control.log controls 1, 2 and 4). Scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 19; two non-blocking findings (a tautological assertion at test line 203, and an unpersisted masking control at fragment line 283). Record stored parsed at both declared paths.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261107T171647831487-review-of-obligations-recompute-only-what-changed-902372b94625" data-who="reckon-build" data-when="2026-11-07T17:35:01.610Z">
     <div class="r-comment-body"><p>Reviewed r-20261107T155222105164-obligations-recompute-only-what-changed at base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 and head 902372b946250b719af5df8a9f0a146625130397: the three memoisations landed and the base arm genuinely fails their zero-count assertions, but the done_when's live under-2-s bullet is unmet at 75.761 s and four non-blocking findings are recorded (stale held-record signature, a live timing log that ends in a NameError stamped EXIT=0, an after-arm recorded one revision behind head, and a hand-rolled memo beside file_memo).</p></div>

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed run was dispatched unarmed, with no armed suite pair; its own baseline_suite.log at a2bf0d8d5a ended 6 passed EXIT=0 and suite-after.log at 4108f0425a ended 10 passed EXIT=0, so no failure was added",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/run_store.py:1491 stored_run_signature",
+    "reckon/run_store.py:654 _legacy_run_signature",
+    "reckon/run_store.py:2208 _retire_signature",
+    "reckon/run_store.py:2808 DELETE FROM runs"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T08:45:09Z",
+  "findings": [
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/test_evidence_matches_the_captures.py",
+      "line": 203,
+      "severity": "non-blocking",
+      "summary": "the assertion dstate_station <= dstate cannot fail, because both counts come from the same parse and station_pid appearing in a hit implies that sample is non-empty, so it adds no guard; durability rests on the phrase assertions at lines 207 and 211."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html",
+      "line": 283,
+      "severity": "non-blocking",
+      "summary": "the artifacts list claims the new assertions were seen failing by masking 24,030, 62,280,070 and the first later window's D-state count, but the only persisted control log, negative-control.log, holds the D-state controls alone; the two figure-masking runs appear only in the worker stream, so a later reader cannot open a log that shows them, and this claim predates the increment reviewed here."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 814b8bca to 4108f04; ddb5b37e corrects the fragment's D-state sentence, d478b919 derives both counts from the capture, and 4108f04 only reformats.",
+    "done_when": "the done_when asks read volume, D-state, CPU, a pane-row replay and a before/after RCA record; the increment keeps those measured and now makes test_evidence_matches_the_captures.py:197-220 derive the D-state counts from captures/window-3.txt and window-4.txt instead of matching fixed phrases.",
+    "goal": "the increment repairs the prior review's two blocking findings on a node whose goal is to re-measure the cutover window with the RCA's section 2 instruments; the fragment at lines 182-188 now says a monitor process appears in D in four and five of six samples with the station among them in one and two.",
+    "manifest": "read; it records suite-evidence.log and suite-after.log at 10 passed with EXIT=0, and negative-control.log with four controls, two of which fail on the reinstated-defect arm.",
+    "write_paths": "the three-commit increment changes exactly two files, both inside the node's declared write paths."
+  },
+  "justifications": {
+    "durability": "test_evidence_matches_the_captures.py:207-218 asserts prose phrases built from window(path)['dstate'] and ['dstate_station'] against the fragment, and negative-control.log:7-18 shows the phrase assertion and the station-count assertion failing when the defect is reinstated.",
+    "evidence": "the repaired gate passes 10 at 4108f04 in a fresh extraction of that revision, and negative-control.log:4-14 records the gate reddening when either the fragment sentence or the attribution clause is rolled back.",
+    "fit": "test_evidence_matches_the_captures.py:49-58 names the helper _words and the counts dstate_station and station_pid by mechanism, matching the sibling window() parser it extends.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:184-188 now attributes the fleet-wide D-state count to the monitor set and states the station's own one and two.",
+    "reuse": "a search of reckon/, tests/ and docs/ found no existing number-to-words helper and the new _words at test_evidence_matches_the_captures.py:49 is the only added definition, the rest extending the existing window() owner.",
+    "scope_discipline": "git diff 814b8bca..4108f04 lists only the fragment and the s12 figure-directory gate test, both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment repairs the prior review's two blocking findings on a node whose goal is to re-measure the cutover window with the RCA's section 2 instruments; docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:182-188 now says a monitor process appears in D in four and five of six samples with the station among them in one and two.\nVERDICT done_when: the done_when asks read volume, D-state, CPU, a pane-row replay and a before/after RCA record; the increment keeps those measured and now makes docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/test_evidence_matches_the_captures.py:197-220 derive the D-state counts from captures/window-3.txt and window-4.txt instead of matching fixed phrases.\nVERDICT write_paths: the three-commit increment changes exactly two files, docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html and the s12 figure-directory gate test, both inside the node's declared write paths.\nVERDICT manifest: read; it records suite-evidence.log and suite-after.log at 10 passed with EXIT=0, and negative-control.log with four controls, two of which fail on the reinstated-defect arm.\nVERDICT diff: read commit by commit from 814b8bca to 4108f04; ddb5b37e corrects the fragment's D-state sentence, d478b919 derives dstate and dstate_station from the capture, and 4108f04 only reformats.\nCALL_SITES: reckon/run_store.py:1491 stored_run_signature, reckon/run_store.py:654 _legacy_run_signature, reckon/run_store.py:2208 _retire_signature, reckon/run_store.py:2808 DELETE FROM runs\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:184-188 now attributes the fleet-wide D-state count to the monitor set and states the station's own one and two.\nSCORE evidence: 17\nJUSTIFICATION evidence: the repaired gate passes 10 at 4108f04 in a fresh extraction of that revision, and negative-control.log:4-14 records the gate reddening when either the fragment sentence or the attribution clause is rolled back.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 814b8bca..4108f04 lists only docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html and docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/test_evidence_matches_the_captures.py, both declared.\nSCORE durability: 19\nJUSTIFICATION durability: test_evidence_matches_the_captures.py:207-218 asserts prose phrases built from window(path)['dstate'] and ['dstate_station'] against the fragment, and negative-control.log:7-18 shows line 207 and the station-count assertion failing when the defect is reinstated.\nSCORE fit: 18\nJUSTIFICATION fit: test_evidence_matches_the_captures.py:49-58 names the helper _words and the counts dstate_station and station_pid by mechanism, matching the sibling window() parser it extends.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of reckon/, tests/ and docs/ found no existing number-to-words helper and the new _words at test_evidence_matches_the_captures.py:49 is the only added definition, the rest extending the existing window() owner.\nFINDING docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/test_evidence_matches_the_captures.py:203 non-blocking: the assertion dstate_station <= dstate cannot fail, because both counts come from the same parse and station_pid appearing in a hit implies that sample is non-empty, so it adds no guard; durability rests on the phrase assertions at lines 207 and 211.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:283 non-blocking: the artifacts list claims the new assertions were seen failing by masking 24,030, 62,280,070 and the first later window's D-state count, but the only persisted control log, negative-control.log, holds the D-state controls alone; the two figure-masking runs appear only in the worker stream, so a later reader cannot open a log that shows them, and this claim predates the increment reviewed here.\n",
+  "review_run_id": "r-20261122T134459832739-review-of-the-monitor-reads-each-fact-once-s12-4108f0425a93",
+  "reviewed_base_sha": "814b8bca3a2682c87b1211c7d685f3e81aad9423",
+  "reviewed_head_sha": "4108f0425a93d8ea903fb5c3796162c1a5b0dcd0",
+  "reviewed_run_id": "r-20261122T123255337138-the-monitor-reads-each-fact-once-s12",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T08:53:18.428434+00:00",
+  "total": 111
+}
