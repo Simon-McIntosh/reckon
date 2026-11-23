@@ -1123,6 +1123,17 @@ def _landing_test_files(
     return delivery_scope.changed_test_files(pointer, changed, tree)
 
 
+def _tests_only_checkout(config: Mapping[str, Any] | None) -> dict[str, bool]:
+    """Ask for a tests-only tree when the arms build their own trees on a partition.
+
+    An in-place measure runs its arms in the local tree, so it keeps the full
+    checkout and the call keeps its plain form.
+    """
+    if landing_measure.measures_on_partition(config):
+        return {"tests_only": True}
+    return {}
+
+
 def _measure_delivery(
     pointer: Mapping[str, Any],
     run_id: str,
@@ -1213,7 +1224,7 @@ def _measure_delivery(
                         primary,
                         head,
                         timeout,
-                        tests_only=landing_measure.measures_on_partition(config),
+                        **_tests_only_checkout(config),
                     )
                 )
             elif request is not None:
@@ -1222,7 +1233,7 @@ def _measure_delivery(
                         repo,
                         head,
                         timeout,
-                        tests_only=landing_measure.measures_on_partition(config),
+                        **_tests_only_checkout(config),
                     )
                 )
             if not promoted and _landed_elsewhere(pointer, run_id):

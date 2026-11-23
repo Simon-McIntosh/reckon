@@ -260,12 +260,12 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         landing_measure,
         "base_checkout",
-        lambda repo, sha, timeout=0.0: _Yield(prepared),
+        lambda repo, sha, timeout=0.0, **_: _Yield(prepared),
     )
     monkeypatch.setattr(
         landing_measure,
         "candidate_checkout",
-        lambda repo, primary, head, timeout=0.0: _Yield((head, prepared)),
+        lambda repo, primary, head, timeout=0.0, **_: _Yield((head, prepared)),
     )
     return {
         "repo": repo,
