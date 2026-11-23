@@ -8,6 +8,10 @@ point at.
 The refusal is the negative control. Feed it a rows file whose enforced row
 names an identifier the logs do not carry, and it exits 2 naming the row.
 
+Each log's revision and result line are read through the readers the manifest
+audit itself uses, so the page cannot state a figure the audit would spell
+differently.
+
 Run:  python3 render_fragment.py --out <fragment.html> --logs <enforced-logs-dir>
 """
 
@@ -19,6 +23,8 @@ from pathlib import Path
 
 import classify
 import scan_head
+from reckon.crew.reports import _GATE_LOG_REVISION, _first_recorded_line
+from reckon.crew.review import pytest_summary_line
 
 NODE = "the-crew-contract-fits-one-read-s2"
 
@@ -40,6 +46,18 @@ def check_citations(rows, logs_text: str) -> list[str]:
     return missing
 
 
+def log_statements(logs_dir: Path) -> list[tuple[str, str, str]]:
+    """Each log's name, revision and own result line, as the audit reads them."""
+    statements = []
+    for path in sorted(logs_dir.glob("*.log")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        named = _GATE_LOG_REVISION.search(_first_recorded_line(text))
+        summary = pytest_summary_line(text)
+        if named and summary:
+            statements.append((path.name, named.group(1), summary))
+    return statements
+
+
 def per_file_counts():
     counts = {}
     for rel in scan_head.FILES:
@@ -56,7 +74,7 @@ def esc(text: str) -> str:
     return html.escape(text, quote=True)
 
 
-def render(rows, total: int) -> str:
+def render(rows, total: int, statements) -> str:
     counts = per_file_counts()
     enforced = [r for r in rows if r["disposition"] == "delete as enforced"]
     obsolete = [r for r in rows if r["disposition"] == "delete as obsolete"]
@@ -158,6 +176,18 @@ def render(rows, total: int) -> str:
         " drive those guards far enough to make each fire. Every cited test node id was run at this head,"
         " and each run exited 0. The logs are under the run directory <code>logs/enforced/</code>.</p>"
     )
+    out.append(
+        "   <p>Every log in this section records the revision it ran at on its first line and its own"
+        " runner result line; both are read here through the readers the manifest audit uses, so the"
+        " page and the audit spell each figure the same way:</p>"
+    )
+    out.append("   <ul>")
+    for name, revision, summary in statements:
+        out.append(
+            f"    <li><code>{esc(name)}</code> — revision <code>{esc(revision)}</code>,"
+            f" {esc(summary)}</li>"
+        )
+    out.append("   </ul>")
     out.append("   <table>")
     out.append("    <thead><tr><th>Refusal or check</th><th>Test id</th><th>Log</th></tr></thead><tbody>")
     for test, by in tests.items():
@@ -208,7 +238,7 @@ def main() -> int:
         for m in missing:
             print("  " + m, file=sys.stderr)
         return 2
-    out_path.write_text(render(rows, total), encoding="utf-8")
+    out_path.write_text(render(rows, total, log_statements(logs_dir)), encoding="utf-8")
     print(f"# wrote {out_path} rows={len(rows)}", file=sys.stderr)
     return 0
 

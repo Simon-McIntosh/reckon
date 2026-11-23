@@ -814,6 +814,21 @@
   <section id="the-crew-contract-fits-one-read-s2-enforcement">
    <h2>§3 — Enforcement evidence</h2>
    <p>19 rows name a production refusal or check, and 9 distinct tests drive those guards far enough to make each fire. Every cited test node id was run at this head, and each run exited 0. The logs are under the run directory <code>logs/enforced/</code>.</p>
+   <p>Every log in this section records the revision it ran at on its first line and its own runner result line; both are read here through the readers the manifest audit uses, so the page and the audit spell each figure the same way:</p>
+   <ul>
+    <li><code>s9-cited-nodeids-2.log</code> — revision <code>bee04f7fb9</code>, 8 passed in 4.81s</li>
+    <li><code>s9-cited-nodeids.log</code> — revision <code>bee04f7fb9</code>, 8 passed in 8.61s</li>
+    <li><code>s9-enforced.log</code> — revision <code>bee04f7fb9</code>, 182 passed in 13.63s</li>
+    <li><code>test_a_context_refusal_names_the_window.log</code> — revision <code>bee04f7fb9</code>, 3 passed in 0.82s</li>
+    <li><code>test_a_followup_that_hides_work_is_refused.log</code> — revision <code>bee04f7fb9</code>, 6 passed in 2.00s</li>
+    <li><code>test_a_full_queue_is_a_wait_not_a_refusal.log</code> — revision <code>bee04f7fb9</code>, 8 passed in 1.42s</li>
+    <li><code>test_a_queued_run_is_never_told_to_redispatch.log</code> — revision <code>bee04f7fb9</code>, 5 passed in 1.28s</li>
+    <li><code>test_a_scope_refusal_names_the_paths_it_parsed.log</code> — revision <code>bee04f7fb9</code>, 5 passed in 1.05s</li>
+    <li><code>test_crew_ack.log</code> — revision <code>bee04f7fb9</code>, 4 passed in 1.27s</li>
+    <li><code>test_crew_refusal_visibility.log</code> — revision <code>bee04f7fb9</code>, 37 passed in 2.61s</li>
+    <li><code>test_manifest_parse_format.log</code> — revision <code>bee04f7fb9</code>, 104 passed in 1.42s</li>
+    <li><code>test_the_ledger_writer_refuses_a_fold.log</code> — revision <code>bee04f7fb9</code>, 10 passed in 2.39s</li>
+   </ul>
    <table>
     <thead><tr><th>Refusal or check</th><th>Test id</th><th>Log</th></tr></thead><tbody>
      <tr><td>dispatch refuses an exclusive-path claim before a worktree exists, naming the owning run</td><td><code>tests/test_only_unmergeable_paths_are_claimed.py::test_an_unmergeable_path_is_refused_naming_its_live_owner</code></td><td><code>logs/enforced/test_only_unmergeable_paths_are_claimed.py.log</code></td></tr>
