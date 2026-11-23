@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="164">
+<meta name="plan-version" content="165">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -412,6 +412,7 @@
     <h2 id="s56">§56 — A landing arm that never reaches the scheduler says why</h2>
 <section data-reckon="section" data-id="s56" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>On 23 November §48's repaired head (<code>8261475dbd</code>), reviewed clean, was refused twice by the landing measure with "landing measure unreadable: the base arm did not run". Its <code>landing-measure/measurement.json</code> records every arm, base and head, suite and population, with <code>elapsed_seconds</code> near 0.01, no <code>job_id</code>, <code>exit_status</code> null and an empty log. No arm reached the scheduler, and nothing recorded why. The same head passed its own tests and an importer arm pair on <code>all_debug</code> within the hour, and landed by hand.</p>
+    <p>The monitor plan's §118 met it again at 12:15Z. Its suite arms ran as scheduler jobs, 1339069 and 1339078, base exit 1 and head exit 0. Its population arms, base and head, each naming 264 test files, ended in 0.01 seconds with no job id and an empty log. The failure therefore sits in the submission of a large population arm, not in the scheduler or the tests.</p>
     <p><strong>Deliverable.</strong> A landing arm whose submission fails before a scheduler job exists records the reason: the submission command, its exit status and its output. The landing's refusal names that reason instead of "the base arm did not run". The refusal is the same whether the landing is attempted by the lander's own pass or by a coordinator's <code>crew complete --land</code>.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_landing_arm_that_never_starts_says_why.py</code> passes, covering: an arm whose submission exits non-zero before printing a job id is recorded with that command, its exit status and its output, and the refusal quotes the output; an arm whose job starts and fails is recorded as today; and the refusal reads the same through the lander's pass and through <code>crew complete --land</code>. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>. The node's base and head gate logs sit under its run directory, and each carries its revision, its literal command and a closing <code>EXIT=</code> line.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case fails, with the arm recorded with no reason and the refusal reading "the base arm did not run".</p>
