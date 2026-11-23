@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-23T16:12:00+00:00",
+  "dispatched_at": "2026-11-23T16:01:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/release.py",
+      "line": 710,
+      "severity": "non-blocking",
+      "summary": "fixpoint round bound is fixed before the pass extends its own candidate list",
+      "text": "reckon/crew/admission/release.py:710 `for _round in range(len(candidates) + 1)` evaluates its bound once, then the idle-filing branch at line 749 appends the requests it files to `candidates`; a chain deeper than the starting candidate count + 1 is therefore only partly resolved in one pass. The three-deep case the done_when names fits in two rounds and is covered; a fourth waits for the next release tick rather than failing, so this is a bounded-behaviour note, not a wrong answer."
+    },
+    {
+      "file": "reckon/crew/admission/release.py",
+      "line": 746,
+      "severity": "non-blocking",
+      "summary": "a refused idle upstream is re-filed through queue_plan on every release tick",
+      "text": "reckon/crew/admission/release.py:746 calls `_file_idle_upstreams` whenever the wait class is idle, and a refused upstream stays idle (the test at tests/test_an_idle_wait_queues_its_upstream.py:280 asserts exactly that), so every release tick re-runs `queue_plan` over that upstream plan and re-derives the same refusal. The refusal is recorded on the pointer as `upstream_unqueued` but is not consulted to skip the retry, so a permanently refused wait pays a whole-plan queue read on each tick for as long as it stands; caching that the answer was already refused would bound it."
+    }
+  ],
+  "justifications": {
+    "durability": "The negative control is genuinely red at base: negative-control.log records tests/test_an_idle_wait_queues_its_upstream.py:228 failing with `assert [] == ['s1']` at dcfb49b07b, so removing the filing reddens case 1; the repair's negative-control-repair.log shows the chain line now rejects an unstamped wait_class, and the refused-upstream case asserts `\"review owed\"` is present and the old instruction absent.",
+    "evidence": "Both suite arms are complete receipts on disk: baseline_suite-1795449372402708937.log closes 58 passed with EXIT=0 at dcfb49b07b and after_suite-1795449447941001731.log closes 63 passed with EXIT=0 at ed89a3001a, each naming its revision, tree and literal command.",
+    "fit": "The addition follows the module's idiom of module-private helpers with docstrings and lazy imports at the call site, and the repair aligns it with the surrounding package by using reckon/crew/admission/queueing.py:50 `_default_config`; reaching a sibling module's private helper is the one wrinkle, though release.py already uses `_wait_refs._mount_view` the same way.",
+    "goal_fidelity": "reckon/crew/admission/release.py:746 votes the filed pointers into the pass's store and releases the waiter once the upstream lands, which is the behaviour the goal names, including the setting-off and refused-upstream arms.",
+    "reuse": "reckon/crew/admission/release.py:569 `_file_idle_upstreams` delegates to reckon/crew/dispatch_batch.py:1480 `queue_plan` and reckon/crew/admission/queueing.py:50 `_default_config` instead of owning a second queue path or config resolver, and the duplicate `_project_config` the prior review scored 5 is gone at the head.",
+    "scope_discipline": "Every path in the diff (reckon/crew/admission/release.py, reckon/crew/obligations.py, tests/test_an_idle_wait_queues_its_upstream.py) is inside the declared write paths, and the goal names the queueing behaviour and the duty text the change carries."
+  },
+  "plan": "reckon:a-reviewed-plan-is-queued-at-full-width",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a wait classed idle files its upstream section's request through the whole-plan dispatch and is released when that upstream lands; reckon/crew/admission/release.py:569 _file_idle_upstreams calls reckon.crew.dispatch_batch.queue_plan and release.py:746 extends the pass's store and re-reads the wait.\nVERDICT done_when: The done_when names tests/test_an_idle_wait_queues_its_upstream.py with five cases; all five are present and the recorded after arm closes 63 passed with EXIT=0 against a 58-passed base.\nVERDICT write_paths: Read the declared write paths against the three-path diff; all three paths are inside them and nothing outside the scope was touched.\nVERDICT manifest: Read; it records status complete, cites both commits, states 63 passed at the repair head and 58 at the base, and names the negative-control logs whose contents agree.\nVERDICT diff: Read commit by commit from dcfb49b07b; c56bc3a5e5e8 adds the filing helper and duty text, ed89a3001a removes the duplicate config helper and tightens the chain assertion.\nCALL_SITES: reckon/crew/admission/release.py:463 _release_tick, reckon/crew/admission/selection.py:149 admit pass wait stage, reckon/crew/obligations.py:5347 _obligations_view\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/admission/release.py:746 files the idle wait's upstream and releases the waiter when it lands.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline_suite-1795449372402708937.log closes 58 passed with EXIT=0 at dcfb49b07b and after_suite-1795449447941001731.log closes 63 passed with EXIT=0 at ed89a3001a.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: Every path in the diff is inside the declared write paths listed in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log records tests/test_an_idle_wait_queues_its_upstream.py:228 failing with assert [] == ['s1'] at dcfb49b07b, and the refused case asserts the duty carries 'review owed'.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/admission/release.py:615 uses reckon/crew/admission/queueing.py:50 _default_config, matching the package idiom though through a private helper.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/admission/release.py:569 delegates to reckon/crew/dispatch_batch.py:1480 queue_plan; the duplicate _project_config the prior review scored 5 is removed at ed89a3001a.\nFINDING reckon/crew/admission/release.py:710 non-blocking: the fixpoint round bound is computed before the pass extends its candidate list, so a chain deeper than the starting candidate count + 1 needs another tick.\nFINDING reckon/crew/admission/release.py:746 non-blocking: a refused idle upstream is re-filed through queue_plan on every release tick because the recorded refusal does not short-circuit the retry.\n",
+  "review_run_id": "r-20261123T160106190761-review-of-rpfw-an-idle-wait-queues-its-upstream-ed89a3001a09",
+  "reviewed_base_sha": "dcfb49b07b4b1f22295a721d5a69d65e5f519b50",
+  "reviewed_head_sha": "ed89a3001a09bd20db71012014f521a730d7edd1",
+  "reviewed_run_id": "r-20261122T071922909776-rpfw-an-idle-wait-queues-its-upstream",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "section": "s8",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T16:12:00+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "Read commit by commit from dcfb49b07b: c56bc3a5e5e8 adds `_FILED_STATUSES`, `_file_idle_upstreams`, the `config_for` threading and the idle-filing branch to release.py, replaces the idle duty's `next_command` in obligations.py when `upstream_unqueued` is present, and adds the five cases; the repair ed89a3001a deletes the duplicate `_project_config` in favour of `queueing._default_config` and replaces the chain line's `or \"progressing\"` default with an explicit presence assertion.",
+    "done_when": "The done_when names tests/test_an_idle_wait_queues_its_upstream.py with five cases; all five are present (single upstream and release at line 210, three-deep chain at 241, service queueing off at 265, refused upstream at 281, blocked-upstream phase at 310) and the recorded after arm closes 63 passed with EXIT=0 against a 58-passed base, the five-case difference being the new file.",
+    "goal": "The node goal is that a wait classed idle files its upstream section's request through the whole-plan dispatch and is released when that upstream lands; reckon/crew/admission/release.py:569-657 `_file_idle_upstreams` calls `reckon.crew.dispatch_batch.queue_plan`, the same call the service's queue stage uses, and release.py:746-768 appends the filed pointers to `live` and `candidates` and re-runs `_resolve_and_move`, which is the goal realised.",
+    "manifest": "Read; it records status complete, cites both commits c56bc3a5e5e8 and ed89a3001a, states the repair head passes 63 with 0 failures and the base arm 58, and names the negative-control and repair logs whose contents I read and which agree with it.",
+    "write_paths": "Read the declared write paths against the three-path diff: reckon/crew/admission/release.py sits inside the declared reckon/crew/admission directory, reckon/crew/obligations.py and tests/test_an_idle_wait_queues_its_upstream.py are both declared, and no path outside the scope was touched; the declared evidence fragment and figure directory were not delivered, and the done_when does not require them."
+  }
+}
