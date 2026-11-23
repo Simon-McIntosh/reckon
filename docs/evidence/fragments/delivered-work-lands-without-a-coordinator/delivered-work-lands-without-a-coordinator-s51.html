@@ -75,6 +75,22 @@
         and <code>no tests ran</code>. That is the reported defect reproduced;
         the repaired arm runs the one file the tree holds and passes.
       </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-merge">
+        The primary branch advanced while this run was measuring, bounding a
+        landing's arms by the declared gate duration and selecting the arm
+        partition from that same maximum. Both changes reach the same two
+        runner constructions, so the branch was merged into this run's head.
+        Both intents are kept: each arm still passes no test files to the
+        partitioned runner, because a partitioned arm builds its own tree from
+        its own revision, and the new long-partition argument and the config it
+        reads are threaded through both call sites. Re-measured at the merge
+        head <code>cc67c90de4</code>, the scoped gate reports
+        <code>67 passed in 56.43s</code>, the head arm
+        <code>67 passed in 46.95s</code>, and the base arm at
+        <code>c4c441eaf2</code> <code>64 passed in 47.86s</code> — four files
+        at the base against five at the head, the same per-tree resolution this
+        fragment describes.
+      </p>
       <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-scope-note">
         A new failing test the head adds reads as real: the base arm has no
         reading of it to excuse it, and a delivery that adds a failing test has
