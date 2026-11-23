@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_measure_delivery",
+    "reckon/crew/queue_landing.py:measure_a_coordinator_landing",
+    "reckon/crew/queue_landing.py:run_measurement_request",
+    "reckon/crew/queue_landing.py:_promoted_candidate",
+    "reckon/crew/queue_landing.py:_verified_measurement",
+    "reckon/crew/queue_landing.py:measure_landing_group",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/promotion_records.py:_measure_missing_arms"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T07:50:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 1839,
+      "severity": "non-blocking",
+      "text": "The merge kept primary's new sweep behaviour on the partitioned path by adding `sweep_abandoned_base_trees(root)` at line 1839, and its comment claims this reclaims a killed landing's tree 'even on a host whose landings are all partitioned'. No test drives that branch with an abandoned `landing-base-*` directory present: tests/test_a_landing_leaves_none_of_its_base_trees_behind.py proves the sweep only through `base_checkout`, and tests/test_a_partitioned_landing_builds_no_base_tree.py asserts the scratch root is empty without seeding an abandoned tree. Deleting lines 1836-1839 therefore leaves the suite green while a host that only ever measures on a partition stops reclaiming a killed measure's tree until the two-hour ctime grace in gc.garbage_collect_orphan_scratch expires."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 1317,
+      "severity": "non-blocking",
+      "text": "The merge authored `population_files = _distinct_files(files, exclude=argv)` so a node's own armed test is not run a second time as an importer. No assertion covers it: the fixture in tests/test_a_landing_holds_no_fleet_checkout_while_its_job_runs.py names tests/test_subject.py both as the node's write path and as the importer of the changed subject.py, and `_submitting_runner` answers every job with `1 passed` / `EXIT=0`, so reverting line 1317 to `population_files = files` still reads green. The dedupe is the third merge decision and the only one with no independent instrument."
+    }
+  ],
+  "notes": "Incremental review of the commits gained since the run was last reviewed at dbfbd62ebe9045de14b5ea56da01cccee9661350: 8261475dbd, the merge that brings primary (ddf84d71cc) into the landing repair. Read 8261475d commit by commit; `git show --cc --name-only` shows exactly two files needed resolution, reckon/crew/landing_measure.py and reckon/crew/queue_landing.py, both inside the declared write paths. The merge's own authored content is three decisions: (1) base_tree_for_measure keeps this branch's name-only yield for a partitioned measure instead of primary's scratch placeholder, and its parameter list gains this branch's `name`; (2) it keeps primary's sweep by calling sweep_abandoned_base_trees in the partitioned branch; (3) it routes the importer population through primary's _distinct_files with exclude=argv. Everything else in the 142-path delta is primary's already-landed work arriving with the merge, and the two files' only other change is primary's _tests_only_checkout wired into candidate_checkout/base_checkout in queue_landing. Verified the base-tree family still behaves: tests/test_a_partitioned_landing_builds_no_base_tree.py asserts tree == name and not tree.exists() with an empty scratch root. Evidence read rather than re-run: baseline dd1ff29 log reports '61 passed in 38.92s' EXIT=0, after 8261475d log reports '65 passed in 40.33s' EXIT=0, and the negative control at dd1ff29 exits 1 on test_a_partitioned_landing_creates_nothing_under_the_scratch_root naming ['landing-base-imybdksq', 'landing-base-ref-8su_agt5']. The after_suite still omits tests/test_the_landing_pass_measures_and_lands.py (the importer test the previous round's blocking finding was reproduced against); that finding was already recorded at dbfbd62e and is not re-emitted here. Reuse search: the nearest owner of the file dedupe is reckon/crew/claims.py:_distinct (private, no exclusion, no path normalisation) and of the scratch sweep is reckon/crew/gc.py:garbage_collect_orphan_scratch (run-name keyed, two-hour grace); the additions extend their families rather than fork an owner, and sweep_abandoned_base_trees consumes gc._scratch_process_holders and dispatch.tree_size_bytes.",
+  "project": "reckon",
+  "review_run_id": "r-20261123T075001856265-review-of-delivered-work-lands-without-a-coordinator-s48-8261475dbdff",
+  "reviewed_base_sha": "dbfbd62ebe9045de14b5ea56da01cccee9661350",
+  "reviewed_head_sha": "8261475dbdff4eeb245250013fa5a19e9a18c722",
+  "reviewed_run_id": "r-20261122T191836994460-delivered-work-lands-without-a-coordinator-s48",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20,
+    "total": 105
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T08:16:18.413355+00:00",
+  "total": 105
+}
