@@ -138,6 +138,15 @@ def test_a_submission_that_starts_no_job_records_what_refused_it(
 
     measured = _measure(project, tmp_path)
 
+    # The refusal is the reading under test: without a submission's own reason
+    # it is the bare "the base arm did not run", which says nothing a reader
+    # can act on.
+    refusal = measured.unreadable
+    assert "never reached the scheduler" in refusal, f"refusal read: {refusal!r}"
+    assert "the base arm" in refusal
+    assert "Invalid partition name specified" in refusal
+    assert "did not run" not in refusal
+
     arm = measured.suite["base"]
     assert arm["exit_status"] == 3
     assert arm["job_id"] == ""
@@ -147,12 +156,6 @@ def test_a_submission_that_starts_no_job_records_what_refused_it(
     assert "sbatch --wait" in reason
     assert "exited 1 with" in reason
     assert "Invalid partition name specified" in reason
-
-    refusal = measured.unreadable
-    assert "did not run" not in refusal
-    assert "never reached the scheduler" in refusal
-    assert "the base arm" in refusal
-    assert "Invalid partition name specified" in refusal
 
 
 def test_an_arm_whose_job_starts_and_fails_is_recorded_as_before(
@@ -170,7 +173,7 @@ def test_an_arm_whose_job_starts_and_fails_is_recorded_as_before(
     base = measured.suite["base"]
     assert base["exit_status"] == 1
     assert tuple(base["failure_ids"]) == (SUBJECT_ID,)
-    assert base["submission_failed"] is False
+    assert base["job_id"] == JOB
     assert measured.suite["head"]["exit_status"] == 0
 
 
