@@ -2244,6 +2244,26 @@ def _plan_impl_from_state(state: Any) -> float | None:
         return None
 
 
+def _plan_root_for_run(
+    record: Mapping[str, Any], *, fallback_root: str | Path | None
+) -> str | Path | None:
+    """The repository holding the plan this run was dispatched against.
+
+    The authority's plan repository is preferred over the ledger checkout — a
+    caller may point ``--checkout-path`` at another tree. The impl comparison
+    and the declaration lookup both resolve their plan through this one root,
+    so a promotion cannot read a declaration from one tree and an impl from
+    another.
+    """
+    root: str | Path | None = fallback_root
+    authority = record.get("authority")
+    if isinstance(authority, Mapping):
+        plan_authority = authority.get("plan")
+        if isinstance(plan_authority, Mapping) and plan_authority.get("repository"):
+            root = str(plan_authority["repository"])
+    return root
+
+
 def _plan_state_for_run(
     record: Mapping[str, Any], *, fallback_root: str | Path | None
 ) -> dict[str, Any]:
@@ -2257,12 +2277,7 @@ def _plan_state_for_run(
     plan = str((record.get("node") or {}).get("plan") or "")
     if not project or not plan:
         return {}
-    root: str | Path | None = fallback_root
-    authority = record.get("authority")
-    if isinstance(authority, Mapping):
-        plan_authority = authority.get("plan")
-        if isinstance(plan_authority, Mapping) and plan_authority.get("repository"):
-            root = str(plan_authority["repository"])
+    root = _plan_root_for_run(record, fallback_root=fallback_root)
     try:
         state, _version = _store.read_plan(project, plan, root, artifact_type="plan")
     except (OSError, ValueError, _store.OpError):
@@ -2291,30 +2306,6 @@ def _landed_sections(state: Mapping[str, Any]) -> set[str]:
                 landed.add(str(raw_section).strip())
                 break
     return landed
-
-
-def _section_declaration(state: Mapping[str, Any], section: Any) -> str:
-    """The declaration a plan entry reads for one section, or ``""``.
-
-    The declaration map may spell a section with an anchor or a section sign,
-    so every key resolves through the ledger's normal form — the same one a
-    dispatch reads this declaration through — before it is compared to the
-    identity the run names. A declaration written as a status mapping reads
-    its status, as a dispatch reads it.
-    """
-    from reckon.ledger import normalize_section
-
-    wanted = normalize_section(str(section or ""))
-    declarations = state.get("section_declarations")
-    if not wanted or not isinstance(declarations, Mapping):
-        return ""
-    for key, value in declarations.items():
-        if normalize_section(str(key)) != wanted:
-            continue
-        if isinstance(value, Mapping):
-            value = value.get("status") or ""
-        return str(value or "").strip().lower()
-    return ""
 
 
 def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
@@ -2411,6 +2402,7 @@ def _require_impl_moved(
     failure_classification: str,
     no_impl_change: str,
     plan_state: Mapping[str, Any],
+    plan_repo: str | Path | None = None,
 ) -> dict[str, Any]:
     """Compare the plan's impl at promotion against the value at dispatch.
 
@@ -2501,8 +2493,16 @@ def _require_impl_moved(
     # section still implementable. Both therefore land without an override; a
     # section already declared done, or a plan run naming no section, is still
     # held to the movement this check exists to require.
-    declared = _section_declaration(
-        plan_state, node.get("section") or record.get("section")
+    from reckon.crew.dispatching.measurement import (
+        _section_declaration as _dispatch_section_declaration,
+    )
+
+    project = str(record.get("project") or "")
+    declared = _dispatch_section_declaration(
+        project,
+        plan,
+        repo=plan_repo,
+        section=str(node.get("section") or record.get("section") or ""),
     )
     if declared == "implementable":
         check["verdict"] = "section-open"
@@ -3148,6 +3148,7 @@ def _landing_preconditions(
         )
     )
     plan_state = _plan_state_for_run(record, fallback_root=ledger_root)
+    plan_repo = _plan_root_for_run(record, fallback_root=ledger_root)
     _ok, brief_owner = attempt(
         lambda: _require_brief_owner(
             run_id, record, plan_link=plan_link, unplanned_reason=unplanned_reason
@@ -3161,6 +3162,7 @@ def _landing_preconditions(
             failure_classification=failure_classification,
             no_impl_change=no_impl_change,
             plan_state=plan_state,
+            plan_repo=plan_repo,
         )
     )
     attempt(lambda: _require_no_undisposed_blocking_figure_finding(run_id, record))

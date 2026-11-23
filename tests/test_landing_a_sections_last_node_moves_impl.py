@@ -237,13 +237,56 @@ def test_a_sibling_pointer_for_the_same_node_does_not_hold_it_open(
     assert state["impl"] == 1.0
 
 
-def test_a_declaration_written_as_a_status_mapping_reads_its_status() -> None:
-    """The guard reads the declaration form a dispatch reads."""
-    from reckon.crew.promotion_checks import _section_declaration
+def test_a_declaration_written_as_a_status_mapping_reads_its_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The owner the guard reads through resolves a mapping declaration."""
+    from reckon import _store
+    from reckon.crew.dispatching.measurement import _section_declaration
 
     state = {"section_declarations": {"s2": {"status": "implementable"}}}
+    monkeypatch.setattr(_store, "read_plan", lambda *a, **k: (state, 1))
 
-    assert _section_declaration(state, "§2") == "implementable"
+    assert (
+        _section_declaration("proj", "plan-a", repo=None, section="§2")
+        == "implementable"
+    )
+
+
+def test_the_impl_guard_reads_the_declaration_through_the_dispatch_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The guard asks the owner a dispatch reads through, not a copy of it."""
+    from reckon.crew import promotion_checks
+    from reckon.crew.dispatching import measurement
+
+    seen: list[tuple] = []
+
+    def _owner(project, plan, *, repo, section):
+        seen.append((project, plan, repo, section))
+        return "implementable"
+
+    monkeypatch.setattr(measurement, "_section_declaration", _owner)
+    record = {
+        "project": PROJECT,
+        "role": "implement",
+        "plan_impl_at_dispatch": 0.5,
+        "node": {"id": "node-a", "plan": PLAN, "section": "s2"},
+    }
+    check = promotion_checks._require_impl_moved(
+        "r-20261123T090400000000-delegation",
+        record,
+        gate="passed",
+        failure_classification="",
+        no_impl_change="",
+        plan_state={"type": "plan", "impl": 0.5},
+        plan_repo="/plans",
+    )
+
+    # The guard asked the owner, with the plan it read and the section it holds,
+    # and took that answer as the exemption it lands on.
+    assert seen == [(PROJECT, PLAN, "/plans", "s2")]
+    assert check["verdict"] == "section-open"
 
 
 def test_a_refused_landing_writes_no_declaration(
