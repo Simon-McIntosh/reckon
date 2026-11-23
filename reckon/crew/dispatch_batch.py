@@ -1079,11 +1079,52 @@ QUEUE_ANSWER_MAY = "may be queued"
 QUEUE_ANSWER_REVIEW = "review owed"
 QUEUE_ANSWER_DECISION = "an open decision holds the plan"
 QUEUE_ANSWER_HOLD = "a coordinator's hold covers it"
+QUEUE_ANSWER_SPRINT = "the plan's sprint is not one the session works in"
+
+#: The session identity the admission service files a request under when the
+#: plan has no coordinator of its own. A service pass answers for a project
+#: rather than for one coordinator, so the sprint rule that constrains which
+#: unowned plans a session may take on does not apply to it: the service's
+#: purpose is to queue work nobody's session has taken, across every sprint the
+#: project holds. Other dispatchers identify themselves by their own session id.
+ADMISSION_SERVICE_SESSION = "admission-service"
+
+#: The event a whole-plan dispatch appends to the project's watch stream when a
+#: session takes on an unowned plan. It is its own kind, so a reader never
+#: mistakes it for a run's state change: the plan's coordinator is derived from
+#: the request this dispatch queued, and this row is how the project's other
+#: sessions learn who took it.
+PLAN_TAKEN_ON_EVENT = "plan-taken-on"
 
 
 def _coordinated_answer(session: str) -> str:
     """The answer a section of another session's plan carries."""
     return f"plan coordinated by session {session}"
+
+
+def plan_taken_on_row(
+    project: str, plan: str, session: str, *, at: str | None = None
+) -> dict[str, Any]:
+    """One watch row naming the plan a session took on and the session.
+
+    The row carries no ``session``: it is a broadcast about a plan rather than
+    one coordinator's run, so a follower on every live session in the project
+    reads it, the taking session's own pane included. The taking session rides
+    ``took_by`` as a structured field beside the free-text ``detail`` clause a
+    formatter may render, so a reader that must know who took the plan reads the
+    field rather than parsing the clause.
+    """
+    from datetime import UTC, datetime
+
+    return {
+        "project": project,
+        "event": PLAN_TAKEN_ON_EVENT,
+        "kind": PLAN_TAKEN_ON_EVENT,
+        "observed_at": at or datetime.now(UTC).isoformat(),
+        "plan": plan,
+        "took_by": session,
+        "detail": f"session {session} took on plan {plan}",
+    }
 
 
 class _QueueReads:
@@ -1123,6 +1164,7 @@ class _QueueReads:
         self._answers: dict[
             tuple[str, str, bool], dict[str, dict[str, Any]]
         ] = {}
+        self._sprints_worked: dict[tuple[str, str, str], bool] = {}
 
     def live(self, project: str) -> list[Mapping[str, Any]]:
         if self._live is not None:
@@ -1219,6 +1261,12 @@ class _QueueReads:
                     may=False, reason=_coordinated_answer(owner), session=owner
                 )
             return answers
+        if not owner and self.session != ADMISSION_SERVICE_SESSION:
+            sprint = str((read.state or {}).get("sprint") or "").strip()
+            if sprint and not self._works_in_sprint(read.repo_root, project, sprint):
+                for row in answers.values():
+                    row.update(may=False, reason=QUEUE_ANSWER_SPRINT)
+                return answers
         held_whole, held = self._held_sections(project, plan)
         if held_whole or held:
             for identity, row in answers.items():
@@ -1241,6 +1289,40 @@ class _QueueReads:
             ):
                 row.update(may=False, reason=QUEUE_ANSWER_REVIEW)
         return answers
+
+    def _works_in_sprint(
+        self, repo_root: str | Path, project: str, sprint: str
+    ) -> bool:
+        """Whether this session already coordinates a plan in ``sprint``.
+
+        The session's standing is read from the same coordinator resolution the
+        queue read uses: a plan the resolution names this session for is one the
+        session works in, and the sprint it declares is a sprint the session
+        works in. Only the plan's head is read for its sprint, so a session
+        coordinating many plans pays one small read each rather than parsing
+        their bodies on every queue read.
+        """
+        from reckon._plan_html import _parse_meta_head
+
+        key = (project, str(repo_root), sprint)
+        cached = self._sprints_worked.get(key)
+        if cached is not None:
+            return cached
+        worked = False
+        ownership = self.ownership(project, repo_root)
+        for slug, row in (ownership.get("plans") or {}).items():
+            if str(row.get("coordinator") or "") != self.session:
+                continue
+            path = Path(repo_root) / "docs" / "plans" / f"{slug}.html"
+            try:
+                declared = str(_parse_meta_head(path).get("sprint") or "").strip()
+            except OSError:
+                declared = ""
+            if declared and declared == sprint:
+                worked = True
+                break
+        self._sprints_worked[key] = worked
+        return worked
 
     def _held_sections(self, project: str, plan: str) -> tuple[bool, set[str]]:
         """The sections a coordinator's queue hold covers, and whether it is whole.
@@ -1550,6 +1632,17 @@ def queue_plan(
             row.setdefault("reason", row["status"])
     results = list(rows.values())
     skipped = sum(row["status"] == "skipped" for row in results)
+    queued = len(results) - skipped - result["refused"]
+    if not dry_run and not owner and queued > 0:
+        # The plan had no coordinator and this dispatch became one, so the
+        # project's other live sessions are told which plan was taken on and by
+        # whom. A row that cannot be written never fails the dispatch: the
+        # queued requests, not the row, are what took the plan on.
+        with contextlib.suppress(Exception):
+            runs._append_watch_lines(
+                runs.watch_stream_path(project),
+                [plan_taken_on_row(project, plan, session)],
+            )
     return {
         "ok": result["ok"],
         "project": project,
