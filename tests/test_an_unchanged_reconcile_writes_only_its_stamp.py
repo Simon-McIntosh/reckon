@@ -167,7 +167,7 @@ def stored(tmp_path):
 def test_an_unchanged_reconcile_writes_only_its_stamp(stored) -> None:
     directory, run_ids, _tmp = stored
     review_records.store_index_document(directory)
-    index = directory / ".review-index" / "index.json"
+    index = review_records._index_document_path(directory)
     before = os.stat(index)
     before_bytes = index.read_bytes()
 
