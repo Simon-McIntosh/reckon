@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s120">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-23">
-  <meta name="evidence-commit" content="4c4bf5a45c">
+  <meta name="evidence-commit" content="a7fc06d9fe">
   <title>An unchanged sweep reads no plan and walks no tree | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -65,12 +65,16 @@
   </ul>
 
   <p><strong>Gate arms.</strong> The head arm at revision
-  <code>6ede4dd00a</code>, over the new test and the three importer files,
-  reported <code>75 passed in 57.60s</code>. The base arm at revision
-  <code>a1d432530d</code>, over the three importer files, reported
-  <code>2 failed, 69 passed in 30.29s</code>; both failures are the staged-write
-  census, which finds nothing because the base tree is a git archive with no
-  index and the census reads one.</p>
+  <code>a7fc06d9fe</code>, over the new test and the four importer files,
+  reported <code>79 passed in 59.01s</code>. The base arm at revision
+  <code>a1d432530d</code> reported <code>6 failed, 69 passed in 34.69s</code>:
+  four are the held-tree read-once cases, whose stand-in refused the keyword
+  its caller passes, and two are the staged-write census, which finds nothing
+  because the base tree is a git archive with no index and the census reads
+  one. The held-tree file also ran alone at both revisions &mdash; nine passed
+  at the base revision and nine at the head &mdash; so the case where a run
+  file and a later aggregate row name one tree is attributed to the run
+  the file carries at both revisions.</p>
 
   <p>The importer population &mdash; 231 test files that import the changed
   modules &mdash; ran in three parts per revision. The head arm reported
