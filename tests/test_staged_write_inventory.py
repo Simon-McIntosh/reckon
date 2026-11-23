@@ -90,6 +90,12 @@ def test_every_staged_write_reaches_the_owner(trees):
         # new day empty. The shared file writer publishes a replacement for one
         # path; it cannot give a new name to the file it is vacating.
         ("reckon/crew/admission/verdicts.py", "_rotate_current_verdict_log"),
+        # _write_plan_holds stages its replacement: under the project's own
+        # hold-file lock it writes the whole map to a pid-suffixed .tmp sibling
+        # and os.replace-s it over the hold file, so a pass that reads the
+        # holds sees every hold or none). The shared file writer publishes one
+        # path and this record is a map that grows per plan held.
+        ("reckon/crew/queue_edit.py", "_write_plan_holds"),
     }, sorted(observed)
 
 
