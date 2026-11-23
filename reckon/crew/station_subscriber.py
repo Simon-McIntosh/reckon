@@ -455,6 +455,26 @@ def live_work_verdict(
         payload = json.loads(raw) if raw else None
     except (TypeError, ValueError):
         return None
+    return live_work_verdict_from_payload(
+        payload, session=session, now=now, max_age_seconds=max_age_seconds
+    )
+
+
+def live_work_verdict_from_payload(
+    payload: Any,
+    *,
+    session: str | None,
+    now: datetime | None = None,
+    max_age_seconds: float = STALE_HEARTBEAT_SECONDS,
+) -> bool | None:
+    """The verdict a recorded live-work payload makes, or ``None`` for no answer.
+
+    This is the one statement of how a stored reading is read, so a caller that
+    holds the payload already -- a session host reading the store's own row
+    without opening it through :class:`StationStore` -- makes the same
+    judgement as :func:`live_work_verdict` rather than restating the freshness
+    rule and drifting from it.
+    """
     if not isinstance(payload, Mapping):
         return None
     age = _age_seconds(str(payload.get("at") or ""), now=now or datetime.now(tz=UTC))

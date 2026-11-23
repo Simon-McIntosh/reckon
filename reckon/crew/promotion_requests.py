@@ -1268,26 +1268,36 @@ class PromotionService:
         self._threads = [thread for thread in self._threads if thread.is_alive()]
         if self._draining:
             return []
-        for path in _requests_dir().glob("*.json"):
-            # Decoded once per version of the file: this loop runs every refill
-            # tick over the whole directory, settled requests included, and an
-            # uncached read re-reads every request file from shared storage.
-            request = dict(_request_record(path))
-            if _refusal_uses_replaced_code(request):
-                try:
-                    request_promotion(str(request["run_id"]))
-                except CrewError as exc:
-                    _LOGGER.warning("could not rejudge promotion: %s", exc)
-            elif _retry_owed_by_service(request):
-                try:
-                    request_promotion(
-                        str(request["run_id"]),
-                        kind=str(request.get("kind") or "complete"),
-                        options=request.get("options") or {},
-                        retry=True,
-                    )
-                except CrewError as exc:
-                    _LOGGER.warning("could not retry a locked-store promotion: %s", exc)
+        # The scan reads every request in the directory, settled ones included,
+        # every refill tick. It is decoded once per version of each file and
+        # read inside a read-only region, so the tick takes a view of each
+        # record rather than a deep copy. Nothing is written inside the region:
+        # the requests owed a retry are collected and retried after it closes.
+        rejudge: list[str] = []
+        retry: list[Path] = []
+        with file_memo.read_only_region():
+            for path in _requests_dir().glob("*.json"):
+                request = _request_record(path)
+                if _refusal_uses_replaced_code(request):
+                    rejudge.append(str(request["run_id"]))
+                elif _retry_owed_by_service(request):
+                    retry.append(path)
+        for run_id in rejudge:
+            try:
+                request_promotion(run_id)
+            except CrewError as exc:
+                _LOGGER.warning("could not rejudge promotion: %s", exc)
+        for path in retry:
+            request = _request_record(path)
+            try:
+                request_promotion(
+                    str(request["run_id"]),
+                    kind=str(request.get("kind") or "complete"),
+                    options=request.get("options") or {},
+                    retry=True,
+                )
+            except CrewError as exc:
+                _LOGGER.warning("could not retry a locked-store promotion: %s", exc)
         pending = _pending_requests()
         parked = [request for request in pending if request.get("phase") == WAITING]
         for request in parked:

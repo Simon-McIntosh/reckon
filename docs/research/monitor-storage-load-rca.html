@@ -679,6 +679,8 @@
       <tbody>
         <tr><td>1, 07:40:12Z, 71 live pointers</td><td>11,645&nbsp;MB/min</td><td>10,702&nbsp;MB/min</td><td>299&nbsp;MB/min</td><td>22,646&nbsp;MB/min</td><td>262&nbsp;% of one core</td></tr>
         <tr><td>2, 07:45:57Z, 68 live pointers</td><td>13,622&nbsp;MB/min</td><td>6,469&nbsp;MB/min</td><td>799&nbsp;MB/min</td><td>20,889&nbsp;MB/min</td><td>208&nbsp;% of one core</td></tr>
+        <tr><td>3, 13:00:18Z, 62 live pointers, after the store-signature change</td><td>16,779&nbsp;MB/min</td><td>7,188&nbsp;MB/min</td><td>63&nbsp;MB/min</td><td>24,030&nbsp;MB/min</td><td>194.95&nbsp;% of one core</td></tr>
+        <tr><td>4, 13:04:19Z, 61 live pointers, after the store-signature change</td><td>18,953&nbsp;MB/min</td><td>6,840&nbsp;MB/min</td><td>74&nbsp;MB/min</td><td>25,867&nbsp;MB/min</td><td>202.72&nbsp;% of one core</td></tr>
       </tbody>
     </table>
     <figure>
@@ -708,6 +710,37 @@
     the store's own size, not the streams, is the volume while the fleet is writing. The census, the probe
     and the instrument are in the run directory of
     <code>r-20261122T072346716754-the-monitor-reads-each-fact-once-s12</code>.</p>
+    <p><strong>After the store-signature change (windows 3 and 4).</strong> The
+    payload-free signature mirror was built to answer exactly the store cost
+    above, so the window was taken again on the same node and job at revision
+    <code>a2bf0d8d5a</code>, with the instruments unchanged. The figures are the
+    last two rows of the table: 24,030 and 25,867&nbsp;MB/min in total, with the
+    station alone at 16,779 and 18,953&nbsp;MB/min and 92.07 and 89.35&nbsp;% of
+    one core. Both are outside the bound and slightly worse than the earlier
+    pair, and the D-state clause fails in both: four and five of six samples carry
+    a monitor process in state D, the station among them at
+    <code>cxiWaitEventWait</code>, and window 4's last sample holds a
+    nineteen-process stall at <code>D:open_last_lookups</code>. Both windows'
+    positive control reads a 197-byte file and sees the delta, so the read
+    counters were working.</p>
+    <p><strong>Why the change did not move it.** The mirror answers for eleven of
+    the thirteen projects, each in under 2.1&nbsp;MB, but it answers only when its
+    row count agrees with the project's stored run count, and two projects
+    disagree: <code>reckon</code> (21 stored runs, 34 mirror rows marked present)
+    and <code>imas-efit</code> (1,549 stored, 1,548 present). Those two fall back
+    to <code>_legacy_run_signature</code> and still scan the whole payload —
+    12,681,155&nbsp;B and 62,280,070&nbsp;B per call. The drift comes from the
+    rebuild path, which deletes <code>runs</code>-table rows with raw SQL and never
+    writes the mirror's tombstone, while <code>_retire_signature</code> is called
+    only from <code>retire</code> and <code>delete_run</code>; every rebuild that
+    removes a run leaves a <code>present=1</code> row behind. Per-project costs and
+    counts are drawn in
+    <code>docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/signature-mirror-per-project.svg</code>,
+    and the two after-windows in
+    <code>cutover-window-after-the-signature-mirror.svg</code> beside it. The
+    captured logs, the probe and the row replay session are in the run directory of
+    <code>r-20261122T123255337138-the-monitor-reads-each-fact-once-s12</code>, and
+    the re-measurement is recorded in the plan's evidence fragment.</p>
   </main>
 </body>
 </html>

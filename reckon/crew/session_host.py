@@ -249,6 +249,11 @@ class _Child:
     # to the host -- an admission, a resume, a delivery still owing its review
     # -- is otherwise indistinguishable from a restart of a failed child.
     rearmed_for: str | None = None
+    # Which reader re-armed the pair: the station's live-work reading or the
+    # host's own classification. A settled pair judged by the station reads no
+    # pointer, so ``rearmed_for`` cannot name a run there and the source is
+    # what tells a reader of the census where the answer came from.
+    live_work_source: str | None = None
     # Set when the request that asked for this pair passed the ownership guard
     # on the writing side. Only a mark travels from a request line into the
     # census, so a later host adopting its predecessor's record can tell the
@@ -277,6 +282,7 @@ def _child_entry(child: _Child) -> dict[str, Any]:
         "pid": child.pid,
         "settled_at": child.settled_at,
         "rearmed_for": child.rearmed_for,
+        "live_work_source": child.live_work_source,
     }
     if child.owner_checked:
         entry["owner_checked"] = True
@@ -613,14 +619,107 @@ def _fifo_path(owner: Mapping[str, Any]) -> Path | None:
     return _session_host_fifo_path((pid, start))
 
 
-def live_work_run(project: str, session: str) -> str | None:
-    """The run that keeps this session's pane owed, or None when it owes none.
+@dataclass(frozen=True)
+class LiveWorkAnswer:
+    """One settled pair's live-work answer, and which reader produced it.
 
-    This is the same judgement the follower settles by, asked of the same live
-    pointers: ``population_has_live_work`` is the one statement of which runs
-    owe a pane -- anything that has not reached a terminal phase, and a
-    delivered run whose review is not yet stored -- so the host cannot re-arm
-    over work the pane would not show, nor stay idle over work it would.
+    ``run_id`` names the run that brought a pair back when the answer came from
+    the host's own classification. A station reading names the sessions that
+    hold work but not the run behind them, so ``run_id`` is None there and
+    ``source`` says where the answer came from.
+    """
+
+    run_id: str | None
+    owed: bool
+    source: str
+
+
+LIVE_WORK_SOURCE_STATION = "station"
+LIVE_WORK_SOURCE_CLASSIFIED = "classified"
+
+
+def _station_live_work_verdict(project: str, session: str) -> bool | None:
+    """The station's fresh live-work verdict for this project/session, or None.
+
+    The station judges every project's live work once on its tick and records
+    the answer as the live-work reading, so a session host can take this
+    project's answer for free rather than repeating the classification -- which
+    spawns git and reads review and budget records from shared storage -- on
+    every tick of every host on the node.
+
+    The store is opened through a read-only handle, because a host consulting
+    the reading neither creates nor maintains the store. A missing store, an
+    unreadable one, or a reading the station has stopped refreshing all answer
+    ``None``: that is no reading, and the caller must reach its own conclusion
+    rather than settle a pair on a station's silence.
+    """
+    import sqlite3
+
+    from reckon.crew import station_store, station_subscriber
+
+    try:
+        root, _source = station_store.runtime_root_source()
+    except Exception:  # noqa: BLE001 - an unresolvable root is no reading
+        return None
+    if root is None:
+        return None
+    database = Path(root) / station_store.DATABASE_NAME
+    if not database.exists():
+        return None
+    key = f"{station_subscriber.LIVE_WORK_KEY}:{project}"
+    # Read-only, with no writable fallback: a host only consults a reading the
+    # station owns, so it must not create the store, take the station's writer
+    # lock or leave a journal behind in it.
+    try:
+        connection = sqlite3.connect(
+            f"{database.as_uri()}?mode=ro", uri=True, timeout=1.0
+        )
+    except sqlite3.Error:
+        return None
+    try:
+        row = connection.execute(
+            "SELECT value FROM station WHERE key = ?", (key,)
+        ).fetchone()
+    except sqlite3.Error:
+        return None
+    finally:
+        connection.close()
+    if row is None:
+        return None
+    try:
+        payload = json.loads(str(row[0]))
+    except (TypeError, ValueError):
+        return None
+    return station_subscriber.live_work_verdict_from_payload(payload, session=session)
+
+
+def live_work_answer(project: str, session: str) -> LiveWorkAnswer:
+    """Whether a settled pair owes a pane, and which reader answered.
+
+    While the station's reading for this project is fresh the host answers from
+    it and reads no pointer. When no fresh reading exists the host classifies
+    as it always has, and ``source`` says so in the census.
+    """
+    reading = _station_live_work_verdict(project, session)
+    if reading is not None:
+        return LiveWorkAnswer(
+            run_id=None, owed=reading, source=LIVE_WORK_SOURCE_STATION
+        )
+    return _classified_live_work(project, session)
+
+
+def live_work_run(project: str, session: str) -> str | None:
+    """The run that keeps this session's pane owed, or None when it owes none."""
+    return live_work_answer(project, session).run_id
+
+
+def _classified_live_work(project: str, session: str) -> LiveWorkAnswer:
+    """The host's own judgement, asked of every live pointer as before.
+
+    ``population_has_live_work`` is the one statement of which runs owe a pane
+    -- anything that has not reached a terminal phase, and a delivered run
+    whose review is not yet stored -- so the host cannot re-arm over work the
+    pane would not show, nor stay idle over work it would.
 
     Naming the run is local to this module: the census records which run
     brought a pair back. An unreadable fleet is read as no work rather than as
@@ -633,7 +732,7 @@ def live_work_run(project: str, session: str) -> str | None:
     try:
         pointers = runs_module._list_live_records(project=project)
     except OSError:
-        return None
+        return LiveWorkAnswer(None, False, LIVE_WORK_SOURCE_CLASSIFIED)
     # The crew home is part of the key: a different home is a different fleet.
     key = (str(runs_module.crew_home()), project, session)
     signature = _owned_pointer_signature(pointers, session)
@@ -644,14 +743,14 @@ def live_work_run(project: str, session: str) -> str | None:
         and held[0] == signature
         and now - held[1] < LIVE_WORK_RECHECK_SECONDS
     ):
-        return held[2]
+        return LiveWorkAnswer(held[2], held[2] is not None, LIVE_WORK_SOURCE_CLASSIFIED)
     answer = (
         _naming_run(pointers, session)
         if station_subscriber.population_has_live_work(pointers, session)
         else None
     )
     _LIVE_WORK_ANSWERS[key] = (signature, now, answer)
-    return answer
+    return LiveWorkAnswer(answer, answer is not None, LIVE_WORK_SOURCE_CLASSIFIED)
 
 
 # A settled pair is asked whether it owes a pane on every tick, and the answer
@@ -755,14 +854,17 @@ class SessionHost:
         environ: Mapping[str, str] | None = None,
         clock: Callable[[], float] = time.monotonic,
         now: Callable[[], float] = time.time,
-        live_view: Callable[[str, str], str | None] | None = None,
+        live_view: Callable[[str, str], LiveWorkAnswer | str | None] | None = None,
         reloader: _HostReloader | None = None,
     ) -> None:
         self._environ = dict(os.environ if environ is None else environ)
         # The work a settled pair is re-armed over: given the project and
-        # session, the run that keeps it owed, or None. A harness states the
-        # fleet this way rather than by writing live pointers.
-        self._live_view = live_work_run if live_view is None else live_view
+        # session, whether the pair owes a pane and which reader answered. A
+        # harness states the fleet this way rather than by writing live pointers,
+        # and may return a bare run id, which is read as a classified answer.
+        self._live_view: Callable[[str, str], LiveWorkAnswer | str | None] = (
+            live_work_answer if live_view is None else live_view
+        )
         resolved = owner if owner is not None else default_owner()
         self._owner = {
             "pid": int(resolved.get("pid") or 0),
@@ -1091,6 +1193,22 @@ class SessionHost:
 
     # -- start-up -----------------------------------------------------------
 
+    def _ask_live_view(self, project: str, session: str) -> LiveWorkAnswer:
+        """The live-work answer for a pair, from the station or the classifier.
+
+        The seam may return a :class:`LiveWorkAnswer` or a bare run id. A bare
+        id is what a harness states to drive the host against a fleet; it
+        carries no source, so it is read as a classified answer that named a run.
+        """
+        answer = self._live_view(project, session)
+        if isinstance(answer, LiveWorkAnswer):
+            return answer
+        return LiveWorkAnswer(
+            run_id=answer,
+            owed=answer is not None,
+            source=LIVE_WORK_SOURCE_CLASSIFIED,
+        )
+
     def adopt_live_work(self) -> None:
         """Follow the live work this owner's sessions already own.
 
@@ -1114,7 +1232,7 @@ class SessionHost:
                     continue
                 if (project, session) in self._children:
                     continue
-                if self._live_view(project, session) is None:
+                if not self._ask_live_view(project, session).owed:
                     continue
                 self._start_follower(project, session, owner_checked=True)
 
@@ -1334,6 +1452,7 @@ class SessionHost:
                         child.settled = True
                         child.settled_at = now
                         child.rearmed_for = None
+                        child.live_work_source = None
                         if child.wanted:
                             # A dispatch asked for this pair while the settling
                             # child still ran, so the run it published is work
@@ -1361,13 +1480,14 @@ class SessionHost:
                 # admission, a resume, a delivery still owing its review --
                 # would otherwise leave the session unwatched until something
                 # happened to ask again. A pair that owns nothing stays settled.
-                run_id = self._live_view(child.project, child.session)
-                if run_id is None:
+                answer = self._ask_live_view(child.project, child.session)
+                if not answer.owed:
                     continue
                 child.settled = False
                 child.settled_at = None
                 child.next_attempt = now
-                child.rearmed_for = run_id
+                child.rearmed_for = answer.run_id
+                child.live_work_source = answer.source
             if child.pid is None and child.next_attempt is not None:
                 if now < child.next_attempt:
                     continue
