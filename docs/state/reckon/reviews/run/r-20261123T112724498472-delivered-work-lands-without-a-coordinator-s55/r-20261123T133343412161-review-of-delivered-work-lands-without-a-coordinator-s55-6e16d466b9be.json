@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/promotion_requests.py:_carried_delivery_settlement",
+    "reckon/crew/recovery_review_acceptance.py:accept_clean_review"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T13:34:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s55.html",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "The fragment calls gate-head-first.log an earlier head arm, but that log's own header reads REVISION=398a0d09, because the change was uncommitted when the arm ran, so a reader reconciling the fragment against the cited log sees the base revision rather than one that exercised the change."
+    },
+    {
+      "file": "reckon/crew/review_landing.py",
+      "line": 181,
+      "severity": "non-blocking",
+      "text": "_UNREAD_LEDGER_ROW duplicates pending_landing._UNREAD_ROW and finish_landing translates between the two private sentinels at line 203; one shared sentinel would avoid reaching into another module's private name and remove a second way to spell the same state."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": 2175,
+      "severity": "non-blocking",
+      "text": "The early landed_record_refusal with integration false cannot fire for a run with no ledger row because the row-None path continues at line 2137 before reaching it, so it only catches a row that names no revision and its comment describes a case it does not catch."
+    }
+  ],
+  "justifications": {
+    "durability": "The two negative-control cases redden at 398a0d09, but the added landing-row-refused branch at pending_landing.py:2175 has no test that reaches it, so a regression confined to that branch would leave the suite green.",
+    "evidence": "tests/test_a_refused_landing_writes_no_landed_record.py asserts the three done_when cases, and gate-base.log records 3 failed/539 passed (EXIT=1) against gate-head-second.log's 1 failed/541 passed (EXIT=1) at af80e1240f, so the only shared failure is the pre-existing test_no_caller_waits_on_a_promotion case.",
+    "fit": "review_landing.py:181 defines a second _UNREAD_LEDGER_ROW sentinel beside pending_landing._UNREAD_ROW and translates between them at line 203, reaching into another module's private name where one shared sentinel would do.",
+    "goal_fidelity": "pending_landing.py:1592 landed_record_refusal requires the run's ledger row and a head that is an ancestor of the primary revision, and it is asked at finish_landing (review_landing.py:196), _release_integrated_pointer (pending_landing.py:216) and finish_pending_landings (pending_landing.py:2175), which is exactly the section's deliverable.",
+    "reuse": "record_a_carried_delivery (pending_landing.py:1651) composes the existing ledger.build_record, ledger.append_run and promotion_scope._commit_landing_writes, and landed_record_refusal reuses merge._is_ancestor and queue_landing._ledger_row rather than forking a new write or ancestry path.",
+    "scope_discipline": "The diff keeps to the three landing modules and their tests the section's deliverable implies, but those six paths sit outside the node's declared write paths, which named only the evidence fragment and its figure directory."
+  },
+  "notes": "Read the reviewed node's goal from its shadow-picker node record, the done_when and negative control from node.json and the plan's section 55 in docs/plans/delivered-work-lands-without-a-coordinator.html, and the manifest from the reviewed run directory. The delivered commits are not ancestors of this review worktree's HEAD, so the diff and the head revisions of the three modules were read with git show against 6e16d466b9be1ed5cde107cc706d0597ad7c165d rather than from the working tree. Suite results were read from the reviewed run's own gate logs: gate-base.log and gate-head-second.log. Added failures are the head arm's failing ids minus the base arm's: the two negative-control cases pass at head and the single shared failure, test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation, is present at both revisions, so the added count is zero. The evidence fragment was corrected in the final commit 6e16d466b9 to quote each cited arm's summary line verbatim. The three findings are non-blocking: none changes the correctness of the landed guard, so each is recorded for a later node or exemption.",
+  "project": "reckon",
+  "review_run_id": "r-20261123T133343412161-review-of-delivered-work-lands-without-a-coordinator-s55-6e16d466b9be",
+  "reviewed_base_sha": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "reviewed_head_sha": "6e16d466b9be1ed5cde107cc706d0597ad7c165d",
+  "reviewed_run_id": "r-20261123T112724498472-delivered-work-lands-without-a-coordinator-s55",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewed_at": "2026-11-23T14:55:00Z",
+    "reviewer_run_id": "r-20261123T133343412161-review-of-delivered-work-lands-without-a-coordinator-s55-6e16d466b9be"
+  },
+  "rubric": "dimensions",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T13:58:16.297362+00:00",
+  "total": 105,
+  "verdicts": {
+    "diff": "Read all five commits against 398a0d09: 42563ebaa2 adds the guard and the carried-delivery recorder, af80e1240f reduces the ancestry check to one test, and b4bda91772, ac3c3d8f5e and 6e16d466b9 add and correct the evidence fragment and its figure.",
+    "done_when": "tests/test_a_refused_landing_writes_no_landed_record.py carries the three cases the done_when names, and the manifest records the base arm at 398a0d09 and the head arm at af80e1240f, each log carrying REVISION, COMMAND and a closing EXIT=1 line.",
+    "goal": "The node goal is the section's own statement that a refused landing writes no landed record and keeps the run's pointer, and pending_landing.py:1592 landed_record_refusal plus its call sites in review_landing.py:196 and pending_landing.py:2175 enforce it before any close comment, declaration or pointer retirement happens.",
+    "manifest": "The reviewed manifest reads status: complete and states the five commits, the eight changed paths, and the two arms with their failing ids; its head-arm figure (1 failed, 541 passed) reconciles with gate-head-second.log and the base figure (3 failed, 539 passed) with gate-base.log.",
+    "write_paths": "The node's declared write paths name only docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s55.html and its figures directory, while the delivered diff also changes reckon/crew/pending_landing.py, queue_landing.py, review_landing.py and three tests, which the section's deliverable itself requires."
+  }
+}
