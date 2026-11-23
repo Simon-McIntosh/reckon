@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_checks": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bd0d2051dbe94c9232f5e64986364fdc12a65b24",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3311 crew_host -> session_host.run",
+    "reckon/crew/session_host.py:1718 run -> _HostReloader and host.supervise",
+    "reckon/crew/session_host.py:1162 supervise -> maybe_reload",
+    "reckon/crew/session_host.py:1077 supervise -> adopt_handover",
+    "reckon/crew/directory.py:584 _census_facts -> session_host.live_census",
+    "reckon/crew/lost_sessions.py:126 live_pairs -> _session_host.live_census"
+  ],
+  "completed_at": "",
+  "delta_base_sha": "ca1fd849c618e3cc54727989f7f1c9f892d0675b",
+  "dispatched_at": "2026-11-23T10:42:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "375",
+      "severity": "non-blocking",
+      "text": "_held_reads compares Path(os.environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))).resolve() with self.source_root, which __init__ derives from the same environ default, so the two are identical whenever run() builds the reloader and the flag is a constant True; the named-root branch at :405 is unreachable and the comment at :370-374 says the post-reload read is answered from the tree when it is in fact held."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "1156",
+      "severity": "non-blocking",
+      "text": "the mid-start deferral is part of the section's Deliverable but no assertion fails if _children_mid_start is deleted, because a child survives an exec and is re-adopted from the handover, so the gate cannot catch a regression there."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "1115",
+      "severity": "non-blocking",
+      "text": "the pid-start-time refinement that refuses a reused pid is untested; no case exercises a mismatched pid_start, so the guard that stops the replacement supervising a stranger is exercised only on the passing path."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": "928",
+      "severity": "non-blocking",
+      "text": "StationReloader is the repository's owner of replacing a long-running crew process with a proved image, and reckon/crew/session_host.py:340 _HostReloader duplicates that orchestration instead of extending or wrapping it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s118.html",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "the row added at a50cdb5d73 is labelled \"base \u2014 importing tests\" but gate/repair-base.log ran only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py (58 passed), while the row at :53 labelled \"base \u2014 tests importing the changed module\" is the nine-file set at 60 passed; two near-identical labels report different sets and counts for bd0d2051db, so a reader cannot tell that the 62-vs-58 delta rests on a two-file arm."
+    }
+  ],
+  "head_log_revision": "3b58fd2f7898825031c309cdb6843c6626eb388c",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against the prior reviewed head ca1fd849; the gained first-parent commits are 3b58fd2f78 (merge primary main, resolving the host constructor to keep both live_view and reloader) and a50cdb5d73 (two gate rows and a paragraph in the s118 fragment); the reload module's bytes at a50cdb5d are identical to ca1fd849, so the merge dropped none of it.",
+    "done_when": "tests/test_a_session_host_reloads_onto_current_code.py carries the three required cases (stale reload keeps pid and follower, current code: reload_count 0, unread bytes defer then reload); gate/repair-head.log at 3b58fd2f78 reads 62 passed EXIT=0 against gate/repair-base.log at bd0d2051db with 58 passed EXIT=0, and gate/base-new.log carries the declared 1 failed EXIT=1 negative control.",
+    "goal": "the node's goal is section 118, a session host that runs the checkout's current code; reckon/crew/session_host.py:1162 maybe_reload compares the host identity with the checkout on each idle tick and reckon/crew/session_host.py:1718 run() supplies the _HostReloader, which is the deliverable and survived the merge onto primary main at 3b58fd2f78.",
+    "manifest": "read; status complete, nine commits, changed_paths the three landed files, six test_logs under gate/ with their arms, and a landing line; it records the base and head arm counts as prose and carries no baseline_suite/after_suite JSON keys, so the failure count is derived from gate/repair-head.log and gate/repair-base.log rather than from those keys.",
+    "write_paths": "the source node declared the s118 fragment, a figures directory, reckon/crew/session_host.py and tests/test_a_session_host_reloads_onto_current_code.py; the two commits gained since the prior review touch only the fragment, and the wider merge diff consists of peer files the merge reconciled rather than files this node authored."
+  },
+  "justifications": {
+    "durability": "tests/test_a_session_host_reloads_onto_current_code.py asserts the census and the live process table, so test_a_stale_host_reexecutes_once_keeping_its_pid_and_its_follower fails if the merge dropped the reloader (reload_count absent) or if maybe_reload at reckon/crew/session_host.py:1162 stops exec'ing, but no test fails if _children_mid_start at reckon/crew/session_host.py:1156 is deleted, so the mid-start deferral remains unguarded.",
+    "evidence": "gate/repair-head.log (revision 3b58fd2f78) reads \"62 passed in 74.30s\" EXIT=0 and gate/repair-base.log (bd0d2051db) reads \"58 passed in 42.66s\" EXIT=0, a zero delta for the two importing test files, but the merged-head arm runs only 2 of the 9 importing files that gate/head-pre.log and gate/base-pre.log carried at 60 passes each, so the zero-delta at the merged code is measured on a narrower set than the declared arm.",
+    "fit": "the module keeps the surrounding dataclass-and-docstring idiom and names by mechanism, but reckon/crew/session_host.py:375 computes _held_reads from two expressions that are identical under run(), leaving the branch at :405 unreachable and the comment at :370-374 describing the opposite behaviour.",
+    "goal_fidelity": "reckon/crew/session_host.py:1162 maybe_reload compares the host's identity with the checkout's each idle tick and re-execs at reckon/crew/session_host.py:1718 run() builds _HostReloader, and the merge at 3b58fd2f78 leaves both live_view and reloader on the constructor, so the section's deliverable is intact at a50cdb5d.",
+    "reuse": "reckon/crew/session_host.py:340 _HostReloader re-implements the carried-identity/defer/materialise/prove/execve sequence that reckon/crew/station.py:928 StationReloader already owns, rather than extending or wrapping it.",
+    "scope_discipline": "the node's own commits gained since the prior review are 3b58fd2f78 (a merge of primary main) and a50cdb5d73, which changes only docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s118.html; the reload module and its test bytes are unchanged from ca1fd849, and the peer files in the wider diff arrived through the merge rather than by this node's authorship."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is section 118, a session host that runs the checkout's current code; reckon/crew/session_host.py:1162 maybe_reload compares the host identity with the checkout each idle tick and reckon/crew/session_host.py:1718 run() supplies the _HostReloader, which is the deliverable and survived the merge onto primary main at 3b58fd2f78.\nVERDICT done_when: tests/test_a_session_host_reloads_onto_current_code.py carries the three required cases; gate/repair-head.log at 3b58fd2f78 reads 62 passed EXIT=0 against gate/repair-base.log at bd0d2051db with 58 passed EXIT=0, and gate/base-new.log carries the declared 1 failed EXIT=1 negative control.\nVERDICT write_paths: the source node declared the s118 fragment, a figures directory, reckon/crew/session_host.py and tests/test_a_session_host_reloads_onto_current_code.py; the two commits gained since the prior review touch only the fragment, and the wider merge diff consists of peer files the merge reconciled rather than files this node authored.\nVERDICT manifest: read; status complete, nine commits, changed_paths the three landed files, six test_logs under gate/ with their arms, and a landing line; it records the base and head arm counts as prose and carries no baseline_suite/after_suite JSON keys, so the failure count is derived from gate/repair-head.log and gate/repair-base.log rather than from those keys.\nVERDICT diff: read commit by commit against the prior reviewed head ca1fd849; the gained first-parent commits are 3b58fd2f78 (merge primary main, resolving the host constructor to keep both live_view and reloader) and a50cdb5d73 (two gate rows and a paragraph in the s118 fragment); the reload module's bytes at a50cdb5d are identical to ca1fd849, so the merge dropped none of it.\nCALL_SITES: reckon/crew_follow_commands.py:3311 crew_host -> session_host.run, reckon/crew/session_host.py:1718 run -> _HostReloader and host.supervise, reckon/crew/session_host.py:1162 supervise -> maybe_reload, reckon/crew/session_host.py:1077 supervise -> adopt_handover, reckon/crew/directory.py:584 _census_facts -> session_host.live_census, reckon/crew/lost_sessions.py:126 live_pairs -> _session_host.live_census\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:1162 maybe_reload compares the host's identity with the checkout's each idle tick and re-execs, and reckon/crew/session_host.py:1718 run() builds _HostReloader, with the merge at 3b58fd2f78 leaving both live_view and reloader on the constructor.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate/repair-head.log (revision 3b58fd2f78) reads \"62 passed in 74.30s\" EXIT=0 and gate/repair-base.log (bd0d2051db) reads \"58 passed in 42.66s\" EXIT=0, a zero delta, but the merged-head arm runs only 2 of the 9 importing files that gate/head-pre.log and gate/base-pre.log carried at 60 passes each.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node's own commits gained since the prior review are 3b58fd2f78 (a merge of primary main) and a50cdb5d73, which changes only the s118 fragment; the module's reload bytes are unchanged from ca1fd849.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_session_host_reloads_onto_current_code.py asserts the census and the live process table, so the stale-host case fails if the reloader is dropped, but no test fails if _children_mid_start at reckon/crew/session_host.py:1156 is deleted.\nSCORE fit: 16\nJUSTIFICATION fit: the module keeps the surrounding idiom, but reckon/crew/session_host.py:375 computes _held_reads from two expressions that are identical under run(), leaving the branch at :405 unreachable.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/session_host.py:340 _HostReloader re-implements the carried-identity/defer/materialise/prove/execve sequence that reckon/crew/station.py:928 StationReloader already owns.\nFINDING reckon/crew/session_host.py:375 non-blocking: _held_reads compares Path(os.environ.get(_FOLLOWER_SOURCE_ROOT_ENV, str(import_root))).resolve() with self.source_root, which __init__ derives from the same environ default, so the two are identical whenever run() builds the reloader and the flag is a constant True, and the branch at :405 is unreachable.\nFINDING reckon/crew/session_host.py:1156 non-blocking: the mid-start deferral is part of the section's Deliverable but no assertion fails if _children_mid_start is deleted, because a child survives an exec and is re-adopted from the handover, so the gate cannot catch a regression there.\nFINDING reckon/crew/session_host.py:1115 non-blocking: the pid-start-time refinement that refuses a reused pid is untested; no case exercises a mismatched pid_start, so the guard that stops the replacement supervising a stranger is exercised only on the passing path.\nFINDING reckon/crew/station.py:928 non-blocking: StationReloader is the repository's owner of replacing a long-running crew process with a proved image, and reckon/crew/session_host.py:340 _HostReloader duplicates that orchestration instead of extending or wrapping it.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s118.html:68 non-blocking: the added row is labelled \"base \u2014 importing tests\" but gate/repair-base.log ran only two test files (58 passed) while the row at :53 labelled \"base \u2014 tests importing the changed module\" is the nine-file set at 60 passed, so a reader cannot tell that the 62-vs-58 delta rests on a two-file arm.",
+  "review_run_id": "r-20261123T104142383210-review-of-the-monitor-reads-each-fact-once-s118-a50cdb5d7305",
+  "reviewed_base_sha": "bd0d2051dbe94c9232f5e64986364fdc12a65b24",
+  "reviewed_head_sha": "a50cdb5d7305ea6ab2b520c0ab635fe80650b5ac",
+  "reviewed_run_id": "r-20261123T090124910717-the-monitor-reads-each-fact-once-s118",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T104142383210-review-of-the-monitor-reads-each-fact-once-s118-a50cdb5d7305"
+  },
+  "reviewer_run_id": "r-20261123T104142383210-review-of-the-monitor-reads-each-fact-once-s118-a50cdb5d7305",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T10:56:38.614207+00:00",
+  "total": 92
+}
