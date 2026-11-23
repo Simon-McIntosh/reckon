@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T115801957881-the-monitor-reads-each-fact-once-s120/gates/base-importer-01-all_debug.log",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T115801957881-the-monitor-reads-each-fact-once-s120/gates/head-importer-01-all_debug.log"
+  },
+  "call_sites": [
+    "reckon/crew/obligations.py:_held_records_pass",
+    "reckon/crew/obligations.py:recorded_run_rows",
+    "reckon/crew/obligations.py:_held_worktrees_by_session",
+    "reckon/crew/section_obligations.py:174",
+    "reckon/crew/recovery_stream.py:245"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T21:07:48Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s120.html",
+      "line": 93,
+      "severity": "non-blocking",
+      "summary": "negative-control citation names the wrong importer part",
+      "text": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s120.html:93: the negative-control sentence says both failing ids sit in \"the base importer arm's first part log\", but they are in gates/base-importer-01-all_debug.log (part 01); part 00 contains neither id, so a reader following the citation to the first part finds the case that is not there."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the six commits f69887117f..79a79f0603; two files changed, +53-16 in reckon/crew/obligations.py (a from_store helper threaded through _run_namings and the aggregate-completion loop) and +11-7 in the evidence fragment (gate figures and revision).",
+    "done_when": "the done_when names tests/test_an_unchanged_sweep_reads_no_plan_and_walks_no_tree.py and requires the head arm to add no failure with both arms' logs carrying revision, literal command and a closing EXIT; the head fence arm at 95b4a02d56 reports 79 passed with EXIT=0 and the base arm 6 failed, 69 passed with EXIT=1.",
+    "goal": "the node's goal is an obligations sweep that reads no plan and walks no file tree over an unchanged state; the gained commits at reckon/crew/obligations.py:4494 complete the held-tree aggregate for every reader's undelivered rows, which is the history this sweep files from.",
+    "manifest": "read; it records status complete, fourteen commits ending 79a79f0603, the tests line naming four test files, and the head/base gate logs under gates/, and its 79-passed head and 6-failed base figures match the logs I opened.",
+    "write_paths": "the manifest declares ten write paths; the gained commits touch exactly docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s120.html and reckon/crew/obligations.py, both inside that declaration."
+  },
+  "justifications": {
+    "durability": "the gained commits add no test and tests/test_held_worktrees_read_run_files.py passes nine at both base and head, though tests/test_held_worktree_fallback_resolves_each_row_once.py:273 checks the run-less row against an independent ledger reference.",
+    "evidence": "gates/head-fence-all_debug.log reports 79 passed in 60.28s and gates/base-fence-all_debug.log 6 failed, 69 passed in 32.30s, and the importer parts agree with the manifest's 44-failed head against 63-failed base.",
+    "fit": "the helper at reckon/crew/obligations.py:3769 follows the module's extracted-predicate idiom and from_store is named for the reader it selects.",
+    "goal_fidelity": "reckon/crew/obligations.py:4494 computes from_store once and 4552 uses it to file only the aggregate rows the answering reader could not deliver, completing the history the sweep reads without a second read.",
+    "reuse": "reckon/crew/obligations.py:3769 extracts the predicate both readers need and calls open_run_index.matches_sources, the owner of that check, rather than forking a second rule.",
+    "scope_discipline": "the gained diff touches only the evidence fragment and reckon/crew/obligations.py, both on the manifest's declared write paths."
+  },
+  "plan": "reckon:the-monitor-reads-each-fact-once",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is an obligations sweep that reads no plan and walks no file tree over an unchanged state; the gained commits at reckon/crew/obligations.py:4494 complete the held-tree aggregate for every reader's undelivered rows, which is the history this sweep files from.\nVERDICT done_when: the done_when names tests/test_an_unchanged_sweep_reads_no_plan_and_walks_no_tree.py and requires the head arm to add no failure with both arms' logs carrying revision, literal command and a closing EXIT; the head fence arm at 95b4a02d56 reports 79 passed with EXIT=0 and the base arm 6 failed, 69 passed with EXIT=1.\nVERDICT write_paths: the manifest declares ten write paths; the gained commits touch exactly docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s120.html and reckon/crew/obligations.py, both inside that declaration.\nVERDICT manifest: read; it records status complete, fourteen commits ending 79a79f0603, the tests line naming four test files, and the head/base gate logs under gates/, and its 79-passed head and 6-failed base figures match the logs I opened.\nVERDICT diff: read the six commits f69887117f..79a79f0603; two files changed, +53-16 in reckon/crew/obligations.py (a from_store helper threaded through _run_namings and the aggregate-completion loop) and +11-7 in the evidence fragment (gate figures and revision).\nCALL_SITES: reckon/crew/obligations.py:_held_records_pass, reckon/crew/obligations.py:recorded_run_rows, reckon/crew/obligations.py:_held_worktrees_by_session, reckon/crew/section_obligations.py:174, reckon/crew/recovery_stream.py:245\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:4494 computes from_store once and 4552 uses it to file only the aggregate rows the answering reader could not deliver, completing the history the sweep reads without a second read.\nSCORE evidence: 17\nJUSTIFICATION evidence: gates/head-fence-all_debug.log reports 79 passed in 60.28s and gates/base-fence-all_debug.log 6 failed, 69 passed in 32.30s, and the importer parts agree with the manifest's 44-failed head against 63-failed base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff touches only the evidence fragment and reckon/crew/obligations.py, both on the manifest's declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: the gained commits add no test and tests/test_held_worktrees_read_run_files.py passes nine at both base and head, though tests/test_held_worktree_fallback_resolves_each_row_once.py:273 checks the run-less row against an independent ledger reference.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at reckon/crew/obligations.py:3769 follows the module's extracted-predicate idiom and from_store is named for the reader it selects.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/obligations.py:3769 extracts the predicate both readers need and calls open_run_index.matches_sources, the owner of that check, rather than forking a second rule.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s120.html:93 non-blocking: docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s120.html:93: the negative-control sentence says both failing ids sit in \"the base importer arm's first part log\", but they are in gates/base-importer-01-all_debug.log (part 01); part 00 contains neither id, so a reader following the citation to the first part finds the case that is not there.\n",
+  "review_run_id": "r-20261123T195832804610-review-of-the-monitor-reads-each-fact-once-s120-79a79f0603e7",
+  "reviewed_base_sha": "f69887117f1aedffdfe40b2e5992b83576c9ea09",
+  "reviewed_head_sha": "79a79f0603e78da179d5ec26065eef2ab0a81ded",
+  "reviewed_run_id": "r-20261123T115801957881-the-monitor-reads-each-fact-once-s120",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "section": "s120",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T21:43:55.663522+00:00",
+  "total": 104
+}
