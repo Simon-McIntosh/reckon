@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T08:51:12Z",
+  "figures": {
+    "docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/cutover-window-after-the-signature-mirror.svg": {
+      "contrast": "fail - the window-4 series is drawn in the light tint #7fa9bf and its value labels are drawn in that same tint on white; the rendered labels measure about 2.5:1, below the 3:1 graphical-object floor and well below 4.5:1 for 14 pt text.",
+      "data_ink": "pass - grouped bars and direct value labels only; no gridlines, no shading, no series the caption does not use.",
+      "decoration": "pass - white ground, top and right spines removed, no gradient or background fill; the only non-data line is the stated bound drawn dotted grey.",
+      "label_collision": "pass - no label is clipped or overlapping; the bound labels sit clear above the top bar and the direct value labels sit just past each bar's end.",
+      "legibility": "pass - two side-by-side panels (read volume log axis, CPU linear), three arms on the shared y axis and two windows paired per arm; every bar carries its own value label and the figure-level legend names the two windows.",
+      "table_form": "pass - the figure's job is comparison against the bound across three decades and two arms, which a table of the same numbers would not show at a glance."
+    },
+    "docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/signature-mirror-per-project.svg": {
+      "contrast": "pass - mirror labels #2f6f8f and fallback labels #b8327e both about 5.5:1 on white; tick and axis text sit darker still.",
+      "data_ink": "pass - bars plus one value label each and a two-entry frameless legend; nothing else is drawn.",
+      "decoration": "pass - no gridlines, no background fill, no stylisation; axes despined to the scales that carry data.",
+      "label_collision": "pass - no overlap or clipping; the longest annotation ends just inside the right canvas edge.",
+      "legibility": "pass - thirteen projects ranked by cost on a log axis, each bar direct-labelled, the two fallback projects called out by hue and by their stored/present counts.",
+      "table_form": "pass - the ranked log-scale spread over two to three decades is what the figure is for; the values are direct-labelled rather than tabulated."
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/cutover-window-after-the-signature-mirror.svg",
+      "line": 108,
+      "severity": "non-blocking",
+      "summary": "The window-4 series is encoded in the light tint #7fa9bf, and its value labels (18,953 MB/min, 6,840 MB/min, 74 MB/min, 89.3 %, 101.2 %, 12.2 %) are drawn in that same tint on white. Sampled from the rendered PNG the labels measure about 2.5:1 contrast: below the 3:1 floor for graphical objects and well below the 4.5:1 that 14 pt text needs, so the second window reads noticeably fainter than the window-3 series at about 5.5:1. Legible to an ordinary reader, but the like-for-like comparison the figure exists to make is weakest exactly where the two windows are compared, and the encoding is light for a reader with reduced contrast sensitivity."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/signature-mirror-per-project.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The figure's alternate text in the evidence fragment describes the eleven mirror-answered projects as drawn 'in grey', while the rendered bars are the dark blue #2f6f8f and only the two fallback bars are magenta. A reader given the alternate text is told the wrong encoding for the figure's subject, though the rendered picture itself is correct."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T134524032116-review-of-the-monitor-reads-each-fact-once-s12-4108f0425a93-figure",
+  "reviewed_base_sha": "a2bf0d8d5a65bfab8a9e3d6db922bbab1984f67b",
+  "reviewed_head_sha": "4108f0425a93d8ea903fb5c3796162c1a5b0dcd0",
+  "reviewed_run_id": "r-20261122T123255337138-the-monitor-reads-each-fact-once-s12",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "cutover-window-after-the-signature-mirror: fail - the window-4 series labels and bars render at about 2.5:1 on white (#7fa9bf), below the 3:1 floor; signature-mirror-per-project: pass - mirror labels #2f6f8f about 5.5:1 and fallback labels #b8327e about 5.5:1.",
+    "data_ink": "both figures pass - bars and direct labels only, no gridlines or unused series.",
+    "decoration": "both figures pass - white ground, despined axes, no gradients or decorative fills; the only dotted lines are the stated bounds.",
+    "label_collision": "both figures pass - no clipped or overlapping labels; the longest annotation in signature-mirror-per-project ends inside the right canvas edge and the value labels in the cutover figure sit clear of the bars.",
+    "legibility": "both figures pass - each reads at a glance, every bar direct-labelled, and the two windows / eleven mirror-answered projects are distinguished in the picture.",
+    "table_form": "both figures pass - neither depicts information that is naturally a table; the ranked log-scale spread and the bound comparison are what the charts exist for."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T08:57:12.876269+00:00",
+  "total": null
+}
