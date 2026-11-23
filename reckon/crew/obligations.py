@@ -5339,6 +5339,28 @@ def _obligations_view(
             continue
         run_id = str(pointer.get("run_id") or "")
         started = parse_utc(pointer.get("waits_at") or pointer.get("created_at"))
+        # The pass files the upstream itself when the queue read says it may be
+        # queued, so a row that survives is one whose upstream cannot be queued.
+        # Its answer, not the instruction to queue, is what the owner is told.
+        refused = [
+            row
+            for row in pointer.get("upstream_unqueued") or ()
+            if isinstance(row, Mapping) and str(row.get("reason") or "")
+        ]
+        if refused:
+            detail = "; ".join(
+                f"{row.get('ref') or 'the upstream'}: {row['reason']}"
+                for row in refused
+            )
+            next_command = (
+                f"the upstream cannot be queued ({detail}); settle that or drop "
+                f"the request (reckon crew discard --run {run_id})"
+            )
+        else:
+            next_command = (
+                f"queue the upstream this request waits on, or drop the "
+                f"request (reckon crew discard --run {run_id})"
+            )
         items.append(
             {
                 "kind": WAIT_IDLE_DUTY_KIND,
@@ -5349,10 +5371,7 @@ def _obligations_view(
                 ),
                 "age_seconds": (int((now - started).total_seconds()) if started else 0),
                 "reason": str(pointer.get("wait_detail") or ""),
-                "next_command": (
-                    f"queue the upstream this request waits on, or drop the "
-                    f"request (reckon crew discard --run {run_id})"
-                ),
+                "next_command": next_command,
             }
         )
     # A wait whose probe exceeded its run bound. The gate stopped the probe and

@@ -561,7 +561,108 @@ def _rederive_waits(
     return True
 
 
-def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
+#: The statuses under which a whole-plan dispatch has stored a request for a
+#: section. A row carrying one of these is work now in the queue.
+_FILED_STATUSES = frozenset({"queued", "awaiting-upstream", "held"})
+
+
+def _project_config(project: str, root: str) -> Mapping[str, Any]:
+    """A project's resolved flight configuration, as the dispatch reads it."""
+    from reckon import flight
+
+    return flight.resolve(project, checkout_path=str(root)).config
+
+
+def _file_idle_upstreams(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[str, str], Mapping[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    """File a request for each unqueued section one idle wait names.
+
+    The read is the one the whole-plan dispatch already answers with the same
+    per-section reasons, so a wait is never judged a second way here. Each plan
+    named is filed once per pass through the call the service's own queue stage
+    uses, and the requests filed are returned so the pass can read the wait
+    (and whatever that request itself waits on) against the store it just
+    extended.
+
+    A section the read refuses is returned with that answer. An event that
+    stops a plan from being filed is not the read's answer and is not recorded
+    as one: the request keeps waiting and the next pass tries again.
+    """
+    refs = _wait_refs.section_waits_for(pointer)
+    project = str(pointer.get("project") or "")
+    repo_root = str(pointer.get("repo") or "")
+    session = str(pointer.get("session") or "")
+    if not refs or not project or not repo_root:
+        return [], []
+    docs = Path(repo_root) / "docs"
+    wanted: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    for ref in refs:
+        key = _release_section_key(ref, project)
+        if key is None:
+            continue
+        wanted.setdefault((key[0], key[1]), []).append((ref, key[2]))
+    if not wanted:
+        return [], []
+    resolve_config = config_for if config_for is not None else _project_config
+    filed: list[dict[str, Any]] = []
+    unqueued: list[dict[str, str]] = []
+    from reckon.crew.dispatch_batch import QUEUE_ANSWER_MAY, queue_plan
+
+    from . import queueing as _queueing
+
+    # The waiter's own session chose the work that is now blocked, so the queue
+    # records that identity; a request carrying none names the service.
+    queued_by = session or _queueing.SERVICE_SESSION
+
+    for (waited_project, plan), sections in wanted.items():
+        target_docs = _wait_refs._docs_for_project(
+            waited_project, current_project=project, current_docs=docs
+        )
+        if target_docs is None:
+            continue
+        target_root = Path(target_docs).parent
+        try:
+            result = queue_plan(
+                waited_project,
+                plan,
+                session=session,
+                config_for=lambda name, _root=target_root: resolve_config(
+                    name, str(_root)
+                ),
+                repo_root=target_root,
+                queued_by=queued_by,
+            )
+        except Exception:  # noqa: BLE001, S112 - one unreadable plan ends nothing
+            continue
+        rows = {
+            normalize_section(str(row.get("section") or "")): row
+            for row in result.get("results") or ()
+            if isinstance(row, Mapping)
+        }
+        for ref, section in sections:
+            row = rows.get(normalize_section(section))
+            if row is None:
+                continue
+            status = str(row.get("status") or "")
+            answer = str(row.get("queue_answer") or "")
+            if status in _FILED_STATUSES:
+                run_id = str(row.get("run_id") or "")
+                new_pointer = runs.read_pointer(run_id) if run_id else None
+                if isinstance(new_pointer, dict):
+                    filed.append(new_pointer)
+            elif answer and answer != QUEUE_ANSWER_MAY:
+                unqueued.append({"ref": ref, "reason": answer})
+    return filed, unqueued
+
+
+def advance_waiting_requests(
+    live: list[dict[str, Any]],
+    *,
+    config_for: Callable[[str, str], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Move each waiting request to the phase its refs now justify.
 
     The pass re-reads readiness for every request in ``WAITING_UPSTREAM_PHASES``
@@ -578,10 +679,14 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     so a landing that merges while the pass runs is seen by the next one.
     """
     with _readiness.plan_read_scopes():
-        return _advance_waiting_requests(live)
+        return _advance_waiting_requests(live, config_for=config_for)
 
 
-def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
+def _advance_waiting_requests(
+    live: list[dict[str, Any]],
+    *,
+    config_for: Callable[[str, str], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     candidates = [
         (row, dict(row))
         for row in live
@@ -636,6 +741,40 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
             working = list(pointer.get("upstream_live") or ())
             wait_class = str(pointer.get("wait_class") or "")
             wait_detail = str(pointer.get("wait_detail") or "")
+            previous_unqueued = list(pointer.get("upstream_unqueued") or ())
+            unqueued: list[dict[str, Any]] = []
+            if waiting and wait_class == _stranded_wait.IDLE:
+                # A wait on a section nobody is building is work a coordinator
+                # already chose to queue, one step further upstream. The pass
+                # files that section's request through the whole-plan dispatch,
+                # which is the same call the service's own queue stage uses, so
+                # a wait does not stand on a section the read says may be
+                # queued. A section the read refuses leaves its answer here for
+                # the owner's duty to name.
+                filed, unqueued = _file_idle_upstreams(pointer, config_for=config_for)
+                if filed:
+                    live.extend(filed)
+                    candidates.extend(
+                        (new_pointer, dict(new_pointer)) for new_pointer in filed
+                    )
+                    changed = True
+                    # Re-read the wait against the requests just filed: the
+                    # upstream is now somebody's work, so the class and any
+                    # duty follow the store rather than the pre-queue reading.
+                    _resolve_and_move(
+                        pointer,
+                        live=live,
+                        docs_dir=docs_dir,
+                        cache=cache,
+                        dead_sections=dead,
+                        run_id=run_id,
+                        mount=mount,
+                    )
+                    issues = list(pointer.get("upstream_obligations") or ())
+                    working = list(pointer.get("upstream_live") or ())
+                    wait_class = str(pointer.get("wait_class") or "")
+                    wait_detail = str(pointer.get("wait_detail") or "")
+            pointer["upstream_unqueued"] = unqueued
             if (
                 waiting
                 and wait_class == _stranded_wait.STRANDED
@@ -670,6 +809,7 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                 issues != previous_issues
                 or working != previous_live
                 or wait_class != previous_class
+                or unqueued != previous_unqueued
             ):
 
                 def record_issues(
@@ -678,11 +818,13 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                     live_runs: list[str] = working,
                     class_value: str = wait_class,
                     detail_value: str = wait_detail,
+                    unqueued_value: list[dict[str, Any]] = unqueued,
                 ) -> dict[str, Any]:
                     current["upstream_obligations"] = recorded
                     current["upstream_live"] = live_runs
                     current["wait_class"] = class_value
                     current["wait_detail"] = detail_value
+                    current["upstream_unqueued"] = unqueued_value
                     return current
 
                 runs._mutate_pointer(run_id, record_issues)
@@ -691,6 +833,7 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
             row["upstream_live"] = working
             row["wait_class"] = wait_class
             row["wait_detail"] = wait_detail
+            row["upstream_unqueued"] = unqueued
             if target == phase:
                 # The request holds the phase its waits justify: either they
                 # still wait, or the move could not be written and is retried
