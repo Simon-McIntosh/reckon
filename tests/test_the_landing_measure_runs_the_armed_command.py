@@ -129,6 +129,11 @@ def _recording(calls: list[dict]):
     return run
 
 
+def named(call: dict) -> list[str]:
+    """The test files one arm's recorded argv names."""
+    return [token for token in call["argv"] if token.startswith("tests/")]
+
+
 def test_an_armed_command_runs_its_substituted_files_under_its_environment(
     delivery,
 ) -> None:
@@ -171,27 +176,35 @@ def test_an_armed_command_runs_its_substituted_files_under_its_environment(
         Path(base_tree),
         Path(repo),
     }, suite_calls
+    by_tree = {Path(call["cwd"]): call for call in suite_calls}
+    base_call = by_tree[Path(base_tree)]
+    head_call = by_tree[Path(repo)]
     for call in suite_calls:
         # The placeholder is gone and the node's files stand in its place; the
         # leading assignment is not the program.
-        assert call["argv"][:5] == [
-            ".venv/bin/python",
-            "-m",
-            "pytest",
-            "-q",
-            FILES[0],
-        ], call
-        assert call["argv"][5] == FILES[1], call
+        assert call["argv"][:4] == [".venv/bin/python", "-m", "pytest", "-q"], call
         assert not any(token.startswith("PYTHONPATH=") for token in call["argv"]), call
         assert call["env"].get("PYTHONPATH") == ".", call
+    # The base revision does not carry the file the node added, so the base arm
+    # names only the file both trees hold; the head arm names both.
+    assert named(base_call) == [FILES[1]], base_call
+    assert named(head_call) == FILES, head_call
 
-    # The file the node added is absent at the base revision, so it was carried
-    # into the base tree and its failure counted there rather than stopping the
-    # arm on a missing file.
-    assert base_arm["failure_ids"] == [CARRIED_ID], base_arm
+    # The added file ran in the head arm only: the base arm names the arm it
+    # was left out of rather than stopping on a path its tree does not carry,
+    # and the added file's failure has no base reading to be measured against.
+    assert base_arm["failure_ids"] == [], base_arm
+    assert base_arm["exit_status"] == 0, base_arm
     assert set(head_arm["failure_ids"]) == {CARRIED_ID, LANDED_ID}, head_arm
-    # The head-only id was re-run alone, at both revisions, and reads as real.
-    assert measured.real == (LANDED_ID,), measured.as_dict()
+    assert measured.suite["left_out"] == {FILES[0]: ["base"]}, measured.as_dict()
+    # The id the node's own change broke was re-run alone at both revisions and
+    # reads as real. The added file has no base reading to be excused by, so its
+    # failure reads as real too — a delivery that adds a failing test has not
+    # passed — and only its head arm was re-run, since the base tree does not
+    # hold the file.
+    assert measured.real == (CARRIED_ID, LANDED_ID), measured.as_dict()
+    added_runs = [call for call in calls if call["argv"][-1] == CARRIED_ID]
+    assert {Path(call["cwd"]) for call in added_runs} == {Path(repo)}, added_runs
 
     population = [call for call in calls if "-n" in call["argv"]]
     assert len(population) == 2, population

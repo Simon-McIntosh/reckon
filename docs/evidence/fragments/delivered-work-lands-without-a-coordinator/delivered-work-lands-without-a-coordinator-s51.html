@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="delivered-work-lands-without-a-coordinator">
+  <meta name="plan-evidence-for" content="delivered-work-lands-without-a-coordinator">
+  <title>A landing arm measures only the files its own tree holds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="delivered-work-lands-without-a-coordinator-s51-arm-scope">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A landing arm measures only the test files its own tree holds</h2>
+      </header>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-rule">
+        Each arm of a landing pair now resolves the node's test files against
+        the tree it measures. The head arm runs every file the head tree holds.
+        The base arm runs every file both trees hold. A file only the head
+        holds is new to the delivery and is left out of the base arm; a file
+        only the base holds was deleted and runs in neither arm. Both
+        observations carry the files they left out and the arms they were left
+        out of, and a pair whose base tree holds none of the node's files
+        records the explicit empty base measurement promotion already reads
+        rather than an arm with no log.
+      </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-why">
+        Naming a path a tree does not carry stopped pytest on its own usage
+        error — exit 4, no failing test id, no test run — which the landing
+        read as an unreadable measurement and refused, with no waiver that
+        applied. That is what stopped the last node of the queue plan: its
+        scope named two test files sibling nodes had already deleted from the
+        primary branch.
+      </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-pair">
+        A promotion accepts the pair as it is now recorded: the base arm's
+        command is the armed template resolved over the files both revisions
+        carry, which is narrower than the head-scoped spelling when the head
+        added a file and narrower still when it deleted one. The command a
+        promotion compares is still the armed command by what it runs, as the
+        per-tree resolution already required.
+      </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-measure">
+        The three declared cases run over two synthesised trees and one real
+        subprocess runner: a file the head dropped is named as left out of both
+        arms while the arm that remains genuinely runs pytest and passes; a
+        file the head added runs in the head arm only and is named as left out
+        of the base; a pair both trees carry runs wholly in both arms.
+      </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-gate">
+        The scoped gate at <code>429c4854b3</code> ran the new test file
+        beside the two fence tests, <code>61 passed in 40.20s</code>,
+        <code>EXIT=0</code>. The pair's own arms on the same partition ran the
+        node's files: the head arm at <code>429c4854b3</code> ran the new test
+        beside the two fence tests, <code>61 passed in 46.22s</code>,
+        <code>EXIT=0</code>, and the base arm at <code>c4c441eaf2</code> names
+        only the two files that tree holds, <code>58 passed in 50.06s</code>,
+        <code>EXIT=0</code> — the resolution this fragment describes, produced
+        by the measure itself. The tests that import either changed module were
+        run at the head and at the base revision over seventeen files:
+        <code>168 passed, 5 failed</code> at the head and the same
+        <code>5 failed</code> at <code>c4c441eaf2</code>, so the change adds no
+        failure — those five are red at the base revision as well.
+      </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-control">
+        At the base revision <code>c4c441eaf2</code> the first case fails with
+        <code>{'unreadable': 'the measured baseline arm did not run'}</code>,
+        and the same tree run directly against the two named files exits 4 with
+        <code>ERROR: file or directory not found: tests/test_deleted.py</code>
+        and <code>no tests ran</code>. That is the reported defect reproduced;
+        the repaired arm runs the one file the tree holds and passes.
+      </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-merge">
+        The primary branch advanced while this run was measuring, bounding a
+        landing's arms by the declared gate duration and selecting the arm
+        partition from that same maximum. Both changes reach the same two
+        runner constructions, so the branch was merged into this run's head.
+        Both intents are kept: each arm still passes no test files to the
+        partitioned runner, because a partitioned arm builds its own tree from
+        its own revision, and the new long-partition argument and the config it
+        reads are threaded through both call sites. Re-measured at the merge
+        head <code>cc67c90de4</code>, the scoped gate reports
+        <code>67 passed in 56.43s</code>, the head arm
+        <code>67 passed in 46.95s</code>, and the base arm at
+        <code>c4c441eaf2</code> <code>64 passed in 47.86s</code> — four files
+        at the base against five at the head, the same per-tree resolution this
+        fragment describes.
+      </p>
+      <p id="delivered-work-lands-without-a-coordinator-s51-arm-scope-scope-note">
+        A new failing test the head adds reads as real: the base arm has no
+        reading of it to excuse it, and a delivery that adds a failing test has
+        not passed. Copying a head-only file into the base arm's tree is what
+        the rule forbids, and it would be wrong twice over: the base arm would
+        be handed a path its tree does not hold, and the new test's failure
+        would read as pre-existing rather than as the delivery's.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

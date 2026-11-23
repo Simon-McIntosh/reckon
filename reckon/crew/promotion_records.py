@@ -1017,7 +1017,10 @@ def _writes_product_source(record: Mapping[str, Any]) -> bool:
 
 
 def _scoped_suite_command(
-    record: Mapping[str, Any], *, revision: str | None = None
+    record: Mapping[str, Any],
+    *,
+    revision: str | None = None,
+    also: Sequence[str] = (),
 ) -> str:
     """The armed suite command with its scoped placeholder resolved, or empty.
 
@@ -1038,6 +1041,11 @@ def _scoped_suite_command(
     declared scope, which is what a caller can state before either tree exists
     and what every run recorded before the per-tree rule carried.
 
+    ``also`` names further revisions the command is resolved over, keeping only
+    the files every one of them holds. The base arm of a pair runs only the
+    files both revisions carry: a file the head deleted ran in neither arm, so
+    the base arm that measured it is measured by the pair's own resolution.
+
     An empty result means the run has nothing to measure with: no declaration
     at all, or a scoped one over a scope — or a tree — holding no test file and
     no census the project declares. Promotion then records no suite observation
@@ -1055,10 +1063,13 @@ def _scoped_suite_command(
         else []
     )
     if revision is not None:
-        present = _paths_present_in_tree(_scope_tree(record), revision, files + census)
-        if present is not None:
-            files = [name for name in files if name in present]
-            census = [name for name in census if name in present]
+        for wanted in (revision, *also):
+            present = _paths_present_in_tree(
+                _scope_tree(record), wanted, files + census
+            )
+            if present is not None:
+                files = [name for name in files if name in present]
+                census = [name for name in census if name in present]
     measured = files + census
     if not measured:
         return ""
@@ -1214,7 +1225,9 @@ def _arm_missing_fields(
     the command it was told to run once per-tree resolution landed. The same
     template over the node's whole declared scope is accepted too, because a
     run dispatched before that rule recorded that spelling and its pair is
-    still evidence about the files its tree holds.
+    still evidence about the files its tree holds. The base arm also accepts
+    the template resolved over the files both revisions carry, which is what a
+    pair measures once each arm runs only its own tree's files.
 
     The comparison is by what the command runs rather than by how it is
     spelled: the test files as a set in either order, the interpreter resolved
@@ -1249,6 +1262,13 @@ def _arm_missing_fields(
         _scoped_suite_command(record, revision=revision or None),
         _scoped_suite_command(record),
     ]
+    if arm_name == "baseline_suite" and head:
+        # The base arm runs only the files both trees carry, so its command is
+        # narrower than the head-scoped spelling when the head added a file —
+        # and narrower still when it deleted one, which no arm names.
+        paired = _scoped_suite_command(record, revision=revision or None, also=(head,))
+        if paired and paired not in accepted:
+            accepted.append(paired)
     arm_command = str(observation.get("command") or "").strip()
     missing: list[str] = []
     if arm_command and not _arm_command_matches(
