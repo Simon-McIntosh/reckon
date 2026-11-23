@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-23T02:43:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-23T03:23:49.027323+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261121T205247838428-qwnw-a-dispatch-takes-omitted-fields-from-its-section",
+      "section": "\u00a73"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_dispatch_takes_omitted_fields_from_its_section.py",
+      "line": 168,
+      "severity": "non-blocking",
+      "text": "the repair removed the assertion that the section's negative control reaches the queued entry, and the \"negative_control\" member of the section_derived set, so nothing in this node's test file fails if the batch path stops carrying the control; the owner's tests (tests/test_a_plan_dispatch_reads_the_sections_control.py) cover the plan path and an explicit-override batch entry but not a section-only batch entry, leaving the section's done-when case unguarded."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-takes-omitted-fields-from-its-section.html",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "the evidence commits replaced the fragment's record of the node's declared negative control (the section-only entry refused at the base revision, naming the budget and specification level) with the merged-head plan-reader measure; no log in the run records the base refusal, so that control is claimed in the manifest's landing line but backed by no artefact."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 738,
+      "severity": "non-blocking",
+      "text": "the comment says the negative control is read from the section, which is false at this branch head where no _PlanRead.negative_control exists; it is accurate only at the merged head."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass - reached from dispatch_plan.py:645, dispatching/requests.py:224, admission/reviews.py:598, node.py:1519 and dispatch_batch.py:717.",
+    "diff": "pass - four commits read against fe93263d5e, no path outside the declared scope.",
+    "done_when": "partial - the branch gate no longer asserts the section-only entry's negative control (removed at tests/test_a_dispatch_takes_omitted_fields_from_its_section.py:168); the behaviour holds only at the merged head.",
+    "goal": "pass - the gained commits repair the duplicate control reader; at the merged head reckon/crew/dispatch_batch.py:558 reads the control from the plan reader that owns it, and the budget/spec derivations remain.",
+    "manifest": "pass - status complete, both arms with revisions and EXIT=0, and the negative-control log's revision and result recorded.",
+    "write_paths": "pass - all four paths in the gained commits' diff are inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a dispatch naming a plan section takes its done-when, time budget, spec level and negative control, and that a bracketed token in a path pattern or an HTML tag is accepted; the gained commits repair the duplicate control reader, so at the merged head reckon/crew/dispatch_batch.py:558 reads the control through the plan reader that owns it (main's _PlanRead.negative_control), while on this branch alone no control reader exists.\nVERDICT done_when: the section's done-when requires a section-only batch entry to carry the section's negative control; commit a1e3ca1083 removed that assertion at tests/test_a_dispatch_takes_omitted_fields_from_its_section.py:168, so the branch gate at a0299d538e (73 passed, after_suite log) does not demonstrate it and the behaviour holds only once merged with main.\nVERDICT write_paths: the four gained commits touch reckon/crew/dispatch_batch.py, reckon/crew/node.py, tests/test_a_dispatch_takes_omitted_fields_from_its_section.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-takes-omitted-fields-from-its-section.html, every one inside the declared write paths.\nVERDICT manifest: read; it records status complete, after_suite 73 passed at a0299d538e and baseline_suite 68 passed at 98a04d0a (both EXIT=0), and negative-control.log's 2 failed / 2 passed at the pre-repair head fe93263d5e merged with main.\nVERDICT diff: read the four gained commits against fe93263d5e (a1e3ca1083 removes the duplicate reader and fixes the docstring typo; a0299d538e, 1dad124818 and 9ac4f0defc only rewrite the evidence fragment's measure), with the full 98a04d0a..9ac4f0de diff read for context.\nCALL_SITES: reckon/crew/dispatch_plan.py:645 plan_dispatch -> apply_section_defaults, reckon/crew/dispatching/requests.py:224 queue_requests -> apply_section_defaults, reckon/crew/admission/reviews.py:598 -> rederived_section_fields, reckon/crew/node.py:1519 validate_node -> _placeholder_gap, reckon/crew/dispatch_batch.py:717 _entry_node -> section_derivation\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:558 takes done-when, budget and spec level from the section on both dispatch paths, and the control arrives from main's plan reader at the merged head, so the deliverable is met there though not on the branch alone.\nSCORE evidence: 14\nJUSTIFICATION evidence: the arms are recorded with exits in after_suite-1795401366504470192.log (73 passed, EXIT=0) and baseline_suite-1795401288894023220.log (68 passed, EXIT=0), but the done_when's own base-refusal control has no log and was dropped from the fragment at qwnw-a-dispatch-takes-omitted-fields-from-its-section.html:22.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the gained commits' diff lies inside the declared write paths, and the repair confines itself to dispatch_batch.py, node.py and the node's own test.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_dispatch_takes_omitted_fields_from_its_section.py:165 still fails if the budget derivation regresses because it asserts 150m against the 20m backend default, but line 168 removed the negative-control assertion so no test on this branch fails if the batch path stops carrying the control.\nSCORE fit: 17\nJUSTIFICATION fit: the repair follows the section_derivation idiom of reckon/crew/dispatch_batch.py:556 and corrects the docstring at reckon/crew/node.py:291, though the comment at reckon/crew/dispatch_batch.py:738 describes merged behaviour the branch does not yet have.\nSCORE reuse: 20\nJUSTIFICATION reuse: a1e3ca1083 deletes negative_control_sentence and _NEGATIVE_CONTROL_MARKER from reckon/crew/dispatch_batch.py, leaving the section's control to the plan reader that owns it, and a search over reckon/crew found no owner for effort-hours-to-budget (section_time_budget) or capability-to-spec-level (section_spec_level).\nFINDING tests/test_a_dispatch_takes_omitted_fields_from_its_section.py:168 non-blocking: the repair removed the assertion that the section's negative control reaches the queued entry, and the \"negative_control\" member of the section_derived set, so nothing in this node's test file fails if the batch path stops carrying the control; the owner's tests (tests/test_a_plan_dispatch_reads_the_sections_control.py) cover the plan path and an explicit-override batch entry but not a section-only batch entry, leaving the section's done-when case unguarded.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-dispatch-takes-omitted-fields-from-its-section.html:22 non-blocking: the evidence commits replaced the fragment's record of the node's declared negative control (the section-only entry refused at the base revision, naming the budget and specification level) with the merged-head plan-reader measure; no log in the run records the base refusal, so that control is claimed in the manifest's landing line but backed by no artefact.\nFINDING reckon/crew/dispatch_batch.py:738 non-blocking: the comment says the negative control is read from the section, which is false at this branch head where no _PlanRead.negative_control exists; it is accurate only at the merged head.\n",
+  "review_run_id": "r-20261123T024235106666-review-of-qwnw-a-dispatch-takes-omitted-fields-from-its-section-9ac4f0defca0",
+  "reviewed_base_sha": "fe93263d5e8a1ece6a1841c3702f728d95172793",
+  "reviewed_head_sha": "9ac4f0defca06333c6148a48aa983964cdc1e9e8",
+  "reviewed_run_id": "r-20261121T205247838428-qwnw-a-dispatch-takes-omitted-fields-from-its-section",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T02:55:34.595202+00:00",
+  "total": 100
+}
