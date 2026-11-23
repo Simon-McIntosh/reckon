@@ -175,6 +175,8 @@ class PlanQueue:
                         config_for=config_of,
                         repo_root=root,
                         queued_by=SERVICE_SESSION,
+                        live=live,
+                        ownership=ownership,
                     )
                 except Exception as error:  # noqa: BLE001 - one plan cannot end a pass
                     failed.add(slug)
