@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: base-suite.log at bd0d2051 records '25 failed, 1137 passed' with 25 FAILED ids and head-suite.log at 3258f248 records '25 failed, 1137 passed' with the same 25 FAILED ids; diff of the two sorted FAILED sets is empty, so the set difference is 0 added and 0 fixed. The suite arms ran at the code-fix commit 3258f248, which is the parent of the reviewed head 37a07da0; the only commits between them (90e53d67, 37a07da0) touch the evidence fragment alone.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:3343 (sweep calls review_request_census)",
+    "reckon/crew/station.py:463 (the station pass calls resumption.sweep)",
+    "reckon/crew/station_obligations.py:498 (the obligations payload calls _with_sweep_failures per session)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T09:47:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "5053",
+      "severity": "non-blocking",
+      "text": "non-blocking: when runs.record_process_alive answers None (no pid recorded, a placed run whose scheduler cannot be queried, or an unreadable identity) the predicate returns True without calling turn_in_progress, so an unattributable resumed pointer suppresses the duty indefinitely; the docstring at :5029 says the run's own stream answers there, and the plan's condition for suppression ('its worker process alive and its turn not ended') is not what this branch tests."
+    },
+    {
+      "file": "tests/test_a_run_mid_repair_raises_no_sweep_failure.py",
+      "line": "217",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert _resumed[\"attempt\"] == 2 compares the fixture's own returned mapping, whose _resumed_pointer set attempt = 2, against the literal it wrote, so it can never fail for a regression in the code under test and adds no guard."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the three commits bd0d2051..37a07da0 commit by commit; the change is +55/-1 in recovery_review_dispatch.py (new predicate plus an in_flight list), +6/-1 in resumption.py (carry in_flight into the report), +9 in station_obligations.py (per-run dedupe), +307 in a new test and +43 in the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_run_mid_repair_raises_no_sweep_failure.py, a base arm on all_debug and revision/command/EXIT per gate log; the test asserts the three stated behaviours (196,203 in-flight yields no row; 227 ended attempt yields one; 305 three authors yield one), head-arm.log records 3 passed EXIT=0 at 3258f248 and base-arm.log records 2 failed 1 passed EXIT=1 at bd0d2051.",
+    "goal": "the node goal is section 119 - a run mid-repair is not raised as a failed sweep and a failure is raised once; reckon/crew/recovery_review_dispatch.py:5019 adds _delivery_in_flight and review_request_census records such a run as in_flight (5192-5203), and reckon/crew/station_obligations.py:272 dedupes rows by run id, so both halves of the goal are present.",
+    "manifest": "read; it reports status complete, 3 passed EXIT=0 at head and 2 failed 1 passed at base, and the importer arms identical at 25 failed 1137 passed; I confirmed base-arm.log, head-arm.log, base-suite.log and head-suite.log carry the stated revisions, literal commands and closing EXIT lines, and the two suite FAILED-id sets diff empty.",
+    "write_paths": "the declared paths are the three crew modules, the new test, the evidence fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/ and an unused figures directory; the five paths in git diff bd0d2051..37a07da0 are all inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_mid_repair_raises_no_sweep_failure.py:196,203,227,305 redden on reinstating each regression (base-arm.log shows the first and third red at bd0d2051), but the unknown-liveness branch at recovery_review_dispatch.py:5053 has no assertion.",
+    "evidence": "base-arm.log and head-arm.log each carry a revision, a literal command and a closing EXIT= line, and head-arm.log records 3 passed EXIT=0 against base-arm.log's 2 failed 1 passed EXIT=1.",
+    "fit": "the new predicate follows the surrounding docstring-and-owner-composition style of reckon/crew/recovery_review_dispatch.py:4018, but its docstring at :5029 describes a stream reading the code at :5053 does not take.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:5192-5203 routes a delivered run with a working resumed attempt into in_flight rather than obligations, and reckon/crew/station_obligations.py:272-282 raises one row per run, so both halves of the goal are present.",
+    "reuse": "the added predicate composes the existing owners reckon/crew/dispatch_launch.py:5262 _attempt_ending_receipt, reckon/crew/process_liveness.py:453 record_process_alive and reckon/crew/process_liveness.py:545 turn_in_progress instead of re-implementing liveness, and the new in_flight key mirrors the neighbouring request_unrecorded field.",
+    "scope_discipline": "every one of the five paths in git diff bd0d2051..37a07da0 is within the manifest's declared write paths, and no plan, sprint or index file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is section 119 - a run mid-repair is not raised as a failed sweep and a failure is raised once; reckon/crew/recovery_review_dispatch.py:5019 adds _delivery_in_flight and review_request_census records such a run as in_flight (5192-5203), and reckon/crew/station_obligations.py:272 dedupes rows by run id, so both halves of the goal are present.\nVERDICT done_when: the done_when names tests/test_a_run_mid_repair_raises_no_sweep_failure.py, a base arm on all_debug and revision/command/EXIT per gate log; the test asserts the three stated behaviours (196,203 in-flight yields no row; 227 ended attempt yields one; 305 three authors yield one), head-arm.log records 3 passed EXIT=0 at 3258f248 and base-arm.log records 2 failed 1 passed EXIT=1 at bd0d2051.\nVERDICT write_paths: the declared paths are the three crew modules, the new test, the evidence fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/ and an unused figures directory; the five paths in git diff bd0d2051..37a07da0 are all inside that fence.\nVERDICT manifest: read; it reports status complete, 3 passed EXIT=0 at head and 2 failed 1 passed at base, and the importer arms identical at 25 failed 1137 passed; I confirmed base-arm.log, head-arm.log, base-suite.log and head-suite.log carry the stated revisions, literal commands and closing EXIT lines, and the two suite FAILED-id sets diff empty.\nVERDICT diff: read the three commits bd0d2051..37a07da0 commit by commit; the change is +55/-1 in recovery_review_dispatch.py (new predicate plus an in_flight list), +6/-1 in resumption.py (carry in_flight into the report), +9 in station_obligations.py (per-run dedupe), +307 in a new test and +43 in the evidence fragment, all inside the declared scope.\nVERDICT call_sites: verified 3 production call site(s)\nCALL_SITES: reckon/crew/resumption.py:3343 (sweep calls review_request_census), reckon/crew/station.py:463 (the station pass calls resumption.sweep), reckon/crew/station_obligations.py:498 (the obligations payload calls _with_sweep_failures per session)\nSCORE goal_fidelity: 18\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 17\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:5192-5203 routes a delivered run with a working resumed attempt into in_flight rather than obligations, and reckon/crew/station_obligations.py:272-282 raises one row per run, so both halves of the goal are present.\nJUSTIFICATION evidence: base-arm.log and head-arm.log each carry a revision, a literal command and a closing EXIT= line, and head-arm.log records 3 passed EXIT=0 against base-arm.log's 2 failed 1 passed EXIT=1.\nJUSTIFICATION scope_discipline: every one of the five paths in git diff bd0d2051..37a07da0 is within the manifest's declared write paths, and no plan, sprint or index file is touched.\nJUSTIFICATION durability: tests/test_a_run_mid_repair_raises_no_sweep_failure.py:196,203,227,305 redden on reinstating each regression (base-arm.log shows the first and third red at bd0d2051), but the unknown-liveness branch at recovery_review_dispatch.py:5053 has no assertion.\nJUSTIFICATION fit: the new predicate follows the surrounding docstring-and-owner-composition style of reckon/crew/recovery_review_dispatch.py:4018, but its docstring at :5029 describes a stream reading the code at :5053 does not take.\nJUSTIFICATION reuse: the added predicate composes the existing owners reckon/crew/dispatch_launch.py:5262 _attempt_ending_receipt, reckon/crew/process_liveness.py:453 record_process_alive and reckon/crew/process_liveness.py:545 turn_in_progress instead of re-implementing liveness, and the new in_flight key mirrors the neighbouring request_unrecorded field.\nFINDING reckon/crew/recovery_review_dispatch.py:5053 non-blocking: when runs.record_process_alive answers None (no pid recorded, a placed run whose scheduler cannot be queried, or an unreadable identity) the predicate returns True without calling turn_in_progress, so an unattributable resumed pointer suppresses the duty indefinitely; the docstring at :5029 says the run's own stream answers there, and the plan's condition for suppression ('its worker process alive and its turn not ended') is not what this branch tests.\nFINDING tests/test_a_run_mid_repair_raises_no_sweep_failure.py:217 non-blocking: assert _resumed[\"attempt\"] == 2 compares the fixture's own returned mapping, whose _resumed_pointer set attempt = 2, against the literal it wrote, so it can never fail for a regression in the code under test and adds no guard.\n",
+  "review_node": "review-of-the-monitor-reads-each-fact-once-s119-37a07da0a467",
+  "review_run_id": "r-20261123T094630137301-review-of-the-monitor-reads-each-fact-once-s119-37a07da0a467",
+  "reviewed_base_sha": "bd0d2051dbe94c9232f5e64986364fdc12a65b24",
+  "reviewed_head_sha": "37a07da0a46789f30df898ce75ad186eb0cf28f7",
+  "reviewed_run_id": "r-20261123T090829128666-the-monitor-reads-each-fact-once-s119",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T094630137301-review-of-the-monitor-reads-each-fact-once-s119-37a07da0a467"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T09:59:37.945555+00:00",
+  "total": 108
+}

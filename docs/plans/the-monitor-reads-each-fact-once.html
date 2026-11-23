@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="608">
+<meta name="plan-version" content="609">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -1325,7 +1325,7 @@ staged paths.</p>
     <div class="r-comment-body"><p>Reviewed the three commits the run gained after its prior review (814b8bca3a..4108f0425a): both prior blocking findings are repaired — the fragment now attributes the fleet-wide D-state count to the monitor set with the station among them in one and two samples, and the gate derives both counts from window(path)['dstate'] and ['dstate_station'], reddening on the reinstated defect (negative-control.log controls 1, 2 and 4). Scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 19; two non-blocking findings (a tautological assertion at test line 203, and an unpersisted masking control at fragment line 283). Record stored parsed at both declared paths.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261122T123255337138-the-monitor-reads-each-fact-once-s12" data-who="reckon-build" data-when="2026-11-22T13:43:16Z">
-    <div class="r-comment-body"><p>Re-measured at this revision, the cutover window still fails: all monitor processes read 24,030–25,867 MB/min and the station alone 16,779–18,953 MB/min at 92.07–89.35 % of one core against a bound of 20 MB/min and 5 %, with a monitor process in D in four of six and five of six samples; the signature mirror answers for eleven of thirteen projects but reckon (21 stored, 34 mirrored) and imas-efit (1,549 stored, 1,548 mirrored) still scan their whole payload at 12.68 MB and 62.28 MB per call, and a 191-row hour of today&#x27;s log replayed through the station is carried once, in order, scoped exactly, with every run and row family drawn.</p></div>
+    <div class="r-comment-body"><p>Re-measured at this revision, the cutover window still fails: all monitor processes read 24,030–25,867 MB/min and the station alone 16,779–18,953 MB/min at 92.07–89.35 % of one core against a bound of 20 MB/min and 5 %, with a monitor process in D in four of six and five of six samples; the signature mirror answers for eleven of thirteen projects but reckon (21 stored, 34 mirrored) and imas-efit (1,549 stored, 1,548 mirrored) still scan their whole payload at 12.68 MB and 62.28 MB per call, and a 191-row hour of today's log replayed through the station is carried once, in order, scoped exactly, with every run and row family drawn.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261107T171647831487-review-of-obligations-recompute-only-what-changed-902372b94625" data-who="reckon-build" data-when="2026-11-07T17:35:01.610Z">
     <div class="r-comment-body"><p>Reviewed r-20261107T155222105164-obligations-recompute-only-what-changed at base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 and head 902372b946250b719af5df8a9f0a146625130397: the three memoisations landed and the base arm genuinely fails their zero-count assertions, but the done_when's live under-2-s bullet is unmet at 75.761 s and four non-blocking findings are recorded (stale held-record signature, a live timing log that ends in a NameError stamped EXIT=0, an after-arm recorded one revision behind head, and a hand-rolled memo beside file_memo).</p></div>
@@ -2193,6 +2193,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s119" data-id="c-run-r-20261123T094630137301-review-of-the-monitor-reads-each-fact-once-s119-37a07da0a467" data-who="reckon-build" data-when="2026-11-23T09:59:09.100Z">
+    <div class="r-comment-body"><p>§119 reviewed at head 37a07da0 — six scores 18/19/20/15/17/19, two non-blocking findings (an untested unknown-liveness branch in _delivery_in_flight and a fixture-tautological assertion), zero added suite failures derived from the reviewed run&#x27;s own base/head arm logs.</p></div>
 </div>
 </section>
 </main>
