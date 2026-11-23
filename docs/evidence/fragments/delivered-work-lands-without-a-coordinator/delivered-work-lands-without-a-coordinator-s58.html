@@ -34,4 +34,25 @@ into a base-revision tree, the first case fails
 (<code>1 failed in 0.27s</code>, <code>EXIT=1</code>), because the base repair
 leaves the arm's completion as the worker declared it and the red-base rule
 refuses the merge.</p>
+<p>The review found the repair still left one figure behind: it rewrote the exit
+status, the failure ids and the completion, but the arm's
+<code>failure_count</code> kept the value the worker declared, so the receipt
+check compared that old count with the figures of the very log the arm now
+cites and refused it. The count is now derived with the ids, the same equation
+the manifest schema holds every arm to, and a repair whose log cannot be read
+still leaves the count untouched. The case is pinned by a sixth test, which
+first reproduces the refusal against an arm that cites the log but still
+carries the previous run's count and then passes once the repair has rewritten
+it — the same case fails at the head with the answering commit reverted.</p>
+<p>Measure after the repair: base arm at
+<code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code> gave
+<code>58 passed in 44.52s</code> with <code>EXIT=0</code>; head arm at
+<code>bda475d2ec6e2300dc06a7bdc3bf6fc4c0a73daa</code> gave
+<code>64 passed in 42.76s</code> with <code>EXIT=0</code>, the node's six
+cases and no added failure; and the negative control, the head tree with the
+answering commit reverted, gave <code>1 failed in 1.38s</code> with
+<code>EXIT=1</code> on the count case. All three ran on <code>all_debug</code>
+over the same two shared test files, the base arm over a base-revision tree
+whose git objects are linked to the repository so the staged-write inventory
+test reads the tracked tree it expects.</p>
 </article>
