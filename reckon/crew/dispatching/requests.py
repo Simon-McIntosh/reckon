@@ -171,6 +171,7 @@ def queue_requests(
     priority: int | None = None,
     dispatch_width: str = "",
     dry_run: bool = False,
+    queued_by: str = "",
 ) -> dict[str, Any]:
     """Validate a request batch, then use dispatch's queue writer for each.
 
@@ -315,6 +316,7 @@ def queue_requests(
                 "priority": priority,
                 "dispatch_width": dispatch_width,
                 **({"comment": comment} if comment else {}),
+                **({"queued_by": queued_by} if queued_by else {}),
             },
             queued_at=_utc_now(),
             local=bool(local) or lane == local_backend,

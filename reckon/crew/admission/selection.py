@@ -12,6 +12,7 @@ from reckon.crew.open_run_index import operational_read
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
+from . import queueing as _queueing
 from . import readiness as _readiness
 from . import release as _release
 from . import reviews as _reviews
@@ -122,7 +123,22 @@ def admit_once(
             )
             if result["released_stranded"]:
                 live = runs.list_live()
+            # The queue refills here, before anything is ordered, so a request
+            # fills and drains in one pass and a lane a coordinator left empty
+            # is not seen empty by the ordering that follows. A project whose
+            # configuration turns this off is skipped by the stage itself.
+            with _service._read_tally() as queue_reads:
+                started = time.monotonic()
+                result["plan_queue"] = _queueing.fill_queue(
+                    config_for=config_for
+                )
+                result["queue_seconds"] = round(time.monotonic() - started, 3)
+            _service._record_stage_reads(result, "plan queue", queue_reads)
+            refilled = int((result.get("plan_queue") or {}).get("queued") or 0)
+            if refilled:
+                live = runs.list_live()
             # Readiness is re-read here, on every pass: a request waiting on its
+            # section's refs moves to ``queued`` the moment the last ref lands and
             # section's refs moves to ``queued`` the moment the last ref lands and
             # to ``blocked-upstream`` the moment one is closed as abandoned or
             # failed, with no coordinator turn in between. This is what lets a
