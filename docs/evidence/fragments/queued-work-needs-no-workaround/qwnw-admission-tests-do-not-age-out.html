@@ -34,15 +34,16 @@ that the composed directory survives the hold.</p>
 on the <code>all_debug</code> partition. Head, and head again with admission's
 clock advanced one year, both report 19 passed.</p>
 <p id="qwnw-admission-tests-do-not-age-out-p4">Base arm, revision 1a01424ccd:
-5 failed, 14 passed, <code>EXIT=1</code>. Each test fails for its own reason.
-The two date-fused tests in the named-lane file and the held-review test fail
-because the fixed-date pointer is retired before it is held or launched (empty
-<code>held</code> / <code>launched</code>). The reference-comparison test fails
-with <code>TypeError: dispatch() got an unexpected keyword argument
-'seats_in_flight'</code>, and the composed-review test fails at its
-<code>brief</code> assertion (<code>PosixPath('.')</code> against the composed
-directory). Head arm, revision cbcae1b912: 19 passed, <code>EXIT=0</code>. Clock
-arm, revision cbcae1b912 with <code>datetime</code> advanced 365 days
-process-wide: 19 passed, <code>EXIT=0</code>. No failure id appears at head
-that the base does not show.</p>
+<code>5 failed, 14 passed in 11.02s</code>, <code>EXIT=1</code>. Each test fails
+for its own reason. The two date-fused tests in the named-lane file and the
+held-review test fail because the fixed-date pointer is retired before it is
+held or launched (empty <code>held</code> / <code>launched</code>). The
+reference-comparison test fails with <code>TypeError: dispatch() got an
+unexpected keyword argument 'seats_in_flight'</code>, and the composed-review
+test fails at its <code>brief</code> assertion (<code>PosixPath('.')</code>
+against the composed directory). Head arm, revision cbcae1b912:
+<code>19 passed in 16.35s</code>, <code>EXIT=0</code>. Clock arm, revision
+cbcae1b912 with <code>datetime</code> advanced 365 days process-wide:
+<code>19 passed in 24.87s</code>, <code>EXIT=0</code>. No failure id appears at
+head that the base does not show.</p>
 </section>
