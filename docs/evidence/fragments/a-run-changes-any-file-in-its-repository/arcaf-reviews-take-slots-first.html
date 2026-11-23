@@ -23,6 +23,13 @@
   setting the level to 50. At the base revision the same first case offers the
   review the slot ahead of the override-100 request.</p>
 
+  <p>The production paths, not only the raw ordering, are covered: the
+  admission pass's <code>fair_share_admission_order</code> now returns the
+  critical request, then the review, then a lower override, and the promotion
+  queue's <code>promotion_requests._pending_requests</code> honours a project
+  level of 50
+  for an override of 50.</p>
+
   <table id="arcaf-reviews-take-slots-first-arms">
     <caption>Every arm is a log whose first line names its revision, tree and
     command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
@@ -32,14 +39,14 @@
         <td><code>4fa07b80a8d5335def32b0297d595958115ae7e4</code></td>
         <td>2 failed, 2 passed in 10.82s &mdash; first case fails as declared</td></tr>
       <tr><td>scoped gate, head</td>
-        <td><code>24beaa0127bc469e5ef66ab41b021c546e83002d</code></td>
-        <td>64 passed in 45.44s, EXIT=0</td></tr>
+        <td><code>8c1aa2741ef99a79bca10c52843544b4c11649f7</code></td>
+        <td>66 passed in 43.57s, EXIT=0</td></tr>
       <tr><td>baseline suite, base</td>
         <td><code>4fa07b80a8d5335def32b0297d595958115ae7e4</code></td>
-        <td>59 passed in 44.40s, EXIT=0</td></tr>
+        <td>59 passed in 46.39s, EXIT=0</td></tr>
       <tr><td>after suite, head</td>
-        <td><code>24beaa0127bc469e5ef66ab41b021c546e83002d</code></td>
-        <td>64 passed in 37.98s, EXIT=0</td></tr>
+        <td><code>8c1aa2741ef99a79bca10c52843544b4c11649f7</code></td>
+        <td>66 passed in 46.25s, EXIT=0</td></tr>
     </tbody>
   </table>
 </section>
