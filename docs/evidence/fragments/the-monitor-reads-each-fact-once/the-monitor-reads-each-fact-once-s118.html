@@ -1,0 +1,92 @@
+<section id="the-monitor-reads-each-fact-once-s118" class="evidence-fragment">
+  <h2>§118 — A session host runs the checkout's current code</h2>
+  <p>
+    Every Claude Code session runs its own <code>reckon crew host</code>, and a
+    host used to load its code once, when the session started, then keep that
+    image for the life of the session. On 23 November hosts and MCP servers
+    started a week earlier were still running that week's code: a fix landed on
+    <code>main</code> reached none of them, and their stale stamps kept a shared
+    index document in contention with current code until each process was
+    stopped by hand.
+  </p>
+  <p>
+    A host now compares its recorded image identity with the checkout's on each
+    idle tick, and re-executes itself onto the current code when the checkout has
+    moved. The replacement is <code>os.execve</code>, so the process never goes
+    away: its pid, its owner and its request descriptor are the same before and
+    after. The children it was supervising are written to a handover record
+    beside the census before the exec, and the replacement adopts them — each
+    one only if its pid is alive and its kernel start time still matches — so
+    no second follower is started beside a child that is still running. The
+    handover is named outside the census's <code>*.json</code> set, so a reader
+    of the fleet never sees a half-finished exec as a host state.
+  </p>
+  <p>
+    Two conditions defer the re-execution to a later tick rather than dropping
+    what the host holds: a child spawned since the last completed tick (so a
+    follower is observed running at least once by the image that started it),
+    and any request bytes already read into this image's buffer, which an exec
+    would discard. Bytes still in the kernel pipe survive the exec with the
+    descriptor, so only the user-space buffer is a deferral condition; the
+    buffer is empty whenever the host is idle.
+  </p>
+  <table id="the-monitor-reads-each-fact-once-s118-arms">
+    <caption>
+      Gate arms, each run on <code>all_debug</code> and each logged with its
+      revision, its literal command and a closing <code>EXIT=</code> line.
+    </caption>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>head — new test</td>
+        <td><code>30eab5592f</code></td>
+        <td>4 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>head — tests importing the changed module</td>
+        <td><code>30eab5592f</code></td>
+        <td>60 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>base — tests importing the changed module</td>
+        <td><code>bd0d2051db</code></td>
+        <td>60 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>base — new test (negative control)</td>
+        <td><code>bd0d2051db</code></td>
+        <td>1 failed, <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The nine pre-existing test files that import
+    <code>reckon.crew.session_host</code> are the same 60 passes at both
+    revisions, so the change adds no failure against the base arm.
+  </p>
+  <p id="the-monitor-reads-each-fact-once-s118-negative">
+    Negative control, as declared: at the base revision the first case fails
+    after its 240 s bound with
+    <code>timed out … waiting for the host to reload onto the current code</code>.
+    The base host is still alive and still logging its follower, because it is
+    still running the image it started on — it has no reload behaviour to
+    exercise, which is exactly the defect the head arm closes.
+  </p>
+  <p>
+    The cases drive a real host process against a fake follower and read files,
+    pids and the process table, never a return value. A stale identity is
+    injected through <code>RECKON_FOLLOWER_IMAGE_COMMIT</code>, the variable a
+    reload itself carries, so the checkout reads as moved exactly as a real move
+    is seen from inside a host; the reload it performs materialises this
+    checkout's package and runs its real import proof. The request descriptor is
+    a pipe the harness holds and preloads, which removes the race between a
+    host's first read and a line written just after it starts; after the reload
+    a second request written down the same descriptor produces a second
+    follower, which is the observable proof that the descriptor crossed the
+    exec. The controlled case precedes the stale one: a host told it runs the
+    current code never executes, so the instrument that reports a reload is
+    shown to read an actual exec rather than any host at all.
+  </p>
+</section>
