@@ -257,7 +257,8 @@ def test_a_chain_of_three_upstreams_is_queued_to_its_root_in_one_pass(
     # The middle request waits on the root, so the pass read the request it had
     # just filed rather than stopping at the first upstream.
     middle = _requests_on(CHAIN[1])[0]
-    assert str(middle.get("wait_class") or "progressing") == "progressing", middle
+    assert middle.get("wait_class"), middle
+    assert middle["wait_class"] == "progressing", middle
 
 
 def test_the_upstream_is_queued_with_the_services_own_queueing_off(

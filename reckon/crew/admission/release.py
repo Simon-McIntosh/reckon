@@ -566,17 +566,10 @@ def _rederive_waits(
 _FILED_STATUSES = frozenset({"queued", "awaiting-upstream", "held"})
 
 
-def _project_config(project: str, root: str) -> Mapping[str, Any]:
-    """A project's resolved flight configuration, as the dispatch reads it."""
-    from reckon import flight
-
-    return flight.resolve(project, checkout_path=str(root)).config
-
-
 def _file_idle_upstreams(
     pointer: Mapping[str, Any],
     *,
-    config_for: Callable[[str, str], Mapping[str, Any]] | None = None,
+    config_for: Callable[[str, Path], Mapping[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """File a request for each unqueued section one idle wait names.
 
@@ -606,12 +599,13 @@ def _file_idle_upstreams(
         wanted.setdefault((key[0], key[1]), []).append((ref, key[2]))
     if not wanted:
         return [], []
-    resolve_config = config_for if config_for is not None else _project_config
-    filed: list[dict[str, Any]] = []
-    unqueued: list[dict[str, str]] = []
     from reckon.crew.dispatch_batch import QUEUE_ANSWER_MAY, queue_plan
 
     from . import queueing as _queueing
+
+    resolve_config = config_for if config_for is not None else _queueing._default_config
+    filed: list[dict[str, Any]] = []
+    unqueued: list[dict[str, str]] = []
 
     # The waiter's own session chose the work that is now blocked, so the queue
     # records that identity; a request carrying none names the service.
@@ -629,9 +623,7 @@ def _file_idle_upstreams(
                 waited_project,
                 plan,
                 session=session,
-                config_for=lambda name, _root=target_root: resolve_config(
-                    name, str(_root)
-                ),
+                config_for=lambda name, _root=target_root: resolve_config(name, _root),
                 repo_root=target_root,
                 queued_by=queued_by,
             )
@@ -661,7 +653,7 @@ def _file_idle_upstreams(
 def advance_waiting_requests(
     live: list[dict[str, Any]],
     *,
-    config_for: Callable[[str, str], Mapping[str, Any]] | None = None,
+    config_for: Callable[[str, Path], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Move each waiting request to the phase its refs now justify.
 
@@ -685,7 +677,7 @@ def advance_waiting_requests(
 def _advance_waiting_requests(
     live: list[dict[str, Any]],
     *,
-    config_for: Callable[[str, str], Mapping[str, Any]] | None = None,
+    config_for: Callable[[str, Path], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     candidates = [
         (row, dict(row))
