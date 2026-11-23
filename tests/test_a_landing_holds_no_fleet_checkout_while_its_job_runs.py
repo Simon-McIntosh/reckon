@@ -18,8 +18,11 @@ SIGKILL, so the removal is proven on the next pass rather than at the death.
 from __future__ import annotations
 
 import getpass
+import hashlib
+import os
 import re
 import shlex
+import signal
 import subprocess
 import tempfile
 import time
@@ -227,3 +230,85 @@ def test_one_base_tree_each_and_a_killed_landing_is_reclaimed(
     )
     assert report["removed"], report
     assert not (landing.scratch / "landing-base-killed").exists()
+
+
+def _signalled_runner(landing, real, outcome: dict[str, object]):
+    """End the first submitted job by signal, as a scheduler does.
+
+    The scheduler terminates a job that overruns its bound. The script installs
+    a TERM handler so that the job ends by a deliberate exit, which records
+    ``EXIT=143`` in its log, rather than by the shell dying from the signal;
+    nothing else exercises that handler.
+    """
+
+    first = [True]
+
+    def runner(argv, **options):
+        if Path(argv[0]).name != "sbatch":
+            return real(argv, **options)
+        step = argv[argv.index("--wrap") + 1]
+        tokens = shlex.split(step)
+        inner = tokens[tokens.index("-c") + 1]
+        log = _log_of(step)
+        log.parent.mkdir(parents=True, exist_ok=True)
+        if not first[0]:
+            log.write_text("1 passed\nEXIT=0\n", encoding="utf-8")
+            return subprocess.CompletedProcess(argv, 0, "1 passed\n", "")
+        first[0] = False
+        scratch_id = hashlib.sha256(str(log.absolute()).encode()).hexdigest()[:12]
+        prefix = f"{getpass.getuser()}-landing-{scratch_id}-"
+        root = Path(tempfile.gettempdir())
+        process = subprocess.Popen(
+            ["bash", "-c", inner],
+            cwd=options.get("cwd"),
+            env=options.get("env"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            start_new_session=True,
+        )
+        held: Path | None = None
+        deadline = time.monotonic() + 30.0
+        while time.monotonic() < deadline:
+            matches = [p for p in root.glob(prefix + "*") if (p / "tree").is_dir()]
+            if matches:
+                held = matches[0]
+                break
+            time.sleep(0.05)
+        try:
+            # Positive control: the job was holding a tree when it was signalled.
+            assert held is not None, "the job built no tree to remove"
+            assert (held / "tree" / "subject.py").is_file(), held
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            output = process.communicate(timeout=60)[0]
+        finally:
+            if process.poll() is None:
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                process.communicate()
+        outcome["tree"] = held
+        outcome["output"] = output
+        log.write_text(output, encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, output, "")
+
+    return runner
+
+
+def test_a_job_ended_by_signal_removes_its_tree(
+    landing, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    landing.pointer["suite_command"] = "sh -c 'sleep 60'"
+    outcome: dict[str, object] = {}
+    _measure(
+        landing,
+        monkeypatch,
+        _signalled_runner(landing, landing_measure._RUN, outcome),
+    )
+
+    held = outcome.get("tree")
+    assert isinstance(held, Path), outcome
+    output = str(outcome.get("output") or "")
+    # Without the handler the shell dies from the signal and records EXIT=0, so
+    # this receipt is what shows the handler turned it into a deliberate exit.
+    assert re.search(r"^EXIT=143$", output, re.MULTILINE), output
+    # The deliberate exit also runs the EXIT trap that removes the tree.
+    assert not held.exists(), held
