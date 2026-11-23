@@ -39,6 +39,7 @@ from reckon.crew.runs import (
     _repository_relative_scope,
     capture_run_session,
     drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
+    node_field,
     pointer_path,
     read_pointer,
     run_dir,
@@ -989,9 +990,13 @@ def _node_test_files(record: Mapping[str, Any]) -> list[str]:
 
 
 def _done_when_text(record: Mapping[str, Any]) -> str:
-    """The done-when the run's node states, or empty when it states none."""
-    node = record.get("node")
-    return str(node.get("done_when") or "") if isinstance(node, Mapping) else ""
+    """The done-when the run's node states, or empty when it states none.
+
+    Read through the run store's accessor, not from the pointer's node lane: a
+    slim listing record keeps the node body in its own file, so only the
+    accessor answers for both pointer shapes.
+    """
+    return str(node_field(record, "done_when") or "")
 
 
 def _landing_test_files(record: Mapping[str, Any]) -> list[str]:
@@ -1015,11 +1020,9 @@ def _landing_test_files(record: Mapping[str, Any]) -> list[str]:
             changed = landing_measure.delivered_paths(tree, base, head)
         except (OSError, ValueError):
             changed = []
-    node = record.get("node")
-    done_when = str(node.get("done_when") or "") if isinstance(node, Mapping) else ""
     files, _refusal = landing_measure.resolve_landing_tests(
         (),
-        done_when=done_when,
+        done_when=_done_when_text(record),
         changed=changed,
         tree=tree or "",
     )

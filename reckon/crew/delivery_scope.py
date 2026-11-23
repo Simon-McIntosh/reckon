@@ -77,7 +77,7 @@ def changed_test_files(
     """
     from reckon.crew.landing_measure import resolve_landing_tests
     from reckon.crew.node import is_collectible_test_path
-    from reckon.crew.promotion_records import _node_test_files
+    from reckon.crew.promotion_records import _done_when_text, _node_test_files
 
     named = _node_test_files(record)
     if named:
@@ -96,7 +96,7 @@ def changed_test_files(
     # its landing can measure.
     resolved, _refusal = resolve_landing_tests(
         (),
-        done_when=str((record.get("node") or {}).get("done_when") or ""),
+        done_when=_done_when_text(record),
         changed=_as_paths(changed),
         tree=tree,
     )

@@ -15,6 +15,7 @@ the tree and whose change no test imports names both sources it tried.
 
 from __future__ import annotations
 
+import json
 import shlex
 import subprocess
 import sys
@@ -22,12 +23,15 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import delivery_scope, landing_measure
+from reckon.crew import delivery_scope, landing_measure, promotion_records
 
 DONE_WHEN_NAMES_THE_TEST = (
     "The new sentinel is returned, and `tests/test_thing.py` passes."
 )
 DONE_WHEN_NAMES_NO_TEST = "The sentinel is returned and the suite is unchanged."
+DONE_WHEN_NAMES_AN_IMPORTLESS_TEST = (
+    "The change is inert, and `tests/test_named_other.py` passes."
+)
 
 THING_TEST = (
     "from reckon.thing import value\n\n\ndef test_value():\n    assert value() == 2\n"
@@ -199,3 +203,48 @@ def test_a_run_with_neither_source_is_refused_naming_both(tmp_path: Path) -> Non
     assert "the node names none" in refusal, refusal
     assert "done-when names no test file" in refusal, refusal
     assert "imports a module the change touched" in refusal, refusal
+
+
+def test_a_slim_listing_record_reads_its_done_when_from_the_node_body(
+    tmp_path: Path,
+) -> None:
+    """The listing shape the queue reads keeps the done-when outside the pointer.
+
+    The live listing carries none of a node's body fields, so a run read from a
+    listing names its done-when only through the node body file. A direct read
+    of ``pointer[\"node\"][\"done_when\"]`` finds nothing there and the done-when
+    source never fires. The named test here imports nothing the change touches,
+    so the importer source cannot stand in for it.
+    """
+    repo, base, head = _repository(
+        tmp_path,
+        ("tests/test_named_other.py", "def test_unrelated():\n    assert True\n"),
+    )
+    body = tmp_path / "node.json"
+    body.write_text(
+        json.dumps({"done_when": DONE_WHEN_NAMES_AN_IMPORTLESS_TEST}),
+        encoding="utf-8",
+    )
+    pointer = {
+        "worktree": str(repo),
+        "repo": str(repo),
+        "base_sha": base,
+        "node": {
+            "write_paths": ["reckon/thing.py"],
+            "node_body": str(body),
+        },
+        "suite_command": (
+            f"{sys.executable} -m pytest -p no:cacheprovider -q {{node_test_files}}"
+        ),
+    }
+
+    derived = _derived(pointer, repo, head)
+    measured = _measure(pointer, repo, base, head, derived["test_files"])
+    promotion_command = promotion_records._scoped_suite_command(pointer, revision=head)
+
+    assert derived["test_files"] == ["tests/test_named_other.py"], derived
+    assert "unreadable" not in measured, measured
+    assert _arm_files(measured["after_suite"]) == ["tests/test_named_other.py"], (
+        measured
+    )
+    assert promotion_command.endswith("tests/test_named_other.py"), promotion_command
