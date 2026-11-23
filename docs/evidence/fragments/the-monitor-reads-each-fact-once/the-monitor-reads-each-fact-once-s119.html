@@ -27,13 +27,17 @@
   census through a real resumed live pointer and an owned child process, and the
   station row through the store the station derives its duties from. Against the
   base revision <code>bd0d2051dbe94c9232f5e64986364fdc12a65b24</code>, with the new
-  test overlaid, the result is <strong>2 failed, 1 passed</strong>: the working-attempt
-  case raises a <code>sweep-failed</code> row, and the three-author case raises three
-  rows for one run. At the product revision <strong>3 passed</strong>.</p>
+  test overlaid, the result is <code>2 failed, 1 passed in 1.31s</code>: the
+  working-attempt case raises a <code>sweep-failed</code> row, and the three-author
+  case raises three rows for one run. At the product revision
+  <code>3258f248e4d10daeffca7b920a2c75aefdad25bb</code> the same test reports
+  <code>3 passed in 1.33s</code>.</p>
   <p>The matched population of 140 existing test files importing the changed modules
-  reports <strong>25 failed, 1137 passed</strong> in each arm, with zero failures
-  added and zero fixed at the head: the same twenty-five pre-existing failures on
-  both sides. Both arms ran on the <code>all_debug</code> partition. Gate, arm,
+  reports <code>25 failed, 1137 passed, 3 warnings in 254.34s (0:04:14)</code> at
+  base and <code>25 failed, 1137 passed, 3 warnings in 275.88s (0:04:35)</code> at
+  the head revision <code>3258f248e4d10daeffca7b920a2c75aefdad25bb</code>: the same
+  twenty-five pre-existing failures on both sides, zero added and zero fixed. Both
+  arms ran on the <code>all_debug</code> partition. Gate, arm,
   importer and negative-control logs are preserved in the run directory
   <code>r-20261123T090829128666-the-monitor-reads-each-fact-once-s119</code>.</p>
 </section>
