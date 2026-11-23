@@ -3350,13 +3350,18 @@ def sweep(
             # receives the census's own fields rather than a retelling of them.
             review_requests = {
                 "obligations": census["obligations"],
+                "in_flight": census["in_flight"],
                 "deadline_seconds": census["deadline_seconds"],
                 "late_requests": census["late_requests"],
                 "request_window_seconds": census["request_window_seconds"],
             }
         except Exception as exc:  # noqa: BLE001 - a reading must not fail a sweep
             review_requests = {"error": str(exc)}
-    if review_requests.get("obligations") or review_requests.get("late_requests"):
+    if (
+        review_requests.get("obligations")
+        or review_requests.get("late_requests")
+        or review_requests.get("in_flight")
+    ):
         report["review_requests"] = review_requests
     if review_requests.get("obligations"):
         # The obligation has to reach the row a coordinator reads, not only this

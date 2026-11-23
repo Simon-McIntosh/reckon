@@ -5016,6 +5016,43 @@ def _is_review_subject(run_id: str, record: Mapping[str, Any] | None) -> bool:
     return False
 
 
+def _delivery_in_flight(record: Mapping[str, Any] | None) -> bool:
+    """Whether a live attempt is still working this run's delivery.
+
+    A delivered run whose review is withheld because its resumed attempt is
+    still working is not a sweep failure: nothing is wrong with it, and the row
+    would send a coordinator to inspect a run that is simply unfinished. The
+    attempt's own exit receipt is the proof it ended — the immutable account of
+    one attempt, unlike a phase word a writer can restore onto a live pointer —
+    so an ended attempt is never read as in flight. With no ending receipt the
+    worker is asked: a process the table proves gone is not working; a live one
+    is; and where the table cannot say, the run's own stream answers whether a
+    turn is still being produced.
+
+    The reading is scoped to a resumed attempt, which is the case a review is
+    withheld for the run's own repair. A delivered run of any other attempt
+    kind is judged by the ordinary obligations, so a run nobody is working on
+    is still reported.
+    """
+    if not isinstance(record, Mapping) or not record:
+        return False
+    if str(record.get("attempt_kind") or "") != "resume":
+        return False
+    if record.get("attempt") is None:
+        # A resumed pointer that records no attempt number cannot be ordered
+        # against an exit receipt, so nothing proves the attempt has ended.
+        return True
+    from reckon.crew.dispatch_launch import _attempt_ending_receipt
+    from reckon.crew.process_liveness import turn_in_progress
+
+    if _attempt_ending_receipt(record, record):
+        return False
+    alive = runs.record_process_alive(record)
+    if alive is False:
+        return turn_in_progress(record)
+    return True
+
+
 def _unrequested_reason(record: Mapping[str, Any] | None, *, session: str) -> str:
     """Why a delivered run's review was never requested, from its own record.
 
@@ -5076,7 +5113,9 @@ def review_request_census(
     quarter of an hour late are compatible, and the quantiles alone let a reader
     conclude otherwise. ``obligations`` carries every delivered run with no
     request after ``deadline_seconds``, each with the reason its own record
-    gives. A run whose delivery was never recorded is not in either list:
+    gives. ``in_flight`` carries the delivered runs whose absent request is
+    withheld because a live attempt is still working them, so they raise no
+    duty. A run whose delivery was never recorded is not in any of the lists:
     nothing is known about it, and a zero-length interval would be a claim the
     receipts do not support.
     """
@@ -5087,6 +5126,7 @@ def review_request_census(
     }
     rows: list[dict[str, Any]] = []
     obligations: list[dict[str, Any]] = []
+    in_flight: list[dict[str, Any]] = []
     request_lags: list[float] = []
     launch_lags: list[float] = []
     unrecorded: list[dict[str, Any]] = []
@@ -5149,6 +5189,19 @@ def review_request_census(
                 )
                 continue
             if age >= int(deadline_seconds):
+                if _delivery_in_flight(record):
+                    # The review is withheld because the run's resumed attempt
+                    # is still working, so the absent request is work in flight
+                    # rather than a failure: it appears here and raises no duty.
+                    in_flight.append(
+                        {
+                            "run_id": run_id,
+                            "delivered_at": delivered_at,
+                            "age_seconds": age,
+                            "session": str((record or {}).get("session") or ""),
+                        }
+                    )
+                    continue
                 obligations.append(
                     {
                         "run_id": run_id,
@@ -5195,6 +5248,7 @@ def review_request_census(
         "request_unrecorded": unrecorded,
         "request_window_seconds": int(window_seconds),
         "late_requests": late,
+        "in_flight": in_flight,
         "deadline_seconds": int(deadline_seconds),
         "obligations": obligations,
     }
