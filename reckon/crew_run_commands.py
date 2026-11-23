@@ -4622,6 +4622,14 @@ def crew_complete(
     help="The partition a bound past an hour takes; defaults to the project's.",
 )
 @click.option(
+    "--duration",
+    default="",
+    metavar="DURATION",
+    help="How long this run's gate takes, as a number of seconds or an "
+    "HH:MM:SS / 90m spelling. Every landing arm for the run is submitted with "
+    "a limit no shorter than this.",
+)
+@click.option(
     "--reason",
     callback=_refuse_a_flag_as_a_reason,
     default="",
@@ -4635,10 +4643,11 @@ def crew_declare_gate(
     command: str,
     partition: str,
     long_partition: str,
+    duration: str,
     reason: str,
     pretty: bool,
 ) -> None:
-    """Declare the command and partition a run's gate arms run with.
+    """Declare the command, partition and duration a run's gate arms run with.
 
     A run whose arms are only comparable on a partition the project's own
     declaration does not name states them here. Promotion compares the run's
@@ -4647,11 +4656,30 @@ def crew_declare_gate(
     the project's. The declaration is written on the run's live pointer, so the
     promotion and the landing that follow it read it, and it is retired with
     the run when the run lands.
+
+    A gate that takes longer than the project's measurement floor states its own
+    duration. Every landing arm for this run is then submitted with a limit no
+    shorter than that figure, on a partition that admits it, while every other
+    run in the project keeps the project's bound. A duration no configured
+    partition admits is refused here, naming the longest limit available, rather
+    than submitted as a job the scheduler would end mid-run.
     """
-    if not str(command).strip() and not str(partition).strip():
+    from reckon.crew import landing_measure, queue_landing
+
+    duration_text = str(duration).strip()
+    if not str(command).strip() and not str(partition).strip() and not duration_text:
         raise click.UsageError(
-            "--declare-gate requires at least one of --command and --partition"
+            "--declare-gate requires at least one of --command, --partition and "
+            "--duration"
         )
+    declared_seconds: float | None = None
+    if duration_text:
+        declared_seconds = landing_measure.parse_gate_duration(duration_text)
+        if declared_seconds is None:
+            raise click.UsageError(
+                f"--duration {duration_text!r} is not a duration; write seconds "
+                "(4500), a clock (01:15:00) or a suffix (75m)"
+            )
     _accept_a_matching_project(run_id, project)
     from reckon.crew import runs as runs_module
     from reckon.crew.promotion_records import (
@@ -4671,9 +4699,52 @@ def crew_declare_gate(
         "long_partition": (
             str(long_partition).strip() or previous.get("long_partition", "")
         ),
+        "duration": str(int(declared_seconds)) if declared_seconds else "",
         "reason": str(reason).strip(),
         "declared_at": _utc_now(),
     }
+    if declared_seconds:
+        config = queue_landing._measure_config(pointer)
+        landing = config.get("landing") if isinstance(config, Mapping) else None
+        landing = landing if isinstance(landing, Mapping) else {}
+        partition_name = (
+            declaration["partition"]
+            or str(landing.get("measure_partition") or "")
+            or "all_debug"
+        )
+        long_name = (
+            declaration["long_partition"]
+            or str(landing.get("measure_long_partition") or "")
+            or "rigel"
+        )
+        try:
+            admitted_by = landing_measure.admitting_partition(
+                declared_seconds, partition_name, long_name, config
+            )
+            if admitted_by is None:
+                candidates = list(dict.fromkeys([partition_name, long_name]))
+                limits = [
+                    (name, landing_measure.partition_max_seconds(name, config))
+                    for name in candidates
+                ]
+                longest_name, longest_seconds = max(
+                    (
+                        (name, seconds)
+                        for name, seconds in limits
+                        if seconds is not None
+                    ),
+                    key=lambda pair: pair[1],
+                )
+                available = landing_measure.time_limit_text(longest_seconds)
+                raise click.ClickException(
+                    "a gate declared at "
+                    f"{landing_measure.time_limit_text(declared_seconds)} is "
+                    f"longer than any partition admits; the longest limit "
+                    f"available is {available} on "
+                    f"{longest_name or 'every configured partition'}"
+                )
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
     runs_module._mutate_pointer(
         run_id, lambda record: {**record, GATE_DECLARATION_KEY: declaration}
     )
