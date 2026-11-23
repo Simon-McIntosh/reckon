@@ -67,13 +67,18 @@
 
   <ul>
     <li>Base arm at revision <code>398a0d09708dda09bec869b7a512404cf9eb2902</code>
-    (<code>gate-base.log</code>): 3 failed, 539 passed in 667.84s, <code>EXIT=1</code>:
+    (<code>gate-base.log</code>): <code>3 failed, 539 passed in 667.84s (0:11:07)</code>, <code>EXIT=1</code>:
       the two negative-control cases above and one pre-existing failure in
       <code>test_no_caller_waits_on_a_promotion.py</code>.</li>
     <li>Head arm at revision <code>af80e1240ff1a5750e309c950dbd1397b98374fc</code>
-    (<code>gate-head-second.log</code>): 1 failed, 541 passed in 860.05s,
+    (<code>gate-head-second.log</code>): <code>1 failed, 541 passed in 860.05s (0:14:20)</code>,
     <code>EXIT=1</code>: the same pre-existing failure and nothing else, so the
     arm adds no failure and the two negative-control cases now pass.</li>
+    <li>An earlier head arm at the code change alone, before the guard
+    was reduced to a single ancestry test
+    (<code>gate-head-first.log</code>): <code>6 failed, 536 passed in 744.20s (0:12:24)</code>;
+    five of those were this node's own cases failing on the ordering it had
+    not yet fixed, and they pass in the arm above.</li>
     <li>Affected test files at head, run directly: 50 passed in 26.61s.</li>
     <li>The single file <code>test_the_lander_never_waits_on_a_measurement.py</code>
     carries a three-second wall-clock bound; measured alone three times at base
