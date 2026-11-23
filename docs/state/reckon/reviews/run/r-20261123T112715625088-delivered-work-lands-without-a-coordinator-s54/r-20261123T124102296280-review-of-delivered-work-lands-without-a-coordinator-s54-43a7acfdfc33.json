@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/crew_run_commands.py:crew_declare_gate",
+    "reckon/crew/queue_landing.py:_measure_delivery",
+    "reckon/crew/landing_measure.py:_partition_runner",
+    "reckon/crew/review_landing.py:_partition_runner call",
+    "reckon/crew/standing_suite.py:_partition_runner call",
+    "reckon/crew/promotion_gate.py:partition_submission"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T12:41:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "720",
+      "severity": "non-blocking",
+      "text": "_UNSET is defined but never referenced anywhere in the module or the repository, so it is dead code added by this commit; remove it or use it where a sentinel was intended."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "6 production call sites verified",
+    "diff": "read c0e484cbfb..43a7acfdfc commit by commit (one commit, 43a7acfd): reckon/crew/landing_measure.py +53/-..., reckon/crew_run_commands.py +46/-..., tests/test_a_declared_gate_duration_bounds_its_arms.py +57/-0, all three inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_declared_gate_duration_bounds_its_arms.py; the manifest records the literal gate command and s54-head-gate.log/EXIT=1 with its 4 head failures all present at base, and I re-ran the file at 43a7acfd in a scratch extraction: 6 passed, EXIT=0. The two new cases assert a configured ceiling below the hour rule routes the declaration and both arms to the same admitting partition (:211-246) and an unreadable ceiling is refused naming the key and partition (:249-264).",
+    "manifest": "read; status complete, commits c0e484cb and 43a7acfd, the literal gate command, both gate logs, negative_control_log s54r-reverted-repair.log, baseline_suite and after_suite both 0 failures.",
+    "write_paths": "the source node declared the whole \u00a754 file set; the delta's three paths (reckon/crew/landing_measure.py, reckon/crew_run_commands.py, tests/test_a_declared_gate_duration_bounds_its_arms.py) are each inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_declared_gate_duration_bounds_its_arms.py:241 asserts the arm's --time is at least the declared 2400 and :243 that it is within the partition's configured maximum; the reverting negative control fails that case with 'assert 600.0 >= 2400.0', so reinstating the defect reddens the guard.",
+    "evidence": "tests/test_a_declared_gate_duration_bounds_its_arms.py:211-264 exercises the routing and refusal, the reverted-repair log s54r-reverted-repair.log records 2 failed of the file at that revert, and the file re-passes 6 at 43a7acfd; both suite arms record 0 failures.",
+    "fit": "reckon/crew/landing_measure.py:720 adds an unused module constant _UNSET that nothing references, but the surrounding helpers keep the module's regex-plus-mechanism-comment idiom.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1004 makes partition_for_bound return admitting_partition's choice, so the declaration's check and the arm's submission share one partition decision.",
+    "reuse": "reckon/crew/landing_measure.py:983 delegates partition_for_bound to the existing admitting_partition owner at :792 rather than re-implementing partition selection, closing the prior duplicate.",
+    "scope_discipline": "the delta touches only reckon/crew/landing_measure.py, reckon/crew_run_commands.py and tests/test_a_declared_gate_duration_bounds_its_arms.py, all declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a run declares how long its gate takes and its landing arms are bounded by it on a partition that admits it; this delta repairs the case where the declaration was checked against landing.partition_max_seconds while the arm was submitted through a separate hour rule, and reckon/crew/landing_measure.py:983 now makes both one decision by delegating partition_for_bound to admitting_partition; the two new tests at tests/test_a_declared_gate_duration_bounds_its_arms.py:211 and :249 cover the configured-ceiling routing and the unreadable-ceiling refusal.\nVERDICT done_when: the done_when names tests/test_a_declared_gate_duration_bounds_its_arms.py; the manifest records the literal gate command and s54-head-gate.log/EXIT=1 with its 4 head failures all present at base, and I re-ran the file at 43a7acfd in a scratch extraction: 6 passed, EXIT=0. The two new cases assert a configured ceiling below the hour rule routes the declaration and both arms to the same admitting partition (:211-246) and an unreadable ceiling is refused naming the key and partition (:249-264).\nVERDICT write_paths: the source node declared the whole \u00a754 file set; the delta's three paths (reckon/crew/landing_measure.py, reckon/crew_run_commands.py, tests/test_a_declared_gate_duration_bounds_its_arms.py) are each inside it.\nVERDICT manifest: read; status complete, commits c0e484cb and 43a7acfd, the literal gate command, both gate logs, negative_control_log s54r-reverted-repair.log, baseline_suite and after_suite both 0 failures.\nVERDICT diff: read c0e484cbfb..43a7acfdfc commit by commit (one commit, 43a7acfd): reckon/crew/landing_measure.py +53/-..., reckon/crew_run_commands.py +46/-..., tests/test_a_declared_gate_duration_bounds_its_arms.py +57/-0, all three inside the declared scope.\nCALL_SITES: reckon/crew/crew_run_commands.py:crew_declare_gate, reckon/crew/queue_landing.py:_measure_delivery, reckon/crew/landing_measure.py:_partition_runner, reckon/crew/review_landing.py:_partition_runner call, reckon/crew/standing_suite.py:_partition_runner call, reckon/crew/promotion_gate.py:partition_submission\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 16\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1004 makes partition_for_bound return admitting_partition's choice, so the declaration's check and the arm's submission share one partition decision.\nJUSTIFICATION evidence: tests/test_a_declared_gate_duration_bounds_its_arms.py:211-264 exercises the routing and refusal, the reverted-repair log s54r-reverted-repair.log records 2 failed of the file at that revert, and the file re-passes 6 at 43a7acfd; both suite arms record 0 failures.\nJUSTIFICATION scope_discipline: the delta touches only reckon/crew/landing_measure.py, reckon/crew_run_commands.py and tests/test_a_declared_gate_duration_bounds_its_arms.py, all declared write paths.\nJUSTIFICATION durability: tests/test_a_declared_gate_duration_bounds_its_arms.py:241 asserts the arm's --time is at least the declared 2400 and :243 that it is within the partition's configured maximum; the reverting negative control fails that case with 'assert 600.0 >= 2400.0', so reinstating the defect reddens the guard.\nJUSTIFICATION fit: reckon/crew/landing_measure.py:720 adds an unused module constant _UNSET that nothing references, but the surrounding helpers keep the module's regex-plus-mechanism-comment idiom.\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:983 delegates partition_for_bound to the existing admitting_partition owner at :792 rather than re-implementing partition selection, closing the prior duplicate.\nFINDING reckon/crew/landing_measure.py:720 non-blocking: _UNSET is defined but never referenced anywhere in the module or the repository, so it is dead code added by this commit; remove it or use it where a sentinel was intended.\n",
+  "review_run_id": "r-20261123T124102296280-review-of-delivered-work-lands-without-a-coordinator-s54-43a7acfdfc33",
+  "reviewed_base_sha": "c0e484cbfb74d0bdf005d2d276f871bdd32a761b",
+  "reviewed_head_sha": "43a7acfdfc33aa62df05be929844c8c1c0d40541",
+  "reviewed_run_id": "r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T12:54:30.650362+00:00",
+  "total": 110
+}
