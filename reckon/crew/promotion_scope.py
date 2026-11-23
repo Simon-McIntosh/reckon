@@ -1591,14 +1591,17 @@ def _landing_closes_its_section(
     it may is a fact about the fleet, not about this run: the section is
     closed only when no other open node of it remains.
 
-    An open node is another executable run of the same plan section still
-    holding a live pointer — queued, running or delivered; a pointer is removed
-    at landing, so a landed sibling is not open. A review of the same node is
-    not a node, and this run's own pointer is what proves it is one of the
-    section's nodes at all: a run whose pointer is already gone closes
-    nothing, so a re-promotion cannot re-declare a section a coordinator has
-    since reopened.
+    An open node is another executable run of the same plan section that is
+    queued, waiting for its upstream, working, or delivered and unlanded; that
+    question is owned by ``pending_landing.nodes_awaiting_landing``, which also
+    excludes a pointer serving this dispatch node, so a sibling pointer for the
+    same node is not a second node. The run's own pointer is what proves it is
+    one of the section's nodes at all: a run whose pointer is already gone
+    closes nothing, so a re-promotion cannot re-declare a section a coordinator
+    has since reopened.
     """
+    from reckon.crew.pending_landing import nodes_awaiting_landing
+
     if not (project and plan and section and run_id):
         return False
     wanted = _section_identity(section)
@@ -1606,10 +1609,12 @@ def _landing_closes_its_section(
         pointers = list_live(project=project)
     except (OSError, ValueError):
         return False
+    own_node_id = ""
     ours = False
-    others = 0
     for pointer in pointers:
         if not isinstance(pointer, Mapping):
+            continue
+        if str(pointer.get("run_id") or "") != run_id:
             continue
         node = pointer.get("node")
         node = node if isinstance(node, Mapping) else {}
@@ -1620,11 +1625,14 @@ def _landing_closes_its_section(
             continue
         if _section_identity(node.get("section") or pointer.get("section")) != wanted:
             continue
-        if str(pointer.get("run_id") or "") == run_id:
-            ours = True
-        else:
-            others += 1
-    return ours and others == 0
+        ours = True
+        own_node_id = str(node.get("id") or "")
+        break
+    if not ours:
+        return False
+    return not nodes_awaiting_landing(
+        project, plan, section, node_id=own_node_id, run_id=run_id
+    )
 
 
 def _close_a_landed_section(

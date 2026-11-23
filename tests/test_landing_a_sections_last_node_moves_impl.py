@@ -205,6 +205,38 @@ def test_a_node_whose_section_still_has_an_open_sibling_lands_untouched(
     assert pointer_path(second).exists()
 
 
+def test_a_sibling_that_never_landed_does_not_hold_the_section_open(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A sibling pointer in a terminal phase is not an open node."""
+    first = "r-20261123T090200000000-node-a"
+    second = "r-20261123T090200000001-node-b"
+    _pointer(repository, tmp_path, first, node_id="node-a")
+    _pointer(repository, tmp_path, second, node_id="node-b", phase="failed")
+
+    _complete(first, repository)
+
+    state = _state(repository)
+    assert state["section_declarations"]["s2"] == "done"
+    assert state["impl"] == 1.0
+
+
+def test_a_sibling_pointer_for_the_same_node_does_not_hold_it_open(
+    repository: Path, tmp_path: Path
+) -> None:
+    """Two pointers serving one dispatch node are one node, not two."""
+    first = "r-20261123T090300000000-node-a"
+    second = "r-20261123T090300000001-node-a-again"
+    _pointer(repository, tmp_path, first, node_id="node-a")
+    _pointer(repository, tmp_path, second, node_id="node-a", phase="working")
+
+    _complete(first, repository)
+
+    state = _state(repository)
+    assert state["section_declarations"]["s2"] == "done"
+    assert state["impl"] == 1.0
+
+
 def test_a_refused_landing_writes_no_declaration(
     repository: Path, tmp_path: Path
 ) -> None:
