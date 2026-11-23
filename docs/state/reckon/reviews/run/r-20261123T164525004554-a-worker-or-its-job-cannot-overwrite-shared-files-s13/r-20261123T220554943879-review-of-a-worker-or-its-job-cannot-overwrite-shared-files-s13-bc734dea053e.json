@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_backends.py:3395",
+    "reckon/crew/dispatch_admission.py:2426"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:24:19Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "id": "f7bcf529141",
+      "line": 2352,
+      "severity": "non-blocking",
+      "text": "the comment claims a grant naming the shared crew runs root is refused, but declared_grant_refusal at reckon/_worker_fence.py:1554 refuses only a filesystem root, a git checkout and a registered project root; no ancestor or peer-run overlap is checked, so a dispatch declaring the shared crew runs root composes a writable grant over every peer run directory, which the plan's deliverable says a grant must never cover."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "id": "fd063b5c565",
+      "line": 305,
+      "severity": "non-blocking",
+      "text": "removing the workspace-write tier's grant of the main checkout is a behaviour change with no added test; tests/test_fence_never_binds_the_main_checkout.py composes only the worktree-full tier, so re-adding roots.add(Path(repository)) for workspace-write would pass every test in the suite."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "id": "f07f5ed126b",
+      "line": 2259,
+      "severity": "non-blocking",
+      "text": "the fence_argv docstring narrates the replaced implementation and dates the incident, and tests/test_a_worker_can_write_only_what_it_was_granted.py:3 repeats it; the repository's comment-hygiene rule keeps changelog and provenance prose out of source because the mechanism sentence stands alone."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_worker_can_write_only_what_it_was_granted.py:209 and :224 redden if the root returns to --dev-bind, and :397 reddens if an assertion treats an empty .git marker as a checkout; the removal of the workspace-write repository grant has no such test.",
+    "evidence": "tests/test_a_worker_can_write_only_what_it_was_granted.py exercises every done-when case and the reviewed manifest records 66 passed at d8e4d746f0 against 58 passed at bee04f7fb9 plus a negative-control arm of 8 failed, EXIT=1.",
+    "fit": "the new helpers follow the module's existing style, but reckon/_worker_fence.py:2259 and tests/test_a_worker_can_write_only_what_it_was_granted.py:3 narrate the replaced implementation and date the incident, which the repository's comment-hygiene rule keeps out of source.",
+    "goal_fidelity": "reckon/_worker_fence.py:2320 mounts --ro-bind / / and binds only handed roots writable, and reckon/_backends.py:327 refuses a declared grant naming a filesystem root or project root, which is the deliverable; only the plan's peer-run-overlap clause has no code behind it.",
+    "reuse": "reckon/_worker_fence.py:1514 extends the incident policy but its own _is_git_checkout at :1487 adds a third inline git rev-parse --show-toplevel wrapper beside reckon/pages.py:358 and reckon/hooks/worker_stop.py:170 instead of a shared helper; project_root_paths does reuse mounted_project_docs and protected_paths.",
+    "scope_discipline": "every one of the 13 paths in bee04f7fb9..bc734dea05 is inside the manifest's declared write paths, and no path outside them appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is section 13's deliverable, a fence that mounts the filesystem read-only and grants writes only to handed roots plus dispatch-declared grants; reckon/_worker_fence.py:2320 does that and reckon/_backends.py:327 refuses a filesystem-root or project-root declaration.\nVERDICT done_when: tests/test_a_worker_can_write_only_what_it_was_granted.py:202 pins the read-only root, :224 proves the four allowed writes and every refusal with the targets unchanged, :259 and :278 prove the two grant refusals, and :298 replays the incident; the manifest records 66 passed at the head and 58 at the base.\nVERDICT write_paths: the manifest declares the sixteen paths the dispatch named; the thirteen paths in the diff all fall inside them, including the two product modules, the eight test files, the evidence fragment and the figure directory.\nVERDICT manifest: read; it states status complete, names commits d8e4d746f0, 6103044204 and bc734dea05, and records the scoped gate 66 passed, the base and head arms 58 and 66 passed, the negative-control arm 8 failed EXIT=1, and 11 pre-existing failures in the wider batch.\nVERDICT diff: read commit by commit against bee04f7fb9; d8e4d746f0 is the product change (_worker_fence.py and _backends.py plus eight test files), 6103044204 adds only the evidence fragment and figure, and bc734dea05 edits only the fragment's measured lines.\nCALL_SITES: reckon/_backends.py:3395, reckon/crew/dispatch_admission.py:2426\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:2320 mounts --ro-bind / / and binds only handed roots writable, and reckon/_backends.py:327 refuses a declared grant naming a filesystem root or project root.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_worker_can_write_only_what_it_was_granted.py:202 and :224 assert the argv shape and every done-when case, and the manifest records 66 passed at d8e4d746f0 against 58 passed at bee04f7fb9.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the 13 paths in bee04f7fb9..bc734dea05 is inside the manifest's declared write paths and nothing outside them was modified.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_can_write_only_what_it_was_granted.py:209 and :224 redden if the root returns to --dev-bind and :397 reddens if an empty .git marker is read as a checkout, but the workspace-write grant removal has no test.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/_worker_fence.py:2259 and tests/test_a_worker_can_write_only_what_it_was_granted.py:3 narrate the replaced implementation and date the incident, which the repository's comment-hygiene rule keeps out of source.\nSCORE reuse: 16\nJUSTIFICATION reuse: _is_git_checkout at reckon/_worker_fence.py:1487 adds a third inline git rev-parse --show-toplevel wrapper beside reckon/pages.py:358 and reckon/hooks/worker_stop.py:170 rather than extending a shared owner.\nFINDING reckon/_worker_fence.py:2352 non-blocking: the comment claims a grant on the shared crew runs root is refused, but declared_grant_refusal at :1554 tests only filesystem root, git checkout and registered project root, so no peer-run overlap is refused.\nFINDING reckon/_backends.py:305 non-blocking: removing the workspace-write tier's main-checkout grant has no test; tests/test_fence_never_binds_the_main_checkout.py composes only the worktree-full tier, so re-adding roots.add(Path(repository)) for workspace-write would pass every test.\nFINDING reckon/_worker_fence.py:2259 non-blocking: the docstring narrates the replaced fence and dates the reviewed incident, which the comment-hygiene rule keeps out of source.\n",
+  "review_run_id": "r-20261123T220554943879-review-of-a-worker-or-its-job-cannot-overwrite-shared-files-s13-bc734dea053e",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "bc734dea053eae300109a66f1a026224e827afe6",
+  "reviewed_run_id": "r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T22:55:48.608424+00:00",
+  "total": 103
+}

@@ -25,8 +25,8 @@
   <title>A Worker Or Its Job Cannot Overwrite Shared Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
-<meta name="plan-modified" content="2026-11-21">
+<meta name="plan-version" content="44">
+<meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
   <main class="plan-doc">
@@ -196,6 +196,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261119T065649772937-a-worker-can-write-only-what-it-was-granted" data-who="reckon-build" data-when="2026-11-19T08:16:17Z">
     <div class="r-comment-body"><p>A worker's fence now mounts the filesystem read-only and binds writable only the roots its dispatch handed it: worktree, run directory, scratch, the crew lock path and each declared grant. A declared grant naming a filesystem root or a project root refuses at composition, naming the path, before any process starts. Measure: the node's 6 cases pass at the head revision against 6 failing at the base revision, whose failures include the incident replay removing a temporary shared root.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261123T220612864688-review-of-a-worker-or-its-job-cannot-overwrite-shared-files-s13-bc734dea053e-figure" data-who="reckon-build" data-when="2026-11-23T22:43:19.897Z">
+    <div class="r-comment-body"><p>no plan write and no repository commit — this is a read-only figure review whose landing record is the parsed rubric record at the two declared paths.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-11-19T14:16:00Z">
     <div class="r-comment-body"><p>§14 landed by direct merge (head <code>7c4233aefe</code>), on the lead's instruction. A fenced job task on a node with no system fence program runs under a copy of RHEL 9 bubblewrap 0.4.1 carried on shared storage, verified against its recorded checksum before use and refused when absent or changed. Measured in one betelgeuse job and one all_debug job. The flight schema does not yet declare the fence_program key, and the base-revision control was a local test, not a betelgeuse job. Merged candidate gate: 18 passed, 2 skipped in 3.46s.</p></div>
