@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import subprocess
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextvars import ContextVar
@@ -208,9 +209,8 @@ def _release_integrated_pointer(
         nonlocal refusal, outcome
         changed = _changed_pointer_fields(current, pointer)
         if changed:
-            refusal = (
-                "the live pointer changed before workspace release: "
-                + ", ".join(changed)
+            refusal = "the live pointer changed before workspace release: " + ", ".join(
+                changed
             )
             return False
         # A landed record is published only once the run's head is on the
@@ -1648,6 +1648,44 @@ def landed_record_refusal(
     return ""
 
 
+def _carrying_commit(repository: Path, head: str, primary: str) -> str:
+    """The first-parent commit of the primary branch that brought ``head`` in.
+
+    A head merged with ``--no-ff`` reaches the branch through that merge; a head
+    fast-forwarded onto it lies on the first-parent chain itself and carries
+    itself. The oldest first-parent commit descended from ``head`` is that
+    answer in both cases.
+    """
+    listed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repository),
+            "rev-list",
+            "--first-parent",
+            "--ancestry-path",
+            "--reverse",
+            f"{head}..{primary}",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    oldest = next(
+        (line.strip() for line in listed.stdout.splitlines() if line.strip()), ""
+    )
+    if not oldest:
+        return head
+    parents = subprocess.run(
+        ["git", "-C", str(repository), "rev-parse", f"{oldest}^1"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    # A fast-forwarded head is the first parent of its successor on the chain.
+    return head if parents == head else oldest
+
+
 def record_a_carried_delivery(
     pointer: Mapping[str, Any], run_id: str
 ) -> tuple[Mapping[str, Any] | None, str]:
@@ -1685,6 +1723,7 @@ def record_a_carried_delivery(
             f"the run's head {head[:12]} is not on the primary branch, so no "
             "carried delivery is recorded"
         )
+    carrying = _carrying_commit(repository, head, primary)
     node = pointer.get("node") if isinstance(pointer.get("node"), Mapping) else {}
     row = ledger.build_record(
         run_id=run_id,
@@ -1696,14 +1735,27 @@ def record_a_carried_delivery(
         role=str(pointer.get("role") or ""),
         spec_level=str(node.get("spec_level") or ""),
         gate="passed",
-        commits=[primary],
+        # The run's commit is the head it delivered and a review read; the
+        # commit that brought that head onto the branch is recorded beside it,
+        # as a hand-recorded merge is. The branch tip at the time of the pass
+        # is neither: it is whatever landed last, usually another run.
+        commits=[head],
         promoted_by="landing-pass",
         completed_at=_utc_now(),
-        outcome=f"the primary branch already carried {head[:12]} in {primary[:12]}",
+        outcome=f"the primary branch already carried {head[:12]} in {carrying[:12]}",
         base_sha=str(pointer.get("base_sha") or ""),
         session=str(pointer.get("session") or "") or None,
+        suite_delta={
+            "status": "not-run",
+            "added_failure_ids": [],
+            "recorded_merge": carrying,
+            "reason": (
+                f"the delivered head is already carried by {carrying} on the "
+                "primary branch, so this recording measures no suite delta"
+            ),
+        },
     )
-    row["promoted_revision"] = primary
+    row["promoted_revision"] = head
     try:
         written = ledger.append_run(project, row, root=repository)
     except (OSError, ValueError, ledger.LedgerError) as exc:
@@ -1801,9 +1853,8 @@ def _release_measured_pointer(
         nonlocal refusal, outcome
         changed = _changed_pointer_fields(current, pointer)
         if changed:
-            refusal = (
-                "the live pointer changed before workspace release: "
-                + ", ".join(changed)
+            refusal = "the live pointer changed before workspace release: " + ", ".join(
+                changed
             )
             return False
         refusal = _measured_workspace_refusal(current, repository, head)
