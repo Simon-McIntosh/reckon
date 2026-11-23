@@ -177,6 +177,48 @@ _LANE_RATE_BUCKETS: dict[str, tuple[int, _LaneRateContributions]] = {}
 _LANE_RATE_BUCKETS_LIMIT = 16
 
 
+#: The fields a lane's rate is computed from.
+#:
+#: A rate needs the lane a run took, the model that ran it, when it completed
+#: and the throughput it recorded. A whole record carries the brief, the node
+#: definition, the budget and every other document a run writes beside those,
+#: and decoding them for a median made a station's footprint follow the
+#: ledger's length rather than its window.
+_RATE_FIELDS = ("run_id", "backend", "agent", "completed_at", "throughput")
+
+
+def _bounded_rate_rows(
+    project: str, activity_since: float
+) -> list[Mapping[str, Any]] | None:
+    """The windowed rows a lane's rate is computed from, or None if unreadable.
+
+    The store projects the rate's own fields and applies the window in SQL, so
+    neither its read nor its decode follows a row's width. An absent store
+    falls through to the committed ledger, whose reader applies the same
+    window; a store that exists but cannot answer raises, which the caller
+    treats as a failed read rather than as a project with no completed runs.
+    """
+    from reckon import ledger as ledger_module
+    from reckon import run_store
+
+    try:
+        stored = run_store.stored_run_rows(
+            project, fields=_RATE_FIELDS, activity_since=activity_since
+        )
+        if stored is not None:
+            return stored
+        return ledger_module.load(project, activity_since=activity_since)[0]["runs"]
+    except (
+        ledger_module.LedgerError,
+        run_store.UnreadableRunStoreError,
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ):
+        return None
+
+
 def _lane_rate_contributions(
     project: str, *, activity_since: float
 ) -> _LaneRateContributions | None:
@@ -202,9 +244,8 @@ def _lane_rate_contributions(
 
     shared = obligations_module.derivation_run_rows(project)
     if shared is None:
-        try:
-            rows = ledger_module.load(project, activity_since=activity_since)[0]["runs"]
-        except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
+        rows = _bounded_rate_rows(project, activity_since)
+        if rows is None:
             return None
     else:
         rows = [

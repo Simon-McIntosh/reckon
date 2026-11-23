@@ -3370,6 +3370,43 @@ _BUILT_ROADMAP: ContextVar[_RoadmapScope | None] = ContextVar(
 )
 
 
+#: The plans whose promoted history a build inside the scope consults, when a
+#: caller sets one. ``None`` keeps the build's own behaviour — every plan its
+#: scope selects. An empty frozenset states that the build reads no promoted
+#: history at all, which is what a batch dispatch needs: its duplicate check is
+#: the per-node hold read, and the one reader of its roadmap inside the batch
+#: reads only gate and decision blockers, never a section's run holds.
+#:
+#: Without this, the batch's roadmap is derived over the project's whole plan
+#: set and its section-history read decodes every plan's promoted rows — the
+#: population a queueing coordinator was measured holding gigabytes to place.
+_HISTORY_PLANS: ContextVar[frozenset[str] | None] = ContextVar(
+    "roadmap_history_plans", default=None
+)
+
+
+@contextmanager
+def roadmap_history_scope(
+    plans: Iterable[str] | None,
+) -> Iterator[None]:
+    """Limit the promoted history the builds inside this scope consult.
+
+    ``None`` leaves every build reading the history it always did. A set of
+    plan slugs confines the section-history read to those plans, and an empty
+    set reads none: a caller that states it consults no promoted history is
+    answered without decoding any, rather than decoding the population and
+    dropping it.
+    """
+
+    token = _HISTORY_PLANS.set(
+        None if plans is None else frozenset(str(plan) for plan in plans)
+    )
+    try:
+        yield
+    finally:
+        _HISTORY_PLANS.reset(token)
+
+
 @contextmanager
 def roadmap_build_scope(
     *,
@@ -3808,22 +3845,41 @@ def _build_roadmap(
     # ready to every later wave. Both records: the live pointers, and the ledger
     # rows promotion writes. The hold is per node, so a section whose other node
     # is still waiting in a stored request keeps that node's work ready.
+    history_plans = _HISTORY_PLANS.get()
     try:
-        run_holds_by_section = section_holds.held_section_blockers(
-            project, repo_root, pointers, plans=set(plans)
-        )
+        # A scope that names no plan states the caller reads no promoted
+        # history, so the answer is empty without the population decode; a scope
+        # that names plans narrows the read to them; no scope keeps the whole
+        # project's history, as every reader before the scope did.
+        if history_plans is not None and not history_plans:
+            run_holds_by_section = {}
+        else:
+            run_holds_by_section = section_holds.held_section_blockers(
+                project,
+                repo_root,
+                pointers,
+                plans=set(plans),
+                history_plans=history_plans,
+            )
     except Exception:  # noqa: BLE001 - unreadable history holds nothing
         run_holds_by_section = {}
     run_holds_by_plan: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(dict)
     for (held_plan, held_section), held_rows in run_holds_by_section.items():
         run_holds_by_plan[str(held_plan)][str(held_section)] = held_rows
+    # A scope that states the caller consults no promoted history is answered
+    # without the attempts aggregate for the same reason as without the section
+    # holds: the aggregate reads every promoted row's picker projection to count
+    # attempts, and attempts feed only the reported counts and the ``stuck``
+    # flag, which no readiness verdict turns on.
     attempts_by_plan = (
         section_attempts_by_plan(
             project,
             root=repo_root,
             pointers=runs._list_live_records(project=project),
         )
-        if include_attempts and not readiness_only
+        if include_attempts
+        and not readiness_only
+        and not (history_plans is not None and not history_plans)
         else {}
     )
     findings: list[dict[str, Any]] = []

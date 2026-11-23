@@ -219,7 +219,7 @@ def _parsed_once() -> Iterator[None]:
 
 @contextlib.contextmanager
 def _built_once(
-    cache: dict[tuple[str, str], dict[str, Any]] | None = None,
+    cache: dict[str, dict[str, Any]] | None = None,
 ) -> Iterator[None]:
     """Derive each project's roadmap at most once for the whole batch.
 
@@ -229,71 +229,87 @@ def _built_once(
     that roadmap six times over — once per stored request and again per section
     whose waits are checked — which is the cost the batch exists to remove.
 
-    The batch derives each project's roadmap once, over the project's whole
-    inventory, and serves every reader inside it from that one derivation. The
-    whole-inventory build is the one ordering needs, and it answers the
-    bounded per-section question too: a section verdict is computed the same
-    way from either inventory, so the single build carries the subset's answer.
+    The batch derives each project's roadmap over the plans its readers name,
+    and grows that set as a later reader names a plan the earlier build did not
+    carry. Building over the project's whole inventory instead parsed every
+    plan document the project holds, so the batch's peak followed the plan set
+    rather than the batch. A section verdict is computed the same way from
+    either inventory, so the growing build answers the bounded per-section
+    question too.
     """
     from reckon import roadmap as roadmap_module
     from reckon.roadmap import roadmap_build_scope
 
     original = roadmap_module.build_roadmap
-    built: dict[tuple[str, str], dict[str, Any]] = cache if cache is not None else {}
+    built: dict[str, dict[str, Any]] = cache if cache is not None else {}
 
     def once(project, inventory, sprints, **kwargs):
-        from reckon._store import _docs_dir_for_project
-        from reckon.mcp_discovery import _discover_project, _inventory_row
+        key = str(project)
+        named = {
+            str(row.get("slug")): row
+            for row in (inventory or ())
+            if getattr(row, "get", None) is not None and row.get("slug")
+        }
+        held = built.get(key)
+        if held is not None and (
+            held["plans"] is None or not (named.keys() - held["plans"])
+        ):
+            return held["roadmap"]
+        docs_dir = kwargs.get("docs_dir") or (held or {}).get("docs_dir")
+        if not named:
+            # A caller that names no plan asks about the whole project, which
+            # discovery is the one read that answers. Neither reader in a batch
+            # reads who coordinates a critical-path link, so the build inside
+            # discovery runs with coordinator resolution off: it reads every
+            # run's ledger document, which was most of each entry's queue time.
+            from reckon.mcp_discovery import _discover_project, _inventory_row
 
-        # Ordering names no docs dir and resolves through the project's mount,
-        # while the wait check names the checkout's own. Those two readers can
-        # name different trees — a dispatch made from a worktree names the
-        # worktree's docs while the mount resolves to the main checkout's — and
-        # keying on the resolved dir made that pair pay two whole-project
-        # scans. The batch derives one project once whichever checkout it runs
-        # from, so the key is the project and the build reads the registered
-        # mount, which is the tree the dispatch actually builds against.
-        docs_dir = kwargs.get("docs_dir")
-        mounted = _docs_dir_for_project(project, None)
-        resolved = Path(mounted) if mounted else (Path(docs_dir) if docs_dir else None)
-        key = (str(project), "")
-        if key not in built:
-            # Discovery derives the project's roadmap to attach its ready set,
-            # and the scope hands that derivation back, so the batch takes it
-            # rather than paying for a second one. The build inside discovery
-            # runs unwrapped: leaving the wrapper in place would re-enter here
-            # for the inventory it is being called to produce.
-            roadmap_module.build_roadmap = original
-            try:
-                # Neither reader in a batch, queue ordering or the wait check,
-                # reads who coordinates a critical-path link, so the build skips
-                # that resolution: it reads every run's ledger document, which
-                # was most of each entry's queue time.
-                with roadmap_build_scope(resolve_coordinators=False, audit_landings=False) as scope:
-                    discovered = _discover_project(
-                        str(project), Path(resolved).parent if resolved else None
-                    )
-            except Exception:  # noqa: BLE001 - the caller's inventory carries it
-                discovered = {}
-                scope = None
-            finally:
-                roadmap_module.build_roadmap = once
+            with roadmap_build_scope(
+                resolve_coordinators=False, audit_landings=False
+            ) as scope:
+                discovered = _discover_project(
+                    key, Path(docs_dir).parent if docs_dir else None
+                )
             rows = [
                 _inventory_row(item) for item in discovered.get("inventory", ()) or ()
             ]
-            if scope is not None and scope.built is not None:
-                built[key] = scope.built
-            elif rows:
-                built[key] = original(
+            report = (
+                scope.built
+                if scope.built is not None
+                else original(
                     project,
-                    rows,
-                    list(discovered.get("sprints") or ()) or list(sprints),
+                    rows or inventory,
+                    list(discovered.get("sprints") or ()) or list(sprints or ()),
                     active_sprint_id=discovered.get("active_sprint_id"),
-                    docs_dir=resolved,
+                    docs_dir=docs_dir,
                 )
-            else:
-                built[key] = original(project, inventory, sprints, **kwargs)
-        return built[key]
+            )
+            built[key] = {
+                "roadmap": report,
+                "rows": {},
+                "plans": None,
+                "docs_dir": docs_dir,
+            }
+            return report
+        # A named inventory is answered from its own rows plus the plans an
+        # earlier reader in the same batch named. Discovery would answer the
+        # same question having parsed every plan document the project holds,
+        # which is the plan-set term a batch's peak memory turned on.
+        rows = dict(held["rows"]) if held is not None else {}
+        rows.update(named)
+        report = original(
+            project,
+            list(rows.values()),
+            list(sprints or ()),
+            **{**kwargs, **({"docs_dir": docs_dir} if docs_dir else {})},
+        )
+        built[key] = {
+            "roadmap": report,
+            "rows": rows,
+            "plans": set(rows),
+            "docs_dir": docs_dir,
+        }
+        return report
 
     roadmap_module.build_roadmap = once
     try:
@@ -910,6 +926,45 @@ def _batch_order(entries: Sequence[Mapping[str, Any]]) -> Iterator[int]:
             )
 
 
+def _plan_history(project: str, plan: str, root: str | Path) -> list[dict[str, Any]]:
+    """One plan's recorded runs, read through the store's own plan index.
+
+    Queuing a plan asks, section by section, whether a run has already
+    delivered that section, so the rows that answer the question are that
+    plan's. Reading the project's whole projected history instead made a
+    batch's memory follow the run store's row count: every plan the batch named
+    pulled the project's full projection again, so a store carrying more
+    delivered rows cost more per plan and the batch's peak grew with it.
+
+    The store answers a plan filter from its own index, which resolves the plan
+    through the same three fields :func:`reckon.ledger.row_plan` reads, so a
+    brief-carried row is found as well as one carrying a flat plan. The
+    committed ledger is read only when the store holds nothing for the project,
+    which is the store's own rule for answering history at all; a plan the
+    store simply holds no delivery for answers empty, and falling through to
+    the ledger there would decode the project's whole projection to filter it
+    back down to that empty answer.
+    """
+    from reckon import ledger, run_store
+
+    try:
+        rows = run_store.stored_run_rows(
+            project, plan=plan, fields=ledger._PICKER_FIELDS
+        )
+    except Exception:  # noqa: BLE001 - an unreadable store answers no history
+        rows = None
+    if rows is None:
+        return ledger.picker_runs(project, root)
+    # The projection carries the row's own plan field and drops the two places
+    # a brief-carried dispatch records the same fact, so a row filtered in by
+    # its impl move reaches here with no flat plan. The filter is what
+    # establishes it, and the caller compares candidates on it.
+    return [
+        row if str(row.get("plan") or "").strip() else {**row, "plan": plan}
+        for row in rows
+    ]
+
+
 def queue_plan(
     project: str,
     plan: str,
@@ -952,7 +1007,7 @@ def queue_plan(
     live = list(runs.list_live(project=project))
     ownership = resolve_plan_coordinators(project, root=read.repo_root, pointers=live)
     owner = (ownership.get("plans", {}).get(plan) or {}).get("coordinator")
-    history = ledger.picker_runs(project, read.repo_root)
+    history = _plan_history(project, plan, read.repo_root)
     entries: list[dict[str, Any]] = []
     rows: dict[str, dict[str, Any]] = {}
     config = None
@@ -1083,11 +1138,18 @@ def queue_batch(
     sections chosen.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.roadmap import roadmap_history_scope
     from reckon.serve import discovery_without_git_dates
 
     with (
         _parsed_once(),
         _built_once(),
+        # The batch reads no plan's promoted history: it prevents a duplicate
+        # with the per-node hold read, and the only reader of its roadmap — the
+        # wait check — reads gate and decision blockers and never a section's
+        # run holds. Stating that here keeps the roadmap's section-history read
+        # from decoding the project's whole plan set on every batch pass.
+        roadmap_history_scope(()),
         plan_read_scopes(),
         discovery_without_git_dates(),
     ):
