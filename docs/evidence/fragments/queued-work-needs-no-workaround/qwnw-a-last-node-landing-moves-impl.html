@@ -10,8 +10,11 @@
 
   <p><code>reckon/crew/promotion_scope.py</code> decides, once per landing,
   whether the run landing is the last open node of its section: an open node is
-  another executable run of the same plan section still holding a live pointer,
-  and this run's own pointer must be present, so a re-promotion cannot
+  another executable run of the same plan section that is queued, waiting for
+  its upstream, working, or delivered and unlanded, asked of
+  <code>pending_landing.nodes_awaiting_landing</code> so the phase filter and
+  the same-node exclusion are the owner's rather than a second copy, and this
+  run's own pointer must be present, so a re-promotion cannot
   re-declare a section a coordinator has since reopened. When it is the last,
   the section is recorded done <em>after</em> the landing's own plan comment has
   committed, through the same edit surface a coordinator uses, and committed as
@@ -56,11 +59,11 @@
   with the section still implementable, impl still 0.5, and the sibling's
   pointer untouched; and a last node whose landing is refused by the gate-check
   precondition, which leaves the declaration map and impl exactly as before.
-  The scoped gate reads <code>3 passed in 9.14s</code>.</p>
+  The scoped gate reads <code>5 passed in 3.48s</code>.</p>
 
   <p>The concurrency measure is unchanged and passes again:
   <code>tests/test_every_landed_state_write_survives_a_promotion.py</code> reads
-  <code>41 passed in 67.27s (0:01:07)</code> at this head.</p>
+  <code>41 passed in 49.24s</code> at this head.</p>
 
   <p>The negative control extracts the unchanged base revision into a scratch
   tree and runs the same file there: the first case is refused with
@@ -69,12 +72,27 @@
   <code>2 failed, 1 passed in 1.24s</code> at <code>31eda5cd1f4e</code>. The
   third case passes there, because it expects a refusal.</p>
 
+  <p>Two further cases hold the open-node question to the predicate its owner
+  already states. A sibling pointer in a terminal phase — a run that stopped or
+  failed without landing — is not an open node, so the landing still closes the
+  section and impl moves. A second pointer serving the landing's own dispatch
+  node is not a second node either. Both would have held the section open when
+  the closure counted any other executable pointer, leaving impl unmoved for a
+  landing that is the section's last. The scoped gate, now five cases, is
+  measured again below.</p>
+
   <p>The before and after arms ran on the <code>all_debug</code> partition,
   excluding the nodes whose <code>/tmp</code> is full. The baseline arm reads
   <code>58 passed in 47.50s</code> at <code>31eda5cd1f4e</code>; the after arm
-  reads <code>61 passed in 50.03s</code> at <code>fb996f11cb</code>. Neither arm
+  reads <code>63 passed in 46.74s</code> at <code>f1577fdd19f</code>. Neither arm
   records a failure id.</p>
 
-  <p>Revisions: the change is committed at <code>fb996f11cb</code>, and the
-  base revision the arms compare against is <code>31eda5cd1f4e</code>.</p>
+  <p>Reverting the repair's own hunk in a scratch tree of the same head and
+  running the two cases it adds reads
+  <code>2 failed, 3 deselected in 5.17s</code> at <code>f1577fdd19f</code>: the
+  section stays open and impl stays at 0.5 without the repair.</p>
+
+  <p>Revisions: the change is committed at <code>f1577fdd19f</code>, following
+  <code>fb996f11cb</code>, and the base revision the arms compare against is
+  <code>31eda5cd1f4e</code>.</p>
 </section>
