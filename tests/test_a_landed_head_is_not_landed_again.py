@@ -75,7 +75,9 @@ def settled_delivery(delivery_case, tmp_path: Path, monkeypatch: pytest.MonkeyPa
     # fixture's own repository stands in for it so a pass that does not settle
     # reaches its measurement instead of failing on a missing repository.
     monkeypatch.setattr(
-        landing_measure, "base_checkout", lambda repo, sha, timeout=0.0, **_: _Tree(repo)
+        landing_measure,
+        "base_checkout",
+        lambda repo, sha, timeout=0.0, **_: _Tree(repo),
     )
     counters = _Counters()
 
