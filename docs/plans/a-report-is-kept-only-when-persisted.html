@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s9&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -70,7 +70,7 @@
 <p>The test asserts that the real crew home and docs state are untouched afterwards. Negative control: skipping the hash check makes the altered-copy case pass a corrupt copy and fail the test. Ruff adds no findings on the staged paths. Write paths: one new module under <code>reckon/crew/</code>, <code>reckon/project_state.py</code> (registering the resource type), the flight schema, and the new test.</p>
 
     <h2 id="s3">§3 — Persisting is one action from the CLI, MCP and HTTP</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> The §2 operation is reachable from three surfaces:</p>
 <ul>
 <li>a <code>reckon crew persist</code> verb taking a figure path and zero or more <code>--data</code> paths, figure-only by default;</li>
@@ -235,7 +235,7 @@
     <div class="r-comment-body"><p>independent review of r-20261123T164231103097-a-report-is-kept-only-when-persisted-s3 over dd8397a1..2af6cd019a (the two commits gained since the dd8397a1 review): scores goal_fidelity 19, evidence 18, scope_discipline 17, durability 18, fit 19, reuse 20; added failures 0; one non-blocking finding; both records stored under the reviewed run's review-records/.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261123T164231103097-a-report-is-kept-only-when-persisted-s3" data-who="reckon-build" data-when="2026-11-23T18:51:50Z">
-    <div class="r-comment-body"><p>§3 implemented: `crew persist` (a figure plus repeated `--data`, figure-only by default), `POST /crew/&lt;project&gt;/reports` and a `persisted` field on the existing records view all call `reckon.crew.persist.persist_item`, and `GET /crew/&lt;project&gt;/reports?plan=&lt;slug&gt;` classes each of the plan&#x27;s items with `report_retention.classify_item`, the function the retention sweep calls.</p></div>
+    <div class="r-comment-body"><p>§3 implemented: `crew persist` (a figure plus repeated `--data`, figure-only by default), `POST /crew/&lt;project&gt;/reports` and a `persisted` field on the existing records view all call `reckon.crew.persist.persist_item`, and `GET /crew/&lt;project&gt;/reports?plan=&lt;slug&gt;` classes each of the plan's items with `report_retention.classify_item`, the function the retention sweep calls.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261114T095120038520-wave3-clive-anchored-a-report-is-kept-only-when-p-s4" data-who="reckon-build" data-when="2026-11-14T13:06:49Z">
     <div class="r-comment-body"><p>report item retention rule landed — classify_item keeps persisted, cited and live-pointer items and expires the rest at plan close or 30 days; the sweep reads each item's newest write once through _newest_mtime and passes it into classify_item.</p></div>
