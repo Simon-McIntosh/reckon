@@ -39,11 +39,17 @@
   they are: their logs already carry the evidence that a job ran.</p>
 
   <p><strong>Measure.</strong> The importer population of
-  <code>reckon/crew/landing_measure.py</code> — 41 files plus the node's own
-  test — was run on <code>all_debug</code> at the base and at the head. The
-  base arm reports <code>6 failed, 399 passed</code> (two of the failures are
-  the node's own new test running against the base source, and four are
-  environment-dependent tests that fail identically at both revisions). The
-  head arm reports <code>4 failed, 401 passed</code>, whose four failures are
-  the same four the base arm carries: no failure is added.</p>
+  <code>reckon</code>'s landing measure — 41 files plus the node's own test —
+  was run on <code>all_debug</code> at both revisions. At the base
+  <code>398a0d09708dda09bec869b7a512404cf9eb2902</code> the population reports
+  <code>6 failed, 399 passed in 197.10s (0:03:17)</code>; two of those failures
+  are the node's own new test running against the base source, and four are
+  environment-dependent tests that fail the same
+  way at both revisions. At the same base
+  <code>398a0d09708dda09bec869b7a512404cf9eb2902</code>, running only the
+  node's test reports <code>2 failed, 1 passed in 0.53s</code>: the two cases
+  that read the new reason fail, and the case whose job starts passes. At the
+  head <code>100851f91471887b26b0d4637a64b461a1060d26</code> the population
+  reports <code>4 failed, 401 passed in 329.14s (0:05:29)</code>, whose four
+  failures are the same four the base arm carries: no failure is added.</p>
 </section>
