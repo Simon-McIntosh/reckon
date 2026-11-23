@@ -1,0 +1,268 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "result['ok'] is True",
+      "fails_when": "Seeding the plan refuses rather than returning success; fixture precondition only.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 193
+    },
+    {
+      "assertion": "result.get('ok') is True",
+      "fails_when": "A state write returns refusal; reinstating a not-landed response fails this assertion.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 265
+    },
+    {
+      "assertion": "result['new_version'] == written_version",
+      "fails_when": "The returned version differs from an independent reread of the file; this is not the input expected_version.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 269
+    },
+    {
+      "assertion": "holds(written)",
+      "fails_when": "The accepted operation does not immediately persist its expected state.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 270
+    },
+    {
+      "assertion": "result.get('ok') is True",
+      "fails_when": "The accepted operation reports failure; response check supplements independent disk assertions.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 279
+    },
+    {
+      "assertion": "holds(_state(on_disk))",
+      "fails_when": "Landing reverts the write; rereading the checkout then loses the expected value or inserted record.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 282
+    },
+    {
+      "assertion": "_git(run['repository'], 'show', 'HEAD:reviewed.txt') == 'the reviewed change'",
+      "fails_when": "Landing does not deliver the worker file into local HEAD.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 283
+    },
+    {
+      "assertion": "_git(run['origin'], 'show', 'main:reviewed.txt') == 'the reviewed change'",
+      "fails_when": "Landing does not push the worker file to the temporary origin.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 284
+    },
+    {
+      "assertion": "any((row.get('id') == f'c-run-{RUN_ID}' for rows in _state(on_disk)['comments'].values() for row in rows))",
+      "fails_when": "Landing loses or never writes its comment in the checkout.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 285
+    },
+    {
+      "assertion": "holds(_state(committed))",
+      "fails_when": "A clean checkout plan commits state without the accepted write.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 294
+    },
+    {
+      "assertion": "landing.exit_code == 0",
+      "fails_when": "Restoring the base preflight refuses an inserted section before landing.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 305
+    },
+    {
+      "assertion": "landing.exit_code == 0",
+      "fails_when": "Restoring base snapshot adoption refuses concurrent state at either comment boundary.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 327
+    },
+    {
+      "assertion": "landing.exit_code == 0",
+      "fails_when": "The real landing fails before the after-landing write can be exercised.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 336
+    },
+    {
+      "assertion": "'Appended while a landing was in flight.' in document",
+      "fails_when": "The inserted section body never reached the file; fixture/mutation precondition.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 347
+    },
+    {
+      "assertion": "landing.exit_code != 0",
+      "fails_when": "Removing authored-prose refusal wrongly lets the unrelated edit land.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 355
+    },
+    {
+      "assertion": "'authored content outside those store-owned regions' in landing.output",
+      "fails_when": "The refusal occurs for another cause or ceases to explain authored-content protection.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 356
+    },
+    {
+      "assertion": "path.read_text(encoding='utf-8') == edited",
+      "fails_when": "A refused landing rewrites or drops the independently constructed authored edit.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 357
+    },
+    {
+      "assertion": "_section_appended(_state(edited))",
+      "fails_when": "The constructed edited fixture contains no inserted section; fixture check, not regression coverage.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 358
+    },
+    {
+      "assertion": "not (run['repository'] / 'reviewed.txt').exists()",
+      "fails_when": "A refused landing nevertheless updates the checkout with the worker file.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 359
+    },
+    {
+      "assertion": "path.read_bytes() == before",
+      "fails_when": "Removing receipt-failure rollback leaves edited bytes after the injected OSError; pytest.raises also fails if receipt recording is bypassed.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 376
+    },
+    {
+      "assertion": "landing.exit_code != 0",
+      "fails_when": "The injected staging failure is swallowed and promotion reports success.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 399
+    },
+    {
+      "assertion": "'injected staging refusal' in landing.output",
+      "fails_when": "Promotion refuses earlier than the injected staging boundary, invalidating the rollback experiment.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 400
+    },
+    {
+      "assertion": "holds(_state((run['repository'] / PLAN_PATH).read_text()))",
+      "fails_when": "Restoring stale snapshot rollback erases the accepted declaration or section.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 402
+    },
+    {
+      "assertion": "not (run['repository'] / 'reviewed.txt').exists()",
+      "fails_when": "The refused staging operation still lands the worker file.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 403
+    },
+    {
+      "assertion": "'Appended while a landing was in flight.' in text",
+      "fails_when": "The section write never reached the file before the unrecorded edit; mutation precondition.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 415
+    },
+    {
+      "assertion": "landing.exit_code != 0",
+      "fails_when": "Ignoring provenance admits the unrecorded post-snapshot prose change.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 425
+    },
+    {
+      "assertion": "'Unrecorded edit.' in path.read_text()",
+      "fails_when": "Refusal restoration erases the unrecorded authored edit.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 426
+    },
+    {
+      "assertion": "_section_appended(_state(path.read_text()))",
+      "fails_when": "Refusal restoration erases the inserted section.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 427
+    },
+    {
+      "assertion": "not (run['repository'] / 'reviewed.txt').exists()",
+      "fails_when": "The refused post-snapshot prose case still lands the worker file.",
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 428
+    }
+  ],
+  "assertion_independence": "SUMMARY and fixed record identifiers are shared fixture expectations, but actual values are independently read from the checkout or git objects after promotion; reverting the persisted write makes the survival predicates false. The edited-string-only assertion at line 358 is a fixture check and contributes no durability credit. No self-comparing regression assertion found.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_commit_with_plan_snapshot",
+    "reckon/crew/promotion_scope.py:_refuse_unrelated_plan_edit",
+    "reckon/_store.py:_write_state_locked",
+    "reckon/_store.py:replace_plan_text"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T05:17:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/manifest.md",
+      "line": "18",
+      "severity": "blocking",
+      "text": "blocking: the required base negative control is unmet: declaration-observation-1795410576763213457.log shows accepted_write.ok=true and declarations_after_promotion={s2:done} with promotion_exit=1, whereas the live done_when requires an accepted declaration write to be lost at base; the current tests demonstrate refusal recovery, so the coordinator must explicitly reconcile the live acceptance criterion with this measured base behavior or supply the required loss reproduction before accepting this exact-spec node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commits 71032d61e478ec395de3c46e5169258bcea142e9, 12688bec0d51da99572e77c3976b2797efb7a44f and 0bc78bad883e8163004dc0d7f0b8ec0d6eb09285 against a60da69f51eca65d76bafd0167445b865cf4d6c9; the changes add state-authorship provenance, extend snapshot adoption and add 29 real-promotion tests without unrelated edits.",
+    "done_when": "docs/plans/queued-work-needs-no-workaround.html:381 requires six write kinds across real landing plus a base declaration-loss control; the recorded 87-passed head gate covers the timing matrix, but the base declaration control preserves done and refuses promotion instead of losing the accepted write.",
+    "goal": "prompt.txt:38 asks that every landed plan state write survive an in-flight promotion on current primary; reckon/crew/promotion.py:2382 and the 24 timing cases implement and exercise that endpoint.",
+    "manifest": "the reviewed run's manifest.md:17-20 records readable base/head and negative-control logs and explicitly discloses that historical silent loss was not reproduced; the logs confirm 58 base passes, 87 head passes and 16 negative-control failures.",
+    "write_paths": "the reviewed run's manifest.md:3 declares all four delivered paths, and the diff changes only reckon/_store.py, reckon/crew/promotion.py, reckon/crew/promotion_scope.py and tests/test_every_landed_state_write_survives_a_promotion.py."
+  },
+  "justifications": {
+    "durability": "tests/test_every_landed_state_write_survives_a_promotion.py:282,327,376,402 would fail on lost disk state, restored base refusal, missing receipt rollback or stale-snapshot rollback respectively, and the recorded exact-base control actually reports 16 failures against 29 passing head cases.",
+    "evidence": "the reviewed run's after_suite-1795409896134100773.log records 87 passes at the requested head and EXIT=0, but declaration-observation-1795410576763213457.log records accepted_write.ok=true, s2=done and promotion_exit=1 at base, contradicting the exact negative-control requirement at docs/plans/queued-work-needs-no-workaround.html:381.",
+    "fit": "reckon/_store.py:2639 extends the existing receipt API with a backward-compatible authorship keyword, reckon/crew/promotion.py:2435 uses the existing snapshot replacement idiom, and the new symbols describe mechanisms rather than plan labels.",
+    "goal_fidelity": "reckon/crew/promotion.py:2418-2444 adopts proven concurrent state and retains its bytes for rollback, while tests/test_every_landed_state_write_survives_a_promotion.py:299-338 checks all six write kinds before, on both sides of the comment write, and after real landing.",
+    "reuse": "capability searches for authored-content provenance, snapshot adoption, state parsing and real landing fixtures found owners in reckon/_store.py:2612-2686, reckon/crew/promotion_scope.py:1894-2041 and tests/helpers/landing_repository.py:180-248; the added production helper wraps the receipt owner and test definitions compose the existing parser, editor, git and landing helpers.",
+    "scope_discipline": "all four changed paths belong to manifest.md:3's declared scope, and reckon/_store.py:1934 plus reckon/crew/promotion.py:2425 address provenance and rollback required for the stated survival endpoint."
+  },
+  "negative_control_evidence": {
+    "accepted_write_ok": true,
+    "declaration_after_promotion": "done",
+    "limitation": "The exact historical silent-loss negative control does not reproduce on the declared base.",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/negative-control-1795409838660365504.log",
+    "observation_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/declaration-observation-1795410576763213457.log",
+    "promotion_exit": 1,
+    "summary": "16 failed, 13 passed in 22.08s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks that every landed plan state write survive an in-flight promotion on current primary; reckon/crew/promotion.py:2382 and the 24 timing cases implement and exercise that endpoint.\nVERDICT done_when: docs/plans/queued-work-needs-no-workaround.html:381 requires six write kinds across real landing plus a base declaration-loss control; the recorded 87-passed head gate covers the timing matrix, but the base declaration control preserves done and refuses promotion instead of losing the accepted write.\nVERDICT write_paths: the reviewed run's manifest.md:3 declares all four delivered paths, and the diff changes only reckon/_store.py, reckon/crew/promotion.py, reckon/crew/promotion_scope.py and tests/test_every_landed_state_write_survives_a_promotion.py.\nVERDICT manifest: the reviewed run's manifest.md:17-20 records readable base/head and negative-control logs and explicitly discloses that historical silent loss was not reproduced; the logs confirm 58 base passes, 87 head passes and 16 negative-control failures.\nVERDICT diff: read commits 71032d61e478ec395de3c46e5169258bcea142e9, 12688bec0d51da99572e77c3976b2797efb7a44f and 0bc78bad883e8163004dc0d7f0b8ec0d6eb09285 against a60da69f51eca65d76bafd0167445b865cf4d6c9; the changes add state-authorship provenance, extend snapshot adoption and add 29 real-promotion tests without unrelated edits.\nCALL_SITES: reckon/crew/promotion.py:_commit_with_plan_snapshot, reckon/crew/promotion_scope.py:_refuse_unrelated_plan_edit, reckon/_store.py:_write_state_locked, reckon/_store.py:replace_plan_text\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2418-2444 adopts proven concurrent state and retains its bytes for rollback, while tests/test_every_landed_state_write_survives_a_promotion.py:299-338 checks all six write kinds before, on both sides of the comment write, and after real landing.\nSCORE evidence: 14\nJUSTIFICATION evidence: the reviewed run's after_suite-1795409896134100773.log records 87 passes at the requested head and EXIT=0, but declaration-observation-1795410576763213457.log records accepted_write.ok=true, s2=done and promotion_exit=1 at base, contradicting the exact negative-control requirement at docs/plans/queued-work-needs-no-workaround.html:381.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four changed paths belong to manifest.md:3's declared scope, and reckon/_store.py:1934 plus reckon/crew/promotion.py:2425 address provenance and rollback required for the stated survival endpoint.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_every_landed_state_write_survives_a_promotion.py:282,327,376,402 would fail on lost disk state, restored base refusal, missing receipt rollback or stale-snapshot rollback respectively, and the recorded exact-base control actually reports 16 failures against 29 passing head cases.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_store.py:2639 extends the existing receipt API with a backward-compatible authorship keyword, reckon/crew/promotion.py:2435 uses the existing snapshot replacement idiom, and the new symbols describe mechanisms rather than plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for authored-content provenance, snapshot adoption, state parsing and real landing fixtures found owners in reckon/_store.py:2612-2686, reckon/crew/promotion_scope.py:1894-2041 and tests/helpers/landing_repository.py:180-248; the added production helper wraps the receipt owner and test definitions compose the existing parser, editor, git and landing helpers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/manifest.md:18 blocking: the required base negative control is unmet: declaration-observation-1795410576763213457.log shows accepted_write.ok=true and declarations_after_promotion={s2:done} with promotion_exit=1, whereas the live done_when requires an accepted declaration write to be lost at base; the current tests demonstrate refusal recovery, so the coordinator must explicitly reconcile the live acceptance criterion with this measured base behavior or supply the required loss reproduction before accepting this exact-spec node.\n",
+  "reuse_search": "Searched authored-transition receipts and projection in _store and promotion_scope; opened recorded_plan_text_write, _plan_differs_only_by_the_stores_own_writes and _verified_plan_text_projection. Searched state parsing, temporary landing repository, real completion and git helper capabilities; opened tests/helpers/landing_repository.py and identified tests/helpers/git.py owner. The new _state wrapper delegates parsing; six predicates, seed/run/write/assert helpers and nested refusal hooks are scenario-specific composition, not alternate implementations of these owners.",
+  "review_run_id": "r-20261123T051700388617-review-of-qwnw-landed-state-writes-survive-on-current-main-0bc78bad883e",
+  "reviewed_base_sha": "a60da69f51eca65d76bafd0167445b865cf4d6c9",
+  "reviewed_commits": [
+    "71032d61e478ec395de3c46e5169258bcea142e9",
+    "12688bec0d51da99572e77c3976b2797efb7a44f",
+    "0bc78bad883e8163004dc0d7f0b8ec0d6eb09285"
+  ],
+  "reviewed_head_sha": "0bc78bad883e8163004dc0d7f0b8ec0d6eb09285",
+  "reviewed_run_id": "r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/after_suite-1795409896134100773.log",
+      "revision": "0bc78bad883e8163004dc0d7f0b8ec0d6eb09285",
+      "summary": "87 passed in 93.56s (0:01:33)"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T044644065935-qwnw-landed-state-writes-survive-on-current-main/baseline_suite-1795409821232462550.log",
+      "revision": "a60da69f51eca65d76bafd0167445b865cf4d6c9",
+      "summary": "58 passed in 44.48s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T05:24:38.466485+00:00",
+  "total": 113
+}
