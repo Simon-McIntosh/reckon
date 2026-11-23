@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s120">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-23">
-  <meta name="evidence-commit" content="f5bd2cba91">
+  <meta name="evidence-commit" content="4c4bf5a45c">
   <title>An unchanged sweep reads no plan and walks no tree | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -65,18 +65,30 @@
   </ul>
 
   <p><strong>Gate arms.</strong> The head arm at revision
-  <code>f5bd2cba91</code> reported <code>13 failed, 578 passed in 452.44s (0:07:32)</code>,
-  every one of those failures already red at base. The base arm at revision
-  <code>a1d432530d</code> reported <code>21 failed, 570 passed in 415.23s (0:06:55)</code>.
-  The eight base-only failures are the two negative-control cases below plus six
-  scheduler-dependent fleet-health tests; the head arm adds none.</p>
+  <code>4c4bf5a45c</code>, over the new test and the three importer files,
+  reported <code>75 passed in 54.09s</code>. The base arm at revision
+  <code>a1d432530d</code>, over the three importer files, reported
+  <code>2 failed, 69 passed in 28.79s</code>; both failures are the staged-write
+  census, which finds nothing because the base tree is a git archive with no
+  index and the census reads one.</p>
+
+  <p>The importer population &mdash; 231 test files that import the changed
+  modules &mdash; ran in three parts per revision. The head arm reported
+  <code>44 failed, 1843 passed, 1 error</code>; the base arm reported
+  <code>63 failed, 1824 passed, 1 error</code>. Every head failure is also red
+  at base, so the head adds none. The nineteen base-only failures are the two
+  negative-control cases below, the two reuse cases and the bounded read the
+  held-tree repairs fixed, four held-tree discovery cases, and ten tests whose
+  outcome depends on the arm host's temporary storage and git state. The
+  failures present in both arms are an environment population identical at the
+  two revisions.</p>
 
   <p><strong>Negative control.</strong> At the base revision the first case fails
-  with all four plans parsed and all one thousand state files stat'ed on the
-  second sweep; the second case fails with all four plans parsed after one plan's
-  file changed. Base and head population gate logs are held under the run
-  directory with each arm's revision, its literal command, and a closing
-  <code>EXIT=</code> line.</p>
+  with all four plans parsed and one thousand state files stat'ed on the second
+  sweep; the second case fails with all four plans parsed after one plan's file
+  changed. Both are in the base importer arm's first part log. Base and head
+  population gate logs are held under the run directory with each arm's
+  revision, its literal command, and a closing <code>EXIT=</code> line.</p>
 </section>
 </main>
 </body>
