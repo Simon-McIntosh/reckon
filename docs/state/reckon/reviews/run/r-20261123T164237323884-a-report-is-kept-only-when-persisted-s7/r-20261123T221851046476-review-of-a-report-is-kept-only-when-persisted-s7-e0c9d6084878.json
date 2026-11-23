@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1569 dispatch_claims._compose_prompt",
+    "reckon/crew.py:161 exports",
+    "reckon/crew/dispatch.py:471 exports",
+    "reckon/crew/dispatching/_imports.py:189 re-export"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:24:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 279,
+      "severity": "blocking",
+      "text": "_evidence_figure_rule classifies on FIGURE_NAME_PATTERN (figure, plot, chart, graph, diagram) while the clauses it compiles assert the done-when 'states a measure'; a done-when such as 'the gate cuts runtime by 30 percent' composes 'Your done-when states no measure, so this node has no figure to draw' (reproduced by composing at e0c9d608). The withholding this section exists to remove survives for the common quantitative done-when, and the clause states a falsehood about the node."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 1157,
+      "severity": "non-blocking",
+      "text": "The manifest template is emitted under 'write exactly these keys' and carries no 'figures:' line, while the rule composed at line 244 tells the worker to name the figure on the manifest's 'figures:' line; reckon/crew/reports.py:2156 already reads that key, so the template, in this node's own declared write path, should gain it."
+    },
+    {
+      "file": "tests/test_a_drawable_result_leaves_a_figure.py",
+      "line": 100,
+      "severity": "non-blocking",
+      "text": "The drawable assertion compares the composed prompt against the same module constant the producer inserts (EVIDENCE_FIGURE_ANNOUNCED), and the fixture at line 37 encodes 'states a measure' as containing the word 'figure', so a regression that narrows FIGURE_NAME_PATTERN would leave every case green; the assertion is not independent of the classification under test."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 1013,
+      "severity": "non-blocking",
+      "text": "For the brief carrier figure_src is 'src /<project>/figures/' and the composed sentence reads 'with the project-absolute src /<project>/figures/;', a truncated source that names no leaf path."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "VERDICT diff: read commit e0c9d60848 against ed34968e; the four constants collapse to one producer read by both carriers, and no carrier constant both asks for a figure and withholds one.",
+    "done_when": "VERDICT done_when: tests/test_a_drawable_result_leaves_a_figure.py covers the four cases the done-when names; the suite arms and the gate are recorded at exit 0, but the drawable fixture at line 37 encodes 'states a measure' as containing the word 'figure'.",
+    "goal": "VERDICT goal: the node goal is that a drawable result leaves a figure and no prose report; reckon/crew/prompts.py:267 composes the rule in one producer, but prompts.py:279 still withholds a figure whenever FIGURE_NAME_PATTERN misses a figure word, not when the done-when states no measure.",
+    "manifest": "VERDICT manifest: read; manifest.md records 81 head tests passed, the scoped gate EXIT=0 at e0c9d608, baseline 58 passed and after 67 passed, and the base negative control failing 2 cases with EXIT=1 and passing at head.",
+    "write_paths": "VERDICT write_paths: the seven changed paths all lie inside the nine declared write paths; nothing outside them was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_drawable_result_leaves_a_figure.py:129 reddens on a reintroduced asking clause, but a regression that narrows FIGURE_NAME_PATTERN leaves the suite green because the drawable fixture at line 37 itself contains 'figure'.",
+    "evidence": "The done-when's four cases are exercised by tests/test_a_drawable_result_leaves_a_figure.py and both suite arms are recorded at exit 0, but the 'states a measure' case is instantiated only by a done-when that contains the word 'figure'.",
+    "fit": "The new constants and _evidence_figure_rule follow the constant-plus-composer idiom of reckon/crew/prompts.py:212.",
+    "goal_fidelity": "reckon/crew/prompts.py:279 classifies on the figure word (FIGURE_NAME_PATTERN) rather than on whether the done-when states a measure, so a quantitative done-when without a figure word is told 'states no measure ... no figure to draw' and the withholding this section exists to remove survives.",
+    "reuse": "The producer replaces the earlier _artifact_rule helper; a search of reckon/ and skills/ for the old wording found no second copy, and no pre-existing owner is duplicated.",
+    "scope_discipline": "Every path the diff changes is one of the nine declared write paths, and no file outside them was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a drawable result leaves a figure and no prose report; reckon/crew/prompts.py:267 composes the rule in one producer, but prompts.py:279 still withholds a figure whenever FIGURE_NAME_PATTERN misses a figure word, not when the done-when states no measure.\nVERDICT done_when: tests/test_a_drawable_result_leaves_a_figure.py covers the four cases the done-when names; the suite arms and the gate are recorded at exit 0, but the drawable fixture at line 37 encodes 'states a measure' as containing the word 'figure'.\nVERDICT write_paths: the seven changed paths all lie inside the nine declared write paths; nothing outside them was touched.\nVERDICT manifest: read; manifest.md records 81 head tests passed, the scoped gate EXIT=0 at e0c9d608, baseline 58 passed and after 67 passed, and the base negative control failing 2 cases with EXIT=1 and passing at head.\nVERDICT diff: read commit e0c9d60848 against ed34968e; the four constants collapse to one producer read by both carriers, and no carrier constant both asks for a figure and withholds one.\nCALL_SITES: reckon/crew/dispatch_claims.py:1569 dispatch_claims._compose_prompt, reckon/crew.py:161 exports, reckon/crew/dispatch.py:471 exports, reckon/crew/dispatching/_imports.py:189 re-export\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:279 classifies on the figure word (FIGURE_NAME_PATTERN) rather than on whether the done-when states a measure, so a quantitative done-when without a figure word is told 'states no measure ... no figure to draw' and the withholding this section exists to remove survives.\nSCORE evidence: 13\nJUSTIFICATION evidence: The done-when's four cases are exercised by tests/test_a_drawable_result_leaves_a_figure.py and both suite arms are recorded at exit 0, but the 'states a measure' case is instantiated only by a done-when that contains the word 'figure'.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path the diff changes is one of the nine declared write paths, and no file outside them was touched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_drawable_result_leaves_a_figure.py:129 reddens on a reintroduced asking clause, but a regression that narrows FIGURE_NAME_PATTERN leaves the suite green because the drawable fixture at line 37 itself contains 'figure'.\nSCORE fit: 18\nJUSTIFICATION fit: The new constants and _evidence_figure_rule follow the constant-plus-composer idiom of reckon/crew/prompts.py:212.\nSCORE reuse: 20\nJUSTIFICATION reuse: The producer replaces the earlier _artifact_rule helper; a search of reckon/ and skills/ for the old wording found no second copy, and no pre-existing owner is duplicated.\nFINDING reckon/crew/prompts.py:279 blocking: _evidence_figure_rule classifies on FIGURE_NAME_PATTERN (figure, plot, chart, graph, diagram) while the clauses it compiles assert the done-when 'states a measure'; a done-when such as 'the gate cuts runtime by 30 percent' composes 'Your done-when states no measure, so this node has no figure to draw' (reproduced by composing at e0c9d608). The withholding this section exists to remove survives for the common quantitative done-when, and the clause states a falsehood about the node.\nFINDING reckon/crew/prompts.py:1157 non-blocking: The manifest template is emitted under 'write exactly these keys' and carries no 'figures:' line, while the rule composed at line 244 tells the worker to name the figure on the manifest's 'figures:' line; reckon/crew/reports.py:2156 already reads that key, so the template, in this node's own declared write path, should gain it.\nFINDING tests/test_a_drawable_result_leaves_a_figure.py:100 non-blocking: The drawable assertion compares the composed prompt against the same module constant the producer inserts (EVIDENCE_FIGURE_ANNOUNCED), and the fixture at line 37 encodes 'states a measure' as containing the word 'figure', so a regression that narrows FIGURE_NAME_PATTERN would leave every case green; the assertion is not independent of the classification under test.\nFINDING reckon/crew/prompts.py:1013 non-blocking: For the brief carrier figure_src is 'src /<project>/figures/' and the composed sentence reads 'with the project-absolute src /<project>/figures/;', a truncated source that names no leaf path.\n",
+  "review_run_id": "r-20261123T221851046476-review-of-a-report-is-kept-only-when-persisted-s7-e0c9d6084878",
+  "reviewed_base_sha": "ed34968e986cc663035e7e41790ffba484bf5e1b",
+  "reviewed_head_sha": "e0c9d60848785435da0dfa942a8bb648fcc0e174",
+  "reviewed_run_id": "r-20261123T164237323884-a-report-is-kept-only-when-persisted-s7",
+  "scores": {
+    "durability": 13,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 11,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:33:17.306086+00:00",
+  "total": 94
+}
