@@ -1,0 +1,39 @@
+<section id="the-monitor-reads-each-fact-once-s119">
+  <h3 id="the-monitor-reads-each-fact-once-s119-result">A run mid-repair raises no sweep failure, and one failure is raised once</h3>
+  <p>Two duties were raised against runs with nothing wrong. First, a delivered run
+  resumed for a repair round had its review correctly withheld while the resumed
+  attempt was working, and the review-request census read the withheld request as
+  a missing one: after the deadline it raised a <code>sweep-failed</code> duty for a
+  run whose worker was still alive. Second, the stored failure record is keyed by
+  the session whose sweep recorded it, so three sweep authors reporting one run's
+  failure raised the same <code>sweep-failed</code> row three times.</p>
+  <p><code>reckon/crew/recovery_review_dispatch.py</code> now withholds the duty
+  when a resumed attempt is still in flight, reported in the census as
+  <code>in_flight</code> rather than as an unmet obligation. A resumed attempt
+  whose exit receipt shows it ended without delivering still raises, because
+  nothing is working on it. <code>reckon/crew/station_obligations.py</code> raises
+  one row per run, however many authors stored the failure. The predicate is
+  scoped to a resumed attempt, so an ordinary delivered run with unknown liveness
+  keeps raising the duty it always did.</p>
+  <table>
+    <thead><tr><th>Case</th><th>Base revision</th><th>Delivered revision</th></tr></thead>
+    <tbody>
+      <tr><td>Resumed attempt still working</td><td><code>sweep-failed</code> row raised</td><td>No row; reported as work in flight</td></tr>
+      <tr><td>Resumed attempt ended without delivering</td><td>One row (correct)</td><td>One row (unchanged)</td></tr>
+      <tr><td>One failure stored by three authors</td><td>Three rows</td><td>One row</td></tr>
+    </tbody>
+  </table>
+  <p><code>tests/test_a_run_mid_repair_raises_no_sweep_failure.py</code> drives the
+  census through a real resumed live pointer and an owned child process, and the
+  station row through the store the station derives its duties from. Against the
+  base revision <code>bd0d2051dbe94c9232f5e64986364fdc12a65b24</code>, with the new
+  test overlaid, the result is <strong>2 failed, 1 passed</strong>: the working-attempt
+  case raises a <code>sweep-failed</code> row, and the three-author case raises three
+  rows for one run. At the product revision <strong>3 passed</strong>.</p>
+  <p>The matched population of 140 existing test files importing the changed modules
+  reports <strong>25 failed, 1137 passed</strong> in each arm, with zero failures
+  added and zero fixed at the head: the same twenty-five pre-existing failures on
+  both sides. Both arms ran on the <code>all_debug</code> partition. Gate, arm,
+  importer and negative-control logs are preserved in the run directory
+  <code>r-20261123T090829128666-the-monitor-reads-each-fact-once-s119</code>.</p>
+</section>
