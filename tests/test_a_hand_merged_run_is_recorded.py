@@ -170,7 +170,7 @@ def test_a_hand_merged_run_is_recorded_on_the_branch(merged_run: dict) -> None:
     row = json.loads(
         ledger.run_path(PROJECT, run["run_id"], root=run["repository"]).read_text()
     )
-    assert merge_sha in row["commits"]
+    assert run["head"] in row["commits"]
     assert row["suite_delta"]["status"] == "not-run"
     assert row["suite_delta"]["recorded_merge"] == merge_sha
     assert not pointer_before.exists()
@@ -190,3 +190,47 @@ def test_a_merge_that_does_not_carry_the_head_is_refused(merged_run: dict) -> No
     assert result.exit_code != 0, result.output
     assert run["head"] in result.output
     assert pointer_path(run["run_id"]).exists()
+
+
+def test_a_merge_of_a_reviewed_head_is_recorded_against_that_review(
+    merged_run: dict,
+) -> None:
+    """A stored review of the head is honoured after a --no-ff merge."""
+    run = merged_run
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run["run_id"],
+            "review_run_id": f"review-of-{run['run_id']}-at-head",
+            "reviewed_head_sha": run["head"],
+            "reviewed_base_sha": run["base"],
+        }
+    )
+    review_module.store_review(record)
+    _git(
+        run["repository"],
+        "merge",
+        "--no-ff",
+        "--no-edit",
+        "-m",
+        "merge the reviewed change",
+        run["head"],
+    )
+    merge_sha = _git(run["repository"], "rev-parse", "HEAD")
+    _git(run["repository"], "push", "-q", "origin", "main")
+
+    result = _record_merge(run, merge_sha)
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["recorded_merge"] == merge_sha
+    row = json.loads(
+        ledger.run_path(PROJECT, run["run_id"], root=run["repository"]).read_text()
+    )
+    assert run["head"] in row["commits"]
+    assert row["suite_delta"]["recorded_merge"] == merge_sha
+    assert not pointer_path(run["run_id"]).exists()
