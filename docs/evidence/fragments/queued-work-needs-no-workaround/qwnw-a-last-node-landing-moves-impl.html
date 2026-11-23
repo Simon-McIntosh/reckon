@@ -46,4 +46,30 @@
   <code>impl did not move: 0.5 at dispatch and 0.5 at completion</code>, and the
   sibling case with the same wording. The third case passes there, because it
   expects a refusal.</p>
+
+  <p>Run records, verbatim: the scoped gate reads
+  <code>3 passed in 1.41s</code> at <code>bba1d13a7a9b</code>; the baseline
+  suite reads <code>58 passed in 41.18s</code> at <code>31eda5cd1f4e</code>;
+  the after suite reads <code>61 passed in 41.41s</code> at
+  <code>bba1d13a7a9b</code>; the negative control reads
+  <code>2 failed, 1 passed in 1.24s</code> at <code>31eda5cd1f4e</code>; and the
+  declaration-set regression subset reads
+  <code>2 failed, 5 passed, 34 deselected in 10.43s</code> at
+  <code>bba1d13a7a9b</code>.</p>
+
+  <p>Revisions: the change is committed at <code>bba1d13a7a9b</code> and the
+  base revision is <code>31eda5cd1f4e</code>. The scoped gate and the after
+  suite ran at <code>bba1d13a7a9b</code>; the baseline suite and the negative
+  control ran at <code>31eda5cd1f4e</code>.</p>
+
+  <p><strong>Not landed.</strong> Two existing cases of
+  <code>tests/test_every_landed_state_write_survives_a_promotion.py</code> — the
+  declaration-set write accepted after staging, under both a staging refusal and
+  a commit refusal — pass at <code>31eda5cd1f4e</code> and fail at
+  <code>bba1d13a7a9b</code>. The cause is this change's own write: the landing
+  now records the same declaration a coordinator's write of that section asks
+  for, so the two contents are byte-identical and the refused landing's rollback
+  restores HEAD, dropping the coordinator's declaration with its own comment.
+  This node is delivered blocked rather than green so the choice between the two
+  is made deliberately.</p>
 </section>
