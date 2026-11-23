@@ -861,6 +861,32 @@ def _waiting_decision_rows(
     return rows
 
 
+_REPORT_FIGURE_SUFFIXES = (".svg", ".png", ".gif")
+
+
+def _report_item_files(item: Path) -> tuple[Path | None, list[Path]]:
+    """The figure a report item holds and the data files stored beside it.
+
+    An item is a child folder of a plan's report directory, or a file directly
+    inside it. Its figure is the first file carrying an image suffix; every
+    other file is data a reader may persist with that figure. The listing names
+    both so a surface offering a persist control never walks the reports store
+    itself.
+    """
+    if item.is_dir():
+        try:
+            files = [child for child in sorted(item.iterdir()) if child.is_file()]
+        except OSError:
+            files = []
+    else:
+        files = [item]
+    figure = next(
+        (path for path in files if path.suffix.lower() in _REPORT_FIGURE_SUFFIXES),
+        None,
+    )
+    return figure, [path for path in files if path != figure]
+
+
 def crew_plan_reports(project: str, plan: str) -> list[dict]:
     """One plan's report items, each with the retention class the sweep reads.
 
@@ -868,7 +894,9 @@ def crew_plan_reports(project: str, plan: str) -> list[dict]:
     classifier, the one the retention pass calls, so a listing never shows an
     item as retained while the pass would remove it. Nothing here re-derives
     them: a working item's expiry is the date the pass would remove it, and a
-    persisted or cited item carries no expiry at all.
+    persisted or cited item carries no expiry at all. Each item also names its
+    figure and the data files beside it, so the surface renders a persist
+    control from the listing rather than reading the store.
     """
 
     from reckon.crew import report_retention
@@ -896,6 +924,7 @@ def crew_plan_reports(project: str, plan: str) -> list[dict]:
         verdict = report_retention.classify_item(
             context, item, newest_write=_newest_mtime(item)
         )
+        figure, data = _report_item_files(item)
         items.append(
             {
                 "item": str(item),
@@ -907,9 +936,29 @@ def crew_plan_reports(project: str, plan: str) -> list[dict]:
                     else verdict.expires.isoformat(timespec="seconds")
                 ),
                 "reason": verdict.reason,
+                "figure": None if figure is None else str(figure),
+                "data": [str(path) for path in data],
             }
         )
     return items
+
+
+def _report_item_counts(items: list[dict]) -> dict[str, int]:
+    """How many items each retention filter of a listing holds.
+
+    A surface shows these numbers, so they are counted here against the classes
+    the listing already carries rather than tabulated in the browser.
+    """
+    from reckon.crew import report_retention
+
+    retained = (report_retention.PERSISTED, report_retention.CITED)
+    return {
+        "retained": sum(1 for item in items if item["class"] in retained),
+        "working": sum(
+            1 for item in items if item["class"] == report_retention.WORKING
+        ),
+        "all": len(items),
+    }
 
 
 def crew_persist_from_reports(project: str, payload: Mapping[str, object]) -> dict:
@@ -3361,6 +3410,7 @@ class Handler(BaseHTTPRequestHandler):
                         {"error": "a reports listing names one plan as ?plan=<slug>."},
                     )
                     return
+                items = crew_plan_reports(project, requested)
                 self._send_json(
                     HTTPStatus.OK,
                     {
@@ -3368,7 +3418,8 @@ class Handler(BaseHTTPRequestHandler):
                         "project": project,
                         "plan": requested,
                         "view": "reports",
-                        "items": crew_plan_reports(project, requested),
+                        "items": items,
+                        "counts": _report_item_counts(items),
                     },
                 )
                 return
