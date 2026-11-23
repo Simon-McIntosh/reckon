@@ -46,17 +46,26 @@ PLAN_ANSWER_KIND = "plan-answer"
 HELD_PHASE = "held"
 
 
-def _claim_name(decision_id: str) -> str:
-    """A filesystem name for one decision's presentation claim.
+def readably_named(identity: str, *, fallback: str) -> str:
+    """The filename one identity takes: a readable slug and a digest of it.
 
-    A crew decision's identity is already safe as a filename. A plan's
-    ``plan:<project>:<slug>:<key>`` identity is not, so its readable part is
-    stripped to safe characters and a digest of the whole identity keeps apart
-    two identities that strip alike.
+    The identities this path stores are not filenames — a plan decision's
+    ``plan:<project>:<slug>:<key>`` and a session's UUID both carry characters
+    a filename may not — so the readable part is stripped to safe characters
+    and eight hex digits of a digest of the whole identity keep apart two
+    identities that strip alike. One rule, used for both the claim on a
+    decision and the ask sent to a session: a second copy of it would have to
+    be kept in step with this one, and the digest is what stops two identities
+    sharing a file.
     """
-    readable = re.sub(r"[^a-z0-9.-]+", "-", str(decision_id).lower()).strip("-")
-    digest = hashlib.sha256(str(decision_id).encode("utf-8")).hexdigest()[:8]
-    return f"{(readable or 'decision')[-60:]}-{digest}"
+    readable = re.sub(r"[^a-z0-9.-]+", "-", str(identity).lower()).strip("-")
+    digest = hashlib.sha256(str(identity).encode("utf-8")).hexdigest()[:8]
+    return f"{(readable or fallback)[-60:]}-{digest}"
+
+
+def _claim_name(decision_id: str) -> str:
+    """A filesystem name for one decision's presentation claim."""
+    return readably_named(decision_id, fallback="decision")
 
 
 def answer_path(answer_id: str) -> Path:
@@ -70,9 +79,34 @@ def answer_path(answer_id: str) -> Path:
     return crew_home() / "answers" / f"{answer_id}.json"
 
 
+def presenting_directory() -> Path:
+    """The directory holding every decision's presentation claim."""
+    return crew_home() / "decisions" / "presenting"
+
+
 def presentation_path(decision_id: str) -> Path:
     """The file holding one decision's presentation claim."""
-    return crew_home() / "decisions" / "presenting" / f"{_claim_name(decision_id)}.json"
+    return presenting_directory() / f"{_claim_name(decision_id)}.json"
+
+
+def presenting_claims() -> list[dict[str, Any]]:
+    """Every presentation claim on disk, read whole.
+
+    A claim's decision id is carried in the file rather than parsed from its
+    name, because the name holds a digest of the identity: two identities that
+    read alike stay apart and a name-to-identity parse would have to re-derive
+    the digest.
+    """
+    claims = []
+    for path in sorted(presenting_directory().glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            continue
+        if not isinstance(record, dict):
+            raise TypeError(f"claim {path.name} is not an object")
+        claims.append(record)
+    return claims
 
 
 def _plan_decision_parts(decision_id: str) -> tuple[str, str, str] | None:
@@ -109,29 +143,49 @@ def _read_presentation(decision_id: str) -> dict[str, Any] | None:
 
 
 def claim_presentation(decision_id: str, *, session: str) -> dict[str, Any]:
-    """Take one decision for presentation, or name the claim that holds it."""
+    """Take one decision for presentation, or name the claim that holds it.
+
+    Reading "no claim" and writing one is one step under the decision's own
+    lock. Without it the two halves are separate: two presenting sessions that
+    read at once both see no claim, both write one, and the second write
+    replaces the first, so one decision is offered twice and each presenter
+    believes it holds it. The lock is the one every plan-state writer in this
+    repository takes, so it excludes across nodes and between threads of one
+    process, and a second presenter waits rather than losing the decision.
+    """
+    from reckon.crew.run_paths import crew_home
+    from reckon.node_exclusive_lock import exclusive_lock
+
     session = str(session or "").strip()
     if not session:
         raise ValueError("a presentation claim must name the presenting session")
     _checked_identity(decision_id)
-    existing = _read_presentation(decision_id)
-    if existing is not None:
-        holder = str(existing.get("session") or "")
-        if holder == session:
-            return existing
-        raise ValueError(
-            f"decision {decision_id!r} is presented by {holder!r}, so "
-            f"{session!r} cannot present it: a decision has one presenter"
-        )
-    claim = {
-        "decision_id": decision_id,
-        "session": session,
-        "claimed_at": datetime.now(UTC).isoformat(),
-    }
-    from reckon._store import write_json_atomically
+    lock = (
+        crew_home()
+        / "locks"
+        / f"presenting-{readably_named(decision_id, fallback='decision')}.lock"
+    )
+    with exclusive_lock(lock):
+        existing = _read_presentation(decision_id)
+        if existing is not None:
+            holder = str(existing.get("session") or "")
+            if holder == session:
+                return existing
+            raise ValueError(
+                f"decision {decision_id!r} is presented by {holder!r}, so "
+                f"{session!r} cannot present it: a decision has one presenter"
+            )
+        claim = {
+            "decision_id": decision_id,
+            "session": session,
+            "claimed_at": datetime.now(UTC).isoformat(),
+        }
+        from reckon._store import write_json_atomically
 
-    write_json_atomically(presentation_path(decision_id), claim, fsync_directory=True)
-    return claim
+        write_json_atomically(
+            presentation_path(decision_id), claim, fsync_directory=True
+        )
+        return claim
 
 
 def release_presentation(decision_id: str, *, session: str) -> dict[str, Any]:
