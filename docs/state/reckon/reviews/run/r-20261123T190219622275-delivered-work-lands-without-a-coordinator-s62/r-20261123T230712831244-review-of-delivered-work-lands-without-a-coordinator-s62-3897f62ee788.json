@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:07:30Z",
+  "findings": [
+    {
+      "file": "tests/test_a_hand_merge_records_the_gate_that_passed.py",
+      "line": 230,
+      "severity": "non-blocking",
+      "text": "The test's docstring (\"still refuses, as it did before\") and its name (\"..._as_before\") describe a preserved behaviour that never existed: the run's own base arm arms/node-tests-at-base.log shows the base accepted this recording at exit 0 with suite_delta status not-run, so the no-gate refusal is new, not preserved. The node's evidence fragment states this correctly, but the test a future reader opens first still claims the opposite."
+    },
+    {
+      "file": "tests/test_a_hand_merge_records_the_gate_that_passed.py",
+      "line": 181,
+      "severity": "non-blocking",
+      "text": "No assertion covers the path the change newly reaches: an armed hand-merged run that cites no gate and whose recorded arms both completed now falls through to suite-evidence evaluation instead of returning not-run, so a regression that refused or misread such a legitimate recording would leave all three tests green."
+    },
+    {
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 144,
+      "severity": "non-blocking",
+      "text": "The done_when clause \"the CLI help-contract tests pass with the new options listed\" is only half-evidenced: test_every_crew_verb_help_names_its_state asserts each verb's state phrase in its help text, and asserts nothing about the four new options appearing in record-merge --help, so the clause rests on the test passing rather than on any assertion about the options."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261123T230712831244-review-of-delivered-work-lands-without-a-coordinator-s62-3897f62ee788",
+  "reviewed_base_sha": "d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e",
+  "reviewed_head_sha": "3897f62ee7887de558a67a1ed346f4bdd091f629",
+  "reviewed_run_id": "r-20261123T190219622275-delivered-work-lands-without-a-coordinator-s62",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:34:07.795154+00:00",
+  "total": 105
+}
