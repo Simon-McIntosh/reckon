@@ -146,8 +146,7 @@ def _filed_requests() -> list[dict]:
         pointer
         for pointer in runs.list_live(project=PROJECT)
         if (pointer.get("dispatch_options") or {}).get("queued_by") == SERVICE
-        and str(pointer.get("phase") or "")
-        in ("queued", "awaiting-upstream", "held")
+        and str(pointer.get("phase") or "") in ("queued", "awaiting-upstream", "held")
     ]
 
 
@@ -189,7 +188,9 @@ def test_a_reviewed_plan_is_queued_at_full_width_once(repository: Path) -> None:
     assert _sections_filed() == ["s1", "s2", "s3"], _sections_filed()
     for pointer in _filed_requests():
         assert pointer["session"] == SERVICE, pointer
-        assert (pointer.get("dispatch_options") or {}).get("queued_by") == SERVICE, pointer
+        assert (pointer.get("dispatch_options") or {}).get("queued_by") == SERVICE, (
+            pointer
+        )
 
     second = _pass(repository)
     assert second["queued"] == 0, second
@@ -226,17 +227,61 @@ def test_a_held_plan_gets_none_and_gets_them_after_the_hold_is_released(
     repository: Path,
 ) -> None:
     """A plan held before it had a request is covered until the hold is released."""
-    hold = queue_edit.hold(plan=PLAN, project=PROJECT, reason="the lead has not decided the shape")
-    assert hold["plan"]["plan"] == PLAN, hold
+    queue_edit.hold(
+        plan=PLAN, project=PROJECT, reason="the lead has not decided the shape"
+    )
+    # Read back what was stored rather than what the call was handed, so the
+    # guard fails if the hold never reaches the file the service reads.
+    stored = queue_edit.plan_hold(PROJECT, PLAN)
+    assert stored is not None, stored
+    assert "not decided" in stored["reason"], stored
+    assert stored["session"] == "", stored
 
     assert _pass(repository)["queued"] == 0
     assert _filed_requests() == [], _filed_requests()
 
-    released = queue_edit.release(plan=PLAN, project=PROJECT, reason="the shape is settled")
-    assert released["plan"]["plan"] == PLAN, released
+    queue_edit.release(plan=PLAN, project=PROJECT, reason="the shape is settled")
+    assert queue_edit.plan_hold(PROJECT, PLAN) is None
 
     assert _pass(repository)["queued"] == 3
     assert _sections_filed() == ["s1", "s2", "s3"], _sections_filed()
+
+
+def test_a_pass_after_one_plan_moves_refiles_that_plan_alone(repository: Path) -> None:
+    """The identity is per plan, so an untouched sibling is not parsed again."""
+    queue = queueing.PlanQueue()
+    queue.fill(projects={PROJECT: repository / "docs"})
+    added = repository / "docs" / "plans" / "plan-b.html"
+    added.write_text(_plan_html_text("plan-b"), encoding="utf-8")
+
+    report = queue.fill(projects={PROJECT: repository / "docs"})
+    examined = [
+        entry["plan"]
+        for entry in report["projects"][0]["plans"]
+        if not entry.get("reason")
+    ]
+    assert examined == ["plan-b"], report
+
+
+def test_a_pass_naming_no_configuration_resolves_each_projects_own(
+    repository: Path,
+) -> None:
+    """The service's own pass supplies no callable and still files requests."""
+    report = queueing.PlanQueue().fill(projects={PROJECT: repository / "docs"})
+    assert [entry.get("error") for entry in report["projects"]] == [None], report
+    assert report["queued"] == 3, report
+    assert _sections_filed() == ["s1", "s2", "s3"], _sections_filed()
+
+
+def test_a_plan_named_alone_is_held_without_a_project(repository: Path) -> None:
+    """The plan alone is enough: its project comes from the mounts."""
+    queue_edit.hold(plan=PLAN, reason="the lead has not decided the shape")
+    assert queue_edit.plan_hold(PROJECT, PLAN) is not None
+    assert _pass(repository)["queued"] == 0
+
+    queue_edit.release(plan=PLAN, reason="the shape is settled")
+    assert queue_edit.plan_hold(PROJECT, PLAN) is None
+    assert _pass(repository)["queued"] == 3
 
 
 def test_a_live_coordinators_plan_is_filed_under_its_session(
@@ -250,4 +295,6 @@ def test_a_live_coordinators_plan_is_filed_under_its_session(
     assert filed, report
     for pointer in filed:
         assert pointer["session"] == COORDINATOR, pointer
-        assert (pointer.get("dispatch_options") or {}).get("queued_by") == SERVICE, pointer
+        assert (pointer.get("dispatch_options") or {}).get("queued_by") == SERVICE, (
+            pointer
+        )
