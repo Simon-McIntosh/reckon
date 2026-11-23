@@ -19,10 +19,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
+from reckon import crew
 from reckon.cli import main as cli_main
-from reckon.crew import promotion_records, runs
+from reckon.crew import promotion_checks, promotion_records, runs
 from reckon.crew.runs import _write_json, pointer_path, runs_dir
 
 RUN_ID = "r-20261123T000000000000-gate-names-its-program"
@@ -101,6 +103,12 @@ def test_a_recorded_command_that_begins_with_an_option_is_refused(
     assert RECORDED_WITHOUT_A_PROGRAM in refusal, refusal
     assert "declare-gate" in refusal, refusal
     assert DECLARED in refusal, refusal
+
+    # Promotion reads the same rule from the same file, so a delivery refused
+    # here is refused there in the same words rather than re-described.
+    with pytest.raises(crew.CrewError) as promoted:
+        promotion_checks._require_no_manifest_fault(RUN_ID, runs.read_pointer(RUN_ID))
+    assert str(promoted.value).count("-m pytest tests/test_a.py") >= 1
 
 
 def test_a_command_that_names_its_program_is_accepted(
