@@ -3766,6 +3766,32 @@ def _ledger_read_root(project: str, repository: Path) -> Path | None:
     return repository
 
 
+def _namings_answer_from_store(project: str, repository: Path) -> bool:
+    """Whether :func:`_run_namings` answers from the store's own projection.
+
+    The projection answers the project's history once it holds the project: it
+    is keyed by run identity, so a row the aggregate gained after the
+    projection was last completed is not in it and must not reach a reader from
+    anywhere else. The merged reader, when it answers instead, already decides
+    which aggregate rows are readable, so the derivation neither adds to nor
+    subtracts from what it returned.
+    """
+
+    try:
+        from reckon.crew import open_run_index
+
+        signature = _HELD_SOURCE_SIGNATURE.get()
+        return (
+            open_run_index.pointers() is not None
+            and signature is not None
+            and open_run_index.matches_sources(
+                project, _ledger_read_root(project, repository), signature
+            )
+        )
+    except Exception:  # noqa: BLE001 — an unreadable index answers nothing
+        return False
+
+
 def _run_namings(
     project: str, repository: Path
 ) -> tuple[dict[str, tuple[str, Path | None]], list[dict[str, Any]]] | None:
@@ -3798,11 +3824,7 @@ def _run_namings(
 
         root = _ledger_read_root(project, repository)
         signature = _HELD_SOURCE_SIGNATURE.get()
-        if (
-            open_run_index.pointers() is not None
-            and signature is not None
-            and open_run_index.matches_sources(project, root, signature)
-        ):
+        if _namings_answer_from_store(project, repository):
             rows = ledger.open_runs(project, root)
             rows.extend(open_run_index.rows_naming_trees(project, signature[4], root))
         else:
@@ -4499,23 +4521,29 @@ def _held_worktree_records_read(
                     key = (1, run_id)
                     index.extra.add(run_id)
                 index.replace(key, row, retained)
-            # The merged reader answers from the run store, and its projection
-            # narrows to the rows it can still serve: one per tree, latest
-            # first. The aggregate is the ledger's own record of what landed,
-            # so every row it carries that the read above did not deliver is
-            # filed from the aggregate's own position. Otherwise a row only the
-            # aggregate carries names no tree, and a rebuild over a rewritten
-            # aggregate would drop the duties its older rows still owe.
-            delivered = {str(row.get("run_id") or "") for row in rows}
-            for ordinals in aggregate_order.values():
-                for ordinal in ordinals:
-                    row = aggregate_rows[ordinal]
-                    run_id = str(row.get("run_id") or "")
-                    if run_id and run_id in delivered:
-                        # Filed above from the store's own copy; filing the
-                        # aggregate's would put one row in the index twice.
-                        continue
-                    index.replace((0, ordinal), row, _retained_worktree(row))
+            # The store's projection narrows to the rows it can still serve,
+            # so a row the aggregate kept after its document went away is not
+            # in the read above even though the ledger still holds it. That
+            # row is filed from the aggregate's own position, or a rebuild over
+            # a rewritten aggregate drops the duty its older rows still owe.
+            #
+            # Only the store's answer is completed this way. When the merged
+            # reader answers instead, it has already decided which aggregate
+            # rows are readable: a row the aggregate gained after the
+            # projection was last completed reaches no reader through it, and
+            # filing it here would attribute a tree to a run the whole-ledger
+            # read attributes to an earlier one.
+            if fresh is None or _namings_answer_from_store(project, repository):
+                delivered = {str(row.get("run_id") or "") for row in rows}
+                for ordinals in aggregate_order.values():
+                    for ordinal in ordinals:
+                        row = aggregate_rows[ordinal]
+                        run_id = str(row.get("run_id") or "")
+                        if run_id and run_id in delivered:
+                            # Filed above; filing the aggregate's copy would
+                            # put one row in the index twice.
+                            continue
+                        index.replace((0, ordinal), row, _retained_worktree(row))
             affected = set(inspected)
         else:
             _stamp, old_identities, index = previous
