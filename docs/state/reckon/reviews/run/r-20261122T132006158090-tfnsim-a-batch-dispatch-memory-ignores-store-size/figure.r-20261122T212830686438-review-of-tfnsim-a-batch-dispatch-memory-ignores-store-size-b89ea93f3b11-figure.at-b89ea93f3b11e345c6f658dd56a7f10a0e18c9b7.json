@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T23:57:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": 31,
+      "severity": "non-blocking",
+      "summary": "The caption calls the threshold 'the dashed line in the left panel', but in the rendered PNG the rule is a fine dotted line. A reader sent looking for dashes is directed at a mark that is not there."
+    },
+    {
+      "file": "docs/figures/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size/dispatch-peaks.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The right panel's third group, 'plan documents doubled', shows only the blue this-change bar (1.08) where the other two groups show a grey/blue pair. A reader cannot tell from the figure whether the base revision was measured and omitted, or never measured; the caption does not say. The comparison the section makes is against the head's own as-prepared arm, so the absence is legitimate, but it is unexplained in the artifact."
+    },
+    {
+      "file": "docs/figures/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size/dispatch-peaks.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The two panels use different y limits (left 0.0-3.0 in 0.5 steps, right 0.0-4.0 in 0.5 steps) for the same quantity, so a bar of equal height means a different memory in each panel. Every bar is value-labelled and each axis states GiB, so no number is lost, but a cross-panel glance at heights misleads."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T212830686438-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-b89ea93f3b11-figure",
+  "reviewed_base_sha": "0d4e508516652090a9d97e8198f92cd21e2105e0",
+  "reviewed_head_sha": "b89ea93f3b11e345c6f658dd56a7f10a0e18c9b7",
+  "reviewed_run_id": "r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "pass: value labels and titles are near-black on white, tick labels and the threshold annotation are mid-grey on white and legible; no text is drawn over a bar fill.",
+    "data_ink": "pass: solid grey and blue bar fills plus one dotted threshold rule carry the ink; there is no gradient, texture or shading.",
+    "decoration": "pass: no grid, background fill, frame or styled theme; only the left and bottom spines are drawn.",
+    "label_collision": "pass: nothing is clipped at the canvas edge; the threshold annotation's two lines sit one above and one below its dotted rule rather than through a glyph; no label overlaps another label, a bar, or the value it annotates, including the 4.19 label above the tallest bar clear of the panel title.",
+    "legibility": "pass: both panel titles, both 'peak resident memory [GiB]' axis labels, all tick labels, the wrapped group names and every bar's value label read at a glance; the threshold annotation sits in clear space to the right of the left panel's bars. Caveat recorded as a non-blocking finding: the panels use different y limits (0-3.0 vs 0-4.0).",
+    "table_form": "pass: the picture carries a magnitude comparison plus a bound (half the base peak) drawn across the left panel, which a table would not show against the base peak."
+  },
+  "rubric_note": "judged only from the rendered 1400x720 PNG attached to this review",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:15:07.837864+00:00",
+  "total": null
+}

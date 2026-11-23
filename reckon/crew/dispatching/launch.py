@@ -127,12 +127,13 @@ def worker_mcp_record(plan: _backends.LaunchPlan) -> dict[str, dict[str, Any]]:
     """
     if not plan.mcp_set and not plan.worker_mcp_servers:
         return {}
-    return {
-        "worker_mcp": {
-            "set": plan.mcp_set,
-            "servers": list(plan.worker_mcp_servers),
-        }
+    entry: dict[str, Any] = {
+        "set": plan.mcp_set,
+        "servers": list(plan.worker_mcp_servers),
     }
+    if plan.shared_mcp_endpoints:
+        entry["shared"] = dict(sorted(plan.shared_mcp_endpoints.items()))
+    return {"worker_mcp": entry}
 
 
 def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) -> None:
@@ -455,6 +456,10 @@ def _launch_dispatch(
             # session's budget keeps nothing, because the points return the
             # moment the request leaves the waiting phases.
             "priority": _dispatch_priority(dispatch_options),
+            # The width the caller asked for, carried on the pointer a promotion
+            # reads so the committed row can say whether the run came from a
+            # whole-plan call, a batch file or one section.
+            "dispatch_width": str(dispatch_options.get("dispatch_width") or ""),
             "due": due,
             "urgency": urgency,
             "brief": brief,

@@ -60,13 +60,20 @@ def section_waits_for(pointer: Mapping[str, Any]) -> list[str]:
 
 
 def _run_record_held(project: str, run_id: str) -> bool:
-    """Whether one project's ledger holds the row for a run."""
+    """Whether one project's records name a run.
+
+    Read through the readiness reader that resolves a ``run:`` wait, so a
+    request queued before its upstream was promoted still finds the run once
+    the promotion has recorded it: the store holds that row, and the per-run
+    documents beside the aggregate are not maintained for every checkout. A
+    reader that opened only the documents called a promoted run unresolvable,
+    and the request waiting on it could never be released.
+    """
     if not project:
         return False
     try:
-        from reckon import ledger
-
-        return ledger.run_path(project, run_id).is_file()
+        _revision, named, _unreadable = _readiness._promotion_record(project, run_id)
+        return named
     except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
         return False
 
@@ -320,7 +327,6 @@ def _validated_batch_waits(
 ) -> tuple[dict[str, list[str]], dict[str, dict[str, str]]]:
     """Resolve all waits and reject absent targets or a combined graph cycle."""
     from reckon import _plan_html as plan_html_reader
-    from reckon import ledger
     from reckon._schema import parse_plan_ref
 
     current_docs = Path(repo_root) / "docs"
@@ -352,7 +358,7 @@ def _validated_batch_waits(
             run_id = ref[len(REQUEST_REF_PREFIX) :]
             if run_id not in request_nodes and run_id not in live_requests:
                 known = any(
-                    ledger.run_path(candidate, run_id).is_file()
+                    _run_record_held(candidate, run_id)
                     for candidate in {owner_project, project}
                     if candidate
                 )
@@ -376,7 +382,16 @@ def _validated_batch_waits(
         html = _readiness.plan_document_text(docs.parent, parsed.slug)
         if not html:
             raise CrewError(f"wait names missing plan {target_project}:{parsed.slug}")
-        row = _readiness._plan_state_and_text(docs, parsed.slug, target_project)[0]
+        try:
+            row = _readiness._plan_state_and_text(docs, parsed.slug, target_project)[0]
+        except Exception:  # another project's plan is not ours to refuse
+            if target_project == project:
+                raise
+            # A malformed plan in a project this dispatch does not own is that
+            # project's document to repair. The wait is kept and stays
+            # unresolved, reported where it is resolved, so one project's bad
+            # plan cannot refuse another project's dispatch.
+            row = {}
         if parsed.stage:
             authored = {
                 normalize_section(identity)
@@ -414,9 +429,18 @@ def _validated_batch_waits(
             edges[key].add(child)
             if not child.startswith("run:"):
                 section_edges(child)
-        state = _readiness._plan_state_and_text(
-            docs, parsed.slug, parsed.project or project
-        )[0]
+        try:
+            state = _readiness._plan_state_and_text(
+                docs, parsed.slug, parsed.project or project
+            )[0]
+        except Exception:  # an unreadable plan adds no edges
+            # A plan this project does not own that cannot be read contributes
+            # no dependency edges; the wait itself is kept and held, and the
+            # read that failed is reported when the wait is resolved. A plan
+            # this project owns still refuses here, as it always has.
+            if (parsed.project or project) == project:
+                raise
+            state = {}
         for ref in state.get("depends_on") or ():
             child, _ = target(str(ref), parsed.project or project)
             edges[key].add(child)

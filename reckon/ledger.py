@@ -155,6 +155,10 @@ RECORD_FIELDS = (
     "lane",
     "model_key",
     "local",
+    # The width the request was dispatched at: "plan" for a whole-plan call,
+    # "batch" for a batch file, "section" for a call naming one section. Null on
+    # a row whose request recorded no width.
+    "dispatch_width",
     "agent",
     "dispatched_at",
     "completed_at",
@@ -1742,9 +1746,15 @@ def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
 # project and the projection, because a picker-projected row and a full record
 # are different answers to the same history and neither can be derived from the
 # other once decoded (the picker projection leaves out fields the full record
-# keeps). It holds the token its rows were read under and the per-row signature
-# the store answered at that read.
-_Entry = tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]]
+# keeps). It holds the token its rows were read under, the per-row signature the
+# store answered at that read, the decoded rows, and the sequence number the
+# store had reached, so the next read asks only for the rows written since.
+_Entry = tuple[
+    tuple[Any, ...],
+    dict[str, tuple[Any, ...]],
+    dict[str, dict[str, Any]],
+    int,
+]
 
 # How many stored histories one process keeps: eight projects, each read
 # through both the picker projection and the full record. Each entry holds a
@@ -1875,26 +1885,44 @@ def stored_history(
     if held is not None and held[0] == token:
         return _handed_rows(held[2]), _stored_auxiliary(project, root)
 
-    signature = run_store.stored_run_signature(project, path=target)
+    # A held history names the sequence number its rows were read at, so an
+    # incremental read asks only for the rows written since rather than for the
+    # project's whole signature.
+    cursor = None if held is None else held[3]
+    signature = run_store.stored_run_signature(project, path=target, since=cursor)
     if signature is None:
         return None
-    current = {str(row[0]): row for row in signature}
+    moved = {str(row[0]): row for row in signature}
     # The rows this read has to decode: everything when nothing is held, and
-    # otherwise only those whose signature moved.
+    # otherwise only those whose signature moved. A row the answer reports as
+    # absent is a deletion, and is dropped from what is held.
     wanted: list[str] | None
     if held is None:
+        current = moved
         rows: dict[str, dict[str, Any]] = {}
         wanted = None
     else:
+        current = dict(held[1])
+        for run_id, row in moved.items():
+            if row[13]:
+                current[run_id] = row
+            else:
+                current.pop(run_id, None)
         rows = {run_id: row for run_id, row in held[2].items() if run_id in current}
         wanted = sorted(
-            run_id for run_id, row in current.items() if held[1].get(run_id) != row
+            run_id
+            for run_id, row in moved.items()
+            if run_id in current and held[1].get(run_id) != row
         )
         if not wanted and held[0][2] != token[2]:
-            # The project's generation moved and no row the signature can see
-            # did, so this is a rewrite the signature cannot describe. Read the
-            # project's rows again rather than answer from what it does not
-            # hold.
+            # The project's generation moved and no row the store's signature
+            # reported did. Read the project's whole signature and decode its
+            # rows again rather than answer from what it does not hold.
+            full = run_store.stored_run_signature(project, path=target)
+            if full is None:
+                return None
+            current = {str(row[0]): row for row in full}
+            rows = {run_id: row for run_id, row in held[2].items() if run_id in current}
             wanted = None
     decoded = {
         str(row.get("run_id")): row
@@ -1908,11 +1936,14 @@ def stored_history(
     complete = wanted is None or all(run_id in decoded for run_id in wanted)
     answer = _handed_rows(rows)
     auxiliary = _stored_auxiliary(project, root)
+    reached = max(
+        [0 if cursor is None else cursor, *(int(row[14]) for row in moved.values())]
+    )
     # Kept only when no write landed under the read and every row this read
     # asked for arrived: a row promoted between the signature and the rows, or
     # one that vanished under them, would otherwise be cached as already seen.
     if complete and _history_token(project, target, run_store=run_store) == token:
-        _hold_history(key, (token, current, rows))
+        _hold_history(key, (token, current, rows, reached))
     return answer, auxiliary
 
 

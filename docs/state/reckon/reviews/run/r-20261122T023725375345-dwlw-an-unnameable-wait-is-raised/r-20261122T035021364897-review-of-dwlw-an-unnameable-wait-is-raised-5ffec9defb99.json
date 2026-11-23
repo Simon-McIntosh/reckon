@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligations.py:1734 obligations() classifies each live pointer into the session's duties",
+    "reckon/crew/recovery_watch.py:758 watch loop classifies each live run per tick",
+    "reckon/crew/query.py:610 crew status renders the live classification",
+    "reckon/crew/promotion.py:1146 promotion classifies the run before landing",
+    "reckon/crew/reports.py:362 parse_manifest refuses an out-of-vocabulary status word and now names the declared wait"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T03:50:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1567",
+      "severity": "non-blocking",
+      "text": "non-blocking: _wait_no_reader_will_run returns None when a manifest declares only wait_condition, because _wait_probe_shape_refusal reads an absent probe as no refusal, so an ended worker on such a wait is still classed running with no duty even though its docstring at :1549 promises the declared wait nothing can probe."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "860",
+      "severity": "non-blocking",
+      "text": "non-blocking: _declared_wait_text scans only wait_probe and wait_file, so a refused manifest whose whole wait declaration is a prose wait_condition gets none of it into the refusal text, leaving the coordinator to repair the status and still not see the unprobeable condition."
+    }
+  ],
+  "head_log_revision": "ddb95a0dd24edf0a7a98049baad2e32e5c30f9bf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "traced the classifier branch through reckon/crew/obligations.py:1734 (the session's obligation rows), reckon/crew/recovery_watch.py:758 (watch loop), reckon/crew/query.py:610 (crew status) and the reports.py change through reckon/crew/reports.py:362 parse_manifest.",
+    "diff": "Read commit by commit against b5444d24: ddb95a0dd2 adds _wait_no_reader_will_run and its classifier branch and the reports.py wait-in-refusal text, ac7e86736c and e3b8ae67df add and correct the evidence fragment, 5ffec9defb drops a table row no log backed.",
+    "done_when": "tests/test_an_unnameable_wait_is_raised.py asserts the three arms at :135-201 and adds a fourth for an out-of-vocabulary word at :214-235; the run directory's logs record 58 passed baseline and 62 passed after, both EXIT=0, plus a red control at EXIT=1.",
+    "goal": "The goal is to raise an ended run whose status or wait probe cannot be acted on; reckon/crew/recovery_classification.py:2480-2510 classes a dead worker with a prose wait_probe as unreadable with recovery verb repair, quoting the status word and the probe text, which is the reported case from the plan's 21 November incident.",
+    "manifest": "Read; status complete, four commits cited, changed_paths the four landed files, tests naming the three-file pytest command, baseline_suite 58 passed and after_suite 62 passed with log paths, negative_control_log negative-control-base.log.",
+    "write_paths": "git diff b5444d24..5ffec9df touches docs/evidence/fragments/delivered-work-lands-without-a-coordinator/dwlw-an-unnameable-wait-is-raised.html, reckon/crew/recovery_classification.py, reckon/crew/reports.py and tests/test_an_unnameable_wait_is_raised.py, all four declared; recovery_vocabulary.py and the figures directory were declared but not changed."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unnameable_wait_is_raised.py:147 fails on the pinned base with the run classed running, and its :233 fails if reckon/crew/reports.py:850 stops appending the declared wait to the refusal text.",
+    "evidence": "the run directory's scoped-gate log records 62 passed in 39.03s with EXIT=0 at revision ddb95a0dd, the baseline log 58 passed in 37.94s EXIT=0 at b5444d24, and negative-control-base.log records 1 failed EXIT=1 on assert 'running' == 'unreadable'.",
+    "fit": "reckon/crew/recovery_classification.py:1546 names the mechanism in a docstring with no plan, sprint or ticket identifier and follows the surrounding helper style and the module's late import block at :4159.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:2485 raises a dead worker's prose-probe wait as unreadable and quotes both texts, and reckon/crew/reports.py:850 names the declared wait on an out-of-vocabulary status word, but a manifest declaring only wait_condition with no probe still returns None at recovery_classification.py:1567 and stays running.",
+    "reuse": "the new helper composes the owner's reckon/crew/recovery_wait.py:462 _wait_probe_shape_refusal and :501 _wait_file_shape_refusal plus _WAIT_ACCEPTED_SHAPES rather than re-reading probe shapes, and no second refusal formatter exists in either module.",
+    "scope_discipline": "git diff --stat b5444d24..5ffec9df lists exactly the evidence fragment, recovery_classification.py, reports.py and the new test file, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to raise an ended run whose status or wait probe cannot be acted on; reckon/crew/recovery_classification.py:2480-2510 classes a dead worker with a prose wait_probe as unreadable with recovery verb repair, quoting the status word and the probe text.\nVERDICT done_when: tests/test_an_unnameable_wait_is_raised.py asserts the three done_when arms at :135-201 and adds a fourth for an out-of-vocabulary word at :214-235; the run directory logs record 58 passed baseline and 62 passed after, both EXIT=0.\nVERDICT write_paths: git diff b5444d24..5ffec9df touches the evidence fragment, reckon/crew/recovery_classification.py, reckon/crew/reports.py and tests/test_an_unnameable_wait_is_raised.py, all four inside the declared write paths.\nVERDICT manifest: read; status complete, four commits cited, changed_paths the four landed files, tests naming the three-file pytest command, baseline_suite 58 passed and after_suite 62 passed with log paths, negative_control_log negative-control-base.log.\nVERDICT diff: read commit by commit against b5444d24: ddb95a0dd2 adds _wait_no_reader_will_run and its classifier branch and the reports.py wait-in-refusal text, ac7e86736c and e3b8ae67df add and correct the evidence fragment, 5ffec9defb drops a table row no log backed.\nCALL_SITES: reckon/crew/obligations.py:1734 obligations(), reckon/crew/recovery_watch.py:758 watch loop, reckon/crew/query.py:610 crew status, reckon/crew/promotion.py:1146 promotion, reckon/crew/reports.py:362 parse_manifest\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:2485 raises a dead worker's prose-probe wait as unreadable, but a manifest declaring only wait_condition still returns None at :1567 and stays running.\nSCORE evidence: 18\nJUSTIFICATION evidence: the scoped-gate log records 62 passed with EXIT=0 at ddb95a0dd, the baseline log 58 passed EXIT=0 at b5444d24, and negative-control-base.log 1 failed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b5444d24..5ffec9df lists exactly four paths and every one is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_unnameable_wait_is_raised.py:147 reddens on the pinned base as the control log shows, and :233 reddens if reckon/crew/reports.py:850 stops naming the declared wait.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1546 states the mechanism with no plan or ticket identifier and follows the module's helper style and late import block at :4159.\nSCORE reuse: 18\nJUSTIFICATION reuse: the helper composes the owner's reckon/crew/recovery_wait.py:462 _wait_probe_shape_refusal and :501 _wait_file_shape_refusal plus _wait_file_paths rather than re-reading probe shapes, and no second refusal formatter exists.\nFINDING reckon/crew/recovery_classification.py:1567 non-blocking: _wait_no_reader_will_run returns None when a manifest declares only wait_condition, because an absent probe reads as no refusal, so an ended worker on such a wait stays classed running.\nFINDING reckon/crew/reports.py:860 non-blocking: _declared_wait_text scans only wait_probe and wait_file, so a refused manifest whose whole wait declaration is a prose wait_condition gets none of it into the refusal text.",
+  "review_run_id": "r-20261122T035021364897-review-of-dwlw-an-unnameable-wait-is-raised-5ffec9defb99",
+  "reviewed_base_sha": "b5444d24baca6ef9d1e71d26c2265191a1134845",
+  "reviewed_head_sha": "5ffec9defb99002e8fa987e5a13379057c6460e3",
+  "reviewed_run_id": "r-20261122T023725375345-dwlw-an-unnameable-wait-is-raised",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T035021364897-review-of-dwlw-an-unnameable-wait-is-raised-5ffec9defb99"
+  },
+  "reviewer_run_id": "r-20261122T035021364897-review-of-dwlw-an-unnameable-wait-is-raised-5ffec9defb99",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T04:26:23.839445+00:00",
+  "total": 109
+}

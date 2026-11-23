@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:3128 shared_server_urls",
+    "reckon/_backends.py:3175 _shared_mcp_endpoints",
+    "reckon/_backends.py:3347 claude_worker_mcp_config",
+    "reckon/mcp.py:4112 serve",
+    "reckon/_worker_fence.py:668 _seed_worker_mcp_exclusions"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T11:08:25Z",
+  "findings": [
+    {
+      "file": "reckon/project_setup_commands.py",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "commit 171ca91311 says it restores the file's prior spacing but adds a third blank line at lines 17, 116 and 157, which ruff format --check reports as three reformat hunks, so the style commit introduces the churn it claims to remove and its message misstates the result."
+    },
+    {
+      "file": "tests/test_one_server_per_node_serves_every_worker.py",
+      "line": 208,
+      "severity": "non-blocking",
+      "text": "assert declaration == {\"type\": \"http\", \"url\": server.url} compares the composed endpoint against the same server.url the test passed into claude_worker_mcp_config, so it passes whatever the composition does with the url; the live tool call at line 210 is what actually guards the endpoint."
+    },
+    {
+      "file": "tests/test_one_server_per_node_serves_every_worker.py",
+      "line": 219,
+      "severity": "non-blocking",
+      "text": "assert len(answers) == WORKERS is tautological because answers is a gather over exactly WORKERS coroutines, so it holds whatever the server returns; lines 220-222 carry the real answer checks and this line only overstates what it verifies."
+    },
+    {
+      "file": "reckon/mcp_shared.py",
+      "line": 83,
+      "severity": "non-blocking",
+      "text": "node_dir now takes runtime_root_candidate's third candidate, the per-session scratch root, for a record that must be shared by every worker on the node, and the tempfile.gettempdir() branch at line 85 bypasses the candidate order; where no runtime directory exists two sessions resolve different directories and each starts its own server, weakening the one-server-per-node guarantee the change exists to provide."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one MCP server per node serving every worker that names it, and the commits gained since the prior review keep that mechanism at reckon/mcp_shared.py:230 serve and deliver the missing evidence, so the goal is met by the landed change rather than newly restructured.\nVERDICT done_when: the done_when asks 5 then 40 workers, one server process, every tool call answered with a real answer, and resident medians ten minutes apart over one hour per arm; gate-after.log records 67 passed/EXIT=0 at aa9504a25871 whose code is identical to the head (git diff aa9504a258..0802dcd145 over reckon/, tests/, scripts/ is empty), and soak-1336647.log records duration 3600 interval 600 with 7 samples per arm and EXIT=0.\nVERDICT write_paths: the node's own fourteen commits touch only the declared paths (tests/test_one_server_per_node_serves_every_worker.py, tests/test_every_shared_home_lock_holds_across_nodes.py, reckon/mcp_shared.py, reckon/_worker_fence.py, reckon/project_setup_commands.py, and the evidence fragment and figure directory); the remaining paths in the 206-path diff arrive from the primary-branch merge 4a5d9f3b34 and peer landings, not this node's work.\nVERDICT manifest: read the source manifest at the run directory; it states status complete, names the gate command, test_logs gate-after.log, negative_control_log, the one-hour soak with its job id, and its rubric lines, and each claim I checked (gate revision, soak header and EXIT=0, negative control reading 8 servers) reconciles with the log it cites.\nVERDICT diff: read the fourteen node commits from 1b72aa3966 to 0802dcd145: d0137ed0ba adds the server-stop fixture, bf3e171cec replaces the tautological count with per-answer content checks, 2ca7a8db45 adds the composed-config live call, b40f171208 fixes the list-shaped store, 4047fa5e95 moves onto the owned record/runtime/liveness helpers and drops the dead helper, 3ad4d21e05 records the node-local lock, 171ca91311 touches whitespace, and the evidence and figure commits record both arms and the soak.\nCALL_SITES: reckon/_backends.py:3128 shared_server_urls, reckon/_backends.py:3175 _shared_mcp_endpoints, reckon/_backends.py:3347 claude_worker_mcp_config, reckon/mcp.py:4112 serve, reckon/_worker_fence.py:668 _seed_worker_mcp_exclusions\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_shared.py:230 serve holds one node-local lock per name for the process lifetime and reckon/_worker_fence.py:668 hands every worker the shared endpoint, which is the deliverable the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-after.log records 67 passed/EXIT=0 at aa9504a25871, arm-base.log records 58 passed/EXIT=0 at bfacff71, and soak-1336647.log records the one-hour 3600s/600s run at 1b72aa3966 with EXIT=0 and 7 samples per arm, all quoted verbatim in the fragment.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every changed path in the node's own commits is inside its declared write paths, but reckon/project_setup_commands.py:17 in 171ca91311 adds whitespace churn the commit says it is removing.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_one_server_per_node_serves_every_worker.py:105 fails if a stopped server survives and :222 fails if workers disagree, but no test drives launch_plan with a shared_mcp_servers declaration, and :208 and :219 assert values the test itself supplied.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/mcp_shared.py follows the module's dataclass-and-env-constants idiom, but reckon/project_setup_commands.py:17 leaves three runs of three blank lines that ruff format --check would reformat.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/mcp_shared.py:83 and :130 now call reckon/node_runtime.py:24 runtime_root_candidate, reckon/_store.py:636 write_json_atomically and reckon/crew/process_liveness.py:11 process_alive, and the uncalled worker_server_config helper is gone, so every capability used extends its existing owner.\nFINDING reckon/project_setup_commands.py:17 non-blocking: commit 171ca91311 says it restores the file's prior spacing but adds a third blank line at lines 17, 116 and 157, which ruff format --check reports as three reformat hunks, so the style commit introduces the churn it claims to remove and its message misstates the result.\nFINDING tests/test_one_server_per_node_serves_every_worker.py:208 non-blocking: assert declaration == {\"type\": \"http\", \"url\": server.url} compares the composed endpoint against the same server.url the test passed into claude_worker_mcp_config, so it passes whatever the composition does with the url; the live tool call at line 210 is what actually guards the endpoint.\nFINDING tests/test_one_server_per_node_serves_every_worker.py:219 non-blocking: assert len(answers) == WORKERS is tautological because answers is a gather over exactly WORKERS coroutines, so it holds whatever the server returns; lines 220-222 carry the real answer checks and this line only overstates what it verifies.\nFINDING reckon/mcp_shared.py:83 non-blocking: node_dir now takes runtime_root_candidate's third candidate, the per-session scratch root, for a record that must be shared by every worker on the node, and the tempfile.gettempdir() branch at line 85 bypasses the candidate order; where no runtime directory exists two sessions resolve different directories and each starts its own server, weakening the one-server-per-node guarantee the change exists to provide.\n",
+  "review_run_id": "r-20261122T110805714183-review-of-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-0802dcd14535",
+  "reviewed_base_sha": "1b72aa3966dcfb9eff5e776a39cd52efdf7d5a39",
+  "reviewed_head_sha": "0802dcd145355a54a09b0b79161669c9226f6c90",
+  "reviewed_run_id": "r-20261122T032400625016-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T11:22:15.711647+00:00",
+  "total": 100
+}

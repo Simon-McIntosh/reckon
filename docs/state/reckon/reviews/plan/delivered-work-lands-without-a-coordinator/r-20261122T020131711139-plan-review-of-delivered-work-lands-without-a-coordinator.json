@@ -1,0 +1,181 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T02:03:23Z",
+  "findings": [
+    {
+      "anchor": "plan.html:280",
+      "id": "reasoning-1",
+      "reason": "the section's premise is already fixed at its own negative-control revision, so a node dispatched to build it would write a test that passes at base and cannot show the guard fires, and the section must be dropped or re-based on a defect that still reproduces.",
+      "text": "\u00a737 states \"the negative-control check would not accept imas-efit's logs/gate-nc-unit-base.log\" carrying \"1155 - unit/imas/iron_limb_outline (Failed)\" under ctest's \"The following tests FAILED\" summary, but at the cited base `204509cf6f` the reader already accepts exactly that shape: `promotion_checks._control_failure_ids` routes through `review_module.gate_log_failure_ids` (`reckon/crew/promotion_checks.py:2513` at 204509cf6f), and `review.py` at 204509cf6f already carries the ctest block reader \u2014 `_CTEST_FAILED_HEADER_RE` (`^The following tests FAILED:\\s*$`) and `_CTEST_ENTRY_RE` (`^\\s*\\d+\\s*-\\s*(.+?)\\s+\\(([^)]*)\\)\\s*$`) match that entry, and `_gate_log_format` classifies the log as ctest from the header alone",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:294",
+      "id": "reasoning-2",
+      "reason": "a coordinator reading the followup as the plan's landing state would treat only \u00a710 (the measurement) as remaining and never dispatch the eight unbuilt repair sections, so the plan would be closed while its defect fixtures are still red.",
+      "text": "the new followup f-dwl-s28 states \"Every section but \u00a710 has landed. \u00a710 is the 24-hour measurement\", but `plan-section-declarations` at plan.html:23 declares s30, s31, s32, s33, s34, s35, s36 and s37 as `implementable`, not `done`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:283",
+      "id": "done_when-1",
+      "reason": "a negative control that is green at the stated base is not a control, and the node's gate would pass on unchanged code, exactly the failure the done_when rubric exists to catch.",
+      "text": "\u00a737's negative control reads \"On main after 204509cf6f the first case must fail with the control log not accepted\", but the first case (a ctest failed-tests summary read as red) already holds at 204509cf6f, so the control cannot fail and measures nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:275",
+      "id": "done_when-2",
+      "reason": "the deliverable states the refusal as an earlier gate than command selection, so a node reading the deliverable's order resolves it without a decision; the contradiction narrows the wording only.",
+      "text": "\u00a736's third arm, \"a gate command given on the landing command line is used whatever the manifest holds\", contradicts its deliverable's unconditional \"a manifest with more than one tests: line is refused before any gate runs\", because the arm's \"whatever the manifest holds\" includes the two-line manifest the deliverable says must be refused",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "b3d730c8e140b705ad25fbb12a7bc72eae6b5e0d",
+  "plan_fingerprint": "833e48edc11a8053937597ba21e161567237c84582bae95786786631586d8b7b",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 77,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "section 37 now describes the refused log as an extract with no ctest summary header, from the coordinator's own description of it",
+      "reason": "",
+      "when": "2026-11-22T02:50:59.188703+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "the followup now says sections 30 to 37 were added on 22 November, that 34 is delivered and the rest are queued",
+      "reason": "",
+      "when": "2026-11-22T02:52:09.293518+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the first case is now the headerless extract, which the base reader finds no failed test in",
+      "reason": "",
+      "when": "2026-11-22T02:53:30.516230+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "the third arm now applies to a manifest with one tests line or none, and a manifest with two is still refused",
+      "reason": "",
+      "when": "2026-11-22T02:54:52.129115+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "note": "the first case is now the headerless extract, which the base reader finds no failed test in",
+      "reason": "",
+      "when": "2026-11-22T02:53:30.516230+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "note": "the third arm now applies to a manifest with one tests line or none, and a manifest with two is still refused",
+      "reason": "",
+      "when": "2026-11-22T02:54:52.129115+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "note": "section 37 now describes the refused log as an extract with no ctest summary header, from the coordinator's own description of it",
+      "reason": "",
+      "when": "2026-11-22T02:50:59.188703+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "153cc75ec3d1f48fe708223b5370ef2c61c7cb44",
+      "commit_basis": "edit",
+      "note": "the followup now says sections 30 to 37 were added on 22 November, that 34 is delivered and the rest are queued",
+      "reason": "",
+      "when": "2026-11-22T02:52:09.293518+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/delivered-work-lands-without-a-coordinator/r-20261122T020131711139-plan-review-of-delivered-work-lands-without-a-coordinator.json",
+  "review_run_id": "r-20261122T020131711139-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "d8d6a512ac4aea8102bcaba4c52d23b74508b9c0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited base `204509cf6f` resolves (`plan(the-monitor-reads-each-fact-once): declare s109 done`), is an ancestor of the reviewed HEAD `b3d730c8e1`; \u00a718, \u00a719 and \u00a76 resolve as sections; every named test path is the file the section itself creates, which is the normal form for a done-when; the two cross-repo anchors (`74e32c369`, `logs/gate-nc-unit-base.log`) sit in another project's tree and cannot be resolved from this repository \u2014 an unresolvable-by-construction citation, not a dangling one.",
+    "done_when": "a finding \u2014 s37's negative control cannot fire at the revision it names, and s36's third arm contradicts its own deliverable's refusal rule.",
+    "evidence_paths": "pass \u2014 every done-when places each arm's log \"under the run directory\" (the crew run directory, durable on GPFS), never in a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 s30\u2013s37 name no symbol, file, function or stage label in their deliverable text; the mechanism words they use (control-mutation measure, merged-primary measure) describe behaviour already named once in the plan, not a new code path.",
+    "reasoning": "a finding \u2014 s37's stated root cause is contradicted by the code at the very revision it cites, and the new followup's landing claim contradicts the section declarations.",
+    "single_goal": "pass \u2014 each of s30\u2013s37 states one deliverable: build-and-run a control measure, read-or-refuse a gate status, promote-from-record, raise an unnameable wait, retire a landed head, suppress a redundant repair resume, read one gate command, read a ctest control. \u00a734's \"and a refused release says which field differed\" is the diagnostic of the same one-step landing, not a second goal.",
+    "wiring": "pass \u2014 s30\u2013s37 declare no `depends-on`, and each cites an upstream that is already landed (\u00a730 reads \u00a719's merged-primary measure, \u00a732 reads \u00a76; \u00a734 reads \u00a718), so no unrecorded wait and no wrong edge; the sole declared edges (s8, s10, s29) are untouched by this change."
+  },
+  "section_digests": {
+    "_document": "c5afbd355fe050403ec1acd4374cac6ee24183e44970e642c1581f336f31d2ff",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s18": "952c184917351117b3f92f50b109c64b6edc963dc57f74f8d0e96e260b672454",
+    "s19": "fd99cdb85821b8f1cc753d60d3461ddda1e36227553a34ad710f3c4edbcb65dd",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s20": "73a59983728fec7eb3a28f9305c1846bab53db81049cdf361b7332b51458b9ab",
+    "s21": "c95db350871319247d9fa4cc2afa9694a54554ea9e31d2e9da533f29a2f8331f",
+    "s22": "af8c57fe3c0c211e820c487af5729bf215453da9640ec5c8b23d71e3f7418e41",
+    "s23": "3739019144c6377f7bee7906410475d1c3b4b1cb8c6cc230ed6a6ba1fb090517",
+    "s24": "2d55de204feeb4689a853af6b9a87571dcb196723395a8172af8276eb87eb3b3",
+    "s25": "5a7d62a0abe80ca6575854a16a19342fe76fea7420d61e441c7c934523ebb7fd",
+    "s26": "a83b6d3223dde663f8b81971ca35c3f4f0d2f46d2f19f7761f9802cb61788701",
+    "s27": "6d263751c392fc5e86bdf0e86106d2e36860af9f0b37a3bfe889db5542c3f8e6",
+    "s28": "17e9b9db682ba8c582f60c11d7f752a497c3ef3401c66cc48a72764617d78e9e",
+    "s29": "aee1396a8754e1625c820205737fe59f7824cbf2b36e9dfd86c1035adf168991",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s30": "d93b8bb4383f924d889d17c41242ca68d40eacc16593a842828af0d7c12fc061",
+    "s31": "0cd73bcd2c2f9995003f53395122fdcf820de30cc0a379b6e2c4843155ea5ba3",
+    "s32": "5ed643747e9b7d9ed5abb8a077fe1a07abd308c872e6f4aa459a6b84437fc045",
+    "s33": "182952968e90a6809c9d1d6ffbdb9510e799ca5245584a0c5aedca3c540a8765",
+    "s34": "ba929b0ada9dbaaa04649c97228a35ddf2844c32297b5083c6074edca3fd9d73",
+    "s35": "342fa77136b1cf1369dc14d00ac464410822978a17a52d8ac2fe7106d46653db",
+    "s36": "e1acc1ea518a2d1fff9b7b9fc64ebec06e9e225473c57be34e0191904a51258d",
+    "s37": "75bf9ec15a1b269bf0794859f8e09c2048ab24714de05e977beba79ab09be4a0",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T02:10:52.378941+00:00",
+  "total": null
+}

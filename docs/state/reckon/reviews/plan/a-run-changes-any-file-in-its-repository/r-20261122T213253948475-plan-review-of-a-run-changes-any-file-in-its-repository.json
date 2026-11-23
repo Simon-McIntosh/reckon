@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T00:25:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans-placeholder:53",
+      "id": "reasoning-1",
+      "reason": "a wrong root cause sends the repair at a mechanism that is already correct, so the gate would either pass on unfixed code or measure an unintended inversion.",
+      "text": "\u00a74 blames the admission order for reviews waiting behind new work, but at the base revision `reckon/crew/queue_order.py` already ranks a delivered review in the leading urgency class: `_precedence` returns `(0, ...)` for a review ahead of ageing `(1)`, priority `(2)` and fair-share `(3)`, and `_next_to_launch` documents \"a review of a delivered run ... launches ahead of the session's queued implementation\". The named negative control (\"an implement request offered the slot ahead of the review\") therefore cannot reproduce, and a node dispatched on this section would be sent to build behaviour the tree already has \u2014 or, on the second clause, to invert it \u2014 on a false premise",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-changes-any-file-in-its-repository.html:45",
+      "id": "done_when-1",
+      "reason": "without a negative control that fails at base, the node's gate cannot show it changed dispatch behaviour, and the test would be written to pass on unfixed code.",
+      "text": "\u00a72's negative control claims \"the section refused for naming no write paths\" at base, but a section with no write-paths sentence is queued: `_PlanRead.write_paths` returns `[]` when no sentence matches, `section_derivation` omits an empty list rather than refusing, `_resolved_write_paths` returns `[]` without error, and `reckon/crew/dispatch_batch.py` states \"a node with no write paths is queued as one\". `doccheck._write_paths_sentence_findings` fires only on a section whose label paragraph is unparseable and only when the text mentions \"write path\" \u2014 never on a section that never mentions it. The first case passes unchanged on the unfixed tree, so the arm's guard does not fire",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-changes-any-file-in-its-repository.html:56",
+      "id": "reasoning-2",
+      "reason": "an unstated threshold makes the endpoint depend on whoever reads it; the implementer must invent a level the plan never fixed, and the arm cannot fail against any stated criterion.",
+      "text": "\u00a74 requires an implement request \"whose priority override the coordinator set at or above a stated critical level\" to launch ahead of a review, but the plan never states that level, and priority is an integer points field (`queue_order._override`) with no critical threshold anywhere in the tree; a review currently outranks every point value unconditionally. The second done-when arm (\"with a critical override on one implement request, that request launches first\") thus has no value to test against",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-changes-any-file-in-its-repository.html:33",
+      "id": "anchors_resolve-1",
+      "reason": "it is narrative attribution of a past incident, not a deliverable any node depends on, and it is repaired by a one-word edit.",
+      "text": "the narrative cites `reckon/crew/admission/node.py`, which does not exist; the module is `reckon/crew/node.py`, so a reader following the citation lands nowhere",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "0402c557e2d94ae075b07d5633293859f5177b01",
+  "plan_fingerprint": "efa23c5ada4072d2cf30fa4a3606faf870b5908734aacdc740a0828309dab978",
+  "plan_slug": "a-run-changes-any-file-in-its-repository",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T213253948475-plan-review-of-a-run-changes-any-file-in-its-repository",
+  "reviewed_blob_sha": "329d51aa379a3f6bc58f6104de593ae83d8641d6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "finding \u2014 `reckon/crew/admission/node.py` does not exist; the module is `reckon/crew/node.py`.",
+    "done_when": "finding \u2014 \u00a72's negative control asserts a refusal (\"the section refused for naming no write paths\") that does not fire at the base revision, so its first case cannot be made to fail.",
+    "evidence_paths": "pass \u2014 every done-when puts each arm's log under the run directory with its revision, literal command and closing `EXIT=` line; no session scratchpad or node-local temp path is named.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags are asked to reach a symbol, filename or comment; section labels `\u00a71`\u2013`\u00a74` stay in the plan surface.",
+    "reasoning": "two findings \u2014 \u00a74's stated root cause is contradicted by the cited mechanism (reviews already lead every queue class at base), and \u00a74's \"stated critical level\" is never stated, leaving its second arm unfalsifiable.",
+    "single_goal": "pass \u2014 each section names one endpoint: \u00a71 scope judged by exclusivity, \u00a72 sections need no write-paths sentence, \u00a73 guidance stops asking, \u00a74 a review takes a slot first.",
+    "wiring": "pass \u2014 `plan-depends-on: concurrent-edits-meet-at-the-merge` resolves to `docs/plans/concurrent-edits-meet-at-the-merge.html`, and no declared relation points at a wrong or missing node."
+  },
+  "section_digests": {
+    "_document": "8763ac68115fb979cf47962c7a09e870ec025ad4dcfa60d67d5762b00c08aa2d",
+    "s1": "ca10de726f87d2ee98482ce4cd462cf2483a8c10575b507a7276c5ffb75192ff",
+    "s2": "a140060086c44a289af84c9d26a1339e847bebb6c0a21650f86ab4f5e2a20aed",
+    "s3": "909b82d9e22c6dddb74e184a51ec57049758195315f215c2182d3fbeaab60613",
+    "s4": "fbb0471623bf8f01db5beadcee15c46acbec25f811d13394534b2475a8471610"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:36:53.832081+00:00",
+  "total": null
+}

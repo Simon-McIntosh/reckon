@@ -1,0 +1,165 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "digests": {
+        "_document": "2a6a93dd5e510a33fc5dc163fb6a83d38314768dd0a16427d2855020b5f7807e"
+      },
+      "reason": "the edit since the reviews withdraws section 10 as their findings concluded",
+      "units": [
+        "_document"
+      ],
+      "when": "2026-11-22T03:57:35.291738+00:00"
+    }
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T03:22:25Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_batch.py:777",
+      "id": "reuse_search-1",
+      "reason": "the endpoint stands unchanged; the brief should direct the node to call `queue_plan(dry_run=True)` for the count (\u00a74 supplying the reason per section) rather than write a fourth enumeration.",
+      "text": "\u00a710 asks a question `queue_plan` already answers in one place: it resolves the plan's coordinator (:807), enumerates implementable sections through `_plan_html.derive_section_todos` (:805), and skips each section that already carries live or ledger work (:832-:860), which is precisely \"implementable, may be queued, has no request\"; the coordinator-joined half of the same census exists in `_ready_idle_rows_from_owners` (reckon/crew/directory.py:491, which joins `resolve_plan_coordinators` to `ready_set_view`), and the plan\u00d7section\u00d7session grouping already exists in `section_obligations.merged_section_items_by_session` (reckon/crew/section_obligations.py:27) \u2014 three owners of the join, none named",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/directory.py:491",
+      "id": "duplicate_owner-1",
+      "reason": "a plan that leaves two counts of \"my plan's work that is not queued\" on one board must say which is the answer and what happens to the other, and \u00a710 says neither.",
+      "text": "the obligation is a second answer to a question the board already answers: `_ready_idle_rows_from_owners` names, per resolved coordinator session, the sections of that session's plans with no live run, and the directory now carries them as `ready_idle_sections` (reckon/crew/directory.py:815) and serves them through the crew view (reckon/mcp_views.py:4516, filter at :1269); \u00a74's predicate (review owed, decision hold, other coordinator, hold) is a different filter over the same rows, so the two counts will diverge on the same board once \u00a74 lands \u2014 the owner to extend is `ready_set_view`'s ready-idle filter (`reckon/mcp_views.py:1213-:1269`) plus `_ready_idle_rows_from_owners`, with `resolve_plan_coordinators` (`reckon/crew/plan_coordinator.py:256`) remaining the single coordinator fact",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:87",
+      "id": "deep_module-1",
+      "reason": "the section must say when it can fire (the project's service queueing switched off, a plan held by the coordinator's hold, or a section \u00a77 declined) or that it is the owner-facing signal for work the service does not file, otherwise a node builds a duty that is dead by construction.",
+      "text": "\u00a710's obligation fires on the same set \u00a77's admit pass queues automatically (\"every implementable section that \u00a74's read says may be queued and that has none\"), and \u00a77 files those requests under the plan's own coordinator when the resolution names a live one; so with \u00a77's setting on, the obligation exists only in the window between a section becoming queueable and the next pass clearing it, and the section never states the gap it covers",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:87",
+      "id": "deep_module-2",
+      "reason": "one more arm (\"a plan coordinated by another live session raises none on this session\") is what proves the duty is scoped to its owner rather than broadcast.",
+      "text": "the design's one real risk is scope: a duty raised on the wrong session tells every coordinator about every plan's unqueued work, yet the done-when's only negative arm is \"a plan with no live coordinator raises none on any session\", so no arm measures the refusal side for a plan that does have a live coordinator",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+  "plan_fingerprint": "073ae054b2a8b4d1ab107a5d34ceae3bd6aa62858499f1be578bb5b8d221ed6c",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:51:07.072272+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:52:36.600846+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:54:08.305868+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "finding": "deep_module-2",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:55:39.428900+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:54:08.305868+00:00"
+    },
+    "deep_module-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:55:39.428900+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:52:36.600846+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c4753055342a194063be7204d2b3ff948027cd5d",
+      "commit_basis": "edit",
+      "note": "section 10 is withdrawn: the admit service empties the set it would watch on every pass and the crew directory already lists each coordinator's sections with no live run",
+      "reason": "",
+      "when": "2026-11-22T03:51:07.072272+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-reviewed-plan-is-queued-at-full-width/r-20261122T032012704695-plan-review-of-a-reviewed-plan-is-queued-at-full-width.json",
+  "review_run_id": "r-20261122T032012704695-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "277fd4d9d746837e1a83784e8772011cca9d1b80",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a710 derives a per-session, per-plan census behind the obligations interface, but it targets the same section set \u00a77 already queues automatically, and the section does not say when it can fire; the scoping guard that keeps the duty on its coordinator alone also carries no arm.",
+    "duplicate_owner": "a finding \u2014 the obligation would be a second statement of \"which sections of this plan have no work\", beside the `ready_idle_sections` field the directory view already computes and serves (`directory.py:491`, filter at `mcp_views.py:1269`, exposed at `mcp_views.py:4516`); the census of existing coordinator\u00d7plan\u00d7section derivations is in the finding below.",
+    "interface_budget": "pass \u2014 public_definitions 3145, cli_options 535, mcp_views 15, refusal_families 25; \u00a710 adds a duty-kind constant and one payload row, which `reckon/interface_counts.py` does not count (it counts public functions/classes, Click options, tool/name view pairs and `format_refusal` codes), and adds no CLI option, MCP view or refusal code.",
+    "reuse_search": "a finding \u2014 the coordinator fact is correctly taken from `resolve_plan_coordinators` (reckon/crew/plan_coordinator.py:256), but the set \u00a710 needs \u2014 a plan's implementable sections with no stored request \u2014 is already produced by `queue_plan` (reckon/crew/dispatch_batch.py:777), whose loop at :832-:860 skips exactly the sections that already carry live or ledger work, and by the coordinator-joined ready-idle join (`_ready_idle_rows_from_owners`, reckon/crew/directory.py:491).",
+    "thin_wrapper": "pass \u2014 \u00a710 proposes no layer over an existing mechanism; it adds one typed duty kind to the session-obligations derivation (reckon/crew/obligations.py, kinds at :383 and :5017; wiring at reckon/crew/obligation_snapshot.py:2098), which is an extension of the owning mechanism rather than a wrapper beside it."
+  },
+  "section_digests": {
+    "_document": "d1e10c4171730369eff28bd04893aee3e7bf7ae30e8b227a8bfb24496bc85be1",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s10": "146496d95cce87ae6aa386637831744be077c20b7664e68c0a6865f3dfe6070c",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "7bf7f9b92e4bbc6a9d86f2d20aacc04cdaa9e3a0c27be56c9f1eccb8cea9efee",
+    "s4": "e8bae1154476fd5795445f93606c186df8a847489d5c50d1ec1934e7190018d4",
+    "s5": "a0356c829de2dc9d9549641fb3dbdff1b2e2904914c61bc70b9f36213272e8ab",
+    "s6": "322422e335f3f8d278ca86100a57410fa7524921c9bda5e38840490a1fd1dd52",
+    "s7": "46ed5e587a3ccf200df8d9e3c23a84e8b5238c86449f9a30e4bcd07c28cc3b76",
+    "s8": "ab8adf6dcfeab65b717343054ca1c1fbd76bfa295179fc83776e83a5d2ae8606",
+    "s9": "6e84f853b79600df1fd05c11705c314262c11808dbcbb043660311f640c0474d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T03:33:41.169025+00:00",
+  "total": null
+}

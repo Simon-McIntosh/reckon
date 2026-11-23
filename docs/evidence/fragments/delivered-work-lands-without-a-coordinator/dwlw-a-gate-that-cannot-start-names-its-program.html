@@ -1,0 +1,89 @@
+<section id="dwlw-a-gate-that-cannot-start-names-its-program-landing">
+  <h2>A merged-head gate that cannot start says so, instead of blaming the merge</h2>
+
+  <p>At the pinned base <code>dde7b001769544957d5ca63f50cbb48c26574553</code>,
+  replaying a gate command that names <code>.venv/bin/python</code> against a
+  tree carrying no <code>.venv</code> ends with the shell's exit status 127 and
+  the finding text <em>the gate passed at the worker's base but reports failed
+  on the integrated revision …: the merge changes what this node's gate
+  proves</em>. Nothing was measured at the merged head, and the refusal sent a
+  r-20261122T032524701158 coordinator into the merge for a missing program.</p>
+
+  <p><strong>What changed.</strong> One resolver — <code>gate_program</code>,
+  <code>resolve_gate_program</code> and <code>rewrite_gate_program</code> in
+  <code>reckon/crew/promotion_gate.py</code> — now serves both the promotion
+  guard that admits a recorded command and the replay that executes it, so one
+  tokenisation, PATH lookup, relative-candidate resolution and executable test
+  answer for both. The replay resolves the command's program
+  before the shell receives it. A relative spelling — <code>.venv/bin/python</code>
+  — is looked for under the tree being measured, then under each recorded worker
+  root, then through any resolved <code>.venv</code>, then through the
+  interpreter running the measurement, and the first executable found is
+  substituted into the command as an absolute path, leaving every other word
+  alone. The guard looks in fewer seats than the replay: it resolves over the
+  run's own checkout and repository and applies no interpreter fallback, so a
+  run whose checkout lacks the <code>.venv/bin/python</code> it recorded is
+  still refused naming that tree. The extra fallback exists for the opposite
+  case — a merged head whose tree holds no <code>.venv</code> although the run's
+  own checkout did. The report names <code>gate_program</code>, the seats it was looked in,
+  and <code>gate_program_rewritten</code>. A program that resolves nowhere is
+  reported as a gate that did not start —
+  <code>integrated_verdict: not-run</code>, <code>gate_started: false</code>,
+  <code>missing_program</code> — with the program and the tree in the reason and
+  in the finding, whose message now says outright that the failure came from a
+  program that could not start rather than from anything the merge changed. An
+  exit status of 127 from the shell is read the same way, with the
+  program taken from the shell's own <code>not found</code> line where it prints
+  one. A not-started replay still writes its log, under the same header, with a
+  <code># not started:</code> line and no <code>EXIT=</code> record.</p>
+
+  <p><strong>What does not change.</strong> A gate that starts and fails keeps
+  its verdict and the failure ids its own output named. A command whose program
+  already resolves replays byte-identically to before. The shell-builtin set is
+  recognised as startable, so a stored command such as <code>exit 3</code> is
+  still executed rather than refused.</p>
+
+  <h3 id="dwlw-a-gate-that-cannot-start-names-its-program-measured">Measured</h3>
+
+  <p>The negative control runs the node's own test file against the pinned base
+  code: three cases fail, the first with <em>verdict=failed
+  exit_status=127 … the merge changes what this node's gate proves</em>, and the
+  same three pass at the head. The first case's gate command,
+  <code>.venv/bin/python -c 'print("the gate ran")'</code>, runs at a tree the
+  fixture asserts carries no <code>.venv</code>, and its log ends
+  <code>EXIT=0</code> with the marker in the captured output. The second case
+  names a program that exists nowhere and is reported not started; the third
+  runs a command that fails and keeps <code>tests/test_sample.py::test_broken</code>
+  as its failure id.</p>
+
+  <p>Both suite arms were run by the project's own measuring path on
+  <code>all_debug</code> at revision
+  <code>54220d000d2f20946cdeb0451208cd89bc8978eb</code>: the after arm logged
+  <em>65 passed in 44.40s</em> and the base arm at
+  <code>dde7b001769544957d5ca63f50cbb48c26574553</code> <em>58 passed in
+  35.72s</em> — the base arm is narrower because the node's test file does not
+  exist there. The scoped gate at <code>831132252430</code> logged <em>61 passed
+  in 43.18s</em>. The population of every test file naming
+  <code>promotion_gate</code> runs <em>121 passed in 136.95s (0:02:16)</em> at
+  this head against <em>114 passed in 140.83s (0:02:20)</em> at the pinned base,
+  the added cases being this node's own.</p>
+
+  <p>Two controls pin the repairs. Against the tree before the resolver was
+  consolidated (<code>b0157b82c3</code>), the file logs <em>3 failed, 4 passed
+  in 0.58s</em>: the single-resolver case, naming <code>landing_measure</code>
+  as the module that re-implements <code>gate_program</code>, and the two cases
+  for the guard's program and the rewriter's token. Against the tree before the
+  shared helpers were consolidated (<code>b55533df9dc8</code>), the same file
+  logs <em>4 failed, 3 passed in 1.00s</em>: those three and the count of
+  <code>_is_executable_file</code> and <code>_SHELL_ASSIGNMENT</code>
+  definitions. Every case is green at the head. The node's own control at the
+  pinned base logged <em>3 failed in 0.58s</em>.</p>
+
+  <p>The guard and the replay resolve over different seats, and both directions
+  are pinned. The replay resolves <code>.venv/bin/python</code> through the
+  measuring interpreter, so a gate runs at a merged head whose tree carries no
+  <code>.venv</code>. The guard does not, so a run whose own checkout lacks the
+  program it recorded is still refused naming that checkout — the case
+  <code>tests/test_deferred_promotion_resolves_relative_program.py</code> holds
+  and which an interpreter fallback at promotion broke.</p>
+</section>

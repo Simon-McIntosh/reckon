@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 14,
+  "call_sites": [
+    "reckon/mcp.py:3932 (_edit_plan_tool through _deadline_tool)",
+    "reckon/mcp_edit_plan.py:177",
+    "439",
+    "497",
+    "577",
+    "693",
+    "801",
+    "999",
+    "1053",
+    "2037 (write_plan callers)",
+    "reckon/serve.py:_handle_plan_write",
+    "reckon/_store.py:2638",
+    "2697 (_replace_* through _replace_plan_text)",
+    "reckon/_store.py:2045 write_plan"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:14:50Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "2068",
+      "severity": "non-blocking",
+      "text": "non-blocking: `write_plan` imports `reckon._plan_html` locally while the same file imports `shares_one_parse` from that module at module scope (reckon/_store.py:78), so one module is reached by two import mechanisms; it matters only as convention drift."
+    },
+    {
+      "file": "tests/test_a_plan_write_parses_its_document_once.py",
+      "line": "126",
+      "severity": "non-blocking",
+      "text": "non-blocking: the counter patches only `_plan_html.BeautifulSoup` and `_StructuredSectionSpanParser.feed`, so a whole-document parse through another parser the repository owns (e.g. reckon/doccheck.py:1692) would go uncounted and the \"every parser entry point the write reaches\" claim would still pass; I verified the current write path does not reach doccheck's document parsers, so the gate holds today."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 14 production call site(s)",
+    "diff": "Read commit by commit against 50e7ad1022: fde22f2a adds the parse scope and routes nine readers through it, 8dd03813 is a lint tidy of the new test only; every refusal path and message is unchanged.",
+    "done_when": "The done_when names tests/test_a_plan_write_parses_its_document_once.py, and the run records it: node-test.log shows 5 passed at fde22f2a, negative-control.log shows the same file at base 50e7ad1022 failing 2 with \"soup parse of a 11935-character document ran 10 times\", and timed-write-base.log and timed-write-head.log each name their revision, literal command and closing EXIT=0 for the no-op edit of the monitor plan, whose job 1336679 sacct reports on partition all_debug.",
+    "goal": "The node's goal is that one versioned plan write parses the stored document once and the written document once; reckon/_plan_html.py:447 `document_parse` and the re-entrant `one_parse_per_document` scope opened at reckon/_store.py:2070, reckon/mcp_edit_plan.py:2293 and reckon/serve.py `_handle_plan_write` deliver that, and the added test counts exactly one soup and one structural scan of each of the write's two documents.",
+    "manifest": "Read; it records status complete, commits fde22f2a and 8dd03813, the 5-passed scoped gate, the base arm's 2 failures, baseline_suite 58 passed and after_suite 63 passed both at EXIT=0, and the two timed-arm logs.",
+    "write_paths": "Read the node's declared paths (reckon/_store.py, reckon/_plan_html.py, reckon/serve.py, reckon/mcp_edit_plan.py, the new test, an evidence fragment and a figure); every path in the delivered diff is inside them, and no file outside them was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_write_parses_its_document_once.py:126 instruments `_plan_html.BeautifulSoup` and the structural parser's `feed`, so reinstating a second parse reddens the count at test line 168, which the base arm demonstrates.",
+    "evidence": "tests/test_a_plan_write_parses_its_document_once.py:159 asserts the counts against `stored` read by the test itself, and negative-control.log records the same assertion failing at base with \"soup parse of a 11935-character document ran 10 times\".",
+    "fit": "the decorator and scope follow the module's own idiom, naming no plan, sprint or ticket identifier anywhere in reckon/_plan_html.py:435-486 or the new test.",
+    "goal_fidelity": "reckon/_plan_html.py:447 `document_parse` returns the one parse of a text held in the write's scope, and the head test asserts exactly one soup and one structural scan of each of the two documents.",
+    "reuse": "the repository's nearest owner of a per-pass scope is reckon/resources.py resource_scan_scope (reckon/resources.py:482 `_SCAN_SCOPE`); the addition follows that idiom and no existing parser owner was forked, since file_memo keys by file identity across requests rather than by document text within a write.",
+    "scope_discipline": "the five delivered paths are inside the declared set; the declared evidence fragment and figure were left unused and nothing was written outside the set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that one versioned plan write parses the stored document once and the written document once; reckon/_plan_html.py:447 `document_parse` and the re-entrant `one_parse_per_document` scope opened at reckon/_store.py:2070, reckon/mcp_edit_plan.py:2293 and reckon/serve.py `_handle_plan_write` deliver that, and the added test counts exactly one soup and one structural scan of each of the write's two documents.\nVERDICT done_when: The done_when names tests/test_a_plan_write_parses_its_document_once.py, and the run records it: node-test.log shows 5 passed at fde22f2a, negative-control.log shows the same file at base 50e7ad1022 failing 2 with \"soup parse of a 11935-character document ran 10 times\", and timed-write-base.log and timed-write-head.log each name their revision, literal command and closing EXIT=0 for the no-op edit of the monitor plan, whose job 1336679 sacct reports on partition all_debug.\nVERDICT write_paths: Read the node's declared paths (reckon/_store.py, reckon/_plan_html.py, reckon/serve.py, reckon/mcp_edit_plan.py, the new test, an evidence fragment and a figure); every path in the delivered diff is inside them, and no file outside them was touched.\nVERDICT manifest: Read; it records status complete, commits fde22f2a and 8dd03813, the 5-passed scoped gate, the base arm's 2 failures, baseline_suite 58 passed and after_suite 63 passed both at EXIT=0, and the two timed-arm logs.\nVERDICT diff: Read commit by commit against 50e7ad1022: fde22f2a adds the parse scope and routes nine readers through it, 8dd03813 is a lint tidy of the new test only; every refusal path and message is unchanged.\nCALL_SITES: reckon/mcp.py:3932 (_edit_plan_tool through _deadline_tool), reckon/mcp_edit_plan.py:177,439,497,577,693,801,999,1053,2037 (write_plan callers), reckon/serve.py:_handle_plan_write, reckon/_store.py:2638,2697 (_replace_* through _replace_plan_text), reckon/_store.py:2045 write_plan\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:447 `document_parse` returns the one parse of a text held in the write's scope, and the head test asserts exactly one soup and one structural scan of each of the two documents.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_plan_write_parses_its_document_once.py:159 asserts the counts against `stored` read by the test itself, and negative-control.log records the same assertion failing at base with \"soup parse of a 11935-character document ran 10 times\".\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the five delivered paths are inside the declared set; the declared evidence fragment and figure were left unused and nothing was written outside the set.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_plan_write_parses_its_document_once.py:126 instruments `_plan_html.BeautifulSoup` and the structural parser's `feed`, so reinstating a second parse reddens the count at test line 168, which the base arm demonstrates.\nSCORE fit: 17\nJUSTIFICATION fit: the decorator and scope follow the module's own idiom, naming no plan, sprint or ticket identifier anywhere in reckon/_plan_html.py:435-486 or the new test.\nSCORE reuse: 17\nJUSTIFICATION reuse: the repository's nearest owner of a per-pass scope is reckon/resources.py resource_scan_scope (reckon/resources.py:482 `_SCAN_SCOPE`); the addition follows that idiom and no existing parser owner was forked, since file_memo keys by file identity across requests rather than by document text within a write.\nFINDING reckon/_store.py:2068 non-blocking: `write_plan` imports `reckon._plan_html` locally while the same file imports `shares_one_parse` from that module at module scope (reckon/_store.py:78), so one module is reached by two import mechanisms; it matters only as convention drift.\nFINDING tests/test_a_plan_write_parses_its_document_once.py:126 non-blocking: the counter patches only `_plan_html.BeautifulSoup` and `_StructuredSectionSpanParser.feed`, so a whole-document parse through another parser the repository owns (e.g. reckon/doccheck.py:1692) would go uncounted and the \"every parser entry point the write reaches\" claim would still pass; I verified the current write path does not reach doccheck's document parsers, so the gate holds today.",
+  "review_run_id": "r-20261122T091412504150-review-of-arcwc-a-plan-write-parses-its-document-once-8dd038135890",
+  "reviewed_base_sha": "50e7ad1022e2336f4f5fdfea7b8ccc90919c9b7b",
+  "reviewed_head_sha": "8dd0381358909a43e0c18eaeb9f928802807d3eb",
+  "reviewed_run_id": "r-20261122T073648055016-arcwc-a-plan-write-parses-its-document-once",
+  "rubric_notes": {},
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:36:37.062279+00:00",
+  "total": 106
+}

@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3121 _resume_without_a_started_turn",
+    "reckon/crew/forgotten_runs.py:111 classify_pointer",
+    "reckon/crew/obligations.py:1794 classify_pointer",
+    "reckon/crew/directory.py:343 classify_pointer",
+    "reckon/crew/query.py:610 classify_pointer",
+    "reckon/crew/dispatch_sessions.py:2442 signal_worker(reach_run=True)",
+    "reckon/crew/dispatch_sessions.py:2812 signal_worker(reach_run=True)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T07:17:02Z",
+  "findings": [
+    {
+      "file": "tests/test_a_resume_that_never_started_reads_as_not_started.py",
+      "line": 401,
+      "severity": "non-blocking",
+      "text": "printable = json.dumps(record) contains record['ended_pids'] itself, so `assert str(pid) in printable` holds for every pid in the list whatever the stop did, and the done_when's 'prints each pid signalled' is therefore not measured by the only case that claims to."
+    },
+    {
+      "file": "docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-resume-that-never-started-reads-as-not-started-and-a-s.html",
+      "line": 48,
+      "severity": "non-blocking",
+      "text": "the landed fragment reports 'At this head the module reports 4 passed' and cites 62 passed at b6f64a6, while the delivered head is dae0b78 with 64 passed in repair-head-gate.log, so the record's own figure names a revision that is not the one landed."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 204,
+      "severity": "non-blocking",
+      "text": "_record_newest_stream is imported from reckon/crew/recovery_wait.py, which only re-exports it from its owner reckon/crew/recovery_liveness.py:470, unlike the sibling imports a few lines above that name the owner directly."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery_classification.py:3121 reaches the reading from classify_pointer, which is called from forgotten_runs.py:111, obligations.py:1794, directory.py:343 and query.py:610; signal_worker with reach_run=True is called from dispatch_sessions.py:2442 and :2812.",
+    "diff": "read commit by commit from b8d76fea; b6f64a60 adds the reading and the step-start condition, 41d3bfbb/96a06832/9143fee4 correct the fragment, and dae0b78 takes the bound, attempt clock and reason from their owners.",
+    "done_when": "the done_when names a blocking stand-in launcher, a bounded launch-failed classification carrying the launcher's own reason with a resume offered, a begun-turn case reading working, a stop that ends the tree naming each pid, and a base-revision negative control; tests/test_a_resume_that_never_started_reads_as_not_started.py:281-306 and :380-405 assert these and negative-control.log records 2 failed 2 passed at base; its literal 'within the bound' clause is the inverse of the deliverable and of the test at :277.",
+    "goal": "the deliverable is that a resumed run reads as working only once its worker has begun a turn and that a stop ends a never-started launch tree; reckon/crew/recovery_classification.py:3284-3286 adds the bounded launch-failed reading and reckon/crew/process_signal.py:1116-1141 stops a placed run whose step never wrote step-task.txt.",
+    "manifest": "read in full; it names five commits, the scoped gate at dae0b78 (64 passed, EXIT=0), both suite arms (58 then 64 passed, EXIT=0, all_debug), the base negative control (2 failed 2 passed), the repair negative control (3 failed 3 passed at 9143fee4) and the scope_note.",
+    "write_paths": "the delivered diff is resumption.py, recovery_classification.py, process_signal.py, the test module and the fragment HTML, inside the seven paths the dispatch brief declares; process_liveness.py is unchanged and the two extra source files carry a manifest scope_note."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's deliverable is that a resumed run reads as working only once its worker has begun a turn, and that a stop ends a never-started launch tree; reckon/crew/recovery_classification.py:3284-3286 adds the bounded launch-failed reading and reckon/crew/process_signal.py:1116-1141 stops a placed run whose step never wrote step-task.txt, so both halves are present.\nVERDICT done_when: the done_when names a blocking stand-in launcher, a bounded launch-failed classification carrying the launcher's own reason with a resume offered, a begun-turn case reading working, a stop that ends the launch tree naming each pid, and a base-revision negative control; tests/test_a_resume_that_never_started_reads_as_not_started.py:281-306 and :380-405 assert these, and negative-control.log records the base revision red (2 failed, 2 passed) against 4 passed at the then-head. Its literal clause 'within the bound the run's classification is the failed-launch one' is the inverse of the deliverable's 'within a stated bound' (i.e. after it) and of the test at :277, so the gate asserts the deliverable, not that sentence.\nVERDICT write_paths: the dispatch declared resumption.py, process_liveness.py, the test module and the evidence-fragment and figure directories; the delivered diff is resumption.py, recovery_classification.py, process_signal.py, the test module and the fragment HTML, with process_liveness.py unchanged and the two extra mergeable source files disclosed in the manifest's scope_note.\nVERDICT manifest: read in full; it names five commits, the scoped gate at dae0b78 (64 passed, EXIT=0), both suite arms (58 then 64 passed, EXIT=0, all_debug), the base negative control (2 failed, 2 passed), the repair negative control (3 failed, 3 passed at 9143fee4) and the scope_note for the two extra source files.\nVERDICT diff: read commit by commit from b8d76fea to dae0b78; b6f64a60 adds the reading and the step-start condition on the stop, 41d3bfbb/96a06832/9143fee4 add and correct the evidence fragment, and dae0b78 takes the bound, attempt clock and reason from their owners, with no test deleted or weakened.\nCALL_SITES: reckon/crew/recovery_classification.py:3121 _resume_without_a_started_turn call site, reckon/crew/forgotten_runs.py:111, reckon/crew/obligations.py:1794, reckon/crew/directory.py:343, reckon/crew/query.py:610, reckon/crew/dispatch_sessions.py:2442 and :2812 signal_worker(reach_run=True)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:3284-3305 classifies a resumed attempt with no turn past the bound as launch-failed carrying the launcher's own reason and offering resume, and reckon/crew/process_signal.py:1116-1141 ends a never-started placed client's tree.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_resume_that_never_started_reads_as_not_started.py:292-306 assert the launch-failed reading, its reason and the resume action, and negative-control.log records base 2 failed 2 passed with EXIT=1 against the head, but the landed fragment at docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-resume-that-never-started-reads-as-not-started-and-a-s.html:48-54 cites only the pre-repair head b6f64a6.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff touches resumption.py, recovery_classification.py, process_signal.py, the test module and the fragment, inside the seven declared paths the dispatch brief lists, though the plan section's own text names only three and the manifest discloses the two extra source files at reckon/crew/recovery_classification.py:1546 and reckon/crew/process_signal.py:1116.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log shows tests/test_a_resume_that_never_started_reads_as_not_started.py:281 and :380 redden at the base revision and repair-negative-control.log shows :308, :345 and :281 redden if the repair is reverted, but :401-403 asserts each pid appears in a json.dumps of the record that contains the pid list itself, so it cannot fail.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/resumption.py:169-258 follows the module's Mapping-typed deferred-import idiom and adds no plan or ticket identifier, though :204 imports the private _record_newest_stream from the re-exporter recovery_wait rather than its owner reckon/crew/recovery_liveness.py:470.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/resumption.py:169 takes the owner's STRANDED_LAUNCH_BOUND_SECONDS (reckon/crew/recovery_liveness.py:70), :215 takes the owner's _attempt_started_seconds (:495), and :1546 recounts the first-line convention once in its owner recovery_classification, which the launch-failure arm at :3165 also calls.\nFINDING tests/test_a_resume_that_never_started_reads_as_not_started.py:401 non-blocking: printable = json.dumps(record) contains record['ended_pids'] itself, so `assert str(pid) in printable` holds for every pid in the list whatever the stop did, and the done_when's 'prints each pid signalled' is therefore not measured by the only case that claims to.\nFINDING docs/evidence/fragments/a-claim-nobody-is-working-is-released/acniw-a-resume-that-never-started-reads-as-not-started-and-a-s.html:48 non-blocking: the landed fragment reports 'At this head the module reports 4 passed' and cites 62 passed at b6f64a6, while the delivered head is dae0b78 with 64 passed in repair-head-gate.log, so the record's own figure names a revision that is not the one landed.\nFINDING reckon/crew/resumption.py:204 non-blocking: _record_newest_stream is imported from reckon/crew/recovery_wait.py, which only re-exports it from its owner reckon/crew/recovery_liveness.py:470, unlike the sibling imports a few lines above that name the owner directly.",
+  "review_run_id": "r-20261122T071153392917-review-of-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s-dae0b78d2231",
+  "reviewed_base_sha": "b8d76fea6133278752f383eb93dd69996f9facf9",
+  "reviewed_head_sha": "dae0b78d22319531179e72157fb1e234fc59256f",
+  "reviewed_run_id": "r-20261122T032522825423-acniw-a-resume-that-never-started-reads-as-not-started-and-a-s",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T07:28:56.161626+00:00",
+  "total": 102
+}

@@ -61,6 +61,15 @@ SETTLED = "promotion-settled"
 # The kinds that ask for a run's own promotion, and so are the ones a delivery
 # the primary branch already carries can settle in place of a gate replay.
 SETTLEABLE_KINDS = frozenset({"command", "complete"})
+# A promotion that loses a race for the run store's write lock is not a
+# delivery a coordinator must repair: the store is busy, and the same
+# promotion succeeds once the lock is free. The service owes the retry, and
+# the verdict records that debt so its obligation says who holds it.
+STORE_LOCKED_RETRY = "store-locked"
+STORE_LOCKED_OBLIGATION = (
+    "the run store was locked past its write bound; the service retries this "
+    "promotion on its next pass, so no coordinator action is owed"
+)
 
 # How long the drain waits for a wakeup before looking for requests another
 # process queued. A freed slot wakes it immediately, so this only bounds the
@@ -152,6 +161,41 @@ def _refusal_uses_replaced_code(request: Mapping[str, Any]) -> bool:
         and _JUDGING_CODE_REVISION != checkout_trust.IDENTITY_UNKNOWN
         and _current_code_revision() == _JUDGING_CODE_REVISION
         and runs.pointer_path(str(request["run_id"])).exists()
+    )
+
+
+def _store_lock_outlasted_the_bound(exc: BaseException) -> bool:
+    """Whether the run store declined a write because its lock outlasted it.
+
+    The ledger raises its refusal ``from`` the store's own lock error, so the
+    lock is on the cause chain rather than in the refusal's text. A failure of
+    any other kind is not a busy lane: it stays the delivery's or the gate's
+    to answer, and is never retried here.
+    """
+    from reckon import run_store
+
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if run_store._locked(current):
+            return True
+        current = current.__cause__
+    return False
+
+
+def _retry_owed_by_service(request: Mapping[str, Any]) -> bool:
+    """Whether the service, and not a coordinator, owes this refusal's retry.
+
+    A store-locked verdict is recorded on the request so the next pass finds
+    it without re-deriving the cause. It is owed only while the run still has
+    a pointer: a run promoted, landed or discarded in the meantime has arrived
+    where the retry was asking it to go.
+    """
+    return bool(
+        request.get("phase") == FAILED
+        and request.get("retry_owed") == STORE_LOCKED_RETRY
+        and runs.pointer_path(str(request.get("run_id") or "")).exists()
     )
 
 
@@ -947,7 +991,7 @@ def _defer_to_a_queued_review(
         reviewed == run_id
         for _other, reviewed in _reviewed_request_runs(
             request
-            for request in map(_read, _requests_dir().glob("*.json"))
+            for request in map(_request_record, _requests_dir().glob("*.json"))
             if request.get("phase") in QUEUED
         )
     ):
@@ -1225,12 +1269,25 @@ class PromotionService:
         if self._draining:
             return []
         for path in _requests_dir().glob("*.json"):
-            request = _read(path)
+            # Decoded once per version of the file: this loop runs every refill
+            # tick over the whole directory, settled requests included, and an
+            # uncached read re-reads every request file from shared storage.
+            request = dict(_request_record(path))
             if _refusal_uses_replaced_code(request):
                 try:
                     request_promotion(str(request["run_id"]))
                 except CrewError as exc:
                     _LOGGER.warning("could not rejudge promotion: %s", exc)
+            elif _retry_owed_by_service(request):
+                try:
+                    request_promotion(
+                        str(request["run_id"]),
+                        kind=str(request.get("kind") or "complete"),
+                        options=request.get("options") or {},
+                        retry=True,
+                    )
+                except CrewError as exc:
+                    _LOGGER.warning("could not retry a locked-store promotion: %s", exc)
         pending = _pending_requests()
         parked = [request for request in pending if request.get("phase") == WAITING]
         for request in parked:
@@ -1410,6 +1467,17 @@ class PromotionService:
             phase = REFUSED if isinstance(exc, CrewError) else FAILED
             if isinstance(exc, CrewError) and _defer_to_a_queued_review(request, exc):
                 return
+            if _store_lock_outlasted_the_bound(exc):
+                # The lane is busy, not the delivery broken: record the debt
+                # so the obligation names the lock and the next pass retries.
+                _finish(
+                    request,
+                    FAILED,
+                    ok=False,
+                    error=_failure_text(exc),
+                    retry_owed=STORE_LOCKED_RETRY,
+                )
+                return
             _finish(request, phase, ok=False, error=_failure_text(exc))
         finally:
             PREPARATION_DONE.reset(token)
@@ -1538,7 +1606,7 @@ def settle_requests_for(run_id: str, *, settled_as: str = "promoted") -> list[st
     """
     settled: list[str] = []
     for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+        request = dict(_request_record(path))
         if str(request.get("run_id") or "") != run_id:
             continue
         if request.get("phase") == SETTLED:
@@ -1600,6 +1668,7 @@ def failure_obligations(
                 }
             )
             continue
+        retry_owed = request.get("retry_owed") == STORE_LOCKED_RETRY
         items.append(
             {
                 "kind": "promotion-failed",
@@ -1614,7 +1683,9 @@ def failure_obligations(
                         ).total_seconds()
                     ),
                 ),
-                "reason": str(request.get("error") or "promotion refused"),
+                "reason": STORE_LOCKED_OBLIGATION
+                if retry_owed
+                else str(request.get("error") or "promotion refused"),
                 "next_command": f"reckon crew complete --run {request['run_id']} --gate {((request.get('options') or {}).get('gate') or 'passed')}",
             }
         )

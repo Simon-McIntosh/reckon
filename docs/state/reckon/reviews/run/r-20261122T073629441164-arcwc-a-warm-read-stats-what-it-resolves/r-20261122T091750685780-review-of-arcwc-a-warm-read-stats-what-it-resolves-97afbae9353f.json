@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/resources.py:_canonical_identity_is_unique",
+    "reckon/resources.py:resolve_resource",
+    "reckon/resources.py:read_plan_record",
+    "reckon/serve.py:2438",
+    "reckon/mcp_edit_plan.py:1847",
+    "reckon/roadmap.py:199"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:18:08Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": 819,
+      "severity": "non-blocking",
+      "text": "The held listing stamps siblings once per directory change, so a sibling rewritten in place that comes to claim an idle slug is not refused until the directory moves, where the base revision refused it immediately; production plan writes publish through a sibling temporary (reckon/_store.py:628) and so move the directory, leaving the gap to out-of-band in-place writes."
+    },
+    {
+      "file": "tests/test_a_warm_read_stats_what_it_resolves.py",
+      "line": 158,
+      "severity": "non-blocking",
+      "text": "The assertion compares the file on disk to the exact text the fixture wrote, exercising no reckon code, so it cannot fail on a regression in the change; the preceding `second[\"title\"]` assertion at line 157 is the one that guards the in-place rewrite."
+    },
+    {
+      "file": "tests/test_plan_resolution_reads_the_directory_once_per_change.py",
+      "line": 207,
+      "severity": "non-blocking",
+      "text": "The assertion message is truncated mid-sentence locally (\"so this case no longer... \"), so a failure reports an incomplete reason."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/resources.py:794 _canonical_identity_is_unique reaches the change through _directory_identity_index; it is called from resolve_resource and read_plan_record, which reckon/serve.py:2438, reckon/mcp_edit_plan.py:1847 and reckon/roadmap.py:199 call in production.",
+    "diff": "read commit 97afbae9 against ae34dd6f; it replaces per-resolve stamping with a file_memo-held listing, adds three tests, and rewrites the pinned regression test.",
+    "done_when": "the done_when names tests/test_a_warm_read_stats_what_it_resolves.py; after_suite-1795334988358421515.log records 61 passed and EXIT=0 at 97afbae9, and arm-head.log records warm 12 in both stores.",
+    "goal": "the node goal is to bound a warm plan read's stat calls by the plans it resolves; reckon/resources.py:819 holds the directory listing against the directory's own signature.",
+    "manifest": "read; it records base 32/212 against head 12/12, both suite arms green with logs and closing EXIT lines, and the negative control's red.",
+    "write_paths": "declared reckon/resources.py and the new test; the diff also edits tests/test_plan_resolution_reads_the_directory_once_per_change.py, which is outside the declaration and recorded under outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_warm_read_stats_what_it_resolves.py:141 asserts small_warm == large_warm and the negative-control log reddens on exactly that line when the base stamping is reinstated, so the guard fails on the regression it exists to catch.",
+    "evidence": "arm-head.log records warm 12 in both a twenty-plan and a two-hundred-plan store while arm-base.log records 32 and 212, and after_suite-1795334988358421515.log ends in a 61-passing summary and EXIT=0.",
+    "fit": "reckon/resources.py:819 follows the surrounding idiom and names mechanisms only, with no plan, stage or ticket identifier in a path, symbol or comment.",
+    "goal_fidelity": "reckon/resources.py:819 holds the plans-directory listing against the directory's own signature so a warm read stamps only the plans it resolves, as the goal states.",
+    "reuse": "reckon/resources.py:832 delegates holding the listing to the existing file_memo.memoized owner rather than forking a second cache beside it, and the bespoke _ENTRY_NAMES dict is deleted.",
+    "scope_discipline": "tests/test_plan_resolution_reads_the_directory_once_per_change.py is edited outside the declared write paths, though the change records it under outside_scope and no merge-refused path is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to bound a warm plan read's stat calls by the plans it resolves; reckon/resources.py:819 holds the directory listing against the directory's own signature.\nVERDICT done_when: the done_when names tests/test_a_warm_read_stats_what_it_resolves.py; after_suite-1795334988358421515.log records 61 passed and EXIT=0 at 97afbae9, and arm-head.log records warm 12 in both stores.\nVERDICT write_paths: declared reckon/resources.py and the new test; the diff also edits tests/test_plan_resolution_reads_the_directory_once_per_change.py, outside the declaration and recorded under outside_scope.\nVERDICT manifest: read; it records base 32/212 against head 12/12, both suite arms green with logs and closing EXIT lines, and the negative control's red.\nVERDICT diff: read commit 97afbae9 against ae34dd6f; it replaces per-resolve stamping with a file_memo-held listing, adds three tests, and rewrites the pinned regression test.\nCALL_SITES: reckon/resources.py:_canonical_identity_is_unique, reckon/resources.py:resolve_resource, reckon/resources.py:read_plan_record, reckon/serve.py:2438, reckon/mcp_edit_plan.py:1847, reckon/roadmap.py:199\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/resources.py:819 holds the plans-directory listing against the directory's own signature so a warm read stamps only the plans it resolves.\nSCORE evidence: 19\nJUSTIFICATION evidence: arm-head.log records warm 12 in both stores while arm-base.log records 32 and 212, and after_suite-1795334988358421515.log ends 61 passed with EXIT=0.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: tests/test_plan_resolution_reads_the_directory_once_per_change.py is edited outside the declared write paths, though recorded under outside_scope.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_warm_read_stats_what_it_resolves.py:141 asserts small_warm == large_warm, the exact line the negative control reddens when the base stamping is reinstated.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/resources.py:819 follows the surrounding idiom and names mechanisms only, with no plan or ticket identifier in any path, symbol or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/resources.py:832 delegates holding the listing to the existing file_memo.memoized owner and deletes the bespoke _ENTRY_NAMES cache rather than forking a second one.\nFINDING reckon/resources.py:819 non-blocking: the held listing does not notice a sibling rewritten in place that comes to claim an idle slug until the directory moves, unlike the base revision.\nFINDING tests/test_a_warm_read_stats_what_it_resolves.py:158 non-blocking: this assertion compares the file on disk to the fixture's own text and exercises no reckon code.\nFINDING tests/test_plan_resolution_reads_the_directory_once_per_change.py:207 non-blocking: the assertion message is truncated mid-sentence.\n",
+  "review_run_id": "r-20261122T091750685780-review-of-arcwc-a-warm-read-stats-what-it-resolves-97afbae9353f",
+  "reviewed_base_sha": "ae34dd6f2865aba45ee02137b7788b9e5aa8a08c",
+  "reviewed_commit": "97afbae9353f3808538a26b67c9a4a559d53e872",
+  "reviewed_head_sha": "97afbae9353f3808538a26b67c9a4a559d53e872",
+  "reviewed_run_id": "r-20261122T073629441164-arcwc-a-warm-read-stats-what-it-resolves",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:38:32.537104+00:00",
+  "total": 106
+}

@@ -816,6 +816,11 @@ def dispatch(
         route = resolution.route
 
     dispatch_options = dict(dispatch_options or {})
+    # A dispatch of one node is a call that named one section, unless the
+    # options it arrived with already name a wider one: a request the admission
+    # service launches carries the width it was queued at, and that is what its
+    # record must go on saying.
+    dispatch_options.setdefault("dispatch_width", "section")
     # A caller-supplied pick is never re-used as the dispatch's answer: the
     # selection resolved here is the checked one, and the option is a request
     # field rather than the question. It is dropped first so that only the

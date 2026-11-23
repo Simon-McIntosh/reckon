@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed node's suite was unarmed (no test file in its write scope) and its manifest carries no baseline_suite or after_suite block, so no arm exists to difference; the one gate it recorded, window-reconcile.log at revision 790a380eb7, reads followed by the reviewed head log review-gate.log at 3a00a3e8 record 4 passed and EXIT=0 with no FAILED line.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:2741 (_send_evidence_record composes the evidence fragment)",
+    "reckon/serve.py:3766 (serves a file under figures, reaching the figure svg)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T10:54:44Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html",
+      "line": "79",
+      "severity": "non-blocking",
+      "text": "non-blocking: the positive-control sentence states 'Both windows report rchar_delta=300' but before-window-2.log line 4 records rchar_delta=294 for the same 197-byte file, so the evidence does not reconcile with the capture it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T072346716754-the-monitor-reads-each-fact-once-s12/test_window_reconciles_with_the_evidence.py",
+      "line": "65",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reconciliation test named as the gate never opens the evidence fragment; it compares the window logs against a literal STATED dict held in the test, so a fragment edit such as the wrong control figure at s12.html:79 cannot redden it, and no committed test guards the quoted figures."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html",
+      "line": "124",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parenthetical '(100 of 100)' is attributed to RCA section 11, which states only that the station 'carries every row' (docs/research/monitor-storage-load-rca.html:309); the count appears in plan section 13, so the cited anchor does not carry the number it is quoted for."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html",
+      "line": "122",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's pane-replay clause is not measured; the fragment records it as not run, so the node's gate covers four of the five done-when clauses, and the withheld verdict is the honest reading rather than a failure of the rows."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/plot_cutover_window.py",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the window figures are hardcoded in the script rather than read from the window logs, and the panel plotting at lines 40-69 repeats docs/figures/monitor-storage-load-rca/read-volume-against-the-bound.py:36-69 with no shared helper, so the same chart mechanism now exists twice."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is documentation, a figure and its svg; the only runtime paths that reach it are reckon/serve.py:2741, which composes evidence fragments into a record, and reckon/serve.py:3766, which serves a figure file, and neither was altered.",
+    "diff": "read both commits against base 790a380eb77a2f01baaeed15ba1d793954be2acb: 1d31ded183 adds the evidence fragment and the figure script and svg, 3a00a3e8d3 reconciles the stated window figures, and 4 paths changed with 2432 insertions and 1 deletion, all documentation.",
+    "done_when": "the done_when asks for a 60 s window with at least 30 live runs under 20 MB/min and 5 % of one core with no D-state sample; the fragment at s12.html:40-47 records two windows over 71 and 68 live pointers, and the gate test at test_window_reconciles_with_the_evidence.py:72-80 asserts the recorded total and station exceed the bound and line 83 asserts the D-state clause fails, so the read, CPU and D-state clauses are measured; the rows clause is declared unmeasured at s12.html:122.",
+    "goal": "the node goal is section 12's cutover measured with the RCA section 2 instruments; docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:22-33 records the two windows and withholds the retirement on the measured cost, so the measure is delivered and the retirement half is correctly declined by the result.",
+    "manifest": "read manifest.md: status complete, commits 1d31ded183 and 3a00a3e8d3, the two windows' totals, station and producer figures, and window-reconcile.log named as the gate log; I re-read that log and re-ran its test, recording 4 passed and EXIT=0 in review-gate.log.",
+    "write_paths": "the declared paths are the s12 evidence fragment, the s12 figures directory and docs/research/monitor-storage-load-rca.html; all four diff paths lie inside them, with the svg and plot script inside the declared figures directory."
+  },
+  "justifications": {
+    "durability": "the only guard, test_window_reconciles_with_the_evidence.py:65-69, lives in the run directory rather than the repository and compares the logs to a literal dict without reading the fragment, so the 300-versus-294 drift at s12.html:79 stays green.",
+    "evidence": "window-reconcile.log records 4 passed and EXIT=0, which I re-ran at the reviewed head in review-gate.log, but one quoted control figure does not reconcile: s12.html:79 states rchar_delta=300 for both windows while before-window-2.log:4 records 294.",
+    "fit": "the fragment follows the evidence meta convention of its sibling fragments and plot_cutover_window.py:150-175 follows the data-ink, 14x7.2 inch two-panel idiom of docs/figures/monitor-storage-load-rca/read-volume-against-the-bound.py:72-98.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:27-33 records the decision and withholds the retirement on the measured cost, but the pane-replay clause at s12.html:122 is declared unmeasured rather than measured.",
+    "reuse": "plot_cutover_window.py:24-27 hardcodes the same read-volume-against-the-bound panel that docs/figures/monitor-storage-load-rca/read-volume-against-the-bound.py already draws, and its label guard at lines 107-137 re-implements docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py:74, though the figures tree has no shared module for either to extend.",
+    "scope_discipline": "every path in 790a380eb7..3a00a3e8 is one of the three declared write paths or a file inside the declared s12 figures directory, and git diff --stat shows no fourth area touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is section 12's cutover measured with the RCA section 2 instruments; docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:27-33 records the measurement and withholds the retirement on the measured cost, so the measure is delivered and the retirement is correctly declined, but the pane-replay clause at s12.html:122 is declared unmeasured rather than measured.\nVERDICT done_when: the done_when asks for a 60 s window with at least 30 live runs under 20 MB/min and 5 % of one core with no D-state sample; s12.html:40-47 records two windows over 71 and 68 live pointers, and test_window_reconciles_with_the_evidence.py:72-80 asserts the recorded totals and station exceed the bound while line 83 asserts the D-state clause fails, so the read, CPU and D-state clauses are measured and the rows clause is declared unmeasured at s12.html:122.\nVERDICT write_paths: the declared paths are the s12 evidence fragment, the s12 figures directory and docs/research/monitor-storage-load-rca.html; all four diff paths (fragment, svg, plot_cutover_window.py, RCA) lie inside them.\nVERDICT manifest: read manifest.md; it reports status complete, names commits 1d31ded183 and 3a00a3e8d3, records the two windows' totals, station and producer figures, and names window-reconcile.log, which I re-read and re-ran to 4 passed EXIT=0 in review-gate.log.\nVERDICT diff: read both commits of 790a380eb7..3a00a3e8 commit by commit; 1d31ded183 adds the fragment and figure, 3a00a3e8d3 reconciles the stated figures, 4 paths and 2432 insertions against 1 deletion, all documentation.\nCALL_SITES: reckon/serve.py:2741 (_send_evidence_record composes the evidence fragment), reckon/serve.py:3766 (serves a figure file reaching the svg)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:27-33 records the decision and withholds the retirement on the measured cost, but the pane-replay clause at s12.html:122 is declared unmeasured rather than measured.\nSCORE evidence: 15\nJUSTIFICATION evidence: window-reconcile.log records 4 passed EXIT=0 and I re-ran it at the reviewed head, but one quoted control figure is wrong: s12.html:79 states rchar_delta=300 for both windows while before-window-2.log:4 records 294.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 790a380eb7..3a00a3e8 is inside the declared write paths or the declared figures directory, as git diff --stat 790a380eb7..3a00a3e8 shows.\nSCORE durability: 6\nJUSTIFICATION durability: the only guard, test_window_reconciles_with_the_evidence.py:65-69, lives in the run directory rather than the repository and compares the logs to a literal dict without reading the fragment, so the 300-versus-294 drift at s12.html:79 stays green.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the evidence-fragment meta convention of its siblings and plot_cutover_window.py:150-175 follows the data-ink 14x7.2 two-panel idiom of docs/figures/monitor-storage-load-rca/read-volume-against-the-bound.py:72-98.\nSCORE reuse: 14\nJUSTIFICATION reuse: plot_cutover_window.py:24-27 hardcodes the read-volume-against-the-bound panel that docs/figures/monitor-storage-load-rca/read-volume-against-the-bound.py already draws and its label guard at lines 107-137 re-implements section_row_readers.py:74, though the figures tree has no shared module to extend.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:79 non-blocking: 'Both windows report rchar_delta=300' does not reconcile with before-window-2.log line 4, which records rchar_delta=294 for the same 197-byte file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T072346716754-the-monitor-reads-each-fact-once-s12/test_window_reconciles_with_the_evidence.py:65 non-blocking: the reconciliation test never opens the fragment; it compares the logs to a literal STATED dict, so the drift at s12.html:79 cannot redden it and no committed test guards the quoted figures.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:124 non-blocking: the '(100 of 100)' count is attributed to RCA section 11, which states only that the station carries every row (docs/research/monitor-storage-load-rca.html:309); the count is in plan section 13.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12.html:122 non-blocking: the done-when's pane-replay clause is not measured, leaving four of five clauses covered by the gate.\nFINDING docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/plot_cutover_window.py:24 non-blocking: the window figures are hardcoded rather than read from the logs and the panel plotting at lines 40-69 duplicates docs/figures/monitor-storage-load-rca/read-volume-against-the-bound.py:36-69.",
+  "review_node": "review-of-the-monitor-reads-each-fact-once-s12-3a00a3e8d319",
+  "review_run_id": "r-20261122T090847162707-review-of-the-monitor-reads-each-fact-once-s12-3a00a3e8d319",
+  "reviewed_base_sha": "790a380eb77a2f01baaeed15ba1d793954be2acb",
+  "reviewed_head_sha": "3a00a3e8d3190aee3319b891cea73c8b549e9249",
+  "reviewed_run_id": "r-20261122T072346716754-the-monitor-reads-each-fact-once-s12",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T090847162707-review-of-the-monitor-reads-each-fact-once-s12-3a00a3e8d319"
+  },
+  "scores": {
+    "durability": 6,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T11:05:20.064073+00:00",
+  "total": 89
+}

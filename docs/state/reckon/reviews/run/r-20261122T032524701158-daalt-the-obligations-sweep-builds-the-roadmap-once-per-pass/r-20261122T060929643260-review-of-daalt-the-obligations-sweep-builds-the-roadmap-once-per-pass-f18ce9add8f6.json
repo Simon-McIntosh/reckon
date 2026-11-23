@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:2246",
+    "reckon/crew/obligations.py:3353",
+    "reckon/crew/obligations.py:5004",
+    "reckon/crew/station_obligations.py:485",
+    "reckon/crew/station_obligations.py:490"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-22T06:09:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 89,
+      "severity": "non-blocking",
+      "summary": "the docstring says the order is derived from the pointers, the instant and the lane and from nothing else, but the order also depends on the plan documents' content through reckon/crew/queue_order.py:112 _roadmap_input_signature and build_roadmap, which the memo key omits; the stated invariant is false and a repeated (pointers, now, lane) with changed plan content would serve a stale ordering"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 97,
+      "severity": "non-blocking",
+      "summary": "the key carries the instant as repr(now), so now=None collides across instants while reckon/crew/admission/ordering.py:419 substitutes the live clock for None, serving a stale ordering to a default-now caller; no production call site in this module passes now=None"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one obligations sweep builds each project's roadmap at most once; the gained commits move the ordering answer from a module-private ContextVar to reckon/file_memo.memoized_key at reckon/crew/obligations.py:119-141, and tests/test_an_obligations_sweep_builds_the_roadmap_once.py:186 holds the count at one build per project against a base arm of four.\nVERDICT done_when: the done_when asks for a 40-item two-project sweep with at most one build per project, obligations equal to a base sweep, a negative control above two at base, ten stage-timed sweeps under 30 s, and an all_debug run at -n 4; the manifest records the count (1 vs 4) and both negative controls and the after_suite log (61 passed, EXIT=0), but the equal-to-base-obligations clause is measured only head-against-head at tests/test_an_obligations_sweep_builds_the_roadmap_once.py:200-205 and the ten-sweep stage timings and the all_debug placement remain unrecorded.\nVERDICT write_paths: the declared scope is reckon/crew/station_obligations.py, reckon/crew/obligations.py, reckon/crew/section_obligations.py, the test file, the evidence fragment and the figures dir; the gained commits touch only reckon/crew/obligations.py and the evidence fragment, and the whole node diff touches only the three delivered paths, all inside it.\nVERDICT manifest: read at the reviewed run directory; it reports status complete, eight commits, baseline_suite 58 passed EXIT=0 and after_suite 61 passed EXIT=0 at a67ef5821d, negative controls at 2 failed/1 passed EXIT=1 with {'sweep-one': 4, 'sweep-two': 4}, and states the reuse answer for the prior review's non-blocking finding.\nVERDICT diff: read commit by commit; the three commits gained since the review at 03d8f58b2e are a67ef5821d (reckon/crew/obligations.py, +29/-29), dc49bab286 and f18ce9add8 (the evidence fragment, +20/-13), and they replace the module's own ordering cache with reckon/file_memo.memoized_key and make the fragment reconcile to its logs.\nCALL_SITES: reckon/crew/obligation_snapshot.py:2246, reckon/crew/obligations.py:3353, reckon/crew/obligations.py:5004, reckon/crew/station_obligations.py:485, reckon/crew/station_obligations.py:490\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:133-141 answers an identical ordering read from file_memo.memoized_key, and tests/test_an_obligations_sweep_builds_the_roadmap_once.py:192 asserts at most one build per project, so the deliverable's bound survives the refactor that the gained commits land.\nSCORE evidence: 14\nJUSTIFICATION evidence: the fragment at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass.html:38-39 now quotes the after_suite.log summary line exactly (61 passed in 63.99s (0:01:03), EXIT=0), but the done_when's equal-to-base-sweep clause is still measured only head-against-head at tests/test_an_obligations_sweep_builds_the_roadmap_once.py:200-205 and the ten stage-timed sweeps and all_debug placement are unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commits change only reckon/crew/obligations.py and docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass.html, both declared write paths, and nothing outside the declared scope changed across the node.\nSCORE durability: 17\nJUSTIFICATION durability: reverting both answering commits returns the count to four builds per project (negative_control_reuse_reverted.log, 2 failed EXIT=1) and the footfall assertion at tests/test_an_obligations_sweep_builds_the_roadmap_once.py:181 catches a zero, though reverting only the memoisation at a67ef5821d leaves the suite green (3 passed) because that commit changes the holder of the answer rather than the answer.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:134 follows the module's existing file_memo.memoized_key idiom at reckon/crew/obligations.py:1643 and 2853 and names nothing the repository forbids.\nSCORE reuse: 19\nJUSTIFICATION reuse: the prior review's reuse finding is answered \u2014 reckon/crew/obligations.py:133-141 now delegates the bounded, locked keyed memo to its owner reckon/file_memo.py:562 memoized_key and the module's own cache was removed, leaving _QueueAdmissionViews a thin adapter rather than a second mechanism.\nFINDING reckon/crew/obligations.py:89 non-blocking: the docstring states the order is derived from the pointers, the instant and the lane \"and from nothing else\", but the order also depends on the plan documents' content through reckon/crew/queue_order.py:112 _roadmap_input_signature and build_roadmap, which the memo key omits, so the stated invariant is false and a repeated (pointers, now, lane) with changed plan content would serve a stale ordering; this module's three production call sites each pass a fresh sweep instant, which is what keeps it latent.\nFINDING reckon/crew/obligations.py:97 non-blocking: the key carries the instant as repr(now), so now=None yields \"None|\" for every call while reckon/crew/admission/ordering.py:419 substitutes the live clock for None, so a caller using the default now would be served the first ordering at every later instant; no production call site in this module passes now=None, so the collision is latent.\n",
+  "review_run_id": "r-20261122T060929643260-review-of-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass-f18ce9add8f6",
+  "reviewed_base_sha": "1f914072e1646e1a5cd3f591470859d2866c0093",
+  "reviewed_head_sha": "f18ce9add8f6770ad825e0916d1857b2f256635d",
+  "reviewed_run_id": "r-20261122T032524701158-daalt-the-obligations-sweep-builds-the-roadmap-once-per-pass",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T06:15:26.745760+00:00",
+  "total": 106
+}

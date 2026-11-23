@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:1769 (with_deps gating in _read_plan)",
+    "reckon/mcp.py:1946 (_section_dependency_rows)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T20:15:23Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-22T22:26:12.214005+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261122T185137666667-a-read-costs-what-changed-s35"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/a-read-costs-what-changed-s35.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the timed arms compare 1.092 s with resolution restored against 0.890 s as the base stands, both at the base revision, so they do not reproduce the section's motivating 27.7 s cold read; the fragment records this honestly, but the pair demonstrates a 0.2 s marginal saving and should not be read as validating the section's headline improvement."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three commits (e9b35734bb, 5e216cc302, d6860ea3d5) against base 9ed4c9ee2e01; +74 lines across two declared paths, no production change because the guard is already at base.",
+    "done_when": "the done_when names tests/test_a_version_read_pays_only_its_version.py and a timed cold read on all_debug; the manifest records 63 passed at 5e216cc302 against 62 at 9ed4c9ee2e01 (after_suite and baseline_suite logs) and timed-base.log / timed-base-resolution-restored.log carry revision, literal command and EXIT=0 from all_debug job 1337584.",
+    "goal": "source node goal is '\u00a735 \u2014 A version, raw or section read resolves no dependencies' (prompt.txt:38); the landed change adds tests/test_a_version_read_pays_only_its_version.py:172, showing the skipped resolution path parses the three referenced plans and that the index builder records a build, and it records the with_deps guard already at reckon/mcp.py:1769 in the base.",
+    "manifest": "read; status complete, tests line names the literal 3-file command with its logs, suite arms 62 passed at 9ed4c9ee2e01 and 63 at 5e216cc302 with zero failures, negative control EXIT=1 with 3 failed.",
+    "write_paths": "declared paths are reckon/mcp.py, tests/test_a_version_read_pays_only_its_version.py, docs/evidence/fragments/a-read-costs-what-changed/ and docs/figures/a-read-costs-what-changed/; the diff touches only the declared test path and the declared fragment, and reckon/mcp.py needed no edit."
+  },
+  "justifications": {
+    "durability": "tests/test_a_version_read_pays_only_its_version.py:187 fails if _section_dependency_rows stops parsing the referenced plans and :191 fails if metadata_index.index_rows stops recording a build, and the pre-existing parametrized case at :163 reddens under the declared with_deps=True mutation.",
+    "evidence": "the manifest's after_suite and baseline_suite logs record 63 passed at 5e216cc302 versus 62 at 9ed4c9ee2e01 and the negative-control.log records 3 failed with EXIT=1, but the timed arms at docs/evidence/fragments/a-read-costs-what-changed/a-read-costs-what-changed-s35.html:44 measure 0.890 s and 1.092 s and so do not reproduce the section's cited 27.7 s cold read.",
+    "fit": "the new case at tests/test_a_version_read_pays_only_its_version.py:172 reuses the store and counter fixtures and the helper style of the surrounding module, and introduces no plan label in a symbol name.",
+    "goal_fidelity": "tests/test_a_version_read_pays_only_its_version.py:180-191 proves the resolution path the version/raw/section reads skip and that the project index build counter moves, supplying the instrument control the section's goal needed while the with_deps guard stands at reckon/mcp.py:1769.",
+    "reuse": "the addition reuses mcp._section_dependency_rows and metadata_index.index_rows and follows the existing instrument-control idiom in tests/test_a_plan_read_reads_each_referenced_plan_once.py rather than forking a new counter or helper.",
+    "scope_discipline": "the diff at 9ed4c9ee2e01..d6860ea3d5 changes only tests/test_a_version_read_pays_only_its_version.py and docs/evidence/fragments/a-read-costs-what-changed/a-read-costs-what-changed-s35.html, both within the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261122T201427985844-review-of-a-read-costs-what-changed-s35-d6860ea3d5b6",
+  "reviewed_base_sha": "9ed4c9ee2e01533b4e68d56dc381075e437da704",
+  "reviewed_head_sha": "d6860ea3d5b673d39ea6cd95c721cba871ef9c20",
+  "reviewed_run_id": "r-20261122T185137666667-a-read-costs-what-changed-s35",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T21:34:18.172783+00:00",
+  "total": 105
+}

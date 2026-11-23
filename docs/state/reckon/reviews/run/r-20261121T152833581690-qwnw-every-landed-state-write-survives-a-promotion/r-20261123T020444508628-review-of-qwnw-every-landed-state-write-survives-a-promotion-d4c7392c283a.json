@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:2284 _commit_with_plan_snapshot",
+    "reckon/crew/promotion.py:2532 _record_comment_with_snapshot",
+    "reckon/crew/promotion_scope.py:1785 _refuse_unrelated_plan_edit",
+    "reckon/_store.py:1632 write_plan",
+    "reckon/mcp_edit_plan.py:177 _edit_plan"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T02:05:49Z",
+  "findings": [
+    {
+      "file": "tests/test_every_landed_state_write_survives_a_promotion.py",
+      "line": 314,
+      "severity": "non-blocking",
+      "text": "the recorded negative control (negative-control.log) loses the declaration only by replacing _record_landing_comment with a blind writer, while the real writer at reckon/crew/promotion_scope.py:1655 re-reads the plan, so the case the done_when names does not reproduce at the base revision and durability rests on the authored-change arms instead."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 2200,
+      "severity": "non-blocking",
+      "text": "`_ok` is an underscore-prefixed live local naming a value that is read, contrary to it being a live binding."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 2044,
+      "severity": "non-blocking",
+      "text": "_the_store_made_the_authored_change repeats the relative-path/HEAD-show/disk-read prologue already present in _verified_plan_text_projection and _plan_differs_only_by_the_stores_own_writes, leaving three copies in one module."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the store write path, the mcp edit path and the landing adoption and refusal paths listed in call_sites.",
+    "diff": "both commits against c4f4f896 add a state-authorship receipt, an authored-change adoption branch, a refusal allowance and the test.",
+    "done_when": "tests/test_every_landed_state_write_survives_a_promotion.py drives all eighteen cases through `crew complete --land`; the manifest records 18 passed, but the negative control is a mutated landing rather than the base revision.",
+    "goal": "the node's goal is that every kind of plan state write answering as landed is in the plan file after a concurrent promotion; reckon/crew/promotion.py:2151 and reckon/crew/promotion_scope.py:2044 carry the fix.",
+    "manifest": "states 18 passed at d4c7392c28 in test-every-landed-state-write.log and records baseline/after suite runs of 58 and 76 passed with zero failures.",
+    "write_paths": "the four changed files are all inside the declared write paths; no evidence fragment was needed for a routine landing."
+  },
+  "justifications": {
+    "durability": "the during-section-append arm reddens on a revert because reckon/crew/promotion.py:2195 catches the ValueError that would otherwise refuse and revert the write, while the during-declaration arm adopts correctly even without the change.",
+    "evidence": "tests/test_every_landed_state_write_survives_a_promotion.py:314 records 18 passed, but negative-control.log loses the declaration only through a monkeypatched blind landing while reckon/crew/promotion_scope.py:1655 shows the real writer re-reads the plan.",
+    "fit": "reckon/_store.py:1919-1923 mirrors the receipt-and-rollback idiom the text path already uses at reckon/_store.py:2836, with only a minor `_ok` local at promotion.py:2200.",
+    "goal_fidelity": "reckon/crew/promotion.py:2200 adopts a store-authored change instead of refusing and reverting it, which is the loss the goal names.",
+    "reuse": "the change extends the existing receipt mechanism at reckon/_store.py:2617 with an authorship field rather than forking it, though reckon/crew/promotion_scope.py:2044 repeats the HEAD-show/disk-read prologue of _verified_plan_text_projection.",
+    "scope_discipline": "every path in the diff (reckon/_store.py, reckon/crew/promotion.py, reckon/crew/promotion_scope.py, tests/test_every_landed_state_write_survives_a_promotion.py) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every kind of plan state write answering as landed is in the plan file after a concurrent promotion; reckon/crew/promotion.py:2151 and reckon/crew/promotion_scope.py:2044 carry the two halves of that fix.\nVERDICT done_when: the done_when names tests/test_every_landed_state_write_survives_a_promotion.py with six write kinds at three timings and a base-revision negative control; the test drives all eighteen cases through `crew complete --land` and the manifest records 18 passed, but the recorded negative control is a mutated landing rather than the base revision.\nVERDICT write_paths: read the manifest's declared paths; the four changed files are all inside them (reckon/_store.py, reckon/crew/promotion.py, reckon/crew/promotion_scope.py, tests/test_every_landed_state_write_survives_a_promotion.py), and no evidence fragment was needed for a routine landing.\nVERDICT manifest: read; it states 18 passed at d4c7392c28 in test-every-landed-state-write.log, names the negative control log, and records baseline/after suite runs of 58 and 76 passed with zero failures.\nVERDICT diff: read both commits against c4f4f896; they add a state-authorship receipt to the store, an authored-change adoption branch to the landing, a plan-edit refusal allowance, and the 325-line test.\nCALL_SITES: reckon/crew/promotion.py:2284 _commit_with_plan_snapshot, reckon/crew/promotion.py:2532 _record_comment_with_snapshot, reckon/crew/promotion_scope.py:1785 _refuse_unrelated_plan_edit, reckon/_store.py:1632 write_plan, reckon/mcp_edit_plan.py:177 _edit_plan\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2200 adopts a store-authored change instead of refusing and reverting it, which is the loss the goal names.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_every_landed_state_write_survives_a_promotion.py:314 records 18 passed, but negative-control.log loses the declaration only through a monkeypatched blind landing while reckon/crew/promotion_scope.py:1655 shows the real writer re-reads the plan.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/_store.py, reckon/crew/promotion.py, reckon/crew/promotion_scope.py, tests/test_every_landed_state_write_survives_a_promotion.py) is inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the during-section-append arm reddens on a revert because reckon/crew/promotion.py:2195 catches the ValueError that would otherwise refuse and revert the write, while the during-declaration arm adopts correctly even without the change.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:1919-1923 mirrors the receipt-and-rollback idiom the text path already uses at reckon/_store.py:2836, with only a minor `_ok` local at promotion.py:2200.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends the existing receipt mechanism at reckon/_store.py:2617 with an authorship field rather than forking it, though reckon/crew/promotion_scope.py:2044 repeats the HEAD-show/disk-read prologue of _verified_plan_text_projection.\nFINDING tests/test_every_landed_state_write_survives_a_promotion.py:314 non-blocking: the recorded negative control (negative-control.log) loses the declaration only by replacing _record_landing_comment with a blind writer, while the real writer at reckon/crew/promotion_scope.py:1655 re-reads the plan, so the case the done_when names does not reproduce at the base revision and durability rests on the authored-change arms instead.\nFINDING reckon/crew/promotion.py:2200 non-blocking: `_ok` is an underscore-prefixed live local naming a value that is read, contrary to the surrounding naming style.\nFINDING reckon/crew/promotion_scope.py:2044 non-blocking: _the_store_made_the_authored_change repeats the relative-path/HEAD-show/disk-read prologue already present in _verified_plan_text_projection and _plan_differs_only_by_the_stores_own_writes, leaving three copies in one module.\n",
+  "review_run_id": "r-20261123T020444508628-review-of-qwnw-every-landed-state-write-survives-a-promotion-d4c7392c283a",
+  "reviewed_base_sha": "c4f4f896d70e64bc2d3986efaa13e8fe70765921",
+  "reviewed_head_sha": "d4c7392c283ad39fb4af837335c7170cd69ac402",
+  "reviewed_run_id": "r-20261121T152833581690-qwnw-every-landed-state-write-survives-a-promotion",
+  "rubric": "text",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T02:22:08.880604+00:00",
+  "total": 102
+}

@@ -21,7 +21,12 @@ from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from reckon.crew.node import CrewError, TaskNode
+from reckon.crew.node import (
+    NEGATIVE_CONTROL_NONE,
+    CrewError,
+    TaskNode,
+    negative_control_writes_a_check,
+)
 
 #: The fields a batch entry may carry. Anything else is refused by name rather
 #: than silently dropped, because a misspelt field would otherwise store a
@@ -128,6 +133,20 @@ _DESCRIBED_FILE = re.compile(
 #: Phases a request reports as waiting for its upstream rather than queued.
 WAITING_UPSTREAM_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
 
+#: Phases a live pointer carries when its run delivered nothing.
+_UNDELIVERED_PHASES = frozenset(
+    {"failed", "stopped", "interrupted", "discarded", "dropped"}
+)
+
+#: A promoted row carries no phase, because a promotion is a landing, so a run
+#: whose own check failed is read from the gate the row does carry. The
+#: classification says what the failure measured: a failure recorded as
+#: pre-existing or as a negative result is work that landed with the check
+#: reading red for a reason outside the node, so the section is delivered; any
+#: other classification, and an unclassified failure, names work the run did
+#: not do, so the section is still to queue.
+_LANDED_DESPITE_FAILED_GATE = frozenset({"pre-existing-failure", "negative-result"})
+
 
 class BatchEntryRefusedError(CrewError):
     """One entry cannot be queued, and the rest of the batch still can."""
@@ -200,7 +219,7 @@ def _parsed_once() -> Iterator[None]:
 
 @contextlib.contextmanager
 def _built_once(
-    cache: dict[tuple[str, str], dict[str, Any]] | None = None,
+    cache: dict[str, dict[str, Any]] | None = None,
 ) -> Iterator[None]:
     """Derive each project's roadmap at most once for the whole batch.
 
@@ -210,77 +229,129 @@ def _built_once(
     that roadmap six times over — once per stored request and again per section
     whose waits are checked — which is the cost the batch exists to remove.
 
-    The batch derives each project's roadmap once, over the project's whole
-    inventory, and serves every reader inside it from that one derivation. The
-    whole-inventory build is the one ordering needs, and it answers the
-    bounded per-section question too: a section verdict is computed the same
-    way from either inventory, so the single build carries the subset's answer.
+    The batch derives each project's roadmap over the plans its readers name,
+    and grows that set as a later reader names a plan the earlier build did not
+    carry. Building over the project's whole inventory instead parsed every
+    plan document the project holds, so the batch's peak followed the plan set
+    rather than the batch. A section verdict is computed the same way from
+    either inventory, so the growing build answers the bounded per-section
+    question too.
     """
     from reckon import roadmap as roadmap_module
     from reckon.roadmap import roadmap_build_scope
 
     original = roadmap_module.build_roadmap
-    built: dict[tuple[str, str], dict[str, Any]] = cache if cache is not None else {}
+    built: dict[str, dict[str, Any]] = cache if cache is not None else {}
 
     def once(project, inventory, sprints, **kwargs):
-        from reckon._store import _docs_dir_for_project
-        from reckon.mcp_discovery import _discover_project, _inventory_row
+        key = str(project)
+        named = {
+            str(row.get("slug")): row
+            for row in (inventory or ())
+            if getattr(row, "get", None) is not None and row.get("slug")
+        }
+        held = built.get(key)
+        if held is not None and (
+            held["plans"] is None or not (named.keys() - held["plans"])
+        ):
+            return held["roadmap"]
+        docs_dir = kwargs.get("docs_dir") or (held or {}).get("docs_dir")
+        if not named:
+            # A caller that names no plan asks about the whole project, which
+            # discovery is the one read that answers. Neither reader in a batch
+            # reads who coordinates a critical-path link, so the build inside
+            # discovery runs with coordinator resolution off: it reads every
+            # run's ledger document, which was most of each entry's queue time.
+            from reckon.mcp_discovery import _discover_project, _inventory_row
 
-        # Ordering names no docs dir and resolves through the project's mount,
-        # while the wait check names the checkout's own. Those two readers can
-        # name different trees — a dispatch made from a worktree names the
-        # worktree's docs while the mount resolves to the main checkout's — and
-        # keying on the resolved dir made that pair pay two whole-project
-        # scans. The batch derives one project once whichever checkout it runs
-        # from, so the key is the project and the build reads the registered
-        # mount, which is the tree the dispatch actually builds against.
-        docs_dir = kwargs.get("docs_dir")
-        mounted = _docs_dir_for_project(project, None)
-        resolved = Path(mounted) if mounted else (Path(docs_dir) if docs_dir else None)
-        key = (str(project), "")
-        if key not in built:
-            # Discovery derives the project's roadmap to attach its ready set,
-            # and the scope hands that derivation back, so the batch takes it
-            # rather than paying for a second one. The build inside discovery
-            # runs unwrapped: leaving the wrapper in place would re-enter here
-            # for the inventory it is being called to produce.
-            roadmap_module.build_roadmap = original
-            try:
-                # Neither reader in a batch, queue ordering or the wait check,
-                # reads who coordinates a critical-path link, so the build skips
-                # that resolution: it reads every run's ledger document, which
-                # was most of each entry's queue time.
-                with roadmap_build_scope(resolve_coordinators=False, audit_landings=False) as scope:
-                    discovered = _discover_project(
-                        str(project), Path(resolved).parent if resolved else None
-                    )
-            except Exception:  # noqa: BLE001 - the caller's inventory carries it
-                discovered = {}
-                scope = None
-            finally:
-                roadmap_module.build_roadmap = once
+            with roadmap_build_scope(
+                resolve_coordinators=False, audit_landings=False
+            ) as scope:
+                discovered = _discover_project(
+                    key, Path(docs_dir).parent if docs_dir else None
+                )
             rows = [
                 _inventory_row(item) for item in discovered.get("inventory", ()) or ()
             ]
-            if scope is not None and scope.built is not None:
-                built[key] = scope.built
-            elif rows:
-                built[key] = original(
+            report = (
+                scope.built
+                if scope.built is not None
+                else original(
                     project,
-                    rows,
-                    list(discovered.get("sprints") or ()) or list(sprints),
+                    rows or inventory,
+                    list(discovered.get("sprints") or ()) or list(sprints or ()),
                     active_sprint_id=discovered.get("active_sprint_id"),
-                    docs_dir=resolved,
+                    docs_dir=docs_dir,
                 )
-            else:
-                built[key] = original(project, inventory, sprints, **kwargs)
-        return built[key]
+            )
+            built[key] = {
+                "roadmap": report,
+                "rows": {},
+                "plans": None,
+                "docs_dir": docs_dir,
+            }
+            return report
+        # A named inventory is answered from its own rows plus the plans an
+        # earlier reader in the same batch named. Discovery would answer the
+        # same question having parsed every plan document the project holds,
+        # which is the plan-set term a batch's peak memory turned on.
+        rows = dict(held["rows"]) if held is not None else {}
+        rows.update(named)
+        report = original(
+            project,
+            list(rows.values()),
+            list(sprints or ()),
+            **{**kwargs, **({"docs_dir": docs_dir} if docs_dir else {})},
+        )
+        built[key] = {
+            "roadmap": report,
+            "rows": rows,
+            "plans": set(rows),
+            "docs_dir": docs_dir,
+        }
+        return report
 
     roadmap_module.build_roadmap = once
     try:
         yield
     finally:
         roadmap_module.build_roadmap = original
+
+
+#: The wording that opens a section's negative-control paragraph, together with
+#: the separator that ends the heading — a colon or a full stop, or the dash a
+#: plan may use in its place. The separator is part of the pattern because a
+#: section's explanatory prose also names its negative control while saying why
+#: the section exists; only the paragraph that states the declaration closes
+#: the phrase with a separator, so matching one is what tells the two apart.
+_NEGATIVE_CONTROL_MARKER = re.compile(
+    "\\bnegative[\\s-]+control\\b\\s*[:.\\u2014\\u2013-]", re.IGNORECASE
+)
+
+
+def _negative_control_paragraph(prose: str) -> str | None:
+    """The negative control a section states in its prose, or ``None``.
+
+    The declaration is the section's closing paragraph, so the last phrase that
+    opens one states it. A paragraph that opens ``none`` declares that no
+    mutation applies and gives its reason; it is written with the colon the
+    node's declaration reads that reason after, so a plan and a batch entry
+    that spell the same exemption reach one declaration, and both are judged by
+    the same reader.
+    """
+    normalised = " ".join(prose.split())
+    matches = list(_NEGATIVE_CONTROL_MARKER.finditer(normalised))
+    if not matches:
+        return None
+    rest = normalised[matches[-1].end() :].strip()
+    rest = rest.lstrip(" .:-")
+    if not rest:
+        return None
+    head = rest.partition(" ")[0]
+    if head.rstrip(",;:.").lower() == NEGATIVE_CONTROL_NONE:
+        reason = rest[len(head) :].lstrip(" ,;:.-")
+        return f"{NEGATIVE_CONTROL_NONE}: {reason}" if reason else NEGATIVE_CONTROL_NONE
+    return rest
 
 
 class _PlanRead:
@@ -330,6 +401,15 @@ class _PlanRead:
                 "done-when, so the entry must give one"
             )
         return paragraph
+
+    def negative_control(self, section: str) -> str:
+        """The negative control the section states in its prose, or ``""``.
+
+        A section that states none yields the empty string: the absence is
+        answered where the node's check is known, because whether a missing
+        control refuses the request depends on whether the node writes a check.
+        """
+        return _negative_control_paragraph(self.prose_for(section)) or ""
 
     def write_paths(self, section: str) -> list[str]:
         """Every path the section's write-paths sentence puts in scope.
@@ -489,6 +569,46 @@ def _as_list(value: Any) -> list[str]:
     raise BatchEntryRefusedError(f"{value!r} is not a list of strings")
 
 
+#: How a section's declared autonomy maps onto the specification level a
+#: dispatch records. Autonomy names who owns the design — the section fixes it
+#: (``guided``) or the worker derives it (``autonomous`` → an open spec) — which
+#: is exactly the question the specification level answers.
+_SPEC_LEVEL_FROM_AUTONOMY = {"guided": "guided", "autonomous": "open"}
+
+#: A capability request that states no autonomy still declares a design the
+#: worker implements, so its section dispatches guided rather than undeclared.
+DEFAULT_SECTION_SPEC_LEVEL = "guided"
+
+def section_time_budget(effort_hours: Any) -> str:
+    """The wall-clock budget a section's effort estimate buys.
+
+    The estimate is the plan's own sizing of the work, so an entry that names
+    no budget inherits it. It is stated in whole minutes: an estimate of 2.5
+    hours is ``150m``, which ``parse_duration`` reads back as the same figure.
+    """
+    try:
+        minutes = int(round(float(effort_hours) * 60))
+    except (TypeError, ValueError):
+        return ""
+    return f"{minutes}m" if minutes > 0 else ""
+
+
+def section_spec_level(capability: Mapping[str, Any] | None) -> str:
+    """The specification level a section's capability request declares.
+
+    A section that declares no capability request states nothing about the
+    design's ownership, so it supplies no level and the node's own declaration
+    (or its absence) stands.
+    """
+    requirements = (capability or {}).get("requirements") or {}
+    if not (capability or {}).get("class") and not requirements:
+        return ""
+    autonomy = str(requirements.get("tool_autonomy") or "").strip().lower()
+    return _SPEC_LEVEL_FROM_AUTONOMY.get(autonomy, DEFAULT_SECTION_SPEC_LEVEL)
+
+
+
+
 def section_derivation(
     read: _PlanRead, section: str, *, derive_write_paths: bool = True
 ) -> dict[str, tuple[Any, str]]:
@@ -507,6 +627,12 @@ def section_derivation(
     values: dict[str, Any] = {}
     with contextlib.suppress(BatchEntryRefusedError):
         values["done_when"] = read.done_when(section)
+    # A section that states no control supplies none, and the request keeps
+    # whatever its entry gave, or is refused where the node's check is known.
+    with contextlib.suppress(BatchEntryRefusedError):
+        declaration = read.negative_control(section)
+        if declaration:
+            values["negative_control"] = declaration
     # An entry that gives its own write paths keeps them, so the sentence is
     # not read for it at all: a description the sentence cannot resolve must
     # not refuse an entry that never needed the derivation.
@@ -514,10 +640,64 @@ def section_derivation(
         paths = read.write_paths(section)
         if paths:
             values["write_paths"] = paths
-    estimate = read.section_record(section).get("effort_hours")
+    record = read.section_record(section)
+    estimate = record.get("effort_hours")
     if isinstance(estimate, (int, float)):
         values["estimated_hours"] = float(estimate)
+        budget = section_time_budget(estimate)
+        if budget:
+            values["time_budget"] = budget
+    values["spec_level"] = section_spec_level(record.get("capability"))
     return {name: (value, _digest(value)) for name, value in values.items()}
+
+
+#: The node fields a section supplies to a dispatch that omits them.
+SECTION_SUPPLIED_NODE_FIELDS = (
+    "done_when",
+    "time_budget",
+    "spec_level",
+    "negative_control",
+)
+
+
+def apply_section_defaults(
+    node: Any, *, project: str, repo_root: str | Path
+) -> list[str]:
+    """Fill every node field this section supplies and the node left unsaid.
+
+    A dispatch that names a plan section names its authority, and the section
+    already states the measure, the sizing and the mutation its check must fail
+    against. Requiring the caller to repeat them is how a section-only request
+    gets refused for fields the plan owns. Only an empty field is filled: a
+    value the caller gave always wins.
+
+    A plan or section that cannot be read is left alone rather than refused
+    here, because the dispatch paths already name that failure (plan visibility,
+    routing evidence) with the flag the caller can correct.
+    """
+    plan = str(getattr(node, "plan", "") or "").strip()
+    section = str(getattr(node, "section", "") or "").strip()
+    if not plan or not section:
+        return []
+    omitted = [
+        name
+        for name in SECTION_SUPPLIED_NODE_FIELDS
+        if not str(getattr(node, name, "") or "").strip()
+    ]
+    if not omitted:
+        return []
+    try:
+        read = _PlanRead(project, plan, Path(repo_root))
+        derivation = section_derivation(read, section, derive_write_paths=False)
+    except (BatchEntryRefusedError, OSError):
+        return []
+    filled: list[str] = []
+    for name in omitted:
+        if name not in derivation:
+            continue
+        setattr(node, name, derivation[name][0])
+        filled.append(name)
+    return filled
 
 
 def rederived_section_fields(
@@ -637,10 +817,28 @@ def _entry_node(
         # refused. An entry that declares paths keeps them, exactly as before.
         write_paths, derived["write_paths"] = derivation["write_paths"]
 
+    # A control the entry states is the entry's own and is never overridden by
+    # the section's paragraph, exactly as a supplied field beats a derived one.
+    negative_control = str(entry.get("negative_control") or "").strip()
+    if not negative_control and "negative_control" in derivation:
+        negative_control, derived["negative_control"] = derivation["negative_control"]
+
     estimated_hours = entry.get("estimated_hours")
     if estimated_hours is None and "estimated_hours" in derivation:
         estimated_hours, derived["estimated_hours"] = derivation["estimated_hours"]
+    # Every field the entry leaves out is the section's. The budget, the
+    # specification level and the negative control are read from the section
+    # exactly as the done-when and the write paths already were, so an entry
+    # naming only its project, plan, section, node and goal is dispatchable.
+    time_budget = str(entry.get("time_budget") or "")
+    if not time_budget and "time_budget" in derivation:
+        time_budget, derived["time_budget"] = derivation["time_budget"]
     spec_level = str(entry.get("spec_level") or "")
+    if not spec_level and "spec_level" in derivation:
+        spec_level, derived["spec_level"] = derivation["spec_level"]
+    negative_control = str(entry.get("negative_control") or "")
+    if not negative_control and "negative_control" in derivation:
+        negative_control, derived["negative_control"] = derivation["negative_control"]
     # A field the entry leaves out falls back to the command-level value, so a
     # coordinator queuing one batch for many sections states a reason, a
     # comment or a lane once rather than on every entry.
@@ -658,13 +856,13 @@ def _entry_node(
         brief=str(entry.get("brief") or ""),
         role=str(entry.get("role") or "implement"),
         spec_level=spec_level,
-        negative_control=str(entry.get("negative_control") or ""),
+        negative_control=negative_control,
         mcp_set=str(entry.get("mcp_set") or ""),
         done_when=done_when,
         write_paths=list(write_paths),
         regenerate_paths=_as_list(entry.get("regenerate_paths")),
         anchor_paths=_as_list(entry.get("anchor_paths")),
-        time_budget=str(entry.get("time_budget") or ""),
+        time_budget=time_budget,
         over_fence_reason=over_fence_reason,
         estimated_hours=estimated_hours,
         manifest_path=str(entry.get("manifest") or ""),
@@ -674,6 +872,25 @@ def _entry_node(
         inputs=_as_list(entry.get("inputs")),
         compares_with=str(entry.get("compares_with") or ""),
     )
+    if negative_control_writes_a_check(node):
+        # The section's prose is the authority on its own control, so its
+        # absence is refused here, by name, rather than left to the generic
+        # node contract where neither the section nor the paragraph it lacks is
+        # named. The refusal a plan-level dispatch raises is the section's to
+        # repair, so it says what the section is missing.
+        if node.write_paths:
+            trigger = (
+                f"its write paths include a test file ({', '.join(node.write_paths)})"
+            )
+        else:
+            trigger = "its done-when names a test file"
+        raise BatchEntryRefusedError(
+            f"{project}:{plan}#{section}: the section states no negative-control "
+            f"paragraph, and {trigger}, so it writes a check, but its "
+            f"negative_control field declares no mutation that check must fail "
+            f"against; add a `Negative control.` paragraph to the section, or "
+            f"declare the control as `{NEGATIVE_CONTROL_NONE}: <reason>`"
+        )
     return project, node, derived
 
 
@@ -736,6 +953,47 @@ def _stamp_section_derived(run_id: str, derived: Mapping[str, str]) -> None:
     runs_module._mutate_pointer(run_id, stamp)
 
 
+def _wait_verdict(
+    waits: Sequence[str],
+    *,
+    project: str,
+    plan: str,
+    section: str,
+    docs_dir: Path,
+    live: Sequence[Mapping[str, Any]],
+) -> tuple[str, list[str]]:
+    """The phase a request's waits justify and the findings the read produced."""
+    from reckon.crew.admission import readiness as _readiness
+
+    return _readiness.preview_wait_phase(
+        waits,
+        project=project,
+        plan=plan,
+        section=section,
+        docs_dir=docs_dir,
+        live=live,
+    )
+
+
+def _record_wait_findings(run_id: str, findings: Sequence[str]) -> None:
+    """Write what a wait's read found onto the stored request.
+
+    The admission pass records the same values when it next resolves the
+    request; writing them here means the coordinator reading the dispatch
+    answer finds it on the request it stored, without waiting for a pass.
+    """
+    from reckon.crew import runs as runs_module
+
+    def record(current: dict[str, Any]) -> dict[str, Any]:
+        merged = list(
+            dict.fromkeys([*current.get("upstream_obligations", ()), *findings])
+        )
+        current["upstream_obligations"] = merged
+        return current
+
+    runs_module._mutate_pointer(run_id, record)
+
+
 def _require_stored(stored: Mapping[str, Any], project: str, node: TaskNode) -> None:
     """Refuse an entry whose request the queue did not store."""
     if not stored:
@@ -774,6 +1032,45 @@ def _batch_order(entries: Sequence[Mapping[str, Any]]) -> Iterator[int]:
             )
 
 
+def _plan_history(project: str, plan: str, root: str | Path) -> list[dict[str, Any]]:
+    """One plan's recorded runs, read through the store's own plan index.
+
+    Queuing a plan asks, section by section, whether a run has already
+    delivered that section, so the rows that answer the question are that
+    plan's. Reading the project's whole projected history instead made a
+    batch's memory follow the run store's row count: every plan the batch named
+    pulled the project's full projection again, so a store carrying more
+    delivered rows cost more per plan and the batch's peak grew with it.
+
+    The store answers a plan filter from its own index, which resolves the plan
+    through the same three fields :func:`reckon.ledger.row_plan` reads, so a
+    brief-carried row is found as well as one carrying a flat plan. The
+    committed ledger is read only when the store holds nothing for the project,
+    which is the store's own rule for answering history at all; a plan the
+    store simply holds no delivery for answers empty, and falling through to
+    the ledger there would decode the project's whole projection to filter it
+    back down to that empty answer.
+    """
+    from reckon import ledger, run_store
+
+    try:
+        rows = run_store.stored_run_rows(
+            project, plan=plan, fields=ledger._PICKER_FIELDS
+        )
+    except Exception:  # noqa: BLE001 - an unreadable store answers no history
+        rows = None
+    if rows is None:
+        return ledger.picker_runs(project, root)
+    # The projection carries the row's own plan field and drops the two places
+    # a brief-carried dispatch records the same fact, so a row filtered in by
+    # its impl move reaches here with no flat plan. The filter is what
+    # establishes it, and the caller compares candidates on it.
+    return [
+        row if str(row.get("plan") or "").strip() else {**row, "plan": plan}
+        for row in rows
+    ]
+
+
 def queue_plan(
     project: str,
     plan: str,
@@ -794,6 +1091,16 @@ def queue_plan(
     nor forgets delivered work whose pointer has already been promoted. The
     command-level options are carried to every section this queues, exactly as
     they are to the entries of a batch file.
+
+    Delivered work is read from the run store, which is where a promotion puts
+    its row, rather than from the ledger documents beside a checkout: the
+    documents are no longer written, so a reader of them alone sees no landed
+    run at all. A row is matched on the plan and section it names rather than
+    on the node id, because a section dispatched on its own carries the node id
+    that dispatch chose, not the one this call derives from the section. A
+    stored row carries no phase, so a run whose own check failed is read from
+    the gate and classification the row does carry: such a run is delivered
+    only when its failure is recorded as one the node's work did not cause.
     """
     from reckon import _plan_html, ledger
     from reckon.crew import runs
@@ -806,7 +1113,7 @@ def queue_plan(
     live = list(runs.list_live(project=project))
     ownership = resolve_plan_coordinators(project, root=read.repo_root, pointers=live)
     owner = (ownership.get("plans", {}).get(plan) or {}).get("coordinator")
-    history = ledger.run_rows_from_documents(project, root=read.repo_root)
+    history = _plan_history(project, plan, read.repo_root)
     entries: list[dict[str, Any]] = []
     rows: dict[str, dict[str, Any]] = {}
     config = None
@@ -833,16 +1140,20 @@ def queue_plan(
         for candidate in [*live, *history]:
             node = candidate.get("node")
             node = node if isinstance(node, Mapping) else {}
-            candidate_plan = node.get("plan") or candidate.get("plan")
+            candidate_plan = ledger.row_plan(candidate) or str(node.get("plan") or "")
             candidate_section = node.get("section") or candidate.get("section")
             phase = str(candidate.get("phase") or candidate.get("status") or "")
+            gate = str(candidate.get("gate") or "")
+            classification = str(candidate.get("failure_classification") or "")
+            delivered = phase not in _UNDELIVERED_PHASES and (
+                gate != "failed" or classification in _LANDED_DESPITE_FAILED_GATE
+            )
             role = node.get("role") or candidate.get("role") or "implement"
             if (
                 candidate_plan == plan
                 and normalize_section(candidate_section) == normalize_section(identity)
                 and role == "implement"
-                and phase
-                not in {"failed", "stopped", "interrupted", "discarded", "dropped"}
+                and delivered
             ):
                 existing = candidate
                 break
@@ -878,6 +1189,7 @@ def queue_plan(
             over_fence_reason=over_fence_reason,
             comment=comment,
             local=local,
+            dispatch_width="plan",
             dry_run=dry_run,
         )
         if entries
@@ -921,6 +1233,7 @@ def queue_batch(
     comment: str = "",
     local: bool = False,
     priority: int | None = None,
+    dispatch_width: str = "",
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own — see :func:`_queue_batch`.
@@ -931,11 +1244,18 @@ def queue_batch(
     sections chosen.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.roadmap import roadmap_history_scope
     from reckon.serve import discovery_without_git_dates
 
     with (
         _parsed_once(),
         _built_once(),
+        # The batch reads no plan's promoted history: it prevents a duplicate
+        # with the per-node hold read, and the only reader of its roadmap — the
+        # wait check — reads gate and decision blockers and never a section's
+        # run holds. Stating that here keeps the roadmap's section-history read
+        # from decoding the project's whole plan set on every batch pass.
+        roadmap_history_scope(()),
         plan_read_scopes(),
         discovery_without_git_dates(),
     ):
@@ -949,6 +1269,7 @@ def queue_batch(
             comment=comment,
             local=local,
             priority=priority,
+            dispatch_width=dispatch_width,
             dry_run=dry_run,
         )
 
@@ -964,6 +1285,7 @@ def _queue_batch(
     comment: str = "",
     local: bool = False,
     priority: int | None = None,
+    dispatch_width: str = "",
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own and report one row per entry.
@@ -1116,6 +1438,9 @@ def _queue_batch(
                 local=options["local"],
                 comment=options["comment"],
                 priority=options["priority"],
+                # An entry may state its own width; otherwise it is the width
+                # of the call that named the batch.
+                dispatch_width=str(entry.get("dispatch_width") or dispatch_width),
                 dry_run=dry_run,
             )
             if not dry_run:
@@ -1133,6 +1458,24 @@ def _queue_batch(
             phase = str(row.get("phase") or "")
             stored_by_node[node.id] = actual_id
             already = actual_id != run_id
+            waits = list(row.get("waits") or ())
+            # What the waits resolve to, read through the same derivation the
+            # admission pass uses. A real dispatch has already applied it to the
+            # pointer; a preview needs it to answer with the row the dispatch
+            # would report, which is what makes a dry run worth reading.
+            would_phase = ""
+            findings: list[str] = []
+            if dry_run or phase in WAITING_UPSTREAM_PHASES:
+                would_phase, findings = _wait_verdict(
+                    waits,
+                    project=project,
+                    plan=node.plan,
+                    section=node.section,
+                    docs_dir=Path(work_repository) / "docs",
+                    live=live_pointers,
+                )
+            if findings and not dry_run:
+                _record_wait_findings(actual_id, findings)
             if dry_run:
                 # A preview names what the entry resolved to and stores nothing.
                 status = "would-queue"
@@ -1152,7 +1495,13 @@ def _queue_batch(
                     "status": status or "queued",
                     "run_id": actual_id,
                     "position": row.get("position"),
-                    "waits": list(row.get("waits") or ()),
+                    "waits": waits,
+                    # The phase the waits justify, reported beside a preview's
+                    # ``would-queue`` status so the preview names the same
+                    # decision the dispatch records rather than a bare promise
+                    # to queue.
+                    "would_phase": would_phase,
+                    "wait_holds": findings,
                     **{
                         key: row[key]
                         for key in ("reason", "detail", "plan_reviews")

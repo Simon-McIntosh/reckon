@@ -38,6 +38,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import hashlib
+import io
 import json
 import math
 import os
@@ -46,6 +47,7 @@ import shlex
 import shutil
 import statistics
 import subprocess
+import tarfile
 import tempfile
 import threading
 import time
@@ -89,6 +91,12 @@ _FAILED_ID = re.compile(r"^(?:FAILED|ERROR)[ \t]+(\S+)", re.MULTILINE)
 #: last one. The last match wins: a line the suite itself printed earlier is
 #: superseded by the trap's own, which is written after everything the arm ran.
 _EXIT_RECEIPT = re.compile(r"^EXIT=(\d+)[ \t]*$", re.MULTILINE)
+
+#: The sentence a partitioned arm prints when a test file its tree lacked could
+#: not be carried from the revision asked for it, with both facts in the line.
+_TREE_BUILD_REFUSAL = re.compile(
+    r"^cannot build the measurement tree: .*$", re.MULTILINE
+)
 
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
@@ -919,6 +927,45 @@ def partition_submission(
     return selected, argv, environment
 
 
+def _delivered_head(tree: Path) -> str:
+    """The revision a delivered worktree is at, when it can be read.
+
+    The head of the tree a run delivered is the revision that holds the test
+    files the run added, so it is what a measurement tree that lacks one of
+    them carries it from. An unreadable head leaves the caller to fall back to
+    the revision it already has, and the arm then refuses naming what it could
+    not find.
+
+    The read is the repository's shared commit resolver's, so a bound or a
+    revision validation fixed there reaches this caller too rather than
+    leaving a second reader to disagree with it.
+    """
+    from reckon.crew.recovery import _resolve_commit
+
+    return _resolve_commit(tree, "HEAD")
+
+
+def _carry_line(git: str, relative: str, revision: str) -> str:
+    """One shell step carrying a test file the measurement tree lacks.
+
+    The archive is named so a failure says which path was asked for and which
+    revision it was asked of, rather than letting ``git archive`` and ``tar``
+    each print a fragment of the same failure into the arm's log. A path the
+    revision does not hold cannot be carried, so the tree cannot be built and
+    the arm stops with that sentence instead of running a suite over a tree
+    that is missing a file the node declared.
+    """
+    quote = shlex.quote
+    return (
+        f'if [ ! -e "$scratch/tree"/{quote(relative)} ]; then '
+        f"{{ {git} archive {quote(revision)} -- {quote(relative)} | "
+        'tar -x -C "$scratch/tree"; } || { '
+        'printf "cannot build the measurement tree: %s is not present at '
+        f'revision %s\\n" {quote(relative)} {quote(revision)} >&2; '
+        "exit 4; }; fi"
+    )
+
+
 def _partition_runner(
     runner,
     *,
@@ -954,12 +1001,7 @@ def _partition_runner(
         scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote
         git = shlex.join(["git", "--git-dir", str(git_dir)])
-        carry = "\n".join(
-            f'if [ ! -e "$scratch/tree"/{quote(relative)} ]; then '
-            f"{git} archive {quote(head_sha)} -- {quote(relative)} | "
-            'tar -x -C "$scratch/tree"; fi'
-            for relative in carried
-        )
+        carry = "\n".join(_carry_line(git, relative, head_sha) for relative in carried)
         assignments = options.pop("arm_environment")
         invocation = shlex.join(
             ["env", *[f"{k}={v}" for k, v in assignments.items()], *command]
@@ -1037,7 +1079,12 @@ exit "$status"
         receipts = _EXIT_RECEIPT.findall(output)
         status = int(receipts[-1]) if receipts else 3
         reason = ""
-        if not receipts:
+        refusal = _TREE_BUILD_REFUSAL.search(output)
+        if refusal:
+            # The arm's own sentence names the path and the revision, so it is
+            # the reason a reader is given rather than a log excerpt.
+            reason = refusal.group(0).strip()
+        elif not receipts:
             reason = "carries no exit receipt"
         elif status != finished.returncode:
             reason = (
@@ -1415,6 +1462,12 @@ def control_mutation_observation(
     The failing ids are the control's own, judged by the same reader promotion
     uses for a log the run recorded.
 
+    The tree the control runs over is the base revision, but a test file the
+    node adds does not exist there. That file is carried from the run's own
+    head, read from the delivered tree, which is the revision that holds it, so
+    a control measure of an added test is a tree that can be built rather than
+    an archive request for a path its revision does not carry.
+
     The run is submitted to the configured measurement partition the way an
     armed arm is, so taking the reading costs a queue wait rather than a suite
     run on the landing host. The return value carries ``unreadable`` when the
@@ -1444,7 +1497,7 @@ def control_mutation_observation(
             repo=tree,
             base_tree=base_tree,
             base_sha=base_sha,
-            head_sha=base_sha,
+            head_sha=_delivered_head(tree) or base_sha,
             partition=partition,
             long_partition=str(landing.get("measure_long_partition") or "rigel"),
             test_files=node_tests,
@@ -1538,7 +1591,7 @@ def delivered_paths(repo: Path, base: str, head: str) -> list[str]:
 
 @contextlib.contextmanager
 def candidate_checkout(
-    repo: Path, primary: str, head: str, timeout: float
+    repo: Path, primary: str, head: str, timeout: float, *, tests_only: bool = False
 ) -> Iterator[tuple[str, Path]]:
     """Build the same merge as landing, and measure it without moving a branch."""
     from reckon.crew import merge
@@ -1556,7 +1609,7 @@ def candidate_checkout(
         raise BaseCheckoutError(
             f"the merge candidate could not be built: {exc}"
         ) from exc
-    with base_checkout(repo, candidate, timeout) as tree:
+    with base_checkout(repo, candidate, timeout, tests_only=tests_only) as tree:
         yield candidate, tree
 
 
@@ -1571,9 +1624,51 @@ def _git(repo: Path, *arguments: str, timeout: float):
     )
 
 
+def measures_on_partition(config: Mapping[str, Any] | None) -> bool:
+    """Whether the project's landing measure submits its arms to a partition."""
+    landing = (config or {}).get("landing") or {}
+    return bool(str(landing.get("measure_partition") or "").strip())
+
+
+@contextlib.contextmanager
+def base_tree_for_measure(
+    repo: Path, base_sha: str, timeout: float, *, partitioned: bool
+) -> Iterator[Path]:
+    """The base tree a measurement's base arms run against.
+
+    An arm submitted to a partition builds its own tree from the revision on
+    the node that runs it, and the runner tells the base arm apart from the
+    head arm by the directory it is given, so a partitioned measurement needs
+    only an empty directory to name its base. A checkout there would be a full
+    tree on the fleet node that nothing reads. An in-place measurement runs in
+    the tree, so it still gets the real checkout.
+    """
+    if not partitioned:
+        with base_checkout(repo, base_sha, timeout) as tree:
+            yield tree
+        return
+    try:
+        root = worker_scratch_root()
+        root.mkdir(parents=True, exist_ok=True)
+        placeholder = Path(tempfile.mkdtemp(prefix="landing-base-ref-", dir=root))
+    except OSError as exc:
+        raise BaseCheckoutError(
+            f"could not create the base placeholder for {base_sha}: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
+    try:
+        yield placeholder
+    finally:
+        shutil_rmtree(placeholder)
+
+
 @contextlib.contextmanager
 def base_checkout(
-    repo: Path, base_sha: str, timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS
+    repo: Path,
+    base_sha: str,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    *,
+    tests_only: bool = False,
 ) -> Iterator[Path]:
     """A detached scratch tree at ``base_sha``, released when the block ends.
 
@@ -1622,6 +1717,7 @@ def base_checkout(
                 "worktree",
                 "add",
                 "--detach",
+                *(("--no-checkout",) if tests_only else ()),
                 str(target),
                 base_sha,
                 timeout=timeout,
@@ -1644,6 +1740,16 @@ def base_checkout(
                 f"could not check out {base_sha} for the base arm: "
                 f"{(added.stderr or added.stdout or '').strip()}"
             )
+        if tests_only:
+            try:
+                _populate_tests_and_top_level(repo, target, base_sha, timeout)
+            except BaseCheckoutError:
+                with contextlib.suppress(Exception):
+                    _release_worktree_whole(
+                        repo, target, run_id="landing-base", trash_root=scratch
+                    )
+                shutil_rmtree(scratch)
+                raise
         _link_environment(repo, target)
         try:
             yield target
@@ -1662,6 +1768,44 @@ def base_checkout(
                 # it act immediately rather than after the default grace period.
                 with contextlib.suppress(OSError, subprocess.TimeoutExpired):
                     _git(repo, "worktree", "prune", "--expire", "now", timeout=timeout)
+
+
+def _populate_tests_and_top_level(
+    repo: Path, target: Path, revision: str, timeout: float
+) -> None:
+    """Write a revision's ``tests`` directory and top-level files into ``target``.
+
+    A partitioned measurement reads only these from its local tree: the test
+    files it selects and scans for imports, and the project files at the top.
+    The arms build their own full trees on the nodes that run them, so the rest
+    of a checkout would be gigabytes on the fleet node that nothing reads.
+    """
+    listed = _git(repo, "ls-tree", revision, timeout=timeout)
+    if listed.returncode:
+        raise BaseCheckoutError(
+            f"could not list {revision}: {(listed.stderr or '').strip()}"
+        )
+    names = []
+    for line in listed.stdout.splitlines():
+        meta, _, name = line.partition("\t")
+        kind = meta.split()[1] if len(meta.split()) > 1 else ""
+        if kind == "blob" or (kind == "tree" and name == "tests"):
+            names.append(name)
+    if not names:
+        return
+    archived = _RUN(
+        ["git", "-C", str(repo), "archive", revision, "--", *names],
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+    )
+    if archived.returncode:
+        raise BaseCheckoutError(
+            f"could not read the tests of {revision}: "
+            f"{bytes(archived.stderr or b'').decode(errors='replace').strip()}"
+        )
+    with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r:") as archive:
+        archive.extractall(target, filter="data")
 
 
 def shutil_rmtree(path: Path) -> None:

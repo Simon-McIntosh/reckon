@@ -642,6 +642,12 @@ def bounded_map[V](name: str, *, limit: str | int) -> BoundedMap[V]:
     return helper
 
 
+def memo_entries() -> int:
+    """How many parsed files the process-wide memo currently holds."""
+    with _LOCK:
+        return len(_CACHE)
+
+
 def clear() -> None:
     """Drop every memoised parse and every bounded map."""
 
@@ -649,3 +655,217 @@ def clear() -> None:
         _CACHE.clear()
         for helper in _MAPS:
             helper._entries.clear()
+
+
+# ── Where the bytes a measured pass read came from ──────────────────────────
+
+#: A read whose path matches no declared source is charged here, so a reader can
+#: see what the accounting could not place rather than a total that silently
+#: omits it.
+READ_SOURCE_OTHER = "everything else"
+
+
+#: How many bytes this process has read through ``read`` so far, from its own
+#: ``/proc`` record. The whole-process figure the per-source breakdown is
+#: compared against: a source the accounting misses shows up as a gap between
+#: the attributed sum and this, which is what makes a missing source visible
+#: instead of invisible.
+def read_character_count() -> int | None:
+    """The bytes this process has read, or ``None`` when the record is unreadable."""
+    try:
+        # Read through the descriptor directly rather than through ``open``, so a
+        # caller taking this figure inside an accounting scope does not charge
+        # the /proc record's own bytes to one of the sources.
+        descriptor = os.open("/proc/self/io", os.O_RDONLY)
+        try:
+            text = os.read(descriptor, 65536).decode("utf-8", "replace")
+        finally:
+            os.close(descriptor)
+    except OSError:
+        return None
+    for line in text.splitlines():
+        if line.startswith("rchar:"):
+            return int(line.split()[1])
+    return None
+
+
+class ReadAccount:
+    """Bytes read during a pass, each charged to the source it came from.
+
+    A source is an ordered ``(name, prefixes)`` rule; the first rule whose
+    prefix the read path starts with owns the bytes, and a path matching none is
+    charged to :data:`READ_SOURCE_OTHER`. A prefix beginning with ``*`` matches
+    anywhere in the path instead, which is how a store that lives under every
+    mounted checkout rather than under one root is named. Rules are ordered
+    because a narrower prefix (the crew home's live pointer directory) must be
+    tested before the broader one that contains it (the crew home itself).
+    """
+
+    __slots__ = ("_bytes", "_reads", "_rules")
+
+    def __init__(self, rules: Iterable[tuple[str, Iterable[str]]]) -> None:
+        self._rules = [
+            (str(name), tuple(str(prefix) for prefix in prefixes))
+            for name, prefixes in rules
+        ]
+        self._bytes: dict[str, int] = {}
+        self._reads: dict[str, int] = {}
+
+    def source_for(self, path: Path | str) -> str:
+        """The source a read of ``path`` is charged to."""
+        text = str(path)
+        for name, prefixes in self._rules:
+            for prefix in prefixes:
+                if prefix.startswith("*"):
+                    if prefix[1:] in text:
+                        return name
+                elif text.startswith(prefix):
+                    return name
+        return READ_SOURCE_OTHER
+
+    def record(self, path: Path | str, count: int) -> None:
+        """Charge ``count`` bytes read from ``path`` to its source."""
+        if count <= 0:
+            return
+        source = self.source_for(path)
+        self._bytes[source] = self._bytes.get(source, 0) + int(count)
+        self._reads[source] = self._reads.get(source, 0) + 1
+
+    def summary(self) -> dict[str, int]:
+        """Bytes and reads per source, largest first, and their sum."""
+        rows = sorted(self._bytes.items(), key=lambda item: -item[1])
+        summary = dict(rows)
+        summary["attributed_bytes"] = sum(self._bytes.values())
+        return summary
+
+    def read_counts(self) -> dict[str, int]:
+        """How many reads each source served."""
+        return dict(self._reads)
+
+
+_ACCOUNT: ContextVar[ReadAccount | None] = ContextVar("file_memo_account", default=None)
+
+
+class _CountedTextFile:
+    """A text file that charges the bytes it hands back to the open account.
+
+    A text read returns characters, and the process's own ``/proc`` figure
+    counts the bytes those characters were decoded from. They are charged at
+    their encoded size, in the stream's own encoding, so a document of
+    multibyte text is not counted at a fraction of what reading it cost.
+    """
+
+    __slots__ = ("_account", "_path", "_wrapped")
+
+    def __init__(self, wrapped: Any, account: ReadAccount, path: str) -> None:
+        self._wrapped = wrapped
+        self._account = account
+        self._path = path
+
+    def _encoded(self, text: str) -> int:
+        if not text:
+            return 0
+        encoding = getattr(self._wrapped, "encoding", None) or "utf-8"
+        try:
+            return len(text.encode(encoding, "surrogatepass"))
+        except (LookupError, UnicodeEncodeError):
+            return len(text.encode("utf-8", "surrogatepass"))
+
+    def read(self, *arguments: Any) -> str:
+        data = self._wrapped.read(*arguments)
+        self._account.record(self._path, self._encoded(data))
+        return data
+
+    def readline(self, *arguments: Any) -> str:
+        data = self._wrapped.readline(*arguments)
+        self._account.record(self._path, self._encoded(data))
+        return data
+
+    def readlines(self, *arguments: Any) -> list[str]:
+        data = self._wrapped.readlines(*arguments)
+        self._account.record(self._path, sum(self._encoded(line) for line in data))
+        return data
+
+    def __iter__(self) -> Iterator[str]:
+        for line in self._wrapped:
+            self._account.record(self._path, self._encoded(line))
+            yield line
+
+    def __enter__(self) -> Self:
+        self._wrapped.__enter__()
+        return self
+
+    def __exit__(self, *arguments: object) -> Any:
+        return self._wrapped.__exit__(*arguments)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._wrapped, name)
+
+
+class _CountedBinaryFile(_CountedTextFile):
+    """A binary file that charges the bytes it hands back to the open account."""
+
+    __slots__ = ()
+
+    def read(self, *arguments: Any) -> bytes:
+        data = self._wrapped.read(*arguments)
+        self._account.record(self._path, len(data))
+        return data
+
+    def readline(self, *arguments: Any) -> bytes:
+        data = self._wrapped.readline(*arguments)
+        self._account.record(self._path, len(data))
+        return data
+
+
+@contextlib.contextmanager
+def attributing(
+    rules: Iterable[tuple[str, Iterable[str]]],
+) -> Iterator[ReadAccount]:
+    """Charge every file read made inside the block to the source it came from.
+
+    ``open`` and the import machinery's ``open_code`` are wrapped for the
+    block's duration and restored afterwards, so the accounting costs nothing
+    outside its scope. Reads made through C modules (a SQLite page read, a
+    memory map) never pass through these entry points; they show up as the gap
+    between the attributed sum and :func:`read_character_count`, which the
+    caller records beside the breakdown rather than papering over.
+    """
+    import builtins
+    import io
+
+    account = ReadAccount(rules)
+    token = _ACCOUNT.set(account)
+    original_open = builtins.open
+    original_open_code = getattr(io, "open_code", None)
+
+    def counted_open(file: Any, mode: str = "r", *arguments: Any, **keywords: Any):
+        handle = original_open(file, mode, *arguments, **keywords)
+        path = file if isinstance(file, (str, bytes, os.PathLike)) else ""
+        binary = "b" in str(mode)
+        proxy: Any = (
+            _CountedBinaryFile(handle, account, str(path))
+            if binary
+            else _CountedTextFile(handle, account, str(path))
+        )
+        return proxy
+
+    def counted_open_code(path: Any, *arguments: Any, **keywords: Any):
+        handle = original_open_code(path, *arguments, **keywords)
+        return _CountedBinaryFile(handle, account, str(path))
+
+    original_io_open = io.open
+    builtins.open = counted_open
+    # ``pathlib`` reaches ``io.open`` by module attribute, so patching the
+    # builtin alone would leave every ``Path.read_text`` unaccounted.
+    io.open = counted_open
+    if original_open_code is not None:
+        io.open_code = counted_open_code
+    try:
+        yield account
+    finally:
+        builtins.open = original_open
+        io.open = original_io_open
+        if original_open_code is not None:
+            io.open_code = original_open_code
+        _ACCOUNT.reset(token)

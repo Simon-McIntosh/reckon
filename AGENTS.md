@@ -29,7 +29,9 @@ prevents. Pointers below, one per rule; the references hold the full text.
     cohort completes — and name the scarce resource
   - an operational run outliving a turn runs in bounded slices
   - queue every reviewed plan you own (assigned to you, or authored and being
-    built by you) at its full width in one beat with `crew dispatch --batch`;
+    built by you) at its full width in one beat with the whole-plan
+    `crew dispatch --plan <slug>` (no `--section`; `crew dispatch --batch`
+    only for fields a section lacks);
     never another session's, an unowned or a superseded plan, including sections whose upstream has not landed;
     the declared waits are the gate, holding each node until its upstream has
     passed review and landed. Do not ration; reprioritise what is urgent

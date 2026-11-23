@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "432b5ff1a1625be57d5c7a1589ae591cdd91a7f3",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/resumption.py:2376 _resume appends the compute partition block",
+    "reckon/crew/resumption.py:3225 _resume (automatic resume door)",
+    "reckon/crew/recovery_repair_dispatch.py:213 resumption._resume (repair dispatch)",
+    "reckon/crew/recovery_repair_dispatch.py:2134 resumption_module._resume (repair dispatch)",
+    "reckon/crew_run_commands.py:2912 crew resume",
+    "reckon/mcp.py:3323 MCP resume tool"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T13:05:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "793",
+      "severity": "non-blocking",
+      "text": "non-blocking: named_gate_partition decides that a done-when named no partition by comparing node_gate_partition's answer against the literal default \"all_debug\" and re-searching the text, so the wrapper re-encodes the owner's default in reckon/crew/standing_suite.py:179; if the owner's default changes, an unnamed done-when is reported as a named partition and the resume invents an instruction the dispatch never gave. The owner should return the match or \"\" rather than a default the wrapper must invert."
+    }
+  ],
+  "head_log_revision": "0e95f7d0abb64f25b901d7ab19ef35b47ce22b15",
+  "item_verdicts": {
+    "call_sites": "verified the production doors that reach _resume: reckon/crew/resumption.py:3225, reckon/crew/recovery_repair_dispatch.py:213 and :2134, reckon/crew_run_commands.py:2912, and reckon/mcp.py:3323.",
+    "diff": "read commit by commit against base 432b5ff1: 0e95f7d0ab adds named_gate_partition and compute_partition_block in prompts.py, _compute_partition_block and _with_compute_partition_block plus the advice call in resumption.py, and the 101-line test file; 3ce5a016f3 and 71ec35e4dc change only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_repair_resume_keeps_its_partition.py, both halves, each arm's log under the run directory with revision, literal command and closing EXIT=, and a red negative control at base; the manifest and logs record exactly that (1 failed/1 passed EXIT=1 at 432b5ff1; 58 passed and 60 passed EXIT=0 across the arms).",
+    "goal": "the node's goal is that a reflex resume carries the compute instruction its dispatch named; reckon/crew/resumption.py:2376 appends reckon/crew/prompts.py:798 compute_partition_block to the advice before resume_plan builds the prompt, and the block names the partition read from the node's done_when at prompts.py:781-795.",
+    "manifest": "read; status complete, commits 0e95f7d0ab, 3ce5a016f3 and 71ec35e4dc, changed_paths four files, the gate 60 passed, both suite arms 0 failures, the negative control EXIT=1, and it discloses that the last two commits touch only the fragment.",
+    "write_paths": "the fence was reckon/crew/prompts.py, reckon/crew/resumption.py, the new test, the evidence fragment and a figures directory; git diff --stat 432b5ff1a162..71ec35e4dc touches the first four and nothing else."
+  },
+  "justifications": {
+    "durability": "the negative control reddens tests/test_a_repair_resume_keeps_its_partition.py:84 with the block construction removed, so the positive case is a real guard; the negative case at :100-101 passes at base and only fails if the code composes the default partition unconditionally.",
+    "evidence": "the negative control records 1 failed, 1 passed EXIT=1 at 432b5ff1 with the partition absent from the prompt, the baseline arm 58 passed EXIT=0 at 432b5ff1 and the after arm 60 passed EXIT=0 at 0e95f7d0ab; the two commits after that measured revision (3ce5a016f3, 71ec35e4dc) touch only the evidence fragment, which I confirmed with git show --stat.",
+    "fit": "the two helpers follow the file's existing local-import idiom (reckon/crew/prompts.py:790-791, 809) and every added name describes the mechanism, with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/resumption.py:2376 appends reckon/crew/prompts.py:798 compute_partition_block to the advice before resume_plan builds the prompt, and the block names the partition read from the node's own done_when at prompts.py:781-795; a done-when naming none composes nothing.",
+    "reuse": "the partition detection is delegated to reckon/crew/standing_suite.py:175 node_gate_partition and the route text to reckon/nested_launch.py:160 PARTITION_ROUTE rather than restated, though prompts.py:793 re-encodes the owner's default literal to recover the named-or-not answer.",
+    "scope_discipline": "git diff --stat 432b5ff1a162..71ec35e4dc lists exactly reckon/crew/prompts.py, reckon/crew/resumption.py, tests/test_a_repair_resume_keeps_its_partition.py and the evidence fragment, every one inside the node's declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reflex resume carries the compute instruction its dispatch named; reckon/crew/resumption.py:2376 appends reckon/crew/prompts.py:798 compute_partition_block to the advice before resume_plan builds the prompt, and the block names the partition read from the node's done_when at prompts.py:781-795.\nVERDICT done_when: the done_when names tests/test_a_repair_resume_keeps_its_partition.py, both halves, each arm's log under the run directory with revision, literal command and closing EXIT=, and a red negative control at base; the manifest and logs record exactly that (negative-control-base.log 1 failed, 1 passed EXIT=1 at 432b5ff1; baseline_suite 58 passed and after_suite 60 passed EXIT=0).\nVERDICT write_paths: the fence was reckon/crew/prompts.py, reckon/crew/resumption.py, tests/test_a_repair_resume_keeps_its_partition.py, the evidence fragment and a figures directory; git diff --stat 432b5ff1a162..71ec35e4dc touches the first four and nothing else.\nVERDICT manifest: read; status complete, commits 0e95f7d0ab, 3ce5a016f3 and 71ec35e4dc, changed_paths four files, the scoped gate 60 passed, both suite arms 0 failures, the negative control EXIT=1, and it discloses that the last two commits touch only the fragment.\nVERDICT diff: read commit by commit against base 432b5ff1: 0e95f7d0ab adds named_gate_partition and compute_partition_block in prompts.py, _compute_partition_block and _with_compute_partition_block plus the advice call in resumption.py, and the 101-line test file; 3ce5a016f3 and 71ec35e4dc change only the evidence fragment.\nCALL_SITES: reckon/crew/resumption.py:2376 _resume, reckon/crew/resumption.py:3225 _resume (automatic resume door), reckon/crew/recovery_repair_dispatch.py:213 resumption._resume (repair dispatch), reckon/crew/recovery_repair_dispatch.py:2134 resumption_module._resume (repair dispatch), reckon/crew_run_commands.py:2912 crew resume, reckon/mcp.py:3323 MCP resume tool\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:2376 appends reckon/crew/prompts.py:798 compute_partition_block to the advice before resume_plan builds the prompt, and the block names the partition read from the node's own done_when at prompts.py:781-795.\nSCORE evidence: 18\nJUSTIFICATION evidence: the negative control records 1 failed, 1 passed EXIT=1 at 432b5ff1 with the partition absent from the prompt, and the arms record 58 passed at 432b5ff1 and 60 passed at 0e95f7d0ab EXIT=0, the later two commits touching only the evidence fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 432b5ff1a162..71ec35e4dc lists exactly the four declared files, every one inside the node's fence.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reddens tests/test_a_repair_resume_keeps_its_partition.py:84 with the block construction removed, so the positive case is a real guard; the negative case at :100-101 passes at base and only fails if the code composes the default unconditionally.\nSCORE fit: 20\nJUSTIFICATION fit: the two helpers follow the file's existing local-import idiom at reckon/crew/prompts.py:790-791 and 809, and every added name describes the mechanism with no plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: partition detection delegates to reckon/crew/standing_suite.py:175 node_gate_partition and the route text to reckon/nested_launch.py:160 PARTITION_ROUTE, though prompts.py:793 re-encodes the owner's default literal.\nFINDING reckon/crew/prompts.py:793 non-blocking: named_gate_partition decides that a done-when named no partition by comparing node_gate_partition's answer against the literal default \"all_debug\" and re-searching the text, so the wrapper re-encodes the owner's default in reckon/crew/standing_suite.py:179; if the owner's default changes, an unnamed done-when is reported as a named partition and the resume invents an instruction the dispatch never gave. The owner should return the match or \"\" rather than a default the wrapper must invert.",
+  "review_run_id": "r-20261122T130450221687-review-of-dwlw-a-repair-resume-keeps-its-partition-71ec35e4dc64",
+  "reviewed_base_sha": "432b5ff1a1625be57d5c7a1589ae591cdd91a7f3",
+  "reviewed_head_sha": "71ec35e4dc64049eb32868245c28158d996828a9",
+  "reviewed_run_id": "r-20261122T124838904721-dwlw-a-repair-resume-keeps-its-partition",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T130450221687-review-of-dwlw-a-repair-resume-keeps-its-partition-71ec35e4dc64"
+  },
+  "reviewer_run_id": "r-20261122T130450221687-review-of-dwlw-a-repair-resume-keeps-its-partition-71ec35e4dc64",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T13:12:35.276365+00:00",
+  "total": 114
+}

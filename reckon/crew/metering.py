@@ -111,7 +111,7 @@ class _StreamFold:
         newline that will never come.
         """
         try:
-            with path.open("rb") as stream:
+            with path.open("rb", buffering=0) as stream:
                 stream.seek(self.offset)
                 chunk = stream.read()
         except OSError:

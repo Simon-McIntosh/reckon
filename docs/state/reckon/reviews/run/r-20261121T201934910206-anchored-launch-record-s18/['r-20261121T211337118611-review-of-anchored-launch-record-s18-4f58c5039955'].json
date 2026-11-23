@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3901",
+    "reckon/crew/dispatch_launch.py:4287",
+    "reckon/crew/dispatch_launch.py:5735",
+    "reckon/crew/dispatch_launch.py:4679",
+    "reckon/crew/dispatch_launch.py:5749",
+    "reckon/crew/dispatch_launch.py:5810",
+    "reckon/crew/dispatching/launch.py:1006"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-anchored-launch-record-s18-4f58c5039955",
+      "recorded_at": "2026-11-21T22:26:15.640313+00:00"
+    },
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-anchored-launch-record-s18-4f58c5039955",
+      "recorded_at": "2026-11-21T22:25:42.984371+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-21T20:26:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-anchored-launch-record-s18-4f58c5039955",
+      "recorded_at": "2026-11-21T22:25:19.726234+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-anchored-launch-record-s18-4f58c5039955",
+      "recorded_at": "2026-11-21T22:25:42.302637+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "id": "f938a8afaeb",
+      "line": "145",
+      "severity": "blocking",
+      "text": "blocking: the deleted keys are asserted here (also :146, :150, :151) by a file that imports dispatch_launch; at 4f58c5039955 the file reads 13 failed, 28 passed against 41 passed at 1666d19f7744, so the change breaks a live guard."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html",
+      "id": "f639540388e",
+      "line": "23",
+      "severity": "blocking",
+      "text": "blocking: the fragment says nothing outside the module read either field and sets plan-verdict passed, while tests/test_anchored_edit_claude_arm.py reads both keys and 13 of its tests fail at the head the fragment describes."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html",
+      "id": "fef2c7f8c9e",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the corroborating run names four suites that do not import the changed module and omits the one that does, so the corroboration cannot catch the defect class this node ran into."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from 1666d19f7744; 7 deletions at three record sites in reckon/crew/dispatch_launch.py (:3624, :4262, :4836) plus a new 53-line evidence fragment, and no test added.",
+    "done_when": "the done_when requires a grep that finds nothing plus \"the test files importing the changed modules add no failure against a base arm\"; the grep passes but the arms ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports dispatch_launch.",
+    "goal": "The goal is to drop the anchored edit field from the launched-worker record; `git show 4f58c5039955:reckon/crew/dispatch_launch.py | grep anchored_edit` returns nothing, so the spec, the worker record and the pointer rewrite no longer write it.",
+    "manifest": "read at status complete with commits c531183617a5, 3bb1e179d5e0 and 4f58c5039955; it records 58 passed in each arm, the negative control and the ruff delta, and records nothing about the importing test file.",
+    "write_paths": "the node declared reckon/crew/dispatch_launch.py, an evidence fragment and a figure directory; the diff touches the first two and not the figure directory, so every changed path is inside the five-held scope."
+  },
+  "justifications": {
+    "durability": "no assertion was added by the diff, and the one existing assertion that guards the deleted keys (tests/test_anchored_edit_claude_arm.py:145) now fails, so nothing protects the change and one thing detects it only by breaking.",
+    "evidence": "the arms named in the manifest cover two files that do not import reckon/crew/dispatch_launch.py, so the gate cannot see the 13 failures my reproduction finds at 4f58c5039955 in tests/test_anchored_edit_claude_arm.py.",
+    "fit": "the three deletions in reckon/crew/dispatch_launch.py:3624, :4262 and :4836 remove whole entries and leave the surrounding dict style intact, and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:3624 no longer carries the two keys, but the removal stops at the writer and leaves the record's readers in tests/test_anchored_edit_claude_arm.py:145 asserting them.",
+    "reuse": "the diff adds no definition, and a search of reckon/ and tests/ for another owner of the launch-record anchored field found only the writer, which is the site removed.",
+    "scope_discipline": "every changed path (dispatch_launch.py and the anchored-launch-record-s18 fragment) is inside the declared write paths, and the fragment states a verdict the head contradicts."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to drop the anchored edit field from the launched-worker record; `git show 4f58c5039955:reckon/crew/dispatch_launch.py | grep anchored_edit` returns nothing, so the spec, the worker record and the pointer rewrite no longer write it.\nVERDICT done_when: the done_when requires a grep that finds nothing plus \"the test files importing the changed modules add no failure against a base arm\"; the grep passes but the arms ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports dispatch_launch.\nVERDICT write_paths: the node declared reckon/crew/dispatch_launch.py, an evidence fragment and a figure directory; the diff touches the first two and not the figure directory, so every changed path is inside the five-held scope.\nVERDICT manifest: read at status complete with commits c531183617a5, 3bb1e179d5e0 and 4f58c5039955; it records 58 passed in each arm, the negative control and the ruff delta, and records nothing about the importing test file.\nVERDICT diff: read commit by commit from 1666d19f7744; 7 deletions at three record sites in reckon/crew/dispatch_launch.py (:3624, :4262, :4836) plus a new 53-line evidence fragment, and no test added.\nCALL_SITES: reckon/crew/dispatch_launch.py:3901, reckon/crew/dispatch_launch.py:4287, reckon/crew/dispatch_launch.py:5735, reckon/crew/dispatch_launch.py:4679, reckon/crew/dispatch_launch.py:5749, reckon/crew/dispatch_launch.py:5810, reckon/crew/dispatching/launch.py:1006\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:3624 no longer carries the two keys, but the removal stops at the writer and leaves the record's readers in tests/test_anchored_edit_claude_arm.py:145 asserting them.\nSCORE evidence: 5\nJUSTIFICATION evidence: the arms named in the manifest cover two files that do not import reckon/crew/dispatch_launch.py, so the gate cannot see the 13 failures my reproduction finds at 4f58c5039955 in tests/test_anchored_edit_claude_arm.py.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path (dispatch_launch.py and the anchored-launch-record-s18 fragment) is inside the declared write paths, and the fragment states a verdict the head contradicts.\nSCORE durability: 2\nJUSTIFICATION durability: no assertion was added by the diff, and the one existing assertion that guards the deleted keys (tests/test_anchored_edit_claude_arm.py:145) now fails, so nothing protects the change and one thing detects it only by breaking.\nSCORE fit: 16\nJUSTIFICATION fit: the three deletions in reckon/crew/dispatch_launch.py:3624, :4262 and :4836 remove whole entries and leave the surrounding dict style intact, and carry no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and a search of reckon/ and tests/ for another owner of the launch-record anchored field found only the writer, which is the site removed.\nFINDING tests/test_anchored_edit_claude_arm.py:145 blocking: the deleted keys are asserted here (also :146, :150, :151) by a file that imports dispatch_launch; at 4f58c5039955 the file reads 13 failed, 28 passed against 41 passed at 1666d19f7744, so the change breaks a live guard.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html:23 blocking: the fragment says nothing outside the module read either field and sets plan-verdict passed, while tests/test_anchored_edit_claude_arm.py reads both keys and 13 of its tests fail at the head the fragment describes.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-launch-record-s18.html:33 non-blocking: the corroborating run names four suites that do not import the changed module and omits the one that does, so the corroboration cannot catch the defect class this node ran into.",
+  "review_run_id": [
+    "r-20261121T211337118611-review-of-anchored-launch-record-s18-4f58c5039955"
+  ],
+  "reviewed_base_sha": "1666d19f7744d3cbbb272f620e38427ad9738472",
+  "reviewed_head_sha": "4f58c5039955ce0b92857a963ebd8849fc46eab0",
+  "reviewed_run_id": "r-20261121T201934910206-anchored-launch-record-s18",
+  "scores": {
+    "durability": 2,
+    "evidence": 5,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-21T22:07:48.895254+00:00",
+  "total": 73
+}

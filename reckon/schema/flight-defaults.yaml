@@ -62,6 +62,16 @@ harness_home_adjacent_files:
     - path: .claude.json
       keys: [mcpServers]
 
+# Servers this node runs once and shares with every worker whose MCP set names
+# them. An entry with no command runs the reckon MCP server under the
+# interpreter that composed the launch. The worker connects to the node's one
+# process instead of starting its own copy, so the node pays a single resident
+# footprint however many workers use it. A name absent from this table starts
+# per worker exactly as before, and a node whose set does not name a server
+# here is untouched.
+shared_mcp_servers:
+  reckon: {}
+
 roles:
   # Committed ledger p75: 457s across 79 usable implement runs, rounded up.
   implement:

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="passed">
+  <title>An obligations sweep builds each project roadmap once per pass</title>
+</head>
+<body>
+<article class="r-note" data-reckon="landed" data-when="2026-11-22">
+<h2>One sweep, one roadmap build per project</h2>
+<p>A sweep asks the admission ordering where each queued request stands, once
+for every session's payload. Ordering a payload derives the queued plans'
+section priorities, and that derivation composes the project's roadmap. A
+temporary crew home held two projects with twenty queued items each across
+four sessions: <code>payload_for</code> was called four times per project, and
+the base revision composed that project's roadmap four times, eight
+compositions in one sweep.</p>
+<p>The earlier counter watched the sweep's own reachable modules, where no
+roadmap build happens, so its zero was structural and proved nothing. The
+measurement now instruments the path the sweep travels — the ordering's entry
+point and the roadmap composition beneath it — and the fixture carries the
+capability attributes a plan page must declare for a hidden refusal not to
+swallow the build, plus top-level plan and section on every pointer.</p>
+<p>Answering an identical ordering read from the one before it, keyed on the
+pointers, the instant and the lane, makes the sweep compose each project's
+roadmap once. Any sweep that reads at a later instant is answered fresh, and a
+caller that brings its own configuration keeps a direct answer. The answer is
+memoised through <code>reckon.file_memo</code>, the bounded and locked memo
+this repository already owns and this module already reads a delivered review
+and a review tier through, keyed on a digest of the pointers, the instant and
+the lane; no cache of its own was added. Both arms ran with
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code>:
+the baseline at revision 1f914072e1 over the two adjacent suites read
+<code>58 passed in 51.47s</code> (EXIT=0), and the head at revision a67ef5821d
+over those two plus the pinning test read <code>61 passed in 63.99s (0:01:03)</code>
+(EXIT=0).</p>
+<p>The negative control reverts the answering commits and the count returns:
+over the same two projects the pinning test reads <code>2 failed, 1 passed in
+19.57s</code> (EXIT=1) with <code>{'sweep-one': 4, 'sweep-two': 4}</code>, and
+at the base revision with the pinning test copied in it reads <code>2 failed,
+1 passed in 19.27s</code> (EXIT=1) with the same four builds per project.
+Reverting only the memoisation leaves the pinning test green (<code>3 passed
+in 11.05s</code>, EXIT=0), which is what a reuse answer should do: it changes
+which mechanism holds the answer, not the answer. A footfall test asserts the
+counter sees each project's build, so a future zero would be read as a fixture
+that left the path rather than as a sweep that composed nothing.</p>
+</article>
+</body>
+</html>

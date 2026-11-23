@@ -1123,6 +1123,17 @@ def _landing_test_files(
     return delivery_scope.changed_test_files(pointer, changed, tree)
 
 
+def _tests_only_checkout(config: Mapping[str, Any] | None) -> dict[str, bool]:
+    """Ask for a tests-only tree when the arms build their own trees on a partition.
+
+    An in-place measure runs its arms in the local tree, so it keeps the full
+    checkout and the call keeps its plain form.
+    """
+    if landing_measure.measures_on_partition(config):
+        return {"tests_only": True}
+    return {}
+
+
 def _measure_delivery(
     pointer: Mapping[str, Any],
     run_id: str,
@@ -1208,16 +1219,32 @@ def _measure_delivery(
                 if not promoted and _landed_elsewhere(pointer, run_id):
                     raise _LandedElsewhereError
                 measured_head, measured_tree = stack.enter_context(
-                    landing_measure.candidate_checkout(repo, primary, head, timeout)
+                    landing_measure.candidate_checkout(
+                        repo,
+                        primary,
+                        head,
+                        timeout,
+                        **_tests_only_checkout(config),
+                    )
                 )
             elif request is not None:
                 measured_tree = stack.enter_context(
-                    landing_measure.base_checkout(repo, head, timeout)
+                    landing_measure.base_checkout(
+                        repo,
+                        head,
+                        timeout,
+                        **_tests_only_checkout(config),
+                    )
                 )
             if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
             base_tree = stack.enter_context(
-                landing_measure.base_checkout(repo, primary, timeout)
+                landing_measure.base_tree_for_measure(
+                    repo,
+                    primary,
+                    timeout,
+                    partitioned=landing_measure.measures_on_partition(config),
+                )
             )
             if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
@@ -1275,6 +1302,68 @@ def _measure_delivery(
     if request is None:
         _record_suite_evidence(run_id, measured, promoted=promoted)
     return measured
+
+
+def measure_a_coordinator_landing(
+    run_id: str, pointer: Mapping[str, Any] | None = None
+) -> landing_measure.Measurement | None:
+    """Measure a landing a coordinator asks for over the lander's own population.
+
+    The landing pass compares the base and head of the tests that import what a
+    delivery changed before the delivery is published. A coordinator's
+    ``complete --land`` skipped that comparison: it read the run's own gate
+    evidence, which covers the node's own test files and nothing that imports
+    what they changed, and merged a head that had reddened an importer test
+    nobody re-ran. The same base-and-head measurement is taken here, so a head
+    that adds a failure outside the gate the coordinator cited is refused naming
+    the id, exactly as the pass would have refused it.
+
+    A measurement already standing for this head and primary is reused rather
+    than taken twice: a pass that measured the delivery and left it as an
+    obligation, and the coordinator who lands it from the command line, read one
+    answer. A run that armed no suite command has nothing for the pass to
+    measure either, and reads as ``None`` — the coordinator's own gate evidence
+    stays the only guard for an unarmed run, rather than this refusing a landing
+    the run's own record never armed.
+
+    The measurement is recorded beside the run's gate evidence in the run's own
+    directory, so a later reader sees both what the coordinator checked and what
+    the population found.
+
+    A head or tree that cannot be read returns a measurement carrying its
+    ``unreadable`` reason rather than an empty one, so the caller refuses a
+    landing it could not measure instead of reading the absent reading as a
+    clean result.
+    """
+    pointer = _pointer_or_read(run_id, pointer)
+    command = str(pointer.get("suite_command") or "").strip()
+    if not command:
+        return None
+    head, tree = recovery._review_head_and_tree(pointer)
+    project = str(pointer.get("project") or "")
+
+    def unreadable(reason: str) -> landing_measure.Measurement:
+        return landing_measure.Measurement(
+            command=command,
+            suite={},
+            population={},
+            unreadable=reason,
+            head=head,
+            project=project,
+        )
+
+    if not head:
+        return unreadable("the run records no reviewed head to measure")
+    primary = _primary_revision(pointer)
+    stored = _stored_measurement(run_id, head, command, primary, pointer)
+    if stored is not None:
+        return stored
+    if tree is None or not Path(tree).is_dir():
+        return unreadable("the run's worktree holds no tree to measure")
+    try:
+        return _measure_delivery(pointer, run_id, head, str(tree))
+    except _LandedElsewhereError:
+        return None
 
 
 def run_measurement_request(path: Path) -> None:
@@ -1677,41 +1766,81 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     Returns "" when the beat was recorded or the run names no plan section, and
     the refusal otherwise. The evidence anchor is the node's own fragment path,
     so a reader follows the closing comment to the record the worker wrote.
+
+    The declaration closes only with the section's last landing. A landing that
+    arrives while another node of the section is queued, waiting for its
+    upstream, working, or delivered and unlanded records itself and its
+    evidence and leaves the declaration as it was, so the sibling's request
+    still reads as live work rather than as a dispatch of a finished section.
     """
     node = pointer.get("node") if isinstance(pointer.get("node"), Mapping) else {}
     plan = str(node.get("plan") or "").strip()
-    section = str(node.get("section") or "").strip()
+    # A pointer may spell its section with a section sign or as its record id;
+    # the plan's declarations and comment anchors are keyed by the record id.
+    from reckon._plan_html import section_record_id
+
+    section = section_record_id(node.get("section") or "")
     project = str(pointer.get("project") or "").strip()
     repo = str(pointer.get("repo") or "").strip()
     if not (plan and section and project and repo):
         return ""
     from datetime import UTC, datetime
+    from html import escape
 
     from reckon import _store
+    from reckon.crew import pending_landing
     from reckon.mcp_edit_plan import _edit_plan_tool
 
-    anchor = str(node.get("id") or run_id)
-    record_href = f"/{project}/evidence/archive/{plan}-landed.html#{anchor}"
-    body = (
-        f"<p>Landed {run_id} on the measured suite pair; "
-        f'<a href="{record_href}">evidence</a></p>'
+    node_id = str(node.get("id") or "")
+    outstanding = pending_landing.nodes_awaiting_landing(
+        project, plan, section, node_id=node_id, run_id=run_id
     )
+    anchor = node_id or run_id
+    record_href = f"/{project}/evidence/archive/{plan}-landed.html#{anchor}"
+    if outstanding:
+        # The section's last landing declares it, not its first: a sibling still
+        # queued, waiting for its upstream, working or delivered and unlanded is
+        # work this section still owes, and closing it here would make that
+        # sibling's request read as a dispatch of finished work.
+        waiting = ", ".join(escape(name) for name in outstanding)
+        body = (
+            f"<p>Landed {escape(run_id)} on the measured suite pair; the section "
+            f"stays implementable for {len(outstanding)} other node(s) still to "
+            f'land: {waiting}. <a href="{record_href}">evidence</a></p>'
+        )
+        comment_id = f"c-landed-{run_id}"
+    else:
+        body = (
+            f"<p>Landed {escape(run_id)} on the measured suite pair; "
+            f'<a href="{record_href}">evidence</a></p>'
+        )
+        comment_id = f"c-close-{section}"
     ops = [
         {
             "op": "append_evidence",
             "plan": plan,
             "anchor": anchor,
             "title": f"{section} landed",
-            "body": f"<p>Run <code>{run_id}</code> landed after the landing pass "
-            "measured its suite at base and head.</p>",
+            "body": f"<p>Run <code>{escape(run_id)}</code> landed after the landing "
+            "pass measured its suite at base and head.</p>",
         },
-        {"op": "set", "path": f"section_declarations.{section}", "value": "done"},
+        *(
+            []
+            if outstanding
+            else [
+                {
+                    "op": "set",
+                    "path": f"section_declarations.{section}",
+                    "value": "done",
+                }
+            ]
+        ),
         {
             "op": "append",
             "target": "comments",
             "section": section,
             "item": {
-                "id": f"c-close-{section}",
+                "id": comment_id,
                 "who": "reckon-build",
                 "when": datetime.now(UTC).isoformat(),
                 "body": body,
@@ -1730,7 +1859,9 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     except (OSError, ValueError) as exc:
         return f"landing beat refused: {type(exc).__name__}: {exc}"
     if not result.get("ok"):
-        return f"landing beat refused: {result.get('error') or 'unknown refusal'}"
+        detail = str(result.get("detail") or result.get("message") or "").strip()
+        refusal = f"landing beat refused: {result.get('error') or 'unknown refusal'}"
+        return f"{refusal}: {detail}" if detail else refusal
     return ""
 
 

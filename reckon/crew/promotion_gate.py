@@ -8,6 +8,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -57,6 +58,60 @@ _PARTITION_RECEIPT = re.compile(r"^EXIT=(-?\d+)\s*$", re.MULTILINE)
 # What a job's log states when its submission never reached the command, so a
 # missing receipt and a receipt that says so report the same status.
 _UNREADABLE_JOB_STATUS = 3
+
+
+# The status a POSIX shell exits with when it cannot find the program it was
+# told to start. It is not a verdict on anything the program would have read.
+_SHELL_PROGRAM_NOT_FOUND_STATUS = 127
+
+
+_NOT_FOUND_LINE = re.compile(
+    r"(?:^|\n)[^\n:]*: (?:\d+: |line \d+: )?(\S+): (?:command )?not found"
+)
+
+
+def _not_found_program(output: str) -> str | None:
+    """The program a shell's ``not found`` line names, or None.
+
+    Used only when the replay exited 127, so the line it reads is the shell's
+    own account of what it could not start rather than a string a test printed.
+    """
+    match = _NOT_FOUND_LINE.search(output or "")
+    return match.group(1) if match else None
+
+
+def _program_not_found_reason(
+    resumed: Mapping[str, Any],
+    *,
+    tree: Path,
+    exit_status: int | None = None,
+) -> str:
+    """State that the gate never started, naming the program and the tree.
+
+    A shell that cannot start the gate's program exits 127, which a reader takes
+    for a gate that ran and failed — measured 2026-11-22, a command naming
+    ``.venv/bin/python`` in a merged-head tree that carried none was reported as
+    a gate the merge had changed, and the refusal sent the coordinator into the
+    merge for a missing file. The seats are named too, because that is where the
+    program was looked for and therefore where a reader would put it.
+    """
+    program = resumed.get("program") or "its program"
+    seats = [str(seat) for seat in resumed.get("seats") or ()]
+    looked = ", ".join(seats) if seats else str(tree)
+    if exit_status == _SHELL_PROGRAM_NOT_FOUND_STATUS:
+        outcome = (
+            "The shell reported it as not found (exit status 127) before the "
+            "gate started"
+        )
+    else:
+        outcome = "The gate never started"
+    return (
+        f"the gate command names the program {program!r}, which does not exist "
+        f"in the tree being measured or where it was looked for ({looked}). "
+        f"{outcome}: this is not a verdict on the merge and nothing about the "
+        "merged revision has been measured. Run the gate from a tree that can "
+        "start its program, or record a command whose program the tree carries"
+    )
 
 
 def run_worker_gate(
@@ -362,6 +417,233 @@ def _require_runnable_gate_command(
 _SHELL_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 
+_ENV_PROGRAM_ARGUMENTS = frozenset({"-C", "-u", "-S"})
+
+
+# Commands a POSIX shell starts itself rather than finding on PATH. They carry
+# no file for ``shutil.which`` to find, yet the shell that receives the gate
+# command runs them, so they count as startable.
+_SHELL_BUILTINS = frozenset(
+    {
+        ":",
+        "[",
+        "alias",
+        "bg",
+        "break",
+        "cd",
+        "continue",
+        "echo",
+        "eval",
+        "exec",
+        "exit",
+        "export",
+        "false",
+        "fg",
+        "getopts",
+        "hash",
+        "jobs",
+        "kill",
+        "pwd",
+        "read",
+        "readonly",
+        "return",
+        "set",
+        "shift",
+        "test",
+        "times",
+        "trap",
+        "true",
+        "type",
+        "ulimit",
+        "umask",
+        "unalias",
+        "unset",
+        "wait",
+    }
+)
+
+
+def _program_token_index(argv: Sequence[str]) -> int | None:
+    """The position in ``argv`` of the token a shell would start, or None.
+
+    Leading ``NAME=value`` assignments are skipped, and an ``env`` wrapper is
+    unwrapped with its own arguments, so ``env -C <tree> .venv/bin/python …``
+    reports the interpreter rather than ``env``. Both the resolver and the
+    rewriter read the program from this one walk, so a command cannot be resolved
+    as one word and rewritten as another.
+    """
+    index = 0
+    while index < len(argv) and _SHELL_ASSIGNMENT.match(argv[index]):
+        index += 1
+    if index >= len(argv):
+        return None
+    if Path(argv[index]).name != "env":
+        return index
+    index += 1
+    while index < len(argv):
+        token = argv[index]
+        if token in _ENV_PROGRAM_ARGUMENTS:
+            index += 2
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        if _SHELL_ASSIGNMENT.match(token):
+            index += 1
+            continue
+        return index
+    return None
+
+
+def gate_program(command: str) -> str | None:
+    """The program a shell command starts, or None when it names none.
+
+    The command is tokenised the way a shell tokenises it, leading ``NAME=value``
+    assignments are skipped, and an ``env`` wrapper is unwrapped with its own
+    arguments, so a command written as ``env -C <tree> .venv/bin/python ...``
+    reports the interpreter rather than ``env``. A command that does not
+    tokenise names nothing this can resolve, and None says so.
+    """
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return None
+    index = _program_token_index(argv)
+    return None if index is None else argv[index]
+
+
+def resolve_gate_program(
+    command: str,
+    *,
+    tree: Path | None = None,
+    roots: Sequence[str | Path] = (),
+    interpreter: str | None = None,
+) -> dict[str, Any]:
+    """Resolve the program a gate command starts against the tree it will run in.
+
+    A stored gate command names its interpreter relatively — ``.venv/bin/python``
+    — because that is where the worker's own checkout carries it. The merged-head
+    replay runs in a tree that may hold no ``.venv`` at all, and a shell asked to
+    start a path the tree does not carry exits 127 before the gate measures
+    anything. So the program is resolved here first, against the tree being
+    measured and then against the runs' recorded roots, and any relative spelling
+    that resolves is rewritten to the absolute path it found, leaving every other
+    word of the command untouched.
+
+    Two fallbacks keep the environment interpreter reachable when no checkout
+    carries a link: the resolved ``.venv`` of any seat (a provisioned worktree's
+    link reaches the one real environment), and the interpreter running this
+    process, which is the environment the promotion itself runs under. Both apply
+    only to a program whose name reads as a Python interpreter, so a relative
+    path naming anything else is never silently replaced by something else.
+
+    The result states which program was named, the seats it was looked in, the
+    absolute path it resolved to (None when nothing could start it), and where it
+    came from, so a caller that cannot start it can name both the program and the
+    tree rather than reporting a failure the merged revision did not cause.
+    """
+    from reckon.crew.fleet_supervisor import resolved_environment
+
+    program = gate_program(command)
+    seats: list[str] = [str(tree)] if tree is not None else []
+    seats.extend(str(root) for root in roots if str(root).strip())
+    resolution: dict[str, Any] = {
+        "program": program,
+        "seats": seats,
+        "resolved": None,
+        "source": None,
+    }
+    if program is None:
+        return resolution
+    path = Path(program).expanduser()
+    if "/" not in program:
+        found = shutil.which(program)
+        if found is not None:
+            resolution.update(resolved=found, source="path")
+        elif program in _SHELL_BUILTINS:
+            resolution.update(resolved=program, source="shell builtin")
+        return resolution
+    candidates = [path] if path.is_absolute() else [Path(seat) / path for seat in seats]
+    for candidate in candidates:
+        if _is_executable_file(candidate):
+            resolution.update(resolved=str(candidate), source="tree")
+            return resolution
+    if path.name.startswith("python"):
+        for seat in seats:
+            seat_path = Path(seat)
+            try:
+                relative = path.relative_to(seat_path) if path.is_absolute() else path
+            except ValueError:
+                continue
+            if not relative.parts or relative.parts[0] != ".venv":
+                continue
+            environment = resolved_environment(seat_path)
+            candidate = environment.joinpath(*relative.parts[1:])
+            if _is_executable_file(candidate):
+                resolution.update(
+                    resolved=str(candidate), source=f"environment of {seat}"
+                )
+                return resolution
+        if (
+            interpreter
+            and Path(interpreter).name.startswith("python")
+            and _is_executable_file(Path(interpreter))
+        ):
+            resolution.update(
+                resolved=str(interpreter), source="the measuring interpreter"
+            )
+    return resolution
+
+
+def _program_token_span(command: str, index: int) -> tuple[int, int] | None:
+    """The character span of ``argv[index]`` in ``command``, or None."""
+    import io
+
+    stream = io.StringIO(command)
+    lexer = shlex.shlex(stream, posix=True)
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    position = 0
+    while True:
+        start = stream.tell()
+        try:
+            token = lexer.get_token()
+        except ValueError:
+            return None
+        if token == lexer.eof:
+            return None
+        if position == index:
+            raw = command[start : stream.tell()]
+            return start, start + len(raw.rstrip())
+        position += 1
+
+
+def rewrite_gate_program(command: str, program: str, replacement: str) -> str:
+    """Replace the command's program with an absolute one, and nothing else.
+
+    The substituted word is the token the command actually starts — the position
+    ``gate_program`` reads it from — so a program name that also appears inside an
+    argument, or earlier in the command than the program token, is left alone.
+    The replacement is quoted for the shell, and a resolved path equal to the
+    recorded spelling is a no-op, so a command that already ran correctly replays
+    byte-identically.
+    """
+    if not program or not replacement or program == replacement:
+        return command
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return command
+    index = _program_token_index(argv)
+    if index is None or argv[index] != program:
+        return command
+    span = _program_token_span(command, index)
+    if span is None:
+        return command
+    start, end = span
+    return command[:start] + shlex.quote(replacement) + command[end:]
+
+
 def _require_executable_gate_command(
     run_id: str,
     gate_check: Mapping[str, Any] | None,
@@ -369,19 +651,22 @@ def _require_executable_gate_command(
     """Refuse a recorded gate command whose first token names no executable.
 
     The recorded command is what the integration re-run executes, so it has to
-    name a program that can start. The command is tokenised the way a shell
-    would tokenise it, leading ``NAME=value`` assignments are skipped, and the
-    first remaining token either carries a path separator — and must then be an
-    existing executable file — or is looked up on ``PATH``. A command written
-    as prose can satisfy every shape check that refuses placeholders, ellipses
-    and prose parentheticals and still name no program at all, so the token
-    itself is resolved here and a promotion recording such a command is refused
-    before the row is written.
+    name a program that can start. The resolution is ``resolve_gate_program``,
+    the one the replay itself uses, over the run's checkout and repository, so
+    the tokenisation, PATH lookup, relative-candidate resolution and executable
+    test are one implementation rather than two that can drift. A command
+    written as prose can satisfy every shape check that refuses placeholders,
+    ellipses and prose parentheticals and still name no program at all, so the
+    token itself is resolved here and a promotion recording such a command is
+    refused before the row is written.
 
-    Refusal reaches only a command whose program cannot be resolved from here:
-    the lookup is the same ``PATH`` the promotion process runs under, and a
-    command that resolves still promotes on whatever the other gate checks
-    make of its evidence.
+    The guard resolves over fewer seats than the replay: no measuring-interpreter
+    fallback. A worker records ``.venv/bin/python`` because its own checkout
+    carries it, so a run whose checkout lacks it recorded a program that never
+    existed there, and that is refused naming the tree rather than accepted on
+    the strength of the interpreter promoting it. The replay's extra fallback
+    exists for the opposite case — a merged head whose tree holds no ``.venv``
+    although the run's own checkout did.
     """
     if not isinstance(gate_check, Mapping):
         return
@@ -410,24 +695,19 @@ def _require_executable_gate_command(
             "header or in --outcome"
         )
     program = argv[0]
-    candidates: tuple[Path, ...] = ()
-    if "/" not in program:
-        runnable = shutil.which(program) is not None
-    else:
-        expanded = Path(program).expanduser()
-        if expanded.is_absolute():
-            candidates = (expanded,)
-        else:
-            # A command is recorded by the worker inside its own checkout, so
-            # a relative program such as ``.venv/bin/python`` is relative to
-            # that tree. Resolving it against the promoting process's working
-            # directory would let the answer depend on who ran the promotion:
-            # the same command passes in the caller's shell and is refused in
-            # the admission service, which runs from the crew home.
-            candidates = tuple(root / expanded for root in _run_checkout_roots(run_id))
-        runnable = any(_is_executable_file(path) for path in candidates)
-    if runnable:
+    # A command is recorded by the worker inside its own checkout, so a
+    # relative program such as ``.venv/bin/python`` is relative to that tree.
+    # Resolving it against the promoting process's working directory would let
+    # the answer depend on who ran the promotion: the same command passes in the
+    # caller's shell and is refused in the admission service, which runs from
+    # the crew home. The roots are the run's own checkout and repository, and
+    # no interpreter fallback applies: the recording tree must carry the program
+    # it names.
+    resolved = resolve_gate_program(command, roots=_run_checkout_roots(run_id))
+    if resolved["resolved"] is not None:
         return
+    program = resolved["program"] or program
+    candidates = tuple(Path(seat) for seat in resolved["seats"])
     raise CrewError(
         f"run {run_id!r} records the gate command {command!r}, whose program "
         f"{program!r} names no executable{_resolution_seat(program, candidates)}"
@@ -559,6 +839,9 @@ def _merged_gate_finding(
     failure_ids: Sequence[str] = (),
     timed_out: bool = False,
     replay_elapsed_seconds: float | None = None,
+    not_started: bool = False,
+    missing_program: str | None = None,
+    tree: str | None = None,
 ) -> dict[str, Any] | None:
     """The divergence a merge-time re-run exists to surface, or None.
 
@@ -599,6 +882,26 @@ def _merged_gate_finding(
             "accepted"
         ),
     }
+    if not_started:
+        # Nothing was measured at the merged head, so there is no divergence to
+        # attribute to the merge: the finding's prose must not send a
+        # coordinator looking for code that changed a gate that never ran.
+        program = missing_program or "its program"
+        seat = f" in {tree}" if tree else ""
+        finding["message"] = (
+            f"the gate could not be started at the integrated revision "
+            f"{integrated_revision[:12]}: the command names {program!r}, which "
+            f"does not exist{seat}, so nothing was measured at the merged head "
+            "and this is not a finding about the merge. Re-run the gate from a "
+            "tree that can start its program — or record a command naming a "
+            "program the tree carries — rather than looking for a code change "
+            "the merge did not make"
+        )
+        finding["gate_not_started"] = True
+        if missing_program:
+            finding["missing_program"] = missing_program
+        if tree:
+            finding["tree"] = tree
     if failure_ids:
         finding["failure_ids"] = list(failure_ids)
     if timed_out:
@@ -876,6 +1179,17 @@ def _rerun_gate_at_integrated_revision(
     being replayed before the command executes, and ``worktree_roots_rewritten``
     names the ones the rewrite replaced.
 
+    The command's program is resolved before delivery to the shell, because a
+    worker records its environment interpreter relatively — ``.venv/bin/python``
+    — and the merged-head tree may hold no such link. A relative spelling that
+    resolves against the checkout, one of the recorded roots, a resolved
+    ``.venv`` or the measuring interpreter is rewritten to the absolute path it
+    found, and the report names the program, the seats it was looked in and the
+    path it resolved to. A command whose program resolves nowhere is reported as
+    a gate that did not start, naming the program and the tree it was looked for
+    in, and never as a gate the merge changed; an exit status of 127 from the
+    shell is read the same way.
+
     The re-run's own output is kept when ``replay_log_path`` is given: the
     command that ran, the captured stdout and stderr, and the exit status go to
     that path under a header naming the revision, the tree, and the command,
@@ -924,6 +1238,13 @@ def _rerun_gate_at_integrated_revision(
         "replay_bound_seconds": bound_seconds,
         "recorded_gate_seconds": recorded_gate_seconds,
         "ran": False,
+        "gate_started": False,
+        "gate_program": None,
+        "gate_program_seats": [],
+        "gate_program_source": None,
+        "gate_program_rewritten": None,
+        "missing_program": None,
+        "measure_partition": None,
         "exit_status": None,
         "timed_out": False,
         "replay_elapsed_seconds": None,
@@ -983,130 +1304,189 @@ def _rerun_gate_at_integrated_revision(
     else:
         reason = None
         checkout_root = Path(repository).expanduser().resolve()
+        report["checkout_tree"] = str(checkout_root)
+        report["gate_program"] = None
         replayed, rewritten_roots = _rewrite_worktree_roots(
             command, roots=worktree_roots, checkout=checkout_root
         )
         report["worktree_roots_rewritten"] = list(rewritten_roots)
-        landing = _replay_landing(checkout_root)
-        declared = str(landing.get("measure_partition") or "").strip()
-        selected = ""
-        executor = run or subprocess.run
-        job_log: Path | None = None
-        environment: dict[str, str] | None = None
-        if declared:
-            from reckon.crew.landing_measure import partition_submission
-
-            job_log = _replay_job_log(replay_log_path)
-            selected, argv, environment = partition_submission(
-                script=_partition_replay_script(replayed),
-                partition=declared,
-                long_partition=str(landing.get("measure_long_partition") or "rigel"),
-                bound_seconds=bound_seconds,
-                chdir=checkout_root,
-                log_path=job_log,
-            )
-            timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
-        else:
-            argv = ["sh", "-c", replayed]
-            timeout = bound_seconds
-        report["measure_partition"] = selected or "in-place"
-        header = _replay_log_header(
-            replay_command=replayed,
-            checkout=checkout_root,
-            checkout_revision=report["checkout_revision"],
-            integrated_revision=report["integrated_revision"],
-            rewritten_roots=rewritten_roots,
-            partition=selected,
+        resumed = resolve_gate_program(
+            replayed,
+            tree=checkout_root,
+            roots=worktree_roots,
+            interpreter=sys.executable,
         )
-        started = time.monotonic()
-        try:
-            result = executor(
-                argv,
-                cwd=str(checkout_root if job_log is not None else repository),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                check=False,
-                timeout=timeout,
-                **({"env": environment} if environment is not None else {}),
+        report["gate_program"] = resumed["program"]
+        report["gate_program_seats"] = list(resumed["seats"])
+        report["gate_program_source"] = resumed["source"]
+        if resumed["program"] is not None and resumed["resolved"] is None:
+            report["missing_program"] = resumed["program"]
+            reason = _program_not_found_reason(resumed, tree=checkout_root)
+            header = _replay_log_header(
+                replay_command=replayed,
+                checkout=checkout_root,
+                checkout_revision=report["checkout_revision"],
+                integrated_revision=report["integrated_revision"],
             )
-        except subprocess.TimeoutExpired as expired:
-            elapsed = time.monotonic() - started
-            report.update(ran=True, timed_out=True, replay_elapsed_seconds=elapsed)
-            partial = expired.output if isinstance(expired.output, str) else ""
-            if job_log is not None and environment is not None:
-                # sbatch --wait prints the id before waiting; stop that job only.
-                identifier = re.match(r"^(\d+)(?:;[^\n]*)?(?:\n|$)", partial)
-                if identifier:
-                    executor(
-                        ["scancel", identifier.group(1)],
-                        cwd=str(checkout_root),
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        text=True,
-                        check=False,
-                        timeout=30,
-                        env=environment,
-                    )
             written = _write_replay_log(
                 replay_log_path,
                 stream=replay_log_stream,
                 header=header,
-                output=partial,
+                output=f"# not started: {reason}",
                 exit_status=None,
-                cut_short=_replay_cut_short_reason(
+            )
+            if written is not None:
+                report["log_path"] = str(written)
+        elif resumed["resolved"]:
+            replayed = rewrite_gate_program(
+                replayed, resumed["program"], resumed["resolved"]
+            )
+            report["gate_program_rewritten"] = resumed["resolved"]
+
+        if reason is None:
+            landing = _replay_landing(checkout_root)
+            declared = str(landing.get("measure_partition") or "").strip()
+            selected = ""
+            executor = run or subprocess.run
+            job_log: Path | None = None
+            environment: dict[str, str] | None = None
+            if declared:
+                from reckon.crew.landing_measure import partition_submission
+
+                job_log = _replay_job_log(replay_log_path)
+                selected, argv, environment = partition_submission(
+                    script=_partition_replay_script(replayed),
+                    partition=declared,
+                    long_partition=str(
+                        landing.get("measure_long_partition") or "rigel"
+                    ),
                     bound_seconds=bound_seconds,
-                    bound_source=bound_source,
-                    elapsed_seconds=elapsed,
-                ),
-            )
-            if written is not None:
-                report["log_path"] = str(written)
-            replay_text = partial
-        else:
-            report["ran"] = True
-            if job_log is not None:
-                # The job's own log is the durable copy; the submission's
-                # stdout carries only the job id and whatever the scheduler
-                # printed. Its terminal receipt is the status this replay
-                # reports, because a client-side return code cannot tell a
-                # finished job from one the scheduler stopped, and a job that
-                # never reached its command leaves no receipt at all — that is
-                # an unmeasured replay, not a passing one.
-                replay_text = (
-                    job_log.read_text(encoding="utf-8", errors="replace")
-                    if job_log.exists()
-                    else ""
+                    chdir=checkout_root,
+                    log_path=job_log,
                 )
-                receipt = _job_log_receipt(replay_text)
-                status = receipt if receipt is not None else _UNREADABLE_JOB_STATUS
+                timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
             else:
-                replay_text = result.stdout or ""
-                status = result.returncode
-            report["exit_status"] = status
-            written = _write_replay_log(
-                replay_log_path,
-                stream=replay_log_stream,
-                header=header,
-                output=replay_text,
-                exit_status=status,
+                argv = ["sh", "-c", replayed]
+                timeout = bound_seconds
+            report["measure_partition"] = selected or "in-place"
+            header = _replay_log_header(
+                replay_command=replayed,
+                checkout=checkout_root,
+                checkout_revision=report["checkout_revision"],
+                integrated_revision=report["integrated_revision"],
+                rewritten_roots=rewritten_roots,
+                partition=selected,
             )
-            if written is not None:
-                report["log_path"] = str(written)
-                report["integrated_verdict"] = "passed" if status == 0 else "failed"
-            elif status == 0:
-                report["integrated_verdict"] = "passed"
-            else:
-                # A replay that exited non-zero and wrote no log produced no
-                # evidence a reader can open. That is a failure of the replay
-                # itself, not a verdict on the run's code: recording it as the
-                # run's failure would charge the delivery for a measurement
-                # nobody can read.
-                report["integrated_verdict"] = "not-run"
-                report["replay_failure"] = (
-                    f"the replay exited {status} and wrote no log, so its "
-                    "output cannot be read as a verdict on the run"
+            report["gate_started"] = True
+            started = time.monotonic()
+            try:
+                result = executor(
+                    argv,
+                    cwd=str(checkout_root if job_log is not None else repository),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    check=False,
+                    timeout=timeout,
+                    **({"env": environment} if environment is not None else {}),
                 )
+            except subprocess.TimeoutExpired as expired:
+                elapsed = time.monotonic() - started
+                report.update(ran=True, timed_out=True, replay_elapsed_seconds=elapsed)
+                partial = expired.output if isinstance(expired.output, str) else ""
+                if job_log is not None and environment is not None:
+                    # sbatch --wait prints the id before waiting; stop that job only.
+                    identifier = re.match(r"^(\d+)(?:;[^\n]*)?(?:\n|$)", partial)
+                    if identifier:
+                        executor(
+                            ["scancel", identifier.group(1)],
+                            cwd=str(checkout_root),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                            check=False,
+                            timeout=30,
+                            env=environment,
+                        )
+                written = _write_replay_log(
+                    replay_log_path,
+                    stream=replay_log_stream,
+                    header=header,
+                    output=partial,
+                    exit_status=None,
+                    cut_short=_replay_cut_short_reason(
+                        bound_seconds=bound_seconds,
+                        bound_source=bound_source,
+                        elapsed_seconds=elapsed,
+                    ),
+                )
+                if written is not None:
+                    report["log_path"] = str(written)
+                replay_text = partial
+            else:
+                report["ran"] = True
+                if job_log is not None:
+                    # The job's own log is the durable copy; the submission's
+                    # stdout carries only the job id and whatever the scheduler
+                    # printed. Its terminal receipt is the status this replay
+                    # reports, because a client-side return code cannot tell a
+                    # finished job from one the scheduler stopped, and a job that
+                    # never reached its command leaves no receipt at all — that is
+                    # an unmeasured replay, not a passing one.
+                    replay_text = (
+                        job_log.read_text(encoding="utf-8", errors="replace")
+                        if job_log.exists()
+                        else ""
+                    )
+                    receipt = _job_log_receipt(replay_text)
+                    status = receipt if receipt is not None else _UNREADABLE_JOB_STATUS
+                else:
+                    replay_text = result.stdout or ""
+                    status = result.returncode
+                report["exit_status"] = status
+                written = _write_replay_log(
+                    replay_log_path,
+                    stream=replay_log_stream,
+                    header=header,
+                    output=replay_text,
+                    exit_status=status,
+                )
+                if written is not None:
+                    report["log_path"] = str(written)
+                    report["integrated_verdict"] = "passed" if status == 0 else "failed"
+                elif status == 0:
+                    report["integrated_verdict"] = "passed"
+                else:
+                    # A replay that exited non-zero and wrote no log produced no
+                    # evidence a reader can open. That is a failure of the replay
+                    # itself, not a verdict on the run's code: recording it as the
+                    # run's failure would charge the delivery for a measurement
+                    # nobody can read.
+                    report["integrated_verdict"] = "not-run"
+                    report["replay_failure"] = (
+                        f"the replay exited {status} and wrote no log, so its "
+                        "output cannot be read as a verdict on the run"
+                    )
+                if status == _SHELL_PROGRAM_NOT_FOUND_STATUS:
+                    # 127 is a gate that never started, not a gate that ran and
+                    # failed: the shell could not find the program it was told to
+                    # start. Charging that to the merge sends a coordinator to
+                    # the code for a missing file.
+                    missing = _not_found_program(replay_text) or report.get(
+                        "gate_program"
+                    )
+                    report["gate_started"] = False
+                    report["missing_program"] = missing
+                    report["integrated_verdict"] = "not-run"
+                    reason = _program_not_found_reason(
+                        {
+                            "program": missing,
+                            "seats": report.get("gate_program_seats") or [],
+                        },
+                        tree=checkout_root,
+                        exit_status=status,
+                    )
+                    report["replay_failure"] = reason
     if reason is not None:
         report["reason"] = reason
     elif report.get("replay_failure"):
@@ -1128,6 +1508,9 @@ def _rerun_gate_at_integrated_revision(
         else (),
         timed_out=report["timed_out"],
         replay_elapsed_seconds=report["replay_elapsed_seconds"],
+        not_started=report.get("missing_program") is not None,
+        missing_program=report.get("missing_program"),
+        tree=report.get("checkout_tree"),
     )
     # ``ok`` reads the verdict, not the measurement: only a replay that finished
     # and passed is a success. A replay cut short by the bound, or one that never

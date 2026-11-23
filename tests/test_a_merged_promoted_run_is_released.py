@@ -215,3 +215,41 @@ def test_a_complete_merged_repair_without_a_journal_is_retired(cohort, mark):
     row = json.loads(ledger.run_path(PROJECT, run_id, cohort["repo"]).read_text())
     assert row["release"]["worktree_released"] is True
     assert runs.read_pointer("r-waiter")["phase"] == "queued"
+
+
+def test_a_run_whose_node_body_is_stored_apart_is_released(cohort: dict) -> None:
+    """A real pointer keeps its node body in the run's own file, and still releases.
+
+    A dispatched run's done-when and brief live beside the pointer, so the
+    listing of live pointers carries a lighter node than a direct read does.
+    The release compared the two forms whole and so refused every such run as
+    changed; the fixture pointers carried no body and never met it.
+    """
+    clean = cohort["members"]["clean"]
+    run_id = clean["pointer"]["run_id"]
+    pointer = runs.read_pointer(run_id)
+    pointer["node"] = {
+        **pointer["node"],
+        "done_when": "the merged head carries the file",
+        "brief": "a brief stored with the node body",
+    }
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    listed = next(p for p in runs.list_live() if p.get("run_id") == run_id)
+    assert listed != runs.read_pointer(run_id), (
+        "the case needs the listing and the direct read to differ, as they do "
+        "for a dispatched run"
+    )
+    result = pending_landing.finish_pending_landings()
+    assert not runs.pointer_path(run_id).exists(), result
+    assert not clean["tree"].exists()
+
+
+def test_a_release_refused_for_a_changed_pointer_names_the_field() -> None:
+    """The refusal says which field moved, so a reader is not left guessing."""
+    before = {"run_id": "r", "phase": "complete", "node": {"id": "n", "plan": "p"}}
+    after = {**before, "phase": "working"}
+    assert pending_landing._changed_pointer_fields(after, before) == ["phase"]
+    observed = {**before, "observed_at": "2026-11-22T01:55:29Z"}
+    assert pending_landing._changed_pointer_fields(observed, before) == []
+    with_body = {**before, "node": {**before["node"], "done_when": "x"}}
+    assert pending_landing._changed_pointer_fields(with_body, before) == []

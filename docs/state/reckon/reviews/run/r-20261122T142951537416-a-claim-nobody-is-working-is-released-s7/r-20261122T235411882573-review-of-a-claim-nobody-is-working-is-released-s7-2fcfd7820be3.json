@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/node.py:2148 _lapsed_claim_reason",
+    "reckon/crew/dispatch_claims.py:2542 stopped_with_terminal_manifest",
+    "reckon/crew/admission/holds.py:575 _claim_disposition_of",
+    "reckon/crew/admission/selection.py:588 admit_once"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T23:54:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/claims.py",
+      "line": 184,
+      "severity": "non-blocking",
+      "text": "the delivered-status set now subtracts failed from the terminal vocabulary, but no arm of tests/test_a_delivered_runs_claim_lapses.py writes a manifest with status failed, so reverting the set to TERMINAL_MANIFEST_STATUSES leaves every test green while a failed run's claim would lapse after a day, widening the rule past the plan's \"complete or blocked\"."
+    },
+    {
+      "file": "reckon/crew/claims.py",
+      "line": 450,
+      "severity": "non-blocking",
+      "text": "the ValueError arm is what keeps the claim when a manifest cannot be parsed, but no case feeds _delivered_status an unparseable manifest, so narrowing the tuple to OSError alone would let a ManifestParseError escape into the admission pass with nothing failing."
+    },
+    {
+      "file": "reckon/crew/claims.py",
+      "line": 426,
+      "severity": "non-blocking",
+      "text": "_delivered_status duplicates the fresh-manifest read owned by reckon/crew/dispatch_claims.py:2542 stopped_with_terminal_manifest \u2014 the same _manifest_freshness plus parse plus error handling, differing only in the accepted statuses and in not judging liveness \u2014 so the shared reader belongs in the manifest reader module; the commit extends that owner's vocabulary but wraps rather than extends dispatch_claims' read."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read d17063f8..2fcfd78 commit by commit; one commit adding 86 lines and removing 8 across two files, deriving the delivered-status set from the manifest reader's terminal set and adding two cases pinning the review-store arm.",
+    "done_when": "the done_when names tests/test_a_delivered_runs_claim_lapses.py; the manifest records the head arm at 65 passed and the base arm at 58 passed, both EXIT=0, in after_suite-1795382569502014752.log and baseline_suite-1795382489561898807.log.",
+    "goal": "the node goal is that a delivered run nobody lands gives up its claim after a day; reckon/crew/claims.py:364 lapsed_claim_reason still implements it at this head, and the gained commit changes only how the delivered status word is read.",
+    "manifest": "read; it states complete, names all three commits, records the repair round's arms (base 58 passed, head 65 passed) and cites negative-control-review-store.log, where each new case reddens under its own mutant.",
+    "write_paths": "the reviewed node declared eight write paths; the gained commit touches only reckon/crew/claims.py and tests/test_a_delivered_runs_claim_lapses.py, both inside that declaration."
+  },
+  "justifications": {
+    "durability": "the two new cases are genuine guards, but no case writes a failed manifest, so reckon/crew/claims.py:184's subtraction of the failed status is unprotected, and no case passes a malformed manifest, so reckon/crew/claims.py:450's ValueError arm is unprotected.",
+    "evidence": "tests/test_a_delivered_runs_claim_lapses.py:314 and :333 both fail under a recorded mutant with EXIT=1 in negative-control-review-store.log, and the caller importing the changed module reads the same two pre-existing ids at both revisions in exposed-caller-at-base.log and exposed-caller-at-head.log.",
+    "fit": "reckon/crew/claims.py:184 derives the delivered set from the manifest reader's own constant, and the new docstring at :426 describes the mechanism without a plan, sprint or ticket identifier, matching the surrounding module.",
+    "goal_fidelity": "reckon/crew/claims.py:405 still gates the lapse on _delivered_status, and the recorded head arm (after_suite-1795382569502014752.log:8) reads 65 passed at the reviewed head, so the deliverable behaves as the plan's \u00a77 states.",
+    "reuse": "reckon/crew/claims.py:426 still composes its own freshness-and-parse manifest read, duplicating reckon/crew/dispatch_claims.py:2542 stopped_with_terminal_manifest, although the vocabulary at :184 now extends that owner instead of restating its literals.",
+    "scope_discipline": "git show --stat d17063f8..2fcfd78 lists only reckon/crew/claims.py and tests/test_a_delivered_runs_claim_lapses.py, both inside the node's eight declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a delivered run nobody lands gives up its claim after a day; reckon/crew/claims.py:364 lapsed_claim_reason still implements it at this head, and the gained commit changes only how the delivered status word is read.\nVERDICT done_when: the done_when names tests/test_a_delivered_runs_claim_lapses.py; the manifest records the head arm at 65 passed and the base arm at 58 passed, both EXIT=0, in after_suite-1795382569502014752.log and baseline_suite-1795382489561898807.log.\nVERDICT write_paths: the reviewed node declared eight write paths; the gained commit touches only reckon/crew/claims.py and tests/test_a_delivered_runs_claim_lapses.py, both inside that declaration.\nVERDICT manifest: read; it states complete, names all three commits, records the repair round's arms (base 58 passed, head 65 passed) and cites negative-control-review-store.log, where each new case reddens under its own mutant.\nVERDICT diff: read d17063f8..2fcfd78 commit by commit; one commit adding 86 lines and removing 8 across two files, deriving the delivered-status set from the manifest reader's terminal set and adding two cases pinning the review-store arm.\nCALL_SITES: reckon/crew/node.py:2148 _lapsed_claim_reason, reckon/crew/node.py:2116 claim_disposition, reckon/crew/admission/holds.py:575 _claim_disposition_of, reckon/crew/admission/selection.py:588 admit_once\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/claims.py:405 still gates the lapse on _delivered_status, and the recorded head arm (after_suite-1795382569502014752.log:8) reads 65 passed at the reviewed head, so the deliverable behaves as the plan's \u00a77 states.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_delivered_runs_claim_lapses.py:314 and :333 both fail under a recorded mutant with EXIT=1 in negative-control-review-store.log, and the caller importing the changed module reads the same two pre-existing ids at both revisions in exposed-caller-at-base.log and exposed-caller-at-head.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat d17063f8..2fcfd78 lists only reckon/crew/claims.py and tests/test_a_delivered_runs_claim_lapses.py, both inside the node's eight declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the two new cases are genuine guards, but no case writes a failed manifest, so reckon/crew/claims.py:184's subtraction of the failed status is unprotected, and no case passes a malformed manifest, so reckon/crew/claims.py:450's ValueError arm is unprotected.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/claims.py:184 derives the delivered set from the manifest reader's own constant, and the new docstring at :426 describes the mechanism without a plan, sprint or ticket identifier, matching the surrounding module.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/claims.py:426 still composes its own freshness-and-parse manifest read, duplicating reckon/crew/dispatch_claims.py:2542 stopped_with_terminal_manifest, although the vocabulary at :184 now extends that owner instead of restating its literals.\nFINDING reckon/crew/claims.py:184 non-blocking: the delivered-status set now subtracts failed from the terminal vocabulary, but no arm of tests/test_a_delivered_runs_claim_lapses.py writes a manifest with status failed, so reverting the set to TERMINAL_MANIFEST_STATUSES leaves every test green while a failed run's claim would lapse after a day, widening the rule past the plan's \"complete or blocked\".\nFINDING reckon/crew/claims.py:450 non-blocking: the ValueError arm is what keeps the claim when a manifest cannot be parsed, but no case feeds _delivered_status an unparseable manifest, so narrowing the tuple to OSError alone would let a ManifestParseError escape into the admission pass with nothing failing.\nFINDING reckon/crew/claims.py:426 non-blocking: _delivered_status duplicates the fresh-manifest read owned by reckon/crew/dispatch_claims.py:2542 stopped_with_terminal_manifest \u2014 the same _manifest_freshness plus parse plus error handling, differing only in the accepted statuses and in not judging liveness \u2014 so the shared reader belongs in the manifest reader module; the commit extends that owner's vocabulary but wraps rather than extends dispatch_claims' read.\n",
+  "review_run_id": "r-20261122T235411882573-review-of-a-claim-nobody-is-working-is-released-s7-2fcfd7820be3",
+  "reviewed_base_sha": "d17063f860206b240e5989e745ec1c49e31ce753",
+  "reviewed_head_sha": "2fcfd7820be33bf254aa8f1cbca017171121d6fa",
+  "reviewed_run_id": "r-20261122T142951537416-a-claim-nobody-is-working-is-released-s7",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:30:40.292466+00:00",
+  "total": 103
+}

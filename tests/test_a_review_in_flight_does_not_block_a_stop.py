@@ -118,7 +118,18 @@ def _blocked_item() -> dict[str, object]:
 
 
 def _publish(items: list[dict[str, object]]) -> None:
-    """Publish a snapshot carrying exactly these duties, as a producer would."""
+    """Publish a snapshot carrying exactly these duties, as a producer would.
+
+    The review's own live pointer is written beside it: a duty listing a review
+    as in flight quotes that review's phase, and the reader re-reads the
+    pointer as it serves the row, so a fixture that lists a working review has
+    to hold the pointer a working review would hold.
+    """
+    pointer = obligation_snapshot.live_pointer_path(REVIEW_RUN_ID)
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(
+        json.dumps({"run_id": REVIEW_RUN_ID, "phase": "working"}), encoding="utf-8"
+    )
     computed_at = datetime.now(tz=UTC)
     document = obligation_snapshot.document_for(
         {

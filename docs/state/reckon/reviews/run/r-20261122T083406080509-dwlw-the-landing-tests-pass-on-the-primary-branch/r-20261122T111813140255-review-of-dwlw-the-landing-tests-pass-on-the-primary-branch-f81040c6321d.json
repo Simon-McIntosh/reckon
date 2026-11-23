@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew_run_commands.py:4316",
+    "reckon/crew/queue_landing.py:2099"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T11:18:40Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the tests: line, which promotion turns into the gate receipt, names the five-file scoped gate (107 tests) rather than the 34-file population command the done_when asserts (268 tests), so the receipt records a narrower measure than the node claims; this is the gap the earlier review of the same run filed and it was not changed."
+    },
+    {
+      "file": "manifest.md",
+      "line": "31",
+      "severity": "non-blocking",
+      "text": "the attribution says the sixth case failed at the merged head, but no log under the run directory records that failure: the only FAILED ids in the run's logs are the five named at dde7b00176, and negative_control_log (manifest.md:20) names population-base.log, which contains none of the sixth id, so the reproduction is asserted rather than recorded."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 0775b391f2..f81040c632 restricted to the two paths the goal names; 0224baa7b2 adds the COMMAND_REPLY/PENDING/read_promotion owner check before _is_a_promoted_pointer at reckon/crew/pending_landing.py:613-623, and f81040c632 rewrites the merge paragraph and the measured figures, every one of which reconciles to its log.",
+    "done_when": "the done_when names the 34-file population `grep -l pending_landing tests/*.py` at both revisions on all_debug with revision, literal command and a closing EXIT= line plus a per-id attribution; population-head.log and population-base.log supply both arms and every figure matches the manifest's artifacts line, although manifest.md:18 records the narrower five-file scoped gate as the gate receipt.",
+    "goal": "the goal bounds this review to the two commits the node gained since its last review, 0224baa7b2 (an 11-line owner-before-ledger check at reckon/crew/pending_landing.py:613-623) and f81040c632 (the evidence fragment); the node's wider goal still holds, with population-head.log recording 268 passed, EXIT=0 at the merged head 0224baa7b2 and population-base.log recording the five named ids red at dde7b00176.",
+    "manifest": "read; status complete, the after and baseline arms are carried with revision, literal command, log path and a closing EXIT= line, the five named ids keep their per-id attribution, and the sixth case is attributed to the product with its repair commit 0224baa7b2.",
+    "write_paths": "the node's own commits touch only reckon/crew/pending_landing.py and docs/evidence/fragments/delivered-work-lands-without-a-coordinator/dwlw-the-landing-tests-pass-on-the-primary-branch.html, both inside the declared paths; the 95-file d74f66309c is a merge of the primary branch and carries peer work rather than this node's change."
+  },
+  "justifications": {
+    "durability": "tests/test_no_caller_waits_on_a_promotion.py:442-460 monkeypatches pending_landing._promoted_row to raise and asserts the pass returns promotion-requested, so reinstating the ledger-read-before-owner ordering reddens it; the test predates the node and the node adds no test of its own.",
+    "evidence": "all five quoted figures reconcile exactly to their logs (scoped-gate-1795345862310383559.log:8 '107 passed in 187.72s', after_suite-1795345653544789426.log:8, baseline_suite-1795345418793495927.log:427, population-head.log and population-base.log tails), but manifest.md:18 names the five-file gate rather than the population and manifest.md:31's sixth-case reproduction has no log.",
+    "fit": "the added guard at reckon/crew/pending_landing.py:619 reuses the COMMAND_REPLY/PENDING/read_promotion idiom already used at :1440, :1654 and :1814, keeps mechanism-named comments with no plan or ticket identifier, and ruff check over the reviewed module reports no finding.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:613-623 now settles a requested promotion from the pointer's own run directory before the ledger read, and population-head.log:last records 268 passed, EXIT=0 at the merged head 0224baa7b2.",
+    "reuse": "the guard extends reckon/crew/promotion_requests.py's existing read_promotion and COMMAND_REPLY owner-check capability rather than adding a parallel mechanism, so no owned capability is forked.",
+    "scope_discipline": "0224baa7b2 edits only reckon/crew/pending_landing.py and f81040c632 only the evidence fragment, both declared, and the large diff in the range is the primary branch merge d74f66309c rather than this node's work."
+  },
+  "node": "review-of-dwlw-the-landing-tests-pass-on-the-primary-branch-f81040c6321d",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal bounds this review to the two commits the node gained since its last review, 0224baa7b2 (the owner-before-ledger check at reckon/crew/pending_landing.py:613-623) and f81040c632 (the evidence fragment), and the node's wider goal still holds with population-head.log recording 268 passed, EXIT=0 at the merged head 0224baa7b2 and population-base.log recording exactly the five named ids red at dde7b00176.\nVERDICT done_when: the done_when names the 34-file population at both revisions on all_debug with revision, literal command and EXIT per arm; population-head.log and population-base.log supply both arms and match the manifest's artifacts line, though manifest.md:18 records the narrower five-file scoped gate as the receipt.\nVERDICT write_paths: the node's own commits touch only reckon/crew/pending_landing.py and docs/evidence/fragments/delivered-work-lands-without-a-coordinator/dwlw-the-landing-tests-pass-on-the-primary-branch.html, both inside the declared paths, while d74f66309c is a primary-branch merge carrying peer work.\nVERDICT manifest: read; status complete, both arms carry revision, literal command, log path and a closing EXIT= line, the five named ids keep their per-id attribution, and the sixth case is attributed to the product with its repair commit 0224baa7b2.\nVERDICT diff: read commit by commit over 0775b391f2..f81040c632 restricted to the two named paths; 0224baa7b2 adds the owner check before _is_a_promoted_pointer at reckon/crew/pending_landing.py:613-623 and f81040c632 rewrites the merge paragraph and measured figures, every one reconciling to its log.\nCALL_SITES: reckon/crew/station.py:461, reckon/crew_run_commands.py:4316, reckon/crew/queue_landing.py:2099\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:613-623 settles a requested promotion from the pointer's own run directory before the ledger read, and population-head.log:last records 268 passed, EXIT=0 at 0224baa7b2.\nSCORE evidence: 16\nJUSTIFICATION evidence: all five quoted figures reconcile to their logs, but manifest.md:18 names the five-file gate where the done_when measures the population and manifest.md:31's sixth-case reproduction has no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: 0224baa7b2 edits only reckon/crew/pending_landing.py and f81040c632 only the evidence fragment, both declared, and the large diff in the range is the primary-branch merge d74f66309c.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_no_caller_waits_on_a_promotion.py:442-460 monkeypatches pending_landing._promoted_row to raise, so reinstating the ledger-read-first ordering reddens it; the test predates the node and no test was added.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/pending_landing.py:619 reuses the COMMAND_REPLY/PENDING/read_promotion idiom at :1440, :1654 and :1814, keeps mechanism-named comments, and ruff reports no finding.\nSCORE reuse: 20\nJUSTIFICATION reuse: the guard extends reckon/crew/promotion_requests.py's read_promotion and COMMAND_REPLY owner check rather than adding a parallel mechanism.\nFINDING manifest.md:18 non-blocking: the tests: line, which promotion turns into the gate receipt, names the five-file scoped gate (107 tests) rather than the 34-file population command the done_when asserts (268 tests), the gap the earlier review of this run already filed.\nFINDING manifest.md:31 non-blocking: the attribution says the sixth case failed at the merged head but no log under the run directory records that failure; the only FAILED ids are the five named at dde7b00176 and negative_control_log (manifest.md:20) names population-base.log, which has none of the sixth id.",
+  "review_run_id": "r-20261122T111813140255-review-of-dwlw-the-landing-tests-pass-on-the-primary-branch-f81040c6321d",
+  "reviewed_base_sha": "0775b391f268d8483248e747f0c40a419b0c2a09",
+  "reviewed_head_sha": "f81040c6321d1b8a63286be941b9189438d18415",
+  "reviewed_run_id": "r-20261122T083406080509-dwlw-the-landing-tests-pass-on-the-primary-branch",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T12:40:00+00:00",
+  "total": 112
+}

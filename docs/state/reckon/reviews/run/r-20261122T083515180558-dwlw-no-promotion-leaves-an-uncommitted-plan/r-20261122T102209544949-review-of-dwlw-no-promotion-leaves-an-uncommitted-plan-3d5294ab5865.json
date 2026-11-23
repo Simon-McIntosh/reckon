@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:743",
+    "reckon/crew/recovery_review_acceptance.py:835",
+    "reckon/crew/recovery_review_acceptance.py:1350"
+  ],
+  "completed_at": "2026-11-22T10:28:45.774156+00:00",
+  "dispatched_at": "2026-11-22T10:22:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2208",
+      "severity": "non-blocking",
+      "text": "non-blocking: excluding \"status\" from the compared state means an authored status move renders byte-identically to HEAD plus comments, so a peer's real status edit is committed under a landing subject attributed to a refused run rather than left for its writer."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2331",
+      "severity": "non-blocking",
+      "text": "non-blocking: the settlement catches BaseException and returns None, so a KeyboardInterrupt or a genuine defect inside _commit_landing_writes is reported as \"nothing to settle\" and the plan stays modified with no refusal naming the real cause."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T083515180558-dwlw-no-promotion-leaves-an-uncommitted-plan/manifest.md",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest states the pre-existing refusal test file passed 53 tests in a partition run and cites refusal-tests.log, but that log records \"1 failed, 52 passed\" with no revision header and refusal-sbatch.log shows its partition job failed with \"No such file or directory\"."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit (829d44ea9d, dd06336f39, 3d5294ab) against dde7b001; the growth is one settlement wrapper, one shared HEAD-plus-comments recogniser, and settlement at both refusal sites, all confined to the two delivered paths.",
+    "done_when": "the done_when names tests/test_no_promotion_leaves_an_uncommitted_plan.py with three cases; the manifest records a head arm of 61 passed (after_suite log, revision 3d5294ab) and a base arm of 2 failed/1 passed (negative-control-base.log, revision dde7b001), which asserts all three named behaviours.",
+    "goal": "the goal is that no promotion or landing leaves uncommitted bytes in a plan file; reckon/crew/promotion.py:989 adds a settlement wrapper around complete() and reckon/crew/promotion.py:2591 settles after a restore, so a refused promotion commits the landing comment it met instead of leaving the plan modified.",
+    "manifest": "read; it records status complete, both arms' logs, the negative control with its revision, cwd and imported module path, and its own declined case at test line 232.",
+    "write_paths": "declared paths were reckon/crew/promotion.py, reckon/crew/promotion_scope.py, the new test, an evidence fragment and a figure directory; the delivered diff dde7b001..3d5294ab touches only reckon/crew/promotion.py (+241/-19) and the new test (+266)."
+  },
+  "justifications": {
+    "durability": "tests/test_no_promotion_leaves_an_uncommitted_plan.py:177 and :213 fail at the base with the plan left modified, while the third case at :232 passes at the base as the manifest itself declined.",
+    "evidence": "the after arm at 3d5294ab reads \"61 passed\" and the base arm \"2 failed, 1 passed\" with EXIT=1 in negative-control-base.log, but the manifest's outside_scope claim of a 53-passed partition run is contradicted by the log it cites.",
+    "fit": "reckon/crew/promotion.py:2212 follows the module's render-and-compare idiom and its helpers are named descriptively, though the settlement runs on every successful promotion for no outcome.",
+    "goal_fidelity": "reckon/crew/promotion.py:989 settles the plan on every non-dry-run outcome, and reckon/crew/promotion.py:2260 commits only landing-comment appends under c-run- ids, so an authored edit still keeps its refusal.",
+    "reuse": "reckon/crew/promotion.py:2331 commits through the existing promotion_scope._commit_landing_writes rather than a second commit path, and the append recognition is one helper shared by the landing adoption at :2416.",
+    "scope_discipline": "the diff dde7b001..3d5294ab touches exactly reckon/crew/promotion.py and tests/test_no_promotion_leaves_an_uncommitted_plan.py, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that no promotion or landing leaves uncommitted bytes in a plan file; reckon/crew/promotion.py:989 adds a settlement wrapper around complete() and reckon/crew/promotion.py:2591 settles after a restore, so a refused promotion commits the landing comment it met instead of leaving the plan modified.\nVERDICT done_when: the done_when names tests/test_no_promotion_leaves_an_uncommitted_plan.py with three cases; the manifest records a head arm of 61 passed (after_suite log, revision 3d5294ab) and a base arm of 2 failed/1 passed (negative-control-base.log, revision dde7b001), which asserts all three named behaviours.\nVERDICT write_paths: declared paths were reckon/crew/promotion.py, reckon/crew/promotion_scope.py, the new test, an evidence fragment and a figure directory; the delivered diff dde7b001..3d5294ab touches only reckon/crew/promotion.py (+241/-19) and the new test (+266).\nVERDICT manifest: read; it records status complete, both arms' logs, the negative control with its revision, cwd and imported module path, and its own declined case at test line 232.\nVERDICT diff: read commit by commit (829d44ea9d, dd06336f39, 3d5294ab) against dde7b001; the growth is one settlement wrapper, one shared HEAD-plus-comments recogniser, and settlement at both refusal sites, all confined to the two delivered paths.\nCALL_SITES: reckon/crew/promotion_requests.py:743, reckon/crew/recovery_review_acceptance.py:835, reckon/crew/recovery_review_acceptance.py:1350\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:989 settles the plan on every non-dry-run outcome, and reckon/crew/promotion.py:2260 commits only landing-comment appends under c-run- ids, so an authored edit still keeps its refusal.\nSCORE evidence: 17\nJUSTIFICATION evidence: the after arm at 3d5294ab reads \"61 passed\" and the base arm \"2 failed, 1 passed\" with EXIT=1 in negative-control-base.log, but the manifest's outside_scope claim of a 53-passed partition run is contradicted by the log it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff dde7b001..3d5294ab touches exactly reckon/crew/promotion.py and tests/test_no_promotion_leaves_an_uncommitted_plan.py, both inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_no_promotion_leaves_an_uncommitted_plan.py:177 and :213 fail at the base with the plan left modified, while the third case at :232 passes at the base as the manifest itself declined.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion.py:2212 follows the module's render-and-compare idiom and its helpers are named descriptively, though the settlement runs on every successful promotion for no outcome.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/promotion.py:2331 commits through the existing promotion_scope._commit_landing_writes rather than a second commit path, and the append recognition is one helper shared by the landing adoption at :2416.\nFINDING reckon/crew/promotion.py:2208 non-blocking: excluding \"status\" from the compared state means an authored status move renders byte-identically to HEAD plus comments, so a peer's real status edit is committed under a landing subject attributed to a refused run rather than left for its writer.\nFINDING reckon/crew/promotion.py:2331 non-blocking: the settlement catches BaseException and returns None, so a KeyboardInterrupt or a genuine defect inside _commit_landing_writes is reported as \"nothing to settle\" and the plan stays modified with no refusal naming the real cause.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T083515180558-dwlw-no-promotion-leaves-an-uncommitted-plan/manifest.md:36 non-blocking: the manifest states the pre-existing refusal test file passed 53 tests in a partition run and cites refusal-tests.log, but that log records \"1 failed, 52 passed\" with no revision header and refusal-sbatch.log shows its partition job failed with \"No such file or directory\".\n",
+  "review_run_id": "r-20261122T102209544949-review-of-dwlw-no-promotion-leaves-an-uncommitted-plan-3d5294ab5865",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "3d5294ab58653796d7044431f430db9e0303b298",
+  "reviewed_run_id": "r-20261122T083515180558-dwlw-no-promotion-leaves-an-uncommitted-plan",
+  "reviewer": {
+    "backend": "local",
+    "effort": "review",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261122T102209544949-review-of-dwlw-no-promotion-leaves-an-uncommitted-plan-3d5294ab5865",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T10:28:45.774175+00:00",
+  "total": 108
+}

@@ -39,7 +39,6 @@ from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_reset,
     obligation_snapshot,
-    queue_admission,
     recovery,
     recovery_classification,
     recovery_review_dispatch,
@@ -48,6 +47,7 @@ from reckon.crew import (
     review_records,
     runs,
 )
+from reckon.crew import queue_admission as _queue_admission_module
 from reckon.crew import (
     repair as repair_module,
 )
@@ -79,6 +79,66 @@ from reckon.git_head import _common_git_directory, _git_directory, _head_identit
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon.node_exclusive_lock import exclusive_lock
 from reckon.velocity import run_git
+
+
+def _ordering_key(
+    pointers: Sequence[Mapping[str, Any]], now: Any, lane: str
+) -> tuple[str, str]:
+    """The change key of one ordering read: what the order is a function of.
+
+    The order is derived from the pointers, the instant and the lane, and from
+    nothing else, so those three are the key a memo can answer on. The
+    pointers are digested rather than carried, because the memo keeps an entry
+    per distinct read and a fleet's pointers are large.
+    """
+    material = json.dumps(
+        list(pointers), sort_keys=True, default=str, separators=(",", ":")
+    )
+    return (hashlib.sha256(material.encode("utf-8")).hexdigest(), f"{now!r}|{lane or ''}")
+
+
+class _QueueAdmissionViews:
+    """``queue_admission``, answering one ordering per identical read.
+
+    Every other name on the module is reached through this object unchanged.
+    A sweep asks where each queued request stands once for every session's
+    payload, and each ask carries the same pointers at the same instant;
+    ordering them again re-derives the queued plans' section priorities, which
+    composes the project's roadmap again. The answer is memoised on the inputs
+    the order is derived from, so a sweep over many sessions derives each
+    project's roadmap once while a read at a later instant is answered fresh.
+
+    A caller that hands its own ``config_for`` is answered directly: the order
+    then depends on a callable this layer cannot compare, so it is not
+    memoised.
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(_queue_admission_module, name)
+
+    def queued_placements(
+        self,
+        pointers: Sequence[Mapping[str, Any]],
+        *,
+        now: Any = None,
+        lane: str = "",
+        config_for: Callable[..., Any] | None = None,
+    ) -> dict[str, dict[str, int]]:
+        if config_for is not None:
+            return _queue_admission_module.queued_placements(
+                pointers, now=now, lane=lane, config_for=config_for
+            )
+        material = list(pointers)
+        return file_memo.memoized_key(
+            "obligation_queue_ordering",
+            _ordering_key(material, now, lane),
+            lambda: _queue_admission_module.queued_placements(
+                material, now=now, lane=lane
+            ),
+        )
+
+
+queue_admission = _QueueAdmissionViews()
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
@@ -112,9 +172,12 @@ PARKED_REQUEST_PHASES = (
 #: and the abandoned pointer holds whatever claim it took in silence. The row
 #: carries the classifier's own next action, which is the command that releases
 #: it.
+#: The duty kind carried by a run whose launch ended before it reached a model.
+LAUNCH_FAILED_DUTY_KIND = "launch-failed"
+
 RECOVERY_CLASSIFICATION_DUTY_KINDS = {
     "needs-help": "needs-help",
-    "launch-failed": "launch-failed",
+    "launch-failed": LAUNCH_FAILED_DUTY_KIND,
     # Both classifications whose recovery verb is ``repair``: the run's own
     # declaration is what is wrong, so no sweep, resume or promotion moves it
     # until the session edits the thing the classifier refused. Left out, they
@@ -128,7 +191,9 @@ RECOVERY_CLASSIFICATION_DUTY_KINDS = {
 #: what is wrong with the run, carried on the row's ``detail``. A coordinator
 #: reading one of these owes a repair, so the obligation says what to repair
 #: rather than only that the run is halted.
-CLASSIFIER_DETAIL_DUTY_KINDS = frozenset({"unreadable", "exited-unfinished"})
+CLASSIFIER_DETAIL_DUTY_KINDS = frozenset(
+    {"unreadable", "exited-unfinished", "launch-failed"}
+)
 
 # A duty kind whose evidence is a stored review rather than a live run's state:
 # the row is owed while the dimension carries no disposition, and it names the
@@ -225,6 +290,9 @@ DUTY_ROW_FIELDS = (
     "holder_session",
     "holder_phase",
     "held_path",
+    # The session that dispatched a request no live process carries, so an
+    # orphaned refusal names the dispatcher whose end stranded it.
+    "ended_session",
     # A producer-gone duty's own evidence: the probe, the value it is stuck on,
     # the terminal states it is waiting for and how long the value has stood
     # still, so a coordinator sees why nothing will lift the wait.
@@ -267,6 +335,15 @@ REVIEW_QUEUED_DUTY_KIND = "review-queued"
 # review gets, and the one a coordinator needs to end a turn with a watch armed
 # rather than sit in a foreground wait on it.
 REVIEW_IN_FLIGHT_DUTY_KIND = "review-in-flight"
+
+# The field a duty carries when its sentence quotes a fact read from another
+# run's own pointer, such as the phase a review had reached when the duty was
+# composed. A duty is composed once and can be served later, from a snapshot an
+# aged snapshot carried, so the value is recorded beside the sentence: a reader
+# re-reads the named run and quotes the value it finds then, rather than the one
+# the composer happened to see. The mapping holds the run id the fact belongs to
+# and the value quoted.
+QUOTED_RUN_FIELD = "quoted_run"
 
 # A run whose review has been dispatched, delivered, and not yet landed reads
 # as awaiting promotion: the wait is a promotion, not a dispatch and not a
@@ -328,6 +405,19 @@ _EDITABLE_CONTRACT_PROPERTIES: Mapping[str, str] = {
     "bounded": "time-budget",
 }
 
+# The ``crew queue edit`` option that sets each editable field, with the value
+# its reader has to supply. The refusal names a property; the field behind it is
+# what a coordinator changes, so the row publishes the flag that sets it rather
+# than a verb that would leave the field as it is. The placeholder is quoted so a
+# session that copies the command out of a terminal passes the text through
+# instead of handing the shell a redirect.
+_QUEUE_EDIT_FIELD_FLAGS: Mapping[str, str] = {
+    "steering": "--brief '<file>'",
+    "done-when": "--done-when '<measure>'",
+    "write-paths": "--write-path '<path>'",
+    "time-budget": "--time-budget '<budget>'",
+}
+
 # Each node-contract finding is rendered as ``<property>: <detail>``, the first
 # after the refusal's opening words and the rest after ``; ``. The detail may
 # itself contain a colon or a semicolon, so the property is read by position
@@ -343,6 +433,15 @@ _CONTRACT_PROPERTY = re.compile(r"(?:(?<=; )|(?<=— ))([a-z][a-z_-]*): ")
 # either — that names a condition only the session can clear, where this names
 # a wait the lane's own admission pass ends.
 QUEUED_RUN_DUTY_KIND = "run-queued"
+
+# A refused queued request whose dispatching session has ended. The refusal is
+# charged to the session that dispatched the request, and an obligations view is
+# built for one session, so an ended dispatcher leaves the refusal in a view
+# nobody reads. This row carries the refusal to a live session that can answer
+# it and names the ended session, so the request is not lost with its
+# dispatcher. It is distinct from the session-refusal kind, which is the same
+# refusal listed to the session that can still clear it.
+ORPHANED_REFUSAL_DUTY_KIND = "orphaned-refusal"
 
 # A queued request the admission pass recorded a stall verdict for: the lane
 # could launch it and did not, so the wait is one the lane has already declared
@@ -1055,9 +1154,19 @@ def _refusal_speaks_for_revision(recorded: Mapping[str, Any], *, head: str) -> b
 
 
 def _cli_review_rubric(record: Mapping[str, Any]) -> str | None:
-    """Text review records use the CLI's default rubric selector."""
+    """The rubric flag the dispose verb accepts for this record, if any.
+
+    A stored record names its family, and older records carry names the verb
+    never accepted: a code review states the health rubric. The verb selects a
+    figure record by ``--rubric figure`` and answers the run's text review when
+    no rubric is named, so any other family is rendered by omitting the flag. A
+    hint carrying a family the verb refuses is one a coordinator cannot paste,
+    which is worse than naming the default the verb already applies.
+    """
     rubric = review_module._review_record_rubric(record)
-    return None if rubric == "node" else rubric or None
+    if rubric == review_module.FIGURE_REVIEW_RUBRIC:
+        return rubric
+    return None
 
 
 def _finding_disposition_commands(
@@ -1073,6 +1182,53 @@ def _finding_disposition_commands(
     return recovery_review_dispatch._finding_dispose_commands(
         project, run_id, index, review=review
     )
+
+
+def _open_review_finding(
+    project: str, run_id: str
+) -> tuple[Mapping[str, Any], list[Any], str, str] | None:
+    """The first undisposed blocking finding on a run's newest open review.
+
+    The findings are read from the run's stored records under the same lifecycle
+    derivation and the same disposition reader the dispatch applies, so a duty
+    that explains the wait cannot describe a state the dispatch would not act
+    on. The two duties that report this state — a recorded refusal, and a review
+    the reflex has not reached — share this reader rather than each carrying its
+    own copy of the selection.
+
+    Returns the review record, the undisposed findings in index order, and the
+    two commands that dispose or exempt the first of them. None means no stored
+    review of this run is open with a blocking finding still owed an answer.
+    """
+    try:
+        stored = [
+            record
+            for _path, record in review_module.stored_records_for_run(project, run_id)
+        ]
+    except (OSError, ValueError):
+        return None
+    if not stored:
+        return None
+    from reckon.crew.open_run_index import has_row
+
+    closed = has_row(project, run_id)
+    for record in stored:
+        if (
+            review_lifecycle.lifecycle(
+                record, run_closed=closed, later_records=tuple(stored)
+            )
+            != review_lifecycle.OPEN
+        ):
+            continue
+        undisposed = recovery_review_dispatch._undisposed_blocking_findings(record)
+        if not undisposed:
+            continue
+        index, _finding = undisposed[0]
+        fold, exempt = _finding_disposition_commands(
+            project, run_id, index, review=record
+        )
+        return record, undisposed, fold, exempt
+    return None
 
 
 def _review_dispatch_refusal(
@@ -1133,31 +1289,9 @@ def _review_dispatch_refusal(
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
-    try:
-        stored = [
-            record
-            for _path, record in review_module.stored_records_for_run(project, run_id)
-        ]
-    except (OSError, ValueError):
-        return None
-    from reckon.crew.open_run_index import has_row
-
-    closed = has_row(project, run_id)
-    for record in stored:
-        if (
-            review_lifecycle.lifecycle(
-                record, run_closed=closed, later_records=tuple(stored)
-            )
-            != review_lifecycle.OPEN
-        ):
-            continue
-        undisposed = recovery_review_dispatch._undisposed_blocking_findings(record)
-        if not undisposed:
-            continue
-        index, _finding = undisposed[0]
-        fold, exempt = _finding_disposition_commands(
-            project, run_id, index, review=record
-        )
+    open_finding = _open_review_finding(project, run_id)
+    if open_finding is not None:
+        _record, _undisposed, fold, exempt = open_finding
         return {
             "reason": str(recorded.get("reason") or "")
             or "the review reflex refused this review's dispatch",
@@ -1177,6 +1311,44 @@ def _review_dispatch_refusal(
             ),
         }
     return None
+
+
+def _undisposed_review_cause(
+    project: str, pointer: Mapping[str, Any]
+) -> dict[str, str] | None:
+    """The cause that makes a run's review the coordinator's to unblock now.
+
+    The reflex refuses to compose a review while the run's newest open review
+    still carries a blocking finding with no disposition. That state does not
+    clear with time, so a review-missing duty that printed an overdue figure
+    would send the coordinator to inspect a follower that is behaving
+    correctly. The state is read through :func:`_open_review_finding`, the same
+    reader the recorded-refusal duty uses, so the dispatch and both duties agree
+    on when a round is still owed an answer.
+
+    None means no stored review of this run has an undisposed blocking finding,
+    so the reflex's own window is the only thing between the run and its
+    review.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    open_finding = _open_review_finding(project, run_id)
+    if open_finding is None:
+        return None
+    _record, undisposed, fold, exempt = open_finding
+    from reckon.crew import repair as repair_module
+
+    place = repair_module._finding_location(undisposed[0][1]) or "the review's findings"
+    return {
+        "reason": (
+            f"the newest review carries {len(undisposed)} blocking "
+            f"finding(s) with no disposition, so a review dispatched now "
+            f"would repeat them: {place} — dispose it with `{fold}` or "
+            f"`{exempt}`"
+        ),
+        "next_command": f"dispose the blocking finding with `{fold}` or `{exempt}`",
+    }
 
 
 def _reflex_owns_review(project: str, pointer: Mapping[str, Any]) -> bool:
@@ -1776,6 +1948,14 @@ def _queued_contract_refusal(
     failed: an editable one is cleared in place, keeping the request's place in
     the queue, while a plan-owned one leaves nothing to edit and the request is
     dropped after the section is repaired.
+
+    A refusal that only one pass recorded is not this row at all. The stored
+    contract is the authority, and a pass can read no authority or no measure
+    for a request whose body it did not manage to read, so one refusal is
+    evidence about the pass rather than about the request. Only
+    passes that each read the request and each refused it agree about it; until
+    they do, the request keeps the waiting reading and the next pass judges it
+    afresh.
     """
     if str(pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
         return None
@@ -1786,12 +1966,13 @@ def _queued_contract_refusal(
     failure = pointer.get("failure")
     if not failure:
         return None
-    text = queue_admission._failure_text(failure)
-    if queue_admission._NODE_CONTRACT_REFUSAL not in text:
-        return None
-    if queue_admission._CAPACITY_REFUSAL_REMEDY in text:
+    if not queue_admission._is_node_contract_refusal(failure):
         # A full lane names the same condition in its opening words, but an
         # occupying run finishing clears it: that one is a wait, not a repair.
+        return None
+    text = queue_admission._failure_text(failure)
+    passes = int(pointer.get(queue_admission.CONTRACT_REFUSAL_PASSES_FIELD) or 0)
+    if passes < queue_admission.CONTRACT_REFUSAL_CONFIRMATIONS:
         return None
     run_id = str(pointer.get("run_id") or "")
     properties = _CONTRACT_PROPERTY.findall(text)
@@ -1800,20 +1981,30 @@ def _queued_contract_refusal(
     )
     if editable:
         fields = sorted({_EDITABLE_CONTRACT_PROPERTIES[name] for name in properties})
+        flags = [
+            _QUEUE_EDIT_FIELD_FLAGS[field]
+            for field in fields
+            if field in _QUEUE_EDIT_FIELD_FLAGS
+        ]
         detail = (
-            "the last admission attempt refused this queued request on its node "
-            f"contract, which no lane slot clears; the queue edit sets the "
-            f"field behind each named property ({', '.join(fields)}): {text}"
+            "two admission passes each read this queued request and each "
+            "refused it on its node contract, which no lane slot clears; the "
+            "queue edit sets the field behind each named property "
+            f"({', '.join(fields)}): {text}"
         )
         return {
             "detail": detail,
-            "next_command": f"reckon crew queue edit --run {run_id}",
+            "next_command": (
+                f"reckon crew queue edit --run {run_id} " + " ".join(flags)
+            ).strip()
+            if flags
+            else f"reckon crew queue edit --run {run_id}",
         }
     detail = (
-        "the last admission attempt refused this queued request on its node "
-        "contract, which no lane slot clears; the named properties belong to the "
-        "plan section the request was queued from, so repair the section and "
-        f"dispatch it again: {text}"
+        "two admission passes each read this queued request and each refused it "
+        "on its node contract, which no lane slot clears; the named properties "
+        "belong to the plan section the request was queued from, so repair the "
+        f"section and dispatch it again: {text}"
     )
     return {"detail": detail, "next_command": f"reckon crew queue drop --run {run_id}"}
 
@@ -2063,7 +2254,146 @@ def _live_item(
                 item["age_seconds"] = _seconds_since(stamped, now=now)
             remedy = str(hold.get("remedy") or "")
             item["next_command"] = remedy or f"wait: {item['reason']}"
+    if kind == LAUNCH_FAILED_DUTY_KIND and row.get("ended_during_launch"):
+        # A launch that recorded its own end before reaching a model leaves
+        # nothing to continue: there is no session to resume and no work to
+        # carry on. The classifier's remedy still names the command-and-PATH
+        # repair, which is what a person does before trying the run again, but
+        # the duty handed to a coordinator must name a command accepted for the
+        # run as it stands, so it names the discard and carries the cause.
+        run_id = str(item.get("run_id") or "")
+        item["next_command"] = f"reckon crew discard --run {run_id}"
+        launch_error = str(row.get("launch_error") or "").strip()
+        if launch_error and launch_error not in item.get("reason", ""):
+            item["reason"] = f"{item.get('reason') or ''} ({launch_error})".strip()
     return item
+
+
+def _session_reachability(sessions: Iterable[str]) -> dict[str, bool | None]:
+    """Whether a live harness process still carries each session.
+
+    ``True`` and ``False`` are the harness's own answers. A session it keeps no
+    record for is absent from the map and reads as unknown, never as ended:
+    nothing observed that session, and an end is a fact that has to be seen to
+    be reported. The harness reads its records once for every id named here.
+    """
+    wanted = {str(session) for session in sessions if str(session or "").strip()}
+    if not wanted:
+        return {}
+    from reckon.crew import harness_sessions
+
+    return {
+        session: address.get("reachable")
+        for session, address in harness_sessions.addresses(wanted).items()
+    }
+
+
+def orphaned_refusal_readings(
+    project: str,
+    *,
+    classified: Sequence[Mapping[str, Any]],
+    pointers: Iterable[Mapping[str, Any]],
+    now: datetime,
+) -> tuple[list[dict[str, Any]], set[str]]:
+    """The refusals an ended dispatcher left behind, and the project's live sessions.
+
+    A refused queued request is charged to the session that dispatched it. When
+    no live process carries that session the refusal sits in an obligations view
+    nobody reads, and nothing on the lane ends it. Each such request is built
+    into an orphaned-refusal row here, naming the ended session, and paired with
+    the set of the project's sessions a live process still carries so a caller
+    can tell whether it is the session that should be told.
+
+    Only a session observed ended is orphaned. A session the harness keeps no
+    record for is unknown rather than gone, so its refusals stay with it and are
+    reported exactly as they were before.
+    """
+    candidates = [
+        row
+        for row in classified
+        if str(row.get("classification") or "") == "queued"
+        and (row.get("session_refusal") or row.get("contract_refusal"))
+    ]
+    if not candidates:
+        return [], set()
+    reachability = _session_reachability(
+        str(row.get("session") or "") for row in candidates
+    )
+    items = [
+        _orphaned_refusal_item(row, now=now)
+        for row in candidates
+        if reachability.get(str(row.get("session") or "")) is False
+    ]
+    if not items:
+        return [], set()
+    ended = {str(row.get("session") or "") for row in candidates}
+    ended = {session for session in ended if reachability.get(session) is False}
+    project_sessions = {
+        str(pointer.get("session") or "")
+        for pointer in pointers
+        if str(pointer.get("session") or "")
+    }
+    project_reachability = _session_reachability(project_sessions)
+    live_sessions = {
+        session
+        for session in project_sessions
+        if session not in ended and project_reachability.get(session) is not False
+    }
+    return items, live_sessions
+
+
+def _orphaned_refusal_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
+    """One refused request whose dispatching session has ended, as a duty row.
+
+    The row keeps the refusal's own remedy, because that is the command that
+    clears it whoever runs it, and adds the one fact the session that reads it
+    cannot otherwise know: which session ended and left the request behind.
+    """
+    refusal = row.get("session_refusal") or row.get("contract_refusal") or {}
+    ended_session = str(row.get("session") or "")
+    run_id = str(row.get("run_id") or "")
+    item = _live_item(row, kind=ORPHANED_REFUSAL_DUTY_KIND, now=now)
+    detail = str(refusal.get("detail") or row.get("detail") or "").strip()
+    item["reason"] = (
+        f"the session that dispatched this request ({ended_session!r}) has ended, "
+        f"so no live coordinator was told of its refusal: {detail}"
+    ).strip()
+    item["next_command"] = (
+        str(refusal.get("next_command") or "") or f"reckon crew discard --run {run_id}"
+    )
+    item["ended_session"] = ended_session
+    recorded_at = str(refusal.get("recorded_at") or "").strip()
+    if recorded_at:
+        item["age_seconds"] = _seconds_since(recorded_at, now=now)
+    return item
+
+
+def _orphaned_refusals_for_session(
+    items: Sequence[Mapping[str, Any]],
+    *,
+    project_live_sessions: Iterable[str],
+    session: str,
+) -> list[dict[str, Any]]:
+    """The orphaned refusals one session's view should list.
+
+    A live session of the project answers the request, so every such session is
+    told. When the project has no live session at all, the request is told to
+    any live session on the lane rather than left in the ended session's view,
+    which is the whole loss this row exists to end. The ended dispatcher's own
+    session is never told: no process carries it, and reporting to it repeats
+    the loss rather than closing it.
+    """
+    if not items:
+        return []
+    live = set(project_live_sessions)
+    if live:
+        return [dict(item) for item in items if session in live]
+    # The lane fallback is the only reading that has to ask about this caller
+    # itself, so it is the only one that pays for the harness read: a project
+    # with a live session answers every session from the fleet reading.
+    if _session_reachability([session]).get(session) is False:
+        return []
+    return [dict(item) for item in items]
 
 
 def _route_defaulted_items(
@@ -2138,12 +2468,14 @@ def admission_verdicts() -> dict[str, dict[str, Any]]:
 
 
 def recent_upstream_retirements() -> list[dict[str, Any]]:
-    """The upstream retirements the most recent admission pass recorded.
+    """The newest upstream retirements an admission pass recorded.
 
     A retired request has no pointer left to read, so the pass's own record is
-    the only account of it. Only the last record's list is returned: the pass
-    that retired the request carried it, and a later pass carrying none means
-    the retirement has already been read.
+    the only account of it. Every pass writes a record, and a pass that retired
+    nothing carries an empty list, so the newest non-empty list is the answer: a
+    retirement stays readable through the idle passes that follow it rather than
+    surviving only one line of the log. It is replaced when another pass retires
+    a request.
     """
     path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
     try:
@@ -2156,8 +2488,8 @@ def recent_upstream_retirements() -> list[dict[str, Any]]:
         except ValueError:
             continue
         retired = record.get("retired")
-        if not isinstance(retired, list):
-            return []
+        if not isinstance(retired, list) or not retired:
+            continue
         return [dict(row) for row in retired if isinstance(row, Mapping)]
     return []
 
@@ -3137,6 +3469,10 @@ def _review_duty_detail(
     ):
         item = _live_item(row, kind=REVIEW_IN_FLIGHT_DUTY_KIND, now=now)
         item["reason"] = str(row.get("detail") or "")
+        item[QUOTED_RUN_FIELD] = {
+            "run_id": str(row.get("review_run_id") or ""),
+            "phase": str(row.get("review_run_phase") or ""),
+        }
         return item
 
     resumed_head, _tree = recovery._review_head_and_tree(pointer)
@@ -3315,6 +3651,14 @@ def _review_duty_detail(
             item["kind"] = REVIEW_DISPATCH_REFUSED_DUTY_KIND
             item["reason"] = refusal["reason"]
             item["next_command"] = refusal["next_command"]
+        elif (undisposed := _undisposed_review_cause(project, pointer)) is not None:
+            # The reflex will not compose this run's review while the previous
+            # round's blocking finding stands, so the wait is a decision rather
+            # than a delay: naming the cause and the command that lifts it is
+            # what lets the coordinator act, where an overdue figure would send
+            # it to inspect a follower with nothing wrong with it.
+            item["reason"] = undisposed["reason"]
+            item["next_command"] = undisposed["next_command"]
         elif _reflex_owns_review(project, pointer):
             # One actor owns review dispatch. While an armed follower will
             # compose this review, the duty names that reflex and the window
@@ -5011,6 +5355,42 @@ def _obligations_view(
                 ),
             }
         )
+    # A wait whose probe exceeded its run bound. The gate stopped the probe and
+    # recorded one duty naming the run and the vector, so the owner is told
+    # which probe to repair rather than left watching a wait that cannot lift.
+    from reckon.crew import recovery_wait
+
+    stopped_probes = {
+        str(duty.get("run_id") or ""): duty
+        for duty in recovery_wait.wait_probe_stopped_duties()
+    }
+    for pointer in live_pointers:
+        run_id = str(pointer.get("run_id") or "")
+        duty = stopped_probes.get(run_id)
+        if duty is None or str(pointer.get("session") or "") != session:
+            continue
+        raised = duty.get("raised_at")
+        items.append(
+            {
+                "kind": recovery_wait.WAIT_PROBE_STOPPED_DUTY_KIND,
+                "run_id": run_id,
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "plan": str(
+                    pointer.get("plan") or (pointer.get("node") or {}).get("plan") or ""
+                ),
+                "age_seconds": (
+                    int(max(0.0, now.timestamp() - float(raised)))
+                    if isinstance(raised, (int, float))
+                    else 0
+                ),
+                "reason": str(duty.get("detail") or ""),
+                "probe": str(duty.get("probe") or ""),
+                "next_command": (
+                    f"repair the probe the wait declares, or carry the wait past "
+                    f"it: reckon crew resume --run {run_id} --advice '<advice>'"
+                ),
+            }
+        )
     # A request the pass removed because an upstream could never land. The
     # departure is recorded, so the owner is told why it went rather than left
     # to notice a request that is no longer there.
@@ -5082,6 +5462,18 @@ def _obligations_view(
     # pass wrote, rather than re-deriving the claim.
     classified = _classified_rows(project)
     classified_by_run = {str(row.get("run_id") or ""): row for row in classified}
+    # A refused request charged to a session no live process carries reaches a
+    # session that can answer it, rather than staying in a view nobody reads.
+    orphaned, orphan_live_sessions = orphaned_refusal_readings(
+        project, classified=classified, pointers=live_pointers, now=now
+    )
+    items.extend(
+        _orphaned_refusals_for_session(
+            orphaned,
+            project_live_sessions=orphan_live_sessions,
+            session=session,
+        )
+    )
     for pointer in live_pointers:
         if str(pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
             continue

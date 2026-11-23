@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms with the same two files at both revisions: baseline_suite-1795353990423818135.log at c37ee57 lists 58 passed and no failure id, after_suite-1795354066791010020.log at dd0d3bf3 lists 63 passed and no failure id, so the five added passes are this node's new cases and no failure id was added.",
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1959",
+    "reckon/crew/recovery_classification.py:4217",
+    "reckon/crew/obligations.py:2038",
+    "reckon/crew/obligations.py:5113",
+    "reckon/crew/resumption.py:2988"
+  ],
+  "call_sites_note": "the classification and obligations readers reach _run_wait_condition_probe as condition_test, the sweep's _run_condition_probe is passed at resumption.py:2988, and the obligations view reads wait_probe_stopped_duties at obligations.py:5113.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T14:12:55Z",
+  "findings": [
+    {
+      "file": "tests/test_a_wait_probe_runs_once_at_a_time.py",
+      "line": "173",
+      "severity": "non-blocking",
+      "text": "non-blocking: the bound assertion reads bound from recovery_wait.WAIT_PROBE_RUN_BOUND_SECONDS and asserts that integer appears in the duty detail, and the detail is built from that same constant, so the two sides move together and the assertion holds whatever value the constant takes; an independent literal, or the elapsed measurement already taken at line 156, would give it a fixed side."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "2475",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sweep's reader is routed through the gate but no assertion fails if it is reverted to its own subprocess.run, and the observed='stopped' branch two lines below is never exercised by any test, so half of the landed change can regress silently while the file stays green."
+    },
+    {
+      "file": "reckon/crew/recovery_vocabulary.py",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "non-blocking: WAIT_PROBE_TIMEOUT_SECONDS = 1.0 no longer bounds any probe now that recovery_wait.py:808 replaces both readers' own timeboxes, so it survives only as a noqa re-export shim (recovery_wait.py:2063) and a reader comparing it with WAIT_PROBE_RUN_BOUND_SECONDS = 60.0 gets two different answers about one wait's probe."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2038",
+      "severity": "non-blocking",
+      "text": "non-blocking: the classifier's reader this call reaches was previously timeboxed at 1 s (WAIT_PROBE_TIMEOUT_SECONDS) and now runs against the gate's 60 s bound under an exclusive cross-node lock, so an acknowledgements or obligations view can block up to a minute on one slow probe where it was bounded at one second; the bound is the plan's number, but the widening on this hot path is not named in the goal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the classifier's reader is passed as condition_test at reckon/crew/recovery_classification.py:1959 and reached through its alias at 4217 and directly at reckon/crew/obligations.py:2038; the sweep's reader is passed at reckon/crew/resumption.py:2988; the new duty is read at reckon/crew/obligations.py:5113.",
+    "diff": "read the three commits c37ee578cdbb9fb6ea3345f571f826943e36e05f..f2470d73e4d5c5bb93c79a7a466bfb6d625a5b1e commit by commit: dd0d3bf3 lands the gate and its test, f3361b95 lands the evidence fragment, f2470d73 quotes the gate summaries as printed.",
+    "done_when": "the node's done_when names tests/test_a_wait_probe_runs_once_at_a_time.py and read the file at the reviewed head: the ten-reader, interval and bound cases all exist, and after_suite-1795354066791010020.log records 63 passed with EXIT=0 at dd0d3bf3.",
+    "goal": "the node goal is to start a waiting run's probe once for all readers and stop one that overruns; reckon/crew/recovery_wait.py:808 is the gate and both readers route through it.",
+    "manifest": "read the reviewed manifest; it reads status complete, records commits dd0d3bf3fd, f3361b95da, f2470d73e4, and its arts and gate summaries reconcile.",
+    "write_paths": "read the reviewed manifest's declared scope and the delivered diff; all five changed paths (recovery_wait.py, resumption.py, obligations.py, the test file and the evidence fragment) are inside it, with docs/figures unused and no undeclared path touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_probe_runs_once_at_a_time.py:112 would redden if the gate ran the probe per reader, but nothing fails if reckon/crew/resumption.py:2475 stops routing through the gate and its observed='stopped' branch at resumption.py:2479 is never exercised, so half the change is unguarded.",
+    "evidence": "tests/test_a_wait_probe_runs_once_at_a_time.py carries the three named cases and the run's scoped-gate log records 63 passed with EXIT=0, but negative-control.log reddens on an absent API (assert 0 == 10, all ten threads raised AttributeError) rather than on the probe count the done_when names, so the declared negative control proves the test is new rather than that it catches the regression.",
+    "fit": "the change reuses write_json_atomically, exclusive_lock and crew_home and keeps its duty kind and constants in the module it belongs to, but recovery_vocabulary.py:48 WAIT_PROBE_TIMEOUT_SECONDS = 1.0 now bounds nothing and survives as a noqa re-export shim beside a differently named 60 s bound.",
+    "goal_fidelity": "reckon/crew/recovery_wait.py:808 run_wait_probe holds one result per (run, probe) behind exclusive_lock, refuses to start a probe inside WAIT_PROBE_INTERVAL_SECONDS=30 s, and kills past WAIT_PROBE_RUN_BOUND_SECONDS=60 s, which is the goal as stated.",
+    "reuse": "searched reckon/ for probe caches, start_new_session subprocess launchers and interval caches: file_memo.py is an in-process per-file parse memo and obligation_snapshot.py is a published payload snapshot, so no owner of a shared cross-node subprocess-result cache exists and recovery_wait.py:808 is the first.",
+    "scope_discipline": "git diff c37ee578cdbb9fb6ea3345f571f826943e36e05f..f2470d73e4d5c5bb93c79a7a466bfb6d625a5b1e touches five paths and every one is inside the six declared write paths, with the evidence fragment the only documentation path and no plan or state file edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one shared probe per (run, probe) with a 60 s bound; reckon/crew/recovery_wait.py:808 run_wait_probe is that gate and both waiting readers route to it.\nVERDICT done_when: the done_when names tests/test_a_wait_probe_runs_once_at_a_time.py, and the file at f2470d73e4 carries the ten-reader, interval and bound cases with after_suite-1795354066791010020.log recording 63 passed and EXIT=0 at dd0d3bf3.\nVERDICT write_paths: read the reviewed manifest's declared scope against the delivered diff; all five changed paths are inside it and no undeclared path is touched.\nVERDICT manifest: read; it reads status complete, names commits dd0d3bf3fd, f3361b95da and f2470d73e4, and its quoted gate summaries reconcile with the logs' own summary lines.\nVERDICT diff: read commit by commit from c37ee578cdbb9fb6ea3345f571f826943e36e05f to f2470d73e4d5c5bb93c79a7a466bfb6d625a5b1e; three commits, five paths, and only recovery_wait.py carries product logic while resumption.py and obligations.py route their existing readers through it.\nCALL_SITES: reckon/crew/recovery_classification.py:1959, reckon/crew/recovery_classification.py:4217, reckon/crew/obligations.py:2038, reckon/crew/obligations.py:5113, reckon/crew/resumption.py:2988\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:808 shares one result for 30 s, refuses a second start, and kills past 60 s with the process group, which is the goal as stated.\nSCORE evidence: 16\nJUSTIFICATION evidence: the goal's three cases exist in tests/test_a_wait_probe_runs_once_at_a_time.py and the scoped-gate log records 63 passed with EXIT=0, but negative-control.log reddens on an absent API (assert 0 == 10) rather than on the probe count the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all five paths in git diff c37ee578cdbb9fb6ea3345f571f826943e36e05f..f2470d73e4d5c5bb93c79a7a466bfb6d625a5b1e are inside the six declared write paths, and no plan or state file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_wait_probe_runs_once_at_a_time.py:112 reddens if the gate runs the probe per reader, but nothing fails if reckon/crew/resumption.py:2475 reverts to its own subprocess.run and the stopped branch at resumption.py:2479 is never exercised.\nSCORE fit: 16\nJUSTIFICATION fit: the change reuses write_json_atomically, exclusive_lock and crew_home, but recovery_vocabulary.py:48 WAIT_PROBE_TIMEOUT_SECONDS = 1.0 now bounds nothing and survives as a noqa re-export shim.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner of a shared cross-node subprocess-result cache exists (file_memo.py is an in-process parse memo, obligation_snapshot.py a published payload), so reckon/crew/recovery_wait.py:808 is the first and extends the lock and atomic-write owners correctly.\nFINDING tests/test_a_wait_probe_runs_once_at_a_time.py:173 non-blocking: the bound assertion reads the module constant on both sides and holds whatever value the constant takes.\nFINDING reckon/crew/resumption.py:2475 non-blocking: the sweep's routing through the gate and its stopped branch are unguarded, so half the change can regress while the file stays green.\nFINDING reckon/crew/recovery_vocabulary.py:48 non-blocking: WAIT_PROBE_TIMEOUT_SECONDS = 1.0 bounds nothing now and misleads beside WAIT_PROBE_RUN_BOUND_SECONDS = 60.0 for the same probe.\nFINDING reckon/crew/obligations.py:2038 non-blocking: the classifier path this call reaches went from a 1 s timebox to the gate's 60 s bound under one exclusive lock, so a view can block up to a minute on a slow probe.\n",
+  "review_run_id": "r-20261122T141242308665-review-of-rpfw-a-wait-probe-runs-once-at-a-time-f2470d73e4d5",
+  "reviewed_base_sha": "c37ee578cdbb9fb6ea3345f571f826943e36e05f",
+  "reviewed_head_sha": "f2470d73e4d5c5bb93c79a7a466bfb6d625a5b1e",
+  "reviewed_run_id": "r-20261122T131054848221-rpfw-a-wait-probe-runs-once-at-a-time",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T14:38:05.158037+00:00",
+  "total": 103
+}

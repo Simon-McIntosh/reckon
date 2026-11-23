@@ -3823,6 +3823,33 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": f"json: {e}"})
             return False, None
 
+    @_plan_html.shares_one_parse
+    def _send_disagreeing_plan_refusal(self, text: str, exc: Exception) -> None:
+        """Refuse a document whose section record disagrees with its declaration.
+
+        The typed read raises on such a document, so the disagreement is named
+        from the tree rather than from the parse: the section, the status its
+        record carries and the status its declaration reads. Any other parse
+        failure reaches the caller as the schema refusal it already was.
+        """
+        disagreements = _plan_html.section_status_disagreements(text)
+        if disagreements:
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {
+                    "error": "section_status_disagreement",
+                    "detail": _plan_html.section_status_disagreement_message(
+                        disagreements[0]
+                    ),
+                    "sections": [entry["id"] for entry in disagreements],
+                },
+            )
+            return
+        self._send_json(
+            HTTPStatus.BAD_REQUEST,
+            {"error": "schema_validation", "details": [str(exc)]},
+        )
+
     def _handle_plan_write(self, path: str) -> None:
         """POST /plan/<project>/<slug> — merge a dotted patch into the plan
         embedded semantic state and rewrite the HTML file in place. The plan HTML
@@ -3881,7 +3908,11 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         text = plan_file.read_text(encoding="utf-8", errors="replace")
-        state = _plan_html.read_state(text)
+        try:
+            state = _plan_html.read_state(text)
+        except ValueError as exc:
+            self._send_disagreeing_plan_refusal(text, exc)
+            return
         cur_version = int(state.get("version", 0) or 0)
 
         if_match = self.headers.get("If-Match")

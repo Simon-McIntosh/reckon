@@ -59,6 +59,7 @@ mutators, serve.py, single-checkout agents) are completely unaffected.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import html
 import json
@@ -80,6 +81,25 @@ from reckon.lifecycle import TERMINAL_STATUSES
 from reckon.node_exclusive_lock import exclusive_lock
 
 PLAN_SUMMARY_MAX_LENGTH = 160
+
+
+def shares_one_parse(fn):
+    """Run a store entry point inside the plan-parse scope.
+
+    ``reckon._plan_html`` is imported here, at call time, because this module
+    sits on the obligations hook's import path and that hook must load no
+    derivation module. Importing it at module scope would load the parser into
+    a prompt process that answers from a published snapshot.
+    """
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        from reckon import _plan_html
+
+        with _plan_html.one_parse_per_document():
+            return fn(*args, **kwargs)
+
+    return wrapper
 
 
 def plan_summary_length(value: Any) -> int:
@@ -2057,16 +2077,25 @@ def write_plan(
     editors above it and the HTTP handler alike — so the generation advances
     for all of them at one place, whether or not the write commits and whether
     or not a change watch is running.
+
+    The whole write runs inside :func:`reckon._plan_html.one_parse_per_document`,
+    so the version check, the heading guard, the coverage check and the
+    renderer share one parse of the stored document and one of the document it
+    writes.
     """
-    version = _write_plan_at_version(
-        project,
-        slug,
-        data,
-        expected_version,
-        root,
-        artifact_type,
-        retire_preimages,
-    )
+
+    from reckon import _plan_html
+
+    with _plan_html.one_parse_per_document():
+        version = _write_plan_at_version(
+            project,
+            slug,
+            data,
+            expected_version,
+            root,
+            artifact_type,
+            retire_preimages,
+        )
     advance_write_generation(project)
     return version
 
@@ -2705,6 +2734,7 @@ def replace_plan_text_batch(
     )
 
 
+@shares_one_parse
 def _replace_plan_text(
     project: str,
     slug: str,

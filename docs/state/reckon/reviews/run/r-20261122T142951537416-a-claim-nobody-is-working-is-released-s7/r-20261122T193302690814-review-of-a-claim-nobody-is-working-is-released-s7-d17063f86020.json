@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/node.py:2116 claim_disposition",
+    "reckon/crew/admission/holds.py:575 _claim_disposition_of",
+    "reckon/crew/admission/selection.py:803 admit_once -> _name_set_aside_claims",
+    "reckon/crew/directory.py:400",
+    "reckon/crew/dispatch_claims.py:516",
+    "reckon/crew/promotion_scope.py:829",
+    "reckon/crew/queue_edit.py:386",
+    "reckon/crew/runs.py:2333",
+    "reckon/crew/admission/service.py:574 admit_once"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-a-claim-nobody-is-working-is-released-s7-d17063f86020",
+      "recorded_at": "2026-11-22T21:36:58.872459+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T19:37:49Z",
+  "findings": [
+    {
+      "file": "tests/test_a_delivered_runs_claim_lapses.py",
+      "line": 182,
+      "severity": "non-blocking",
+      "text": "the node's gate runs this file plus two invariant modules but never runs tests/test_a_request_that_cannot_launch_costs_nothing.py, which imports the changed claim module and already fails two cases at the base revision (one named for a stopped run's claim, recorded in pre-existing-unrelated-failures-at-base.log), so the done_when's 'the tests that import the changed modules add no failure' is unmeasured for the file most exposed to the change"
+    },
+    {
+      "file": "reckon/crew/claims.py",
+      "line": 507,
+      "severity": "non-blocking",
+      "text": "the broadened 'except Exception' and the entire _review_record_paths review-store arm carry no assertion: restoring 'except (OSError, CrewError)', or dropping review records from the quiet-window set, reddens no test, so the head commit's 'an unreadable store keeps the claim' behaviour is unprotected"
+    },
+    {
+      "file": "reckon/crew/claims.py",
+      "line": 424,
+      "severity": "non-blocking",
+      "text": "_delivered_status duplicates the fresh terminal-manifest read owned by reckon/crew/dispatch_claims.py:2542 stopped_with_terminal_manifest (the same _manifest_freshness plus parse_manifest block, differing only in the accepted status set and error handling), and DELIVERED_MANIFEST_STATUSES at line 182 restates literals owned by reckon/crew/reports.py:128 TERMINAL_MANIFEST_STATUSES without deriving from it; a shared fresh-manifest-status reader in reports.py would own both"
+    }
+  ],
+  "findings_note": "severity is stated per finding below",
+  "item_verdicts": {
+    "diff": "Read both commits against 2c522e9e1a413798755b22ceed2fd2163b7ea6b2; five files, 587 insertions and one deletion, every path inside the declared scope.",
+    "done_when": "The done_when names tests/test_a_delivered_runs_claim_lapses.py with four cases; the head file carries five arms covering all four and the worker records 63 passed.",
+    "goal": "The node goal is that a delivered run which is never landed gives up its claim; reckon/crew/claims.py:362 lapsed_claim_reason implements it and reckon/crew/node.py:2116 reads it through claim_disposition.",
+    "manifest": "Read; it states status complete, names both commits, records after arm 63 passed against base arm 58 passed, and cites a base negative-control log closing EXIT=1.",
+    "write_paths": "The node declared eight write paths and the five changed paths (claims.py, node.py, admission/holds.py, admission/selection.py, the new test) all lie inside that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_a_delivered_runs_claim_lapses.py:195 fails at the base revision (recorded in negative-control-base.log at base 2c522e9e1a), so the lapse rule has a real guard, but the head commit's review-store branch carries none.",
+    "evidence": "tests/test_a_delivered_runs_claim_lapses.py:182 carries the done_when's first case and the recorded gates are green, but the base and head arms run only two invariant modules beside it, not the tests that import the changed modules.",
+    "fit": "reckon/crew/admission/selection.py:817 follows the surrounding row-naming idiom and no added symbol or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/claims.py:362 lapsed_claim_reason proves delivery, an ended session and 24 hours of quiet before setting the claim aside, and leaves the run untouched.",
+    "reuse": "reckon/crew/claims.py:424 _delivered_status re-implements the fresh terminal-manifest read already owned by reckon/crew/dispatch_claims.py:2542 rather than extending it.",
+    "scope_discipline": "reckon/crew/node.py:2116 is inside the declared set, and every changed path in the diff lies inside the eight declared paths with nothing outside them touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a delivered run which is never landed gives up its claim; reckon/crew/claims.py:362 lapsed_claim_reason implements it and reckon/crew/node.py:2116 reads it through claim_disposition.\nVERDICT done_when: the done_when names tests/test_a_delivered_runs_claim_lapses.py with four cases; the head file carries five arms covering all four and the worker records 63 passed.\nVERDICT write_paths: the node declared eight write paths and the five changed paths (claims.py, node.py, admission/holds.py, admission/selection.py, the new test) all lie inside that declaration.\nVERDICT manifest: read; it states status complete, names both commits, records after arm 63 passed against base arm 58 passed, and cites a base negative-control log closing EXIT=1.\nVERDICT diff: read both commits against 2c522e9e1a413798755b22ceed2fd2163b7ea6b2; five files, 587 insertions and one deletion, every path inside the declared scope.\nCALL_SITES: reckon/crew/node.py:2116 claim_disposition, reckon/crew/admission/holds.py:575, reckon/crew/admission/selection.py:803, reckon/crew/directory.py:400, reckon/crew/dispatch_claims.py:516, reckon/crew/promotion_scope.py:829, reckon/crew/queue_edit.py:386, reckon/crew/runs.py:2333, reckon/crew/admission/service.py:574",
+  "review_run_id": "r-20261122T193302690814-review-of-a-claim-nobody-is-working-is-released-s7-d17063f86020",
+  "reviewed_base_sha": "2c522e9e1a413798755b22ceed2fd2163b7ea6b2",
+  "reviewed_head_sha": "d17063f860206b240e5989e745ec1c49e31ce753",
+  "reviewed_run_id": "r-20261122T142951537416-a-claim-nobody-is-working-is-released-s7",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T20:52:06.992482+00:00",
+  "total": 83
+}

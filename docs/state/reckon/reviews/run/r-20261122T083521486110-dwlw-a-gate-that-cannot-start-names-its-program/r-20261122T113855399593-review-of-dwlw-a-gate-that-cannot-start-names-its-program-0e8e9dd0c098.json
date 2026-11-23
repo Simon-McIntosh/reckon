@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:1404",
+    "reckon/crew/recovery_review_acceptance.py:752",
+    "reckon/crew_run_commands.py:5348",
+    "reckon/crew/promotion_gate.py:1569",
+    "reckon/crew/promotion_gate.py:1696"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T11:39:18Z",
+  "findings": [
+    {
+      "file": "tests/test_a_gate_that_cannot_start_names_its_program.py",
+      "line": "246",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert PROGRAM_THAT_EXISTS_NOWHERE in message is satisfied by the CrewError's own {command!r} echo at reckon/crew/promotion_gate.py:711, so it holds even if the refusal names argv[0] instead of the program the resolver read; only the following \"'env'\" not in message line actually catches that regression."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T083521486110-dwlw-a-gate-that-cannot-start-names-its-program/negative-control-reuse.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reuse control cited in test_logs and in the landing fragment carries no revision header, no literal command line and no closing EXIT= record, so a reader cannot tell which tree it measured."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: 8311322524 adds the resolver and the not-started reporting, 78755444 moves the resolver into promotion_gate and deletes landing_measure's copies, 67b19df7 consolidates _SHELL_ASSIGNMENT and _is_executable_file to one definition each and makes the guard pass the interpreter fallback, and 0e8e9dd0 is docs-only.",
+    "done_when": "the done_when names the three cases now at tests/test_a_gate_that_cannot_start_names_its_program.py:70, :95 and :131; after_suite-1795347332897345389.log records 65 passed EXIT=0 at 67b19df7 and negative-control-base.log records 3 failed EXIT=1 at dde7b001, the first reading verdict=failed exit_status=127 with \"the merge changes what this node's gate proves\".",
+    "goal": "the node's deliverable is that a merged-head gate replay which cannot start its program says so instead of blaming the merge; reckon/crew/promotion_gate.py:1311 resolves the program before the shell receives it and :1322-1337 reports not-run naming the program and the tree.",
+    "manifest": "read; status complete, baseline_suite 58 passed and after_suite 65 passed with no failure ids, three control logs recorded with their failure counts, and the pre-existing test_crew_gate_command_is_runnable failure recorded under outside_scope.",
+    "write_paths": "the delivered diff dde7b001..0e8e9dd0 touches only reckon/crew/promotion_gate.py, the new test and the landing fragment; reckon/crew/landing_measure.py is declared and nets zero because its resolver copy was added and removed inside the range, so every path is inside the declared set."
+  },
+  "justifications": {
+    "durability": "negative-control-duplicate-helpers.log shows four cases including the helper-count and rewrite cases red at b55533df9d, but tests/test_a_gate_that_cannot_start_names_its_program.py:246 passes on the command echo and so does not guard the refusal it claims to.",
+    "evidence": "after_suite-1795347332897345389.log carries revision, command, 65 passed and EXIT=0, and negative-control-base.log reproduces the defect at dde7b001, but negative-control-reuse.log has no header and no EXIT= record.",
+    "fit": "reckon/crew/promotion_gate.py:466 takes the env-unwrapping walk into one helper with a docstring stating the mechanism, and no added name carries a plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion_gate.py:1311 resolves the program and :1339 rewrites it into the command, while :1474-1494 classify exit 127 as not-run, so all three done-when outcomes are carried by the landed code.",
+    "reuse": "the resolver at promotion_gate.py:498-645 is the only owner of gate-program resolution in reckon, it reuses fleet_supervisor's resolved_environment, and the nearest neighbours (dispatch_launch.py:1364 backend-binary resolution, process_liveness.py:178 scheduler lookup) are different capabilities.",
+    "scope_discipline": "every path in dde7b001..0e8e9dd0 is inside the declared set and no figure directory or unrelated module is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's deliverable is that a merged-head gate replay which cannot start its program says so instead of blaming the merge; reckon/crew/promotion_gate.py:1311 resolves the program before the shell receives it and :1322-1337 reports not-run naming the program and the tree.\nVERDICT done_when: the done_when names the three cases now at tests/test_a_gate_that_cannot_start_names_its_program.py:70, :95 and :131; after_suite-1795347332897345389.log records 65 passed EXIT=0 at 67b19df7 and negative-control-base.log records 3 failed EXIT=1 at dde7b001, the first reading verdict=failed exit_status=127 with \"the merge changes what this node's gate proves\".\nVERDICT write_paths: the delivered diff dde7b001..0e8e9dd0 touches only reckon/crew/promotion_gate.py, the new test and the landing fragment; reckon/crew/landing_measure.py is declared and nets zero because its resolver copy was added and removed inside the range, so every path is inside the declared set.\nVERDICT manifest: read; status complete, baseline_suite 58 passed and after_suite 65 passed with no failure ids, three control logs recorded with their failure counts, and the pre-existing test_crew_gate_command_is_runnable failure recorded under outside_scope.\nVERDICT diff: read commit by commit: 8311322524 adds the resolver and the not-started reporting, 78755444 moves the resolver into promotion_gate and deletes landing_measure's copies, 67b19df7 consolidates _SHELL_ASSIGNMENT and _is_executable_file to one definition each and makes the guard pass the interpreter fallback, and 0e8e9dd0 is docs-only.\nCALL_SITES: reckon/crew/promotion.py:1404, reckon/crew/recovery_review_acceptance.py:752, reckon/crew_run_commands.py:5348, reckon/crew/promotion_gate.py:1569, reckon/crew/promotion_gate.py:1696\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_gate.py:1311 resolves the program and :1339 rewrites it into the command, while :1474-1494 classify exit 127 as not-run, so all three done-when outcomes are carried by the landed code.\nSCORE evidence: 17\nJUSTIFICATION evidence: after_suite-1795347332897345389.log carries revision, command, 65 passed and EXIT=0, and negative-control-base.log reproduces the defect at dde7b001, but negative-control-reuse.log has no header and no EXIT= record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in dde7b001..0e8e9dd0 is inside the declared set and no figure directory or unrelated module is touched.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control-duplicate-helpers.log shows four cases including the helper-count and rewrite cases red at b55533df9d, but tests/test_a_gate_that_cannot_start_names_its_program.py:246 passes on the command echo and so does not guard the refusal it claims to.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_gate.py:466 takes the env-unwrapping walk into one helper with a docstring stating the mechanism, and no added name carries a plan, stage or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the resolver at promotion_gate.py:498-645 is the only owner of gate-program resolution in reckon, it reuses fleet_supervisor's resolved_environment, and the nearest neighbours (dispatch_launch.py:1364 backend-binary resolution, process_liveness.py:178 scheduler lookup) are different capabilities.\nFINDING tests/test_a_gate_that_cannot_start_names_its_program.py:246 non-blocking: assert PROGRAM_THAT_EXISTS_NOWHERE in message is satisfied by the CrewError's own {command!r} echo at reckon/crew/promotion_gate.py:711, so it holds even if the refusal names argv[0] instead of the program the resolver read; only the following \"'env'\" not in message line actually catches that regression.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T083521486110-dwlw-a-gate-that-cannot-start-names-its-program/negative-control-reuse.log:1 non-blocking: the reuse control cited in test_logs and in the landing fragment carries no revision header, no literal command line and no closing EXIT= record, so a reader cannot tell which tree it measured.",
+  "review_run_id": "r-20261122T113855399593-review-of-dwlw-a-gate-that-cannot-start-names-its-program-0e8e9dd0c098",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "0e8e9dd0c0986b7711e2fc0226316dda68bda80e",
+  "reviewed_run_id": "r-20261122T083521486110-dwlw-a-gate-that-cannot-start-names-its-program",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T11:46:12.333741+00:00",
+  "total": 111
+}

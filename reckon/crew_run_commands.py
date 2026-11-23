@@ -1,5 +1,6 @@
 import inspect
 import os
+import re
 import time
 from collections.abc import Iterable, Mapping
 from contextvars import ContextVar
@@ -71,6 +72,53 @@ def _emit_completion_reply(payload, pretty: bool) -> None:
         reply.append(dict(payload))
     else:
         _emit(payload, pretty)
+
+
+# A worker records a gate's status the way it read it off the job, as a number
+# followed by where it came from — "0 (job 1335599, all_debug)". The job is one
+# execution, so the number is the status and the rest is provenance; refusing
+# the whole value leaves the gate unrecorded and a later reader concludes the
+# run has no passing gate at all. An integer is read from the opening of the
+# value, an integer passes through untouched, and a value that opens with
+# anything else is refused naming the field and the text, because a status
+# nobody can read is worse recorded as zero.
+_LEADING_INTEGER = re.compile(r"\s*([+-]?\d+)")
+
+
+def gate_exit_status_integer(value: Any) -> int | None:
+    """The integer at the opening of a recorded gate exit status, else None."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if value is None:
+        return None
+    match = _LEADING_INTEGER.match(str(value))
+    return int(match.group(1)) if match else None
+
+
+class GateExitStatusType(click.ParamType):
+    """A ``--gate-exit-status`` value: its leading integer, denying anything else.
+
+    Reading only the opening keeps one incident from recurring at every caller:
+    the promotion, the dry run and the landing all take the status through this
+    one option, so a stored value carrying its provenance reads as the number in
+    each of them rather than as a usage error in the first.
+    """
+
+    name = "gate_exit_status"
+
+    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None):
+        if value is None or value == "":
+            return None
+        status = gate_exit_status_integer(value)
+        if status is None:
+            self.fail(
+                f"gate_exit_status must open with an integer; found {str(value)!r}",
+                param,
+                ctx,
+            )
+        return status
 
 
 # Preserve the CLI re-export while the retired name resolves through the
@@ -283,7 +331,95 @@ def _install_carried_answer() -> None:
     crew_review.callback = callback
 
 
+def _compose_run_review(pretty, run, **params):
+    """Compose the code review of one named delivered run at its head.
+
+    The subject is a run, so the plan, code and portfolio flags the review verb
+    also accepts are refused rather than dropped: a command naming two subjects
+    would compose a review of something nobody asked for. The composed dispatch
+    is the reflex's own, so a review composed here is the one that stands for
+    the run's head and the reflex composes no second one for it.
+    """
+    from reckon.crew import review as review_module
+    from reckon.crew.node import CrewError
+
+    def refuse(detail: str) -> None:
+        _emit({"error": "crew_error", "detail": detail}, pretty)
+        raise click.exceptions.Exit(1)
+
+    if (
+        params.get("plan_slug")
+        or params.get("around_plan")
+        or params.get("paths")
+        or params.get("portfolio")
+        or params.get("sprint_id")
+    ):
+        refuse(
+            "--run names one delivered run; drop --plan, --around, --path, "
+            "--portfolio and --sprint, which name other subjects"
+        )
+    if (
+        params.get("answer")
+        or params.get("acted")
+        or params.get("declined") is not None
+        or str(params.get("note") or "").strip()
+        or str(params.get("accept_edits") or "").strip()
+        or params.get("review_sections")
+    ):
+        refuse(
+            "the answer and section flags answer a plan finding; --run "
+            "composes a review of the run's delivered head"
+        )
+    try:
+        report = review_module.compose_run_review(
+            run,
+            dry_run=bool(params.get("dry_run")),
+            prefer_local=bool(params.get("local")),
+        )
+    except CrewError as exc:
+        refuse(str(exc))
+        return
+    _emit(report, pretty)
+    if report.get("refused") or report.get("error"):
+        raise click.exceptions.Exit(1)
+
+
+def _install_run_review_subject() -> None:
+    """Add the ``--run`` subject to the review verb.
+
+    A coordinator needs to compose the code review of one delivered run when
+    the reflex will not, and the review verb only names a plan, a path or a
+    portfolio. The option is attached to the existing command object rather
+    than a second ``review`` command being registered, and every other
+    invocation reaches the verb's own callback unchanged.
+    """
+    params = getattr(crew_review, "params", None)
+    if not isinstance(params, list):
+        return
+    if any("--run" in getattr(param, "opts", ()) for param in params):
+        return
+    params.append(
+        click.Option(
+            ["--run"],
+            default="",
+            help="Compose the code review of this delivered run at its head.",
+        )
+    )
+    original = crew_review.callback
+
+    def callback(run="", **kwargs):
+        if run:
+            pretty = kwargs.get("pretty", False)
+            params = dict(kwargs)
+            params.pop("pretty", None)
+            return _compose_run_review(pretty, run, **params)
+        return original(**kwargs)
+
+    crew_review.callback = callback
+
+
 _install_carried_answer()
+_install_run_review_subject()
 
 
 def _merge_land_refusal(
@@ -338,7 +474,10 @@ def _merge_land_refusal(
 )
 @click.option("--gate-command", default="", help="Promotion gate command.")
 @click.option(
-    "--gate-exit-status", type=int, default=None, help="Promotion gate exit status."
+    "--gate-exit-status",
+    type=GateExitStatusType(),
+    default=None,
+    help="Promotion gate exit status; a leading integer is read, the rest is note.",
 )
 @click.option("--gate-log-path", default="", help="Promotion gate log path.")
 @click.option("--gate-log-digest", default="", help="Promotion gate log digest.")
@@ -600,6 +739,84 @@ def crew_decision_record(record_file, pretty):
         _emit({"ok": True, "decision": record_decision(record)}, pretty)
     except (OSError, ValueError, TypeError) as exc:
         _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
+@crew_decision.command(name="present")
+@click.option(
+    "--session",
+    required=True,
+    help="The one session presenting the choices to the lead.",
+)
+@click.option("--project", default=None, help="Present one project's decisions.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_present(session, project, pretty):
+    """Hold every open decision for one session and return them as choices.
+
+    Largest held work first, each with its repository, session, plan and
+    section, its context, its options recommendation-first and what the answer
+    releases. A decision another session is already presenting is reported with
+    the session holding it, and a project whose documents cannot be read is
+    named apart rather than dropping the rest of the fleet.
+    """
+    from reckon.crew.lead_presentation import present
+
+    try:
+        _emit(present(session=session, project=project), pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit(
+            {"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty
+        )
+        raise click.exceptions.Exit(1) from exc
+
+
+@crew_decision.command(name="choose")
+@click.option("--id", "decision_id", required=True, help="The decision answered.")
+@click.option("--option", "option", required=True, help="The chosen option value.")
+@click.option(
+    "--session",
+    required=True,
+    help="The presenting session; only it may answer what it presents.",
+)
+@click.option("--note", default="", help="The lead's note, when there is one.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_choose(decision_id, option, session, note, pretty):
+    """Record the lead's answer to one presented decision."""
+    from reckon.crew.lead_presentation import choose
+
+    try:
+        _emit(
+            choose(
+                session=session, decision_id=decision_id, option=option, note=note
+            ),
+            pretty,
+        )
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
+@crew_decision.command(name="release")
+@click.option(
+    "--session", required=True, help="The presenting session giving its claim up."
+)
+@click.option(
+    "--id",
+    "decision_id",
+    default=None,
+    help="One decision's claim; every claim the session holds when omitted.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_release(session, decision_id, pretty):
+    """Give up presentation claims so another session can present them."""
+    from reckon.crew.lead_presentation import release
+
+    try:
+        _emit(release(session=session, decision_id=decision_id), pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit(
+            {"ok": False, "error": "presentation_error", "detail": str(exc)}, pretty
+        )
         raise click.exceptions.Exit(1) from exc
 
 
@@ -924,6 +1141,43 @@ def _no_named_review_record_refusal(
     )
 
 
+def _unpromoted_named_review_refusal(
+    reviewed_run_id: str,
+    review_run_id: str,
+    record_path: Path,
+) -> str:
+    """Why a named review run's record is not in the store yet, and how to land it.
+
+    A run review writes its record into the directory of the run it reviews,
+    and a promotion files that copy into the project's review store, which is
+    the store a disposition reads. Between those two moments the record exists
+    and no store reader can see it, so a refusal that says only that no record
+    was found sends the reader looking for a lookup defect in a store that is
+    behaving correctly. Naming the review run as not yet promoted, the copy
+    that holds the record, and the command that promotes it is the one answer
+    that ends the search.
+    """
+    from reckon.crew import recovery_classification as recovery_classification_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    try:
+        pointer = runs_module.read_pointer(review_run_id)
+    except CrewError:
+        pointer = {}
+    command = recovery_classification_module._promotion_command(
+        review_run_id,
+        pointer,
+        list(pointer.get("manifest_commits") or ()),
+    )
+    return (
+        f"run {reviewed_run_id!r} carries a record from review run "
+        f"{review_run_id!r} that is not yet promoted: it is filed at "
+        f"{record_path}, and the project's review store holds no copy because "
+        f"no promotion has landed it. Promote that review run first: {command}"
+    )
+
+
 def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     """The revision a run with no live pointer was reviewed at, from its records.
 
@@ -1171,6 +1425,19 @@ def crew_dispose(
             project, reviewed_run_id, named_review, rubric=rubric
         )
         if named_record is None:
+            # The store holds nothing, but a review writes its record into the
+            # reviewed run's own directory before a promotion files it. A
+            # record waiting there is a different answer from one that was
+            # never written, and it names the command that files it.
+            filed = review_records_module.filed_unpromoted_review_record(
+                reviewed_run_id, named_review
+            )
+            if filed is not None:
+                raise click.ClickException(
+                    _unpromoted_named_review_refusal(
+                        reviewed_run_id, named_review, filed[0]
+                    )
+                )
             raise click.ClickException(
                 _no_named_review_record_refusal(
                     project, reviewed_run_id, named_review, rubric
@@ -3455,8 +3722,10 @@ def _gate_exit_status(result: Mapping[str, Any] | None) -> int | None:
     """The status the gate's own command ended at, or None when it carries none.
 
     ``verify-gate`` reports it inside the re-run's report; ``suite run`` carries
-    it on the suite row itself. A status that is not an integer is no status at
-    all, so a row that recorded none does not read as a zero.
+    it on the suite row itself. A row records the status the way its job
+    printed it, so a value that opens with an integer reads as that integer and
+    keeps the provenance after it as a note; a row that records no integer
+    reads as no status, so it does not read as a zero.
     """
     if not isinstance(result, Mapping):
         return None
@@ -3464,10 +3733,7 @@ def _gate_exit_status(result: Mapping[str, Any] | None) -> int | None:
     value = report.get("exit_status") if isinstance(report, Mapping) else None
     if value is None:
         value = result.get("exit_status")
-    try:
-        return int(value) if value is not None else None
-    except (TypeError, ValueError):
-        return None
+    return gate_exit_status_integer(value)
 
 
 def _refuse_a_flag_as_a_reason(
@@ -3822,9 +4088,14 @@ def _record_suite_delta_waiver(
 )
 @click.option(
     "--gate-exit-status",
-    type=int,
+    type=GateExitStatusType(),
     default=None,
-    help="The check command's exit status.",
+    help=(
+        "The check command's exit status. A leading integer is read and the "
+        "prose after it is kept as a note, so a status recorded as "
+        "'0 (job 1335599, all_debug)' reads as 0; a value that does not open "
+        "with an integer is refused by name."
+    ),
 )
 @click.option(
     "--gate-log-path",
@@ -4234,6 +4505,13 @@ def crew_complete(
         ) as exc:
             raise click.ClickException(str(exc)) from exc
     if land:
+        _refuse_a_landing_its_population_measure_refuses(
+            run_id,
+            pointer,
+            gate_check=gate_check,
+            candidate=candidate,
+            pretty=pretty,
+        )
         # Written before the promotion pushes anything, so a process killed
         # between the promotion and its merge leaves a record the landing pass
         # finds and finishes, instead of a run that reads as landed. The head
@@ -4794,6 +5072,70 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
         return outcome
     finally:
         lock.__exit__(None, None, None)
+
+
+def _refuse_a_landing_its_population_measure_refuses(
+    run_id: str,
+    pointer: Mapping[str, Any] | None,
+    *,
+    gate_check: Mapping[str, Any],
+    candidate: str = "",
+    pretty: bool = False,
+) -> None:
+    """Refuse a coordinator's landing the importer population adds a failure to.
+
+    A landing the pass makes by itself measures the delivered change against the
+    tests that import it, base and head, before publishing anything. A
+    coordinator's ``complete --land`` did not: it read the run's own gate
+    evidence, which covers the node's tests and nothing that imports what the
+    node changed, so a head that reddened an importer test merged with nothing
+    reported. The same measurement is taken here, and a failure it adds refuses
+    the landing and names the ids.
+
+    A measurement that could not be read refuses the landing too. A run whose
+    head or worktree has gone, whose base cannot be built, or whose stored
+    record is unreadable has no population reading at all, and accepting it
+    would report the absence of a measurement as a clean one.
+
+    A candidate names a member the pass already measured, and a landing group
+    measures its members' heads together, so both are left to those measures
+    rather than measured a second time. The coordinator's gate evidence is kept
+    beside the measurement in the run's own directory, so the two are readable
+    together and the population measure sits beside the gate rather than
+    replacing it.
+    """
+    if candidate or not pointer:
+        return
+    from reckon.crew import pending_landing, queue_landing, runs
+
+    if pending_landing.LANDING_GROUP.get() is not None:
+        return
+    measured = queue_landing.measure_a_coordinator_landing(run_id, pointer)
+    if measured is None:
+        return
+    directory = runs.run_dir(run_id) / "landing-measure"
+    directory.mkdir(parents=True, exist_ok=True)
+    runs._write_json(directory / "coordinator-gate.json", dict(gate_check))
+    # The guard is the pass's own reading of a measurement: it refuses one that
+    # cannot be read as well as one that adds a failure, so a landing whose
+    # population could not be measured is never taken for a clean one. Only an
+    # empty guard, which means the measurement was readable and added nothing,
+    # lets the landing proceed.
+    refusal = queue_landing._measure_guard(measured)
+    if not refusal:
+        return
+    _emit_completion_reply(
+        {
+            "ok": False,
+            "run_id": run_id,
+            "error": "landing-measure-refused",
+            "detail": refusal,
+            "added_failure_ids": list(measured.real),
+            "unreadable": measured.unreadable,
+        },
+        pretty,
+    )
+    raise click.exceptions.Exit(1)
 
 
 def _land_a_promoted_run(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Sequence
 
 from .. import lost_sessions as _lost_sessions
 from .. import queue_order
@@ -799,11 +800,59 @@ def admit_once(
         admissible_age = result.get("admissible_age_seconds")
         for row in result["verdicts"]:
             row.setdefault("admissible_age_seconds", admissible_age)
+        _name_set_aside_claims(
+            order,
+            verdicts,
+            live=live,
+            dispositions=claim_dispositions,
+            shared_files=shared_files,
+        )
         if not local_gated:
             _record_admission_positions(
                 order, verdicts, moment=moment, ordered=not bool(run_id)
             )
         return result
+
+
+def _name_set_aside_claims(
+    order: Sequence[Mapping[str, Any]],
+    verdicts: list[dict[str, Any]],
+    *,
+    live: Sequence[Mapping[str, Any]],
+    dispositions: dict[str, Any],
+    shared_files: dict[tuple[str, str], frozenset[str]],
+) -> None:
+    """Name on each launched row the lapsed claims the request walked past.
+
+    A delivered run whose session ended and whose records went quiet stops
+    fencing its paths, and the request it fenced launches. The row would
+    otherwise read as though nothing had ever held it, which is the record a
+    coordinator cannot use to find the run that is still owed a landing. The
+    note is written for launched rows only: a row that says the request waited
+    already carries the reason.
+    """
+    by_run = {str(pointer.get("run_id") or ""): pointer for pointer in order}
+    for row in verdicts:
+        if str(row.get("verdict") or "") != "launched":
+            continue
+        pointer = by_run.get(str(row.get("run_id") or ""))
+        if pointer is None:
+            continue
+        shared_key = (
+            str(pointer.get("project") or ""),
+            str(pointer.get("repo") or ""),
+        )
+        details = _holds._set_aside_claim_details(
+            pointer,
+            live,
+            dispositions=dispositions,
+            shared_files=shared_files.get(shared_key, frozenset()),
+        )
+        if not details:
+            continue
+        row["set_aside"] = details
+        note = "; ".join(str(item.get("reason") or "") for item in details)
+        row["detail"] = f"{row['detail']} — {note}" if row.get("detail") else note
 
 
 def gate_admits_request(backend: str, lane: str, config: Mapping[str, Any]) -> bool:

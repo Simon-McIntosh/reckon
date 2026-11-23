@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_store.py:2065 write_plan (scope entered inline at :2089)",
+    "reckon/_store.py:2737 _replace_plan_text (decorated by the added shares_one_parse)",
+    "reckon/mcp_edit_plan.py:2293 _edit_plan_tool",
+    "reckon/serve.py:3827 _handle_plan_write",
+    "reckon/mcp.py:3932 _edit_plan_tool reached through _deadline_tool",
+    "reckon/hooks/coordinator_obligations.py:1533 (imports reckon._store, the import path the deferred import protects)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T10:56:13Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "86",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added `shares_one_parse` duplicates `reckon/_plan_html.py:469` under the same name, differing only in importing `reckon._plan_html` inside the wrapper rather than at module scope. The scope capability itself is still the owner's (`one_parse_per_document`), so nothing is re-implemented, but the same file already enters that scope inline at `reckon/_store.py:2089`, which is the idiom that would remove the duplicate decorator entirely; as landed, two same-named decorators with different import semantics invite a future caller to import the wrong one."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s): the store's own write_plan and _replace_plan_text, the MCP edit tool (both direct and through reckon/mcp.py:3932 _deadline_tool), the HTTP plan write, and the obligations-hook import of reckon._store at reckon/hooks/coordinator_obligations.py:1533.",
+    "diff": "Read commit by commit against 8dd0381358: the increment is commit 1e65b28 alone, which deletes `from reckon._plan_html import shares_one_parse` (reckon/_store.py:78 at 8dd03813) and defines `shares_one_parse` at reckon/_store.py:86 importing `reckon._plan_html` inside the wrapper; no other file or behaviour changes. The whole node diff 50e7ad1022..1e65b28 was read too, and the earlier two commits were reviewed at 8dd0381358.",
+    "done_when": "The done_when names tests/test_a_plan_write_parses_its_document_once.py; node-test.log records 5 passed at fde22f2a, negative-control.log records 2 failed and 3 passed at base 50e7ad1022 with \"soup parse of a 11935-character document ran 10 times\", timed-write-base.log (7.13 s) and timed-write-head.log (4.0 s) each carry revision, literal command and EXIT=0, and the increment's own scoped-gate-1795344673169125539.log records 1e65b28 with 72 passed including tests/test_obligations_hook_reads_the_snapshot.py.",
+    "goal": "The node's goal is that one versioned plan write parses the stored document once and the written document once; the increment at reckon/_store.py:86 keeps the scope reachable from the store without loading the parser at import, so the goal's measure is unchanged and still asserted.",
+    "manifest": "Read; it records status complete, commits fde22f2a, 8dd03813 and 1e65b28, the 72-passed scoped gate at 1e65b28, baseline_suite 58 passed and after_suite 63 passed both at EXIT=0, the base arm's 2 failures, and both timed-arm logs.",
+    "write_paths": "Read the node's declared paths; the reviewed increment 8dd0381358..1e65b2868cbc touches only reckon/_store.py, which is inside the declared set, and no file outside it was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_hook_reads_the_snapshot.py lists `reckon._plan_html` in DERIVATION_MODULES and drives the prompt hook through a fresh interpreter, and the hook imports `reckon._store` at reckon/hooks/coordinator_obligations.py:1533, so restoring the module-scope import at reckon/_store.py:78 would redden that test; the scoped gate ran it green at 1e65b28.",
+    "evidence": "scoped-gate-1795344673169125539.log records revision 1e65b28, the literal command and 72 passed with EXIT=0, and the reviewed run's baseline_suite and after_suite logs record 0 failures each, so added_failure_count is 0.",
+    "fit": "the deferred import is an ordinary local import matching reckon/_store.py:2089, and the docstring at reckon/_store.py:87 gives the mechanism reason; the only fit cost is the second same-named `shares_one_parse` beside reckon/_plan_html.py:469.",
+    "goal_fidelity": "reckon/_store.py:86 keeps every write entry point inside reckon/_plan_html.py:447 `one_parse_per_document`, so the one-parse-per-document measure the node set out to deliver is unchanged by the increment.",
+    "reuse": "the scope capability is owned by reckon/_plan_html.py:447 `one_parse_per_document` and the addition delegates to it rather than forking it, but the added decorator duplicates the owner's `shares_one_parse` at reckon/_plan_html.py:469 instead of reusing it or entering the scope inline at reckon/_store.py:2089.",
+    "scope_discipline": "the reviewed increment is one file, reckon/_store.py (+20/-1), and every other path in the node diff is unchanged from the already-reviewed 8dd0381358."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that one versioned plan write parses the stored document once and the written document once; the increment at reckon/_store.py:86 keeps the scope reachable from the store without loading the parser at import, so the goal's measure is unchanged and still asserted.\nVERDICT done_when: The done_when names tests/test_a_plan_write_parses_its_document_once.py; node-test.log records 5 passed at fde22f2a, negative-control.log records 2 failed and 3 passed at base 50e7ad1022 with \"soup parse of a 11935-character document ran 10 times\", timed-write-base.log (7.13 s) and timed-write-head.log (4.0 s) each carry revision, literal command and EXIT=0, and the increment's own scoped-gate-1795344673169125539.log records 1e65b28 with 72 passed including tests/test_obligations_hook_reads_the_snapshot.py.\nVERDICT write_paths: Read the node's declared paths; the reviewed increment 8dd0381358..1e65b2868cbc touches only reckon/_store.py, which is inside the declared set, and no file outside it was touched.\nVERDICT manifest: Read; it records status complete, commits fde22f2a, 8dd03813 and 1e65b28, the 72-passed scoped gate at 1e65b28, baseline_suite 58 passed and after_suite 63 passed both at EXIT=0, the base arm's 2 failures, and both timed-arm logs.\nVERDICT diff: Read commit by commit against 8dd0381358: the increment is commit 1e65b28 alone, which deletes `from reckon._plan_html import shares_one_parse` (reckon/_store.py:78 at 8dd03813) and defines `shares_one_parse` at reckon/_store.py:86 importing `reckon._plan_html` inside the wrapper; no other file or behaviour changes. The whole node diff 50e7ad1022..1e65b28 was read too, and the earlier two commits were reviewed at 8dd0381358.\nCALL_SITES: reckon/_store.py:2065 write_plan (scope entered inline at :2089), reckon/_store.py:2737 _replace_plan_text (decorated by the added shares_one_parse), reckon/mcp_edit_plan.py:2293 _edit_plan_tool, reckon/serve.py:3827 _handle_plan_write, reckon/mcp.py:3932 _edit_plan_tool reached through _deadline_tool, reckon/hooks/coordinator_obligations.py:1533 (imports reckon._store, the import path the deferred import protects)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:86 keeps every write entry point inside reckon/_plan_html.py:447 `one_parse_per_document`, so the one-parse-per-document measure the node set out to deliver is unchanged by the increment.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795344673169125539.log records revision 1e65b28, the literal command and 72 passed with EXIT=0, and the reviewed run's baseline_suite and after_suite logs record 0 failures each, so added_failure_count is 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed increment is one file, reckon/_store.py (+20/-1), and every other path in the node diff is unchanged from the already-reviewed 8dd0381358.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_obligations_hook_reads_the_snapshot.py lists `reckon._plan_html` in DERIVATION_MODULES and drives the prompt hook through a fresh interpreter, and the hook imports `reckon._store` at reckon/hooks/coordinator_obligations.py:1533, so restoring the module-scope import at reckon/_store.py:78 would redden that test; the scoped gate ran it green at 1e65b28.\nSCORE fit: 14\nJUSTIFICATION fit: the deferred import is an ordinary local import matching reckon/_store.py:2089, and the docstring at reckon/_store.py:87 gives the mechanism reason; the only fit cost is the second same-named `shares_one_parse` beside reckon/_plan_html.py:469.\nSCORE reuse: 12\nJUSTIFICATION reuse: the scope capability is owned by reckon/_plan_html.py:447 `one_parse_per_document` and the addition delegates to it rather than forking it, but the added decorator duplicates the owner's `shares_one_parse` at reckon/_plan_html.py:469 instead of reusing it or entering the scope inline at reckon/_store.py:2089.\nFINDING reckon/_store.py:86 non-blocking: the added `shares_one_parse` duplicates `reckon/_plan_html.py:469` under the same name, differing only in importing `reckon._plan_html` inside the wrapper rather than at module scope. The scope capability itself is still the owner's (`one_parse_per_document`), so nothing is re-implemented, but the same file already enters that scope inline at `reckon/_store.py:2089`, which is the idiom that would remove the duplicate decorator entirely; as landed, two same-named decorators with different import semantics invite a future caller to import the wrong one.",
+  "review_run_id": "r-20261122T105536866354-review-of-arcwc-a-plan-write-parses-its-document-once-1e65b2868cbc",
+  "reviewed_base_sha": "8dd0381358909a43e0c18eaeb9f928802807d3eb",
+  "reviewed_head_sha": "1e65b2868cbc55a596d034cdba5b8f57907277c2",
+  "reviewed_run_id": "r-20261122T073648055016-arcwc-a-plan-write-parses-its-document-once",
+  "rubric_notes": {},
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T11:06:42.231058+00:00",
+  "total": 98
+}

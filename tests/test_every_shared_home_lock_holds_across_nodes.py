@@ -73,6 +73,7 @@ JUDGED: dict[str, tuple[str, int]] = {
     "reckon/crew/watch_unit.py::_register_watch_unit": (HOST_LEASE, 1),
     "reckon/crew/watch_unit.py::_seat_is_held": (HOST_LEASE, 1),
     "reckon/crew/watch_unit.py::watch_state": (HOST_LEASE, 1),
+    "reckon/mcp_shared.py::serve": (NODE_LOCAL, 1),
     "reckon/node_exclusive_lock.py::_hold_lock": (LOCK_HALF, 1),
 }
 

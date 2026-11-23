@@ -419,6 +419,60 @@ def _complete_manifest_write_time(path: Path) -> float | None:
         return None
 
 
+def _manifest_cannot_be_read(path: Path) -> bool:
+    """Whether a manifest file is present and carries no readable field.
+
+    A manifest a worker is still writing is absent or short of the field the
+    reader wants, and waiting answers that. An unreadable file is a different
+    state: nothing in it will change by itself, so a reader that treats the two
+    alike waits for a verdict that has already been written somewhere else. An
+    absent file is not this question — the callers ask presence separately —
+    so only a file that is there and refused answers ``True``.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    try:
+        parse_manifest(text)
+    except ManifestParseError:
+        return True
+    return False
+
+
+def review_record_delivered(record: Mapping[str, Any]) -> bool:
+    """Whether a review run has filed the complete record its rubric demands.
+
+    A review run's whole deliverable is the record it files for its subject, and
+    the three kinds of review key that record differently: a code or portfolio
+    report under its composed directory, a plan review under the report
+    directory its dispatch named, and a run review at the head-keyed store path.
+    Each is read through the one reader that already owns its kind, so this
+    predicate cannot disagree with the promotion gate or the classifier about
+    what a given run has delivered.
+
+    A malformed delivery is not a delivered one: the kind's own reader raises
+    the condition that failed, and promotion names that condition when the run
+    is refused. ``False`` here says only that this run has nothing a promotion
+    could land from its record.
+    """
+    if not _is_review_run(record):
+        return False
+    try:
+        if _report_review_delivery(record) is not None:
+            return True
+    except (CrewError, OSError, ValueError):
+        return False
+    project = str(record.get("project") or "")
+    from reckon.crew.recovery_review_dispatch import _plan_review_pointer_slug
+
+    if _plan_review_pointer_slug(record):
+        from reckon.crew import recovery_review_acceptance as acceptance
+
+        return acceptance._plan_review_delivery(record, project) is not None
+    return bool(_review_delivery_verdict(record, project)["delivered"])
+
+
 def _read_review_record(path: Path) -> tuple[Mapping[str, Any], float] | None:
     """The record at ``path`` and when it landed, without judging it complete.
 

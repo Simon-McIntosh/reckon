@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s18">
+  <meta name="plan-recorded-at" content="2026-11-22">
+  <meta name="plan-verdict" content="passed">
+  <title>The launch record carries no anchored edit field | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="anchored-launch-record-s18-landing" data-node="anchored-launch-record-s18" data-reckon="landed" data-when="2026-11-22">
+  <h2>The launch record carries no anchored edit field</h2>
+  <p><code>reckon/crew/dispatch_launch.py</code> no longer writes an
+    <code>anchored_edit</code> or <code>anchored_edit_reason</code> field at any
+    of its three record sites: the supervisor spec, the worker record, and the
+    live pointer's phase rewrite. A grep for <code>anchored_edit</code> and
+    <code>anchored-edit</code> over the changed path finds nothing.</p>
+  <p><strong>What read the field.</strong> One test file did:
+    <code>tests/test_anchored_edit_claude_arm.py</code>. Its receipt helper
+    asserted <code>anchored_edit</code> and <code>anchored_edit_reason</code> on
+    the supervisor spec (lines 145–146), on the worker record (150–151) and on
+    the pointer (440–441), so removing the fields broke it:
+    <code>13 failed, 28 passed in 4.29s</code> where it had read <code>41
+    passed in 2.01s</code> before the removal. The repair turned those into
+    absence assertions on the same three records. <strong>The sibling node
+    <code>anchored-fence-prompt-s18</code> then removed the anchored edit
+    prompt and the fence seeding, and deleted that test file on main</strong>,
+    so the merged tree carries neither the file nor its assertions: the guard's
+    subject left with the tool, and the field's absence is asserted by no test.
+    That is why the fragment names the reader instead of claiming none
+    existed.</p>
+  <p><strong>Measure.</strong> Arms ran one at a time on <code>all_debug</code>
+    with the command resolved over each tree. Base
+    <code>1666d19f7744</code>, where the claude-arm file exists, read
+    <code>99 passed in 39.45s</code>. Merged head
+    <code>573d3ceb282e</code>, where it is deleted, read <code>58 passed in
+    38.76s</code>, <code>EXIT=0</code> in each. The sweep over the 91 test
+    files that import <code>reckon/crew/dispatch_launch.py</code> read
+    <code>23 failed, 986 passed, 7 skipped</code> at the merged head and
+    <code>25 failed, 983 passed, 7 skipped</code> at base: the head adds no
+    failure, and every head failure is present at base. Those failures are the
+    worker fence's scheduler shim, which answers <code>sbatch</code>,
+    <code>srun</code> and <code>salloc</code> inside this allocation
+    (<code>srun was never forwarded to the scheduler</code>), so they measure
+    the sandbox and not this change.</p>
+  <p><strong>Falsified.</strong> Two directions, both red. The head module with
+    the base receipt assertions reads <code>13 failed, 28 passed in
+    4.29s</code>. The repaired assertions against the base module — the module
+    that still writes the field — read <code>13 failed, 28 passed in
+    2.07s</code>, <code>EXIT=1</code> in each, so the assertions fire on
+    exactly the record the change removed. The declared negative control states
+    the same fact as data: a spec whose backend carries
+    <code>anchored_edit: true</code> produced a record naming it at
+    <code>1666d19f7744</code> and produces no such key at the head, with the
+    base run as the positive control that the probe reads the field when it
+    exists.</p>
+</article>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1244",
+    "reckon/crew/runs.py:5256",
+    "reckon/crew/runs.py:5358",
+    "reckon/live_run_classification.py:630",
+    "reckon/sprint_liveness.py:70",
+    "reckon/crew/station_store.py:905",
+    "reckon/crew/paid_lanes.py:1214",
+    "reckon/crew_follow_commands.py:634",
+    "reckon/crew/recovery_watch.py:878",
+    "reckon/crew/follower_registration.py:362",
+    "reckon/crew/watch_unit.py:381",
+    "reckon/crew/runs.py:2625"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T21:35:26Z",
+  "findings": [
+    {
+      "file": "tests/test_a_small_read_costs_its_bytes.py",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the module docstring repeats the sentence pair beginning \"A default binary reader fills one st_blksize block\" twice in a row (lines 3-6), so the file's own description reads as a paste error even though the cases below it are correct."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 9ed4c9ee2e; f90e3db changes eleven modules and adds the test, 51aa213 and 88510c5e edit only the new evidence fragment, and the trace figures reconcile with the strace lines.",
+    "done_when": "the done_when names tests/test_a_small_read_costs_its_bytes.py; its five cases pass at the head revision (5 passed in 7.96s at 88510c5e in this reviewer's run), and the worker's scoped gate log records 63 passed in 47.18s beside base and after arms of 58 and 63 passed with zero failures either side.",
+    "goal": "the node's goal is that every bounded or post-seek binary read in reckon/crew/, reckon/run_store.py and reckon/ledger.py costs its own bytes; the scan at 88510c5e finds 18 in-scope sites and all of them open with buffering=0, reckon/crew/run_paths.py:50 reading the shared lock record positionally through os.pread.",
+    "manifest": "read; it records the three commits, the scoped gate command and log, both suite arms with exit_status 0 and completed true, and the negative-control log path alone on its line.",
+    "write_paths": "the reviewed manifest declares fourteen paths; the delivered diff touches thirteen files and every one sits inside that list."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every bounded or post-seek binary read in reckon/crew/, reckon/run_store.py and reckon/ledger.py costs its own bytes; the scan at 88510c5e finds 18 in-scope sites and all of them open with buffering=0, reckon/crew/run_paths.py:50 reading the shared lock record positionally through os.pread.\nVERDICT done_when: the done_when names tests/test_a_small_read_costs_its_bytes.py; its five cases pass at the head revision (5 passed in 7.96s at 88510c5e in this reviewer's run), and the worker's scoped gate log records 63 passed in 47.18s beside base and after arms of 58 and 63 passed with zero failures either side.\nVERDICT write_paths: the reviewed manifest declares fourteen paths; the delivered diff touches thirteen files and every one sits inside that list, the eleven reckon/crew modules, the new test and the evidence fragment.\nVERDICT manifest: read; it records the three commits, the scoped gate command and log, both suite arms with exit_status 0 and completed true, and the negative-control log path alone on its line.\nVERDICT diff: read commit by commit against 9ed4c9ee2e; f90e3db changes eleven modules and adds the test, 51aa213 and 88510c5e edit only the new evidence fragment, and the fragment's trace figures (8,454,146 bytes at base, 73,794 at head) reconcile with the strace lines in logs/bounded-reads-base.trace and logs/bounded-reads-head.trace.\nCALL_SITES: reckon/crew_follow_commands.py:1244, reckon/crew/runs.py:5256, reckon/crew/runs.py:5358, reckon/live_run_classification.py:630, reckon/sprint_liveness.py:70, reckon/crew/station_store.py:905, reckon/crew/paid_lanes.py:1214, reckon/crew_follow_commands.py:634, reckon/crew/recovery_watch.py:878, reckon/crew/follower_registration.py:362, reckon/crew/watch_unit.py:381, reckon/crew/runs.py:2625\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every one of the eighteen in-scope sites is unbuffered or positional, and logs/bounded-reads-head.trace asks 8,192 bytes for the 8 KiB probe and 64 for the 64-byte range read where the base arm shows two 4 MiB fills.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names tests/test_a_small_read_costs_its_bytes.py and scoped-gate-1795381141825890463.log records 63 passed in 47.18s with EXIT=0, and logs/negative-control-base.log records 4 failed, 1 passed, EXIT=1, the first case quoting the 4194304-byte block fill.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 9ed4c9ee2e..88510c5e lists thirteen files and every one of them is among the manifest's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: reverting a buffering=0 in any scanned module puts that site in the offenders list asserted at tests/test_a_small_read_costs_its_bytes.py:346, and reverting reckon/crew/run_paths.py:50 to handle.read() reddens the helper check at line 396.\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the surrounding per-site idiom and adds no forbidden name, but the module docstring at tests/test_a_small_read_costs_its_bytes.py:3 repeats its opening two sentences.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for buffering=0 and os.pread found no owner of a bounded-read helper, only per-site callers and the pre-existing repair at reckon/run_store.py:469.\nFINDING tests/test_a_small_read_costs_its_bytes.py:3 non-blocking: the module docstring repeats the sentence pair beginning \"A default binary reader fills one st_blksize block\" twice in a row (lines 3-6), so the file's own description reads as a paste error even though the cases below it are correct.\n",
+  "review_run_id": "r-20261122T213407325451-review-of-the-monitor-reads-each-fact-once-s116-88510c5e16d2",
+  "reviewed_after_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_small_read_costs_its_bytes.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T143232125878-the-monitor-reads-each-fact-once-s116/after_suite-1795381065530633596.log",
+    "revision": "f90e3db88fff831b37aa61fe976c84d6e4a3a5c2"
+  },
+  "reviewed_base_sha": "9ed4c9ee2e01533b4e68d56dc381075e437da704",
+  "reviewed_baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T143232125878-the-monitor-reads-each-fact-once-s116/baseline_suite-1795380990615458061.log",
+    "revision": "9ed4c9ee2e01533b4e68d56dc381075e437da704"
+  },
+  "reviewed_head_sha": "88510c5e16d262615416d4571a86f56ce42f641f",
+  "reviewed_run_id": "r-20261122T143232125878-the-monitor-reads-each-fact-once-s116",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T22:06:02.267320+00:00",
+  "total": 115
+}

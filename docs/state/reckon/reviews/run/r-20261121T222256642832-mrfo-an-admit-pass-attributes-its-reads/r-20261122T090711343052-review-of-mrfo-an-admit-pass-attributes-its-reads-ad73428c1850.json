@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:07:39Z",
+  "findings": [
+    {
+      "file": "tests/test_an_admit_pass_attributes_its_reads.py",
+      "line": "105",
+      "text": "non-blocking: the encoded-bytes case added in 705931eb55 (1000 characters of \u00e9 charged 2000 bytes) is deleted at head by e1b0a89cc6, so restoring a character count at reckon/file_memo.py:765 leaves every remaining case green because every fixture file is ASCII; the manifest still reports six cases including that one"
+    },
+    {
+      "file": "tests/test_an_admit_pass_attributes_its_reads.py",
+      "line": "117",
+      "text": "non-blocking: the assertion compares one fixture constant with another (sizes['review store'] / sum(sizes.values()) > BAND), so it cannot fail for any product change and guards nothing; the real mutation is the external plugin, and that control does reproduce (16.7 % shortfall, EXIT=1)"
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "838",
+      "text": "non-blocking: the _ACCOUNT ContextVar is set and reset but never read; the patched open charges the account object captured by the block from every thread, so a landing thread reading files while a pass is open (worker.settle() runs on its own thread) has its bytes attributed to that pass's sources"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T222256642832-mrfo-an-admit-pass-attributes-its-reads/collect_admit_reads.py",
+      "line": "98",
+      "text": "non-blocking: every sample of the ten-minute record carries service_has_reads_by_source: false, so the record is the collector's own full re-read of every store rather than the service's pass readings the done_when names; ~242 MB per sample is the store inventory read whole, not one pass's reads, and the run store is absent by construction"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/the-monitor-reads-each-fact-once.html \u00a7113 asks each pass reading to carry the bytes broken down by store; reckon/crew/admission/service.py:406 defines the six named rules, service.py:576 attaches the summary to each pass result and reckon/crew/admission/verdicts.py:522 rides it on the verdict row, so the code does what the goal states, and the landed record now charges the sharded review store at 177,885,166 B (73.3 %) instead of zero.\nVERDICT done_when: the done_when names tests/test_an_admit_pass_attributes_its_reads.py with a 5 % sum band, per-source identity, per-arm logs with revision/command/EXIT=, and a ten-minute record naming the sources holding 90 %; the sum and isolation cases are at tests/test_an_admit_pass_attributes_its_reads.py:78 and :89, both suite arms and the scoped gate carry a revision and a bare EXIT=0 (58 passed at base, 63 at head), and the record names review store + ledger at 98.6 %, but that record is a collector sweep rather than the service's own pass readings (every sample carries service_has_reads_by_source: false).\nVERDICT write_paths: the declared set is reckon/crew/admission/service.py, reckon/crew/admission/verdicts.py, reckon/file_memo.py, tests/test_an_admit_pass_attributes_its_reads.py, one evidence fragment and one figure directory; git diff --stat 0833873..ad73428 touches exactly those five files and nothing outside the set.\nVERDICT manifest: read; it records both suite arms at 0 added failures (58 passed base, 63 passed head), the scoped gate at 63 passed EXIT=0, logs/negative-control.log at EXIT=1 with a 16.7 % shortfall against the 5 % band, the readings artifact at ~/.cache/reckon-landing/admit-reads/e1b0a89cc6-readings.jsonl with its command on line 1, and it discloses that the live service predates this head and that the run store's SQLite pages land in the unattributed remainder.\nVERDICT diff: read commit by commit \u2014 9c5de26bcd adds ReadAccount, attributing and read_character_count (reckon/file_memo.py:665-871), admit_read_sources and _reads_by_source plus the two accounting scopes (reckon/crew/admission/service.py:406-455, 576, 631+), the verdict field (reckon/crew/admission/verdicts.py:522), 159 lines of tests and the evidence fragment; 929d83475b widens the review-store rule to the sharded prefix; 514b5b59cc adds the real-pass wiring case; 705931eb55 charges encoded bytes; e1b0a89cc6 moves the mutation into a plugin and in doing so deletes the encoded-byte case; d6c8e19add and ad73428c18 write and correct the fragment.\nCALL_SITES: reckon/crew_run_commands.py:6328 -> reckon/crew/queue_admission.py:admit_until_stopped -> reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/admission/service.py:576 result[\"reads_by_source\"] read at reckon/crew/admission/verdicts.py:522 (_pass_verdict_record, reached from _record_pass_verdicts:570)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/service.py:406-455 and service.py:576 produce the six-bucket breakdown the section asks for, and service.py:425 charges the sharded review store the 73.3 % the record reports.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arms and the scoped gate carry revision, command and EXIT=0, the negative control reproduces at EXIT=1 with a 16.7 % shortfall, but every sample of the ten-minute record carries service_has_reads_by_source: false so it measures the collector's sweep, not the service's passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 0833873..ad73428 is inside the declared write paths, and the later commits d6c8e19add and ad73428c18 touch only the node's own evidence fragment.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_an_admit_pass_attributes_its_reads.py:78 reddens if a source rule is dropped (the plugin control proves it) and :134 reddens if the accounting wrap at reckon/crew/admission/service.py:576 is reverted, but the encoded-bytes fix at reckon/file_memo.py:765 has no case at head because :705\u2019s case was deleted.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/file_memo.py:665-871 extends the module's existing counting section (MemoCounts/record_memo) in its idiom, uses no plan label, version or ticket name, and the only wrinkle is reaching private reckon/_store._state_root() at reckon/crew/admission/service.py:426.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search by capability (grep for rchar, /proc/self/io and read accounting under reckon/) found no owner of per-source byte accounting; the nearest, the _ReadTally at reckon/crew/admission/service.py:400, counts reads and seconds per reader, not bytes per path, so ReadAccount is a new capability rather than a fork and only the run-store path derivation could have extended an existing owner.\nFINDING tests/test_an_admit_pass_attributes_its_reads.py:105 non-blocking: the encoded-bytes case added in 705931eb55 (1000 '\u00e9' charged 2000 bytes) is deleted at head by e1b0a89cc6, so restoring a character count at reckon/file_memo.py:765 leaves every remaining case green because every fixture file is ASCII, and the manifest still reports six cases including that one.\nFINDING tests/test_an_admit_pass_attributes_its_reads.py:117 non-blocking: the assertion compares one fixture constant with another (sizes['review store'] / sum(sizes.values()) > BAND), so it cannot fail for any product change and guards nothing; the mutation itself is the external plugin and that control does reproduce, so no durability score rests on this line.\nFINDING reckon/file_memo.py:838 non-blocking: the _ACCOUNT ContextVar is set and reset but never read, so the patched open charges the account object captured by the block from every thread, and a landing thread reading files while a pass is open has its bytes attributed to that pass's sources, polluting the per-source table the section exists to produce.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261121T222256642832-mrfo-an-admit-pass-attributes-its-reads/collect_admit_reads.py:98 non-blocking: every sample of the ten-minute record carries service_has_reads_by_source: false, so the record is the collector's own full re-read of every store rather than the service's pass readings the done_when names; its ~242 MB per sample is the store inventory read whole, not one pass's reads, and the run store is absent by construction.\n",
+  "review_run_id": "r-20261122T090711343052-review-of-mrfo-an-admit-pass-attributes-its-reads-ad73428c1850",
+  "reviewed_base_sha": "08338737e698ae1855f48d25560408e03a01a23c",
+  "reviewed_head_sha": "ad73428c1850e0c3fece8fd2772ef2371206b6a3",
+  "reviewed_run_id": "r-20261121T222256642832-mrfo-an-admit-pass-attributes-its-reads",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:31:15.276214+00:00",
+  "total": 101
+}

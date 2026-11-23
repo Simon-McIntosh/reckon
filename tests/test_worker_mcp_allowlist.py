@@ -46,17 +46,15 @@ def worker_setup(tmp_path, monkeypatch):
     return operator, checkout
 
 
-def launch(tmp_path, worker_setup, command, declared=(), anchored=False, **kwargs):
+def launch(tmp_path, worker_setup, command, declared=(), **kwargs):
     operator, checkout = worker_setup
     run = tmp_path / command
     run.mkdir(exist_ok=True)
     backend = {"launch": "cli", "command": command, "sandbox": "worktree-full"}
     if command == "omp":
         backend["harness_home_files"] = [{"path": "agent/mcp.json"}]
-    if anchored:
-        backend["anchored_edit"] = True
     return _backends.launch_plan(
-        backend_name=command + ("-anchored" if anchored else ""),
+        backend_name=command,
         backend=backend,
         prompt="read the brief and deliver",
         worktree=checkout,
@@ -136,10 +134,13 @@ def test_declared_project_server_is_available(tmp_path, worker_setup, command):
 
 
 @pytest.mark.parametrize("command", ["claude", "clive", "codex"])
-def test_anchored_backend_keeps_only_its_edit_server(tmp_path, worker_setup, command):
-    plan = launch(tmp_path, worker_setup, command, anchored=True)
-    expected = "anchored" if command == "codex" else "reckon-anchored-edit"
-    assert active_servers(plan, worker_setup) == {expected}
+def test_no_launch_withholds_the_editing_tools(tmp_path, worker_setup, command):
+    """Every dialect keeps its own editing tools; no launch is denied one."""
+    plan = launch(tmp_path, worker_setup, command)
+    assert active_servers(plan, worker_setup) == set()
+    assert "--disallowedTools" not in plan.argv
+    assert "Edit" not in plan.argv
+    assert "MultiEdit" not in plan.argv
 
 
 def test_profile_only_servers_do_not_create_incomplete_root_transports(tmp_path):

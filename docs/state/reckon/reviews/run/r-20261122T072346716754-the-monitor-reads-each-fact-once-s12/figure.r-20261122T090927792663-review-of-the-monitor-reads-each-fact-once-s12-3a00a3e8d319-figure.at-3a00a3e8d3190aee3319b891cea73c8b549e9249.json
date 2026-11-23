@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T10:54:44Z",
+  "findings": [
+    {
+      "disposition": "exempted: this review is read-only and cannot edit the figure; the defect is a single constant (SUBJECT_LIGHT) to darken toward the 3:1 floor at the next figure rebuild, and it does not stop a reader reading any value.",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s12/plot_cutover_window.py",
+      "line": 31,
+      "severity": "non-blocking",
+      "summary": "SUBJECT_LIGHT is #7fa9bf and window 2 uses it for both the bar fill and the value labels. Measured on the rendered PNG, the label glyphs are (127,169,191) on white, a contrast of 2.52:1 \u2014 under the 4.5:1 a 14 pt label needs and under the 3:1 non-text floor for the bar as a graphical object. The window-2 numbers (13,622, 6,469, 799 MB/min; 104.6, 89.9, 13.8 %) read faintly beside the dark window-1 numbers. The data remain readable: window 2 is the lower bar of each pair, is named by the legend and carries its own value label, so nothing is lost and the finding does not hold the node."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261122T090927792663-review-of-the-monitor-reads-each-fact-once-s12-3a00a3e8d319-figure",
+  "reviewed_base_sha": "790a380eb77a2f01baaeed15ba1d793954be2acb",
+  "reviewed_head_sha": "3a00a3e8d3190aee3319b891cea73c8b549e9249",
+  "reviewed_run_id": "r-20261122T072346716754-the-monitor-reads-each-fact-once-s12",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "defect \u2014 the window-2 bars and their value labels are drawn in #7fa9bf and render at 2.52:1 against white (measured from the PNG: core glyph colour (127,169,191)), below the 4.5:1 for 14 pt text and below the 3:1 floor for a graphical object, so the window-2 labels read faintly next to the window-1 labels.",
+    "data_ink": "pass \u2014 solid bars carry the visual weight, each bar is directly labelled with its value, and the only other ink is the two dotted bound lines, thin axes and one frameless legend.",
+    "decoration": "pass \u2014 plain white background, no gradient, shading, band or styled theme; the dotted vertical lines are data \u2014 the figure answers whether the measurement is under that bound.",
+    "label_collision": "pass \u2014 no text is clipped, overlaps another text, or sits over a bar; the rendered ink spans x 12-1389 and y 18-746 of the 1400x758 canvas, leaving a margin at every edge, and direct labels begin beyond their bar ends.",
+    "legibility": "pass \u2014 at the rendered 1400x758 px the three category labels, both axis labels, the legend and all twelve direct value labels are readable at a glance; the axis label states the scale ('read volume [MB/min, log scale]' and 'CPU [% of one core]').",
+    "table_form": "pass \u2014 the image compares three process populations against two thresholds on two quantity axes, which is what a chart is for; the totals are not in the image and are carried by the table beside it, so the image does not duplicate a table's content."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T11:02:02.965258+00:00",
+  "total": null
+}

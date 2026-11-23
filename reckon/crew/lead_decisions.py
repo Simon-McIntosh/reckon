@@ -464,6 +464,23 @@ def release_withdrawn_holds(live: list[dict[str, Any]]) -> list[str]:
     return released
 
 
+def held_work_order(row: Mapping[str, Any]) -> tuple[int, str, str, str]:
+    """The one order a decision record is listed in: largest held work first.
+
+    Every surface that lists these decisions sorts by this key, including a
+    reader that merges per-project reads back into one list, so the order the
+    lead answers in is the same whichever way the read reached its rows. A
+    plan-block decision holds nothing and reports that as absent; it sorts as
+    zero held work here rather than being reordered by a second rule.
+    """
+    return (
+        -(row.get("held_work_count") or 0),
+        str(row.get("recorded_at") or ""),
+        str(row.get("project") or ""),
+        str(row.get("id") or ""),
+    )
+
+
 def read_decisions(project: str | None = None) -> dict[str, Any]:
     """Return every open question in the list its own state belongs to.
 
@@ -578,14 +595,7 @@ def read_decisions(project: str | None = None) -> dict[str, Any]:
             row["recorded_at"] = None
             row["held_work_count"] = None
             row["absent"] = ["session", "recorded_at", "held_work"]
-    rows.sort(
-        key=lambda row: (
-            -(row["held_work_count"] or 0),
-            row.get("recorded_at") or "",
-            row["project"],
-            row["id"],
-        )
-    )
+    rows.sort(key=held_work_order)
     ready = [row for row in rows if row["state"] == "ready"]
     pending = [row for row in rows if row["state"] == "pending"]
     reversible = [row for row in rows if row["state"] == "taken-and-reversible"]

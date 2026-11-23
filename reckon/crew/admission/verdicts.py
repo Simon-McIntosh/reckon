@@ -7,8 +7,11 @@ from . import readiness as _readiness
 from . import service as _service
 from . import wait_refs as _wait_refs
 from .shared import (
+    ADMISSION_VERDICT_DAY_LOG_PREFIX,
     ADMISSION_VERDICT_LOG,
     ADMISSION_VERDICT_LOG_MAX_BYTES,
+    ADMISSION_VERDICT_LOG_RETENTION_DAYS,
+    ADMIT_MEMORY_BOUND_BYTES,
     HELD_PHASE,
     HOLD_VERDICTS,
     NOT_ADMISSIBLE_PHASES,
@@ -16,6 +19,7 @@ from .shared import (
     STALL_AFTER_SECONDS,
     STALL_VERDICT,
     TERMINAL_VERDICTS,
+    UTC,
     WAITING_UPSTREAM_PHASES,
     Any,
     Callable,
@@ -23,10 +27,13 @@ from .shared import (
     Mapping,
     Path,
     Sequence,
+    contextlib,
     datetime,
     json,
+    os,
     parse_utc,
     runs,
+    timedelta,
 )
 
 #: The holds the lane itself writes by granting no worker slot. The reason one of
@@ -199,29 +206,339 @@ def _verdict_row(
     return row
 
 
+def _day_log_name(day: str) -> str:
+    """The file name a rotated day's verdict log carries."""
+    return f"{ADMISSION_VERDICT_DAY_LOG_PREFIX}{day}.jsonl"
+
+
+def _day_from_log_name(name: str) -> str:
+    """The ISO day a rotated log's file name carries, or ``""`` for any other."""
+    if not name.startswith(ADMISSION_VERDICT_DAY_LOG_PREFIX):
+        return ""
+    stem = name[len(ADMISSION_VERDICT_DAY_LOG_PREFIX) :]
+    if not stem.endswith(".jsonl"):
+        return ""
+    day = stem[: -len(".jsonl")]
+    try:
+        datetime.fromisoformat(day)
+    except ValueError:
+        return ""
+    return day
+
+
+def _verdict_log_dir(home: Path | None = None) -> Path:
+    return home if home is not None else runs.crew_home()
+
+
+def _current_verdict_log_path(home: Path | None = None) -> Path:
+    return _verdict_log_dir(home) / ADMISSION_VERDICT_LOG
+
+
+def _day_verdict_log_paths(home: Path | None = None) -> list[tuple[str, Path]]:
+    """Every rotated day log under the crew home, oldest day first."""
+    try:
+        entries = list(_verdict_log_dir(home).iterdir())
+    except OSError:
+        return []
+    found: list[tuple[str, Path]] = []
+    for entry in entries:
+        day = _day_from_log_name(entry.name)
+        if day:
+            found.append((day, entry))
+    found.sort()
+    return found
+
+
+def _pass_record_paths(home: Path | None = None) -> list[tuple[str, Path]]:
+    """The files a week read parses, oldest first, day-labelled.
+
+    The rotated day files hold complete days; the current file holds the day in
+    progress and is labelled by its own newest record so a report names which
+    day's rows it carries.
+    """
+    files = _day_verdict_log_paths(home)
+    current = _current_verdict_log_path(home)
+    if current.exists():
+        files.append((_last_record_day(current) or "current", current))
+    return files
+
+
+def _last_record_day(path: Path) -> str:
+    """The UTC day of the newest complete record in a log file, or ``""``.
+
+    Read from the file's tail, so an append need not deserialize a whole day of
+    records to learn whether the day has rolled over. A partial final line, from
+    a writer mid-append, is skipped.
+    """
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            window = min(size, 65536)
+            handle.seek(size - window)
+            tail = handle.read(window)
+    except OSError:
+        return ""
+    for raw in reversed(tail.splitlines()):
+        try:
+            record = json.loads(raw)
+        except ValueError:
+            continue
+        if not isinstance(record, dict):
+            continue
+        at = parse_utc(record.get("at"))
+        if at is not None:
+            return at.date().isoformat()
+    return ""
+
+
+def _rotate_current_verdict_log(day: str, home: Path | None = None) -> Path | None:
+    """Move the current log to the day file its records belong to.
+
+    Called before an append whose record is dated a later day than the file's
+    newest record. A target that already exists is folded into rather than
+    replaced, because a second lane on the same shared home can rotate the same
+    day concurrently and the day file holds records no other file carries.
+    """
+    current = _current_verdict_log_path(home)
+    held = _last_record_day(current)
+    if not held or held == day:
+        return None
+    target = _verdict_log_dir(home) / _day_log_name(held)
+    try:
+        if target.exists():
+            data = current.read_bytes()
+            with open(target, "ab") as handle:
+                handle.write(data)
+            current.unlink()
+        else:
+            os.replace(current, target)
+    except OSError:
+        return None
+    return target
+
+
+def _prune_day_verdict_logs(today: str, home: Path | None = None) -> list[Path]:
+    """Drop day logs that have fallen outside the retention window.
+
+    The horizon is ``today`` minus the retention, so the current day plus one
+    file per retained day is held and a read of the last seven days always finds
+    its whole window. Only files whose name carries an ISO day are considered,
+    so the current log is never a candidate.
+    """
+    try:
+        horizon = datetime.fromisoformat(today) - timedelta(
+            days=ADMISSION_VERDICT_LOG_RETENTION_DAYS
+        )
+    except ValueError:
+        return []
+    removed: list[Path] = []
+    for day, path in _day_verdict_log_paths(home):
+        try:
+            day_at = datetime.fromisoformat(day)
+        except ValueError:
+            continue
+        if day_at >= horizon:
+            continue
+        try:
+            path.unlink()
+        except OSError:
+            continue
+        removed.append(path)
+    return removed
+
+
+def verdict_log_append(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Write one pass record to its day's log, rotating and pruning around it.
+
+    Rotation and pruning happen on the append rather than on a timer, so a
+    service that is idle across midnight rolls over on its next pass, and one
+    that stops leaves the day it stopped in to hold its records rather than a
+    current file nothing will ever rotate.
+    """
+    at = parse_utc(record.get("at"))
+    day = at.date().isoformat() if at is not None else _service._utc_now()[:10]
+    _rotate_current_verdict_log(day)
+    path = _current_verdict_log_path()
+    from reckon.crew.picker import _append_crew_log_line
+
+    _append_crew_log_line(ADMISSION_VERDICT_LOG, dict(record))
+    if not path.exists():
+        return {"written": False, "day": day, "path": str(path)}
+    from reckon.crew.fleet_supervisor import trim_service_log
+
+    with contextlib.suppress(OSError):
+        trim_service_log(
+            path,
+            limit=ADMISSION_VERDICT_LOG_MAX_BYTES,
+            keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
+        )
+    _prune_day_verdict_logs(day)
+    return {"written": True, "day": day, "path": str(path)}
+
+
+def _record_instant(record: Mapping[str, Any]) -> datetime:
+    return parse_utc(record.get("at")) or datetime.min.replace(tzinfo=UTC)
+
+
+def read_pass_verdicts(
+    *,
+    since: datetime | None = None,
+    until: datetime | None = None,
+    paths: Sequence[tuple[str, Path]] | None = None,
+) -> dict[str, Any]:
+    """Every admission verdict the retained log holds, and the span it covers.
+
+    A read is answered from the current day's file and the rotated day files
+    kept under the crew home, so a verdict written on any retained day is
+    returned from
+    one call rather than from whatever fitted in a single byte-bounded file.
+    Records are filtered to ``[since, until]`` and returned oldest first.
+
+    The covered span is the span of the whole retained log rather than of the
+    filtered rows, so a caller asking for a stretch older than the log's start
+    is told the span it covers instead of being handed a window the log cannot
+    support. ``days`` carries, per retained file, the day it holds, its path,
+    its bytes and its record count; ``bytes_per_day`` is the same byte figure
+    keyed by day, which is the cost the log keeps per day. ``paths`` narrows the
+    read to given files, which a caller wanting only the newest records passes
+    so a pass need not parse the whole week.
+    """
+    paths = _pass_record_paths() if paths is None else list(paths)
+    days: list[dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
+    covered: list[datetime] = []
+    for label, path in paths:
+        try:
+            data = path.read_bytes()
+        except OSError:
+            continue
+        day_records = 0
+        for raw in data.splitlines():
+            try:
+                record = json.loads(raw)
+            except ValueError:
+                continue
+            if not isinstance(record, Mapping):
+                continue
+            at = parse_utc(record.get("at"))
+            if at is None:
+                continue
+            day_records += 1
+            covered.append(at)
+            if since is not None and at < since:
+                continue
+            if until is not None and at > until:
+                continue
+            records.append(dict(record))
+        days.append(
+            {
+                "day": label,
+                "path": str(path),
+                "bytes": len(data),
+                "records": day_records,
+            }
+        )
+    records.sort(key=_record_instant)
+    covered_start = min(covered) if covered else None
+    covered_end = max(covered) if covered else None
+    total_bytes = sum(day["bytes"] for day in days)
+    uncovered = None
+    if covered_start is not None and since is not None:
+        uncovered = round((covered_start - since).total_seconds(), 3)
+    span = None
+    if covered_start is not None and covered_end is not None:
+        span = round((covered_end - covered_start).total_seconds(), 3)
+    return {
+        "status": "measured" if covered else "unmeasured",
+        "retention_days": ADMISSION_VERDICT_LOG_RETENTION_DAYS,
+        "requested_start": since.isoformat() if since is not None else None,
+        "requested_end": until.isoformat() if until is not None else None,
+        "covered_start": covered_start.isoformat() if covered_start else None,
+        "covered_end": covered_end.isoformat() if covered_end else None,
+        "covered_span_seconds": span,
+        "uncovered_seconds": uncovered,
+        "records": records,
+        "records_by_day": {day["day"]: day["records"] for day in days},
+        "days": days,
+        "bytes_per_day": {day["day"]: day["bytes"] for day in days},
+        "total_bytes": total_bytes,
+        "mean_bytes_per_day": round(total_bytes / len(days), 1) if days else 0.0,
+    }
+
+
+#: The newest reading of the newest retained pass records, memoised against the
+#: identity of the files it parsed. A pass asks a verdict and a stage duration
+#: of every queued request, so one reading of a day of records is shared by all
+#: and re-read only when a file it parsed has changed.
+_RECENT_PASS_CACHE: dict[str, Any] = {}
+
+
+def _recent_pass_reading(paths: Sequence[tuple[str, Path]]) -> dict[str, Any]:
+    """The last verdict and last stage duration each request carries.
+
+    Parsed by :func:`read_pass_verdicts` over the newest retained files, so one
+    reader owns the log's format and the memo below only spares a pass the
+    re-parse it would otherwise repeat for every queued request.
+    """
+    key = _pass_files_signature(paths)
+    if _RECENT_PASS_CACHE.get("key") == key:
+        return _RECENT_PASS_CACHE
+    verdicts: dict[str, str] = {}
+    stages: dict[str, float] = {}
+    for record in read_pass_verdicts(paths=paths)["records"]:
+        for name, value in record.items():
+            if name.endswith("_seconds") and isinstance(value, (int, float)):
+                stages[name] = round(float(value), 3)
+        for row in record.get("pointers") or ():
+            if isinstance(row, Mapping):
+                run_id = str(row.get("run_id") or "")
+                if run_id:
+                    verdicts[run_id] = str(row.get("verdict") or "")
+    _RECENT_PASS_CACHE["key"] = key
+    _RECENT_PASS_CACHE["verdicts"] = verdicts
+    _RECENT_PASS_CACHE["stages"] = stages
+    return _RECENT_PASS_CACHE
+
+
+def _pass_files_signature(
+    paths: Sequence[tuple[str, Path]],
+) -> tuple[tuple[str, int, int, int], ...]:
+    """The identity of the files a recent reading parsed."""
+    signature: list[tuple[str, int, int, int]] = []
+    for _label, path in paths:
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        signature.append((str(path), stat.st_mtime_ns, stat.st_size, stat.st_ino))
+    return tuple(signature)
+
+
+def _recent_pass_files() -> list[tuple[str, Path]]:
+    """The current log and the newest day log, oldest first.
+
+    A rotation at midnight leaves the current file with today's records, so a
+    reader that looked only there would lose the verdict a request carried
+    across the boundary. Two files hold more than a day of passes at any
+    measured rate.
+    """
+    return _pass_record_paths()[-2:]
+
+
 def _last_verdict_of(run_id: str) -> str:
     """The verdict the most recent recorded pass gave this request.
 
-    Read from the verdict log rather than from the pointer, because a verdict is
-    what a pass decided rather than what the request says about itself. A later
-    pass for the same request replaces the answer, so a request whose stall has
-    since launched no longer reads as stalled.
+    Read from the verdict log rather than from the pointer, because a verdict
+    is what a pass decided rather than what the request says about itself. A
+    later pass for the same request replaces the answer, so a request whose
+    stall has since launched no longer
+    reads as stalled.
     """
     if not run_id:
         return ""
-    try:
-        text = (runs.crew_home() / ADMISSION_VERDICT_LOG).read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    for line in reversed(text.splitlines()):
-        try:
-            record = json.loads(line)
-        except ValueError:
-            continue
-        for row in record.get("pointers") or ():
-            if str(row.get("run_id") or "") == run_id:
-                return str(row.get("verdict") or "")
-    return ""
+    reading = _recent_pass_reading(_recent_pass_files())
+    return str((reading.get("verdicts") or {}).get(run_id, ""))
 
 
 def _last_stage_seconds(stage: str) -> float | None:
@@ -232,20 +549,9 @@ def _last_stage_seconds(stage: str) -> float | None:
     at rather than only that the request waited. ``None`` when no pass has
     recorded that stage yet, which is the first pass of a service.
     """
-    key = f"{stage}_seconds"
-    try:
-        text = (runs.crew_home() / ADMISSION_VERDICT_LOG).read_text(encoding="utf-8")
-    except OSError:
-        return None
-    for line in reversed(text.splitlines()):
-        try:
-            record = json.loads(line)
-        except ValueError:
-            continue
-        value = record.get(key)
-        if isinstance(value, (int, float)):
-            return round(float(value), 3)
-    return None
+    stages = _recent_pass_reading(_recent_pass_files()).get("stages") or {}
+    value = stages.get(f"{stage}_seconds")
+    return None if value is None else float(value)
 
 
 def _stall_stage(pointer: Mapping[str, Any]) -> str:
@@ -495,23 +801,18 @@ def _record_readiness_verdicts(
 
 def _pass_verdict_record(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
-) -> dict[str, Any] | None:
-    """The one record a pass leaves, or ``None`` when it had no outcome.
+) -> dict[str, Any]:
+    """The one record a pass leaves, whether or not it decided anything.
 
+    A pass always leaves a reading: an idle pass is a fact a reader needs, and
+    the reading carries the service's resident memory so the bound the service
+    holds to is read from its own passes rather than inferred from the outside.
     The same object is what the verdict log holds and what the service loop
     prints, so a coordinator reading the log and a caller reading stdout see
     one account of the pass rather than two that can drift.
     """
     verdicts = result.get("verdicts") or []
     landing = result.get("landing") or {}
-    if (
-        not verdicts
-        and not result.get("retired")
-        and not landing.get("landed")
-        and not landing.get("skipped")
-        and not landing.get("obligations")
-    ):
-        return None
     return {
         "at": _service._utc_now(),
         "started_at": result.get("started_at"),
@@ -523,6 +824,9 @@ def _pass_verdict_record(
         "launch_budget_exhausted": bool(result.get("launch_budget_exhausted")),
         "land_seconds": result.get("land_seconds"),
         "reads": result.get("reads"),
+        "reads_by_source": result.get("reads_by_source"),
+        "resident_bytes": result.get("resident_bytes"),
+        "memory_bound_bytes": ADMIT_MEMORY_BOUND_BYTES,
         "lane": lane,
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
@@ -543,23 +847,23 @@ def _publish_pass_verdicts(record: Mapping[str, Any] | None) -> None:
 
     The bare ``crew admit`` verb is the fleet's admit service: a coordinator
     watching it must see each decision as the pass reaches it rather than only
-    afterwards out of the verdict log. A pass that examined no queued pointer
-    decided nothing, so it prints nothing — the same silence it records.
+    afterwards out of the verdict log. Every pass prints its reading, so an
+    idle service is visible as a run of pass readings rather than as silence.
     """
-    if record is None:
-        return
     print(json.dumps(record), flush=True)
 
 
 def _record_pass_verdicts(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
-) -> dict[str, Any] | None:
-    """Write one log line for a pass with an admission or landing outcome.
+) -> dict[str, Any]:
+    """Write one log line for every pass, including a pass that decided nothing.
 
-    A pass with no pointer verdict or landing outcome writes nothing: an idle
-    pass is the absence of a line, not a line saying so. The line uses the shared
-    crew-home log writer, so this log and the picker's timings are written the
-    same way, and the bound that follows is the shared service-log trim.
+    A reading that carried only outcomes made an idle service indistinguishable
+    from a stopped one, and left the service's resident memory unrecorded: the
+    pass reading is where the bound the service holds to is read. The record is
+    written by :func:`verdict_log_append`, which rolls the current file to its
+    day file when the day changes and prunes what has fallen out of the
+    retention window, so the log a later seven-day read sees holds a week.
 
     The trim keeps the file's inode, so the appender's own descriptor stays
     valid, but it reads the tail and then rewrites the file in place: a line
@@ -570,18 +874,5 @@ def _record_pass_verdicts(
     whose admission decision has already been made.
     """
     record = _pass_verdict_record(result, lane=lane, code_stamp=code_stamp)
-    if record is None:
-        return None
-    from reckon.crew.fleet_supervisor import trim_service_log
-    from reckon.crew.picker import _append_crew_log_line
-
-    _append_crew_log_line(ADMISSION_VERDICT_LOG, record)
-    try:
-        trim_service_log(
-            runs.crew_home() / ADMISSION_VERDICT_LOG,
-            limit=ADMISSION_VERDICT_LOG_MAX_BYTES,
-            keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
-        )
-    except OSError:  # a pass never fails on its own record
-        return record
+    verdict_log_append(record)
     return record

@@ -11,6 +11,7 @@ mutable state, imported once and independent of run-index rebuilds.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import hashlib
 import json
@@ -156,6 +157,31 @@ _RUNS_ARCHIVE_INSERT = (
     f"INSERT INTO archive.runs ({_RUNS_INSERT_COLUMNS}) "  # noqa: S608
     f"SELECT {_RUNS_INSERT_COLUMNS} FROM main.runs WHERE run_id = ?"
 )
+
+
+def _land_from(schema: str) -> str:
+    """Copy one schema's promoted rows into the landing index.
+
+    The index exists so a retention pass can remove a run's row without the
+    store forgetting where that run landed, so it is filled from the same rows
+    the pass is about to delete.
+    """
+    return (
+        'INSERT INTO "landed_runs" '  # noqa: S608 - a literal schema from this module
+        '("run_id", "project", "promoted_revision") '
+        'SELECT "run_id", "project", '
+        "json_extract(\"payload\", '$.promoted_revision') "
+        f'FROM {schema}."runs" WHERE "project" = ? '
+        'AND json_valid("payload") '
+        "AND json_extract(\"payload\", '$.promoted_revision') != '' "
+        'ON CONFLICT("run_id") DO UPDATE SET '
+        '"project" = excluded."project", '
+        '"promoted_revision" = excluded."promoted_revision"'
+    )
+
+
+_LAND_FROM_MAIN = _land_from("main")
+_LAND_FROM_ARCHIVE = _land_from("archive")
 # The migration backfills every column a row is missing. The SET list and the
 # values share the QUERY_KEYS declaration, so the two cannot drift. The revision
 # is COALESCEd rather than assigned: a record that cannot name the commit its
@@ -199,11 +225,93 @@ CREATE TABLE IF NOT EXISTS "retired_runs" (
     "project" TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS "idx_retired_runs_project" ON "retired_runs" ("project");
+CREATE TABLE IF NOT EXISTS "landed_runs" (
+    "run_id" TEXT PRIMARY KEY,
+    "project" TEXT NOT NULL,
+    "promoted_revision" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "idx_landed_runs_project" ON "landed_runs" ("project");
 CREATE TABLE IF NOT EXISTS "store_meta" (
     "key" TEXT PRIMARY KEY,
     "value" TEXT NOT NULL
 );
 """
+
+# One row per stored run, holding what a signature comparison needs and never
+# the record itself. The runs table keeps each payload inline in its own row, so
+# any statement that selects a column of every run loads every payload; this
+# table is the payload-free mirror a signature read answers from. ``version`` is
+# allocated from :data:`SIGNATURE_SEQUENCE_TABLE` on every write, so a reader
+# can ask for the rows that moved since the version it last read. A deleted row
+# keeps its row here with ``present`` cleared, so the deletion is a row that
+# moved rather than an absence a reader must scan the whole table to find.
+SIGNATURE_TABLE = "run_signatures"
+SIGNATURE_SEQUENCE_TABLE = "signature_sequence"
+_SIGNATURE_COLUMNS = frozenset(
+    (
+        "run_id",
+        "project",
+        "version",
+        "present",
+        "schema_name",
+        "ordinal",
+        "payload_bytes",
+        "detail_bytes",
+        *QUERY_KEYS,
+        ROW_REVISION,
+        "activity_seconds",
+    )
+)
+_SIGNATURE_SCHEMA = f"""
+CREATE TABLE IF NOT EXISTS "{SIGNATURE_TABLE}" (
+    "run_id" TEXT PRIMARY KEY,
+    "project" TEXT NOT NULL DEFAULT '',
+    "version" INTEGER NOT NULL,
+    "present" INTEGER NOT NULL DEFAULT 1,
+    "schema_name" TEXT NOT NULL DEFAULT 'main',
+    "ordinal" INTEGER,
+    "payload_bytes" INTEGER NOT NULL DEFAULT 0,
+    "detail_bytes" INTEGER,
+    {", ".join(f'"{name}"' + (" REAL" if name == "activity_seconds" else " TEXT") for name in (*QUERY_KEYS, ROW_REVISION, "activity_seconds") if name != "project")}
+);
+CREATE INDEX IF NOT EXISTS "idx_{SIGNATURE_TABLE}_project_version"
+    ON "{SIGNATURE_TABLE}" ("project", "version");
+CREATE TABLE IF NOT EXISTS "{SIGNATURE_SEQUENCE_TABLE}" ("value" INTEGER NOT NULL);
+"""
+
+# The write side of the signature table, from one declaration so the insert and
+# its conflict clause cannot drift. The revision is coalesced on conflict: a
+# write that states none leaves the one a backfill already found.
+_SIGNATURE_WRITE_COLUMNS = (
+    "run_id",
+    "project",
+    "version",
+    "present",
+    "schema_name",
+    "ordinal",
+    "payload_bytes",
+    "detail_bytes",
+    *QUERY_KEYS,
+    ROW_REVISION,
+    "activity_seconds",
+)
+_SIGNATURE_SET = ", ".join(
+    f'"{name}" = excluded."{name}"' for name in _SIGNATURE_WRITE_COLUMNS[1:]
+)
+_SIGNATURE_WRITE = (
+    f'INSERT INTO "{SIGNATURE_TABLE}" '  # noqa: S608 - fixed column names
+    f"({', '.join(chr(34) + name + chr(34) for name in _SIGNATURE_WRITE_COLUMNS)}) "
+    f"VALUES ({', '.join('?' for _name in _SIGNATURE_WRITE_COLUMNS)}) "
+    f'ON CONFLICT("run_id") DO UPDATE SET {_SIGNATURE_SET}, '
+    f'"{ROW_REVISION}" = COALESCE(excluded."{ROW_REVISION}", '
+    f'"{SIGNATURE_TABLE}"."{ROW_REVISION}")'
+)
+
+# The store_meta key recording that the signature table was built from the
+# store's rows. A store that carries the table without this record was
+# interrupted between the two writes, so its rows are built again rather than
+# trusted.
+_SIGNATURE_RECORD_KEY = "signature_built"
 
 # The store_meta key holding the schema declaration version the store was last
 # migrated to.
@@ -217,7 +325,7 @@ _SCHEMA_RECORD_KEY = "schema_version"
 # than carrying a hand-maintained number is what stops the record from
 # outliving a schema change: there is no separate constant to forget to bump.
 _STORE_SCHEMA_VERSION = hashlib.sha256(
-    f"{_AUX_SCHEMA}\n{_RUNS_SCHEMA}\n{_RUNS_UPDATE}".encode()
+    f"{_AUX_SCHEMA}\n{_SIGNATURE_SCHEMA}\n{_RUNS_SCHEMA}\n{_RUNS_UPDATE}".encode()
 ).hexdigest()
 
 
@@ -387,7 +495,10 @@ def store_stamp(path: str | Path | None = None) -> tuple[int, ...] | None:
     target = store_path() if path is None else Path(path)
     try:
         info = target.stat()
-        with target.open("rb") as handle:
+        # Unbuffered: a buffered reader fills one st_blksize block before
+        # returning the first byte, and on GPFS that block is 4 MiB, so a
+        # 28-byte header read would cost 4 MiB on every stamp.
+        with target.open("rb", buffering=0) as handle:
             header = handle.read(_STAMPED_HEADER_BYTES)
     except OSError:
         return None
@@ -411,6 +522,163 @@ def change_token(path: str | Path | None = None) -> tuple[Any, ...]:
 
     target = store_path() if path is None else Path(path)
     return (store_stamp(target), store_stamp(_archive_path(target)))
+
+
+# What this process's read statements returned, per statement. A caller that
+# needs to know how many rows a read touched reads this rather than timing it:
+# the signature read and the row decode are the two statements a stored-history
+# answer is built from, and both count the rows they returned.
+_STATEMENT_COUNTERS: dict[str, int] = {
+    "signature_rows": 0,
+    "decoded_rows": 0,
+}
+
+
+def statement_counters() -> dict[str, int]:
+    """The rows this process's store reads have returned so far."""
+    return dict(_STATEMENT_COUNTERS)
+
+
+def reset_statement_counters() -> None:
+    """Start a fresh count, for a caller measuring one read."""
+    for key in _STATEMENT_COUNTERS:
+        _STATEMENT_COUNTERS[key] = 0
+
+
+# The signature tuple's fields, in the order every reader compares them. The
+# last two are the tombstone flag and the version the row was written at; a
+# reader asks for rows newer than the version it last held and drops the ids
+# whose ``present`` is cleared.
+_SIGNATURE_FIELDS = (
+    "run_id",
+    "schema_name",
+    "ordinal",
+    "payload_bytes",
+    "detail_bytes",
+    *QUERY_KEYS,
+    ROW_REVISION,
+    "activity_seconds",
+    "present",
+    "version",
+)
+_SIGNATURE_SELECT = ", ".join(f'"{name}"' for name in _SIGNATURE_FIELDS)
+
+
+def _signature_ready(connection: sqlite3.Connection) -> bool:
+    """True when the store carries the payload-free signature table."""
+    try:
+        described = connection.execute(
+            f'SELECT * FROM "{SIGNATURE_TABLE}" LIMIT 0'  # noqa: S608 - a fixed table name
+        )
+    except sqlite3.OperationalError as exc:
+        if "no such table" in str(exc):
+            return False
+        raise
+    columns = frozenset(str(desc[0]) for desc in described.description)
+    return columns >= _SIGNATURE_COLUMNS
+
+
+def _signature_counts_agree(
+    connection: sqlite3.Connection, project: str, schemas: Iterable[str]
+) -> bool:
+    """True when the signature table holds exactly the runs the store holds.
+
+    A cheap completeness check, run once per cold read: it counts index entries
+    rather than reading any row. A store written by code that does not maintain
+    the signature table (an older process still running against the same file)
+    fails this and is answered by the query the table replaced, rather than
+    answering a project's history without the rows that process wrote.
+    """
+    stored = 0
+    try:
+        # One transaction over both counts: a write landing between the two
+        # statements would otherwise read as a difference that is not there,
+        # and every such read would try to repair a mirror that already agrees.
+        connection.execute("BEGIN")
+        for schema in schemas:
+            stored += connection.execute(
+                f"SELECT COUNT(*) FROM {schema}.runs WHERE project = ?",  # noqa: S608 - fixed schema names
+                (project,),
+            ).fetchone()[0]
+        present = connection.execute(
+            f'SELECT COUNT(*) FROM "{SIGNATURE_TABLE}" WHERE project = ? AND present = 1',  # noqa: S608
+            (project,),
+        ).fetchone()[0]
+    except sqlite3.Error:
+        with contextlib.suppress(sqlite3.Error):
+            connection.rollback()
+        return False
+    else:
+        connection.commit()
+    return int(stored) == int(present)
+
+
+def _signature_ids_agree(
+    connection: sqlite3.Connection, project: str, schemas: Iterable[str]
+) -> bool:
+    """True when the mirror's present rows name exactly the store's runs.
+
+    A count comparison cannot make this judgement: one stale mirror row beside
+    one stored row no signature describes leaves both counts equal, which is
+    the state a refused landing's discard and a writer older than this table
+    produce together. Both sides are read from indexes and no payload is
+    touched; this runs on a cold read, not on the incremental one.
+    """
+    stored: set[str] = set()
+    try:
+        connection.execute("BEGIN")
+        for schema in schemas:
+            stored |= {
+                str(row[0])
+                for row in connection.execute(
+                    f'SELECT "run_id" FROM {schema}.runs WHERE "project" = ?',  # noqa: S608 - fixed schema names
+                    (project,),
+                )
+            }
+        present = {
+            str(row[0])
+            for row in connection.execute(
+                f'SELECT "run_id" FROM "{SIGNATURE_TABLE}" WHERE "project" = ? AND "present" = 1',  # noqa: S608
+                (project,),
+            )
+        }
+    except sqlite3.Error:
+        with contextlib.suppress(sqlite3.Error):
+            connection.rollback()
+        return False
+    else:
+        connection.commit()
+    return stored == present
+
+
+def _legacy_run_signature(
+    connection: sqlite3.Connection, project: str, schemas: Iterable[str]
+) -> tuple[tuple[Any, ...], ...]:
+    """The signature as it was read before the payload-free table existed.
+
+    Kept as the fallback for a store the signature table cannot answer for.
+    Every payload is measured here, which is what the table exists to avoid; it
+    runs only when the table is absent from an older process's view or the row
+    counts disagree with it.
+    """
+    selected = ", ".join(f'r."{name}"' for name in (*QUERY_KEYS, ROW_REVISION))
+    signature: list[tuple[Any, ...]] = []
+    for schema in schemas:
+        if not _table_columns(connection, schema):
+            continue
+        query = (
+            f'SELECT r."run_id", r.rowid, LENGTH(r."payload"), '  # noqa: S608 - fixed schema and column names
+            "LENGTH(COALESCE(d.\"detail\", '')), "
+            f'{selected}, r."activity_seconds", 1, 0 '
+            f'FROM "{schema}"."runs" r '
+            f'LEFT JOIN "{schema}"."run_details" d ON d."run_id" = r."run_id" '
+            f'WHERE r."project" = ? ORDER BY r.rowid'
+        )
+        signature.extend(
+            (str(row[0]), schema, *row[1:])
+            for row in connection.execute(query, (project,))
+        )
+    return tuple(signature)
 
 
 def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
@@ -842,6 +1110,74 @@ def stored_run_revisions(
     return revisions
 
 
+def promoted_revision(
+    project: str,
+    run_id: str,
+    *,
+    path: str | Path | None = None,
+) -> str:
+    """The commit a run was promoted at, answerable after its row is retired.
+
+    A retention pass may remove every copy of a run's row — the archive the
+    store retires into is itself rebuilt from the committed ledger, so a run
+    whose document has left the tree loses both. The landing is kept apart from
+    the row for exactly that reason, and this is the read that answers it: the
+    landing index first, then the row that still holds it, hot store before its
+    archive. An empty string is a landing nothing holds, which a caller reads
+    as "not known to have landed" rather than as a revision.
+
+    The connection is read-only: resolving a landing creates, migrates and
+    rebuilds nothing, so a question never changes the answer it is asking.
+    """
+    run_id = str(run_id or "").strip()
+    if not run_id:
+        return ""
+    target = store_path() if path is None else Path(path)
+    if not target.is_file():
+        return ""
+    try:
+        connection = sqlite3.connect(f"{target.resolve().as_uri()}?mode=ro", uri=True)
+    except sqlite3.Error:
+        return ""
+    try:
+        tables = _read_attached_tables(connection, target)
+    except (OSError, sqlite3.Error, RuntimeError):
+        connection.close()
+        return ""
+    try:
+        for table in tables:
+            if table == "main":
+                try:
+                    row = connection.execute(
+                        'SELECT "promoted_revision" FROM "landed_runs" '
+                        'WHERE "run_id" = ?',
+                        (run_id,),
+                    ).fetchone()
+                except sqlite3.Error:
+                    row = None
+                if row is not None and row[0]:
+                    return str(row[0])
+            try:
+                payload = connection.execute(
+                    f'SELECT "payload" FROM {table}."runs" WHERE "run_id" = ?',  # noqa: S608 - fixed table names
+                    (run_id,),
+                ).fetchone()
+            except sqlite3.Error:
+                continue
+            if payload is None:
+                continue
+            try:
+                record = json.loads(payload[0])
+            except (TypeError, ValueError):
+                continue
+            revision = str(record.get("promoted_revision") or "").strip()
+            if revision:
+                return revision
+        return ""
+    finally:
+        connection.close()
+
+
 def stored_run_payloads(
     project: str,
     *,
@@ -1069,6 +1405,7 @@ def stored_run_rows(
         connection.close()
     if change_token(target) == token:
         _remember_answer(key, records)
+    _STATEMENT_COUNTERS["decoded_rows"] += len(records)
     return records
 
 
@@ -1134,26 +1471,63 @@ def stored_run_exists(project: str, *, path: str | Path | None = None) -> bool:
         connection.close()
 
 
+def _reconcile_mirror(target: Path, project: str) -> bool:
+    """Repair one project's mirror once, or report that it could not be.
+
+    The signature read is otherwise read-only; this is the one repair it
+    attempts, and only when the counts already disagree. A short busy timeout
+    keeps a read that meets a writer's lock from stalling: the caller falls
+    back to the query the mirror replaced and the next read tries again. A
+    copy held read-only refuses here for the same reason.
+    """
+    try:
+        with RunStore(target, busy_timeout=INDEX_BUSY_TIMEOUT_SECONDS) as store:
+            store.reconcile_signatures(project)
+    except (OSError, sqlite3.Error):
+        return False
+    return True
+
+
 def stored_run_signature(
     project: str,
     *,
     path: str | Path | None = None,
+    since: int | None = None,
 ) -> tuple[tuple[Any, ...], ...] | None:
     """Each stored row's identity, indexed columns and encoded size.
 
     A reader that already holds a project's decoded history answers its next
     read from what it holds, decoding only the rows this signature differs
-    from. One metadata row per stored run carries what a write moves: the
-    rowid an insert takes, every column the store indexes, the revision a
-    backfill stamps, and the encoded size of both halves of the record. No
-    payload is decoded, so comparing the whole of a project's history costs the
-    store's own page reads rather than one parse per run.
+    from. One row per stored run in the payload-free
+    :data:`SIGNATURE_TABLE` carries what a write moves: the rowid an insert
+    takes, every column the store indexes, the revision a backfill stamps, the
+    encoded size of both halves of the record, and the sequence number the row
+    was written at. No payload is read, so comparing a project's history costs
+    the metadata rows rather than the store's payload bytes.
+
+    ``since`` asks only for the rows written after that sequence number, which
+    is the state a caller held after its last read. A row deleted since then
+    arrives with ``present`` clear rather than as an absence, so a caller
+    applies the answer to what it holds without scanning the table. Every row
+    also carries its ``version`` as the last element, so a caller records the
+    cursor for its next read.
 
     The comparison is a token, not an answer: a rewrite in place that moves no
-    indexed column and encodes to the same number of bytes does not appear
-    here. That is why :func:`reckon.ledger.stored_history` also watches the
-    project's write generation and refreshes a signature that moves without
-    showing a change.
+    indexed column and encodes to the same number of bytes does not move an
+    indexed value here, but it does move the row's sequence number, so it is
+    reported. That is why the ledger's write-generation watch and this sequence
+    agree, and :func:`reckon.ledger.stored_history` decodes a row reported by
+    either.
+
+    A store that carries runs without the signature table — one written by a
+    process running code older than this table — is answered by the query the
+    table replaced, so its rows are never missing from an answer.
+
+    A mirror the store disagrees with — a row that left by a path that did not
+    write the table, or a stored row no signature describes — is repaired once
+    here, at a cost bounded by the runs that differ, and the answer is then
+    read from the mirror. A store this process cannot write keeps the fallback
+    query rather than failing the read.
 
     None distinguishes an absent store from one holding no runs for this
     project, matching :func:`stored_run_rows`.
@@ -1164,29 +1538,49 @@ def stored_run_signature(
     connection = _open_readonly(target)
     try:
         if not _refuse_owed_migration(connection, target):
-            return ()
-        selected = ", ".join(f'r."{name}"' for name in (*QUERY_KEYS, ROW_REVISION))
-        signature: list[tuple[Any, ...]] = []
-        for schema in _read_attached_tables(connection, target):
-            if not _table_columns(connection, schema):
-                continue
+            return _counted(())
+        schemas = _read_attached_tables(connection, target)
+        if not _signature_ready(connection):
+            return _counted(_legacy_run_signature(connection, project, schemas))
+        if since is None and not _signature_ids_agree(connection, project, schemas):
+            # A mirror the store disagrees with is repaired once here, so a
+            # project whose rows left by a path that did not write the table
+            # comes back to answering from it rather than scanning its whole
+            # payload on every read. A store this process cannot write leaves
+            # the read on the query the mirror replaced.
+            connection.close()
+            _reconcile_mirror(target, project)
+            connection = _open_readonly(target)
+            schemas = _read_attached_tables(connection, target)
+            if not _signature_ready(connection) or not _signature_ids_agree(
+                connection, project, schemas
+            ):
+                return _counted(_legacy_run_signature(connection, project, schemas))
+        if since is None:
             query = (
-                f'SELECT r."run_id", r.rowid, LENGTH(r."payload"), '  # noqa: S608 - fixed schema and column names
-                "LENGTH(COALESCE(d.\"detail\", '')), "
-                f'{selected}, r."activity_seconds" '
-                f'FROM "{schema}"."runs" r '
-                f'LEFT JOIN "{schema}"."run_details" d ON d."run_id" = r."run_id" '
-                f'WHERE r."project" = ? ORDER BY r.rowid'
+                f'SELECT {_SIGNATURE_SELECT} FROM "{SIGNATURE_TABLE}" '  # noqa: S608 - fixed column names
+                'WHERE "project" = ? AND "present" = 1 ORDER BY "ordinal"'
             )
-            signature.extend(
-                (str(row[0]), schema, *row[1:])
-                for row in connection.execute(query, (project,))
+            rows = connection.execute(query, (project,)).fetchall()
+        else:
+            query = (
+                f'SELECT {_SIGNATURE_SELECT} FROM "{SIGNATURE_TABLE}" '  # noqa: S608 - fixed column names
+                'WHERE "project" = ? AND "version" > ? ORDER BY "version"'
             )
-        return tuple(signature)
+            rows = connection.execute(query, (project, int(since))).fetchall()
+        return _counted(tuple(tuple(row) for row in rows))
     except sqlite3.Error as error:
         raise _unreadable(target, f"{type(error).__name__}: {error}") from error
     finally:
         connection.close()
+
+
+def _counted(
+    rows: tuple[tuple[Any, ...], ...],
+) -> tuple[tuple[Any, ...], ...]:
+    """Return one signature answer, recording the rows its statement returned."""
+    _STATEMENT_COUNTERS["signature_rows"] += len(rows)
+    return rows
 
 
 def project_snapshot(project: str) -> dict[str, Any]:
@@ -1457,6 +1851,7 @@ class RunStore:
         self._migrate_runs()
         if self.archive_path.is_file():
             self._attach_archive(create=True)
+        self._rebuild_signatures()
         self._record_schema_version()
 
     def _migrate_auxiliary(self) -> None:
@@ -1622,7 +2017,7 @@ class RunStore:
             }
             if not set(_RUNS_INDEX_NAMES) <= present:
                 return True
-        return False
+        return not _signature_ready(self._conn) or not self._signature_built()
 
     def _migrate_runs(self, table: str = "runs") -> None:
         """Ensure one runs table has the columns this code expects.
@@ -1708,6 +2103,312 @@ class RunStore:
                 )
             self._conn.executescript(indexes)
 
+    def _next_signature_version(self) -> int:
+        """Allocate the sequence number one written run takes."""
+        row = self._conn.execute(
+            f'UPDATE "{SIGNATURE_SEQUENCE_TABLE}" SET "value" = "value" + 1 '  # noqa: S608 - a fixed table name
+            'RETURNING "value"'
+        ).fetchone()
+        return int(row[0])
+
+    def _record_landing(self, project: str, payload: Mapping[str, Any]) -> None:
+        """Keep the commit a promoted run landed at after its row is retired.
+
+        A retention pass may remove a run's row — the store's own retirement
+        moves it to the archive, and the membership rebuild deletes rows the
+        committed ledger no longer carries. Neither is a fact about whether the
+        run landed, so the landing is not retired at all: a reader asking
+        whether a run landed, and any request waiting on it, gets the same
+        answer afterwards. The write joins the caller's transaction, so the
+        landing and the row it describes move together or not at all.
+        """
+        run_id = str(payload.get("run_id") or "")
+        revision = str(payload.get("promoted_revision") or "").strip()
+        if not run_id or not revision:
+            return
+        self._conn.execute(
+            'INSERT INTO "landed_runs" ("run_id", "project", "promoted_revision") '
+            'VALUES (?, ?, ?) ON CONFLICT("run_id") DO UPDATE SET '
+            '"project" = excluded."project", '
+            '"promoted_revision" = excluded."promoted_revision"',
+            (run_id, str(project or ""), revision),
+        )
+
+    def _land_before_rebuild(self, project: str) -> None:
+        """Keep every promoted row's landing before a rebuild drops its row.
+
+        The membership rebuild rewrites a project's rows from the committed
+        ledger, so a run whose document has left the tree loses its row from
+        the hot store and from the archive alike. The landing is copied out
+        first, from the same rows the rebuild is about to delete, so the
+        question the row answered is still answered afterwards.
+        """
+        statements = [_LAND_FROM_MAIN]
+        if self._attach_archive():
+            statements.append(_LAND_FROM_ARCHIVE)
+        with self._conn:
+            for statement in statements:
+                self._conn.execute(statement, (project,))
+
+    def _write_signature(
+        self,
+        project: str,
+        run_id: str,
+        *,
+        payload: Mapping[str, Any],
+        detail: Mapping[str, Any],
+        schema_name: str = "main",
+        ordinal: int | None = None,
+        revision: str | None = None,
+    ) -> None:
+        """Record one row's signature at a fresh sequence number.
+
+        Called in the same transaction as the run write it describes, so the
+        signature moves with the row or not at all. Only the encoded lengths and
+        indexed values are kept; the payload itself is not read back.
+        """
+        encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        encoded_detail = json.dumps(detail, sort_keys=True, separators=(",", ":"))
+        version = self._next_signature_version()
+        self._conn.execute(
+            _SIGNATURE_WRITE,
+            (
+                str(run_id),
+                str(project or ""),
+                version,
+                1,
+                schema_name,
+                ordinal,
+                len(encoded_payload),
+                len(encoded_detail),
+                *_query_values(payload, detail, project=project),
+                revision,
+                _payload_activity_seconds(encoded_payload),
+            ),
+        )
+
+    def _row_project(self, run_id: str, schema_name: str) -> str:
+        """The project a stored row is filed under, empty when it has no row.
+
+        A missing mirror row must be created carrying the project from the row
+        itself: a caller that names the row by id alone would otherwise leave
+        the new signature answering under no project, and the mirror would
+        read one row short of the store for as long as it stood.
+        """
+        table = "runs" if schema_name in ("", "main") else f"{schema_name}.runs"
+        try:
+            row = self._conn.execute(
+                f'SELECT "project" FROM {table} WHERE "run_id" = ?',  # noqa: S608 - fixed table names
+                (str(run_id),),
+            ).fetchone()
+        except sqlite3.Error:
+            return ""
+        return str(row[0] or "") if row is not None else ""
+
+    def _retire_signature(
+        self,
+        run_id: str,
+        *,
+        project: str,
+        schema_name: str,
+        ordinal: int | None,
+        present: bool = True,
+    ) -> None:
+        """Move or delete one row's signature, keeping the id as a tombstone.
+
+        A deleted row keeps its metadata with ``present`` clear so a reader
+        asking for what moved sees the deletion as a row rather than having to
+        compare the whole table to notice an absence. A row that had no
+        signature row takes its project from the row.
+        """
+        version = self._next_signature_version()
+        cursor = self._conn.execute(
+            f'UPDATE "{SIGNATURE_TABLE}" SET "version" = ?, "present" = ?, '  # noqa: S608
+            f'"schema_name" = ?, "ordinal" = ? WHERE "run_id" = ?',
+            (version, 1 if present else 0, schema_name, ordinal, str(run_id)),
+        )
+        if cursor.rowcount == 0:
+            self._conn.execute(
+                f'INSERT INTO "{SIGNATURE_TABLE}" '  # noqa: S608
+                '("run_id", "project", "version", "present", "schema_name", "ordinal", '
+                '"payload_bytes", "detail_bytes") VALUES (?, ?, ?, ?, ?, ?, 0, NULL)',
+                (
+                    str(run_id),
+                    self._row_project(run_id, schema_name) or str(project or ""),
+                    version,
+                    1 if present else 0,
+                    schema_name,
+                    ordinal,
+                ),
+            )
+
+    def _rebuild_signatures(self, *, force: bool = False) -> None:
+        """Build the signature table from the store's rows.
+
+        Run once, when the table is first created against a store that already
+        holds runs, and again after a wholesale rebuild of the rows. This is the
+        only path that measures payload lengths by reading the payloads, and it
+        is the store's open or its own rebuild rather than a read.
+        """
+        self._conn.executescript(_SIGNATURE_SCHEMA)
+        if not force and self._signature_built():
+            return
+        tables = [("main", "runs", "run_details")]
+        if self.archive_path.is_file() and self._attach_archive():
+            tables.append(("archive", "archive.runs", "archive.run_details"))
+        with self._conn:
+            self._conn.execute(f'DELETE FROM "{SIGNATURE_TABLE}"')  # noqa: S608 - fixed table names
+            self._conn.execute(f'DELETE FROM "{SIGNATURE_SEQUENCE_TABLE}"')  # noqa: S608 - fixed table names
+            self._conn.execute(
+                f'INSERT INTO "{SIGNATURE_SEQUENCE_TABLE}" ("value") VALUES (0)'  # noqa: S608 - fixed table name
+            )
+            for schema, runs, details in tables:
+                if not self._runs_columns(runs):
+                    continue
+                query = (
+                    'SELECT r."run_id", r.rowid, LENGTH(r."payload"), '
+                    "LENGTH(COALESCE(d.\"detail\", '')), "
+                    + ", ".join(f'r."{name}"' for name in (*QUERY_KEYS, ROW_REVISION))
+                    + ', r."activity_seconds" '
+                    f"FROM {runs} r "
+                    f'LEFT JOIN {details} d ON d."run_id" = r."run_id"'
+                )
+                for row in self._conn.execute(query).fetchall():
+                    keys = row[4:10]
+                    self._conn.execute(
+                        _SIGNATURE_WRITE,
+                        (
+                            str(row[0]),
+                            str(keys[2] or ""),
+                            self._next_signature_version(),
+                            1,
+                            schema,
+                            row[1],
+                            row[2],
+                            row[3],
+                            *keys,
+                            row[10],
+                            row[11],
+                        ),
+                    )
+            self._conn.execute(
+                'INSERT INTO "store_meta" ("key", "value") VALUES (?, ?) '
+                'ON CONFLICT("key") DO UPDATE SET "value" = excluded."value"',
+                (_SIGNATURE_RECORD_KEY, "1"),
+            )
+
+    def _signature_row_schemas(self) -> list[str]:
+        """The schemas a project's signature rows are compared against."""
+        schemas = ["main"]
+        if self.archive_path.is_file() and self._attach_archive():
+            schemas.append("archive")
+        return schemas
+
+    def _signature_from_row(
+        self,
+        project: str,
+        run_id: str,
+        schema_name: str,
+        ordinal: int | None,
+    ) -> None:
+        """Measure one stored row and write its signature.
+
+        This reads one row's payload, which is what a signature needs and
+        cannot derive: the row is one the mirror does not describe, and only
+        that row is read, so the cost is the rows that differ.
+        """
+        table = "runs" if schema_name in ("", "main") else f"{schema_name}.runs"
+        details = (
+            "run_details"
+            if schema_name in ("", "main")
+            else f"{schema_name}.run_details"
+        )
+        wanted = ", ".join(f'r."{name}"' for name in (*QUERY_KEYS, ROW_REVISION))
+        row = self._conn.execute(
+            f'SELECT LENGTH(r."payload"), LENGTH(COALESCE(d."detail", \'\')), '  # noqa: S608 - fixed columns
+            f'{wanted}, r."activity_seconds" FROM {table} r '
+            f'LEFT JOIN {details} d ON d."run_id" = r."run_id" '
+            'WHERE r."run_id" = ?',
+            (str(run_id),),
+        ).fetchone()
+        if row is None:
+            return
+        self._conn.execute(
+            _SIGNATURE_WRITE,
+            (
+                str(run_id),
+                str(project or ""),
+                self._next_signature_version(),
+                1,
+                schema_name,
+                ordinal,
+                row[0],
+                row[1],
+                *row[2:9],
+                row[9],
+            ),
+        )
+
+    def reconcile_signatures(self, project: str) -> dict[str, int]:
+        """Bring one project's mirror back into agreement with its rows.
+
+        The mirror falls behind when a row leaves the store through a path
+        that does not write this table, which is what a refused landing's
+        discard does. The difference is found from the ids alone, both sides
+        index-only, and repaired by reading only the rows one side names and
+        the other does not: a stored row with no present signature is measured
+        once, and a present signature the store no longer holds is retired to
+        a tombstone. Nothing that already agrees is read or rewritten.
+        """
+        with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            stored: dict[str, tuple[str, int | None]] = {}
+            for schema in self._signature_row_schemas():
+                table = "runs" if schema == "main" else f"{schema}.runs"
+                try:
+                    found = self._conn.execute(
+                        f'SELECT "run_id", rowid FROM {table} WHERE "project" = ?',  # noqa: S608 - fixed table names
+                        (project,),
+                    ).fetchall()
+                except sqlite3.Error:
+                    continue
+                for run_id, ordinal in found:
+                    stored[str(run_id)] = (schema, ordinal)
+            present = {
+                str(row[0]): (str(row[1]), row[2])
+                for row in self._conn.execute(
+                    f'SELECT "run_id", "schema_name", "ordinal" FROM "{SIGNATURE_TABLE}" '  # noqa: S608
+                    'WHERE "project" = ? AND "present" = 1',
+                    (project,),
+                )
+            }
+            added = 0
+            for run_id, (schema, ordinal) in sorted(stored.items()):
+                if run_id in present:
+                    continue
+                self._signature_from_row(project, run_id, schema, ordinal)
+                added += 1
+            retired = 0
+            for run_id, (schema, ordinal) in sorted(present.items()):
+                if run_id in stored:
+                    continue
+                self._retire_signature(
+                    run_id,
+                    project=project,
+                    schema_name=schema,
+                    ordinal=ordinal,
+                    present=False,
+                )
+                retired += 1
+        return {"added": added, "retired": retired}
+
+    def _signature_built(self) -> bool:
+        """True when the signature table is known to hold every stored run."""
+        row = self._conn.execute(
+            'SELECT 1 FROM store_meta WHERE "key" = ?', (_SIGNATURE_RECORD_KEY,)
+        ).fetchone()
+        return row is not None
+
     def append(self, project: str, record: Mapping[str, Any]) -> None:
         """Insert one run's durable record and its wide detail in one transaction.
 
@@ -1731,7 +2432,7 @@ class RunStore:
             self._conn.execute("BEGIN IMMEDIATE")
             if self._is_archived(run_id):
                 raise sqlite3.IntegrityError(f"run {run_id} is already archived")
-            self._conn.execute(
+            cursor = self._conn.execute(
                 _RUNS_INSERT,
                 (
                     run_id,
@@ -1744,6 +2445,14 @@ class RunStore:
                 'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?)',
                 (run_id, json.dumps(detail, sort_keys=True, separators=(",", ":"))),
             )
+            self._write_signature(
+                project,
+                run_id,
+                payload=payload,
+                detail=detail,
+                ordinal=cursor.lastrowid,
+            )
+            self._record_landing(project, payload)
 
     def sync_run(self, project: str, record: Mapping[str, Any]) -> str:
         """Ensure one run's row matches the record, returning what happened.
@@ -1773,13 +2482,14 @@ class RunStore:
             # Both names are this class's own declarations rather than anything
             # a caller supplies, so the statement is fixed text.
             select = (
-                f"SELECT stored.payload, wide.detail FROM {table} AS stored "  # noqa: S608
+                f"SELECT stored.payload, wide.detail, stored.rowid, stored.revision "  # noqa: S608
+                f"FROM {table} AS stored "
                 f"LEFT JOIN {details} AS wide ON wide.run_id = stored.run_id "
                 "WHERE stored.run_id = ?"
             )
             existing = self._conn.execute(select, (run_id,)).fetchone()
             if existing is None:
-                self._conn.execute(
+                cursor = self._conn.execute(
                     _RUNS_INSERT,
                     (
                         run_id,
@@ -1792,6 +2502,15 @@ class RunStore:
                     'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?)',
                     (run_id, encoded_detail),
                 )
+                self._write_signature(
+                    project,
+                    run_id,
+                    payload=payload,
+                    detail=detail,
+                    schema_name="archive" if table.startswith("archive") else "main",
+                    ordinal=cursor.lastrowid,
+                )
+                self._record_landing(project, payload)
                 return "inserted"
             if existing[0] == encoded_payload and (existing[1] or "") == encoded_detail:
                 return "unchanged"
@@ -1811,6 +2530,16 @@ class RunStore:
                 ).replace("INSERT INTO run_details", f"INSERT INTO {details}"),
                 (run_id, encoded_detail),
             )
+            self._write_signature(
+                project,
+                run_id,
+                payload=payload,
+                detail=detail,
+                schema_name="archive" if table.startswith("archive") else "main",
+                ordinal=existing[2],
+                revision=existing[3],
+            )
+            self._record_landing(project, payload)
             return "updated"
 
     @property
@@ -1908,16 +2637,30 @@ class RunStore:
                         )
                     )
                 ):
-                    candidates.append(str(run_id))
+                    candidates.append((str(run_id), str(project or ""), payload))
                     if len(candidates) >= limit:
                         break
             pages_before = self._conn.execute("PRAGMA main.page_count").fetchone()[0]
             if candidates and apply:
                 self._attach_archive(create=True)
-                for run_id in candidates:
+                for run_id, project, payload in candidates:
+                    # The archive keeps the row, but the archive is itself
+                    # rebuilt from the committed ledger and can drop it. The
+                    # landing is the part a reader and a waiting request ask
+                    # for, so it is copied out of the row before the row moves.
+                    self._record_landing(project, json.loads(payload))
                     self._conn.execute(
                         _RUNS_ARCHIVE_INSERT,
                         (run_id,),
+                    )
+                    archived_ordinal = self._conn.execute(
+                        "SELECT last_insert_rowid()"
+                    ).fetchone()[0]
+                    self._retire_signature(
+                        run_id,
+                        project="",
+                        schema_name="archive",
+                        ordinal=archived_ordinal,
                     )
                     self._conn.execute(
                         "INSERT INTO archive.run_details SELECT * FROM main.run_details "
@@ -1943,9 +2686,10 @@ class RunStore:
             self._conn.execute(
                 f"PRAGMA main.incremental_vacuum({int(vacuum_pages)})"
             ).fetchall()
+        retired = [run_id for run_id, _project, _payload in candidates]
         return {
-            "offered": candidates,
-            "retired": candidates if apply else [],
+            "offered": retired,
+            "retired": retired if apply else [],
             "archive": str(self.archive_path),
             "pages_before": pages_before,
             "pages_after": self._conn.execute("PRAGMA main.page_count").fetchone()[0],
@@ -2052,6 +2796,8 @@ class RunStore:
                 # write was refused has no column to read it back from.
                 records[run_id] = {"project": name, **payload, **detail}
         try:
+            for name in changed:
+                self._land_before_rebuild(name)
             with self._conn:
                 for name, rows in changed.items():
                     self._conn.execute(
@@ -2129,6 +2875,7 @@ class RunStore:
                 exc,
             )
         else:
+            self._rebuild_signatures(force=True)
             self._membership_stamps.update(rebuilt)
         return records
 
@@ -2279,8 +3026,54 @@ class RunStore:
                     'AND ("revision" IS NULL OR "revision" = \'\')',
                     (str(revision), str(run_id), project),
                 )
-                stamped += cursor.rowcount
+                if cursor.rowcount:
+                    self._conn.execute(
+                        f'UPDATE "{SIGNATURE_TABLE}" SET "revision" = ?, '  # noqa: S608
+                        f'"version" = ? WHERE "run_id" = ?',
+                        (str(revision), self._next_signature_version(), str(run_id)),
+                    )
+                    stamped += cursor.rowcount
         return stamped
+
+    def delete_run(self, run_id: str, *, project: str | None = None) -> bool:
+        """Delete one run's row and detail, leaving a signature tombstone.
+
+        The rows go in one transaction so a signature reader never sees a row
+        without its detail. The tombstone is kept in the signature table with
+        ``present`` clear, so a reader that held this run is told it moved
+        rather than having to compare the whole table to notice the absence.
+        """
+        run_id = str(run_id)
+        with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            archived = self._is_archived(run_id)
+            table = "archive.runs" if archived else "runs"
+            details = "archive.run_details" if archived else "run_details"
+            deleted = self._conn.execute(
+                f'DELETE FROM {table} WHERE "run_id" = ?',  # noqa: S608 - fixed table names
+                (run_id,),
+            ).rowcount
+            self._conn.execute(
+                f'DELETE FROM {details} WHERE "run_id" = ?',  # noqa: S608 - fixed table names
+                (run_id,),
+            )
+            if deleted:
+                self._conn.execute(
+                    'DELETE FROM "retired_runs" WHERE "run_id" = ?', (run_id,)
+                )
+                # An explicit removal is not a retention pass: the caller is
+                # taking the run back, so the landing goes with it.
+                self._conn.execute(
+                    'DELETE FROM "landed_runs" WHERE "run_id" = ?', (run_id,)
+                )
+                self._retire_signature(
+                    run_id,
+                    project=project or "",
+                    schema_name="archive" if archived else "main",
+                    ordinal=None,
+                    present=False,
+                )
+        return bool(deleted)
 
     def append_member(self, member: Mapping[str, Any], *, project: str = "") -> None:
         """Record one roster member's full payload under its own id."""

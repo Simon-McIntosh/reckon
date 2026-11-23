@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline-arm.log at 4a5ec5081e records 58 passed with EXIT=0 and no FAILED line, and after-arm.log at c0ef2a0bb3 records 60 passed with EXIT=0 and no FAILED line, so the set difference is empty.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:6273 (crew admit calls admit_until_stopped",
+    "reckon/crew/queue_admission.py:254 (re-exports admit_until_stopped",
+    "reckon/crew/queue_admission.py:367 (re-exports _publish_pass_verdicts",
+    "reckon/crew/queue_admission.py:369 (re-exports _record_pass_verdicts",
+    "reckon/crew/obligations.py:2137 (admission_verdicts reads the verdict log",
+    "reckon/crew/obligations.py:2165 (recent_upstream_retirements reads the log)"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-mrfo-the-admit-service-holds-bounded-memory-b55848efb972",
+      "recorded_at": "2026-11-22T04:25:54.348056+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T03:07:40Z",
+  "findings": [
+    {
+      "file": "tests/test_the_admit_service_holds_bounded_memory.py",
+      "line": "98",
+      "severity": "non-blocking",
+      "text": "the 50-pass band assertion is not a guard for this change, because the manifest and the fragment record that the base revision, which has no _release_pass_memory, also keeps 150 MiB to 152 MiB across the constant fixture, so reinstating the removal of the memory release leaves this assertion green and only the idle-reading case notices."
+    },
+    {
+      "file": "tests/test_the_admit_service_holds_bounded_memory.py",
+      "line": "112",
+      "severity": "non-blocking",
+      "text": "the assertion compares the reading's resident_bytes against a different call to service.resident_bytes(), the same function the code under test used, so both sides move together and a rewritten reader returning a constant stays true; the independent /proc helper the module already defines at line 28 is unused here, so the done_when's reading-to-/proc 10 % agreement is unmeasured."
+    },
+    {
+      "file": "reckon/crew/admission/service.py",
+      "line": "202",
+      "severity": "non-blocking",
+      "text": "_release_pass_memory calls file_memo.clear() unconditionally on every pass, while reckon/crew/admission/shared.py:222 and the fragment at line 16 say the memo is dropped only when the reading is above the bound, and clearing the process-wide parse memo every pass discards the cross-pass cache the memo exists to provide (reckon/file_memo.py:1), raising the read volume the plan's next section is trying to bound."
+    },
+    {
+      "file": "reckon/crew/admission/verdicts.py",
+      "line": "574",
+      "severity": "non-blocking",
+      "text": "writing a reading for every idle pass puts a line carrying retired: [] immediately after one carrying a retirement, and reckon/crew/obligations.py:2170 recent_upstream_retirements returns only the last record's retired list, so a retirement is now readable for one pass instead of persisting through idle passes and a production consumer of this log silently loses it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the seven commits 47fe0ca621..b55848efb9 against base 4a5ec5081e; six files, +246/-28: resident_bytes and _release_pass_memory in service.py, the bound and its export in shared.py, the removal of the idle-pass early returns in verdicts.py, the new test, a two-line adjustment to the lander test, and the evidence fragment.",
+    "done_when": "the done_when names tests/test_the_admit_service_holds_bounded_memory.py covering a 50-pass 10 % band and an idle pass writing a reading that carries the memory figure; lines 98 and 112 assert exactly those, after-arm.log records 60 passed with a closing EXIT=0 at c0ef2a0bb3, and negative-control.log records the idle case failing at the base, but the gate never asserts the 2 GiB bound, the 100-pass count, nor that the pass reading agrees with /proc within 10 %.",
+    "goal": "the section's deliverable is an admit service whose resident memory stays under a stated bound and whose every pass, including a pass over a lane with nothing queued, leaves a reading carrying that memory; reckon/crew/admission/shared.py:225 states the section's bound at 2 GiB, reckon/crew/admission/service.py:186 hands a pass's freed pages back, and reckon/crew/admission/verdicts.py:531 records resident_bytes and memory_bound_bytes on every pass, so the goal is implemented.",
+    "manifest": "read; it reports status complete from base 4a5ec5081e to b55848efb9 over seven commits, names baseline-arm.log, after-arm.log, memory-head-arm.log and negative-control.log, and its stated results (58 passed baseline, 60 passed after, base constant-fixture 1 failed 1 passed) match the log bodies I opened.",
+    "write_paths": "the declared paths are reckon/crew/admission, reckon/run_store.py, reckon/ledger.py, reckon/crew/file_memo.py, tests/test_the_admit_service_holds_bounded_memory.py, the fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/, a figures directory and tests/test_the_lander_skips_a_run_landed_elsewhere.py; all six changed paths lie inside them, and the declared reckon/crew/file_memo.py is absent from the diff."
+  },
+  "justifications": {
+    "durability": "tests/test_the_admit_service_holds_bounded_memory.py:98 passes at the base revision too (the manifest and fragment record 150 MiB to 152 MiB within the band without the release), so reinstating the removal of _release_pass_memory leaves it green and only the idle-reading case at line 112 guards the change.",
+    "evidence": "after-arm.log records 60 passed with EXIT=0 at c0ef2a0bb3 and baseline-arm.log 58 passed with EXIT=0 at 4a5ec5081e, matching the manifest, but tests/test_the_admit_service_holds_bounded_memory.py asserts neither the 2 GiB bound nor the reading-to-/proc 10 % agreement the done_when names.",
+    "fit": "the new helpers follow the surrounding import-in-function style of reckon/crew/admission/service.py:186 and no added name carries a plan or version label, though reckon/crew/admission/verdicts.py:558 leaves a broken line-wrap in its docstring.",
+    "goal_fidelity": "reckon/crew/admission/service.py:186 releases a pass's freed pages and reckon/crew/admission/verdicts.py:531 records memory_bound_bytes on every pass, so the landed code does what the goal states even though no test shows the memory improving.",
+    "reuse": "the diff extends existing owners by importing reckon/crew/station.py:878 release_freed_memory and reckon/file_memo.py:645 clear rather than re-implementing them, and the one new reader, resident_bytes at service.py:174, has no callable owner to extend (the nearest is the inline VmRSS regex at reckon/crew/fleet_supervisor.py:1034).",
+    "scope_discipline": "every path in the diff (service.py, shared.py, verdicts.py, the two tests and the fragment) is inside the write paths the manifest declares at its orientation_write_paths line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's deliverable is an admit service whose resident memory stays under a stated bound and whose every pass, including a pass over a lane with nothing queued, leaves a reading carrying that memory; reckon/crew/admission/shared.py:225 states the section's bound at 2 GiB, reckon/crew/admission/service.py:186 hands a pass's freed pages back, and reckon/crew/admission/verdicts.py:531 records resident_bytes and memory_bound_bytes on every pass, so the goal is implemented.\nVERDICT done_when: the done_when names tests/test_the_admit_service_holds_bounded_memory.py covering a 50-pass 10 % band and an idle pass writing a reading that carries the memory figure; lines 98 and 112 assert exactly those, after-arm.log records 60 passed with a closing EXIT=0 at c0ef2a0bb3, and negative-control.log records the idle case failing at the base, but the gate never asserts the 2 GiB bound, the 100-pass count, nor that the pass reading agrees with /proc within 10 %.\nVERDICT write_paths: the declared paths are reckon/crew/admission, reckon/run_store.py, reckon/ledger.py, reckon/crew/file_memo.py, tests/test_the_admit_service_holds_bounded_memory.py, the fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/, a figures directory and tests/test_the_lander_skips_a_run_landed_elsewhere.py; all six changed paths lie inside them, and the declared reckon/crew/file_memo.py is absent from the diff.\nVERDICT manifest: read; it reports status complete from base 4a5ec5081e to b55848efb9 over seven commits, names baseline-arm.log, after-arm.log, memory-head-arm.log and negative-control.log, and its stated results (58 passed baseline, 60 passed after, base constant-fixture 1 failed 1 passed) match the log bodies I opened.\nVERDICT diff: read the seven commits 47fe0ca621..b55848efb9 against base 4a5ec5081e; six files, +246/-28: resident_bytes and _release_pass_memory in service.py, the bound and its export in shared.py, the removal of the idle-pass early returns in verdicts.py, the new test, a two-line adjustment to the lander test, and the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:6273 (crew admit calls admit_until_stopped), reckon/crew/queue_admission.py:254 (re-exports admit_until_stopped), reckon/crew/queue_admission.py:367 (re-exports _publish_pass_verdicts), reckon/crew/queue_admission.py:369 (re-exports _record_pass_verdicts), reckon/crew/obligations.py:2137 (admission_verdicts reads the verdict log), reckon/crew/obligations.py:2165 (recent_upstream_retirements reads the log)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/service.py:186 releases a pass's freed pages and reckon/crew/admission/verdicts.py:531 records memory_bound_bytes on every pass, so the landed code does what the goal states even though no test shows the memory improving.\nSCORE evidence: 12\nJUSTIFICATION evidence: after-arm.log records 60 passed with EXIT=0 at c0ef2a0bb3 and baseline-arm.log 58 passed with EXIT=0 at 4a5ec5081e, matching the manifest, but tests/test_the_admit_service_holds_bounded_memory.py asserts neither the 2 GiB bound nor the reading-to-/proc 10 % agreement the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (service.py, shared.py, verdicts.py, the two tests and the fragment) is inside the write paths the manifest declares at its orientation_write_paths line.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_the_admit_service_holds_bounded_memory.py:98 passes at the base revision too (the manifest and fragment record 150 MiB to 152 MiB within the band without the release), so reinstating the removal of _release_pass_memory leaves it green and only the idle-reading case at line 112 guards the change.\nSCORE fit: 15\nJUSTIFICATION fit: the new helpers follow the surrounding import-in-function style of reckon/crew/admission/service.py:186 and no added name carries a plan or version label, though reckon/crew/admission/verdicts.py:558 leaves a broken line-wrap in its docstring.\nSCORE reuse: 16\nJUSTIFICATION reuse: the diff extends existing owners by importing reckon/crew/station.py:878 release_freed_memory and reckon/file_memo.py:645 clear rather than re-implementing them, and the one new reader, resident_bytes at service.py:174, has no callable owner to extend (the nearest is the inline VmRSS regex at reckon/crew/fleet_supervisor.py:1034).\nFINDING tests/test_the_admit_service_holds_bounded_memory.py:98 non-blocking: the 50-pass band assertion is not a guard for this change, because the manifest and the fragment record that the base revision, which has no _release_pass_memory, also keeps 150 MiB to 152 MiB across the constant fixture, so reinstating the removal of the memory release leaves this assertion green and only the idle-reading case notices.\nFINDING tests/test_the_admit_service_holds_bounded_memory.py:112 non-blocking: the assertion compares the reading's resident_bytes against a different call to service.resident_bytes(), the same function the code under test used, so both sides move together and a rewritten reader returning a constant stays true; the independent /proc helper the module already defines at line 28 is unused here, so the done_when's reading-to-/proc 10 % agreement is unmeasured.\nFINDING reckon/crew/admission/service.py:202 non-blocking: _release_pass_memory calls file_memo.clear() unconditionally on every pass, while reckon/crew/admission/shared.py:222 and the fragment at line 16 say the memo is dropped only when the reading is above the bound, and clearing the process-wide parse memo every pass discards the cross-pass cache the memo exists to provide (reckon/file_memo.py:1), raising the read volume the plan's next section is trying to bound.\nFINDING reckon/crew/admission/verdicts.py:574 non-blocking: writing a reading for every idle pass puts a line carrying retired: [] immediately after one carrying a retirement, and reckon/crew/obligations.py:2170 recent_upstream_retirements returns only the last record's retired list, so a retirement is now readable for one pass instead of persisting through idle passes and a production consumer of this log silently loses it.",
+  "review_node": "review-of-mrfo-the-admit-service-holds-bounded-memory-b55848efb972",
+  "review_run_id": "r-20261122T030628941393-review-of-mrfo-the-admit-service-holds-bounded-memory-b55848efb972",
+  "reviewed_base_sha": "4a5ec5081e3dbac8d523e4d6a1b1d5261ec61410",
+  "reviewed_head_sha": "b55848efb972949edbddd42d4bd5a192fd81790e",
+  "reviewed_run_id": "r-20261121T213437452684-mrfo-the-admit-service-holds-bounded-memory",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T030628941393-review-of-mrfo-the-admit-service-holds-bounded-memory-b55848efb972"
+  },
+  "scores": {
+    "durability": 8,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T03:29:01.261525+00:00",
+  "total": 89
+}

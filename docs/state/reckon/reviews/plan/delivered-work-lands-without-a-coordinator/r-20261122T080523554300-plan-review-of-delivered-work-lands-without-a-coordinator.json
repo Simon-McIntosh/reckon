@@ -1,0 +1,248 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T08:06:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion_gate.py:415",
+      "id": "duplicate_owner-1",
+      "reason": "the write paths must include reckon/crew/promotion_gate.py, because the fix is an edit to the two functions that already produce the refusal and the divergence.",
+      "text": "\u00a741 asks that a merged-head gate whose command cannot start be reported as not started, naming the program and the tree, and not as \"a gate the merge changed\". Both mechanisms already live in reckon/crew/promotion_gate.py: `_require_a_resolvable_gate_program` (:415) resolves a recorded program \u2014 including a relative `.venv/bin/python` \u2014 against the run's own checkout roots and refuses with `_resolution_seat` (:475), which names the program and where it was looked for; and `_merged_gate_finding` (:557) is the function that emits the \"the merge changes what this node's gate proves\" message the section calls wrong. The section's write paths name only `reckon/crew/landing_measure.py` and `reckon/crew/promotion.py`, so a node following them builds a second resolver and a second verdict in another module while the owner that produces both is never edited, leaving two answers to one question",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/landing_measure.py:617",
+      "id": "reuse_search-1",
+      "reason": "the section reads as though interpreter resolution must be invented, and the node brief would otherwise let a node write a path-rewriting layer rather than call `_link_environment` on the replay checkout.",
+      "text": "\u00a741's second half, \"a gate command naming the repository's environment interpreter by a relative path runs at the merged head\", is already solved for measurement trees: `_link_environment(repo, tree)` symlinks the repository's resolved environment into a scratch tree precisely so a relative `.venv/bin/python` starts (documented in its own docstring, called from `base_checkout` at reckon/crew/landing_measure.py:1647 and therefore through `candidate_checkout`). The merged-head replay is the one tree that does not get it \u2014 it runs the stored command with `sh -c` and cwd set to the shared checkout (reckon/crew/promotion_gate.py:993-1013) \u2014 so the change is one existing helper applied to a second tree, not a new interpreter resolution",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_landing.py:1126",
+      "id": "reuse_search-2",
+      "reason": "the section already says \"the same population \u2026 as the lander measures\", so its text would not change; the two function names belong in the brief.",
+      "text": "\u00a742's \"measured against the same test population, base and head, as a landing the lander makes by itself\" is `_measure_delivery` (:1126), which builds the candidate and base trees, derives the population with `delivery_scope.derive` and measures with `landing_measure.measure_run`; `_landing_test_files` (:1107) already covers the incident's exact shape \u2014 a node whose write scope names no test file still has the tests its delivery changed measured \u2014 and the coordinator path's own `--land` branch (reckon/crew_run_commands.py:4340) already has the pointer, the head and the tree this function takes",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/promotion_requests.py:140",
+      "id": "reuse_search-3",
+      "reason": "the section names promotion_requests.py and asks for the existing obligation to state the cause, which is the same edit the owner needs; naming `_refusal_uses_replaced_code` and `failure_obligations` is the brief's job.",
+      "text": "\u00a740's \"promoted again by the service\" is a second automatic retry condition beside the one the request state machine already carries: `_refusal_uses_replaced_code` (:140) is the existing single condition under which a terminal `refused` request is retried without a coordinator, `request_promotion(..., retry=True)` (:460-503) is its seam, and `failure_obligations` (:1554) owns the obligation text and next command the section asks to name the lock; below them `run_store._locked` (reckon/run_store.py:2347) and `_retrying` (:2367) already retry a locked store with a bounded backoff, which is where the 120 s bound the refusal names comes from \u2014 but widening that bound is not the fix, because the section's endpoint is a promotion that lands after the lock clears, not one that waits longer",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/promotion_scope.py:71",
+      "id": "duplicate_owner-2",
+      "reason": "the section already names promotion.py and promotion_scope.py, the two files that own the lease and the snapshot, so the plan reads correctly; the lease functions are the brief's reuse map.",
+      "text": "\u00a739's deliverable is already the stated purpose of the branch-write lease: `_branch_write_scope` (:71) \"holds a branch claim only between the first write and its commit\", `_acquire_branch_write` (:100) takes a cross-process lease keyed on the checkout and branch, and `_PlanWriteSnapshot.require_owned_content`/`restore` (reckon/crew/promotion.py:1995, :2024) accept only exact preimages or the write the run intended. The census the node must take is of plan writes reached outside an enclosing `_branch_write_scope()` \u2014 the scopes that exist are at reckon/crew/promotion.py:1949 and :1962, reckon/crew/promotion_requests.py:1365, and reckon/crew/promotion_scope.py:3088, :3180 and :3284 \u2014 because a write outside every one of them is the lease's real gap, and a section that describes a new restore/commit mechanism instead of naming the lease would fork it",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/ledger.py:241",
+      "id": "duplicate_owner-3",
+      "reason": "the section already says no case is \"skipped, deleted without a replacement, or marked as an expected failure\", which forbids the waiver; the brief only needs the sentence that the waiver is not a repair.",
+      "text": "\u00a738 asks the six named cases to pass or be replaced, and the sibling mechanism a node could reach for is the suite-delta receipt (`SuiteDeltaError`, reckon/ledger.py:241, read at reckon/crew_run_commands.py:4383). That mechanism compares baseline and after populations and is unrelated to repairing an expectation about behaviour the code already has; treating the six ids as a waiver target rather than a test defect would satisfy the done-when without repairing anything",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "ee81ed54a0ccf376fdb4366e4be0729fe91b6dac",
+  "plan_fingerprint": "2d438ee0c5b6b8fae499cdc858d289630c83ea2b5ea7b96238d68cabc796a2ef",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 95,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "ee81ed54a0ccf376fdb4366e4be0729fe91b6dac",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "reckon/crew/promotion_gate.py added to section 41's write paths",
+      "reason": "",
+      "when": "2026-11-22T08:30:05.759419+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "section": "s41",
+      "sections": [
+        "s41"
+      ],
+      "when": "2026-11-22T08:30:10.835006+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "section": "s42",
+      "sections": [
+        "s42"
+      ],
+      "when": "2026-11-22T08:30:17.056653+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "reuse_search-3",
+      "reason": "",
+      "section": "s40",
+      "sections": [
+        "s40"
+      ],
+      "when": "2026-11-22T08:30:22.991180+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "section": "s39",
+      "sections": [
+        "s39"
+      ],
+      "when": "2026-11-22T08:30:28.802072+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "duplicate_owner-3",
+      "reason": "",
+      "section": "s38",
+      "sections": [
+        "s38"
+      ],
+      "when": "2026-11-22T08:30:35.059188+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "ee81ed54a0ccf376fdb4366e4be0729fe91b6dac",
+      "commit_basis": "edit",
+      "note": "reckon/crew/promotion_gate.py added to section 41's write paths",
+      "reason": "",
+      "when": "2026-11-22T08:30:05.759419+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "s39",
+      "sections": [
+        "s39"
+      ],
+      "when": "2026-11-22T08:30:28.802072+00:00"
+    },
+    "duplicate_owner-3": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "s38",
+      "sections": [
+        "s38"
+      ],
+      "when": "2026-11-22T08:30:35.059188+00:00"
+    },
+    "reuse_search-1": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "s41",
+      "sections": [
+        "s41"
+      ],
+      "when": "2026-11-22T08:30:10.835006+00:00"
+    },
+    "reuse_search-2": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "s42",
+      "sections": [
+        "s42"
+      ],
+      "when": "2026-11-22T08:30:17.056653+00:00"
+    },
+    "reuse_search-3": {
+      "action": "carried",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "",
+      "section": "s40",
+      "sections": [
+        "s40"
+      ],
+      "when": "2026-11-22T08:30:22.991180+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/delivered-work-lands-without-a-coordinator/r-20261122T080523554300-plan-review-of-delivered-work-lands-without-a-coordinator.json",
+  "review_run_id": "r-20261122T080523554300-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "82c605ded8e6557655ce62ef53b655402603bf3b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 each section asks for one behaviour whose hiding place already exists and is deep: the plan-write lease and ownership check (`_branch_write_scope`, `_PlanWriteSnapshot.require_owned_content`), the promotion request state machine (`request_promotion`, `failure_obligations`), the measurement module (`measure_run`, `_measure_delivery`). No section proposes a spread of small wrappers, and \u00a739 and \u00a740 extend the lease and the request state rather than adding parallel layers.",
+    "duplicate_owner": "a finding \u2014 \u00a741's refusal and its \"the merge changes what this node's gate proves\" verdict are both owned by reckon/crew/promotion_gate.py, which no section's write paths name, so the node would fork both.",
+    "interface_budget": "pass \u2014 public_definitions 3133, cli_options 535, mcp_views 15, refusal_families 25; s38\u2013s42 add no command, option, module-level public name or view, and \u00a741 reuses the existing gate-program refusal instead of adding a refusal family, so there is nothing to retire.",
+    "reuse_search": "a finding \u2014 \u00a741's two halves already exist as `_link_environment` (reckon/crew/landing_measure.py:617) and `_link_environment`'s sibling refusal `_require_a_resolvable_gate_program`/`_resolution_seat` (reckon/crew/promotion_gate.py:415, :475), and \u00a742's measure is `_measure_delivery` (reckon/crew/queue_landing.py:1126); \u00a742 names its owner in substance, \u00a741 does not.",
+    "thin_wrapper": "pass \u2014 no section adds a layer beside an existing one: \u00a739 extends the branch-write lease, \u00a740 extends the request state machine's own automatic-retry seam, \u00a741 edits the owner of both the program resolution and the merged-head finding, and \u00a742 calls an existing measure."
+  },
+  "section_digests": {
+    "_document": "b34b90e2577712159691325e43858570d20eb091a0a217a40c95fa84463e50bc",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s18": "952c184917351117b3f92f50b109c64b6edc963dc57f74f8d0e96e260b672454",
+    "s19": "fd99cdb85821b8f1cc753d60d3461ddda1e36227553a34ad710f3c4edbcb65dd",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s20": "73a59983728fec7eb3a28f9305c1846bab53db81049cdf361b7332b51458b9ab",
+    "s21": "c95db350871319247d9fa4cc2afa9694a54554ea9e31d2e9da533f29a2f8331f",
+    "s22": "af8c57fe3c0c211e820c487af5729bf215453da9640ec5c8b23d71e3f7418e41",
+    "s23": "3739019144c6377f7bee7906410475d1c3b4b1cb8c6cc230ed6a6ba1fb090517",
+    "s24": "2d55de204feeb4689a853af6b9a87571dcb196723395a8172af8276eb87eb3b3",
+    "s25": "5a7d62a0abe80ca6575854a16a19342fe76fea7420d61e441c7c934523ebb7fd",
+    "s26": "a83b6d3223dde663f8b81971ca35c3f4f0d2f46d2f19f7761f9802cb61788701",
+    "s27": "6d263751c392fc5e86bdf0e86106d2e36860af9f0b37a3bfe889db5542c3f8e6",
+    "s28": "17e9b9db682ba8c582f60c11d7f752a497c3ef3401c66cc48a72764617d78e9e",
+    "s29": "aee1396a8754e1625c820205737fe59f7824cbf2b36e9dfd86c1035adf168991",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s30": "d93b8bb4383f924d889d17c41242ca68d40eacc16593a842828af0d7c12fc061",
+    "s31": "0cd73bcd2c2f9995003f53395122fdcf820de30cc0a379b6e2c4843155ea5ba3",
+    "s32": "5ed643747e9b7d9ed5abb8a077fe1a07abd308c872e6f4aa459a6b84437fc045",
+    "s33": "182952968e90a6809c9d1d6ffbdb9510e799ca5245584a0c5aedca3c540a8765",
+    "s34": "8a7ec1f363dae968ee45f64b182e5d2540d866b85e36a1ee3b05a1d2b76ad667",
+    "s35": "342fa77136b1cf1369dc14d00ac464410822978a17a52d8ac2fe7106d46653db",
+    "s36": "a3e589a0ff13fdff271c9fbffd81fe9408938ea55d38e2509c049b7db4ddc169",
+    "s37": "bd4a2bb395874e438f2b0ccf9bb96960ac2c7f8e208563002a39fc8dfac95b08",
+    "s38": "11f71df4263f64016533391da22340a0688b40f72a639e5f5fc79032ed2f68b4",
+    "s39": "9d1de82c0f41cbcce7c82b7662b0b6d7a9af32f904f345e7a68ee79379097e36",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s40": "0cd0e32a70eb409b7cfa14e7f3c5f5aabfeac32f766b21a05759d9f3eb90716c",
+    "s41": "883c47acb1ac85f365ba9497c643b42a918d9d4550da23e4dd4a9b4644fd99fa",
+    "s42": "3ae44ccd8ab64b96c54c4f27bfd779deeae4fb9e46a3a2bcc75f1d60479c6aff",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T08:17:16.642785+00:00",
+  "total": null
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:5419",
+    "reckon/crew/recovery_review_acceptance.py:752",
+    "reckon/crew/promotion_gate.py:replay_domain_invariant_checks"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-dwlw-a-gate-that-cannot-start-names-its-program-b0157b82c3d0",
+      "recorded_at": "2026-11-22T11:22:34.408503+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T10:56:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "809",
+      "severity": "non-blocking",
+      "text": "non-blocking: _executable_file duplicates _is_executable_file at reckon/crew/promotion_gate.py:497, and resolve_gate_program at :726 re-derives the tokenisation, PATH lookup, relative-candidate resolution and executable test already owned by _require_executable_gate_command at reckon/crew/promotion_gate.py:420, so two resolvers can drift."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from dde7b001 to b0157b82; 8311322524 adds the resolver, the not-started report and the test, b0157b82 adds only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_gate_that_cannot_start_names_its_program.py and its three cases; the manifest records 61 passed for that scoped gate and 3 failed for the same file at the base in the negative control.",
+    "goal": "the goal is to report a merged-head gate that cannot start its program; reckon/crew/promotion_gate.py:83 and :1093 resolve the command's program before the shell sees it and report an unresolved one as not-run rather than as a changed gate.",
+    "manifest": "read; it states the scoped gate at 8311322524 ran 61 passed and both suite arms exited 0, and cites the four logs, which I opened.",
+    "write_paths": "the manifest declares reckon/crew/landing_measure.py, reckon/crew/promotion_gate.py, the new test and the landing fragment; every path in the diff is inside that set."
+  },
+  "justifications": {
+    "durability": "all three cases in tests/test_a_gate_that_cannot_start_names_its_program.py fail at the pinned base (negative-control-base.log line 26 quotes verdict=failed exit_status=127), so the tests redden when the fix is removed, though the fragment's byte-identical-replay claim is not separately guarded.",
+    "evidence": "the after-suite log at 8311322524 reads 61 passed and the base arm at dde7b001 reads 58 passed with no FAILED line, and the negative control reads 3 failed EXIT=1 quoting exit_status=127.",
+    "fit": "the new names in reckon/crew/landing_measure.py:690 carry no plan, stage or ticket identifiers and follow the module's existing docstring idiom.",
+    "goal_fidelity": "reckon/crew/promotion_gate.py:1102 reports an unresolved program as not-run with missing_program and a message that disclaims the merge, matching the goal.",
+    "reuse": "reckon/crew/landing_measure.py:726 re-implements the gate-command program resolution already owned by reckon/crew/promotion_gate.py:420 instead of extending it.",
+    "scope_discipline": "the two product modules, the new test and the fragment are the only paths in git diff dde7b001..b0157b82, all within the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to report a merged-head gate that cannot start its program; reckon/crew/promotion_gate.py:83 and :1093 resolve the command's program before the shell sees it and report an unresolved one as not-run rather than as a changed gate.\nVERDICT done_when: the done_when names tests/test_a_gate_that_cannot_start_names_its_program.py and its three cases; the manifest records 61 passed for that scoped gate and 3 failed for the same file at the base in the negative control.\nVERDICT write_paths: the manifest declares reckon/crew/landing_measure.py, reckon/crew/promotion_gate.py, the new test and the landing fragment; every path in the diff is inside that set.\nVERDICT manifest: read; it states the scoped gate at 8311322524 ran 61 passed and both suite arms exited 0, and cites the four logs, which I opened.\nVERDICT diff: read commit by commit from dde7b001 to b0157b82; 8311322524 adds the resolver, the not-started report and the test, b0157b82 adds only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:5419, reckon/crew/recovery_review_acceptance.py:752, reckon/crew/promotion_gate.py:replay_domain_invariant_checks\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_gate.py:1102 reports an unresolved program as not-run with missing_program and a message that disclaims the merge, matching the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the after-suite log at 8311322524 reads 61 passed and the base arm at dde7b001 reads 58 passed with no FAILED line, and the negative control reads 3 failed EXIT=1 quoting exit_status=127.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two product modules, the new test and the fragment are the only paths in git diff dde7b001..b0157b82, all within the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: all three cases in tests/test_a_gate_that_cannot_start_names_its_program.py fail at the pinned base (negative-control-base.log line 26 quotes verdict=failed exit_status=127), so the tests redden when the fix is removed, though the fragment's byte-identical-replay claim is not separately guarded.\nSCORE fit: 18\nJUSTIFICATION fit: the new names in reckon/crew/landing_measure.py:690 carry no plan, stage or ticket identifiers and follow the module's existing docstring idiom.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:726 re-implements the gate-command program resolution already owned by reckon/crew/promotion_gate.py:420 instead of extending it.\nFINDING reckon/crew/landing_measure.py:809 non-blocking: _executable_file duplicates _is_executable_file at reckon/crew/promotion_gate.py:497, and resolve_gate_program at :726 re-derives the tokenisation, PATH lookup, relative-candidate resolution and executable test already owned by _require_executable_gate_command at reckon/crew/promotion_gate.py:420, so two resolvers can drift.\n",
+  "review_run_id": "r-20261122T105627074826-review-of-dwlw-a-gate-that-cannot-start-names-its-program-b0157b82c3d0",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "b0157b82c3d0c9ce43ed4dc400508d6e5ec8623d",
+  "reviewed_run_id": "r-20261122T083521486110-dwlw-a-gate-that-cannot-start-names-its-program",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T11:05:39.565806+00:00",
+  "total": 98
+}

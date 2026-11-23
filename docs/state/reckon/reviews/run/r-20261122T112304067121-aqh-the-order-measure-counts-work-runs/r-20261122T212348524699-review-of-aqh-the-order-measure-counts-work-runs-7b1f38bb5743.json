@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/drain_measure.py:92",
+    "scripts/measure_queue_drain.py:128"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-aqh-the-order-measure-counts-work-runs-7b1f38bb5743",
+      "recorded_at": "2026-11-22T22:11:45.705117+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T21:25:05Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-aqh-the-order-measure-counts-work-runs-7b1f38bb5743",
+      "recorded_at": "2026-11-22T22:11:44.636685+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/drain_measure.py",
+      "line": 71,
+      "severity": "blocking",
+      "text": "DISPATCHED_WAITS_FIELD \"dispatched_waits\" and WAIVER_FIELD \"section_wait_waiver\" (line 64) are keys no producer writes and neither is in reckon/ledger.py:139 RECORD_FIELDS, so _wait_was_edited always returns False and _recorded_waiver always empty on the ledger rows the only production caller feeds (scripts/measure_queue_drain.py:57), and every early work launch is reported as a defect, which is the deliverable's \"reports why the launch was allowed\" unattained for real records."
+    },
+    {
+      "file": "reckon/crew/drain_measure.py",
+      "line": 304,
+      "severity": "non-blocking",
+      "text": "the wait-normalisation in _wait_was_edited duplicates the capability owned by reckon/crew/admission/wait_refs.py:52 section_waits_for, which reads pointer[\"waits\"] (written at reckon/crew/dispatching/requests.py:140), so the addition invents a parallel field rather than extending the owner."
+    },
+    {
+      "file": "tests/test_the_order_measure_counts_work_runs.py",
+      "line": 125,
+      "severity": "non-blocking",
+      "text": "every window fixture launches after r-upstream's s17 completion at 2026-11-20T12:00Z, so first[\"rows\"] is empty and the equality and sorted assertions hold unchanged with the sort at reckon/crew/drain_measure.py:237 removed, leaving the determinism requirement with no failing guard."
+    },
+    {
+      "file": "tests/test_the_order_measure_counts_work_runs.py",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "assert row[\"waiver\"] == reason compares the row's echo of the fixture's own waiver string against the same value the test supplied, so it holds for any implementation that copies the field and does not guard the waiver reporting."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_the_order_measure_counts_work_runs.py:20 fails at the base as required for the review exclusion, but :125 compares empty row lists and :79 echoes a literal the fixture supplied, so neither guards the behaviour it claims.",
+    "evidence": "scoped-gate-1795379085480363372.log:8 and after_suite-1795379292142490312.log record 64 passed with EXIT=0 and negative-control.log:19 shows the base failing the review-exclusion assertion, but two of the four done-when cases pass only against fields the test itself writes.",
+    "fit": "the frozenset constants and docstring voice at reckon/crew/drain_measure.py:58-72 match the module, though the comment at :52-55 is incident history in source rather than mechanism.",
+    "goal_fidelity": "reckon/crew/drain_measure.py:189-235 counts work runs only, but the \"accounts for each early launch\" half reads section_wait_waiver and dispatched_waits, fields no record produces, so on real ledger rows every early work launch is still reported as a defect.",
+    "reuse": "reckon/crew/drain_measure.py:294-311 re-implements reading the waits a request was dispatched under, while reckon/crew/admission/wait_refs.py:52 section_waits_for already owns that capability on the pointer's waits key.",
+    "scope_discipline": "every path in the diff (reckon/crew/drain_measure.py and tests/test_the_order_measure_counts_work_runs.py) is inside the declared write set, and no plan or state file is edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: node.json states the goal as counting only work runs and accounting for each early launch; reckon/crew/drain_measure.py:189-197 now skips role \"review\" and counts it in review_runs_not_counted, so the counted set is work runs.\nVERDICT done_when: the done_when names tests/test_the_order_measure_counts_work_runs.py; the manifest records it in both arms (58 passed at base, 64 at head) and scoped-gate-1795379085480363372.log:8 reads \"64 passed in 43.67s\" with a closing EXIT=0.\nVERDICT write_paths: the node declared reckon/crew/drain_measure.py, the new test, and a fragment and figure directory; the diff touches only the first two, both inside the declared set, and leaves the two docs paths undelivered.\nVERDICT manifest: read; it reports status complete, 58 to 64 passed, the s8 answer of 1 launch checked and 6 rows all reading \"the waited-on section never landed\", and a red negative control at the base.\nVERDICT diff: read the single commit 7b1f38bb5743 against base 9ed4c9ee2e01 commit by commit; it adds the role exclusion, the waiver and edited-wait classification, and row sorting to reckon/crew/drain_measure.py, plus six tests, and changes nothing else.\nCALL_SITES: reckon/crew/drain_measure.py:92, scripts/measure_queue_drain.py:128\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/drain_measure.py:189-235 counts work runs only, but the \"accounts for each early launch\" half reads section_wait_waiver and dispatched_waits, fields no record produces, so on real ledger rows every early work launch is still reported as a defect.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795379085480363372.log:8 and after_suite-1795379292142490312.log record 64 passed with EXIT=0 and negative-control.log:19 shows the base failing the review-exclusion assertion, but two of the four done-when cases pass only against fields the test itself writes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/drain_measure.py and tests/test_the_order_measure_counts_work_runs.py) is inside the declared write set, and no plan or state file is edited.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_the_order_measure_counts_work_runs.py:20 fails at the base as required for the review exclusion, but tests/test_the_order_measure_counts_work_runs.py:125 compares empty row lists and :79 echoes a literal the fixture supplied, so neither guards the behaviour it claims.\nSCORE fit: 16\nJUSTIFICATION fit: the frozenset constants and docstring voice at reckon/crew/drain_measure.py:58-72 match the module, though the comment's \"the measure's first defect: twelve of fourteen\" at drain_measure.py:52-55 is incident history in source rather than mechanism.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/drain_measure.py:294-311 re-implements reading the waits a request was dispatched under under a new key, while reckon/crew/admission/wait_refs.py:52 section_waits_for already owns that capability on the pointer's waits key.\nFINDING reckon/crew/drain_measure.py:71 blocking: DISPATCHED_WAITS_FIELD \"dispatched_waits\" and WAIVER_FIELD \"section_wait_waiver\" at line 64 are keys no producer writes and neither is in reckon/ledger.py:139 RECORD_FIELDS, so _wait_was_edited always returns False and _recorded_waiver always empty on the ledger rows the only production caller feeds (scripts/measure_queue_drain.py:57), and every early work launch is reported as a defect, which is the deliverable's \"reports why the launch was allowed\" unattained for real records.\nFINDING reckon/crew/drain_measure.py:304 non-blocking: the wait-normalisation in _wait_was_edited duplicates the capability owned by reckon/crew/admission/wait_refs.py:52 section_waits_for, which reads pointer[\"waits\"] (written at reckon/crew/dispatching/requests.py:140), so the addition invents a parallel field rather than extending the owner.\nFINDING tests/test_the_order_measure_counts_work_runs.py:125 non-blocking: every window fixture launches after r-upstream's s17 completion at 2026-11-20T12:00Z, so first[\"rows\"] is empty and the equality and sorted assertions hold unchanged with the sort at reckon/crew/drain_measure.py:237 removed, leaving the determinism requirement with no failing guard.\nFINDING tests/test_the_order_measure_counts_work_runs.py:79 non-blocking: assert row[\"waiver\"] == reason compares the row's echo of the fixture's own waiver string against the same value the test supplied, so it holds for any implementation that copies the field and does not guard the waiver reporting.\n",
+  "review_run_id": "r-20261122T212348524699-review-of-aqh-the-order-measure-counts-work-runs-7b1f38bb5743",
+  "reviewed_base_sha": "9ed4c9ee2e01533b4e68d56dc381075e437da704",
+  "reviewed_head_sha": "7b1f38bb574306d5252cacdc831d7e8a9edf70ba",
+  "reviewed_run_id": "r-20261122T112304067121-aqh-the-order-measure-counts-work-runs",
+  "scores": {
+    "durability": 11,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 12,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T21:44:04.294918+00:00",
+  "total": 76,
+  "verdicts": {
+    "diff": "read the single commit 7b1f38bb5743 against base 9ed4c9ee2e01; it adds the role exclusion, the waiver and edited-wait classification and row sorting to reckon/crew/drain_measure.py plus six tests, and nothing else.",
+    "done_when": "the done_when names tests/test_the_order_measure_counts_work_runs.py; the manifest records it in both arms (58 base, 64 head) and scoped-gate-1795379085480363372.log:8 reads 64 passed with a closing EXIT=0.",
+    "goal": "node.json states the goal as counting only work runs and accounting for each early launch; reckon/crew/drain_measure.py:189-235 skips role review and counts it separately, so the counted set is work runs.",
+    "manifest": "read; it reports status complete, 58 to 64 passed, the s8 answer (1 launch checked, 6 rows all 'the waited-on section never landed'), and a red negative control at the base.",
+    "write_paths": "the node declared four paths; the diff touches only reckon/crew/drain_measure.py and the new test, both inside the declared set, and leaves the two docs paths undelivered."
+  }
+}

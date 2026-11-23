@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite-1795360961366377064.log records '84 passed in 51.32s' EXIT=0 at 2e639881e0 and after_suite-1795361036074871130.log records '58 passed in 49.05s' EXIT=0 at 6406ed9c, neither carrying a FAILED line, so the head failure set minus the base failure set is empty; the 26 fewer tests are exactly the deleted tests/test_anchored_edit.py.",
+  "call_site_count": 3,
+  "call_sites": [
+    "pyproject.toml:49 ([project.scripts] \u2014 the removed console-script entry was the only launch surface)",
+    "pyproject.toml:50 (reckon = \"reckon.cli:main\" remains the sole script); git grep over reckon/ at base 2e639881e0 finds no production importer of anchored_edit outside the deleted module itself",
+    "so no runtime call site remains reachable."
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-anchored-module-s18-6406ed9c9dcd",
+      "recorded_at": "2026-11-22T15:54:59.799453+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T15:30:01Z",
+  "findings": [
+    {
+      "file": "pyproject.toml",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "the removal is proven only by one-off greps and a negative-control probe, and no test asserts that the reckon-anchored-edit entry and reckon/anchored_edit.py stay absent, so a future re-add would leave the suite green while the tool silently returns."
+    },
+    {
+      "file": "scripts/interim_arm_report.py",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "the string reckon-anchored-edit survives outside the declared grep scope as historical arm-report tooling, so the done_when's 'grep finds nothing' holds for reckon/ and pyproject.toml only and not repo-wide."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the single commit 6406ed9c against base 2e639881e0 by name-status and --stat; three paths change, all deletions plus one pyproject line removed, nothing added, and scripts/interim_arm_report.py:41 still names reckon-anchored-edit as historical report tooling outside the declared grep scope.",
+    "done_when": "the done_when's deletions, greps and arm pair are each recorded \u2014 git grep for anchored[-_]edit over reckon/ and pyproject.toml at 6406ed9c exits 1 with no hit, suite-run.json records partition all_debug for both arms with 84 passed at base and 58 passed at head and zero failures, and the two arm test files are absent at base; the trailing sentence of the done_when ('the module reckon/anchored_edit.py and the flight key stay until later nodes remove them') contradicts its first sentence, and the worker resolved it the way the goal and the first sentence state.",
+    "goal": "the node goal is 'delete the anchored edit module, its console script and its tests'; commit 6406ed9c deletes reckon/anchored_edit.py (647 lines) and tests/test_anchored_edit.py (523 lines) and drops the `reckon-anchored-edit = \"reckon.anchored_edit:main\"` entry from pyproject.toml:49-50, while tests/test_anchored_edit_claude_arm.py and tests/test_anchored_edit_codex_arm.py named by the done_when do not exist at base 2e639881e0, so the goal is met as far as the tree permits.",
+    "manifest": "read; it reports status complete, commit 6406ed9c, 84 passed at base against 58 passed at head with zero added failures, a negative-control log whose probe 1 is ModuleNotFoundError, and its own rubric lines for all six dimensions.",
+    "write_paths": "the manifest declares seven paths (module, pyproject, three test files, an evidence fragment and a figure directory) and the diff touches exactly three of them \u2014 reckon/anchored_edit.py, pyproject.toml and tests/test_anchored_edit.py \u2014 with the absent arm test files and the uncreated fragment/figure left as none."
+  },
+  "justifications": {
+    "durability": "nothing in the tree would fail if reckon/anchored_edit.py and its pyproject.toml:49-50 console-script entry returned, because the only test that imported the module was tests/test_anchored_edit.py, which this change deletes, and no replacement guard (such as an import-raised test or a scripts-block assertion beside tests/test_reach_graph.py:52) was added; the manifest's rubric.durability line cites the commit rather than a failing test.",
+    "evidence": "suite-run.json records all_debug for both arms with 84 passed at base and 58 passed at head and no FAILED line in baseline_suite-1795360961366377064.log or after_suite-1795361036074871130.log, but the head arm exercises nothing that can assert the deletion (the only importing test was deleted), so the deletion itself rests on the negative-control.log import probe and the brief's greps rather than on the gate.",
+    "fit": "the change is a pure deletion following the surrounding convention, its commit 6406ed9c carries a conventional subject and a mechanism body with no plan, stage or ticket identifier, and no new name is introduced anywhere.",
+    "goal_fidelity": "reckon/anchored_edit.py, tests/test_anchored_edit.py and the pyproject.toml:49-50 console-script entry are gone at 6406ed9c, and the two arm test files the done_when names do not exist at 2e639881e0, so 'its tests' is fully satisfied in the tree as it stands.",
+    "reuse": "the diff adds no definition; the search for an existing owner of an absence or console-script guard found tests/test_reach_graph.py:52's console-script import-closure walk, which this change does not duplicate or fork.",
+    "scope_discipline": "git diff --name-status 2e639881e0 6406ed9c lists only pyproject.toml (M), reckon/anchored_edit.py (D) and tests/test_anchored_edit.py (D), every one inside the seven declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'delete the anchored edit module, its console script and its tests'; commit 6406ed9c deletes reckon/anchored_edit.py (647 lines) and tests/test_anchored_edit.py (523 lines) and drops the `reckon-anchored-edit = \"reckon.anchored_edit:main\"` entry from pyproject.toml:49-50, while tests/test_anchored_edit_claude_arm.py and tests/test_anchored_edit_codex_arm.py named by the done_when do not exist at base 2e639881e0, so the goal is met as far as the tree permits.\nVERDICT done_when: the done_when's deletions, greps and arm pair are each recorded \u2014 git grep for anchored[-_]edit over reckon/ and pyproject.toml at 6406ed9c exits 1 with no hit, suite-run.json records partition all_debug for both arms with 84 passed at base and 58 passed at head and zero failures, and the two arm test files are absent at base; the trailing sentence of the done_when ('the module reckon/anchored_edit.py and the flight key stay until later nodes remove them') contradicts its first sentence, and the worker resolved it the way the goal and the first sentence state.\nVERDICT write_paths: the manifest declares seven paths (module, pyproject, three test files, an evidence fragment and a figure directory) and the diff touches exactly three of them \u2014 reckon/anchored_edit.py, pyproject.toml and tests/test_anchored_edit.py \u2014 with the absent arm test files and the uncreated fragment/figure left as none.\nVERDICT manifest: read; it reports status complete, commit 6406ed9c, 84 passed at base against 58 passed at head with zero added failures, a negative-control log whose probe 1 is ModuleNotFoundError, and its own rubric lines for all six dimensions.\nVERDICT diff: read the single commit 6406ed9c against base 2e639881e0 by name-status and --stat; three paths change, all deletions plus one pyproject line removed, nothing added, and scripts/interim_arm_report.py:41 still names reckon-anchored-edit as historical report tooling outside the declared grep scope.\nCALL_SITES: pyproject.toml:49 ([project.scripts] \u2014 the removed console-script entry was the only launch surface), pyproject.toml:50 (reckon = \"reckon.cli:main\" remains the sole script); git grep over reckon/ at base 2e639881e0 finds no production importer of anchored_edit outside the deleted module itself, so no runtime call site remains reachable.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/anchored_edit.py, tests/test_anchored_edit.py and the pyproject.toml:49-50 console-script entry are gone at 6406ed9c, and the two arm test files the done_when names do not exist at 2e639881e0, so 'its tests' is fully satisfied in the tree as it stands.\nSCORE evidence: 16\nJUSTIFICATION evidence: suite-run.json records all_debug for both arms with 84 passed at base and 58 passed at head and no FAILED line in baseline_suite-1795360961366377064.log or after_suite-1795361036074871130.log, but the head arm exercises nothing that can assert the deletion (the only importing test was deleted), so the deletion itself rests on the negative-control.log import probe and the brief's greps rather than on the gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 2e639881e0 6406ed9c lists only pyproject.toml (M), reckon/anchored_edit.py (D) and tests/test_anchored_edit.py (D), every one inside the seven declared write paths.\nSCORE durability: 8\nJUSTIFICATION durability: nothing in the tree would fail if reckon/anchored_edit.py and its pyproject.toml:49-50 console-script entry returned, because the only test that imported the module was tests/test_anchored_edit.py, which this change deletes, and no replacement guard (such as an import-raised test or a scripts-block assertion beside tests/test_reach_graph.py:52) was added; the manifest's rubric.durability line cites the commit rather than a failing test.\nSCORE fit: 19\nJUSTIFICATION fit: the change is a pure deletion following the surrounding convention, its commit 6406ed9c carries a conventional subject and a mechanism body with no plan, stage or ticket identifier, and no new name is introduced anywhere.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; the search for an existing owner of an absence or console-script guard found tests/test_reach_graph.py:52's console-script import-closure walk, which this change does not duplicate or fork.\nFINDING pyproject.toml:50 non-blocking: the removal is proven only by one-off greps and a negative-control probe, and no test asserts that the reckon-anchored-edit entry and reckon/anchored_edit.py stay absent, so a future re-add would leave the suite green while the tool silently returns.\nFINDING scripts/interim_arm_report.py:41 non-blocking: the string reckon-anchored-edit survives outside the declared grep scope as historical arm-report tooling, so the done_when's 'grep finds nothing' holds for reckon/ and pyproject.toml only and not repo-wide.\n",
+  "review_node": "review-of-anchored-module-s18-6406ed9c9dcd",
+  "review_run_id": "r-20261122T152939676218-review-of-anchored-module-s18-6406ed9c9dcd",
+  "reviewed_base_sha": "2e639881e083c80d39c22197db04f0e7fc816d0f",
+  "reviewed_head_sha": "6406ed9c9dcd68fe597e770aefc135bb7ff2274a",
+  "reviewed_run_id": "r-20261121T201951227166-anchored-module-s18",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261122T152939676218-review-of-anchored-module-s18-6406ed9c9dcd"
+  },
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T15:39:21.522407+00:00",
+  "total": 102
+}

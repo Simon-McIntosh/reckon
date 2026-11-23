@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:1074",
+    "reckon/roadmap.py:3812"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T09:35:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 225,
+      "severity": "non-blocking",
+      "text": "the _HISTORY_READS key is (project, store_path, plan, node) and drops the ledger root the base's (project, root, store_path) carried, so once an existing-but-empty store caches a ledger-fallback answer, two roots sharing the config-home store and the same project can answer each other; materiality is low because the store normally answers rows independently of root."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/dispatch_batch.py:1074 and reckon/roadmap.py:3812",
+    "diff": "read commit by commit from ebad3fef to 4a98aef: d2b9899943 and ee7298959c narrow the hold read to the store's node index and keep the hold index; a893dfdf31 and fab1100c25 repair the empty-store fallthrough and the retired-row ordering the first review found; 4a98aef297 bounds the test population, and fab1100c25 adds the evidence fragment and figure.",
+    "done_when": "the done_when asks for eight- and forty-entry peaks with a head/base ratio of at most 0.5 and a <10 % rise on doubling; the pytest gate tests/test_dispatch_batch_memory_profile.py measures decoded rows, not peak memory, and the memory figures come from separate measure*.log and doubled-*.log arms, recorded with the unmet 0.83, 0.96 and 89 % in manifest.md.",
+    "goal": "section 8's goal is 'make this hold: a batch dispatch holds a bounded amount of memory'; reckon/crew/section_holds.py:225 narrows the hold read to the node's own store rows, but the recorded doubling arm shows the head's forty-entry peak still rising 89 % when the store doubles, so the bounded-memory goal is only partly met and its criteria move to a section owning the population decode.",
+    "manifest": "read; it reports status complete with the rubric self-checks answered, records baseline and after suite logs at 0 added failures, and states the unmet ratios, the instrument spread and the outside-scope population read.",
+    "write_paths": "read the declared paths reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, tests/test_dispatch_batch_memory_profile.py, the evidence fragment and the figure directory; every changed path in the diff is inside them and dispatch_batch.py is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_batch_memory_profile.py:124 asserts 3 rows decoded against a 123-row store and :157 asserts the count is unchanged when the store doubles, and negative-control-base-tests.log records both failing against the replaced read.",
+    "evidence": "the gate tests/test_dispatch_batch_memory_profile.py:124 counts decoded rows rather than the peak memory the done_when asserts, while the memory figures are recorded and both negative controls (negative-control-base-tests.log, repair-negative-control.log) end EXIT=1.",
+    "fit": "the module keeps its dialect (module-level field tuples, local imports, noqa: BLE001) at reckon/crew/section_holds.py:120, though line 225 drops the ledger root from the cache key the base carried.",
+    "goal_fidelity": "reckon/crew/section_holds.py:225 bounds the hold read to one node's rows, but the recorded doubling arm shows the peak still rising 89 % with the store, so the goal's bounded-memory deliverable is not met.",
+    "reuse": "the read wraps run_store.stored_run_rows (reckon/run_store.py:999) and reuses ledger.picker_runs, ledger.row_plan and ledger.promotion_order_key rather than forking the store-then-ledger selection the first review flagged.",
+    "scope_discipline": "every changed path in the diff (reckon/crew/section_holds.py, the test file, the evidence fragment and its figure) is inside the declared paths listed in manifest.md."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 8's goal is \"make this hold: a batch dispatch holds a bounded amount of memory\"; reckon/crew/section_holds.py:225 narrows the hold read to the node's own store rows, but the recorded doubling arm shows the head's forty-entry peak still rising 89 % when the store doubles, so the \"bounded amount of memory\" goal is only partly met and its two criteria move to a section owning the population decode.\nVERDICT done_when: the done_when asks for eight- and forty-entry peaks at base and head with a head/base ratio of at most 0.5 and a less-than-10 % rise when the store doubles; the pytest gate tests/test_dispatch_batch_memory_profile.py measures decoded rows, not peak memory, and the memory figures come from separate measure*.log and doubled-*.log arms recorded with the unmet 0.83, 0.96 and 89 % in manifest.md.\nVERDICT write_paths: read the declared paths reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, tests/test_dispatch_batch_memory_profile.py, the evidence fragment and the figure directory; every changed path in the diff is inside them and dispatch_batch.py is untouched.\nVERDICT manifest: read; it reports status complete with the rubric self-checks answered, records baseline and after suite logs at 0 added failures, and states the unmet ratios, the instrument spread and the outside-scope population read.\nVERDICT diff: read commit by commit from ebad3fef to 4a98aef: d2b9899943 and ee7298959c narrow the hold read to the store's node index and keep the hold index rather than the decoded rows; a893dfdf31 and fab1100c25 repair the empty-store fallthrough and the retired-row ordering the first review found; 4a98aef297 bounds the test population, and fab1100c25 adds the evidence fragment and figure.\nCALL_SITES: reckon/crew/dispatch_batch.py:1074, reckon/roadmap.py:3812\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/section_holds.py:225 bounds the hold read to one node's rows, but the recorded doubling arm shows the peak still rising 89 % with the store, so the goal's bounded-memory deliverable is not met.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate tests/test_dispatch_batch_memory_profile.py:124 counts decoded rows rather than the peak memory the done_when asserts, while the memory figures are recorded and both negative controls (negative-control-base-tests.log, repair-negative-control.log) end EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path in the diff (reckon/crew/section_holds.py, the test file, the evidence fragment and its figure) is inside the declared paths listed in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_batch_memory_profile.py:124 asserts 3 rows decoded against a 123-row store and :157 asserts the count is unchanged when the store doubles, and negative-control-base-tests.log records both failing against the replaced read.\nSCORE fit: 17\nJUSTIFICATION fit: the module keeps its dialect (module-level field tuples, local imports, noqa: BLE001) at reckon/crew/section_holds.py:120, though line 225 drops the ledger root from the cache key the base carried.\nSCORE reuse: 19\nJUSTIFICATION reuse: the read wraps run_store.stored_run_rows (reckon/run_store.py:999) and reuses ledger.picker_runs, ledger.row_plan and ledger.promotion_order_key rather than forking the store-then-ledger selection the first review flagged.\nFINDING reckon/crew/section_holds.py:225 non-blocking: the _HISTORY_READS key is (project, store_path, plan, node) and drops the ledger root the base's (project, root, plan, node) carried, so once an existing-but-empty store caches a ledger-fallback answer, two roots sharing the config-home store and the same project can answer each other; materiality is low because the store normally answers rows independently of root.",
+  "review_run_id": "r-20261122T093509272482-review-of-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory-4a98aef29769",
+  "reviewed_base_sha": "ebad3fef8f3d1dbfeb1da78e7da1e142b16c6b18",
+  "reviewed_head_sha": "4a98aef29769b56759c3b0271b269cc56c9682d9",
+  "reviewed_run_id": "r-20261122T032527410081-tfnsi-a-batch-dispatch-holds-a-bounded-amount-of-memory",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 11,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:47:07.101661+00:00",
+  "total": 97
+}

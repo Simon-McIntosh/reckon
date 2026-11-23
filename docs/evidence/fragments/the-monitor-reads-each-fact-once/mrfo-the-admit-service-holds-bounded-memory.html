@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The admit service's memory stays bounded</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; color: #1b1b1b; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.25rem 1rem 0.25rem 0; border-bottom: 1px solid #ddd; }
+  code { font-size: 0.92em; }
+</style>
+</head>
+<body>
+<h1 id="mrfo-the-admit-service-holds-bounded-memory-title">The admit service's memory stays bounded
+
+<p id="mrfo-the-admit-service-holds-bounded-memory-what">A pass decodes every live pointer and the run documents behind it, then frees them. The allocator keeps the emptied arenas for the next request, so the service's resident set tracked the reported defect: 22.1 GB resident after three hours and thirty-two minutes. The service now hands a pass's freed pages back after every pass and drops the process-wide parse memo when its reading is still above the stated bound of 2 GB.</p>
+
+<h2 id="mrfo-the-admit-service-holds-bounded-memory-measure">Measure</h2>
+<p>The case this section names holds the fleet's population constant at 2,000 runs across the fifty passes, and on that fixture both revisions hold the 10 % band: the base revision passes it too, because retention follows the live population rather than the pass count. The case that does fail at the base revision is the idle-pass reading: the base writes no reading for a pass over a lane with nothing queued.</p>
+<table id="mrfo-the-admit-service-holds-bounded-memory-table-constant">
+  <tr><th>arm</th><th>after 5 passes</th><th>after 50 passes</th><th>the case</th></tr>
+  <tr><td>before (36c098539b)</td><td>150 MiB</td><td>152 MiB</td><td>50-pass band passes; idle-pass reading fails</td></tr>
+  <tr><td>after (this node)</td><td>123 MiB</td><td>119 MiB</td><td>both pass</td></tr>
+</table>
+<p>The figures above come from probes on the constant fixture; the arms' own summaries are <code>1 failed, 1 passed in 186.11s</code> at the base and <code>2 passed in 187.71s</code> here. A fixture whose population grows instead measures the per-live-run retention and is kept below as evidence of what still holds memory.</p>
+
+<table id="mrfo-the-admit-service-holds-bounded-memory-table">
+  <tr><th>arm</th><th>after 5 passes</th><th>after 50 passes</th><th>change</th></tr>
+  <tr><td>before (36c098539b)</td><td>120 MiB</td><td>175 MiB</td><td>+45 %, past the 10 % band</td></tr>
+  <tr><td>after (this node)</td><td>99 MiB</td><td>121 MiB</td><td>+22 %, still past the 10 % band</td></tr>
+</table>
+
+<p id="mrfo-the-admit-service-holds-bounded-memory-gap">A growing-population arm shows what the constant one cannot: with the fleet growing from 236 to 2,000 runs, the base revision ends the fiftieth pass 45 % above its fifth and this revision 22 % above, and the retainer table below names where that memory goes. Growth that follows the live population is expected in either revision, which is why the section's case holds the population constant. The negative control the section states — the base revision must fail the fifty-pass case with memory grown beyond the band — holds on this growing fixture, where the base fails it at 45 %; on the constant fixture the base passes the band and the case that fails there is the idle-pass reading, and both facts are recorded rather than the first being claimed for the second.</p>
+
+<h2 id="mrfo-the-admit-service-holds-bounded-memory-retainer">What still retains it</h2>
+<p>Two tracemalloc snapshots of the same fixture, one after the tenth pass and one after the fiftieth, compared by allocation traceback. The live population grew by 1,440 runs between the two, and every line below holds one allocation per run added, so what remains is retained per live run rather than per pass. All five sit in <code>reckon/crew/runs.py</code>, outside this node's write paths.</p>
+<table id="mrfo-the-admit-service-holds-bounded-memory-retainers">
+  <tr><th>growth</th><th>blocks</th><th>allocation site</th><th>what it is</th></tr>
+  <tr><td>+6,334 KiB</td><td>+1,440</td><td><code>runs.py:1676</code> <code>_pointer_text_without_omitted_members</code>, kept in <code>_POINTER_TEXT</code> at <code>runs.py:1683</code></td><td>the reduced text of every live pointer</td></tr>
+  <tr><td>+6,334 KiB</td><td>+1,440</td><td><code>runs.py:1711</code> <code>path.read_text()</code> inside <code>_pointer_node_body</code></td><td>each pointer's node body text, read again per pass</td></tr>
+  <tr><td>+263 KiB</td><td>+1,440</td><td><code>runs.py:1995</code> <code>sorted(directory.glob("*.json"))</code></td><td>a <code>Path</code> per pointer, held by the listing</td></tr>
+  <tr><td>+263 KiB</td><td>+1,440</td><td><code>pathlib.py:191</code> <code>str(self)</code></td><td>each listing path's string form</td></tr>
+  <tr><td>+248 KiB</td><td>+7,200</td><td><code>runs.py:1758</code> <code>_pointer_text</code> → <code>runs.py:1665</code> <code>path.stat()</code></td><td>stat identities for the pointer cache</td></tr>
+</table>
+
+<pre id="mrfo-the-admit-service-holds-bounded-memory-arms">constant      base 36c098539b        1 failed, 1 passed in 186.11s (0:03:06)
+                     head 2a0896a533       2 passed in 187.71s (0:03:07)
+growing       before 36c098539b        2 failed in 133.68s (0:02:13)
+                     after  636ec2c010        1 failed, 1 passed in 109.66s (0:01:49)
+suite arms    base 4a5ec5081e        58 passed in 41.44s
+                     head c0ef2a0bb3        60 passed in 236.22s (0:03:56)
+repair arms   base 4a5ec5081e        62 passed in 50.53s
+                     head 00945f8e1d        67 passed in 312.60s (0:05:12)
+                     head b43546e9ef        69 passed in 337.14s (0:05:37)</pre>
+
+<p id="mrfo-the-admit-service-holds-bounded-memory-guards">Three cases guard the change rather than the band alone, which the base revision passes on this fixture: a pass under the idle reading's bound keeps the process-wide parse memo and one over it drops it, so removing either branch fails a case; the idle reading is compared with the process's own <code>/proc</code> figure within 10 %, using a reader the code under test does not call; and a retirement followed by three idle passes is still returned, because every pass now writes a record and the reader takes the newest non-empty list instead of the last record's. A shrinking fleet was also measured — 2,000 runs then 200, resident 169 MiB before and 166 MiB after — so handing the pages back does not reclaim them on that shape and no case claims it does. Reverting the service's reader to a constant 1 GiB fails the idle-reading case against the process's own figure, so that agreement is measured by a reader the code under test does not call. The duration the section states is measured too: a hundred consecutive passes over a working fleet of 30 live pointers end under the 2 GiB bound and match the process's own figure within 10 %, and an unreadable <code>/proc</code> record is carried as no reading rather than as a measured zero.</p>
+
+<p id="mrfo-the-admit-service-holds-bounded-memory-reading">Every pass now writes a reading, including a pass over a lane with nothing queued, and the reading carries the resident figure the service measured and the bound it holds to, so the bound is read from the service's own record rather than inferred from outside.</p>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:1404",
+    "reckon/crew/promotion_gate.py:1088",
+    "reckon/crew/promotion_gate.py:1571",
+    "reckon/crew/promotion_gate.py:1698",
+    "reckon/crew/recovery_review_acceptance.py:752"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T12:31:29Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.cache/reckon-portfolio/arms/gate-program/head-54220d00.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the population head arm's command header is split into five '# command:' lines that re-prefix PYTHONPATH per chunk and glue the interpreter path onto the second chunk ('PYTHONPATH=tests/test_a_gate_that_cannot_start_names_its_program.py tests/test_a_gate_replay_runs_on_the_measure_partition.py/.venv/bin/python'), so no single literal command can be read out of the log to re-run the arm; only the 121 passed summary and EXIT=0 are usable."
+    },
+    {
+      "file": "tests/test_a_gate_that_cannot_start_names_its_program.py",
+      "line": "204",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert PROGRAM_THAT_EXISTS_NOWHERE in str(refused.value) is satisfied by the refusal's own {command!r} echo at reckon/crew/promotion_gate.py:712, so it holds even if the message names the env wrapper instead of the program the resolver read; only the paired \"'env'\" not in message at :255 actually catches that regression."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: 8311322524 adds the resolver and the not-started reporting, 78755444b1 moves the resolver into promotion_gate and removes landing_measure's copies, 67b19df7a0 leaves one definition each of _SHELL_ASSIGNMENT and _is_executable_file, 54220d000d drops the guard's measuring-interpreter fallback so a checkout lacking its recorded program is still refused, and a1712b76..5dc24d3c are docs-only fragment edits.",
+    "done_when": "the done_when names three cases, present at tests/test_a_gate_that_cannot_start_names_its_program.py:66 (relative .venv/bin/python runs at a tree with no .venv), :93 (a program found nowhere is refused naming it and the tree) and :132 (a gate that starts and fails keeps its verdict and failure ids); after_suite records 65 passed EXIT=0 and negative-control-base.log records 3 failed EXIT=1.",
+    "goal": "the node goal is to report a merged-head gate that cannot start its program; reckon/crew/promotion_gate.py:1313 resolves the program before the shell receives it and :1321-1337 plus _merged_gate_finding:889-905 report not-run naming the program and the tree instead of blaming the merge.",
+    "manifest": "read; status complete, baseline_suite 58 passed EXIT=0 and after_suite 65 passed EXIT=0 with no failure ids, three negative-control logs each carrying a revision, a literal command and an EXIT= line, and the pre-existing test_crew_gate_command_is_runnable failure recorded under outside_scope.",
+    "write_paths": "the delivered diff dde7b001..5dc24d3c touches only reckon/crew/promotion_gate.py, the new test file and the landing fragment; reckon/crew/landing_measure.py is declared but nets zero because its resolver copy was added and removed inside the range, and no figure directory is written."
+  },
+  "justifications": {
+    "durability": "negative-control-duplicate-helpers.log shows the helper-count, rewrite and refusal cases red at b55533df9d, head.log shows test_a_relative_program_the_checkout_lacks_is_refused_naming_the_checkout red at 0e8e9dd0, and negative-control-base.log shows the three done-when cases red at dde7b001; the one weak link is tests/test_a_gate_that_cannot_start_names_its_program.py:204, which passes on the refusal's own command echo.",
+    "evidence": "after_suite-1795350441813538255.log carries its revision, literal command, 65 passed and EXIT=0, and negative-control-base.log reproduces the plan's stated defect at dde7b001 (exit_status=127 reported as 'the merge changes what this node's gate proves'), but the population head arm's command header at ~/.cache/reckon-portfolio/arms/gate-program/head-54220d00.log:3 is split and unusable.",
+    "fit": "reckon/crew/promotion_gate.py:466 puts the env-unwrapping token walk in one helper with a mechanism docstring, and no added name in the module or the test carries a plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion_gate.py:1313 resolves the program, :1341 rewrites it into the command, and :900-905 marks a not-started gate as a finding about a program rather than about the merge.",
+    "reuse": "the resolver at reckon/crew/promotion_gate.py:498-645 is the only owner of gate-program resolution, it reuses fleet_supervisor.resolved_environment, and the test at :168 asserts landing_measure owns no copy; the nearest neighbours (dispatch_launch.py:1374 backend-binary resolution, shim_lookup.py:59 non-shim PATH lookup) resolve different things.",
+    "scope_discipline": "git diff --stat dde7b001..5dc24d3c lists exactly the three declared paths and no module outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to report a merged-head gate that cannot start its program; reckon/crew/promotion_gate.py:1313 resolves the program before the shell receives it and :1321-1337 plus _merged_gate_finding:889-905 report not-run naming the program and the tree instead of blaming the merge.\nVERDICT done_when: the done_when names three cases, present at tests/test_a_gate_that_cannot_start_names_its_program.py:66 (relative .venv/bin/python runs at a tree with no .venv), :93 (a program found nowhere is refused naming it and the tree) and :132 (a gate that starts and fails keeps its verdict and failure ids); after_suite records 65 passed EXIT=0 and negative-control-base.log records 3 failed EXIT=1.\nVERDICT write_paths: the delivered diff dde7b001..5dc24d3c touches only reckon/crew/promotion_gate.py, the new test file and the landing fragment; reckon/crew/landing_measure.py is declared but nets zero because its resolver copy was added and removed inside the range, and no figure directory is written.\nVERDICT manifest: read; status complete, baseline_suite 58 passed EXIT=0 and after_suite 65 passed EXIT=0 with no failure ids, three negative-control logs each carrying a revision, a literal command and an EXIT= line, and the pre-existing test_crew_gate_command_is_runnable failure recorded under outside_scope.\nVERDICT diff: read commit by commit: 8311322524 adds the resolver and the not-started reporting, 78755444b1 moves the resolver into promotion_gate and removes landing_measure's copies, 67b19df7a0 leaves one definition each of _SHELL_ASSIGNMENT and _is_executable_file, 54220d000d drops the guard's measuring-interpreter fallback so a checkout lacking its recorded program is still refused, and a1712b76..5dc24d3c are docs-only fragment edits.\nCALL_SITES: reckon/crew/promotion.py:1404, reckon/crew/promotion_gate.py:1088, reckon/crew/promotion_gate.py:1571, reckon/crew/promotion_gate.py:1698, reckon/crew/recovery_review_acceptance.py:752\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_gate.py:1313 resolves the program, :1341 rewrites it into the command, and :900-905 marks a not-started gate as a finding about a program rather than about the merge.\nSCORE evidence: 18\nJUSTIFICATION evidence: after_suite-1795350441813538255.log carries its revision, literal command, 65 passed and EXIT=0, and negative-control-base.log reproduces the plan's stated defect at dde7b001 (exit_status=127 reported as 'the merge changes what this node's gate proves'), but the population head arm's command header at ~/.cache/reckon-portfolio/arms/gate-program/head-54220d00.log:3 is split and unusable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat dde7b001..5dc24d3c lists exactly the three declared paths and no module outside them.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-duplicate-helpers.log shows the helper-count, rewrite and refusal cases red at b55533df9d, head.log shows test_a_relative_program_the_checkout_lacks_is_refused_naming_the_checkout red at 0e8e9dd0, and negative-control-base.log shows the three done-when cases red at dde7b001; the one weak link is tests/test_a_gate_that_cannot_start_names_its_program.py:204, which passes on the refusal's own command echo.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_gate.py:466 puts the env-unwrapping token walk in one helper with a mechanism docstring, and no added name in the module or the test carries a plan, stage or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the resolver at reckon/crew/promotion_gate.py:498-645 is the only owner of gate-program resolution, it reuses fleet_supervisor.resolved_environment, and the test at :168 asserts landing_measure owns no copy; the nearest neighbours (dispatch_launch.py:1374 backend-binary resolution, shim_lookup.py:59 non-shim PATH lookup) resolve different things.\nFINDING /home/ITER/mcintos/.cache/reckon-portfolio/arms/gate-program/head-54220d00.log:3 non-blocking: the population head arm's command header is split into five '# command:' lines that re-prefix PYTHONPATH per chunk and glue the interpreter path onto the second chunk ('PYTHONPATH=tests/test_a_gate_that_cannot_start_names_its_program.py tests/test_a_gate_replay_runs_on_the_measure_partition.py/.venv/bin/python'), so no single literal command can be read out of the log to re-run the arm; only the 121 passed summary and EXIT=0 are usable.\nFINDING tests/test_a_gate_that_cannot_start_names_its_program.py:204 non-blocking: assert PROGRAM_THAT_EXISTS_NOWHERE in str(refused.value) is satisfied by the refusal's own {command!r} echo at reckon/crew/promotion_gate.py:712, so it holds even if the message names the env wrapper instead of the program the resolver read; only the paired \"'env'\" not in message at :255 actually catches that regression.\n",
+  "review_run_id": "r-20261122T123102825605-review-of-dwlw-a-gate-that-cannot-start-names-its-program-5dc24d3cfca4",
+  "reviewed_base_sha": "dde7b001769544957d5ca63f50cbb48c26574553",
+  "reviewed_head_sha": "5dc24d3cfca4288b567942b1d7aceb0c6b940d1c",
+  "reviewed_run_id": "r-20261122T083521486110-dwlw-a-gate-that-cannot-start-names-its-program",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T12:37:14.502843+00:00",
+  "total": 115
+}

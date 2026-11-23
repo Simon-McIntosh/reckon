@@ -1,0 +1,116 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:3253 launch_plan -> _shared_mcp_endpoints",
+    "reckon/crew/dispatching/launch.py:130 worker_mcp_record"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T06:40:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it",
+      "recorded_at": "2026-11-22T11:07:35.138727+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it",
+      "recorded_at": "2026-11-22T11:07:37.679793+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_one_server_per_node_serves_every_worker.py",
+      "line": 98,
+      "severity": "blocking",
+      "text": "test_every_worker_tool_call_is_answered_by_one_server (and test_a_second_launch_reuses_the_node_server at line 45) start a real reckon.mcp server through subprocess.Popen(start_new_session=True) and never terminate it, so every run of this gate leaves two detached server processes holding a port and a lock inside pytest's tmp_path for the node's lifetime; this node's own measure reads 684 MB resident for that server, and the repository binds against a process that outlives the session that started it."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it.html",
+      "line": 49,
+      "severity": "blocking",
+      "text": "The recorded resident-memory measure is the same instrument over ten-second windows with two-second sampling (measure-shared-mcp.json holds six samples per arm) while the done_when requires the medians read every ten minutes for one hour per arm; the flat-memory claim the plan rests on is therefore verified over ten seconds, not an hour, and the fragment states the gap but the node's measure remains unmet."
+    },
+    {
+      "file": "tests/test_one_server_per_node_serves_every_worker.py",
+      "line": 102,
+      "severity": "non-blocking",
+      "text": "assert answered == WORKERS is tautological: _answered returns len(errors) where errors is the gather of exactly WORKERS coroutines, so the assertion holds whatever the server answers; the real guard is assert errors == [] on line 101, and the misnamed count overstates what the test verifies."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": 691,
+      "severity": "non-blocking",
+      "text": "removed = set(servers or {}) - allowed raises TypeError on a list-valued mcpServers because its entries are mappings, so the new list branches at line 697 and line 712 can never be reached; a harness whose mcpServers is a list still raises instead of receiving the shared endpoint the diff was written to deliver."
+    },
+    {
+      "file": "reckon/mcp_shared.py",
+      "line": 167,
+      "severity": "non-blocking",
+      "text": "_write_record keeps a private temporary-and-rename beside reckon/_store.py:636 write_json_atomically, whose docstring states it is the one place a file is published through a sibling temporary; reckon/_worker_fence.py:15 already imports that owner, so the new module forks a capability the repository owns."
+    },
+    {
+      "file": "reckon/mcp_shared.py",
+      "line": 72,
+      "severity": "non-blocking",
+      "text": "node_dir re-implements reckon/node_runtime.py:24 runtime_root_candidate, which exists so every reader resolves one runtime-root order instead of a copy in each, and diverges from it by dropping the TMPDIR fallback, so a node with no /run/user fails at mkdir where the owner would have succeeded."
+    },
+    {
+      "file": "reckon/mcp_shared.py",
+      "line": 122,
+      "severity": "non-blocking",
+      "text": "_pid_alive re-implements reckon/crew/process_liveness.py:11 process_alive and omits its zombie check, so a server whose process has exited but is unreaped is reported live until the port probe happens to fail."
+    },
+    {
+      "file": "reckon/mcp_shared.py",
+      "line": 296,
+      "severity": "non-blocking",
+      "text": "worker_server_config is defined and never called; the harness declarations are composed in _worker_fence.py and _backends.py instead, so the helper is dead surface."
+    },
+    {
+      "file": "reckon/project_setup_commands.py",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "The commit removes about thirty unrelated blank lines across the whole file and drops its trailing line alongside the mcp() option change, folding a lint sweep into a feature commit that the repository requires to be its own commit and that will collide with any peer editing this file."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it.html",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "The two-arm resident-memory measure, the figure that would let a reader see the flat delta at a glance, is delivered as prose only although the node was granted docs/figures/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it and the repository's figure mandate expects a graphic where a graphic carries the result."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from bfacff71: 907 insertions across eleven files, the mechanism in reckon/mcp_shared.py, the seams in _backends.py, _worker_fence.py and launch.py, the declaration and validation in flight.py and flight-defaults.yaml, the measure script, the test, and the evidence fragment; project_setup_commands.py also carries unrelated whitespace churn.",
+    "done_when": "The done_when asks for 5 then 40 workers, one server process, every tool call answered, and resident medians ten minutes apart over one hour per arm; the gate asserts the first three and the recorded measure answers only the fourth over ten-second windows.",
+    "goal": "The node goal is one MCP server per node serving every worker that names it with resident memory flat in worker count; reckon/mcp_shared.py:236 lands it and reckon/_backends.py:3253 wires the launch path to it.",
+    "manifest": "The manifest is honest and complete on shape: status complete, five commits cited, the gate command and log path named, the negative control logged, and the one-hour soak admitted as unrun under blockers and rubric.measure.",
+    "write_paths": "All eleven changed paths are inside the twelve declared write paths, and the two delivery grants under review-records/ are the only paths written outside the repository."
+  },
+  "justifications": {
+    "durability": "tests/test_one_server_per_node_serves_every_worker.py:50 and :103 assert the /proc census equals one pid, which reddens if a second server starts, but no test drives launch_plan with a shared_mcp_servers declaration, and :102 asserts a count the test itself fixes.",
+    "evidence": "gate-shared-mcp.log records 5 passed at 80d609fc and measure-shared-mcp.json records 5 workers 683,932 kB against 40 workers 684,972 kB, but the recorded run used --duration 10 --interval 2 (docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it.html:49) where the done_when requires ten-minute sampling over one hour.",
+    "fit": "reckon/mcp_shared.py follows the surrounding module idiom (frozen dataclass, named env constants, module docstring), while tests/test_one_server_per_node_serves_every_worker.py:87 leaves an over-indented call that ruff format would rewrite.",
+    "goal_fidelity": "reckon/mcp_shared.py:236 ensure_shared_server starts one node-local server under an exclusive lock and returns its endpoint to every later launcher, and reckon/_backends.py:3253 hands that endpoint to the worker's harness declaration, which is the deliverable \u00a72 states.",
+    "scope_discipline": "every changed path in bfacff71..1b72aa39 is inside the twelve declared write paths, but reckon/project_setup_commands.py carries a whole-file blank-line sweep (19 lines of unrelated deletions) folded into the feature commit and reckon/_worker_fence.py:697 adds list-form MCP filtering the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is one MCP server per node serving every worker that names it, with resident memory flat in worker count; reckon/mcp_shared.py:236 lands it and reckon/_backends.py:3253 wires the launch path to it.\nVERDICT done_when: the done_when asks for 5 then 40 workers, one server process, every tool call answered, and resident medians ten minutes apart over one hour per arm; the gate asserts the first three and the recorded measure answers only the fourth over ten-second windows.\nVERDICT write_paths: all eleven changed paths are inside the twelve declared write paths, and the two delivery grants under review-records/ are the only paths written outside the repository.\nVERDICT manifest: the manifest is honest and complete on shape: status complete, five commits cited, the gate command and log path named, the negative control logged, and the one-hour soak admitted as unrun under blockers and rubric.measure.\nVERDICT diff: read commit by commit from bfacff71: 907 insertions across eleven files, the mechanism in reckon/mcp_shared.py, the seams in _backends.py, _worker_fence.py and launch.py, the declaration and validation in flight.py and flight-defaults.yaml, the measure script, the test, and the evidence fragment; project_setup_commands.py also carries unrelated whitespace churn.\nCALL_SITES: reckon/_backends.py:3253, reckon/crew/dispatching/launch.py:130, reckon/_worker_fence.py:437, reckon/_worker_fence.py:756, reckon/_worker_fence.py:810, reckon/project_setup_commands.py:154, reckon/flight.py:1785, reckon/mcp.py:4005\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/mcp_shared.py:236 ensure_shared_server starts one node-local server under an exclusive lock and returns its endpoint to every later launcher, and reckon/_backends.py:3253 hands that endpoint to the worker's harness declaration, which is the deliverable \u00a72 states.\nSCORE evidence: 9\nJUSTIFICATION evidence: gate-shared-mcp.log records 5 passed at 80d609fc and measure-shared-mcp.json records 5 workers 683,932 kB against 40 workers 684,972 kB, but the recorded run used --duration 10 --interval 2 where the done_when requires ten-minute sampling over one hour.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: every changed path in bfacff71..1b72aa39 is inside the declared write paths, but reckon/project_setup_commands.py carries a whole-file blank-line sweep folded into the feature commit and reckon/_worker_fence.py:697 adds list-form MCP filtering the goal does not imply.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_one_server_per_node_serves_every_worker.py:50 and :103 assert the /proc census equals one pid, which reddens if a second server starts, but no test drives launch_plan with a shared_mcp_servers declaration, and :102 asserts a count the test itself fixes.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/mcp_shared.py follows the surrounding module idiom, but tests/test_one_server_per_node_serves_every_worker.py:87 leaves an over-indented call ruff format would rewrite and project_setup_commands.py carries unrelated churn.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/mcp_shared.py:167, :72 and :122 each re-implement a capability the repository owns at reckon/_store.py:636, reckon/node_runtime.py:24 and reckon/crew/process_liveness.py:11 without extending any of them.\nFINDING tests/test_one_server_per_node_serves_every_worker.py:98 blocking: test_every_worker_tool_call_is_answered_by_one_server (and test_a_second_launch_reuses_the_node_server at line 45) start a real reckon.mcp server through subprocess.Popen(start_new_session=True) and never terminate it, so every run of this gate leaves two detached server processes holding a port and a lock inside pytest's tmp_path for the node's lifetime; this node's own measure reads 684 MB resident for that server, and the repository binds against a process that outlives the session that started it.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it.html:49 blocking: The recorded resident-memory measure is the same instrument over ten-second windows with two-second sampling (measure-shared-mcp.json holds six samples per arm) while the done_when requires the medians read every ten minutes for one hour per arm; the flat-memory claim the plan rests on is therefore verified over ten seconds, not an hour, and the fragment states the gap but the node's measure remains unmet.\nFINDING tests/test_one_server_per_node_serves_every_worker.py:102 non-blocking: assert answered == WORKERS is tautological: _answered returns len(errors) where errors is the gather of exactly WORKERS coroutines, so the assertion holds whatever the server answers; the real guard is assert errors == [] on line 101, and the misnamed count overstates what the test verifies.\nFINDING reckon/_worker_fence.py:691 non-blocking: removed = set(servers or {}) - allowed raises TypeError on a list-valued mcpServers because its entries are mappings, so the new list branches at line 697 and line 712 can never be reached; a harness whose mcpServers is a list still raises instead of receiving the shared endpoint the diff was written to deliver.\nFINDING reckon/mcp_shared.py:167 non-blocking: _write_record keeps a private temporary-and-rename beside reckon/_store.py:636 write_json_atomically, whose docstring states it is the one place a file is published through a sibling temporary; reckon/_worker_fence.py:15 already imports that owner, so the new module forks a capability the repository owns.\nFINDING reckon/mcp_shared.py:72 non-blocking: node_dir re-implements reckon/node_runtime.py:24 runtime_root_candidate, which exists so every reader resolves one runtime-root order instead of a copy in each, and diverges from it by dropping the TMPDIR fallback, so a node with no /run/user fails at mkdir where the owner would have succeeded.\nFINDING reckon/mcp_shared.py:122 non-blocking: _pid_alive re-implements reckon/crew/process_liveness.py:11 process_alive and omits its zombie check, so a server whose process has exited but is unreaped is reported live until the port probe happens to fail.\nFINDING reckon/mcp_shared.py:296 non-blocking: worker_server_config is defined and never called; the harness declarations are composed in _worker_fence.py and _backends.py instead, so the helper is dead surface.\nFINDING reckon/project_setup_commands.py:19 non-blocking: The commit removes about thirty unrelated blank lines across the whole file and drops its trailing line alongside the mcp() option change, folding a lint sweep into a feature commit that the repository requires to be its own commit and that will collide with any peer editing this file.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it.html:43 non-blocking: The two-arm resident-memory measure, the figure that would let a reader see the flat delta at a glance, is delivered as prose only although the node was granted docs/figures/work-scales-to-eighty-across-nodes/wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it and the repository's figure mandate expects a graphic where a graphic carries the result.\n",
+  "review_run_id": "r-20261122T063940154365-review-of-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it-1b72aa3966dc",
+  "reviewed_base_sha": "bfacff713aa38c3fe8eeb608d95944e67aa23e23",
+  "reviewed_head_sha": "1b72aa3966dcfb9eff5e776a39cd52efdf7d5a39",
+  "reviewed_run_id": "r-20261122T032400625016-wstea-one-mcp-server-per-node-serves-every-worker-that-uses-it",
+  "scores": {
+    "durability": 13,
+    "evidence": 9,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T06:59:11.385796+00:00",
+  "total": 71
+}

@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T06:42:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 5155,
+      "severity": "non-blocking",
+      "text": "The held-by-finished-run duty still composes its sentence from holder_phase read once at derivation and carries no quoted_run, so a served row keeps quoting the holder's phase as it stood when the snapshot was taken; the done_when's 'an obligation whose sentence quotes a run's phase' is answered only for the review-in-flight arm, and the same staleness this node removed for reviews remains reachable for a holder that resumes or is settled."
+    },
+    {
+      "file": "tests/test_a_review_in_flight_does_not_block_a_stop.py",
+      "line": 121,
+      "severity": "non-blocking",
+      "text": "This fixture is edited by the diff (it now writes the review's live pointer) but is absent from the recorded gate command in the manifest's tests line and from both suite arms, so nothing in the delivery shows the edited fixture passing, and the done_when's population -- 'the tests importing reckon.crew.obligations or reckon.hooks.coordinator_obligations add no failure against the base' -- was never run: the gate ran the new test file plus test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py, neither of which imports either module."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": 1799,
+      "severity": "non-blocking",
+      "text": "_served_phase re-implements the live-pointer read already written in reckon/crew/station_obligations.py:180 (_live_pointer_owner) and reckon/crew/runs.py:1950 (read_pointer) -- path resolution, OSError, json.loads, Mapping check -- rather than extending either owner; the prompt-path rule that the crew facade must not be imported justifies not calling runs.read_pointer, but the near-twin in station_obligations is a second copy that will drift from this one."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an obligation's sentence is re-read with its row, so a quoted phase is the value read when the row is served; reckon/crew/obligations.py:3166 stamps QUOTED_RUN_FIELD on the review-in-flight duty and reckon/hooks/coordinator_obligations.py:1882 re-reads it, so that arm now quotes the phase the run's own pointer holds at read time.\nVERDICT done_when: the done_when asks for new tests each failing at the base revision plus no added failure across the tests importing the two modules; the new file's four cases are recorded with three failing at base (negative-control.log, FFF., EXIT=1) and the head arm passes 62, but the gate population is three files rather than the import population the sentence names.\nVERDICT write_paths: read the manifest's declared six paths; the diff touches reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, tests/test_an_obligation_quotes_what_is_true_when_served.py and tests/test_a_review_in_flight_does_not_block_a_stop.py, all four inside the declared set, and the two declared evidence/figure paths are unused.\nVERDICT manifest: read; it states status complete at 7f31490e52 with a three-file gate command 62 passed, a base arm 58 passed EXIT=0 (suite-base.log) and a head arm 62 passed EXIT=0 (suite-head.log), and its negative_control_note matches the red log.\nVERDICT diff: read commit 7f31490e52 against 67a144270e5e3f9afd5e625a803f2bb74dee35c7 commit by commit; one commit, four files, +268 -4, adding QUOTED_RUN_FIELD, the _served_phase/_requoted read, the absent/unreadable distinction, the requote-and-drop branch in recheck_worktree_held_rows, and four tests.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:_prompt (recheck at lines 1601,1612,1625,1653), reckon/hooks/coordinator_obligations.py:_stop (recheck at lines 1963,1970), reckon/crew/station_subscriber.py:163, reckon/crew/obligation_snapshot.py:2289\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:3166 and reckon/hooks/coordinator_obligations.py:1930 make the review-in-flight sentence quote the pointer as it reads now, but reckon/crew/obligations.py:5155 leaves the held-by-finished-run sentence quoting holder_phase frozen at derivation, so the goal's general 'a run's phase' clause is met for one obligation kind only.\nSCORE evidence: 14\nJUSTIFICATION evidence: the negative-control log is genuine (three FAILED ids at base, EXIT=1) and the head arm's 62 passed reconciles with suite-head.log:8, but the recorded gate omits tests/test_a_review_in_flight_does_not_block_a_stop.py, the one existing test the diff edits, and does not run the import population the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four changed paths (reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py and the two test files) are inside the six declared write paths, and the diff carries no edit outside the goal.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_obligation_quotes_what_is_true_when_served.py:117 reddens if the reader stops re-reading the pointer (the base arm proves it, FFF. at 67a1442), :127 reddens if the absent-pointer row is kept, and :138 reddens if an unreadable pointer is treated as absent.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's existing shape -- a commented module-level constant, a small pure helper and a docstringed branch -- matching reckon/hooks/coordinator_obligations.py:1730's neighbours, and no added name carries a plan, ticket or version label.\nSCORE reuse: 14\nJUSTIFICATION reuse: _served_phase at reckon/hooks/coordinator_obligations.py:1799 re-implements the pointer-decode shape owned by reckon/crew/runs.py:1950 and already copied at reckon/crew/station_obligations.py:180, though the prompt path's ban on importing the crew facade explains why it cannot extend the owner.\nFINDING reckon/crew/obligations.py:5155 non-blocking: the held-by-finished-run sentence quotes holder_phase with no quoted_run, so that row still serves the phase frozen at compose time.\nFINDING tests/test_a_review_in_flight_does_not_block_a_stop.py:121 non-blocking: the fixture this diff edits is absent from the recorded gate command, and the obligations-importing population the done_when names was never run.\nFINDING reckon/hooks/coordinator_obligations.py:1799 non-blocking: _served_phase duplicates the live-pointer read already owned by reckon/crew/runs.py:1950 and copied at reckon/crew/station_obligations.py:180.\n",
+  "review_run_id": "r-20261122T064059505838-review-of-tmttt-an-obligation-quotes-what-is-true-when-served-7f31490e527b",
+  "reviewed_base_sha": "67a144270e5e3f9afd5e625a803f2bb74dee35c7",
+  "reviewed_head_sha": "7f31490e527bfe7d4396e3eb5794534a6be3efc8",
+  "reviewed_run_id": "r-20261122T032921473518-tmttt-an-obligation-quotes-what-is-true-when-served",
+  "rubric": "six-dimension",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T07:00:46.975306+00:00",
+  "total": 98
+}

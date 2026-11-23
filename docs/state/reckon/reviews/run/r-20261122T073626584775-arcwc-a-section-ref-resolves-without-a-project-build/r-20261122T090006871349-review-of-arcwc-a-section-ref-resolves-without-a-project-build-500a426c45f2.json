@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite-1795337093827978496.log reports 58 passed with no FAILED ids at 50e7ad10, after_suite-1795337136506609182.log reports 62 passed with no FAILED ids at 500a426c, so the head-minus-base failure difference is empty.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T073626584775-arcwc-a-section-ref-resolves-without-a-project-build/after_suite-1795337136506609182.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T073626584775-arcwc-a-section-ref-resolves-without-a-project-build/baseline_suite-1795337093827978496.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:924",
+    "reckon/mcp.py:1104",
+    "reckon/mcp.py:1109",
+    "reckon/mcp.py:1960",
+    "reckon/mcp.py:3785"
+  ],
+  "completed_at": "2026-11-22T09:22:14Z",
+  "dispatched_at": "2026-11-22T09:00:49Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "1829",
+      "severity": "non-blocking",
+      "text": "on a cold store the detail view now skips _index_discovery entirely, so the assembled blocker_state is absent and reckon/mcp_views.py:3051 falls back to _blocking(data, deps), which omits sprint, released-blocker and held-path rows; a client that only ever issues detail reads never warms the store, so the loss is not limited to the first read after a restart, and no test in the gate exercises that fallback."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "2033",
+      "severity": "non-blocking",
+      "text": "_PersistedPlanStates.get caches only a non-None answer, so a ref that resolves to nothing runs _resolve again on every lookup, which makes the class docstring's 'each slug is resolved at most once per read' false for the unresolved case."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "2027",
+      "severity": "non-blocking",
+      "text": "_PersistedPlanStates subclasses dict but overrides only get, so in, [], items(), keys(), values() and len() all report an empty mapping; sound today because the only caller uses get and __setitem__, but any later iteration over it silently sees no plans."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit against the base: 6608a2b4f1 adds the lazy resolver and the read-view bound, cadf31879b adds the evidence fragment, 500a426c45 adds the distributed-project guard; 534 insertions and 37 deletions in three files with no unrelated churn.",
+    "done_when": "The done_when names tests/test_a_section_ref_resolves_without_a_project_build.py with four clauses; the test asserts each at lines 251-258, 282, 299 and 311, and the four gate logs carry their revision, literal command and a closing EXIT= line.",
+    "goal": "The node goal asks a section ref to resolve a target plan by parsing only the plans it names; reckon/mcp.py:1988 _PersistedPlanStates resolves each slug from the persisted index one at a time and reckon/mcp.py:2060 parses one document for a target the store does not cover, with the gate measuring a cold detail read of a twenty-plan store at four parsed documents.",
+    "manifest": "Read; it names the lazy resolver, the gate at 62 passed, both suite arms at 58 and 62 passed with exit 0, and a negative-control log showing one failed assertion; its counts agree with the logs beside it.",
+    "write_paths": "The source manifest declares seven paths; the 50e7ad10..500a426c diff changes three -- reckon/mcp.py, the new test and the evidence fragment -- and every one is inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_section_ref_resolves_without_a_project_build.py:257 reddens if either half regresses -- an eager _indexed_plan_states or an unconditional _index_discovery at reckon/mcp.py:1827 -- and line 329 proves the revert switch still reproduces.",
+    "evidence": "tests/test_a_section_ref_resolves_without_a_project_build.py:257 asserts the four-document bound and negative-control-section-ref-parse.log records the same assertion failing at 20 parsed; both suite arms are logged, but the manifest's regression claim for tests/test_a_plan_read_reads_each_referenced_plan_once.py rests on no log.",
+    "fit": "reckon/mcp.py:1988 follows the module's private-helper style and carries no plan label, but subclasses dict while implementing only get, which is not the idiom of any other mapping in reckon/.",
+    "goal_fidelity": "reckon/mcp.py:1988 answers each ref from the persisted index and reckon/mcp.py:2060 parses only an uncovered target, and the gate records four documents parsed against twenty for the reverted arm.",
+    "reuse": "reckon/mcp.py:2022 builds on metadata_index.persisted_discovery_entries and reckon/mcp.py:2045 on metadata_index.current_discovery, both owned by reckon/metadata_index.py:1627 and :1640 at the base revision, so the addition extends the owner rather than duplicating it.",
+    "scope_discipline": "The 50e7ad10..500a426c diff touches only reckon/mcp.py, the new test and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal asks a section ref to resolve a target plan by parsing only the plans it names; reckon/mcp.py:1988 _PersistedPlanStates resolves each slug from the persisted index one at a time and reckon/mcp.py:2060 parses one document for a target the store does not cover, with the gate measuring a cold detail read of a twenty-plan store at four parsed documents.\nVERDICT done_when: The done_when names tests/test_a_section_ref_resolves_without_a_project_build.py with four clauses; the test asserts each at lines 251-258, 282, 299 and 311, and the four gate logs carry their revision, literal command and a closing EXIT= line.\nVERDICT write_paths: The source manifest declares seven paths; the 50e7ad10..500a426c diff changes three -- reckon/mcp.py, the new test and the evidence fragment -- and every one is inside the declared set.\nVERDICT manifest: Read; it names the lazy resolver, the gate at 62 passed, both suite arms at 58 and 62 passed with exit 0, and a negative-control log showing one failed assertion; its counts agree with the logs beside it.\nVERDICT diff: Read commit by commit against the base: 6608a2b4f1 adds the lazy resolver and the read-view bound, cadf31879b adds the evidence fragment, 500a426c45 adds the distributed-project guard; 534 insertions and 37 deletions in three files with no unrelated churn.\nCALL_SITES: reckon/mcp.py:924, reckon/mcp.py:1104, reckon/mcp.py:1109, reckon/mcp.py:1960, reckon/mcp.py:3785\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1988 answers each ref from the persisted index and reckon/mcp.py:2060 parses only an uncovered target, and the gate records four documents parsed against twenty for the reverted arm.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_section_ref_resolves_without_a_project_build.py:257 asserts the four-document bound and negative-control-section-ref-parse.log records the same assertion failing at 20 parsed; both suite arms are logged, but the manifest's regression claim for tests/test_a_plan_read_reads_each_referenced_plan_once.py rests on no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The 50e7ad10..500a426c diff touches only reckon/mcp.py, the new test and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_section_ref_resolves_without_a_project_build.py:257 reddens if either half regresses -- an eager _indexed_plan_states or an unconditional _index_discovery at reckon/mcp.py:1827 -- and line 329 proves the revert switch still reproduces.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/mcp.py:1988 follows the module's private-helper style and carries no plan label, but subclasses dict while implementing only get, which is not the idiom of any other mapping in reckon/.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/mcp.py:2022 builds on metadata_index.persisted_discovery_entries and reckon/mcp.py:2045 on metadata_index.current_discovery, both owned by reckon/metadata_index.py:1627 and :1640 at the base revision, so the addition extends the owner rather than duplicating it.\nFINDING reckon/mcp.py:1829 non-blocking: on a cold store the detail view now skips _index_discovery entirely, so the assembled blocker_state is absent and reckon/mcp_views.py:3051 falls back to _blocking(data, deps), which omits sprint, released-blocker and held-path rows; a client that only ever issues detail reads never warms the store, so the loss is not limited to the first read after a restart, and no test in the gate exercises that fallback.\nFINDING reckon/mcp.py:2033 non-blocking: _PersistedPlanStates.get caches only a non-None answer, so a ref that resolves to nothing runs _resolve again on every lookup, which makes the class docstring's 'each slug is resolved at most once per read' false for the unresolved case.\nFINDING reckon/mcp.py:2027 non-blocking: _PersistedPlanStates subclasses dict but overrides only get, so in, [], items(), keys(), values() and len() all report an empty mapping; sound today because the only caller uses get and __setitem__, but any later iteration over it silently sees no plans.",
+  "review_run_id": "r-20261122T090006871349-review-of-arcwc-a-section-ref-resolves-without-a-project-build-500a426c45f2",
+  "reviewed_base_sha": "50e7ad1022e2336f4f5fdfea7b8ccc90919c9b7b",
+  "reviewed_commits": [
+    "6608a2b4f1fe153fdb825113663704127feed04a",
+    "cadf31879bc1a9212acb20121e2d75b5ca304b60",
+    "500a426c45f2662ae9b777ac343bd2ed96729b68"
+  ],
+  "reviewed_head_sha": "500a426c45f2662ae9b777ac343bd2ed96729b68",
+  "reviewed_run_id": "r-20261122T073626584775-arcwc-a-section-ref-resolves-without-a-project-build",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T09:29:54.928737+00:00",
+  "total": 110
+}

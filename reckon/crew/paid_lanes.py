@@ -1143,7 +1143,7 @@ def _read_rollout_event(path: Path) -> RolloutEvent | None:
     latest: tuple[datetime, Mapping[str, Any]] | None = None
     session_id = ""
     try:
-        with path.open("rb") as stream:
+        with path.open("rb", buffering=0) as stream:
             first = stream.readline()
             size = stream.seek(0, os.SEEK_END)
             stream.seek(max(0, size - ROLLOUT_TAIL_BYTES))

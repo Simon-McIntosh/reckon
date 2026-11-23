@@ -164,16 +164,27 @@ rather than something to implement.
 beat.** Queue only the plans or sprints you own: those the lead assigned you or
 you authored and are building. Never queue another session's plan, an unowned
 or superseded plan, or a legacy sprint you were not asked to run; name it to
-the lead instead. Once an owned plan's review round is answered, size every implementable section into nodes and queue
-all of them in one beat with one
-`reckon crew dispatch --batch <file>` call, naming no lane so the picker routes
-each request. One entry per chosen section, naming its project, plan, section,
-node id and goal; every field an entry omits — the done-when, the write paths,
-the waits — is taken from the section itself, and an entry may wait on another
-entry by its node id. The call prints one row per entry: queued,
-awaiting-upstream, already queued, or refused with its reason, and a refused
-entry does not stop the rest. Queueing this way costs one plan read per plan
-rather than one dispatch per section, so never write one call per section. The set may include sections whose upstream has not
+the lead instead. Once an owned plan's review round is answered, queue
+all of them in one beat with the whole-plan call, naming no lane so the picker
+routes each request:
+
+```bash
+reckon crew dispatch --project <project> --plan <slug> --session <session>
+```
+
+With no `--section`, that call queues every implementable section of the plan,
+each with the done-when, write paths and waits its section declares. It is the
+default form; do not size sections into nodes by hand or write a batch file to
+queue a plan. A section that already has an implement run for the same plan
+and section, live or landed, is skipped and named with that run, so a repeat
+never duplicates work; add `--dry-run` to read every row first without storing
+anything. The call prints one row per section: queued, awaiting-upstream,
+already queued, or refused with its reason, and a refused section does not stop
+the rest. Repair the plan text a refusal names and run the same call again;
+sections already queued are not duplicated. Reach for
+`reckon crew dispatch --batch <file>` only to supply a field a section does not
+carry (a node split, a time budget, a comment), one entry per such node, with
+every omitted field taken from the section. Never write one call per section. The set may include sections whose upstream has not
 landed. Do not ration (lead directive 2026-11-14): a deep queue keeps the lane
 full overnight and after coordinators stop, and the router holds work past its
 gate width off the cards. The DAG is the gate: a declared section wait parks
@@ -285,6 +296,9 @@ reckon crew census [--apply]    # Lists reckon processes whose recorded owner is
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew decision record --record <file>    # records one question for the lead with its owning session, recommendation and the work it holds; read them back through `crew(view="decisions")`
 reckon crew decision answer --id <decision> --answers <json-or-file> [--by <who>]    # answers one raised decision per run record — adopt the work into a named live session or retire it — so the work it held is released rather than left orphaned
+reckon crew decision present --session <session> [--project <project>]    # holds every open decision for one presenting session and returns them as choices, largest held work first, each with its repository, session, plan and section, its context, its options recommendation-first and what the answer releases; a decision another session is presenting is named with its holder
+reckon crew decision choose --id <decision> --option <value> --session <session> [--note <note>]    # records the lead's answer to one presented choice; the presenting session claims a choice before it is shown, so a second session is handed only what the first did not take
+reckon crew decision release --session <session> [--id <decision>]    # gives up presentation claims the session did not answer, so another session can present them
 reckon crew declare-gate --run <id> [--project <project>] [--command "<suite command>"] [--partition <partition>]    # names the suite command and partition a run's own gate arms ran with, when they differ from the project's armed command
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --regenerate-path <path> --input <path> --compares-with <measurement> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
@@ -605,7 +619,8 @@ dispatch to the running count, and do not hold work back because the lane
 looks full.
 
 - **Queue, then steer.** Queue every implementable section of a plan you own
-  in one `crew dispatch --batch`, waits declared, and steer it with
+  in one whole-plan `crew dispatch --plan <slug>` (a `crew dispatch --batch`
+  only for fields a section lacks), waits declared, and steer it with
   `crew queue edit`, `hold`, `release`, `reprioritise` and `drop`. A dispatch
   that answers `"queued": true` is done; leave it.
 - **Priority moves a request forward, not past the gate.** Use

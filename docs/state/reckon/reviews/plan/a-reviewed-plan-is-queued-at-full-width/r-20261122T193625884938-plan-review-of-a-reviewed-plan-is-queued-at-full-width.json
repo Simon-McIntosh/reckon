@@ -1,0 +1,110 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T19:39:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:135",
+      "id": "wiring-1",
+      "reason": "two implementable sections specify opposite outcomes for the same ended-coordinator state, so whichever node lands second breaks the other's done-when, and the plan must state the ordering or which rule governs.",
+      "text": "\u00a717 says a whole-plan dispatch by any session queues a plan whose coordinating session has ended and then coordinates it, while \u00a79 (implementable) accepts a plan the resolution gives no live coordinator only when the plan's sprint is one the session already coordinates a plan in; after \u00a717 lands an ended coordinator is \"no live coordinator\", so \u00a717's first case and \u00a79's second case cannot both hold",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:143",
+      "id": "reasoning-1",
+      "reason": "this is the same implementation-prescription form \u00a711 and \u00a712 were rewritten away from, and the reuse map belongs on the node brief, not the plan.",
+      "text": "\u00a718's done-when states \"Write paths: reckon/crew/dispatch_batch.py and the new test\", naming the module to extend in plan text",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html:129",
+      "id": "naming-1",
+      "reason": "the recorded reason must state the mechanism, not the section number, or the plan ships a banned label into code.",
+      "text": "\u00a716 tells the node to replace the superseded case \"with the reason recorded beside it, since \u00a716 supersedes that behaviour\" in tests/test_a_landed_section_is_not_queued_again.py, which invites plan labels (\u00a716/\u00a712) and changelog prose into a test comment",
+      "type": "naming",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1228deb2e47a211ffa274492820b5dc5823859e1",
+  "plan_fingerprint": "ca055d98bbd1815be8b7d96ffc71c5be54eabd1f953d5cfe86d524169365a54a",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 25,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "66b218d94de008873b5f0787de58bdb5d8720737",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "section 17 now treats an ended coordinator as none and defers to section 9's rule, with a case refusing a session section 9 does not allow",
+      "reason": "",
+      "when": "2026-11-22T20:17:51.881656+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "finding": "reasoning-1",
+      "reason": "the write-paths line bounds the files the node may change, as the dispatch contract requires; it prescribes no method, and the worker settles how",
+      "when": "2026-11-22T20:18:43.722265+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "reason": "the write-paths line bounds the files the node may change, as the dispatch contract requires; it prescribes no method, and the worker settles how",
+      "when": "2026-11-22T20:18:43.722265+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "66b218d94de008873b5f0787de58bdb5d8720737",
+      "commit_basis": "edit",
+      "note": "section 17 now treats an ended coordinator as none and defers to section 9's rule, with a case refusing a session section 9 does not allow",
+      "reason": "",
+      "when": "2026-11-22T20:17:51.881656+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-reviewed-plan-is-queued-at-full-width/r-20261122T193625884938-plan-review-of-a-reviewed-plan-is-queued-at-full-width.json",
+  "review_run_id": "r-20261122T193625884938-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "512fb41f95d822de5308278a1a89f822957f28a1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the sections and test-file deliverables named resolve, and internal \u00a7-references point at existing sections; the September run ids \u00a716 cites are evidence quoted from the dry-run output.",
+    "done_when": "pass \u2014 each of \u00a716, \u00a717 and \u00a718 names a test file, per-arm cases and an independent negative control that can fail at the base revision.",
+    "evidence_paths": "pass \u2014 every arm's log is placed under the run directory, a durable path.",
+    "naming": "a finding \u2014 \u00a716 instructs recording a reason that cites \u00a716/\u00a712 inside a test file.",
+    "reasoning": "a finding \u2014 \u00a718 names the module to extend in plan text, the implementation form \u00a711 and \u00a712 were rewritten away from.",
+    "single_goal": "pass \u2014 \u00a716, \u00a717 and \u00a718 each carry one deliverable.",
+    "wiring": "a finding \u2014 \u00a717's successor rule and \u00a79's sprint rule give opposite verdicts for the same ended-coordinator state, and nothing orders or reconciles them."
+  },
+  "section_digests": {
+    "_document": "27663f5667ea3443a63f08695c85c4aa79a90ae20fb704dfb57e32f98ded638d",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s10": "19cac31f7625580415ae589ef5632a42fa084f147d415318997b99ce31d1e5a6",
+    "s11": "b40094ce1047166cdbfdf05ba800391d2ad75bd7eca54189bb6b4327530f63ec",
+    "s12": "6922aeef29c3e7a44eadeb906db8330aa905620239cf9b1a1141efe2c1924ff5",
+    "s13": "67d423df0c3f4528fca7f84389219d4046241e32d7dc3276ea8031cbb5bdf441",
+    "s14": "485f4fd128450aabd25bfe8536815d32f5535ba3a884a5587a08a6a8a867ffe3",
+    "s15": "c8b323048ada2508c67c6a6afe2efa8c453a851c91ba8e055664241acda0dd08",
+    "s16": "44c101f091c020299490eb25a03ffb01fa2581eb44fd29f1c93611e86276bcd4",
+    "s17": "286d3c6ecad75f4d32e075565d19939a5a5797cecc44def65d9918fb7b41d333",
+    "s18": "a21ae9f4a1153274f1b7194705bf582852ae5da1e9cdc44cf0e3d599d33c7a62",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "7bf7f9b92e4bbc6a9d86f2d20aacc04cdaa9e3a0c27be56c9f1eccb8cea9efee",
+    "s4": "9728c2bdd6e0a20b020fe517e7b4b28259c17b6a31fb630c24213261ae299736",
+    "s5": "a0356c829de2dc9d9549641fb3dbdff1b2e2904914c61bc70b9f36213272e8ab",
+    "s6": "322422e335f3f8d278ca86100a57410fa7524921c9bda5e38840490a1fd1dd52",
+    "s7": "46ed5e587a3ccf200df8d9e3c23a84e8b5238c86449f9a30e4bcd07c28cc3b76",
+    "s8": "ab8adf6dcfeab65b717343054ca1c1fbd76bfa295179fc83776e83a5d2ae8606",
+    "s9": "6e84f853b79600df1fd05c11705c314262c11808dbcbb043660311f640c0474d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T20:05:16.755834+00:00",
+  "total": null
+}

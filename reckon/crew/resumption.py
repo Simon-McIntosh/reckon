@@ -93,8 +93,14 @@ from reckon.crew.recovery import (
     resume_window_refusal,
     stream_paths_newest_first,
 )
-from reckon.crew.recovery_classification import WAIT_PRODUCER_GONE_SECONDS
+from reckon.crew.recovery_classification import (
+    WAIT_PRODUCER_GONE_SECONDS,
+    first_reported_line,
+)
 from reckon.crew.recovery_liveness import (
+    STRANDED_LAUNCH_BOUND_SECONDS,
+    _attempt_started_seconds,
+    _exit_record_names_attempt,
     _newest_stream_in_motion,
     _record_is_known_foreign,
 )
@@ -150,6 +156,116 @@ REFUSED_ADVICE_NAME = "resume-refused-advice.txt"
 # resume of the run off for as long as it lived. The refusal then cannot
 # outlive the attempt it guarded.
 RESUME_LAUNCH_IN_FLIGHT = "resume_launch_in_flight"
+
+#: How long a resumed attempt may hold its claim while its worker has begun no
+#: turn. A resume records the launcher's pid and the working phase the moment
+#: it spawns, so the pointer says "working" for a launcher that is merely
+#: waiting: an srun client waiting on a step the scheduler never started holds
+#: the run, and the sections waiting on it, for as long as it waits. The bound
+#: is the stranded-launch clock itself, read from its owner, because it answers
+#: the same question — a launch that produced nothing of its own — and one
+#: clock keeps the two readings from disagreeing about when "never started"
+#: begins.
+RESUME_TURN_BOUND_SECONDS = STRANDED_LAUNCH_BOUND_SECONDS
+
+
+def launcher_waiting_reason(record: Mapping[str, Any]) -> str:
+    """The launcher's own words about what it is waiting for, or a statement.
+
+    A launcher blocked before its worker starts states why in its own log — a
+    scheduler client names the queue, the partition or the request it is
+    waiting on. Which line is the reason is the launch reading's own convention,
+    not a second one: the recorded ``stderr_tail`` is read first because that is
+    what a launch failure quotes, and the resume's own log is read where no tail
+    was recorded.
+    """
+    texts = [str(record.get("stderr_tail") or "")]
+    for name in ("stderr_path", "log_path"):
+        path = str(record.get(name) or "").strip()
+        if not path:
+            continue
+        try:
+            texts.append(Path(path).read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            continue
+    return first_reported_line(*texts) or "the launcher began no turn for its worker"
+
+
+def _attempt_stream_began_a_turn(record: Mapping[str, Any], started: float) -> bool:
+    """Whether a stream written since the attempt began holds an assistant turn.
+
+    The attempt's own output is the only stream that answers for it: the run
+    directory of a resume still holds the streams of the attempts before it,
+    and an earlier worker's assistant record says nothing about this one. So
+    the newest stream is read only where it was written at or after the attempt
+    started, which is exactly the resume's own stream once the worker writes
+    anything to it.
+    """
+    from reckon.crew.recovery_wait import (
+        _record_newest_stream,
+        _stream_holds_assistant_record,
+    )
+
+    found = _record_newest_stream(record)
+    if found is None or found[1] < started:
+        return False
+    return _stream_holds_assistant_record(found[0])
+
+
+def resume_without_a_started_turn(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> dict[str, Any] | None:
+    """The reading of a resume whose worker has not begun a turn, or None.
+
+    A resumed run reads as working from the instant its launcher returns,
+    whatever the launcher is doing: the pointer's pid is the launcher's, so a
+    process table answering "alive" answers about the launcher rather than
+    about any work. The question a reader needs is whether a turn has begun,
+    and that is answered by the attempt's own stream, not by the process the
+    pointer names.
+
+    Returns the facts the classification states when the attempt is a resume,
+    is past the bound, and its own stream holds no assistant record: the
+    launcher's pid, the bound, the age, and the launcher's own reason. A
+    launcher that returned from its spawn but started no worker is the case
+    this names, so the reading says the launch that never started is a failed
+    launch rather than a working run.
+
+    Three readings answer None and keep the arms that own them: an attempt
+    that is not a resume, an attempt with no readable start (nothing dates the
+    bound), and one whose exit record names the attempt (the supervisor's
+    account of an end is a different reading from a launch that has not
+    reported at all).
+    """
+    if str(record.get("attempt_kind") or "") != "resume":
+        return None
+    run_id = str(record.get("run_id") or "")
+    # The attempt's clock is the launch reading's own: a resume rewrites the
+    # pointer after it publishes the new attempt's identity, so the pointer can
+    # still date the attempt that ended while attempt.json beside it already
+    # names the one running. The later of the two is the attempt the bound is
+    # measured from, and reading only the pointer would age a just-resumed run
+    # from its predecessor and release it as a launch that never started.
+    started = _attempt_started_seconds(record)
+    if started is None:
+        return None
+    attempt = record.get("attempt")
+    if isinstance(attempt, int) and _exit_record_names_attempt(record, attempt):
+        return None
+    if _attempt_stream_began_a_turn(record, started):
+        return None
+    started_at = float(now_seconds) - started
+    if started_at <= RESUME_TURN_BOUND_SECONDS:
+        return None
+    return {
+        "run_id": run_id,
+        "attempt": attempt,
+        "bound_seconds": RESUME_TURN_BOUND_SECONDS,
+        "age_seconds": int(started_at),
+        "started_at": datetime.fromtimestamp(started, tz=UTC).isoformat(),
+        "waiting_reason": launcher_waiting_reason(record),
+        "launcher_pid": record.get("pid"),
+    }
 
 
 def refused_advice_path(run_id: str) -> Path:
@@ -1954,6 +2070,34 @@ def _with_revision_suite_block(advice: str, record: Mapping[str, Any]) -> str:
     return advice.rstrip("\n") + "\n" + block
 
 
+def _compute_partition_block(record: Mapping[str, Any]) -> str:
+    """The compute instruction the run's own dispatch named, for its resume.
+
+    The done-when is where the dispatch read the partition from, and it is the
+    same field a resume still holds on the run's node. A run that recorded no
+    node or no done-when is told nothing rather than handed a default.
+    """
+    node = record.get("node")
+    if not isinstance(node, Mapping):
+        return ""
+    from reckon.crew.prompts import compute_partition_block
+
+    return compute_partition_block(str(node.get("done_when") or ""))
+
+
+def _with_compute_partition_block(advice: str, record: Mapping[str, Any]) -> str:
+    """The advice a resumed worker reads, with its dispatch's partition appended.
+
+    Appended for the same reason the suite revisions are: the advice's opening
+    names the round, and a manifest quoting it still reads as that round's
+    answer. A dispatch that named no partition leaves the advice untouched.
+    """
+    block = _compute_partition_block(record)
+    if not block:
+        return advice
+    return advice.rstrip("\n") + "\n" + block
+
+
 def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
     """Write the prompt the resumed worker reads from ``advice_path``.
 
@@ -2145,6 +2289,7 @@ def _resume(
     launcher: Callable[..., int] | None = None,
     advice: str = CONTINUE_ADVICE,
     coordinator: bool = False,
+    preserve_manifest_status: bool = False,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does.
 
@@ -2225,6 +2370,10 @@ def _resume(
             # here, with the command resolved separately over each. Appended
             # before the plan is built so the prompt the worker reads carries
             # them whether the backend feeds its prompt on stdin or on argv.
+            # The dispatch's compute partition is carried for the same reason:
+            # the advice alone names none, so the resumed worker otherwise runs
+            # its gate on whatever host the resume landed on.
+            advice = _with_compute_partition_block(advice, record)
             advice = _with_revision_suite_block(advice, record)
             plan = resume_plan(run_id, advice, config=config)
             directory = run_dir(run_id)
@@ -2241,8 +2390,11 @@ def _resume(
             _require_fleet_gate_open()
             # The previous attempt may have left a done manifest on disk; clear
             # its verdict so the supervisor does not read the new worker's first
-            # edit as that delivery.
-            _reset_delivered_manifest_status(run_id, record)
+            # edit as that delivery. A repair resume keeps the word it found:
+            # the delivery it resumes already reported its status, and a repair
+            # rewrites that manifest with its own verdict once it is done.
+            if not preserve_manifest_status:
+                _reset_delivered_manifest_status(run_id, record)
             if failure is not None:
                 # A hand-typed resume is the repair the launch-failure refusal
                 # names, so it retires the failure and its phase here, at the
@@ -2352,24 +2504,17 @@ def _run_condition_probe(
     change there decides what a row says. They must agree on the answer, and
     nothing makes them agree but the declaration they both read.
     """
-    worktree = Path(str(record.get("worktree") or "."))
-    try:
-        completed = subprocess.run(
-            list(wait.get("probe") or ()),
-            cwd=worktree if worktree.is_dir() else None,
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=30,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+    outcome = recovery_wait.run_wait_probe(record, wait)
+    if outcome.get("error"):
         return {
             "terminal": False,
-            "observed": "unavailable",
-            "detail": f"condition probe could not run: {exc}",
+            "observed": "stopped" if outcome.get("stopped") else "unavailable",
+            "detail": (
+                f"condition probe could not run: {outcome['error']}"
+            ),
         }
-    lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
-    observed = lines[-1] if lines else f"exit:{completed.returncode}"
+    lines = list(outcome.get("lines") or ())
+    observed = lines[-1] if lines else f"exit:{outcome.get('returncode')}"
     candidates = {observed.casefold()}
     candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
     terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
@@ -2386,7 +2531,8 @@ def _run_condition_probe(
         "terminal": matched,
         "observed": observed,
         "detail": (
-            f"condition probe reported {observed!r} with exit {completed.returncode}"
+            f"condition probe reported {observed!r} with exit "
+            f"{outcome.get('returncode')}"
         ),
     }
 

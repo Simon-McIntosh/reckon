@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -866,6 +867,7 @@ def _read_plan(
     section: str | None = None,
     cursor: str | None = None,
     include_prompts: bool = False,
+    with_deps: bool = True,
 ) -> dict[str, Any]:
     """Read plan state — the single read entrypoint (folds the read tools in).
 
@@ -875,7 +877,7 @@ def _read_plan(
           → { project, slug, version, data } — one plan's parsed state, or the
             index/project JSON envelope data for those special slugs.
 
-      read_plan(project, slug, with_schema=True)
+    read_plan(project, slug, with_schema=True)
           → the above PLUS "schema" (the published JSON Schema), a compact
             dos/don'ts note, and an op-vocabulary summary — the context injector
             an agent reads before calling edit_plan.
@@ -903,6 +905,10 @@ def _read_plan(
 
       read_plan()  or  read_plan("*")    [project omitted/"*"]
           → { projects: [...] } — folds list_projects.
+
+    ``with_deps`` false skips resolving the plan's depends-on and section refs.
+    The views that serve no dependency row set it false, so such a read parses
+    its own document and never reaches the project metadata index.
 
     Multi-worktree (``checkout_path``):
       When an agent runs inside a git worktree (a separate checkout of the same
@@ -1095,7 +1101,10 @@ def _read_plan(
         "version": version,
         "data": data,
     }
-    deps = data.get("depends_on") if isinstance(data, dict) else None
+    # A view that serves no dependency row pays nothing for them: resolving a
+    # ref reaches the project metadata index, which builds the whole project
+    # for a read that answers one field.
+    deps = data.get("depends_on") if with_deps and isinstance(data, dict) else None
     # One referenced-plan index shared by the whole-plan and the section-scoped
     # refs, so a plan named by both is indexed once for the read.
     state_cache: dict[Any, dict[str, dict[str, Any]]] = {}
@@ -1103,7 +1112,7 @@ def _read_plan(
         result["deps"] = [
             _resolve_plan_ref(ref, project, checkout_path, state_cache) for ref in deps
         ]
-    if data and canonical_type(data.get("type")) == "plan":
+    if with_deps and data and canonical_type(data.get("type")) == "plan":
         # Section-scoped refs resolve through the same read, so a caller sees
         # the waiting section beside the whole-plan dependencies it already had.
         section_rows = _section_dependency_rows(
@@ -1757,6 +1766,7 @@ def _read_plan_view(
                 slug=selector.id,
                 checkout_path=checkout_path,
                 doc_type=selector.type,
+                with_deps=selected_view in {"summary", "detail"},
             )
             if legacy.get("ok") is False:
                 detail = str(legacy.get("detail") or "")
@@ -1814,7 +1824,23 @@ def _read_plan_view(
             if composed is not None:
                 data = composed
         elif selector.type == "plan" and selected_view in {"summary", "detail"}:
-            discovered = _index_discovery(selector.project, checkout_path)
+            # The list-level rows a plan's holds are assembled from are the
+            # project's inventory. Reading it is cheap once the persisted index
+            # covers the project, and building it parses every covered document,
+            # which a read about one plan must not pay. On a cold legacy store
+            # the detail read therefore serves the plan and its refs alone and
+            # carries no list-derived holds; the summary view is the read whose
+            # subject is the project's inventory, and a distributed project's
+            # blockers and sprints exist only in that composition, so both
+            # assemble it either way.
+            docs_dir = _docs_dir_for_project(selector.project, checkout_path)
+            discovered = (
+                _index_discovery(selector.project, checkout_path)
+                if selected_view == "summary"
+                or (docs_dir is not None and _distributed(docs_dir))
+                or _persisted_index_holds_rows(selector.project, checkout_path)
+                else {}
+            )
             inventory_plan = next(
                 (
                     item
@@ -1949,43 +1975,132 @@ def _section_dependency_rows(
     return rows
 
 
-def _indexed_plan_states(
-    project: str, checkout_path: str | None
-) -> dict[str, dict[str, Any]]:
-    """Return each live plan's parsed state, keyed by slug, from the index.
+def _persisted_index_holds_rows(project: str, checkout_path: str | None) -> bool:
+    """Whether the project's persisted metadata index carries any rows.
 
-    A referenced plan's row needs only what its parse carries — its status,
-    impl, title, section declarations and followups — and the metadata index
-    already holds that per covered file. One lookup here answers every ref that
-    names any plan in the project, so a read that resolves many refs pays for
-    the project's index once rather than for one full plan read per ref. A
-    slug that a live and an archived document share keeps the live document,
-    matching the live-first resolution a full read takes.
-
-    A project with no docs dir answers empty, so every ref into it resolves as
-    absent rather than raising.
+    The list-level facts a one-plan read assembles its holds from are the
+    index's. Asking whether the store is there costs one read of it; answering
+    yes to a store that is not would parse every covered document to answer one
+    plan's summary.
     """
 
     docs_dir = _docs_dir_for_project(project, checkout_path)
     if docs_dir is None:
-        return {}
+        return False
     from reckon import metadata_index
 
-    live: dict[str, dict[str, Any]] = {}
-    archived: dict[str, dict[str, Any]] = {}
-    for entry in metadata_index.discovery_state(docs_dir, project).values():
-        if not isinstance(entry, Mapping):
-            continue
-        state = entry.get("state")
-        meta = entry.get("meta")
-        if not isinstance(state, Mapping) or not isinstance(meta, Mapping):
-            continue
-        slug = str(meta.get("slug") or state.get("slug") or "")
-        if not slug:
-            continue
-        bucket = archived if meta.get("archived") else live
-        bucket.setdefault(slug, dict(state))
-    return {**archived, **live}
+    try:
+        return bool(metadata_index.persisted_discovery_entries(docs_dir, project))
+    except Exception:  # noqa: BLE001 — an unreadable store holds no answer
+        return False
+
+
+class _PersistedPlanStates(dict):
+    """Slug-keyed plan states resolved one at a time from the persisted index.
+
+    A referenced plan's row needs only what its parse carries — its status,
+    impl, title, section declarations and followups — and the persisted
+    metadata index holds that per covered document. Resolving a slug validates
+    that one document's stored entry against its own file and parses nothing,
+    whatever the project's size; a plan the store does not cover is parsed from
+    its own document, so one ref costs at most one parse. Building the
+    project's index instead would parse every covered document to answer a
+    handful of refs, which is what a dependency-serving read exists to avoid.
+
+    Each slug is resolved at most once per read, including a slug that
+    resolves to nothing: the first lookup keeps the answer — the state in
+    ``self``, an absence in ``self._absent`` — and ``state_cache`` shares one
+    mapping across every ref a single read resolves. A slug that a live and an
+    archived document share keeps the answer a full read takes, live first.
+
+    The mapping itself holds only the plans that resolved to a state, so
+    ``len``, ``in``, iteration and item access report what has been resolved
+    and never claim a plan the store could not answer for.
+    """
+
+    def __init__(self, project: str, checkout_path: str | None) -> None:
+        super().__init__()
+        self._project = project
+        self._checkout_path = checkout_path
+        self._docs_dir = _docs_dir_for_project(project, checkout_path)
+        self._entries: dict[str, dict] | None = None
+        self._absent: set[str] = set()
+
+    def _persisted_entries(self) -> dict[str, dict]:
+        if self._entries is not None:
+            return self._entries
+        if self._docs_dir is None:
+            self._entries = {}
+            return self._entries
+        from reckon import metadata_index
+
+        self._entries = metadata_index.persisted_discovery_entries(
+            self._docs_dir, self._project
+        )
+        return self._entries
+
+    def get(self, slug: str, default: Any = None) -> dict[str, Any] | None:
+        if slug in self:
+            return dict.__getitem__(self, slug)
+        if slug in self._absent:
+            return default
+        state = self._resolve(slug)
+        if state is None:
+            self._absent.add(slug)
+            return default
+        dict.__setitem__(self, slug, state)
+        return state
+
+    def _resolve(self, slug: str) -> dict[str, Any] | None:
+        docs_dir = self._docs_dir
+        if docs_dir is None:
+            return None
+        relative = self._relative_path(slug, docs_dir)
+        if relative is not None:
+            from reckon import metadata_index
+
+            discovery = metadata_index.current_discovery(
+                docs_dir,
+                self._project,
+                relative,
+                self._persisted_entries().get(relative),
+            )
+            # A discovery entry pairs the file's meta record with its parsed
+            # state; a ref's row is built from the state, so the meta half is
+            # not what the lookup returns.
+            state = discovery.get("state") if isinstance(discovery, Mapping) else None
+            if isinstance(state, Mapping):
+                return dict(state)
+        # The store holds nothing current for this plan — no store at all, or
+        # one written before the document existed — so this one document is
+        # parsed rather than the project being indexed to answer it.
+        return _parsed_plan_state(self._project, slug, self._checkout_path)
+
+    def _relative_path(self, slug: str, docs_dir: Path) -> str | None:
+        path = _resolve_html_file(self._project, slug, self._checkout_path)
+        if path is None:
+            return None
+        try:
+            return path.relative_to(docs_dir).as_posix()
+        except ValueError:
+            return None
+
+
+def _indexed_plan_states(
+    project: str, checkout_path: str | None
+) -> dict[str, dict[str, Any]]:
+    """Return a slug-keyed mapping of referenced plans, resolved on demand.
+
+    A dependency-serving read needs the plans its refs name and no others, so
+    the mapping answers each slug from the persisted index when it is asked
+    for rather than indexing the whole project up front. A project with no
+    docs dir answers empty, so every ref into it resolves as absent rather
+    than raising.
+    """
+
+    if _docs_dir_for_project(project, checkout_path) is None:
+        return {}
+    return _PersistedPlanStates(project, checkout_path)
 
 
 def _indexed_plan_state(
@@ -1994,11 +2109,11 @@ def _indexed_plan_state(
     checkout_path: str | None,
     state_cache: dict[Any, dict[str, dict[str, Any]]] | None = None,
 ) -> dict[str, Any] | None:
-    """Return one referenced plan's state from the metadata index.
+    """Return one referenced plan's state from the persisted index.
 
-    Never a full plan read: the index holds the parse a ref's row is built
-    from, and ``state_cache`` shares one project's lookup across every ref a
-    single read resolves, so each referenced plan is indexed at most once.
+    Never a full plan read: the store holds the parse a ref's row is built
+    from, and ``state_cache`` shares one project's mapping across every ref a
+    single read resolves, so each referenced plan is looked up at most once.
     """
 
     key = (project, checkout_path)
@@ -2009,8 +2124,8 @@ def _indexed_plan_state(
             state_cache[key] = states
     state = states.get(slug)
     if state is None:
-        # The index answers every plan it holds; a plan it cannot answer for —
-        # a project whose stored index predates the file — is parsed once from
+        # The store answers the plans it covers; one it cannot answer for — a
+        # project whose stored index predates the file — is parsed once from
         # its own document rather than read in full, so the ref is never a
         # second full read and the answer still comes from one pass.
         state = _parsed_plan_state(project, slug, checkout_path)
@@ -3957,7 +4072,21 @@ if mcp is not None:
 # ── Entrypoint ────────────────────────────────────────────────────────────
 
 
-def main() -> None:
+def main(
+    transport: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    name: str | None = None,
+) -> None:
+    """Run the server on stdio, or as this node's one shared network server.
+
+    The network form is what lets ten workers on a node share one server
+    instead of starting ten. It runs through :mod:`reckon.mcp_shared`, which
+    holds this node's single-instance lock: a second invocation on the same
+    node finds the first server serving and returns rather than binding a
+    second endpoint. The stdio form stays the default, so an operator-declared
+    per-worker server is unchanged.
+    """
     if not _HAS_MCP or mcp is None:
         msg = (
             "mcp package not found. Install with:\n"
@@ -3966,7 +4095,33 @@ def main() -> None:
             "  uv pip install -e ~/Code/reckon\n"
         )
         raise SystemExit(msg)
-    mcp.run(transport="stdio")
+    from reckon import mcp_shared
+
+    transport = transport or os.environ.get(mcp_shared.TRANSPORT_ENV) or "stdio"
+    if transport == "stdio":
+        mcp.run(transport="stdio")
+        return
+    if transport != "streamable-http":
+        raise SystemExit(f"unknown MCP transport: {transport}")
+    host = host or os.environ.get(mcp_shared.HOST_ENV) or mcp_shared.DEFAULT_HOST
+    port = port if port is not None else int(os.environ.get(mcp_shared.PORT_ENV) or 0)
+    name = name or os.environ.get(mcp_shared.NAME_ENV) or mcp_shared.DEFAULT_NAME
+
+    def run_shared(bound_host: str, bound_port: str | int) -> None:
+        # One process serves every client, and an HTTP request carries no
+        # session state the tools depend on, so no per-client session is kept
+        # resident and the footprint does not grow with the worker count.
+        mcp.settings.host = bound_host
+        mcp.settings.port = int(bound_port)
+        mcp.settings.stateless_http = True
+        mcp.run(transport="streamable-http")
+
+    record = mcp_shared.serve(name, run_shared, host=host, port=port)
+    if record.pid != os.getpid():
+        # Another process already serves this node; leave it serving.
+        logging.getLogger(__name__).info(
+            "shared MCP server %r already serving at %s", name, record.url
+        )
 
 
 if __name__ == "__main__":

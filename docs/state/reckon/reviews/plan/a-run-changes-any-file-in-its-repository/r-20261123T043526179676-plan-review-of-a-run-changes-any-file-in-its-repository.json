@@ -1,0 +1,106 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T04:36:08Z",
+  "findings": [
+    {
+      "anchor": "tests/test_a_node_needs_no_write_paths.py:125",
+      "id": "reuse_search-1",
+      "reason": "an implement node dispatched at \u00a72 would find its negative control red-arm passing and either report a blocker or fabricate a refusal; the section should be collapsed to the doccheck/skill text and its negative control retargeted at a check that genuinely fires.",
+      "text": "\u00a72 is already implemented at the base revision: `dispatch_batch.section_derivation` (reckon/crew/dispatch_batch.py:639-642) supplies `write_paths` only when the section states them, `dispatch_batch.py:815` queues a node with no write paths, `dispatch_sections.py:101` only validates that any declared path resolves, and `_PlanRead.write_paths` (dispatch_batch.py:415-437) returns `[]` rather than refusing when the sentence is absent; the existing test file already exercises a batch entry (test_a_batch_entry_with_no_write_paths_is_queued:125), a section stating none (:140), a queued launch (:156) and a direct dispatch (:191). \u00a72's negative control \u2014 \"the section refused for naming no write paths\" \u2014 therefore cannot reproduce, so the section as written would add tests for behaviour that already passes",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:435",
+      "id": "reuse_search-2",
+      "reason": "naming the existing narrowing turns \u00a71 from \"add a new exclusive-kind concept\" into a two-line delegation and gives the negative control a real target (a source path refused at the write-time audit, not at promotion).",
+      "text": "the only genuinely unlanded part of \u00a71 is that the write-time audit's `_outside_declared_scope` reports every changed path outside the declared list, while promotion already narrows the same list through `_changed_artifacts_needing_acceptance` (reckon/crew/promotion_checks.py:2967-2970); as written, \u00a71 reads as if no scope narrowing exists anywhere, which invites a node to build a second classifier rather than make the write-time audit delegate to the promotion one",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:6242",
+      "id": "reuse_search-3",
+      "reason": "\u00a73 as written can pass its text-only test while silently emptying the code-review neighbourhood derivation and the `model_paths` match, so the section must state what replaces a plan's write-paths sentence as their input.",
+      "text": "\u00a73's census of what reads a plan section's write-paths sentence is incomplete: besides skills and `prompts.py`, code consumes plan-declared write paths at `plan_review.code_review_paths_from_plan` (:6242, used by `dispatch_admission._health_review_plan_write_paths`:884 and `_health_review_compose_command`:1008), at `dispatch_plan.py:869` (a role default when the node declares none) and at `dispatch_batch.py:415`; a plan whose sections stop naming write paths makes `code_review_paths_from_plan` return `[]` and drops model-path matching (skills/reckon-build/SKILL.md:233), which \u00a73's done-when does not cover",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_batch.py:815",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is text-and-a-test, not new module surface; a wrapper here would be reviewed as surface added for no behaviour.",
+      "text": "\u00a72's declared source changes add a thin layer over readers that already tolerate an absent sentence (`section_derivation` `if paths:` guard, `_PlanRead.write_paths` returning `[]`, `write_scope_refusal` returning `None` on empty), and the section does not say why `dispatch_batch`'s existing derivation cannot simply be left alone",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/prompts.py:70",
+      "id": "thin_wrapper-2",
+      "reason": "lying about the current text would only cost the node a wasted edit; the section's real work is in `skills/reckon-build/SKILL.md:149,176` and the sibling skills, so the plan's endpoint is unchanged either way.",
+      "text": "\u00a73 lists `prompts.py` as a write path, but its scope fence already states the intended rule (\"a dispatched node may change any file in its repository that git can reconcile\", declared paths as expected, only unmergeable classes sealed); \u00a73 does not justify touching it",
+      "type": "thin_wrapper",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/runs.py:2645",
+      "id": "duplicate_owner-1",
+      "reason": "the brief must name `runs.py` as the owner to extend, so the node does not fork the exclusivity vocabulary that the fence, the claim and promotion all read.",
+      "text": "\u00a71's \"exclusive kinds\" are already owned: `DEFAULT_EXCLUSIVE_PATHS` (:2553), `_SharedWritePaths.exclusive_pattern` (:2645) and `unmergeable_patterns` (:2750) decide exactly the classes \u00a71 lists, and `promotion_scope._changed_artifacts_needing_acceptance` (:603) already applies them; a design that derives its own exclusive-path predicate duplicates this owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/admission/ordering.py:277",
+      "id": "duplicate_owner-2",
+      "reason": "two ordering rules over one queue drift and the verdict becomes untraceable, so the section must say which existing rule it changes rather than adding a parallel one.",
+      "text": "\u00a74 proposes \"offers it first to a waiting review ... before any implement request\", but `priorities_first` (:277) already hoists reviews to the head and `role_share_order` (:201) already reserves a `ROLE_SEAT_SHARE_FLOOR` of seats for a waiting review; as written, \u00a74 would add a third rule over the same queue without saying whether it replaces the seat-share floor or supersedes `priorities_first`'s lead scan",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-changes-any-file-in-its-repository.html#s4",
+      "id": "interface_budget-1",
+      "reason": "an undefined knob is a decision the worker cannot settle, and an unaccounted verdict field is interface surface added without the section saying what it retires; \u00a71 and \u00a72 at least retire a refusal each, \u00a74 retires none.",
+      "text": "public_definitions 3216, cli_options 550, mcp_views 15, refusal_families 25; \u00a74 adds \"a stated critical level\" and a verdict field naming which rule gave a request its slot, naming neither where the critical level is configured nor its default, nor what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-changes-any-file-in-its-repository.html#s2",
+      "id": "interface_budget-2",
+      "reason": "the section's interface accounting is wrong in the same direction as its negative control, so the author must either find the surface that really fires or drop the section's code claims.",
+      "text": "\u00a72 adds a new test file and module surface to retire a refusal that, per the census above, the batch and plan paths do not raise; the surface it claims to remove is therefore not the surface it would touch",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0402c557e2d94ae075b07d5633293859f5177b01",
+  "plan_fingerprint": "efa23c5ada4072d2cf30fa4a3606faf870b5908734aacdc740a0828309dab978",
+  "plan_slug": "a-run-changes-any-file-in-its-repository",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261123T043526179676-plan-review-of-a-run-changes-any-file-in-its-repository",
+  "reviewed_blob_sha": "329d51aa379a3f6bc58f6104de593ae83d8641d6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a74 layers a second precedence rule beside the existing `role_share_order` + `priorities_first` pipeline (`reckon/crew/admission/ordering.py:201,277`), so two mechanisms compete to decide which request owns a slot instead of one ordering function with an explicit precedence.",
+    "duplicate_owner": "a finding \u2014 \u00a71 must extend the exclusivity owner (`reckon/crew/runs.py:2645` `_SharedWritePaths.exclusive_pattern` / `unmergeable_patterns` at 2750, already consumed by `promotion_scope.py:603` `_changed_artifacts_needing_acceptance`) rather than define a second exclusive-kind list; \u00a74 must extend `reckon/crew/admission/ordering.py`, not fork it.",
+    "interface_budget": "a finding \u2014 public_definitions 3216, cli_options 550, mcp_views 15, refusal_families 25; \u00a74 adds a \"stated critical level\" knob and an admission-verdict label without naming the knob's home, its default, or what it retires or merges, and \u00a72's added test surface is not offset by naming the refusal it retires.",
+    "reuse_search": "a finding \u2014 \u00a72's mechanism already exists at base (`dispatch_batch.py:815` admits a node with no write paths; `tests/test_a_node_needs_no_write_paths.py`, landed 2026-11-14, already covers batch, whole-plan and direct dispatch; `tests/test_worker_writes_anywhere_but_unmergeable_paths.py` already fences only the unmergeable classes), and \u00a71's promotion half already exists (`tests/test_a_node_may_change_any_mergeable_file.py`, landed 2026-11-17, via `promotion_checks.py:2967`), leaving only the write-time audit unfixed.",
+    "thin_wrapper": "a finding \u2014 \u00a72's named source changes (`dispatch_batch.py`, `dispatch_sections.py`) would add no behaviour the existing readers lack; only the doccheck/skill text has work left, and \u00a73 names `prompts.py`, whose fence text already states the new rule (`prompts.py:70-97`)."
+  },
+  "section_digests": {
+    "_document": "8763ac68115fb979cf47962c7a09e870ec025ad4dcfa60d67d5762b00c08aa2d",
+    "s1": "ca10de726f87d2ee98482ce4cd462cf2483a8c10575b507a7276c5ffb75192ff",
+    "s2": "a140060086c44a289af84c9d26a1339e847bebb6c0a21650f86ab4f5e2a20aed",
+    "s3": "909b82d9e22c6dddb74e184a51ec57049758195315f215c2182d3fbeaab60613",
+    "s4": "fbb0471623bf8f01db5beadcee15c46acbec25f811d13394534b2475a8471610"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T04:42:52.815656+00:00",
+  "total": null
+}

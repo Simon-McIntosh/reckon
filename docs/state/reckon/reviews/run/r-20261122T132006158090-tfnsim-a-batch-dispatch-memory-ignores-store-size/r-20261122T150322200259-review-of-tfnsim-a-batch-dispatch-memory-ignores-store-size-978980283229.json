@@ -1,0 +1,88 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:981 queue_plan -> queue_batch",
+    "reckon/crew_dispatch_commands.py:1221 crew dispatch --batch/--plan selects queue_batch",
+    "reckon/roadmap.py:3848 _build_roadmap reads _HISTORY_PLANS",
+    "reckon/crew/section_holds.py:236 _history_index narrowed per-plan read"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229",
+      "recorded_at": "2026-11-22T17:29:16.540363+00:00"
+    },
+    "goal_fidelity": {
+      "kind": "folded",
+      "node": "repair-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229",
+      "recorded_at": "2026-11-22T17:29:15.465541+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T15:03:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229",
+      "recorded_at": "2026-11-22T17:29:13.637416+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the node's done_when names three peak criteria and none is met on the prepared home \u2014 the eight-entry peak moves from 1.33 GiB at the base revision to 1.47 GiB at the head (ratio 1.10, asked at most 0.5), doubling the store's delivered rows raises the head's forty-entry peak from 1.51 to 1.68 GiB (+11.4% against under 10%), and doubling the plan documents raises it to 1.80 GiB (+19.0% against under 10%) \u2014 so the delivered change does not satisfy the measure it was dispatched to produce, even though it honestly records the miss and the negative control passes."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: each arm log's '# revision:' header names a scratch git-init commit (e63b49a2d39a4ebb3ecc80a3e425cc94a80daec5 for both base arms) that resolves to no object in the repository, so the source revision the base arm actually ran (4a98aef297 per measure/measure.sh:20) cannot be verified from the log alone, although the fragment prose names it."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": "238",
+      "severity": "non-blocking",
+      "text": "non-blocking: adding the narrowed plan tuple to the _HISTORY_READS cache key means a long-lived process accumulates one entry per distinct (project, plan, node, plan-set) key with no bound, so a serve or station process that reads many different batch plan sets grows a module-global cache \u2014 the same unbounded-growth shape this plan exists to remove, though far smaller than the decode it replaces."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified queue_plan at reckon/crew/dispatch_batch.py:981, the CLI selector at reckon/crew_dispatch_commands.py:1221, and the two readers the scope changes at reckon/roadmap.py:3848 and reckon/crew/section_holds.py:236.",
+    "diff": "Read commit by commit against 0d4e5085: dispatch_batch adds the history scope to queue_batch; section_holds adds stored_run_exists membership and a narrowed per-plan read; roadmap adds _HISTORY_PLANS and roadmap_history_scope and skips holds and attempts when the set is empty; the 326-line test; and the evidence fragment and SVG.",
+    "done_when": "The done_when names three peak criteria and a row-decode test; measure/logs/base-8.log, head-8.log, base-40.log, head-40.log, base-40-store2.log, head-40-store2.log and head-40-plans2.log record revisions and closing EXIT= lines, and the recorded peaks fail two criteria and miss the third while the row-decode test passes at the head and fails at the base.",
+    "goal": "The node goal is 'bound a batch dispatch's peak memory by the plans it names'; reckon/crew/dispatch_batch.py:1056 wraps the batch's roadmap build in roadmap_history_scope(()) and reckon/roadmap.py:3848 skips the section-history and attempts reads, which bounds the store read but not the peak the goal names.",
+    "manifest": "Read; status complete, commits 98cd937f10, 89bf51e109, 82994b62fa, 7de933cc11, 1cf23acaab, 9789802832, changed_paths the six declared files, tests the three-file gate 60 passed, baseline_suite 58 passed at 0d4e5085 and after_suite 60 passed at 89bf51e1, both exit 0.",
+    "write_paths": "The declared write paths are reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, reckon/roadmap.py, tests/test_a_batch_dispatch_memory_ignores_store_size.py, the evidence fragment and a figures directory; the delivered diff touches exactly those, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_dispatch_memory_ignores_store_size.py:243 asserts the doubled-store decode count equals the single-store count and :247 bounds it below DELIVERED, both independent of the value handed in; negative-control-0d4e5085.log shows both cases red (2 failed, EXIT=1) on the pre-change revision, so the declared regression reddens the guard.",
+    "evidence": "The gate measured all three peak criteria the done_when names and recorded the result, but two fail outright (eight-entry ratio 1.10 against at most 0.5; plan-document doubling +19.0% against under 10%) and the third misses (+11.4% against under 10%) in measure/logs/head-8.log and head-40-plans2.log, while the negative control is met (+19.4%), so the evidence is honestly recorded and does not support the deliverable.",
+    "fit": "reckon/roadmap.py:3389 roadmap_history_scope mirrors the existing roadmap_build_scope idiom at :3411, a ContextVar set and reset around a contextmanager, and its comments name the mechanism with no plan, sprint or ticket identifier and no attribution.",
+    "goal_fidelity": "The goal is to bound a batch dispatch's peak memory by the plans it names; reckon/crew/dispatch_batch.py:1056 bounds the store read (2,086 rows and 30 decodes at eight entries, 5,608/30 at forty) but the measured peak is not bounded by the plans named (eight-entry head/base 1.10, plan-document doubling +19.0%), so the goal's stated property does not hold on the prepared home.",
+    "reuse": "The change reuses reckon/run_store.py:1296 stored_run_exists for the membership answer rather than decoding a projection, and extends the existing roadmap scope family instead of forking a second roadmap-derivation mechanism.",
+    "scope_discipline": "git diff --stat 0d4e5085..9789802832 lists exactly the six declared write paths and nothing else; no file outside the fence appears in any of the six commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is 'bound a batch dispatch's peak memory by the plans it names'; reckon/crew/dispatch_batch.py:1056 wraps the batch's roadmap build in roadmap_history_scope(()) and reckon/roadmap.py:3848 skips the section-history and attempts reads, which bounds the store read but not the peak the goal names.\nVERDICT done_when: The done_when names three peak criteria and a row-decode test; measure/logs/base-8.log, head-8.log, base-40.log, head-40.log, base-40-store2.log, head-40-store2.log and head-40-plans2.log record revisions and closing EXIT= lines, and the recorded peaks fail two criteria and miss the third while the row-decode test passes at the head and fails at the base.\nVERDICT write_paths: The declared write paths are reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, reckon/roadmap.py, tests/test_a_batch_dispatch_memory_ignores_store_size.py, the evidence fragment and a figures directory; the delivered diff touches exactly those, all inside the fence.\nVERDICT manifest: Read; status complete, commits 98cd937f10, 89bf51e109, 82994b62fa, 7de933cc11, 1cf23acaab, 9789802832, changed_paths the six declared files, tests the three-file gate 60 passed, baseline_suite 58 passed at 0d4e5085 and after_suite 60 passed at 89bf51e1, both exit 0.\nVERDICT diff: Read commit by commit against 0d4e5085: dispatch_batch adds the history scope to queue_batch; section_holds adds stored_run_exists membership and a narrowed per-plan read; roadmap adds _HISTORY_PLANS and roadmap_history_scope and skips holds and attempts when the set is empty; the 326-line test; and the evidence fragment and SVG.\nCALL_SITES: reckon/crew/dispatch_batch.py:981 queue_plan -> queue_batch, reckon/crew_dispatch_commands.py:1221 crew dispatch --batch/--plan selects queue_batch, reckon/roadmap.py:3848 _build_roadmap reads _HISTORY_PLANS, reckon/crew/section_holds.py:236 _history_index narrowed per-plan read\nSCORE goal_fidelity: 7\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:1056 bounds the store read but the measured peak is not bounded by the plans named (eight-entry head/base 1.10, plan doubling +19.0%).\nSCORE evidence: 8\nJUSTIFICATION evidence: measure/logs/head-8.log and head-40-plans2.log record the criteria failing, so the gate measures the done_when and its recorded result does not support the deliverable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 0d4e5085..9789802832 is inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_batch_dispatch_memory_ignores_store_size.py:243 and :247 are independent of the input, and the negative control reddens both cases at the base revision.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/roadmap.py:3389 roadmap_history_scope follows the existing roadmap_build_scope idiom at :3411.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses reckon/run_store.py:1296 stored_run_exists and extends the existing scope family rather than forking a mechanism.\nFINDING docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html:1 blocking: the done_when's three peak criteria are not met (1.10 against 0.5, +11.4% and +19.0% against under 10%).\nFINDING docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html:1 non-blocking: the arm logs' revision header names an unresolvable scratch commit.\nFINDING reckon/crew/section_holds.py:238 non-blocking: the _HISTORY_READS key now carries a plan tuple and grows without bound in a long-lived process.",
+  "review_run_id": "r-20261122T150322200259-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229",
+  "reviewed_base_sha": "0d4e508516652090a9d97e8198f92cd21e2105e0",
+  "reviewed_head_sha": "9789802832297325fbf0462903aa60189cdd1b99",
+  "reviewed_run_id": "r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size",
+  "reviewer_run_id": "r-20261122T150322200259-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-978980283229",
+  "scores": {
+    "durability": 17,
+    "evidence": 8,
+    "fit": 18,
+    "goal_fidelity": 7,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T15:16:52.890936+00:00",
+  "total": 89
+}

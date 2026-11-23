@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T23:53:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-claim-nobody-is-working-is-released.html:92",
+      "id": "reasoning-1",
+      "reason": "a node built to \u00a79 would implement a promoted-run release on the strength of an observation made almost entirely about dispatched pointers, and if no promoted claim is in that state the section repairs a path no promoted run takes; the author should either cite a promoted instance or fold the job-less liveness read into the run's liveness reader.",
+      "text": "\u00a79 states that \"47 of 76 live pointers carried a placement naming no readable job id\" and concludes \"A promoted run in that state keeps its claim however long its worker has been gone. Its cited record (docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html, line 74) reports that 47-of-76 count over the whole live-pointer population, whose own census summary puts 75 of the 76 in kind `dispatched` and one in kind `promoted`, and the record names no promoted pointer inside the 47; the one promoted pointer at that census is the run \u00a78 already repairs as liveness-dead.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-claim-nobody-is-working-is-released.html:93-94",
+      "id": "done_when-1",
+      "reason": "the dedupe is a stated behaviour the section turns on and no arm can fail it, so the gate would pass both a compliant one-report implementation and a per-pass one; the section needs the report's scope (once per run) written and an arm that runs a second pass and requires no second report.",
+      "text": "the deliverable requires an undecidable run to be \"reported once as an obligation naming what is missing, rather than held without a word\", but the done-when's third arm asks only that such a pointer \"is reported as an obligation naming the missing fact\", so a node that reports it on every pass satisfies the arm while defeating the deliverable's one-report requirement, and the done-when never fixes what \"once\" is counted over.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2846ca9c69452a7046ec809625cd893907048ec5",
+  "plan_fingerprint": "fe4e961a1b3153fbc66c178e6fd354f6eced88150892518b5e3d9459cb45ed4e",
+  "plan_slug": "a-claim-nobody-is-working-is-released",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261122T235248237286-plan-review-of-a-claim-nobody-is-working-is-released",
+  "reviewed_blob_sha": "b6df41c5f3ae8acbebce0df5835a6cb3cadcbcb1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited record docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html exists and carries the named paragraph \"An own-node run was not proved dead at that census\" (line 74 of that file); the test path named is a file to create, not an anchor.",
+    "done_when": "a finding \u2014 \u00a79's obligation arm (docs/plans/a-claim-nobody-is-working-is-released.html:93-94) requires an undecidable run to be \"reported once\", but no arm distinguishes one report across repeated passes from a report on every pass, and \"once\" is not scoped.",
+    "evidence_paths": "pass \u2014 \u00a79 puts each arm's log under the section's run directory (docs/plans/a-claim-nobody-is-working-is-released.html:94), a durable path a later reader can open, not a scratchpad.",
+    "naming": "pass \u2014 \u00a79's test file and prose name the mechanism (a placement without a job is judged), with no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a79's stated cause for promoted claims rests on a population in which 75 of the 76 cited pointers are dispatched pointers, and the cited record names no promoted pointer among the 47.",
+    "single_goal": "pass \u2014 \u00a79 carries one endpoint: decide liveness for a promoted pointer whose placement names no readable job id, with the undecidable case as its residual branch.",
+    "wiring": "pass \u2014 s9 is listed in \u00a76's `plan-section-depends-on` (docs/plans/a-claim-nobody-is-working-is-released.html:24) and \u00a79 introduces no dependency on a section it fails to declare."
+  },
+  "section_digests": {
+    "_document": "0ada20bf53319dec73b5ee166f1c6437c4d97bbea957d0d39160de3befec7adf",
+    "s1": "05d19cd8311964ff3f39edcb6f6001983d854f54efe21e6fab628d2bf2d700be",
+    "s2": "31c170be4951db63af1611f315ea98f170521c6fa5d29d94f4de2266b76647fb",
+    "s3": "e1ab157cd4a1eae9aa12b1663c5b99dcd8436fed8b54c5252e0d9340bb82a93d",
+    "s4": "ec03acc9d9512d7a14042d8168f168a03f069190fef0cbc3e69139a2d33f3b79",
+    "s5": "dfd5788c2eb7c77b78075346068509e49b441c81c20632665e0f9e42a4780f0e",
+    "s6": "e1d48c9b85487772675f3873285172c7697c1adebbdd34cea14d08e8d4b390b1",
+    "s7": "a05c1c4839bcd05b746a6d188db104e184c64e8cc7469fe0ada2abdb19796709",
+    "s8": "9f8340da287588a8b6a89467bf256c93a03e5024e91cb8a3e3ea63ebb7506a1e",
+    "s9": "2422fd42995caf5be92ac2c1b484c9b6f1fa25fe9935975c8871fd82c97e8b9e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:04:50.662207+00:00",
+  "total": null
+}

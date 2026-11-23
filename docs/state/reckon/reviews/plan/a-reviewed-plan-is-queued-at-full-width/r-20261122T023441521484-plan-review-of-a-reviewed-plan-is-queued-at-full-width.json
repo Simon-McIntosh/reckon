@@ -1,0 +1,205 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T02:36:42Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:3061",
+      "id": "reuse_search-1",
+      "reason": "\u00a74 must state that it *adds* the review gate to the brief for the whole-plan path and that it extends `require_plan_reviewed` rather than deriving a second answer, or the node will build a definition \u00a74 believes already exists.",
+      "text": "\u00a74 says \"The whole-plan dispatch already decides it once, when a coordinator calls it\", but `require_plan_reviewed` is called only from the single-node path (`dispatch_plan.py:941`) and the admission review sweep (`admission/reviews.py:401`); `queue_plan` (`dispatch_batch.py:777`) and `_queue_batch` never call it, so a whole-plan dispatch today queues every implementable section of an unreviewed plan and the plan's premise for \u00a74 is false",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:383",
+      "id": "reuse_search-2",
+      "reason": "if \u00a78 ships without naming this, an owner is instructed to do by hand what the pass has already done, which is the same disagreement \u00a74 exists to prevent and would send work at an already-queued section.",
+      "text": "\u00a78 proposes to queue an idle waiter's upstream automatically, but the machinery for that case already exists: `WAIT_IDLE_DUTY_KIND` (\"wait-idle\") is raised for exactly these pointers and its `next_command` already instructs the owner to \"queue the upstream this request waits on, or drop the request\" (`obligations.py:5007-5026`), so \u00a78 must say whether it retires or rewrites that instruction",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:1361",
+      "id": "reuse_search-3",
+      "reason": "a fourth independent read of a decision hold would drift from the roadmap's, so the brief must extend the roadmap's read rather than re-derive the hold.",
+      "text": "\u00a74's second reason, \"an open decision holds it\", is already computed as `plan_holding_decisions` in the roadmap's blocker read (`roadmap.py:1361`, `plan_level_decisions` at `roadmap.py:1349`), and the whole-plan dispatch's skip reasons (`dispatch_batch.py:826-831`, `\"plan coordinated by session {owner}\"`) already carry two of the other three reasons",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html#s4",
+      "id": "deep_module-1",
+      "reason": "a plan-level answer will report \"may be queued\" for a plan one of whose sections the existing gate refuses, which is precisely the \"queued by one and reported held by another\" defect \u00a74 is written to remove; the answer must be per-section with the plan's rollup defined.",
+      "text": "the deliverable fixes the answer at plan granularity (\"for a plan ... the single reason from a fixed list\") while the underlying review verdict is per unit: an unanswered finding anchored on one section refuses only that section's nodes (`routing.py:3079-3083`) and a plan dispatch naming no section keeps the whole-plan check (`routing.py:3110-3111`)",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/lane_document.py:49",
+      "id": "duplicate_owner-1",
+      "reason": "the node would otherwise either edit a module it must not recompute in or fork the lane's count, and the plan needs to say the classed count is published from the crew side (`queue_view`) and the lane document's single `waiting` figure is left to the router.",
+      "text": "\u00a76 makes the lane document a counter of crew's `wait_class`, but that module declares itself a verbatim reader of a router-owned document and forbids callers recomputing its figures (`lane_document.py:49-50`; `ADMISSION_WORKER_SLOTS_KEY` block at `lane_document.py:113-118`); the only place crew aggregates its own requests is `queue_view.py:262` (`counts`), and its row builder `queue_view._row` (`queue_view.py:88`) already receives the pointer that carries `wait_class` (stamped at `admission/release.py:270`) and simply drops it, so the classed count is one field from the existing reader",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-reviewed-plan-is-queued-at-full-width.html#s9",
+      "id": "interface_budget-1",
+      "reason": "the accounting sentence is one clause from complete (a refusal added beside the existing `crew queue-hold`/dispatch refusal reasons), but as written it does not meet the rule every other section here now does.",
+      "text": "against this week's refusal_families 25, \u00a79 adds a refusal family (the sprint rule, \"refused naming the sprint\") and records only \"This section adds one refusal and one row, and no new command or record\": it names nothing retired or merged and does not say why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e0a46dc3bd58575c2b54d9de2f033964d603b5df",
+  "plan_fingerprint": "ab14c222617c39fdd822f9691627ef6721fdd41f0ea737bb2b1cdef590b46da3",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "section 4 now states that the whole-plan dispatch does not check the review today, waits on building-a-plan-queues-all-of-it section 3, and its control is that dispatch queueing a section whose review is owed",
+      "reason": "",
+      "when": "2026-11-22T03:12:32.730526+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "finding": "reuse_search-2",
+      "note": "section 8 now names the existing idle-wait duty and says it is raised only where the upstream may not be queued, with its text giving the reason",
+      "reason": "",
+      "when": "2026-11-22T03:13:20.375236+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "finding": "reuse_search-3",
+      "note": "section 4 now says the read takes each reason from the place that already computes it, naming the roadmap's decision read and the dispatch's coordinator skip",
+      "reason": "",
+      "when": "2026-11-22T03:14:05.125874+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "the read now answers for each implementable section, so a finding anchored on one section holds only that section",
+      "reason": "",
+      "when": "2026-11-22T03:14:56.702430+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "section 6 no longer touches the lane document; the count is the queue view's",
+      "reason": "",
+      "when": "2026-11-22T03:15:48.475988+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "finding": "interface_budget-1",
+      "note": "section 9 now adds one skip reason to the list the whole-plan dispatch already skips by, adds no refusal family, and says nothing existing states the rule so nothing is retired",
+      "reason": "",
+      "when": "2026-11-22T03:16:44.532985+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "note": "the read now answers for each implementable section, so a finding anchored on one section holds only that section",
+      "reason": "",
+      "when": "2026-11-22T03:14:56.702430+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "note": "section 6 no longer touches the lane document; the count is the queue view's",
+      "reason": "",
+      "when": "2026-11-22T03:15:48.475988+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "note": "section 9 now adds one skip reason to the list the whole-plan dispatch already skips by, adds no refusal family, and says nothing existing states the rule so nothing is retired",
+      "reason": "",
+      "when": "2026-11-22T03:16:44.532985+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "note": "section 4 now states that the whole-plan dispatch does not check the review today, waits on building-a-plan-queues-all-of-it section 3, and its control is that dispatch queueing a section whose review is owed",
+      "reason": "",
+      "when": "2026-11-22T03:12:32.730526+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "note": "section 8 now names the existing idle-wait duty and says it is raised only where the upstream may not be queued, with its text giving the reason",
+      "reason": "",
+      "when": "2026-11-22T03:13:20.375236+00:00"
+    },
+    "reuse_search-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "272509f857f2655ad6ba91f20afbeeafaa6bf5e8",
+      "commit_basis": "edit",
+      "note": "section 4 now says the read takes each reason from the place that already computes it, naming the roadmap's decision read and the dispatch's coordinator skip",
+      "reason": "",
+      "when": "2026-11-22T03:14:05.125874+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-reviewed-plan-is-queued-at-full-width/r-20261122T023441521484-plan-review-of-a-reviewed-plan-is-queued-at-full-width.json",
+  "review_run_id": "r-20261122T023441521484-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "28b625732c85a0d038cdf7320849c9a146289072",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a74 collapses a **per-unit** review state into one plan-level answer with one reason, which cannot represent a plan whose unanswered finding blocks one section and not another; the existing gate refuses only the units a finding blocks (`routing.py:3061` docstring, lines 3079-3083 and 3105-3113).",
+    "duplicate_owner": "a finding \u2014 \u00a76 names the lane document as a second place that must count waiting by crew's `wait_class`, but `reckon/crew/lane_document.py` is a **verbatim reader** of a router-published document (\"The router owns every one of these figures ... read here verbatim and no caller recomputes them\", `lane_document.py:49-50`, `113-118`); the only crew-side owner of a request count is `queue_view.py:262`.",
+    "interface_budget": "a finding \u2014 public_definitions 3145, cli_options 535, mcp_views 15, refusal_families 25; \u00a79 adds one refusal (the sprint refusal) and states only that it \"adds one refusal and one row\": it names nothing it retires or merges, and does not state why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a74's premise is wrong: the review gate it wants already exists at `reckon/crew/routing.py:3061` (`require_plan_reviewed`) and is called by the single-section path at `dispatch_plan.py:941` but by neither `queue_plan` nor `_queue_batch`, so the whole-plan path it says \"already decides it once\" decides nothing; the decision-hold reason it also wants already lives in `roadmap.py:1361` (`plan_holding_decisions`).",
+    "thin_wrapper": "pass \u2014 \u00a76 states the pane renders what the queue view and lane document give and that \"Neither recomputes a wait's class\", which is the correct thin-render shape over `stranded_wait.classify` (`stranded_wait.py:64`) and the stamps the pass writes at `admission/release.py:270`."
+  },
+  "section_digests": {
+    "_document": "8aaf3f21828f072ee203581f29857fbb72a3a70499cc9bc7664265f28a360c6a",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "7bf7f9b92e4bbc6a9d86f2d20aacc04cdaa9e3a0c27be56c9f1eccb8cea9efee",
+    "s4": "eed3787cdf4a0517be978759c27ba4674748a3373b7f79bee0d8352f21c0c821",
+    "s5": "a0356c829de2dc9d9549641fb3dbdff1b2e2904914c61bc70b9f36213272e8ab",
+    "s6": "1fb789f65eeb1672448e630a9aeffb305e97e28a1609a0b57bbcf14791880f60",
+    "s7": "ae2d1943cb5e359bc18d88b1ebae9cf0fee2bc50f0a789d64da537ac8fcf8610",
+    "s8": "4bc00e950ee6cf043d0f6db60ac05b62f95abb7bc09d7a16c50d140d5e3942e5",
+    "s9": "80d733bc1159dc0bffbcd3cf399309bfea87f50f4e699b1eeb02bdeb8753ea3c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T02:43:43.499781+00:00",
+  "total": null
+}

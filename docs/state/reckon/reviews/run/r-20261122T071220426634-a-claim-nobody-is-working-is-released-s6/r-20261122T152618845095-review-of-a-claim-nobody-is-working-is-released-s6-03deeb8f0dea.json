@@ -1,0 +1,85 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed node ran no test suite: its write paths hold no test file, and the fence declared its suite unarmed. Its two arm logs are the document auditor over the deliverable (arm-baseline.log EXIT=1 because the file is absent at the base revision; arm-after.log EXIT=0 with zero errors), so neither log names a failing test id and no added failure exists.",
+  "call_sites": [
+    "reckon/crew/runs.py:2555 (docs/evidence/archive/ treated as a cumulative evidence record)",
+    "reckon/crew/queue_landing.py:1760 (links the plan to /<project>/evidence/archive/<plan>-landed.html)",
+    "reckon/_store.py:5500 (expects docs/evidence/archive/<slug>-landed.html)",
+    "reckon/doccheck.py:1995 (audits the archived record path: the gate the node ran)",
+    "reckon/evidence.py:1600 (resolves the archived landing-record path)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T15:26:52Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html",
+      "line": 69,
+      "severity": "non-blocking",
+      "summary": "Section 6's criterion remains unmet: one promoted claim outlives its worker.",
+      "text": "The record's own verdict is that section 6's criterion is unmet: at the six-hour census one promoted claim (r-20261120T074437034953-cym-s5, 2.2 d old, no turn in progress, liveness dead) still holds a pointer, because the compare-under-lock equality accepts 1 of 94 pointers and rejects 93. The deliverable reports a failed measure rather than a passed one; the cause sits in the release module's equality (outside this node's declared write path), so it needs its own node rather than a repair here."
+    },
+    {
+      "file": "docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html",
+      "line": 55,
+      "severity": "non-blocking",
+      "summary": "The 'before' census is 26 minutes after the last landing, not before it.",
+      "text": "The done_when asks for a census taken before the release work landed. The record's first census was taken at 2026-11-22T09:38:51Z, twenty-six minutes after the last landing at 09:12:18Z, because the landings predated dispatch; the record states this plainly and names the three section-1 kinds that had no pointer that day, which is the fallback the done_when allows."
+    },
+    {
+      "file": "docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html",
+      "line": 69,
+      "severity": "non-blocking",
+      "summary": "The gate checks links, not the census measure the done_when asserts.",
+      "text": "The run's recorded gate is `reckon audit-doc ... --check-links`, which validates document structure and links only. No check in the run asserts the census counts (76/76, 94/94), the equality reading (1 of 94) or the residual-claim count, so a record whose numbers regressed could still pass the gate; the base arm is 'FILE ABSENT' with EXIT=1 rather than a failing assertion, so the delta of added failures is 0 by construction."
+    },
+    {
+      "file": "docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html",
+      "line": 60,
+      "severity": "non-blocking",
+      "summary": "Census counts are self-reported by the instrument with no external control.",
+      "text": "The headline figures are reported by the census instrument itself and are not independently re-derivable after the fact: the live directory has moved on since 15:21:52Z, and the record's only cross-check on the read count is arithmetic from the same reading (94 pointers + 19 non-pointers = 113 entries). The instrument does read the directory entry count back and refuses on any unread pointer, which is the check the done_when names, but it is not an external control."
+    }
+  ],
+  "justifications": {
+    "durability": "No test in the landed change fails if the census content regresses; reckon/doccheck.py only lints the document's links.",
+    "evidence": "docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html:69 states the criterion unmet, but the gate recorded in the manifest (reckon audit-doc --check-links) does not assert that measure.",
+    "fit": "docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html:1-24 follows the evidence-record template used by docs/evidence/archive/a-broken-wait-reaches-its-coordinator-landed.html.",
+    "goal_fidelity": "docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html:54 and :67 hold the two censuses with every required column and full pointer counts.",
+    "reuse": "The landed change adds no definition; the run's census instrument reuses promotion._measurement_reason, pending_landing._is_a_promoted_pointer, process_liveness.turn_in_progress and resumption.resume_without_a_started_turn rather than re-implementing a kind classifier.",
+    "scope_discipline": "The diff c595c6d..03deeb8 changes only the declared path docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html."
+  },
+  "notes": "Verdicts and justifications were emitted as the review's text; this record is the parsed counterpart.",
+  "project": "reckon",
+  "review_run_id": "r-20261122T152618845095-review-of-a-claim-nobody-is-working-is-released-s6-03deeb8f0dea",
+  "reviewed_base_sha": "c595c6da6fb2bd37b94c1c8f80a576ff7893a6dd",
+  "reviewed_head_sha": "03deeb8f0dead8ebce0b61e5af018e0a5a0d2f66",
+  "reviewed_run_id": "r-20261122T071220426634-a-claim-nobody-is-working-is-released-s6",
+  "rubric_lines": {
+    "durability": "answered",
+    "evidence": "answered",
+    "fit": "answered",
+    "goal_fidelity": "answered",
+    "reuse": "answered",
+    "scope_discipline": "answered"
+  },
+  "scores": {
+    "durability": 5,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T15:33:43.887557+00:00",
+  "total": 85,
+  "verdicts": {
+    "diff": "Read both commits (9d9d00f2e8 creates the record with the first census; 03deeb8f0d replaces the second-census section with the six-hour reading and its verdict); the full range is one added file of 79 lines.",
+    "done_when": "The done_when's measure is the second census listing no promoted, measurement-only or landed-group run older than one hour with no turn in progress; the record's own second-census verdict at line 69 lists one such claim (r-20261120T074437034953-cym-s5, 2.2 d, no turn) and states the criterion unmet, and the run's gate (reckon audit-doc --check-links) does not assert the count.",
+    "goal": "The goal is a census of the live fleet after the release work landed, beside the same census taken before; the landed record holds two censuses at docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html:54 and :67 with 76 of 76 and 94 of 94 pointers read, each row naming run, kind, recorded host, turn in progress and claim age.",
+    "manifest": "Read; it states status complete, names committed heads 9d9d00f2e8 and 03deeb8f0d, records arm-baseline.log and arm-after.log, and states the residual claim and the criterion unmet under blockers.",
+    "write_paths": "The declared write path is docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html; the diff c595c6d..03deeb8 changes exactly that one path and nothing else."
+  }
+}

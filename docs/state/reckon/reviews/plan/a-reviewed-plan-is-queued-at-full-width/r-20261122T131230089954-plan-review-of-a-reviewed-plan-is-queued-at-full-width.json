@@ -1,0 +1,105 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T13:13:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-reviewed-plan-is-queued-at-full-width.html:122",
+      "id": "done_when-1",
+      "reason": "the node is told to reproduce a red log that does not exist at base; it will either block on an unreproducible control or weaken the arm until it passes, and the section names no pass that actually drops a row while the record exists.",
+      "text": "\u00a715's negative control asserts \"At the base revision, the first case must fail with the row missing after the pruning pass\", but neither store pass removes a row in a way the singular row read can see. Measured at base 1ba844cc with the store's own `retire` pass (the only archiving pass, called from the retention sweep at `reckon/crew/gc.py:2360`) \u2014 before retire `get_run` returns the row True, `records()` returns True; after `retire(..., apply=True)` reports `retired: ['r-land-1']`, `get_run` returns True (it falls back to `archive.runs`, `reckon/run_store.py:2558-2566`), `is_archived` True, and only the plural `records()` returns False. The \"pruning\" pass is `_refresh`, and it deletes only archived ids absent from the committed ledger (`reckon/run_store.py:2459-2470`), which is the case \u00a715's own second arm calls correct. So the first arm is already green at base for the row read, and its stated red cannot be produced",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-reviewed-plan-is-queued-at-full-width.html:120",
+      "id": "reasoning-1",
+      "reason": "the endpoint as written cannot reach its own evidence, so a node will close on a guarantee that was never in question and leave the cited defect in place.",
+      "text": "\u00a715's deliverable promises the row survives \"for as long as its run record exists\", but the four runs it cites have no run record left to survive: the committed ledger for reckon loads 14 runs and none of the four (no `anchored-*-s18` id appears), and the per-run state directory holds exactly 14 files, the same population s13 describes as stale. Queried directly, the store holds 24 reckon rows and returns none for the four ids, with a positive control confirming the read sees rows present. Under the section's own bound the row read is therefore already correct at base for every row whose record exists, and the cited defect lies outside the bound; nothing in the deliverable requires the retention behaviour that removed the records to change, so the section can be declared done while the four landed runs stay unreadable",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ca5f919d52466db0fe99ea9571502766b593293b",
+  "plan_fingerprint": "5755130b44f6234f01dcb78613529a414d185ad9dd7668151891c923f04146b3",
+  "plan_slug": "a-reviewed-plan-is-queued-at-full-width",
+  "plan_version": 16,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "8999eb31cb262bcf2315d7c64b9c963def6131f7",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "section 15 no longer measures the row read with a record present; its first case retires the record through every retention pass and requires the landed run still to read as landed, which fails at base",
+      "reason": "",
+      "when": "2026-11-22T14:04:24.867545+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "8999eb31cb262bcf2315d7c64b9c963def6131f7",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "section 15 now bounds the case where the run record is gone and the landing commit is on the primary branch, and asks the node to name the pass that removed each of the four records",
+      "reason": "",
+      "when": "2026-11-22T14:04:57.853349+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "8999eb31cb262bcf2315d7c64b9c963def6131f7",
+      "commit_basis": "edit",
+      "note": "section 15 no longer measures the row read with a record present; its first case retires the record through every retention pass and requires the landed run still to read as landed, which fails at base",
+      "reason": "",
+      "when": "2026-11-22T14:04:24.867545+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "474f3b90-27bf-44f7-a494-028d588b48ea",
+      "commit": "8999eb31cb262bcf2315d7c64b9c963def6131f7",
+      "commit_basis": "edit",
+      "note": "section 15 now bounds the case where the run record is gone and the landing commit is on the primary branch, and asks the node to name the pass that removed each of the four records",
+      "reason": "",
+      "when": "2026-11-22T14:04:57.853349+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-reviewed-plan-is-queued-at-full-width/r-20261122T131230089954-plan-review-of-a-reviewed-plan-is-queued-at-full-width.json",
+  "review_run_id": "r-20261122T131230089954-plan-review-of-a-reviewed-plan-is-queued-at-full-width",
+  "reviewed_blob_sha": "bb24c2616554bfba1c1c432f4ae78d50eec6c5ac",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ce451ced11`, `ec359cbdb2`, `9b8baaa6dc` and `dde7b00176` all resolve in this repository, and `workers-spend-fewer-tokens-per-landed-node` resolves with a real `\u00a718`.",
+    "done_when": "a finding \u2014 the negative control names a base failure that does not occur on either store pass; measured at the base revision, a retired row is still returned by `get_run`.",
+    "evidence_paths": "pass \u2014 each arm's log sits under the run directory, not a scratch path.",
+    "naming": "pass \u2014 the test file name carries no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the deliverable is bounded by \"for as long as its run record exists\", and the four cited runs' records do not exist, so the section can close green while the defect it opens with persists.",
+    "single_goal": "pass \u2014 one deliverable (a promoted, landed run stays readable from the store) plus the diagnosis of the four named rows, which is the same endpoint.",
+    "wiring": "pass \u2014 s15 declares no `plan-section-depends-on` and no other section declares a wait on it; its subject, the run store's own row read, is separate from the readiness reader s13 changes, so no relationship is missing."
+  },
+  "section_digests": {
+    "_document": "69c5e7e2ab665efd769fe5cb232cd44540af10def0249e8ff09126ce219fd598",
+    "s1": "8d7e07da1818924e8f492d4ad3484c4ee2846582d5e6b68fc06a0272351c0f54",
+    "s10": "19cac31f7625580415ae589ef5632a42fa084f147d415318997b99ce31d1e5a6",
+    "s11": "b40094ce1047166cdbfdf05ba800391d2ad75bd7eca54189bb6b4327530f63ec",
+    "s12": "6922aeef29c3e7a44eadeb906db8330aa905620239cf9b1a1141efe2c1924ff5",
+    "s13": "67d423df0c3f4528fca7f84389219d4046241e32d7dc3276ea8031cbb5bdf441",
+    "s14": "485f4fd128450aabd25bfe8536815d32f5535ba3a884a5587a08a6a8a867ffe3",
+    "s15": "31265497b831c2b13b5933352cb4e9b63f4e29ff9f6106157642733cb5c7ace1",
+    "s2": "df18e789c59e43564db126f275183166e0cc1009402d3edc416070801de5a8c8",
+    "s3": "7bf7f9b92e4bbc6a9d86f2d20aacc04cdaa9e3a0c27be56c9f1eccb8cea9efee",
+    "s4": "9728c2bdd6e0a20b020fe517e7b4b28259c17b6a31fb630c24213261ae299736",
+    "s5": "a0356c829de2dc9d9549641fb3dbdff1b2e2904914c61bc70b9f36213272e8ab",
+    "s6": "322422e335f3f8d278ca86100a57410fa7524921c9bda5e38840490a1fd1dd52",
+    "s7": "46ed5e587a3ccf200df8d9e3c23a84e8b5238c86449f9a30e4bcd07c28cc3b76",
+    "s8": "ab8adf6dcfeab65b717343054ca1c1fbd76bfa295179fc83776e83a5d2ae8606",
+    "s9": "6e84f853b79600df1fd05c11705c314262c11808dbcbb043660311f640c0474d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T13:19:16.266397+00:00",
+  "total": null
+}

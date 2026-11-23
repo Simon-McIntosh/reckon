@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-the-fleet-node-stays-inside-its-memory-s11-7d9fef96901b",
+      "recorded_at": "2026-11-22T21:32:52.716056+00:00"
+    },
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-the-fleet-node-stays-inside-its-memory-s11-7d9fef96901b",
+      "recorded_at": "2026-11-22T21:32:50.516604+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-22T19:30:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-fleet-node-stays-inside-its-memory-s11",
+      "recorded_at": "2026-11-22T21:37:31.358272+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/the-fleet-node-stays-inside-its-memory-s11.html",
+      "line": 40,
+      "severity": "blocking",
+      "text": "The row headed \"Sessions' bytes under /dev/shm\" reports the health series' session_scratch_bytes, which reckon/crew/fleet_supervisor.py:1342-1390 computes by walking the per-session scratch directories of the node-local disk (prepare_session_tmp -> /tmp; the sampled paths are /tmp/39486-fleet-1319168/...), not /dev/shm, so the done-when's /dev/shm reading is reported under a heading the instrument never measured."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/the-fleet-node-stays-inside-its-memory-s11.html",
+      "line": 34,
+      "severity": "non-blocking",
+      "text": "The 72-hour figures (3,523 samples over 2026-11-19T18:40:11Z to 2026-11-22T18:39:34Z, 191 of 3,200 test samples) come from an earlier invocation of logs/analyse_series.py, while the log now at the cited path is a later run whose 72h block reads 3,525 samples over 19:02:32 to 19:01:06 and 180 of 3,204; the values reproduce from the raw series at the record's own window, but the cited receipt no longer carries them."
+    },
+    {
+      "file": "logs/analyse_series.py",
+      "line": 99,
+      "severity": "non-blocking",
+      "text": "The gate's 4,000-sample readability assertion is applied to the whole job, while the delivered 72-hour window holds 3,525 samples, so the check passes the plan's floor on a different population than the record's headline window and cannot fail for the shortfall the record itself reports."
+    }
+  ],
+  "justifications": {
+    "durability": "No file under tests/ changes; the only assertions are the run-directory scripts logs/analyse_series.py:91-113, so nothing in the repository fails if these numbers regress.",
+    "evidence": "The gate logs/series-metrics.log records 5 passed at EXIT=0, but the record's session_scratch_bytes row is mislabelled at fragment:40 and the log's 72h block no longer matches the figures at fragment:34.",
+    "fit": "The fragment follows the sibling evidence-record idiom and the figure lives under the plan-scoped directory reckon/evidence.py:419 requires.",
+    "goal_fidelity": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/the-fleet-node-stays-inside-its-memory-s11.html:24 presents the latest 72 hours rather than a post-landing window, which the same file states cannot exist yet.",
+    "reuse": "No new mechanism is added; the record consumes the existing figure inventory and evidence reader, and the analysis script reads the health series' own columns.",
+    "scope_discipline": "The three changed paths in the diff are a subset of the four declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261122T192550047142-review-of-the-fleet-node-stays-inside-its-memory-s11-7d9fef96901b",
+  "reviewed_base_sha": "1d23967b383ee0f9936283a878bbbad504b4d9f7",
+  "reviewed_head_sha": "7d9fef96901b940be9fd3f05f6406c18cb5b472e",
+  "reviewed_run_id": "r-20261122T072225023667-the-fleet-node-stays-inside-its-memory-s11",
+  "scores": {
+    "durability": 6,
+    "evidence": 9,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-22T20:51:42.106496+00:00",
+  "total": 82,
+  "verdicts": {
+    "diff": "Read both commits against 1d23967b383e: the archive section is a pure insertion (0 deleted lines, prior s14 entry intact at archive:22-25), the fragment is a new 63-line file, and the figure is a single 8,309-line SVG.",
+    "done_when": "The done_when asks for seven readings over the 72 hours with a kill count of zero and under one hour at or above 90 % of the limit, and a 4,000-sample floor; the record carries all seven readings but the kill count is 23, so the section stays open and the 72-hour window holds 3,525 samples, below the floor.",
+    "goal": "The goal is the health series of one fleet job over the 72 hours after the other sections land, beside job 1313886; docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/the-fleet-node-stays-inside-its-memory-s11.html:24 presents the latest 72 hours instead, which the same file states cannot exist after the landings yet.",
+    "manifest": "Read; status complete, it names the run directory, the two commits, the 23-kill miss, and the two caveats (no post-landing window, sample floor below 4,000).",
+    "write_paths": "The dispatch declared four paths; the diff's three paths are all inside them, and docs/figures/fleet-node-memory-after is left empty because reckon/evidence.py:419 cites only a manifest figure under docs/figures/<plan>/."
+  }
+}

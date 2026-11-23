@@ -30,6 +30,13 @@ from ._imports import (
     watch_state,
 )
 
+#: The widths a request can be queued at, in the words its record carries: a
+#: call naming a plan's whole width, a batch file naming several sections, and a
+#: call naming one section. Empty is an unnamed caller: the field is always
+#: present so a reader can tell a request whose width was never recorded from
+#: one recorded before the field existed.
+DISPATCH_WIDTHS = ("plan", "batch", "section")
+
 _recorded_backlog = _unbound_dispatch_call
 
 _FACADE_BINDINGS = ("_recorded_backlog",)
@@ -88,6 +95,11 @@ def _queued_request_record(
         "urgency": (dispatch_options or {}).get("urgency"),
         "backend": backend_name,
         "launch": launch_kind,
+        # The width the caller asked for, so a stored request says whether it
+        # came from a whole-plan call, a batch file or one section. It rides the
+        # request's own options as well, so a request admission launches keeps
+        # the width it was queued at through its launch.
+        "dispatch_width": str((dispatch_options or {}).get("dispatch_width") or ""),
         "local": local,
         "launcher_host": None,
         "phase": "queued",
@@ -157,6 +169,7 @@ def queue_requests(
     local: bool = False,
     comment: str = "",
     priority: int | None = None,
+    dispatch_width: str = "",
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Validate a request batch, then use dispatch's queue writer for each.
@@ -215,6 +228,15 @@ def queue_requests(
         live=live,
     )
     for node in nodes:
+        # A node naming a plan section names its authority, and the section
+        # already states the measure, the sizing, the specification level and
+        # the mutation its check must fail against. Taking every field the node
+        # left unsaid from the section is what makes a section-only request
+        # dispatchable on any path, so it runs here, where the single dispatch
+        # and the batch both arrive before the contract is judged.
+        from reckon.crew.dispatch_batch import apply_section_defaults
+
+        apply_section_defaults(node, project=project, repo_root=repo_root)
         node.manifest_path = node.manifest_path or str(
             run_dir(assigned_ids[node.id]) / "manifest.md"
         )
@@ -291,6 +313,7 @@ def queue_requests(
                 "no_watch": True,
                 "allow_unreviewed_plan": allow_unreviewed_plan,
                 "priority": priority,
+                "dispatch_width": dispatch_width,
                 **({"comment": comment} if comment else {}),
             },
             queued_at=_utc_now(),
