@@ -248,11 +248,10 @@ def test_a_replayed_gate_waits_for_the_profiles_bound(project, monkeypatch, tmp_
     _assert_profile_in(argv)
     assert report["measure_partition"] == "betelgeuse"
     assert report["replay_bound_seconds"] == 600
-    assert report["replay_job_bound_seconds"] == 4 * 3600
     assert options["timeout"] == (
-        report["replay_job_bound_seconds"]
-        + promotion_gate._PARTITION_SUBMISSION_SLACK_SECONDS
+        4 * 3600 + promotion_gate._PARTITION_SUBMISSION_SLACK_SECONDS
     )
+    assert report["replay_job_bound_seconds"] == 4 * 3600
 
 
 def test_a_partition_with_no_profile_submits_exactly_as_today(tmp_path):
