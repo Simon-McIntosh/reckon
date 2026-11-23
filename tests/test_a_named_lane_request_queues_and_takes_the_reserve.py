@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import os
 from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -54,7 +55,10 @@ PLACEMENT = {
     "state_query": ["squeue", "-h", "-j", "{job}", "-o", "%T"],
     "reason_query": ["squeue", "-h", "-j", "{job}", "-o", "%r"],
 }
-QUEUED_AT = "2026-11-15T00:00:00+00:00"
+# A request fixture is a live coordinator's queue entry: it is dated when the
+# test runs, so admission hears the owning session now rather than aging a
+# fixed date past the lost-session window on a later day.
+QUEUED_AT = datetime.now(UTC).isoformat()
 
 
 @pytest.fixture()

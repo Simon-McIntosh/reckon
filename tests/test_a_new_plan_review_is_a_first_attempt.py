@@ -33,6 +33,7 @@ from __future__ import annotations
 import importlib
 import json
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -52,7 +53,12 @@ PLAN_SLUG = "fixture"
 PLAN_VERSION = 3
 PLAN_REVIEW_NODE = f"{PLAN_REVIEW_NODE_PREFIX}{PLAN_SLUG}{PLAN_REVIEW_RUBRIC_SUFFIX}"
 IMPL_NODE = "impl-node"
+# The seeded earlier run is a past attempt, so its own date is fixed. The held
+# request below belongs to a coordinator that is live now, and is dated when the
+# test runs; a fixed date there would age the session past the lost-session
+# window and retirement would drop the request before it could be admitted.
 PRIOR_AT = "2026-10-15T00:00:00Z"
+LIVE_AT = datetime.now(UTC).isoformat()
 
 CONFIG = {
     "default_backend": "worker",
@@ -237,8 +243,8 @@ def test_a_held_plan_review_records_a_first_attempt_when_admitted(
                 "launch": "cli",
                 "local": True,
                 "phase": "queued",
-                "queued_at": PRIOR_AT,
-                "created_at": PRIOR_AT,
+                "queued_at": LIVE_AT,
+                "created_at": LIVE_AT,
                 "reason": "the router grants 0 slots",
                 "dispatch_options": dict(kwargs.get("dispatch_options") or {}),
             }
