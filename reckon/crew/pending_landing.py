@@ -190,6 +190,28 @@ def _changed_pointer_fields(
     return changed
 
 
+def _pointer_ownership(record: Mapping[str, Any]) -> dict[str, Any]:
+    """One pointer as a compare-under-lock reads it, whatever shape it was listed in.
+
+    A listing hands back the record as decoded — its node body stored apart in
+    the run's own file and naming that file's path, and the station's own pid
+    still in place — while a by-id read taken under the lock hydrates the body
+    and drops that pid. The two readings of one unchanged pointer therefore
+    differ in shape and in nothing else, and a whole-record comparison reported
+    every such listing as changed, holding a promoted pointer whose worker was
+    dead for as long as the pointer lived.
+
+    The observation stamp is dropped for the same reason it is dropped from
+    :func:`_changed_pointer_fields`: a producer pass that rewrites only
+    ``observed_at`` has not changed the run a caller judged.
+    """
+    return {
+        name: value
+        for name, value in runs.pointer_as_read(record).items()
+        if name not in _OBSERVATION_FIELDS
+    }
+
+
 def _release_integrated_pointer(
     pointer: Mapping[str, Any],
     repository: Path,
@@ -589,16 +611,20 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
     project = str(pointer.get("project") or "")
     if not run_id or not project or pointer.get("landing_group"):
         return POINTER_HELD
+    # A worker this host can still see alive outranks the promotion row: a dead
+    # worker is what makes the claim ownerless, and a live one may still land.
     # A worker on a node the fleet has left cannot be read here at all, so its
-    # stream is the only evidence that a turn is in progress. The promotion
-    # row alone is not a licence to release a claim somebody is writing into.
-    if process_liveness.launched_on_another_fleet_node(
-        pointer
-    ) and process_liveness.turn_in_progress(pointer):
+    # stream is the only evidence that a turn is in progress. Neither reading
+    # is a licence to release a claim somebody is writing into.
+    if process_liveness.launched_on_another_fleet_node(pointer):
+        if process_liveness.turn_in_progress(pointer):
+            return POINTER_HELD
+    elif process_liveness.record_process_liveness(pointer).alive is True:
         return POINTER_HELD
+    expected = _pointer_ownership(pointer)
 
     def promoted(current: Mapping[str, Any]) -> bool:
-        if dict(current) != pointer or _record_path(run_id).exists():
+        if _pointer_ownership(current) != expected or _record_path(run_id).exists():
             return False
         workspace = str(current.get("worktree") or "")
         if workspace and Path(workspace).exists():
@@ -735,10 +761,13 @@ def release_pointers_of_a_previous_fleet_node(
                 }
             )
             continue
+        judged = _pointer_ownership(pointer)
         if (
             retire_pointer_if(
                 run_id,
-                lambda current, expected=dict(pointer): dict(current) == expected,
+                lambda current, expected=judged: (
+                    _pointer_ownership(current) == expected
+                ),
             )
             != POINTER_RETIRED
         ):
