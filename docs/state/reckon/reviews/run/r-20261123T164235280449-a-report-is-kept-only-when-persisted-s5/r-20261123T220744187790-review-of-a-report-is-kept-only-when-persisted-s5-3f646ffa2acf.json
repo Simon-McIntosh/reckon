@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bf5ff985a74aa4a5e3634a1423d646553740edaf",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:3413 (the Handler's reports route calling crew_plan_reports)",
+    "reckon/serve.py:3422 (_report_item_counts)",
+    "docs/ui/plan.jsx:1231 (PlanReportItems mounted in Plan)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T22:24:23Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "954",
+      "severity": "non-blocking",
+      "text": "non-blocking: _report_item_counts re-declares the kept classes as (PERSISTED, CITED) instead of using the retention module's own kept predicate (reckon/crew/report_retention.py:58, expires is None), so a kept class added to that module is counted as neither retained nor working and silently vanishes from both filters; the JSX copy at docs/ui/plan.jsx:481 is held by the parity test, this one is unguarded."
+    },
+    {
+      "file": "tests/spa_browser_harness.py",
+      "line": "817",
+      "severity": "non-blocking",
+      "text": "non-blocking: served_spa now sets RECKON_MOUNTS_PATH for every caller, changing the served process's project registry for the six other browser modules that use it (tests/test_build.py:249, tests/test_page_paints_from_the_index.py, tests/test_spa_project_visibility.py:132 and three more), and the node's gate ran only the two touched modules plus two unrelated ones, so that shared-surface change is unmeasured."
+    }
+  ],
+  "head_log_revision": "3f646ffa2acfc1f39145783c021fe278239f6ab8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 3f646ffa against base bf5ff98 \u2014 reckon/serve.py adds a figure and data pair to each listing item at :867, per-filter counts at :946 and the counts field on the route at :3422 without touching crew_persist_from_reports; docs/ui/plan.jsx adds the listing component; docs/_shared/dashboard.css adds the .r-report rules on the existing tokens; tests/spa_browser_harness.py adds a caller-supplied crew_home and exports RECKON_MOUNTS_PATH; the new test module adds 335 lines and the parity module adds a mutation case at tests/test_crew_surface_parity.py:298.",
+    "done_when": "the done_when names a browser test over one persisted, one cited and two working figures, a figure-only persist leaving one record, a figure-with-data persist leaving two, a class-swap negative control and a surface-parity case; tests/test_the_report_listing_shows_retained_figures.py:256 asserts the retained view is exactly the two retained names and :263 the all view is all four with counts retained 2, working 2, all 4, :291-301 asserts a persist moves the item into retained and leaves exactly one new figure record in the temporary store, :321-334 asserts ticking one data file leaves two records; scoped-gate-1795470597431284260.log records 68 passed and EXIT=0 at head, and negative-control.log records the three cases red at EXIT=1 under the swap.",
+    "goal": "the node's goal is that the plan view lists a plan's report items by retention class and offers a persist control; docs/ui/plan.jsx:494 adds PlanReportItems, which fetches the server listing at docs/ui/plan.jsx:506, filters it on retained/working/all at docs/ui/plan.jsx:562, and POSTs a selected figure and ticked data files to /crew/<project>/reports at docs/ui/plan.jsx:534, mounted into the plan body at docs/ui/plan.jsx:1231.",
+    "manifest": "read; it records status complete, one commit 3f646ffa, the literal pytest gate command, the scoped gate at 68 passed, both suite arms at 0 failures with full revisions, the swap negative control at EXIT=1 and a rubric line per dimension, but its orientation_write_paths line lists only the four surface and test paths plus the two docs paths, omitting reckon/serve.py and tests/spa_browser_harness.py even though both are declared grants and both changed.",
+    "write_paths": "the declared paths are docs/ui/plan.jsx, docs/_shared/dashboard.css, tests/test_crew_surface_parity.py, tests/test_the_report_listing_shows_retained_figures.py, the section's evidence fragment, the section's figure directory, reckon/serve.py and tests/spa_browser_harness.py; the delivered diff touches exactly six files \u2014 docs/_shared/dashboard.css, docs/ui/plan.jsx, reckon/serve.py, tests/spa_browser_harness.py, tests/test_crew_surface_parity.py and tests/test_the_report_listing_shows_retained_figures.py \u2014 all inside the grants and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_report_listing_shows_retained_figures.py:298 and :328 read the records back through persist.read_persisted and compare against the fixture's own state, so a regression that skipped the persist POST reddens them, and tests/test_crew_surface_parity.py:316 fails when the SPA's class set diverges; the three browser cases skip rather than fail where no browser is installed.",
+    "evidence": "tests/test_the_report_listing_shows_retained_figures.py:256-334 measures every done_when number and scoped-gate-1795470597431284260.log:8 records 68 passed EXIT=0, but negative-control.log carries no revision or command header, and the gate log header names no imported module path for a scratch-tree run.",
+    "fit": "docs/ui/plan.jsx:494 follows the surrounding component idiom and docs/_shared/dashboard.css:1734 uses the existing tokens, but docs/ui/plan.jsx:481 re-derives filter membership from the class strings rather than consuming a membership the Python side already computes.",
+    "goal_fidelity": "docs/ui/plan.jsx:494 renders the listing's class, expiry, figure and data files and offers the persist control the section asks for, driven by the server's own listing at docs/ui/plan.jsx:506.",
+    "reuse": "the persist path reuses reckon/crew/persist.py:218 persist_into and the listing extends reckon/serve.py:885 crew_plan_reports, but reckon/serve.py:954 re-derives the retained class set that reckon/crew/report_retention.py:58 already owns as Verdict.kept.",
+    "scope_discipline": "all six changed paths \u2014 reckon/serve.py, docs/ui/plan.jsx, docs/_shared/dashboard.css and the three test modules \u2014 lie inside the declared grants, and the deliverable adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the plan view lists a plan's report items by retention class and offers a persist control; docs/ui/plan.jsx:494 adds PlanReportItems, which fetches the server listing at docs/ui/plan.jsx:506, filters it on retained/working/all at docs/ui/plan.jsx:562, and POSTs a selected figure and ticked data files to /crew/<project>/reports at docs/ui/plan.jsx:534, mounted into the plan body at docs/ui/plan.jsx:1231.\nVERDICT done_when: the done_when names a browser test over one persisted, one cited and two working figures, a figure-only persist leaving one record, a figure-with-data persist leaving two, a class-swap negative control and a surface-parity case; tests/test_the_report_listing_shows_retained_figures.py:256 asserts the retained view is exactly the two retained names and :263 the all view is all four with counts retained 2, working 2, all 4, :291-301 asserts a persist moves the item into retained and leaves exactly one new figure record in the temporary store, :321-334 asserts ticking one data file leaves two records; scoped-gate-1795470597431284260.log records 68 passed and EXIT=0 at head, and negative-control.log records the three cases red at EXIT=1 under the swap.\nVERDICT write_paths: the declared paths are docs/ui/plan.jsx, docs/_shared/dashboard.css, tests/test_crew_surface_parity.py, tests/test_the_report_listing_shows_retained_figures.py, the section's evidence fragment, the section's figure directory, reckon/serve.py and tests/spa_browser_harness.py; the delivered diff touches exactly six files \u2014 docs/_shared/dashboard.css, docs/ui/plan.jsx, reckon/serve.py, tests/spa_browser_harness.py, tests/test_crew_surface_parity.py and tests/test_the_report_listing_shows_retained_figures.py \u2014 all inside the grants and nothing else.\nVERDICT manifest: read; it records status complete, one commit 3f646ffa, the literal pytest gate command, the scoped gate at 68 passed, both suite arms at 0 failures with full revisions, the swap negative control at EXIT=1 and a rubric line per dimension, but its orientation_write_paths line lists only the four surface and test paths plus the two docs paths, omitting reckon/serve.py and tests/spa_browser_harness.py even though both are declared grants and both changed.\nVERDICT diff: read the single commit 3f646ffa against base bf5ff98 \u2014 reckon/serve.py adds a figure and data pair to each listing item at :867, per-filter counts at :946 and the counts field on the route at :3422 without touching crew_persist_from_reports; docs/ui/plan.jsx adds the listing component; docs/_shared/dashboard.css adds the .r-report rules on the existing tokens; tests/spa_browser_harness.py adds a caller-supplied crew_home and exports RECKON_MOUNTS_PATH; the new test module adds 335 lines and the parity module adds a mutation case at tests/test_crew_surface_parity.py:298.\nCALL_SITES: reckon/serve.py:3413 (the Handler's reports route calling crew_plan_reports), reckon/serve.py:3422 (_report_item_counts), docs/ui/plan.jsx:1231 (PlanReportItems mounted in Plan)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/plan.jsx:494 renders the listing's class, expiry, figure and data files and offers the persist control the section asks for, driven by the server's own listing at docs/ui/plan.jsx:506.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_the_report_listing_shows_retained_figures.py:256-334 measures every done_when number and scoped-gate-1795470597431284260.log:8 records 68 passed EXIT=0, but negative-control.log carries no revision or command header, and the gate log header names no imported module path for a scratch-tree run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all six changed paths \u2014 reckon/serve.py, docs/ui/plan.jsx, docs/_shared/dashboard.css and the three test modules \u2014 lie inside the declared grants, and the deliverable adds nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_report_listing_shows_retained_figures.py:298 and :328 read the records back through persist.read_persisted and compare against the fixture's own state, so a regression that skipped the persist POST reddens them, and tests/test_crew_surface_parity.py:316 fails when the SPA's class set diverges; the three browser cases skip rather than fail where no browser is installed.\nSCORE fit: 18\nJUSTIFICATION fit: docs/ui/plan.jsx:494 follows the surrounding component idiom and docs/_shared/dashboard.css:1734 uses the existing tokens, but docs/ui/plan.jsx:481 re-derives filter membership from the class strings rather than consuming a membership the Python side already computes.\nSCORE reuse: 12\nJUSTIFICATION reuse: the persist path reuses reckon/crew/persist.py:218 persist_into and the listing extends reckon/serve.py:885 crew_plan_reports, but reckon/serve.py:954 re-derives the retained class set that reckon/crew/report_retention.py:58 already owns as Verdict.kept.\nFINDING reckon/serve.py:954 non-blocking: _report_item_counts re-declares the kept classes as (PERSISTED, CITED) instead of using the retention module's own kept predicate (reckon/crew/report_retention.py:58, expires is None), so a kept class added to that module is counted as neither retained nor working and silently vanishes from both filters; the JSX copy at docs/ui/plan.jsx:481 is held by the parity test, this one is unguarded.\nFINDING tests/spa_browser_harness.py:817 non-blocking: served_spa now sets RECKON_MOUNTS_PATH for every caller, changing the served process's project registry for the six other browser modules that use it (tests/test_build.py:249, tests/test_page_paints_from_the_index.py, tests/test_spa_project_visibility.py:132 and three more), and the node's gate ran only the two touched modules plus two unrelated ones, so that shared-surface change is unmeasured.",
+  "review_method": "Read-only: the reviewed dispatch contract, its manifest, the head scoped gate, the swap negative control, both suite arms, the six delivered paths and the production call sites against base bf5ff98 and head 3f646ffa; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261123T220744187790-review-of-a-report-is-kept-only-when-persisted-s5-3f646ffa2acf",
+  "reviewed_base_sha": "bf5ff985a74aa4a5e3634a1423d646553740edaf",
+  "reviewed_head_sha": "3f646ffa2acfc1f39145783c021fe278239f6ab8",
+  "reviewed_run_id": "r-20261123T164235280449-a-report-is-kept-only-when-persisted-s5",
+  "reviewer_run_id": "r-20261123T220744187790-review-of-a-report-is-kept-only-when-persisted-s5-3f646ffa2acf",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:20:00Z",
+  "total": 103
+}
