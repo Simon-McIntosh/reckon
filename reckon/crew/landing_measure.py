@@ -591,6 +591,84 @@ def _distinct_files(paths: Iterable[str], exclude: Iterable[str] = ()) -> list[s
     return list(seen)
 
 
+#: A path-shaped token a done-when's prose names, ending in ``.py``. A test
+#: id's ``::name`` suffix is outside the match, so ``tests/test_x.py::test_y``
+#: is read as the file pytest wants.
+_NAMED_TEST_PATH = re.compile(r"[A-Za-z0-9_./@+-]+\.py")
+
+
+def named_test_files(done_when: str, tree: Path | str = "") -> list[str]:
+    """The test files a done-when names that pytest collects and the tree holds.
+
+    A run that writes no test file still states in its done-when which test it
+    was written to satisfy, so the prose is a source of measurement rather than
+    only a contract. Only a path pytest collects and the measured tree carries
+    is named: a fixture under ``tests/`` is not handed to the runner, and a test
+    the change deletes is not named in an arm that cannot open it.
+    """
+    from reckon.crew.node import is_collectible_test_path
+
+    root = Path(tree) if str(tree or "").strip() else None
+    found: dict[str, None] = {}
+    for match in _NAMED_TEST_PATH.finditer(done_when or ""):
+        path = _target_name(match.group(0))
+        if not is_collectible_test_path(path):
+            continue
+        if root is not None and not (root / path).is_file():
+            continue
+        found.setdefault(path, None)
+    return sorted(found)
+
+
+def importing_test_files(changed: Iterable[str], tree: Path | str = "") -> list[str]:
+    """The test files importing a module the change touched.
+
+    Kept only where the tree holds them, so a file the population read from
+    another revision is not named in an arm that cannot open it.
+    """
+    root = Path(tree) if str(tree or "").strip() else None
+    return [
+        path
+        for path in importer_population(changed, root or Path("."))
+        if root is None or (root / path).is_file()
+    ]
+
+
+def resolve_landing_tests(
+    test_files: Iterable[str] = (),
+    *,
+    done_when: str = "",
+    changed: Iterable[str] = (),
+    tree: Path | str = "",
+) -> tuple[list[str], str]:
+    """The tests a landing measures for a run, and the refusal when none exist.
+
+    Four sources are tried in order, and the first that yields a test wins: the
+    run's own fenced test files, the test files its diff changed, the test files
+    its done-when names, and the test files importing the modules it changed. A
+    run that writes no test file is why the last two exist: each such run made a
+    scoped command measure nothing and was refused as unreadable although its
+    own done-when named the test it was written to satisfy.
+
+    The returned refusal names both prose sources it tried, so a reader knows
+    the run could not be measured rather than that it was measured as clean.
+    """
+    node_tests = _distinct_files(test_files)
+    if node_tests:
+        return node_tests, ""
+    named = named_test_files(done_when, tree)
+    if named:
+        return named, ""
+    importing = importing_test_files(changed, tree)
+    if importing:
+        return importing, ""
+    return [], (
+        "the armed command measures the node's own test files, and the node "
+        "names none: its done-when names no test file this tree holds, and no "
+        "test file imports a module the change touched"
+    )
+
+
 def armed_argv(
     command: str, test_files: Iterable[str] = ()
 ) -> tuple[dict[str, str], list[str]]:
@@ -1437,6 +1515,7 @@ def measure_run(
     declared_duration: float | None = None,
     declared_partition: str = "",
     declared_long_partition: str = "",
+    done_when: str = "",
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
@@ -1500,17 +1579,27 @@ def measure_run(
             project=project,
         )
     if _SCOPED_PLACEHOLDER in (command or "") and not node_tests:
-        return Measurement(
-            command=command,
-            suite={},
-            population={},
-            unreadable=(
-                "the armed command measures the node's own test files, "
-                "and the node names none"
+        # A run that writes no test file still names one in its done-when, or
+        # changed a module some test imports. Both are read before the landing
+        # is refused for having nothing to measure.
+        node_tests, refusal = resolve_landing_tests(
+            node_tests,
+            done_when=done_when,
+            changed=(
+                changed_paths(tree, base_sha, head_sha) if changed is None else changed
             ),
-            head=head_sha,
-            project=project,
+            tree=tree,
         )
+        if refusal:
+            return Measurement(
+                command=command,
+                suite={},
+                population={},
+                unreadable=refusal,
+                head=head_sha,
+                project=project,
+            )
+        environment, argv = armed_argv(command, node_tests)
     files = (
         tuple(str(name) for name in population_files)
         if population_files is not None
@@ -1686,8 +1775,7 @@ def measure_run(
                 # report. The launch failure is the only fact the arm
                 # recorded, and it is the one a reader can act on.
                 unreadable = (
-                    f"the {name} arm could not be launched: "
-                    f"{arm.unreadable_reason}"
+                    f"the {name} arm could not be launched: {arm.unreadable_reason}"
                 )
             else:
                 unreadable = f"the {name} arm did not run"
@@ -1797,6 +1885,7 @@ def armed_observations(
     partition: str = "",
     long_partition: str = "",
     declared_duration: float | None = None,
+    done_when: str = "",
 ) -> dict[str, Any]:
     """Run the armed command at both revisions and return each as an observation.
 
@@ -1819,12 +1908,18 @@ def armed_observations(
     if not argv:
         return {"unreadable": "the run armed no suite command"}
     if _SCOPED_PLACEHOLDER in (command or "") and not node_tests:
-        return {
-            "unreadable": (
-                "the armed command measures the node's own test files, "
-                "and the node names none"
-            )
-        }
+        # The run wrote no test file of its own. Its done-when still names the
+        # test it was written to satisfy, and failing that, the tests importing
+        # the modules it changed are the tests it could have reached.
+        node_tests, refusal = resolve_landing_tests(
+            node_tests,
+            done_when=done_when,
+            changed=changed_paths(tree, base_sha, head_sha),
+            tree=tree,
+        )
+        if refusal:
+            return {"unreadable": refusal}
+        environment, argv = armed_argv(command, node_tests)
     if config is None:
         from reckon import flight
 

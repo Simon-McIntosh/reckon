@@ -988,6 +988,44 @@ def _node_test_files(record: Mapping[str, Any]) -> list[str]:
     )
 
 
+def _done_when_text(record: Mapping[str, Any]) -> str:
+    """The done-when the run's node states, or empty when it states none."""
+    node = record.get("node")
+    return str(node.get("done_when") or "") if isinstance(node, Mapping) else ""
+
+
+def _landing_test_files(record: Mapping[str, Any]) -> list[str]:
+    """The tests a run with no fenced test file is measured by.
+
+    An armed command resolved only from the fenced scope measures nothing for a
+    node that changed source to make an existing test pass, and the landing was
+    refused as unreadable although the run's own done-when named that test. The
+    done-when's test files are read first, then the tests importing the modules
+    the delivery changed; the landing measure resolves the same pair, so the
+    command promotion accepts is the command the landing ran.
+    """
+    from reckon.crew import landing_measure
+
+    tree = _scope_tree(record)
+    base = str(record.get("base_sha") or "").strip()
+    changed: list[str] = []
+    if tree is not None and base:
+        try:
+            head = landing_measure._delivered_head(tree) or base
+            changed = landing_measure.delivered_paths(tree, base, head)
+        except (OSError, ValueError):
+            changed = []
+    node = record.get("node")
+    done_when = str(node.get("done_when") or "") if isinstance(node, Mapping) else ""
+    files, _refusal = landing_measure.resolve_landing_tests(
+        (),
+        done_when=done_when,
+        changed=changed,
+        tree=tree or "",
+    )
+    return files
+
+
 def _census_tests(record: Mapping[str, Any]) -> list[str]:
     """The census tests the project declares for this run, in declared order.
 
@@ -1056,7 +1094,7 @@ def _scoped_suite_command(
         return ""
     if SCOPED_SUITE_PLACEHOLDER not in declared:
         return declared
-    files = _node_test_files(record)
+    files = _node_test_files(record) or _landing_test_files(record)
     census = (
         [name for name in _census_tests(record) if name not in files]
         if _writes_product_source(record)
@@ -1351,6 +1389,7 @@ def _measure_missing_arms(
                 partition=partition,
                 long_partition=long_partition,
                 declared_duration=declared_gate_seconds(record),
+                done_when=_done_when_text(record),
             )
     except (OSError, ValueError, landing_measure.BaseCheckoutError):
         return None
