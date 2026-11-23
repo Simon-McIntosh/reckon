@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:3371 crew_plan_reports -> _newest_mtime (GET /crew/<project>/reports)",
+    "reckon/serve.py:4277 _handle_*_post -> crew_persist_from_reports -> _read_body",
+    "reckon/mcp_views.py:4951 records view -> persisted_items",
+    "reckon/crew_run_commands.py:2627 crew persist -> persist.persist_item"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T19:10:31Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair touched only the two commits gained since the previous review (dd8397a1..2af6cd019a); the one non-goal edit adds four decision-verb help phrases (present, choose, release, answer) at tests/test_crew_help_names_its_state.py:28-31 to repair a pre-existing base failure. The file is a declared write path and the fragment and commit body disclose the repair, so it does not hold the node, but the after arm's green is partly the node repairing main rather than the persist change."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified four production call sites: the GET listing uses crew_plan_reports, the POST handler uses _read_body and crew_persist_from_reports, the records view reads persisted_items, and the CLI verb ends in persist.persist_item.",
+    "diff": "Read commit by commit: 159b2ca140 removes the duplicate _newest_write at reckon/serve.py:864 in favour of reckon.crew.routing._newest_mtime, replaces the inlined Content-Length/JSON read at reckon/serve.py:4266 with Handler._read_body, adds a 400 for a non-list data field at reckon/serve.py:935, adds the four decision help phrases, and adds tests/test_persist_surfaces_agree.py:313; 2af6cd019a rewrites only the evidence fragment's revisions sentence to the repair round's measured arm summaries.",
+    "done_when": "The node's done_when names tests/test_persist_surfaces_agree.py plus tests keeping their base results and a declared negative control. The after arm log records 145 passed EXIT=0 over the two changed test files, the baseline log records 1 failed 138 passed EXIT=1, and negative-control.log records 1 failed EXIT=1, so this repair round runs the clauses the previous review found unlogged.",
+    "goal": "The reviewed node's goal is that section 3's persist operation is reachable from the CLI, the HTTP sub-route and the MCP records view over one function. The gained commits keep all three surfaces on reckon/crew_run_commands.py:2627, reckon/serve.py:4277 and reckon/mcp_views.py:4951, and route the listing at reckon/serve.py:864 through the same newest-write the sweep uses.",
+    "manifest": "The reviewed manifest is status complete; its commits list ends 159b2ca140 and 2af6cd019a; baseline_suite is 3a81cbdd 1 failure and after_suite is 159b2ca140 0 failures over five test files; negative_control_log names the logged mutation.",
+    "write_paths": "The node's declared paths include reckon/serve.py, tests/test_persist_surfaces_agree.py, tests/test_crew_help_names_its_state.py and the s3 evidence fragment; the gained diff dd8397a1..2af6cd019a touches exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_persist_surfaces_agree.py:313 asserts HTTP 400 and error persist_refused, and negative-control.log shows that branch removed yields TypeError and 1 failed, while the two reuse refactors rest on pre-existing listing and POST cases.",
+    "evidence": "The after arm at tests/../after_suite-1795459648952195751.log prints 145 passed EXIT=0 and the fragment's numbers match the base and after logs, though the baseline's single failure is a pre-existing decision-help gap rather than the persist change.",
+    "fit": "The lazy import of _newest_mtime at reckon/serve.py:875 matches the established private-import idiom from reckon.crew.routing used by reckon/crew/recovery.py:49 and others, and the added names describe mechanism.",
+    "goal_fidelity": "The gained change preserves section 3's three-surface reachability at reckon/crew_run_commands.py:2627, reckon/serve.py:4277 and reckon/mcp_views.py:4951 while removing the divergent newest-write the listing used.",
+    "reuse": "The gained change deletes _newest_write and the inlined body read and calls the owners at reckon/crew/routing.py:1893 and reckon/serve.py:3811, adding no duplicate capability.",
+    "scope_discipline": "Every path in git diff --stat dd8397a1..2af6cd019a is a declared write path, but tests/test_crew_help_names_its_state.py:28-31 repairs four unrelated decision verbs."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that the section 3 persist operation is reachable from the CLI, the HTTP sub-route and the MCP records view over one function; the gained commits keep reckon/crew_run_commands.py:2627, reckon/serve.py:4277 and reckon/mcp_views.py:4951 on persist.persist_item and route the listing through the sweep's _newest_mtime.\nVERDICT done_when: the done_when names tests/test_persist_surfaces_agree.py, the two changed test files keeping their base results, and a negative control; the after arm log records 145 passed EXIT=0, baseline 1 failed 138 passed EXIT=1, and negative-control.log 1 failed EXIT=1, closing the previous review's unlogged-clause gap.\nVERDICT write_paths: the declared paths include reckon/serve.py, tests/test_persist_surfaces_agree.py, tests/test_crew_help_names_its_state.py and the s3 fragment, and git diff dd8397a1..2af6cd019a touches exactly those four.\nVERDICT manifest: read; status complete, commits ending 159b2ca140 and 2af6cd019a, baseline_suite 3a81cbdd 1 failure, after_suite 159b2ca140 0 failures over five test files, negative_control_log present.\nVERDICT diff: read both gained commits; 159b2ca140 removes the duplicate _newest_write at reckon/serve.py:864, reuses Handler._read_body at reckon/serve.py:4266, adds a 400 for a non-list data at reckon/serve.py:935 and the four decision help phrases, and adds tests/test_persist_surfaces_agree.py:313; 2af6cd019a updates only the fragment's measured revisions sentence.\nCALL_SITES: reckon/serve.py:3371 crew_plan_reports -> _newest_mtime (GET /crew/<project>/reports), reckon/serve.py:4277 _handle_*_post -> crew_persist_from_reports -> _read_body, reckon/mcp_views.py:4951 records view -> persisted_items, reckon/crew_run_commands.py:2627 crew persist -> persist.persist_item\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained change preserves the three-surface reachability at reckon/crew_run_commands.py:2627, reckon/serve.py:4277 and reckon/mcp_views.py:4951 while removing the divergent newest-write.\nSCORE evidence: 18\nJUSTIFICATION evidence: the after arm log prints 145 passed EXIT=0 and the fragment's base and after numbers match the logged 1 failed, 138 passed in 47.21s and 145 passed in 50.07s, though the baseline failure repaired by the node is pre-existing and unrelated.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the gained diff is a declared write path, but tests/test_crew_help_names_its_state.py:28-31 adds four decision-verb phrases the persist goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_persist_surfaces_agree.py:313 asserts HTTP 400 and error persist_refused, and negative-control.log shows the removed branch raising TypeError and the test failing, while the reuse refactors rest on pre-existing listing and POST cases.\nSCORE fit: 19\nJUSTIFICATION fit: the lazy import of _newest_mtime at reckon/serve.py:875 matches the established reckoning of private helpers imported from reckon.crew.routing at reckon/crew/recovery.py:49, and the added names describe mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained change deletes _newest_write and the inlined body read and calls the owners at reckon/crew/routing.py:1893 and reckon/serve.py:3811, adding no duplicate capability.\nFINDING tests/test_crew_help_names_its_state.py:28 non-blocking: the repair adds four decision-verb help phrases for verbs outside this node's persist capability; the file is a declared path and the fragment discloses the repair, but the after arm's green is partly the node repairing a pre-existing base failure.",
+  "review_run_id": "r-20261123T190935413828-review-of-a-report-is-kept-only-when-persisted-s3-2af6cd019adb",
+  "reviewed_base_sha": "dd8397a1cad99f5f9328972b6dc1327895c07580",
+  "reviewed_head_sha": "2af6cd019adb78034384098d7fef8247d89b8f38",
+  "reviewed_run_id": "r-20261123T164231103097-a-report-is-kept-only-when-persisted-s3",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "configured",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261123T190935413828-review-of-a-report-is-kept-only-when-persisted-s3-2af6cd019adb"
+  },
+  "reviewer_run_id": "r-20261123T190935413828-review-of-a-report-is-kept-only-when-persisted-s3-2af6cd019adb",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T19:24:17.601742+00:00",
+  "total": 111
+}
