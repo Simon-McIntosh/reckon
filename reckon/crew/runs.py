@@ -1911,7 +1911,7 @@ def _pointer_identity(info: os.stat_result) -> tuple[int, int, int, int, int]:
     return file_memo.signature_from_stat(info)
 
 
-def _pointer_as_read(data: Mapping[str, Any]) -> dict[str, Any]:
+def pointer_as_read(data: Mapping[str, Any]) -> dict[str, Any]:
     """The record a by-id read answers with, holding no station pid.
 
     The node's body now lives in the run's own file once it has been moved
@@ -1919,6 +1919,10 @@ def _pointer_as_read(data: Mapping[str, Any]) -> dict[str, Any]:
     the definition is hydrated here: those callers read one shape whichever way
     the pointer was written, while a listing still returns the slim record it
     decoded because every fleet-state derivation pays for what it lists.
+
+    A caller comparing a listing against a later by-id read puts the listing
+    through this reader first, because the two readings of one unchanged
+    pointer differ in shape and in nothing else.
 
     A record naming this host's station names no process of the run. Every
     launch made from inside the station's own long-lived process is recorded
@@ -1954,7 +1958,7 @@ def read_pointer(run_id: str) -> dict[str, Any]:
     that finds every pointer where its previous pass left it decodes none, and
     a by-id read of a pointer an earlier listing decoded answers from the same
     memo without reading the file. The record carries no station pid for the
-    reason :func:`_pointer_as_read` states, and it is left on disk for whatever
+    reason :func:`pointer_as_read` states, and it is left on disk for whatever
     watchdog wrote it.
     """
     path = pointer_path(run_id)
@@ -1968,7 +1972,7 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
-    return _pointer_as_read(data)
+    return pointer_as_read(data)
 
 
 def recorded_dispatch_overrides(record: Mapping[str, Any]) -> tuple[str, ...]:
