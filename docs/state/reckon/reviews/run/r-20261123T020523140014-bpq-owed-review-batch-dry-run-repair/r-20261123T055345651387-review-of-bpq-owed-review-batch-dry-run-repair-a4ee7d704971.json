@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": {
+    "added_assertions": [],
+    "existing_regression_assertions": {
+      "tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:268-278": "Removing the early return produces refused rows and would_queue 0, failing count and status assertions; dropping rows fails index equality; writing state fails independently observed before/after home snapshot equality or empty live-list assertion; queued-count and dry_run assertions check the response contract.",
+      "tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:316-325": "Removing the early return changes CLI exit 0 to 1 and would-queue rows to refused, as the base reproduction shows; preview writes fail independently observed home snapshot or empty live-list assertions."
+    },
+    "tautological_assertions": "None added; existing snapshots compare separate state observations rather than expectations supplied to the code."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:queue_batch",
+    "reckon/crew/admission/release.py:queue_requests",
+    "reckon/crew_dispatch_commands.py:_queue_dispatch_batch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T05:54:28Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The four ids were measured against a main 989 commits past the run's base. The coordinator merged the head into current main (c59320f52c, clean against today's main). The wide selection on all_debug there adds only test_every_concern_fits_the_module_limit, which node bpq-owed-review-preparation-fits-its-module-limit fixes, and a live-plan sweep timeout that times 227 s on both trees (~/.cache/reckon-landing/bpq-merge-wide-{main,merge}.log, bpq-sweep-timing.log). The run lands through that merge.",
+      "recorded_at": "2026-11-23T06:03:51.201037+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "8",
+      "severity": "blocking",
+      "text": "blocking: the required wider zero-added-failures measure remains unmet because wide-head.log contains four failure IDs absent from wide-main.log; the separate passing 58-test suite pair cannot establish that measure, so the coordinator must resolve the acceptance evidence before landing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the sole commit a4ee7d704971a40c26901ca629c28842ffc01a22 against base 766a8312ca0ff652bf514749520be7760a41fc63; only requests.py:339-341 changes and real-request review handling remains intact.",
+    "done_when": "node.json:4 requires two repaired dry-run tests, preserved owed-review tests and zero wider added failures versus main; focused.log records 16 passed, but wide-head.log versus wide-main.log records four added failure IDs.",
+    "goal": "prompt.txt:38 requires preview rows without writes; reckon/crew/dispatching/requests.py:339 returns validated dry-run rows before pointer-backed review handling.",
+    "manifest": "manifest.md:8 acknowledges that the wider acceptance measure is unmet; its baseline_suite and after_suite receipts each record 58 passed and EXIT=0.",
+    "write_paths": "manifest.md:3 declares seven permitted paths; the entire base-to-head diff changes only reckon/crew/dispatching/requests.py with three additions."
+  },
+  "justifications": {
+    "durability": "reinstating the preview pointer read fails the independent would_queue == 2 assertion at tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:270 and CLI exit_code == 0 at line 316, as reproduction.log demonstrates.",
+    "evidence": "focused.log and both suite logs record successful completed gates, while wide-head.log and wide-main.log still show four added failure IDs contrary to node.json:4.",
+    "fit": "reckon/crew/dispatching/requests.py:339 matches its existing dry_run branch at line 307 and adds only a mechanism-based comment without new symbols or forbidden labels.",
+    "goal_fidelity": "reckon/crew/dispatching/requests.py:339 returns preview rows before read_pointer at line 345, and focused.log records passing batch and CLI regression tests.",
+    "reuse": "reckon/crew/dispatching/requests.py:339 extends the existing preview owner at line 307 without adding definitions, while dispatch_batch.py:1106 and admission/release.py:845 continue delegating to that owner.",
+    "scope_discipline": "the complete base-to-head diff adds only three necessary lines in declared reckon/crew/dispatching/requests.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires preview rows without writes; reckon/crew/dispatching/requests.py:339 returns validated dry-run rows before pointer-backed review handling.\nVERDICT done_when: node.json:4 requires two repaired dry-run tests, preserved owed-review tests and zero wider added failures versus main; focused.log records 16 passed, but wide-head.log versus wide-main.log records four added failure IDs.\nVERDICT write_paths: manifest.md:3 declares seven permitted paths; the entire base-to-head diff changes only reckon/crew/dispatching/requests.py with three additions.\nVERDICT manifest: manifest.md:8 acknowledges that the wider acceptance measure is unmet; its baseline_suite and after_suite receipts each record 58 passed and EXIT=0.\nVERDICT diff: read the sole commit a4ee7d704971a40c26901ca629c28842ffc01a22 against base 766a8312ca0ff652bf514749520be7760a41fc63; only requests.py:339-341 changes and real-request review handling remains intact.\nCALL_SITES: reckon/crew/dispatch_batch.py:queue_batch, reckon/crew/admission/release.py:queue_requests, reckon/crew_dispatch_commands.py:_queue_dispatch_batch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/requests.py:339 returns preview rows before read_pointer at line 345, and focused.log records passing batch and CLI regression tests.\nSCORE evidence: 12\nJUSTIFICATION evidence: focused.log and both suite logs record successful completed gates, while wide-head.log and wide-main.log still show four added failure IDs contrary to node.json:4.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the complete base-to-head diff adds only three necessary lines in declared reckon/crew/dispatching/requests.py.\nSCORE durability: 20\nJUSTIFICATION durability: reinstating the preview pointer read fails the independent would_queue == 2 assertion at tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:270 and CLI exit_code == 0 at line 316, as reproduction.log demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatching/requests.py:339 matches its existing dry_run branch at line 307 and adds only a mechanism-based comment without new symbols or forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/dispatching/requests.py:339 extends the existing preview owner at line 307 without adding definitions, while dispatch_batch.py:1106 and admission/release.py:845 continue delegating to that owner.\nFINDING manifest.md:8 blocking: the required wider zero-added-failures measure remains unmet because wide-head.log contains four failure IDs absent from wide-main.log; the separate passing 58-test suite pair cannot establish that measure, so the coordinator must resolve the acceptance evidence before landing.\n",
+  "reproduction_quote": "reproduction.log: assert result['would_queue'] == 2; E assert 0 == 2; CLI reason no live run 'r-20261123T044214647634-cli-one'; 2 failed in 1.55s.",
+  "reuse_search": "No functions/classes/modules added; searched queue_requests call sites at reviewed head and opened the existing dispatch preview owner plus batch/admission callers.",
+  "review_run_id": "r-20261123T055345651387-review-of-bpq-owed-review-batch-dry-run-repair-a4ee7d704971",
+  "reviewed_base_sha": "766a8312ca0ff652bf514749520be7760a41fc63",
+  "reviewed_head_sha": "a4ee7d704971a40c26901ca629c28842ffc01a22",
+  "reviewed_run_id": "r-20261123T020523140014-bpq-owed-review-batch-dry-run-repair",
+  "scores": {
+    "durability": 20,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_sources": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T020523140014-bpq-owed-review-batch-dry-run-repair/after_suite-1795409155263802301.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T020523140014-bpq-owed-review-batch-dry-run-repair/baseline_suite-1795408941434707198.log"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T06:00:15.243712+00:00",
+  "total": 112,
+  "wider_done_when_comparison": {
+    "added_failure_count": 4,
+    "added_failure_ids": [
+      "tests/test_a_queued_request_arranges_its_follower.py::test_queued_request_attaches_before_dispatch_returns",
+      "tests/test_dispatch_split_keeps_its_surface.py::test_every_concern_fits_the_module_limit",
+      "tests/test_fleet_lane_carries_the_dispatch_environment.py::test_a_dispatch_confirms_its_supervisor_reached_the_run",
+      "tests/test_queue_ordering_reads_history_once.py::test_a_recorded_promotion_is_read_and_holds_its_section"
+    ],
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T020523140014-bpq-owed-review-batch-dry-run-repair/wide-head.log",
+    "main_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T020523140014-bpq-owed-review-batch-dry-run-repair/wide-main.log",
+    "note": "Distinct from mandatory baseline_suite/after_suite pair; wider acceptance measure remains unmet."
+  }
+}

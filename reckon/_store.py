@@ -1886,6 +1886,12 @@ def _write_state_locked(
         else []
     )
     authored_text_changed = source_text != text
+    # ``write_state`` can also change the authored stream without an op editing
+    # it: rendering a section record marks its heading as the store's own
+    # region, which moves that heading out of the authored projection. The
+    # receipt below must cover that transition too, or a write made after a
+    # section append leaves a jump in the recorded graph that no later landing
+    # can follow.
     if state_type == "plan":
         _require_heading_for_section_records(source_text, new_data.get("sections"))
     new_text = _plan_html.write_state(
@@ -1925,6 +1931,22 @@ def _write_state_locked(
         return cur_version
 
     write_atomically(html_file, lambda handle: handle.write(new_text))
+    if authored_text_changed or _plan_text_digest(new_text) != _plan_text_digest(text):
+        # A state write that inserts or replaces authored markup — a section
+        # heading and its body, a field edit, a retired preimage — changes the
+        # plan's authored stream, so a later landing cannot tell it from an
+        # editor's pending prose unless the store records that it made the
+        # transition. The receipt names the two authored contents it connects,
+        # which is what lets the landing recognise the change as the store's
+        # own and carry its bookkeeping while leaving any other pending prose
+        # with its editor.
+        try:
+            _record_plan_text_write(html_file, text, new_text, authorship="state")
+        except Exception:
+            # A failed receipt must neither license an unwritten edit nor
+            # leave a successful edit without its promotion provenance.
+            write_atomically(html_file, lambda handle: handle.write(text))
+            raise
     if successor_moves:
         # A descope that names a successor is two plan writes: this one, and the
         # successor's half carrying the section's prose, effort, capability and
@@ -2614,11 +2636,24 @@ def _plan_text_digest(document: str) -> str:
     return hashlib.sha256(authored.encode("utf-8")).hexdigest()
 
 
-def _record_plan_text_write(path: Path, before: str, after: str) -> None:
-    """Record a content-bound edge under the plan writer's existing lock."""
+def _record_plan_text_write(
+    path: Path, before: str, after: str, *, authorship: str = "text"
+) -> None:
+    """Record a content-bound edge under the plan writer's existing lock.
+
+    ``authorship`` names the surface the edge came from. A ``state`` write
+    inserts or replaces the plan's structure — a section heading and its body,
+    a section field — so a landing commits it as the plan state it is. A
+    ``text`` write is an editor's pending prose: the same edge records that the
+    store applied it, and the landing carries its bookkeeping while leaving the
+    prose with its editor. The two are kept apart because the same authored
+    transition can arrive through either surface and the landing answers each
+    one differently.
+    """
     receipts = _plan_text_receipts(path)
-    source = _plan_text_digest(before)
-    destination = _plan_text_digest(after)
+    prefix = "" if authorship == "text" else f"{authorship}:"
+    source = prefix + _plan_text_digest(before)
+    destination = prefix + _plan_text_digest(after)
     targets = receipts.setdefault(source, [])
     if destination not in targets:
         targets.append(destination)
@@ -2627,10 +2662,13 @@ def _record_plan_text_write(path: Path, before: str, after: str) -> None:
     write_json_atomically(receipt_path, receipts)
 
 
-def recorded_plan_text_write(path: Path, before: str, after: str) -> bool:
-    """Whether recorded text writes connect these exact authored contents."""
-    start = _plan_text_digest(before)
-    destination = _plan_text_digest(after)
+def recorded_plan_text_write(
+    path: Path, before: str, after: str, *, authorship: str = "text"
+) -> bool:
+    """Whether recorded writes of this authorship connect these exact contents."""
+    prefix = "" if authorship == "text" else f"{authorship}:"
+    start = prefix + _plan_text_digest(before)
+    destination = prefix + _plan_text_digest(after)
     if start == destination:
         return False
     receipts = _plan_text_receipts(path)

@@ -134,6 +134,14 @@ _PLAN_REF_COULD_BE_SECTION_REF = "plan-ref-could-be-section-ref"
 _SECTION_WITHOUT_TODO = "section-without-todo"
 _TODO_WITHOUT_SECTION = "todo-without-section"
 
+# A section's typed record and its ``section_declarations`` entry state the
+# same fact, so a document that leaves them disagreeing reads one status to a
+# reader of the record and another to the dispatch that acts on the
+# declaration. The typed read refuses such a document outright; this check
+# names the section and both values, which is what a reader needs to repair
+# the file.
+_SECTION_STATUS_DISAGREES = "section-status-disagrees"
+
 # The plan-impl meta on disk and the figure the section records derive must
 # agree. They part company when records do not cover the declarations — the
 # served figure is then derived from the file's declarations while an authored
@@ -1601,6 +1609,18 @@ def _section_coverage_findings(
     return out
 
 
+def _section_status_findings(html_text: str) -> list[Finding]:
+    """Report a section whose record status disagrees with its declaration."""
+    return [
+        Finding(
+            "error",
+            _SECTION_STATUS_DISAGREES,
+            _plan_html.section_status_disagreement_message(disagreement),
+        )
+        for disagreement in _plan_html.section_status_disagreements(html_text)
+    ]
+
+
 def _followup_section_findings(
     doc_type: str, state: Mapping[str, Any]
 ) -> list[Finding]:
@@ -1802,6 +1822,7 @@ def audit_html(
     # Section contract — the unit that carries effort, capability and a route.
     declared_type = ((rt.get("content") if rt else "") or "").strip().lower()
     out.extend(_section_contract_findings(declared_type, state, soup, html_text))
+    out.extend(_section_status_findings(html_text))
     out.extend(_section_coverage_findings(declared_type, state, html_text))
     out.extend(_followup_section_findings(declared_type, state))
 
@@ -2846,7 +2867,11 @@ def _declared_project(path: Path) -> str:
         return ""
     try:
         project = _plan_html.parse_plan(path).get("project")
-    except OSError:
+    except (OSError, ValueError):
+        # An unreadable document is the audit's own finding, reported per file
+        # once the run reaches it. Reading a project from it here is a
+        # convenience for the slug check, so its failure must not end the audit
+        # before the finding that describes it is printed.
         return ""
     return (project or "").strip()
 

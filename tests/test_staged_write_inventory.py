@@ -85,6 +85,11 @@ def test_every_staged_write_reaches_the_owner(trees):
         # beat, so a reader never sees a half-written record and the beat's
         # age is its file's mtime.
         ("reckon/crew/host_heartbeat.py", "_write_beat"),
+        # _rotate_current_verdict_log moves the completed day's log to its day
+        # name in one rename, so the current file every surface reads starts the
+        # new day empty. The shared file writer publishes a replacement for one
+        # path; it cannot give a new name to the file it is vacating.
+        ("reckon/crew/admission/verdicts.py", "_rotate_current_verdict_log"),
     }, sorted(observed)
 
 

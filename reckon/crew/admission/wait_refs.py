@@ -382,7 +382,16 @@ def _validated_batch_waits(
         html = _readiness.plan_document_text(docs.parent, parsed.slug)
         if not html:
             raise CrewError(f"wait names missing plan {target_project}:{parsed.slug}")
-        row = _readiness._plan_state_and_text(docs, parsed.slug, target_project)[0]
+        try:
+            row = _readiness._plan_state_and_text(docs, parsed.slug, target_project)[0]
+        except Exception:  # another project's plan is not ours to refuse
+            if target_project == project:
+                raise
+            # A malformed plan in a project this dispatch does not own is that
+            # project's document to repair. The wait is kept and stays
+            # unresolved, reported where it is resolved, so one project's bad
+            # plan cannot refuse another project's dispatch.
+            row = {}
         if parsed.stage:
             authored = {
                 normalize_section(identity)
@@ -420,9 +429,18 @@ def _validated_batch_waits(
             edges[key].add(child)
             if not child.startswith("run:"):
                 section_edges(child)
-        state = _readiness._plan_state_and_text(
-            docs, parsed.slug, parsed.project or project
-        )[0]
+        try:
+            state = _readiness._plan_state_and_text(
+                docs, parsed.slug, parsed.project or project
+            )[0]
+        except Exception:  # an unreadable plan adds no edges
+            # A plan this project does not own that cannot be read contributes
+            # no dependency edges; the wait itself is kept and held, and the
+            # read that failed is reported when the wait is resolved. A plan
+            # this project owns still refuses here, as it always has.
+            if (parsed.project or project) == project:
+                raise
+            state = {}
         for ref in state.get("depends_on") or ():
             child, _ = target(str(ref), parsed.project or project)
             edges[key].add(child)

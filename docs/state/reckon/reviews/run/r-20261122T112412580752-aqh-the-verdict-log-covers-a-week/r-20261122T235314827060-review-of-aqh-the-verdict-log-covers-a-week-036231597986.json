@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T23:53:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/drain_measure.py",
+      "line": 83,
+      "severity": "non-blocking",
+      "severity_note": "repair in a node holding scripts/measure_queue_drain.py and reckon/crew/runs.py: drop the explicit passes argument so the week default is used, or point admission_pass_history at verdicts._pass_record_paths; write the deferral as a real outside_scope key.",
+      "text": "the week-reading default is unreachable from the operator-facing instrument: scripts/measure_queue_drain.py:148 passes passes=runs_module.admission_pass_history(), which reads only crew_home()/admission-verdicts.jsonl, so a real drain still reports the sliver."
+    },
+    {
+      "file": "reckon/crew/admission/verdicts.py",
+      "line": 366,
+      "severity": "non-blocking",
+      "severity_note": "compare the file size or line count before and after the append rather than testing existence.",
+      "text": "written is inferred from path.exists(), so an append the shared writer refused is reported as written True whenever the file already holds an earlier record from today; the pre-increment code returned written False on the OSError."
+    },
+    {
+      "file": "tests/test_the_verdict_log_covers_a_week.py",
+      "line": 211,
+      "severity": "non-blocking",
+      "severity_note": "drop the line, or assert against the log path the constant names; the cost guards at lines 198 and 216-219 are the ones that carry the measure.",
+      "text": "assert cost[\"measured_on\"] == LIVE_MEASURED_MARK compares the result with the same constant the call passed at line 208, so the two sides move together and the assertion holds whatever the cost accounting does."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T112412580752-aqh-the-verdict-log-covers-a-week/manifest.md",
+      "line": 1,
+      "severity": "non-blocking",
+      "severity_note": "add the outside_scope key naming scripts/measure_queue_drain.py and reckon/crew/runs.py, and the six rubric.<dimension> lines.",
+      "text": "the manifest carries no outside_scope key and no rubric.<dimension> lines, so its twice-claimed deferral reaches the coordinator nowhere and the required self-check is absent."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to return seven days of admission verdicts from one read; the increment gives that read a production path through reckon/crew/admission/verdicts.py:477 _recent_pass_reading (reached by _record_stalls via _last_verdict_of) and routes the append at verdicts.py:365 through reckon/crew/picker/__init__.py:83 _append_crew_log_line, but the drain wiring at reckon/crew/drain_measure.py:83 is bypassed by the only production caller.\nVERDICT done_when: the done_when names tests/test_the_verdict_log_covers_a_week.py; repair-after-suite.log records 63 passed in 58.86s and a bare EXIT=0 at 0362315979867e699e3701556b0464d04dbbebb9 against a base arm in repair-baseline-suite.log of 58 passed, EXIT=0 at 9ed4c9ee2e, and repair-negative-control.log is red at 1 failed with EXIT=1 under the reverted source; the \"instrument reports a real seven-day window\" clause is asserted at tests/test_the_verdict_log_covers_a_week.py:244 over the test's own read records rather than through a measure_drain caller.\nVERDICT write_paths: the dispatch declares reckon/crew/admission/verdicts.py, reckon/crew/admission/shared.py, reckon/crew/drain_measure.py, tests/test_the_verdict_log_covers_a_week.py, tests/test_staged_write_inventory.py and the fragment/figure paths; the increment changes exactly verdicts.py, drain_measure.py and the new test, and the full 9ed4c9ee2e..0362315979 diff adds only shared.py and test_staged_write_inventory.py, all inside the declared set.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T112412580752-aqh-the-verdict-log-covers-a-week/manifest.md; it records the literal gate command, both suite arms with revision, exit_status, completed and failure ids, the negative-control log, the landing line and a long reuse answer, but it carries no outside_scope key (the reuse answer twice says the deferral is \"recorded under outside_scope\") and no rubric.<dimension> lines.\nVERDICT diff: read commit by commit from 230b937e05121275e25367514b20551e8191e524 to 0362315979867e699e3701556b0464d04dbbebb9; the single commit changes only three files: verdicts.py drops the test-only home argument, delegates the append to the shared writer, makes read_pass_verdicts take an explicit paths list, parses the recent reading through it and extracts _pass_files_signature; drain_measure.py defaults passes to the retained week; the test writes a live-sized nine-day fixture and reads per-day bytes from disk.\nCALL_SITES: reckon/crew/admission/service.py:592, reckon/crew/admission/service.py:666, reckon/crew/admission/verdicts.py:_record_stalls, reckon/crew/queue_admission.py:369, scripts/measure_queue_drain.py:128\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: verdicts.py:477 and verdicts.py:365 give the read and the append production paths and the fixture now resolves the operator-facing RECKON_HOME, but reckon/crew/drain_measure.py:83 answers the gap measure from the current-file reader in production because its only caller passes passes explicitly.\nSCORE evidence: 16\nJUSTIFICATION evidence: repair-after-suite.log:1-6 and repair-baseline-suite.log:1-6 each carry the revision, the literal command and a bare EXIT=0, the negative control is red, and the live-rate and live-row constants at tests/test_the_verdict_log_covers_a_week.py:31-32 are now reproduced by the fixture instead of being orders of magnitude away from it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the increment (reckon/crew/admission/verdicts.py, reckon/crew/drain_measure.py, tests/test_the_verdict_log_covers_a_week.py) is in the declared write paths, and the full 9ed4c9ee2e..0362315979 diff adds only the declared shared.py and test_staged_write_inventory.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_verdict_log_covers_a_week.py:198 compares reported per-day bytes with Path.stat() sizes on disk, lines 216-219 floor a day's cost at 0.9 of the live rate times the live row, and lines 279-281 are shown red by repair-negative-control.log when the append stops routing through the shared writer; line 211 is a passthrough echo and no guard rests on it.\nSCORE fit: 19\nJUSTIFICATION fit: the additions follow verdicts.py:252's day-log helper idiom and are named by mechanism (_pass_files_signature, read_pass_verdicts, measure_drain), with no plan, stage or ticket identifier in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: verdicts.py:365 calls the owner reckon/crew/picker/__init__.py:83 _append_crew_log_line and verdicts.py:489 delegates the parse to read_pass_verdicts; a search for an existing file-identity signature (git grep st_mtime_ns over reckon/) found ad-hoc tuples in _backends.py:2405, admission/holds.py:396 and dispatch_peer.py:175 but no owner, so _pass_files_signature at verdicts.py:507 duplicates nothing.\nFINDING reckon/crew/drain_measure.py:83 non-blocking: the week-reading default is unreachable from the operator-facing instrument, because scripts/measure_queue_drain.py:148 still passes passes=runs_module.admission_pass_history(), which reads only crew_home()/admission-verdicts.jsonl, so a real drain still reports the sliver this node exists to remove.\nFINDING reckon/crew/admission/verdicts.py:366 non-blocking: the written flag is inferred from path.exists(), so an append the shared writer refused (picker swallows every exception) is reported as written True whenever the file already holds an earlier record from today; the pre-increment code returned written False on the OSError, and the return value is currently unused so the harm is latent.\nFINDING tests/test_the_verdict_log_covers_a_week.py:211 non-blocking: assert cost[\"measured_on\"] == LIVE_MEASURED_MARK compares the result with the same constant the call passed at line 208, so the two sides move together and it cannot fail on any regression in the cost accounting.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261122T112412580752-aqh-the-verdict-log-covers-a-week/manifest.md:1 non-blocking: the manifest carries no outside_scope key and no rubric.<dimension> lines, so its twice-claimed deferral of the production wiring reaches the coordinator nowhere and the required per-dimension self-check is absent rather than passing.\n",
+  "review_run_id": "r-20261122T235314827060-review-of-aqh-the-verdict-log-covers-a-week-036231597986",
+  "reviewed_base_sha": "230b937e05121275e25367514b20551e8191e524",
+  "reviewed_head_sha": "0362315979867e699e3701556b0464d04dbbebb9",
+  "reviewed_run_id": "r-20261122T112412580752-aqh-the-verdict-log-covers-a-week",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:27:31.093697+00:00",
+  "total": 108
+}

@@ -509,8 +509,11 @@ def test_an_ordinary_failed_run_still_refuses_added_suite_failures(
     result = _complete(run, measurement_repo, tmp_path, gate="failed")
 
     assert result.exit_code != 0, result.output
-    assert "armed promotion added suite failures" in result.output, result.output
-    assert failure_id in result.output, result.output
+    reply = json.loads(result.stdout)
+    receipt = json.loads(Path(reply["record_path"]).read_text())
+    assert reply["error"] == "suite-delta-refused", reply
+    assert "armed promotion added suite failures" in receipt["detail"], receipt
+    assert receipt["added_failure_ids"] == [failure_id], receipt
     assert open_run_index.row_for_run(PROJECT, run["run_id"], measurement_repo) is None
 
 
@@ -524,8 +527,10 @@ def test_a_passing_measurement_still_refuses_added_suite_failures(
     result = _complete(run, measurement_repo, tmp_path, gate="passed")
 
     assert result.exit_code != 0, result.output
-    assert "suite-delta-refused" in result.output, result.output
-    assert failure_id in result.output, result.output
+    reply = json.loads(result.stdout)
+    receipt = json.loads(Path(reply["record_path"]).read_text())
+    assert reply["error"] == "suite-delta-refused", reply
+    assert receipt["added_failure_ids"] == [failure_id], receipt
     assert open_run_index.row_for_run(PROJECT, run["run_id"], measurement_repo) is None
 
 
@@ -687,3 +692,20 @@ def test_the_reflex_composes_a_review_once_its_skip_is_removed(
 
     assert report.get("dispatched") is True, report.get("reason")
     assert report.get("refused") is not True, report
+
+
+def test_review_debt_does_not_queue_a_landed_section_without_measurement_flag(
+    measurement_repo: Path, tmp_path: Path
+) -> None:
+    """A review hold cannot store a replay the section declaration refuses."""
+    with pytest.raises(crew.CrewError, match="--measure-only"):
+        crew.dispatch(
+            node=_node(LANDED_SECTION, manifest=tmp_path / "manifest.md"),
+            project=PROJECT,
+            repo=measurement_repo,
+            config={**CONFIG, "plan_review_gate": "enforce"},
+            session=SESSION,
+            route="deterministic",
+            check_budget=False,
+        )
+    assert runs.list_live(project=PROJECT) == []

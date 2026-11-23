@@ -23,6 +23,7 @@ import hashlib
 import json
 import os
 import stat
+import time
 from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
 from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
@@ -2009,8 +2010,14 @@ def _index_document_path(directory: Path) -> Path:
     beside the records would move the store directory's own mtime after the
     writer had already recorded it, so every read would find the store moved
     and none could settle.
+
+    The name carries the code stamp the document is filed under. Processes
+    running different code share the store but not the document: one shared
+    document was rewritten by each in turn, every reader on the other code
+    found it unusable and rebuilt it from every record in the store, and the
+    store sits on shared storage that each rebuild read in full.
     """
-    return directory / _INDEX_DIRNAME / _INDEX_NAME
+    return directory / _INDEX_DIRNAME / _stamped_index_name(_INDEX_NAME)
 
 
 def _index_stamp_path(directory: Path) -> Path:
@@ -2022,7 +2029,61 @@ def _index_stamp_path(directory: Path) -> Path:
     that changed nothing record it by writing a few dozen bytes, instead of
     rewriting a document of megabytes to change one field of it.
     """
-    return directory / _INDEX_DIRNAME / _INDEX_STAMP_NAME
+    return directory / _INDEX_DIRNAME / _stamped_index_name(_INDEX_STAMP_NAME)
+
+
+# A document filed under code no process has run for this long is removed when
+# a rebuild writes a new one, so the index directory holds the live versions'
+# documents rather than one per revision the store was ever read under.
+_INDEX_RETIRED_AFTER_SECONDS = 2 * 86400.0
+
+
+def _stamped_index_name(name: str) -> str:
+    """``name`` filed under this process's index code stamp.
+
+    An empty stamp disables the persisted index's code check, so the bare name
+    is kept for it rather than inventing a stamp nothing can be compared with.
+    """
+    stamp = _index_code_stamp()
+    if not stamp:
+        return name
+    stem, dot, suffix = name.rpartition(".")
+    return f"{stem}-{stamp[:16]}{dot}{suffix}"
+
+
+def _retire_unused_index_documents(directory: Path) -> None:
+    """Remove other code versions' index files nobody has written for a while.
+
+    Only this store's own index directory is touched, only documents and stamps
+    filed under another code stamp (the unstamped names included), and only
+    those whose last write is older than :data:`_INDEX_RETIRED_AFTER_SECONDS`:
+    a process still running that code rewrites its file on every write, so a
+    live version's document never ages past the bound.
+    """
+    holding = directory / _INDEX_DIRNAME
+    keep = {
+        _stamped_index_name(_INDEX_NAME),
+        _stamped_index_name(_INDEX_STAMP_NAME),
+    }
+    stems = (_INDEX_NAME.rpartition(".")[0], _INDEX_STAMP_NAME.rpartition(".")[0])
+    cutoff = time.time() - _INDEX_RETIRED_AFTER_SECONDS
+    try:
+        candidates = list(holding.iterdir())
+    except OSError:
+        return
+    for path in candidates:
+        name = path.name
+        if name in keep or not name.endswith(".json"):
+            continue
+        if not any(
+            name == f"{stem}.json" or name.startswith(f"{stem}-") for stem in stems
+        ):
+            continue
+        try:
+            if path.stat().st_mtime < cutoff:
+                path.unlink()
+        except OSError:
+            continue
 
 
 def _read_index_stamp(directory: Path) -> tuple[tuple[int, ...], int] | None:
@@ -2518,6 +2579,7 @@ def _settled_index_document(directory: Path) -> Mapping[str, Any] | None:
         if document is None:
             document = _rebuild_index_document(directory)
             _persist_index_document(directory, document)
+            _retire_unused_index_documents(directory)
     return document
 
 

@@ -1343,6 +1343,13 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
+    if config is None:
+        # The station's and producers' sweeps resume without passing settings.
+        # The fence is composed from these settings, so a resume built from none
+        # carries no flight-named fence program, and a job its worker submits to
+        # a node without bubblewrap refuses before its task starts. The run's
+        # own project settings are what its dispatch was fenced with.
+        config = flight.resolve(str(record.get("project") or "") or None).config
     # A stop that could not settle the run's scheduler step leaves work running
     # where this host cannot see it, so the reason is read before any liveness
     # probe: the local process may be gone while the step still works, and the
@@ -1856,9 +1863,10 @@ def _lane_change_launch_failure(
     if len(recorded_after) > len(recorded_before):
         newest = recorded_after[-1]
         return newest if isinstance(newest, Mapping) else {}
-    if str(current.get("phase") or "") == LAUNCH_FAILED_PHASE and str(
-        before.get("phase") or ""
-    ) != LAUNCH_FAILED_PHASE:
+    if (
+        str(current.get("phase") or "") == LAUNCH_FAILED_PHASE
+        and str(before.get("phase") or "") != LAUNCH_FAILED_PHASE
+    ):
         return {}
     if pid is not None and process_alive(pid) is False:
         stream = Path(str(log_path)) if log_path else None

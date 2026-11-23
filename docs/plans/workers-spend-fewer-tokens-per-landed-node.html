@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node">
   <meta name="plan-title" content="Workers Spend Fewer Tokens Per Landed Node">
   <meta name="plan-summary" content="Give crew workers a line-anchored edit tool, pilot oh-my-pi as a local-lane worker program, and measure both against the run store.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="129">
+<meta name="plan-version" content="132">
 <meta name="plan-modified" content="2026-11-23">
 <meta name="plan-sprint" content="S28">
 </head>
@@ -168,10 +168,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-wsft-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-10" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wsft-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-10" data-recommends-skill="" data-resolved-at="2026-11-23T00:28:47+00:00" data-resolved-by="reckon-fa">
     <h4 class="r-fu-title">Build the anchored edit tool and the omp headless investigation</h4>
     <div class="r-fu-body"><p>The plan is written and its prototypes are recorded. §3 and §6 have no upstream and can start at once; §4 and §5 wait on §3, §7 on §6, and §8 on all three arms.</p></div>
     <pre class="r-fu-prompt">/reckon-build workers-spend-fewer-tokens-per-landed-node</pre>
+    <p class="r-fu-outcome"><p>Every section is done. The pooled replay over 18 local sections separated no arm from the same-arm control (clive-anchored +4.7% input, omp-local -7.1%, clive replicate +8.4%, all 18/18 gates), so the lead kept native clive as the local lane. §18 then removed the anchored edit tool in six nodes, all on main: dispatch (ce451ced11), fence and prompt (ec359cbdb2), launch record (9b8baaa6dc), backends (dde7b00176), flight schema key (ceb2ad3f7b) and the module with its console script (0c208b274b). A grep for anchored_edit and anchored-edit over reckon/ and pyproject.toml finds nothing, and tests/test_anchored_edit.py now fails if the module or its script returns. The chain closes here: done, no followup.</p></p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -220,6 +221,9 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T203203115648-measurement-run-never-lands-s13" data-who="reckon-build" data-when="2026-11-15T20:42:02Z">
     <div class="r-comment-body"><p>passed — a `--measure-only` dispatch writes `measure_only` on the run's pointer; the review reflex refuses it and composes no review; the reflex's refusal is recorded on the run; the landing pass records status `measurement-run` and no landing judgement; `crew complete` writes outcome `measured` with gate `passed`, the run's tokens and commit, leaves that commit off `main`, records no plan comment, waives the review and the impl movement, and removes the worktree although its head is never merged.</p></div>
 </div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-fa" data-when="2026-11-23T00:30:00Z">
+    <div class="r-comment-body"><p>Landed by r-20261115T203203115648-measurement-run-never-lands-s13 (promote dce4024ebe, passed); reviewed at 48479ac9ad and c607c2841d with no blocking finding.</p></div>
+</div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261117T204428036183-paired-replay-report-s14" data-who="reckon-build" data-when="2026-11-17T20:49:03Z">
     <div class="r-comment-body"><p>Wrote the paired replay evidence record docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html and committed its producer beside it at docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py, so every figure is re-derivable from the tree; the record states the draw took ten sections at seed 20261116 and that workers-spend-fewer-tokens-per-landed-node#s4 was excluded on context fit before any of its replays ran, leaving nine dispatched sections and 54 runs, each listed by id with its section and base revision (all 54 bases equal the assignment's), with the paired-difference table and 90% intervals over sections, the same-arm negative control, both of §8's positive controls, and each arm's verdict. Measure: mean paired difference in cumulative input per section is -1.35M (-7.0%) clive-anchored, -2.26M (-11.6%) omp-local, -3.15M (-37.5%) codex-anchored; the replicate clive run against clive reads +4.01M (+20.7%), interval 0.06M to 7.97M, every treatment interval overlaps it, so all three arms are not separated and none is adopted; gate pass rate unchanged for all three, and no flight default moves.</p></div>
 </div>
@@ -229,8 +233,14 @@
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261117T213919846475-review-of-paired-replay-report-s14-1ac4af375317" data-who="reckon-build" data-when="2026-11-17T21:42:23.809Z">
     <div class="r-comment-body"><p>Reviewed r-20261117T204428036183-paired-replay-report-s14 over 88060e29ad9d5024ad0ab698dc1157affe7a4ef3..1ac4af375317e6032bdff800dfbdc49d403ca93a and stored a parsed record scoring all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 20, durability 8, fit 16, reuse 4) with four non-blocking findings; the record is written at the run's two declared review-records paths and never in a worktree.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-fa" data-when="2026-11-23T00:30:00Z">
+    <div class="r-comment-body"><p>Landed by r-20261117T204428036183-paired-replay-report-s14; reviewed at 9f3359a87c and 1ac4af3753 with no blocking finding; the plan recorded it done in 800145fde4.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261116T062559722319-measurement-run-is-recorded-s15" data-who="reckon-build" data-when="2026-11-16T07:10:42Z">
     <div class="r-comment-body"><p>Complete measurements are recorded as measured without moving origin/main; recovery says no review is owed; final after arm 70 passed against baseline 68.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-fa" data-when="2026-11-23T00:30:00Z">
+    <div class="r-comment-body"><p>Landed by r-20261116T062559722319-measurement-run-is-recorded-s15 (promote 729f731593, passed).</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261117T125353986055-failed-measurement-is-recorded-s16" data-who="reckon-build" data-when="2026-11-17T13:55:06Z">
     <div class="r-comment-body"><p>Failed measurement runs now record their added suite failures with outcome measured; ordinary runs and passing gates still refuse the same added id. The focused all_debug gate passed 3 cases.</p></div>
@@ -282,6 +292,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261122T152939676218-review-of-anchored-module-s18-6406ed9c9dcd" data-who="reckon-build" data-when="2026-11-22T15:38:47.194Z">
     <div class="r-comment-body"><p>Reviewed r-20261121T201951227166-anchored-module-s18 at base 2e639881e0 and head 6406ed9c: scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 8, fit 19, reuse 20 (total 102), 0 added failures, 2 non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261122T204129641621-review-of-anchored-module-s18-6cc0c222d6b2" data-who="reckon-build" data-when="2026-11-23T00:21:27.386Z">
+    <div class="r-comment-body"><p>Reviewed the anchored edit removal at head 6cc0c222d6 against base 2e639881e0; the tool, console script and exercising tests are gone and two guards now fail if the tool returns; record status parsed, scores goal_fidelity 17, evidence 15, scope_discipline 20, durability 19, fit 19, reuse 20, added_failure_count 0 with no ids.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261110T203544773136-review-of-anchored-edit-tool-27ed13983a3d" data-who="reckon-build" data-when="2026-11-10T20:58:16.138Z">
     <div class="r-comment-body"><p>Reviewed run r-20261110T192355232896-anchored-edit-tool at head 27ed13983a3d19b3a69b18e35b56b33e9f52b354 from base cb5dcf17a3be6c8a022f5c9391ec843c67adb509; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 19; total 110), zero added failures against the reviewed arms, and three non-blocking findings recorded — a self-referential assertion at tests/test_anchored_edit.py:54, a negative-control log whose header revision predates the module checksum it measured, and a ruff claim in the evidence fragment with no recorded log which re-ran clean.</p></div>

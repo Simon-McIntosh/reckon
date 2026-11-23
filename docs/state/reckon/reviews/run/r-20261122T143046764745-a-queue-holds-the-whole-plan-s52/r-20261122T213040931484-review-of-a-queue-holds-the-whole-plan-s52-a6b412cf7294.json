@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T00:25:24Z",
+  "findings": [
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1825",
+      "severity": "non-blocking",
+      "text": "the audit calls _section_status_findings(html_text), which reaches document_parse and builds a second BeautifulSoup for a document audit_html already parsed into soup at line 1691, so reckon audit-doc doubles its parse per file over the 165 section-bearing documents in docs/; every sibling check takes the soup instead and this one could too."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "2813",
+      "severity": "non-blocking",
+      "text": "`if status != declared` restates the record-versus-declaration predicate that reckon/_schema.py:1439 owns in _consistent_section_records; the owner can only raise so the reader cannot extend it, but the rule now lives in two places and a change to what counts as a disagreement must be made in both."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/doccheck.py:1825 (reckon audit-doc), reckon/serve.py:3827 (the plan write handler) and reckon/crew/promotion.py:_preserve_plan_on_refusal (promotion of every landed run).",
+    "diff": "Read all four commits against 9ed4c9ee: reckon/_plan_html.py, reckon/doccheck.py, reckon/serve.py, reckon/crew/promotion.py, the new test and the evidence fragment, nothing else.",
+    "done_when": "Read the done_when's four arms against tests/test_a_disagreeing_section_is_refused_when_written.py: the audit arm, the agreeing control, the server refusal and the promotion refusal each exist, and the run directory records their results.",
+    "goal": "Read the node goal against reckon/_plan_html.py:2796, reckon/doccheck.py:1825, reckon/serve.py:3827 and reckon/crew/promotion.py:2543; the landed change refuses a disagreeing section at all three surfaces, verified by re-running the named test file at a6b412cf72, 4 passed.",
+    "manifest": "Read; it records the scoped gate command, 62 passed in 47.55s and 62 passed in 41.92s at af7841e3, the 58 passed base arm at 9ed4c9ee and the red negative control.",
+    "write_paths": "Read the manifest's seven declared paths; every one of the six delivered paths is inside them and the figure directory went unused."
+  },
+  "justifications": {
+    "durability": "the negative control at 3 failed, 1 passed in 1.51s reinstates the regression and reddens three of the four assertions, but no arm shows the server's plan write accepting an agreeing document, so only the audit control proves the check is not unconditional.",
+    "evidence": "the manifest's tests line matches each log's own # command header and each of the four logs closes with a bare EXIT= line, 62 passed after and 58 passed base, so the gate measures the done_when.",
+    "fit": "reckon/_plan_html.py:2796 follows the module's helpers (_head_declarations, section_record_id, document_parse) and adds no forbidden name, but reckon/doccheck.py:1825 re-parses instead of taking the soup its siblings take.",
+    "goal_fidelity": "reckon/_plan_html.py:2796 derives the disagreement once and reckon/doccheck.py:1825, reckon/serve.py:3827 and reckon/crew/promotion.py:_refuse_a_disagreeing_plan each refuse by naming the section and both values.",
+    "reuse": "the reader extends reckon/_plan_html.py and reuses its owners rather than forking a new parser, but reckon/_plan_html.py:2813 duplicates the predicate reckon/_schema.py:1439 already owns.",
+    "scope_discipline": "every one of the six changed paths in git diff 9ed4c9ee..a6b412cf is inside the declared write paths, and the ValueError catch at reckon/doccheck.py:_declared_project is a repair inside a declared file the audit needs to report the finding at all."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that audit-doc, the server's plan write and a promotion all refuse a section whose record disagrees with its declaration; reckon/_plan_html.py:2796 derives it and all three surfaces name the section and both values.\nVERDICT done_when: the done_when names tests/test_a_disagreeing_section_is_refused_when_written.py and its four arms are present; the manifest and the run-directory logs record their results.\nVERDICT write_paths: read the manifest's seven declared paths; every one of the six delivered paths is inside them.\nVERDICT manifest: read; it records the scoped gate command, 62 passed in 47.55s and 62 passed in 41.92s at af7841e3, the 58 passed base arm at 9ed4c9ee and the red negative control.\nVERDICT diff: read all four commits against 9ed4c9ee; reckon/_plan_html.py, reckon/doccheck.py, reckon/serve.py, reckon/crew/promotion.py, the new test and the evidence fragment, nothing else.\nCALL_SITES: reckon/doccheck.py:1825, reckon/serve.py:3827, reckon/crew/promotion.py:_preserve_plan_on_refusal\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:2796 is the single derivation and reckon/doccheck.py:1825, reckon/serve.py:3827 and reckon/crew/promotion.py:_refuse_a_disagreeing_plan each refuse with it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's tests line matches each log's # command header and each log closes with EXIT=0, 62 passed after and 58 passed base.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 9ed4c9ee..a6b412cf is inside the declared write paths and no undeclared file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reddens three of the four assertions in tests/test_a_disagreeing_section_is_refused_when_written.py at the base revision, but no arm exercises the server writing an agreeing plan.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/_plan_html.py:2796 follows the module's helpers while reckon/doccheck.py:1825 re-parses a document its caller already parsed.\nSCORE reuse: 16\nJUSTIFICATION reuse: the addition extends reckon/_plan_html.py and reuses _head_declarations and section_record_id, but reckon/_plan_html.py:2813 restates the predicate reckon/_schema.py:1439 owns.\nFINDING reckon/doccheck.py:1825 non-blocking: the audit builds a second soup via document_parse where audit_html already holds one, doubling the parse per file.\nFINDING reckon/_plan_html.py:2813 non-blocking: the record-versus-declaration predicate is restated from reckon/_schema.py:1439, so the rule lives in two places.\n",
+  "review_run_id": "r-20261122T213040931484-review-of-a-queue-holds-the-whole-plan-s52-a6b412cf7294",
+  "reviewed_base_sha": "9ed4c9ee2e01533b4e68d56dc381075e437da704",
+  "reviewed_head_sha": "a6b412cf7294b02491505f6125e70c95628ae252",
+  "reviewed_run_id": "r-20261122T143046764745-a-queue-holds-the-whole-plan-s52",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:46:34.222258+00:00",
+  "total": 107
+}

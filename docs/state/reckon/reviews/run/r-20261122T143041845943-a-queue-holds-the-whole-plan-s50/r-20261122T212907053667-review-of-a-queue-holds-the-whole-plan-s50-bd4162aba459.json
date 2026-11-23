@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T23:58:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1453,
+      "severity": "non-blocking",
+      "summary": "QUEUED_POINTER_DUTY_KINDS omits orphaned-refusal, so a stale served answer never phase-settles the row and its discard command could act on a run already launched or discarded."
+    },
+    {
+      "file": "tests/test_an_orphaned_refusal_reaches_a_live_session.py",
+      "line": 120,
+      "severity": "non-blocking",
+      "summary": "assert row[\"next_command\"] cannot fail: _orphaned_refusal_item supplies a non-empty fallback, so it does not guard the remedy being the refusal's own."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1994,
+      "severity": "non-blocking",
+      "summary": "The snapshot half of the change has no test; reverting the FleetState fields, the _build_fleet_state read and the _payload_for_state extension leaves every test green."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a refused queued request whose dispatching session has ended reaches a live coordinator; reckon/crew/obligations.py:2259-2372 (orphaned_refusal_readings, _orphaned_refusal_item, _orphaned_refusals_for_session) builds and routes that row, and the new test exercises it end to end.\nVERDICT done_when: the done_when names tests/test_an_orphaned_refusal_reaches_a_live_session.py with four cases and all four are present at lines 105, 126, 144 and 157; the arms are recorded with revision, literal command and closing EXIT line for the arms I resolved on disk.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff (obligations.py, obligation_snapshot.py, the new test, the landing fragment) is inside them.\nVERDICT manifest: read; it states status complete at bd4162ab, records the head gate 62 passed EXIT=0, base arm 58 passed EXIT=0 and the negative control 2 failed, 2 passed, EXIT=1, and I resolved all four log files on disk.\nVERDICT diff: read commit by commit against 9ed4c9ee2e \u2014 four commits, 353 insertions across four paths, three declared sources plus the landing fragment, nothing outside the declared scope.\nCALL_SITES: reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:_build_fleet_state, reckon/crew/obligation_snapshot.py:_payload_for_state, reckon/mcp_views.py:4672, reckon/hooks/coordinator_obligations.py:_obligations_view\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2288-2295 builds the row only for a dispatcher the harness reports unreachable, and :2339-2372 excludes the ended session from its own view, which is exactly the loss the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at tests/test_an_orphaned_refusal_reaches_a_live_session.py covers all four done_when cases and both arms reconcile (62 vs 58 passed, EXIT=0), but the done_when's \"tests that import the changed modules\" arm is two inventory/lock files rather than the obligation-importing tests, and the two obligation tests the worker saw fail are excluded from both arms with no reproduction log in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9ed4c9ee2e..bd4162ab lists only the four declared paths, and the last commit bd4162ab edits one sentence of docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queue-holds-the-whole-plan-s50.html and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_orphaned_refusal_reaches_a_live_session.py:105 reddens on the base code (negative-control.log: 2 failed), :126 reddens if the ended-session exclusion is removed, but the 28 lines added at reckon/crew/obligation_snapshot.py:1994-1995 have no assertion that fails if reverted.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:2259 follows the module's established idiom of a module-level helper the by-path-loaded snapshot reaches as module._x, and the new \"ended_session\" row field is registered in DUTY_ROW_FIELDS at reckon/crew/obligations.py:295 so a narrowed fields= read still carries it.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/obligations.py:2240-2256 delegates reachability to reckon/crew/harness_sessions.py:74 addresses instead of re-reading records, and reuses _live_item and _seconds_since; the project live-session set is new because plan_coordinator._live_sessions at reckon/crew/plan_coordinator.py:221 answers dispatching state, not process liveness.\nFINDING reckon/crew/obligation_snapshot.py:1453 non-blocking: QUEUED_POINTER_DUTY_KINDS omits the new orphaned-refusal kind, so without_departed_run_duties:1743 never phase-settles the row; a station answer held past the request's launch, discard or stall keeps listing it, and the row's own next_command (reckon crew discard --run <id>) would then act on a run that has already left the queue \u2014 the staleness the set exists to prevent for queued-awaiting-session and queued-contract-refused, and the node was fenced to this file so the repair is in scope.\nFINDING tests/test_an_orphaned_refusal_reaches_a_live_session.py:120 non-blocking: \"assert row[\\\"next_command\\\"], row\" cannot fail, because _orphaned_refusal_item at reckon/crew/obligations.py:2330 supplies a non-empty fallback whatever the refusal carries, so it is not a guard on the remedy being the refusal's own as the evidence fragment claims.\nFINDING reckon/crew/obligation_snapshot.py:1994 non-blocking: the snapshot half (the two FleetState fields, the _build_fleet_state read at :2084-2091 and the _payload_for_state extension at :2258) carries no test, so the \"a snapshot and a derivation list the same orphan\" parity claim is prose only and those lines could be reverted with every test still green.",
+  "review_checks": {},
+  "review_run_id": "r-20261122T212907053667-review-of-a-queue-holds-the-whole-plan-s50-bd4162aba459",
+  "reviewed_base_sha": "9ed4c9ee2e01533b4e68d56dc381075e437da704",
+  "reviewed_head_sha": "bd4162aba459a22a6376219eab868ab31b8e8ff6",
+  "reviewed_run_id": "r-20261122T143041845943-a-queue-holds-the-whole-plan-s50",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:28:09.897078+00:00",
+  "total": 108
+}

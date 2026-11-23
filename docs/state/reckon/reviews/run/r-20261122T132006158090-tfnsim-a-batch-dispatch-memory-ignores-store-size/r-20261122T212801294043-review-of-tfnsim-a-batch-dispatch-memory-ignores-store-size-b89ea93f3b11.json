@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1221",
+    "reckon/crew/dispatch_batch.py:1036",
+    "reckon/crew/dispatch_batch.py:1130",
+    "reckon/crew/dispatch_batch.py:1245",
+    "reckon/roadmap.py:3857",
+    "reckon/crew/admission/readiness.py:645",
+    "reckon/crew/recovery_stream.py:339"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T00:27:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-b89ea93f3b11",
+      "recorded_at": "2026-11-23T02:07:04.207225+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": 38,
+      "severity": "blocking",
+      "text": "the paragraph claims all three criteria hold and that every difference quoted is between arms taken in one job on one home, but the store pair it reports is measure/logs16/head-40 1.180 GiB to head-40-store2 1.113 GiB on /tmp/tfnsim16-UwGY, while the base control it quotes at +53.2 percent is measure/logs14/base-40 2.939 GiB to base-40-store2 4.503 GiB on /tmp/batch-seed14-fa382X at revision 4a98aef2, not the stated base 0d4e5085 - a different prepared home and a different revision - and the only same-home, same-job pairing of the head's store term, measure/logs17 head-40 0.945 GiB to head-40-store2 1.188 GiB, reads +25.7 percent, opposite in sign and outside the 10 percent the section allows, so the store-doubling criterion is not established and plan-verdict 'passed' cannot rest on this evidence. The single-store arm also differs 1.180 to 0.945 GiB between logs16 and logs17, so run-to-run noise alone is larger than the -5.7 percent effect reported. Recommend fold: re-measure the base and head forty-entry store pair on one home in one job, then state the verdict again."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": 46,
+      "severity": "non-blocking",
+      "text": "the projection cases are said to have failed with 2 failed and 4 passed in 1.97s, but the log the manifest cites, negative-control-projections.log, records 2 failed and 4 passed in 4.53s, so a figure the record quotes cannot be reconciled with its own log. Recommend fold: correct the quoted duration."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 888,
+      "severity": "non-blocking",
+      "text": "_plan_history has no assertion that fails if it regresses - the decode cases drive queue_batch and the profiling arms run dispatch --batch, neither of which reaches it, since it is called only from queue_plan at line 969 - so replacing it with the whole-project history read would leave every gate green. Recommend fold: add a case driving queue_plan over a named plan and assert the store read is plan-scoped."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "plan-commits names only a62627bc98 and 1a7841958a while the fragment's text describes the plan-history read landed by bcfe9b0f9b and the shared bounded map landed by c9c388b42c, so the record cannot be traced from its declared commits to the behaviour it reports. Recommend fold: extend plan-commits to every commit whose code the text describes."
+    },
+    {
+      "file": "tests/test_a_batch_dispatch_memory_ignores_store_size.py",
+      "line": 459,
+      "severity": "non-blocking",
+      "text": "the two projection assertions compare the call the code under test made against the same production constants it passed - line 459 expects readiness._LANDING_FIELDS and line 487 expects recovery_stream._RATE_FIELDS - so widening either constant to carry the brief, the documents or the budget moves the expected side with the actual and leaves both assertions true; only the literal check on line 462 and 491 rejects the single key budget, so a widened projection that adds any other field would pass. The assertions do guard against dropping the fields or plan argument, and against the row carrying budget, but not against the field set growing. Recommend fold: assert each field set against a literal tuple the test names."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 0e368058cd: c9c388b42c moves the section index onto file_memo.bounded_map and adds the named-plan-set case, bcfe9b0f9b adds _plan_history and rewrites _built_once over named plans, a62627bc98 adds the _LANDING_FIELDS and _RATE_FIELDS projections and _bounded_rate_rows, 1a7841958a adds the two projection cases, and 9c1220f32f, 9350c28ed2 and b89ea93f3b rewrite the fragment and regenerate the figure.",
+    "done_when": "The done_when asks the gate to show the eight-entry ratio under 0.5, the forty-entry peak under +10 percent when the store doubles, and under +10 percent when the plan documents double; measure/logs16 and measure/logs17 carry resolved revisions, literal commands and closing EXIT= lines, the eight-entry ratio reads 0.348 and the plan-doubling arm reads -1.7 percent, but the store-doubling arms disagree in sign between jobs (-5.7 percent in logs16, +25.7 percent in logs17), so one of the three criteria is not established by the gate the worker ran.",
+    "goal": "The node's goal is to bound a batch dispatch's peak memory by the plans it names; the commits since 0e368058cd do that - _built_once derives the roadmap over the named plans (reckon/crew/dispatch_batch.py:246), _plan_history reads one plan's rows from the store's plan index (dispatch_batch.py:888), the landing verdict and lane rate project their fields (reckon/crew/admission/readiness.py:544, reckon/crew/recovery_stream.py:187), and the section-hold index is the shared bounded map (reckon/crew/section_holds.py:170) - and the eight-entry peak falls from 3.294 to 1.145 GiB (0.348 of base) while the forty-entry decode count falls from 30,913 to 196.",
+    "manifest": "Read; status complete, it names the sixteen commits, records baseline_suite 58 passed at 0d4e5085 and after_suite 64 passed at 1a7841958a (both EXIT=0, no failure ids) and a projection negative control of 2 failed and 4 passed; it quotes the store term as -5.7 percent from logs16 without mentioning logs17's opposite result for the same arms.",
+    "write_paths": "The declared write paths name reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, reckon/roadmap.py, reckon/crew/admission/readiness.py, reckon/crew/recovery_stream.py, the test file, the evidence fragment and the figure directory; every one of the seven paths in git diff 0e368058cd..b89ea93f3b is in that list, and no commit adds a path outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_dispatch_memory_ignores_store_size.py reddens when the readiness and recovery_stream projections are reverted (negative-control-projections.log, 2 failed, EXIT=1), but reckon/crew/dispatch_batch.py:888 _plan_history is reached only from queue_plan at line 969 and no added assertion fails if it is replaced by the whole-history read; the projection cases also read their expected field set from the same production constant the code under test passes, so widening that constant leaves them green.",
+    "evidence": "measure/logs16/head-40.json and measure/logs16/head-40-store2.json were taken on /tmp/tfnsim16-UwGY, while the base control the fragment pairs them with is measure/logs14/base-40 at revision 4a98aef2 on /tmp/batch-seed14-fa382X, a different home and revision, and measure/logs17 pairs the same head arms on one home at +25.7 percent.",
+    "fit": "reckon/crew/section_holds.py:170 uses file_memo.bounded_map and reckon/crew/admission/readiness.py:544 names a field tuple in the surrounding constant style, with no plan, sprint or ticket identifier in the added source.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:246 rebuilds the roadmap over the named plans and the eight-entry peak falls to 0.348 of base (measure/logs17 head-8 1.145 GiB against base-8 3.294 GiB), so the bounded-batch property the goal names holds even though the forty-entry store term is unproven.",
+    "reuse": "reckon/crew/section_holds.py:170 now extends file_memo.BoundedMap rather than forking it, and both projections go through run_store.stored_run_rows (reckon/crew/admission/readiness.py:585), the repository's owner of a selected store read.",
+    "scope_discipline": "git diff 0e368058cd..b89ea93f3b touches only the declared write paths, including reckon/crew/admission/readiness.py and reckon/crew/recovery_stream.py, which the declaration names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to bound a batch dispatch's peak memory by the plans it names; the commits since 0e368058cd do that - _built_once derives the roadmap over the named plans (reckon/crew/dispatch_batch.py:246), _plan_history reads one plan's rows from the store's plan index (dispatch_batch.py:888), the landing verdict and lane rate project their fields (reckon/crew/admission/readiness.py:544, reckon/crew/recovery_stream.py:187), and the section-hold index is the shared bounded map (reckon/crew/section_holds.py:170) - and the eight-entry peak falls from 3.294 to 1.145 GiB (0.348 of base) while the forty-entry decode count falls from 30,913 to 196.\nVERDICT done_when: The done_when asks the gate to show the eight-entry ratio under 0.5, the forty-entry peak under +10 percent when the store doubles, and under +10 percent when the plan documents double; measure/logs16 and measure/logs17 carry resolved revisions, literal commands and closing EXIT= lines, the eight-entry ratio reads 0.348 and the plan-doubling arm reads -1.7 percent, but the store-doubling arms disagree in sign between jobs (-5.7 percent in logs16, +25.7 percent in logs17), so one of the three criteria is not established by the gate the worker ran.\nVERDICT write_paths: The declared write paths name reckon/crew/dispatch_batch.py, reckon/crew/section_holds.py, reckon/roadmap.py, reckon/crew/admission/readiness.py, reckon/crew/recovery_stream.py, the test file, the evidence fragment and the figure directory; every one of the seven paths in git diff 0e368058cd..b89ea93f3b is in that list, and no commit adds a path outside it.\nVERDICT manifest: Read; status complete, it names the sixteen commits, records baseline_suite 58 passed at 0d4e5085 and after_suite 64 passed at 1a7841958a (both EXIT=0, no failure ids) and a projection negative control of 2 failed and 4 passed; it quotes the store term as -5.7 percent from logs16 without mentioning logs17's opposite result for the same arms.\nVERDICT diff: Read commit by commit against 0e368058cd: c9c388b42c moves the section index onto file_memo.bounded_map and adds the named-plan-set case, bcfe9b0f9b adds _plan_history and rewrites _built_once over named plans, a62627bc98 adds the _LANDING_FIELDS and _RATE_FIELDS projections and _bounded_rate_rows, 1a7841958a adds the two projection cases, and 9c1220f32f, 9350c28ed2 and b89ea93f3b rewrite the fragment and regenerate the figure.\nCALL_SITES: reckon/crew_dispatch_commands.py:1221, reckon/crew/dispatch_batch.py:1036, reckon/crew/dispatch_batch.py:1130, reckon/crew/dispatch_batch.py:1245, reckon/roadmap.py:3857, reckon/crew/admission/readiness.py:645, reckon/crew/recovery_stream.py:339\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:246 rebuilds the roadmap over the named plans and the eight-entry peak falls to 0.348 of base (measure/logs17 head-8 1.145 GiB against base-8 3.294 GiB), so the bounded-batch property the goal names holds even though the forty-entry store term is unproven.\nSCORE evidence: 10\nJUSTIFICATION evidence: measure/logs16/head-40.json and measure/logs16/head-40-store2.json were taken on /tmp/tfnsim16-UwGY, while the base control the fragment pairs them with is measure/logs14/base-40 at revision 4a98aef2 on /tmp/batch-seed14-fa382X, a different home and revision, and measure/logs17 pairs the same head arms on one home at +25.7 percent.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 0e368058cd..b89ea93f3b touches only the declared write paths, including reckon/crew/admission/readiness.py and reckon/crew/recovery_stream.py, which the declaration names.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_batch_dispatch_memory_ignores_store_size.py reddens when the readiness and recovery_stream projections are reverted (negative-control-projections.log, 2 failed, EXIT=1), but reckon/crew/dispatch_batch.py:888 _plan_history is reached only from queue_plan at line 969 and no added assertion fails if it is replaced by the whole-history read; the projection cases also read their expected field set from the same production constant the code under test passes, so widening that constant leaves them green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/section_holds.py:170 uses file_memo.bounded_map and reckon/crew/admission/readiness.py:544 names a field tuple in the surrounding constant style, with no plan, sprint or ticket identifier in the added source.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/section_holds.py:170 now extends file_memo.BoundedMap rather than forking it, and both projections go through run_store.stored_run_rows (reckon/crew/admission/readiness.py:585), the repository's owner of a selected store read.\nFINDING docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html:38 blocking: the paragraph claims all three criteria hold and that every difference quoted is between arms taken in one job on one home, but the store pair it reports is measure/logs16/head-40 1.180 GiB to head-40-store2 1.113 GiB on /tmp/tfnsim16-UwGY, while the base control it quotes at +53.2 percent is measure/logs14/base-40 2.939 GiB to base-40-store2 4.503 GiB on /tmp/batch-seed14-fa382X at revision 4a98aef2, not the stated base 0d4e5085 - a different prepared home and a different revision - and the only same-home, same-job pairing of the head's store term, measure/logs17 head-40 0.945 GiB to head-40-store2 1.188 GiB, reads +25.7 percent, opposite in sign and outside the 10 percent the section allows, so the store-doubling criterion is not established and plan-verdict 'passed' cannot rest on this evidence. The single-store arm also differs 1.180 to 0.945 GiB between logs16 and logs17, so run-to-run noise alone is larger than the -5.7 percent effect reported. Recommend fold: re-measure the base and head forty-entry store pair on one home in one job, then state the verdict again.\nFINDING docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html:46 non-blocking: the projection cases are said to have failed with 2 failed and 4 passed in 1.97s, but the log the manifest cites, negative-control-projections.log, records 2 failed and 4 passed in 4.53s, so a figure the record quotes cannot be reconciled with its own log. Recommend fold: correct the quoted duration.\nFINDING reckon/crew/dispatch_batch.py:888 non-blocking: _plan_history has no assertion that fails if it regresses - the decode cases drive queue_batch and the profiling arms run dispatch --batch, neither of which reaches it, since it is called only from queue_plan at line 969 - so replacing it with the whole-project history read would leave every gate green. Recommend fold: add a case driving queue_plan over a named plan and assert the store read is plan-scoped.\nFINDING docs/evidence/fragments/the-fleet-node-stays-inside-its-memory/tfnsim-a-batch-dispatch-memory-ignores-store-size.html:13 non-blocking: plan-commits names only a62627bc98 and 1a7841958a while the fragment's text describes the plan-history read landed by bcfe9b0f9b and the shared bounded map landed by c9c388b42c, so the record cannot be traced from its declared commits to the behaviour it reports. Recommend fold: extend plan-commits to every commit whose code the text describes.\nFINDING tests/test_a_batch_dispatch_memory_ignores_store_size.py:459 non-blocking: the two projection assertions compare the call the code under test made against the same production constants it passed - line 459 expects readiness._LANDING_FIELDS and line 487 expects recovery_stream._RATE_FIELDS - so widening either constant to carry the brief, the documents or the budget moves the expected side with the actual and leaves both assertions true; only the literal check on line 462 and 491 rejects the single key budget, so a widened projection that adds any other field would pass. The assertions do guard against dropping the fields or plan argument, and against the row carrying budget, but not against the field set growing. Recommend fold: assert each field set against a literal tuple the test names.\n",
+  "review_run_id": "r-20261122T212801294043-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-b89ea93f3b11",
+  "reviewed_base_sha": "0e368058cdbca497c168dcba732c559b09681f59",
+  "reviewed_head_sha": "b89ea93f3b11e345c6f658dd56a7f10a0e18c9b7",
+  "reviewed_run_id": "r-20261122T132006158090-tfnsim-a-batch-dispatch-memory-ignores-store-size",
+  "reviewer_run_id": "r-20261122T212801294043-review-of-tfnsim-a-batch-dispatch-memory-ignores-store-size-b89ea93f3b11",
+  "scores": {
+    "durability": 12,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T01:09:47.478159+00:00",
+  "total": 93
+}

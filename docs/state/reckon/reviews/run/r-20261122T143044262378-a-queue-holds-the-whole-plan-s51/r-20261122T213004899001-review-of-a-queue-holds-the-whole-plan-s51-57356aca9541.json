@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:_queue_batch",
+    "reckon/crew/admission/release.py:resolve_waits",
+    "reckon/crew/admission/wait_refs.py:_validated_batch_waits",
+    "reckon/crew/admission/selection.py:admit_once"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-22T23:58:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/readiness.py",
+      "line": "435",
+      "severity": "non-blocking",
+      "text": "non-blocking: _other_project_plan_finding returns '' for a whole-plan cross-project wait because it requires parsed.stage, so a dispatch waiting on a malformed plan without a '#section' anchor is still held awaiting-upstream by _dispatch_nonrun_wait_state (readiness.py:1147-1150, empty state -> PENDING) but carries no finding naming the plan and its validation error; the three tests cover only the section-anchored form (WAIT_REF 'upstream:upstream-plan#s1')."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single commit 57356aca95 against 9ed4c9ee2 file by file: readiness.py adds plan_state_or_error/_other_project_plan_finding/preview_wait_phase and a state_of helper, wait_refs.py wraps two strict reads, dispatch_batch.py adds _wait_verdict/_record_wait_findings and dry-run would_phase/wait_holds reporting; all coherent with the goal.",
+    "done_when": "recounted the three cases in tests/test_an_unreadable_upstream_plan_holds_only_its_waiters.py against the done_when: hold-only-the-waiter, dry-run parity and release-after-repair, each with a recorded arm log carrying revision, literal command and closing EXIT=.",
+    "goal": "The node goal is that a malformed plan in one project does not refuse dispatches in another; the diff narrows strict reads to the dispatch's own project (readiness.py:1095-1104, wait_refs.py:385-395) and the test proves the sibling still queues.",
+    "manifest": "the source manifest records complete with the three-case gate, both suite arms (58->61 passed, 0 failures), the base-arm negative control (3 failed EXIT=1) and its retry_failures correctly attributed to scaffolding, all consistent with the logs.",
+    "write_paths": "read the manifest's four declared write paths; every path in git show --stat 57356aca95 is inside them, and the declared optional fragment/figure were not written."
+  },
+  "justifications": {
+    "durability": "the three cases fail at the base revision on the validation error (negative-control-base-arm.log, 3 failed EXIT=1), so the tests guard the defect; the dry-run parity arm's wait_holds check compares two code outputs, backstopped by the absolute would_phase literals at tests/test_an_unreadable_upstream_plan_holds_only_its_waiters.py:262-263.",
+    "evidence": "baseline_suite-1795380192699466708.log reads '58 passed' EXIT=0 at 9ed4c9ee2; after_suite-1795380267477654875.log reads '61 passed' EXIT=0 at 57356aca95; negative-control-base-arm.log reads '3 failed' EXIT=1 at the base, matching the done_when's gate and its negative control.",
+    "fit": "readiness.py:398-412 follows the module's established idiom of broad 'except Exception noqa: BLE001' plan reads (readiness.py:154,203) and names functions by mechanism, introducing no plan or version label.",
+    "goal_fidelity": "reckon/crew/admission/readiness.py:435-452 and lean admission state_of at readiness.py:1095-1104 scope the strict plan read to the dispatch's own project, so a cross-project malformed plan resolves PENDING; tests/test_an_unreadable_upstream_plan_holds_only_its_waiters.py:222-236 shows the waiting request held with its finding while the sibling queues.",
+    "reuse": "preview_wait_phase (readiness.py:454) extends _release.resolve_waits alongside the queue-time writer rather than re-deriving phases, and plan_state_or_error wraps _plan_state_and_text; a search of readiness.py, wait_refs.py, release.py and _schema.py found no pre-existing state-or-error wrapper or wait-phase preview to extend.",
+    "scope_discipline": "git show --stat 57356aca95 lists only reckon/crew/admission/readiness.py, wait_refs.py, dispatch_batch.py and the new test, every one inside the four declared write paths and nothing else."
+  },
+  "project": "reckon",
+  "review_method": "read-only artefact review of the landed commit against its base; no suite re-run",
+  "review_run_id": "r-20261122T213004899001-review-of-a-queue-holds-the-whole-plan-s51-57356aca9541",
+  "reviewed_base_sha": "9ed4c9ee2e01533b4e68d56dc381075e437da704",
+  "reviewed_head_sha": "57356aca95413a52d6945f177a1a1ba846ec7519",
+  "reviewed_run_id": "r-20261122T143044262378-a-queue-holds-the-whole-plan-s51",
+  "reviewer_run_id": "r-20261122T213004899001-review-of-a-queue-holds-the-whole-plan-s51-57356aca9541",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T00:28:52.272313+00:00",
+  "total": 112
+}

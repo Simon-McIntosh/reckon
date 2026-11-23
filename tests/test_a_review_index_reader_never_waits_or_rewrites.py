@@ -64,7 +64,7 @@ def test_a_held_index_lock_does_not_hold_a_reader(stored) -> None:
 def test_a_reconciliation_that_finds_nothing_writes_nothing(stored) -> None:
     directory, _run_ids, _home = stored
     review_records.store_index_document(directory)
-    index = directory / ".review-index" / "index.json"
+    index = review_records._index_document_path(directory)
     before = os.stat(index)
     transient = directory / ".a-writer-temporary"
     transient.write_text("x", encoding="utf-8")

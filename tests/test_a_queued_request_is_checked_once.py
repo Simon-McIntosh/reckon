@@ -15,6 +15,7 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew.node import TaskNode
+from tests.test_review_plan_command import CONFIG
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 SECTIONS = ("s2", "s3")
@@ -141,6 +142,7 @@ def _node(section: str) -> TaskNode:
         write_paths=[f"{section}.txt"],
         time_budget="20m",
         spec_level="exact",
+        manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
     )
 
 

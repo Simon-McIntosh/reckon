@@ -1987,6 +1987,12 @@ class FleetState:
         default_factory=dict
     )
     unlanded_source: list[dict[str, Any]] = dataclass_field(default_factory=list)
+    # The refusals an ended dispatcher left behind, and the project's sessions a
+    # live process still carries. Both are a property of the fleet, derived once
+    # here so a sweep reads the harness's session records once rather than once
+    # per session it publishes.
+    orphaned_refusals: list[dict[str, Any]] = dataclass_field(default_factory=list)
+    orphan_live_sessions: set[str] = dataclass_field(default_factory=set)
     # One reading of the promotion request directory for the whole sweep. A
     # slice that builds its own would decode every request once per session.
     promotion_index: Any = None
@@ -2075,13 +2081,22 @@ def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetSta
                 # for every session it serves; deriving the index per slice
                 # decoded every request once per session.
                 promotion_index = request_index()
+                classified_rows = module._classified_rows(project)
+                orphaned_refusals, orphan_live_sessions = (
+                    module.orphaned_refusal_readings(
+                        project,
+                        classified=classified_rows,
+                        pointers=list(pointers.values()),
+                        now=instant,
+                    )
+                )
                 state = FleetState(
                     project=project,
                     now=instant,
                     config=config,
                     grace=grace,
                     floors=floors,
-                    rows=module._classified_rows(project),
+                    rows=classified_rows,
                     pointers=pointers,
                     acknowledged=module._acknowledgements_in_force(
                         project, now=instant
@@ -2100,6 +2115,8 @@ def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetSta
                     ),
                     unlanded_source=module._unlanded_source_items(project),
                     promotion_index=promotion_index,
+                    orphaned_refusals=orphaned_refusals,
+                    orphan_live_sessions=orphan_live_sessions,
                 )
     state.findings = list(skipped_records)
     return state
@@ -2232,6 +2249,16 @@ def _payload_for_state(state: FleetState, session: str) -> dict[str, Any]:
             session,
             now=state.now,
             pointers=state.pointers.values(),
+        )
+    )
+    # A refused request whose dispatcher has ended reaches a live session, from
+    # the same reading the derivation uses, so a snapshot and a derivation over
+    # the same files list the same orphan.
+    items.extend(
+        module._orphaned_refusals_for_session(
+            state.orphaned_refusals,
+            project_live_sessions=state.orphan_live_sessions,
+            session=session,
         )
     )
     # Read once, for the first queued row this session owns, from the ordering

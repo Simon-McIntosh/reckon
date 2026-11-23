@@ -1,0 +1,55 @@
+<section id="queued-work-needs-no-workaround-s42-landing">
+  <h2>A landing leaves none of its base trees behind</h2>
+
+  <p><strong>What changed.</strong> A landing measure builds its base and
+  reference trees under the node-local scratch root and releases them on every
+  exit its own process reaches. A measure whose process is killed partway — by
+  a signal, or by the scheduler — reaches no such release, so its tree stays
+  where it stood. The fleet's shared orphan sweep does read such a tree, but it
+  waits two hours of ctime grace before it will remove one, and a busy fleet
+  spends that window refusing dispatches at the scratch floor. The fleet node's
+  <code>/tmp</code> held two of the lander's 1.6 GB trees for hours that way,
+  with no process holding either.</p>
+
+  <p>Every landing pass now sweeps the trees a measure names under the scratch
+  root before it builds its own. A tree no live process holds is removed and the
+  removal is printed with the tree's path and its bytes. A tree a concurrent
+  measure still holds is read from the process table exactly as the orphan sweep
+  reads it, so only abandoned trees are reclaimed. The partitioned base
+  placeholder now carries an open descriptor on the directory itself, with no
+  file inside it, so a concurrent pass keeps it while a partitioned arm is still
+  using it without the placeholder ceasing to read as empty.</p>
+
+  <p>The deciding fact is that the process which built the tree is gone, not how
+  old the tree is. That is what makes the next pass sufficient: no timer, no
+  grace, and nothing left for a coordinator to reclaim by hand.</p>
+
+  <h3 id="queued-work-needs-no-workaround-s42-measured">Measured</h3>
+
+  <p>The test points the scratch root at a temporary directory and drives four
+  measures through the real checkout builder in child processes: one that
+  passes, one refused, one that raises, and one whose process is killed with
+  <code>SIGKILL</code> partway with no chance to run its release. A fifth tree
+  is held open by a live descriptor in the same root. After the next landing
+  pass no measure tree remains, the removal of the killed tree is reported with
+  its path and bytes, and the held tree is untouched.</p>
+
+  <table id="queued-work-needs-no-workaround-s42-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's four exits and the held tree</td>
+        <td>working tree</td>
+        <td>1 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the negative control</td>
+        <td>base revision extraction</td>
+        <td>1 failed, <code>EXIT=1</code> — the killed tree survives the next
+        pass</td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative control is the declared mutation: with the sweep absent, the
+  killed measure's tree is still on disk after the next pass, and the test
+  fails at <code>assert not killed.exists()</code>.</p>
+</section>

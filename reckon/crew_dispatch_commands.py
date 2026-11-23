@@ -450,7 +450,7 @@ def _emit_held_result(
         # upstream section or sits in the admission order, so it reports itself
         # as queued; only a run that existed before the call is answered back.
         created = bool(queued.get("created"))
-        queued_now = created or phase == "queued"
+        queued_now = created or bool(queued.get("queued", phase == "queued"))
         backend = str(queued.get("backend") or "")
         lane_label = f"backend {backend!r}" if backend else "the local lane"
         if phase == "queued":
@@ -460,6 +460,7 @@ def _emit_held_result(
             detail = f"{lane_label} created run {run_id}, which is {phase}"
         else:
             detail = f"run {run_id} is already {phase} for this {noun}"
+        detail = queued.get("detail") or detail
         result = {
             "ok": True,
             "queued": queued_now,
@@ -470,6 +471,9 @@ def _emit_held_result(
             "reason": reason,
             "lane_gate": lane_gate,
         }
+        for key in ("plan_reviews", "waits", "backend"):
+            if key in queued:
+                result[key] = queued[key]
         if report_run_id is not None:
             result["report_run_id"] = report_run_id
         _emit(result, pretty)
@@ -2245,6 +2249,7 @@ def crew_dispatch(
                 default_backend_override=flight_backend_override,
                 member=member,
                 allow_unreviewed_plan=allow_unreviewed_plan,
+                queue_review_owed=True,
                 session=session,
                 watch_required=True,
                 watch_override=no_watch,
@@ -2408,6 +2413,24 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(2)
+        if resolution.plan_review_hold is not None:
+            from reckon.crew.queue_admission import PLAN_REVIEW_HELD_REASON
+
+            _emit_crew_result(
+                _with_resolved_overrides(
+                    {
+                        **resolution.as_dict(),
+                        "dry_run": True,
+                        "would_queue": True,
+                        "phase": "held",
+                        "reason": PLAN_REVIEW_HELD_REASON,
+                        "detail": resolution.plan_review_hold,
+                    },
+                    override_resolution,
+                ),
+                pretty,
+            )
+            raise click.exceptions.Exit(0)
         admission = resolution.admission or {}
         if admission.get("state") == "refused":
             _emit(

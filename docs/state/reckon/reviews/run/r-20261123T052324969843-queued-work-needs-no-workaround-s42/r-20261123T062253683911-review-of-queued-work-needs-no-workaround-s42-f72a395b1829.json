@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T06:23:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "1778",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sweep removes any landing-base- tree with no live holder, with no creation-time gate, so a concurrent measure killed by the scheduler is reclaimed as intended but a tree created during the current pass before its .measurement-owner descriptor is opened (the mkdtemp-to-open window in base_checkout) can be removed by another process's sweep and the landing refused."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal, from plan section 42, is that a killed landing leaves no base or reference tree under the scratch root once the next pass runs; reckon/crew/landing_measure.py:1734 sweep_abandoned_base_trees is called at 1811 and 1872, before each builder creates its own tree.\nVERDICT done_when: the done_when names tests/test_a_landing_leaves_none_of_its_base_trees_behind.py driving four real exits plus a live-held tree; the manifest records that run (59 passed) and the negative control (1 failed, EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/landing_measure.py, tests/test_a_landing_leaves_none_of_its_base_trees_behind.py and docs/evidence/fragments/queued-work-needs-no-workaround/s42.html; the diff touches exactly those three.\nVERDICT manifest: read; it states the gate and the base arm, records 58 passed at the base and 59 at the head, and names the base-revision log where the killed tree survives.\nVERDICT diff: read commit by commit (787aea2d80 adds the sweep and its two call sites, f72a395b18 adds the evidence record); the change is the sweep, the partition-placeholder holder fd, and the test.\nCALL_SITES: reckon/crew/landing_measure.py:1707, reckon/crew/landing_measure.py:1742, reckon/crew/promotion_evidence.py:1649, reckon/crew/promotion_records.py:1237, reckon/crew/queue_landing.py:1232, reckon/crew/queue_landing.py:1242\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1734 removes unheld landing-base- trees and prints each with path and bytes, wired at 1811 and 1872 so the next pass reclaims a killed measure's tree.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is tests/test_a_landing_leaves_none_of_its_base_trees_behind.py, and the recorded logs reconcile at 58 passed base / 59 passed, EXIT=0 in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T052324969843-queued-work-needs-no-workaround-s42/after_suite-1795414579590598534.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths are all inside the declared write paths in the manifest at line 8.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_leaves_none_of_its_base_trees_behind.py:164 asserts not killed.exists(), and the base-revision control reinstates the sweep's absence to redden exactly that assertion (1 failed, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the sweep follows the surrounding idiom of reckon/crew/landing_measure.py:1906 (lazy imports, uppercase module constant, stderr reporting) and carries no plan or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:1762 reuses reckon/crew/gc.py:1545 _scratch_process_holders and reckon/crew/dispatch_launch.py:953 tree_size_bytes rather than forking the holder reader, over the different population and no-grace policy it owns.\nFINDING reckon/crew/landing_measure.py:1778 non-blocking: the sweep removes any landing-base- tree with no live holder, with no creation-time gate, so a concurrent measure killed by the scheduler is reclaimed as intended but a tree created during the current pass before its .measurement-owner descriptor is opened (the mkdtemp-to-open window in base_checkout) can be removed by another process's sweep and the landing refused.\nreviewed_base_sha: 8953532a6f2d54dd570a8f77387e5aa429659a44\nreviewed_head_sha: f72a395b182930cdc3dde4fb1ff11bcc8fda253d\n",
+  "review_run_id": "r-20261123T062253683911-review-of-queued-work-needs-no-workaround-s42-f72a395b1829",
+  "reviewed_base_sha": "8953532a6f2d54dd570a8f77387e5aa429659a44",
+  "reviewed_head_sha": "f72a395b182930cdc3dde4fb1ff11bcc8fda253d",
+  "reviewed_run_id": "r-20261123T052324969843-queued-work-needs-no-workaround-s42",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T06:49:07.318830+00:00",
+  "total": 108
+}

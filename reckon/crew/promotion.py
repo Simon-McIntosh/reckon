@@ -2384,14 +2384,11 @@ def _adopt_a_plan_edited_after_the_snapshot(
 ) -> _PlanWriteSnapshot | None:
     """The snapshot to commit when the plan was edited after ours was taken.
 
-    A landing comment is an append, so the document now on disk is the other
-    writer's committed plan plus this run's comment. That is recognised by
-    re-rendering the plan at HEAD with the state parsed from disk and requiring
-    the result to be byte-identical to the file: a writer that changed anything
-    else does not match, and the caller's refusal stands. When it does
-    match, the rollback target becomes HEAD's plan — the state a refusal must
-    leave behind — rather than the preimage this run snapshotted before the
-    other writer's edit existed.
+    A committed edit plus landing comments can roll back to HEAD. An
+    uncommitted state write must instead keep its current bytes on refusal:
+    HEAD and the snapshot both predate the write the editor already completed.
+    State-only changes must reproduce from HEAD; structural changes require
+    the store's content-bound receipt. Unrecorded authored edits still refuse.
     """
     if not snapshot.comment_id:
         return None
@@ -2403,17 +2400,43 @@ def _adopt_a_plan_edited_after_the_snapshot(
         snapshot.checkout, snapshot.path, current_text
     )
     if recognised is None:
-        return None
-    head_text, _head_state, actual = recognised
+        from reckon import _plan_html
+
+        relative = snapshot.path.relative_to(snapshot.checkout).as_posix()
+        shown = _git(snapshot.checkout, "show", f"HEAD:{relative}", check=False)
+        if shown.returncode:
+            return None
+        head_text = shown.stdout
+        actual = _plan_html.read_state(current_text)
+        try:
+            rendered = _plan_html.write_state(
+                head_text, actual, drop_authored_impl_meta=True
+            )
+        except ValueError:
+            # An inserted section has a heading that HEAD cannot supply.
+            rendered = None
+        if rendered != current_text and not _store.recorded_plan_text_write(
+            snapshot.path,
+            snapshot.content.decode("utf-8"),
+            current_text,
+            authorship="state",
+        ):
+            return None
+        rollback = current
+        index = snapshot.index
+    else:
+        head_text, _head_state, actual = recognised
+        rollback = head_text.encode("utf-8")
+        index = snapshot.index_entry()
     entries = (actual.get("comments") or {}).get(snapshot.comment_anchor or "", [])
     if not any(str(item.get("id") or "") == snapshot.comment_id for item in entries):
         return None
     head_bytes = head_text.encode("utf-8")
     return replace(
         snapshot,
-        content=head_bytes,
+        content=rollback,
         mode=snapshot.path.stat().st_mode,
-        index=snapshot.index_entry(),
+        index=index,
         head_entry=snapshot.committed_entry(),
         head_content=head_bytes,
         expected_content=current,
@@ -2517,7 +2540,9 @@ def _commit_with_plan_snapshot(
     checkpoint.require_owned_index(current)
     checkpoint.commit_attempted = True
     try:
-        return _commit_landing_writes(**kwargs)
+        return _commit_landing_writes(
+            **kwargs, expected_contents={checkpoint.path: current}
+        )
     except BaseException as exc:
         rollback = getattr(exc, LANDING_ROLLBACK_ATTRIBUTE, {})
         if (
@@ -2538,6 +2563,30 @@ def _commit_with_plan_snapshot(
         if checkpoint is not snapshot:
             checkpoint.restore(plan_locked=True)
         raise
+
+
+def _refuse_a_disagreeing_plan(content: bytes, path: Path) -> None:
+    """Refuse a landing whose plan's section record disagrees with its declaration.
+
+    The typed read refuses such a plan, so a landing that reached its comment
+    write would fail there with the parser's own message and no account of
+    which file to repair. Naming the section and both values here stops the
+    landing before either store is written, so a refused promotion leaves the
+    plan and the ledger exactly as they were.
+    """
+    from reckon import _plan_html
+
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        return
+    disagreements = _plan_html.section_status_disagreements(text)
+    if not disagreements:
+        return
+    raise CrewError(
+        f"{_plan_html.section_status_disagreement_message(disagreements[0])} "
+        f"(refusing to commit {path}; repair the plan before promoting)"
+    )
 
 
 def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callable:
@@ -2586,6 +2635,7 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
                 ),
             )
             kwargs["_plan_snapshot"] = snapshot
+            _refuse_a_disagreeing_plan(snapshot.content, path)
             try:
                 return promote(run_id, **kwargs)
             except BaseException as exc:

@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:measure_landing_group",
+    "reckon/crew/queue_landing.py:measure_a_coordinator_landing",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/queue_landing.py:_verified_measurement",
+    "reckon/crew/queue_landing.py:_promoted_candidate",
+    "reckon/crew/queue_landing.py:run_measurement_request"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T07:08:25Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_holds_no_fleet_checkout_while_its_job_runs.py",
+      "line": 298,
+      "severity": "non-blocking",
+      "text": "The after_suite gate the manifest records runs the node's own test file plus tests/test_a_partitioned_landing_builds_no_base_tree.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, but not tests/test_the_landing_pass_measures_and_lands.py, which is the importer test the blocking finding was reproduced against. The repair's central claim -- that a base checkout failure is again reported as a checkout failure -- therefore rests on the negative-control log rather than on the recorded green gate; a targeted rerun at dbfbd62e passes that test (review-check.log in this run's directory)."
+    }
+  ],
+  "notes": "Incremental review of the commits gained since the run was last reviewed at 366cfd21665ccc1c64e8fb8ca3aee83efb23eea5: acd9b5bfe1 (restore the checkout-failure boundary), faf44633b2 (assert a signalled job records EXIT=143 and removes its tree) and dbfbd62ebe (glob the node-local root the job script exports). Read the diff 366cfd21..dbfbd62e (reckon/crew/queue_landing.py + remodel, tests/test_a_landing_holds_no_fleet_checkout_while_its_job_runs.py +87). Verified the blocking finding's repair by running tests/test_the_landing_pass_measures_and_lands.py::test_an_unusable_scratch_root_refuses_that_run_and_returns and the new test file at dbfbd62e in the reviewed run's worktree: 4 passed, EXIT=0 (review-check.log). Added failures: baseline dd1ff29 log records 61 passed, after dbfbd62e log records 65 passed, both EXIT=0, so added_failure_count 0 from the reviewed run's own arms. Negative controls read: negative-control/base-revision.log (first case red at base), negative-control/checkout-misattribution-without-fix.log (importer test red without the boundary fix), negative-control/signal-without-trap.log (signal case red without the TERM handler, output 'Terminated\\nEXIT=0'). The full delivery range dd1ff29..dbfbd62e also carries reckon/crew/promotion_records.py, outside the declared write paths, which the reviewed run records under outside_scope.",
+  "project": "reckon",
+  "review_run_id": "r-20261123T070731836146-review-of-delivered-work-lands-without-a-coordinator-s48-dbfbd62ebe90",
+  "reviewed_base_sha": "366cfd21665ccc1c64e8fb8ca3aee83efb23eea5",
+  "reviewed_head_sha": "dbfbd62ebe9045de14b5ea56da01cccee9661350",
+  "reviewed_run_id": "r-20261122T191836994460-delivered-work-lands-without-a-coordinator-s48",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20,
+    "total": 111
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T07:25:59.298223+00:00",
+  "total": 111
+}

@@ -1,0 +1,86 @@
+<section id="bpq-owed-review-queues-held-landing">
+  <h2>Review debt queues held and releases through the shared gate</h2>
+  <p>Implementation dispatch stores requests held with <code>plan-review-owed</code>
+  and the review gate's own reason. Admission judges missing design reviews,
+  uncovered content and unanswered findings through that same gate over its
+  cached evidence. Review responses participate in the cache identity, so an
+  answer releases a held section even when no plan text changes.</p>
+  <p>Owed reviews are composed through <code>compose_owed_plan_reviews</code>,
+  scoped to the dispatched plan, with the reflex's eligibility rules. A plan
+  needing both rubrics composes one design and one content review. Dispatch
+  results carry those review runs; the CLI preview reports the corresponding
+  hold without storing requests.</p>
+  <table id="bpq-owed-review-queues-held-measures">
+    <caption>Temporary repositories and crew homes; gates ran on
+    <code>all_debug</code>. The gate log records its exact revision, imported
+    module, working directory, relative command and terminal exit status.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Unreviewed plan, one batch call</td><td>2 sections held;
+      1 design and 1 content review composed; repeat call composes 0 extra reviews.</td></tr>
+      <tr><td>Reviews stored without findings</td><td>Both sections release on
+      the next admission pass.</td></tr>
+      <tr><td>Unanswered finding on one section</td><td>Only that section holds;
+      answering the finding releases it without a plan edit.</td></tr>
+      <tr><td>Composition eligibility</td><td>Editing, terminal and already
+      covered plans compose no new review.</td></tr>
+      <tr><td>Focused gate at <code>cbf666c0ab7f98d81580eb559f1b836eb0c7c7f9</code></td>
+      <td>197 passed in 56.29s; <code>EXIT=0</code>, including CLI preview and launch parity.</td></tr>
+      <tr><td>Required suite at base
+      <code>bc316766333df704e7a671de195467dc836ab4b1</code></td>
+      <td>55 passed in 20.86s; <code>EXIT=0</code>.</td></tr>
+      <tr><td>Required suite at source revision
+      <code>7af35b70046dfd99c6c1842aaca118c07543269a</code></td>
+      <td>55 passed in 19.87s; <code>EXIT=0</code>; zero added failures.</td></tr>
+      <tr><td>Shared-selector control at
+      <code>6632bc8e5dd2b75a2ed5326bc25b865450060fb1</code></td>
+      <td>1 failed in 1.46s; <code>EXIT=1</code>: admission made 0 calls
+      to <code>newest_design_review</code>, where the regression requires 1.</td></tr>
+      <tr><td>Base refusal control</td><td>1 failed in 1.60s;
+      <code>EXIT=1</code>. Dispatch raises <code>PlanReviewMissingError</code>:
+      “carries no stored review under the design rubric”, instead of returning
+      a held request.</td></tr>
+    </tbody>
+  </table>
+  <p><a href="/reckon/evidence/fragments/building-a-plan-queues-all-of-it/s3.html">Focused gate log</a>.
+  Suite and refusal-control logs are retained in the run directory. The
+  manifest records the final delivery revision and suite receipt. Integration
+  with the independently implemented plan-width command is measured by the
+  separately assigned merged-head verification.</p>
+  <p>Admission delegates cached design-review selection to
+  <code>newest_design_review</code>. That owner accepts already-read project
+  records, so rubric filtering and numeric plan-version ordering share one
+  implementation. The two added regressions verify the delegation and cached
+  selection, including other-plan exclusion and an empty iterable that reads
+  nothing from the store.</p>
+  <p>The related queue fixtures now supply complete node contracts, including
+  manifest paths, configured roles and specification levels, so their assertions
+  reach review evaluation. CLI parity assertions read stdout independently of
+  stderr progress.</p>
+  <p id="bpq-owed-review-queues-held-merge-repair">Current primary
+  <code>14327953c585f5848bbba9f778689a8756e7a848</code> was merged at
+  <code>0821b1fd60d1fd6fc35c4bf34678f2399826ecad</code>, retaining
+  review queueing, conditional lane reservations and both CLI acceptance
+  signals. The queue fixture retains its role configuration and manifest path.
+  Both previously failing obligations-view cases pass after this merge,
+  without a change to the classification code.</p>
+  <p id="bpq-owed-review-queues-held-guard-composition">The existing measurement
+  guard now runs before review debt can store a request for a completed
+  section. The control at the merge head failed with the review hold where
+  the measurement refusal was required; its regression now requires that
+  refusal and no live request. Pending admission setups are charged against
+  free reservation seats so concurrent setups cannot each spend one seat.
+  The reservation control observed 10 occupants against a cap of 8; the
+  repaired admission cases and the one-seat and two-seat regressions pass.
+  Completion-refusal assertions now open the command's persisted receipt and
+  require the exact added failure identifiers.</p>
+  <p id="bpq-owed-review-queues-held-current-measure">The extended
+  <code>all_debug</code> gate at
+  <code>cbf666c0ab7f98d81580eb559f1b836eb0c7c7f9</code> reports
+  197 passed in 56.29s (<code>EXIT=0</code>). The refreshed original-base
+  suite reports 55 passed in 21.05s (<code>EXIT=0</code>), and its dispatch
+  refusal control reports 1 failed in 1.74s (<code>EXIT=1</code>) as required.
+  The manifest records the exact final delivery head and its after-suite
+  receipt. This already-promoted run continues through its pending landing
+  by merge alone.</p>
+</section>

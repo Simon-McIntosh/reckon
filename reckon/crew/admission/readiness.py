@@ -379,6 +379,113 @@ def _plan_state_and_text(
     return plan_html_reader.read_state_and_text_file(html_file)
 
 
+def _plan_read_error_text(exc: BaseException) -> str:
+    """One line describing why a plan's state could not be read."""
+    errors = getattr(exc, "errors", None)
+    if callable(errors):
+        try:
+            rows = errors()
+        except Exception:  # noqa: BLE001 - the exception's own text answers
+            rows = ()
+        if rows:
+            message = str(rows[0].get("msg") or "").strip()
+            if message:
+                return message
+    text = str(exc).strip()
+    return text.splitlines()[0] if text else type(exc).__name__
+
+
+def plan_state_or_error(
+    docs_dir: str | Path, slug: str, project: str = ""
+) -> tuple[dict, str]:
+    """One plan's semantic state, answering a failed read instead of raising.
+
+    A malformed plan raises out of the shared parser, and a caller that reads a
+    plan another project owns must not turn that document's defect into its own
+    refusal: the wait is what held on the read, so the failure is the value.
+    Answers ``(state, "")`` when the plan reads and ``({}, reason)`` when it does
+    not, the reason naming the validation error.
+    """
+    try:
+        return _plan_state_and_text(docs_dir, slug, project)[0], ""
+    except Exception as exc:  # noqa: BLE001 - the failure is the value reported
+        return {}, _plan_read_error_text(exc)
+
+
+def _other_project_plan_finding(
+    ref: str, *, project: str, docs_dir: str | Path | None
+) -> str:
+    """The finding for a wait whose target plan belongs to another project.
+
+    Reading a plan strictly is how a project's own malformed document is
+    refused to the coordinator who can repair it. A plan reached through a wait
+    into a *different* project is that project's document, so its failure holds
+    only the requests carrying that one wait: one project's bad plan cannot
+    refuse another's work. Answers ``""`` when the plan reads, when the ref is
+    not a section wait, and when the plan is this pass's own.
+    """
+    from reckon._schema import parse_plan_ref
+
+    text = str(ref or "").strip()
+    if not text or text.startswith(
+        (GATE_REF_PREFIX, REQUEST_REF_PREFIX, READINESS_REF_PREFIX)
+    ):
+        return ""
+    parsed = parse_plan_ref(text)
+    if parsed is None or not parsed.stage or docs_dir is None:
+        return ""
+    target_project = parsed.project or project
+    if not target_project or target_project == project:
+        return ""
+    target_docs = _wait_refs._docs_for_project(
+        target_project, current_project=project, current_docs=Path(docs_dir)
+    )
+    if target_docs is None:
+        return ""
+    _state, error = plan_state_or_error(target_docs, parsed.slug, target_project)
+    if not error:
+        return ""
+    return (
+        f"{target_project}:{parsed.slug}#{parsed.stage}: the plan cannot be read "
+        f"({error}), so this wait stays unresolved until that plan is repaired"
+    )
+
+
+def preview_wait_phase(
+    refs: Sequence[str],
+    *,
+    project: str,
+    plan: str = "",
+    section: str = "",
+    docs_dir: str | Path | None,
+    live: Sequence[Mapping[str, Any]] = (),
+    cache: dict[str, Any] | None = None,
+) -> tuple[str, list[str]]:
+    """What a request's waits resolve to, without storing or moving anything.
+
+    The preview reads the same derivation the queue-time writer applies, so a
+    dry run and the dispatch it previews cannot disagree about whether a
+    request is held, and the findings a read produced are reported beside the
+    phase rather than only on the pointer.
+    """
+    waits = [str(ref) for ref in refs if str(ref).strip()]
+    if not waits:
+        return _release.QUEUED_PHASE, []
+    pointer: dict[str, Any] = {
+        "project": project,
+        "node": {"plan": plan, "section": section},
+        "section": section,
+        "waits": waits,
+    }
+    phase = _release.resolve_waits(
+        pointer,
+        live=[*live, pointer],
+        docs_dir=docs_dir,
+        cache=cache if cache is not None else {},
+    )
+    return phase, list(pointer.get("upstream_obligations") or ())
+
+
 @contextmanager
 def readiness_pass() -> Iterator[None]:
     """Hold one admission pass, whose reads are shared across its requests.
@@ -533,6 +640,25 @@ def _manifest_status(run_id: str, *, issues: list[str] | None = None) -> str:
         return ""
 
 
+#: The fields a section's landing verdict is decided from.
+#:
+#: The verdict asks two things of a row: which plan and section it belongs to,
+#: resolved the way :func:`reckon.ledger.row_plan` resolves a brief-carried
+#: dispatch, and which revision promotion recorded for it. A whole record
+#: carries the brief, the node definition, the budget and every other document
+#: the run wrote beside those, so decoding every field made a batch's peak
+#: follow the store's row count rather than the nodes it names.
+_LANDING_FIELDS = (
+    "run_id",
+    "plan",
+    "impl_move",
+    "node_definition",
+    "node",
+    "section",
+    "promoted_revision",
+)
+
+
 def _ledger_run_rows(
     project: str, plan: str, cache: dict[str, Any] | None
 ) -> list[Mapping[str, Any]] | None:
@@ -552,15 +678,23 @@ def _ledger_run_rows(
     footprint flat: the store selects the plan's rows in SQL and decodes only
     those.
     """
-    from reckon import ledger
+    from reckon import ledger, run_store
 
     key = (_SECTION_RUNS_CACHE_KEY, project, plan)
     if cache is not None and key in cache:
         return cache[key]
     try:
-        data, _version = ledger.load(project, plan=plan)
+        # The store projects the fields the verdict reads and decodes nothing
+        # else, so the read is bounded by this plan's rows rather than by their
+        # width. An absent store answers None and the committed ledger answers
+        # instead; a store holding no delivery for the plan answers empty,
+        # which is the same answer the full projection gave after filtering.
+        stored = run_store.stored_run_rows(project, plan=plan, fields=_LANDING_FIELDS)
+        if stored is None:
+            data, _version = ledger.load(project, plan=plan)
+            stored = list(data.get("runs") or ())
         rows: list[Mapping[str, Any]] | None = [
-            row for row in data.get("runs") or () if isinstance(row, Mapping)
+            row for row in stored if isinstance(row, Mapping)
         ]
     except Exception:  # noqa: BLE001 - an unreadable ledger proves no landing
         rows = None
@@ -861,6 +995,14 @@ def _wait_state(
     mount: object = _MOUNT_UNSET,
 ) -> str:
     """Resolve one wait ref of any of the three kinds."""
+    finding = _other_project_plan_finding(ref, project=project, docs_dir=docs_dir)
+    if finding:
+        # The plan this wait names is another project's malformed document.
+        # Held unresolved and reported, so the requests carrying this wait
+        # stay waiting and every other request in the pass is unaffected.
+        if issues is not None:
+            issues.append(finding)
+        return PENDING
     kind = wait_ref_kind(ref)
     if ref.startswith("readiness:"):
         target = ref[len("readiness:") :]
@@ -991,6 +1133,16 @@ def _dispatch_nonrun_wait_state(
     if parsed is None:
         return PENDING
     target_project = parsed.project or project
+
+    def state_of(docs: Path, slug: str, owner: str) -> dict:
+        # A plan this pass's own project owns is read strictly, so a malformed
+        # document there is refused to the coordinator who can repair it. A
+        # plan another project owns answers its plans' failures as an unread
+        # state: the wait is held, and nothing else in the pass is affected.
+        if owner and owner != project:
+            return plan_state_or_error(docs, slug, owner)[0]
+        return _plan_state_and_text(docs, slug, owner)[0]
+
     target_docs = _wait_refs._docs_for_project(
         target_project, current_project=project, current_docs=docs_dir
     )
@@ -999,7 +1151,7 @@ def _dispatch_nonrun_wait_state(
     text = plan_document_text(target_docs.parent, parsed.slug)
     if not text:
         return PENDING
-    state = _plan_state_and_text(target_docs, parsed.slug, target_project)[0]
+    state = state_of(target_docs, parsed.slug, target_project)
     if gate_ref:
         gate = next(
             (
@@ -1021,9 +1173,9 @@ def _dispatch_nonrun_wait_state(
                 current_docs=docs_dir,
             )
             if source_docs is not None:
-                source_state = _plan_state_and_text(
+                source_state = state_of(
                     source_docs, source.slug, source.project or target_project
-                )[0]
+                )
                 if _wait_refs._section_status(source_state, source.stage) == "done":
                     if _section_run_unlanded(
                         source.project or target_project,

@@ -38,6 +38,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import hashlib
+import io
 import json
 import math
 import os
@@ -46,6 +47,8 @@ import shlex
 import shutil
 import statistics
 import subprocess
+import sys
+import tarfile
 import tempfile
 import threading
 import time
@@ -95,6 +98,20 @@ _EXIT_RECEIPT = re.compile(r"^EXIT=(\d+)[ \t]*$", re.MULTILINE)
 _TREE_BUILD_REFUSAL = re.compile(
     r"^cannot build the measurement tree: .*$", re.MULTILINE
 )
+
+#: The line the scheduler writes when it stops a job at its own time limit. A
+#: job cancelled that way never reaches the EXIT trap its script set, so its
+#: log carries no receipt and the scheduler's line is the only account of why
+#: the arm has no result.
+_TIME_LIMIT_CANCEL = re.compile(
+    r"^(?:slurmstepd: error|srun: error):.*(?:DUE TO TIME LIMIT|Time limit exceeded)",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+#: The job id a scheduler line names, for a cancellation whose submission's
+#: printed id cannot be read. A step cancelled by the time limit is named by
+#: ``STEP <job>.<step>``, and the STEP id's integer part is the job.
+_SCHEDULER_JOB = re.compile(r"\b(?:JOB|STEP) (\d+)\b")
 
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
@@ -359,6 +376,10 @@ class Arm:
     #: that took 900 s is not judged again under a bound that ignores it.
     elapsed_seconds: float = 0.0
     file_count: int = 0
+    #: The scheduler job a partitioned arm ran as and the time limit its
+    #: submission carried. Both are empty for an arm that ran in place.
+    job_id: str = ""
+    time_limit: str = ""
 
     @property
     def readable(self) -> bool:
@@ -384,6 +405,8 @@ class Arm:
             "timed_out": self.timed_out,
             "elapsed_seconds": self.elapsed_seconds,
             "file_count": self.file_count,
+            "job_id": self.job_id,
+            "time_limit": self.time_limit,
         }
 
 
@@ -540,6 +563,24 @@ def _target_name(token: str) -> str:
     while name.startswith("./"):
         name = name[2:]
     return name.rstrip("/")
+
+
+def _distinct_files(paths: Iterable[str], exclude: Iterable[str] = ()) -> list[str]:
+    """The files one command names, each counted once.
+
+    A node's armed test is also an importer when it imports the module the node
+    changed, and a delivery scope may name one file twice. A command that names
+    it twice runs it a second time under the same bound, so every file is named
+    once however many routes put it in the population. ``exclude`` names the
+    files the command already carries, which need not be named again.
+    """
+    taken = {_target_name(token) for token in exclude}
+    seen: dict[str, None] = {}
+    for path in paths:
+        name = _target_name(str(path))
+        if name and name not in taken:
+            seen.setdefault(name, None)
+    return list(seen)
 
 
 def armed_argv(
@@ -824,6 +865,12 @@ def _arm(
             unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
             elapsed_seconds=elapsed,
             file_count=file_count,
+            # A partitioned runner that read the scheduler's own cancel line
+            # reports the timeout here; an arm that simply exceeded the
+            # client-side ceiling is reported by the branch above.
+            timed_out=bool(getattr(finished, "timed_out", False)),
+            job_id=str(getattr(finished, "job_id", "") or ""),
+            time_limit=str(getattr(finished, "time_limit", "") or ""),
         )
 
 
@@ -843,6 +890,14 @@ def partition_for_bound(
     if bound_seconds > _LONG_PARTITION_BOUND_SECONDS:
         return long_partition or "rigel"
     return partition
+
+
+def time_limit_text(bound_seconds: float) -> str:
+    """A scheduler time limit as the ``HH:MM:SS`` a submission carries."""
+    seconds = max(1, math.ceil(bound_seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
 def partition_submission(
@@ -879,10 +934,7 @@ def partition_submission(
     with Path(f"{log_path}.scheduler").open("x", encoding="utf-8"):
         pass
     selected = partition_for_bound(partition, long_partition, bound_seconds)
-    seconds = max(1, math.ceil(bound_seconds))
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    bound = time_limit_text(bound_seconds)
     step = (
         shlex.join(
             [
@@ -1072,6 +1124,23 @@ exit "$status"
                     stream.write(f"{cancelled.stdout or ''}{cancelled.stderr or ''}")
             raise
         output = log.read_text() if log.exists() else ""
+        limit = time_limit_text(timeout)
+        job_id = ""
+        printed = re.match(
+            r"^(\d+)(?:;[^\n]*)?(?:\n|$)", (finished.stdout or "").strip()
+        )
+        if printed:
+            job_id = printed.group(1)
+        # The scheduler's own cancel line is the account of an arm stopped at
+        # the job's time limit: the trap that could have printed a receipt was
+        # killed with everything else, so the log has no receipt and nothing
+        # the arm printed is complete. The job's limit is the bound the
+        # submission carried, and the refusal names both.
+        timed_out = bool(_TIME_LIMIT_CANCEL.search(output))
+        if timed_out:
+            named = _SCHEDULER_JOB.search(output)
+            if named:
+                job_id = job_id or named.group(1)
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
         # The scheduler appends lines of its own to the job's log after the
@@ -1079,10 +1148,15 @@ exit "$status"
         # line rather than as the log's last one; the last such line is the
         # trap's, since the trap prints after everything the arm itself ran.
         receipts = _EXIT_RECEIPT.findall(output)
-        status = int(receipts[-1]) if receipts else 3
+        status = int(receipts[-1]) if receipts and not timed_out else 3
         reason = ""
         refusal = _TREE_BUILD_REFUSAL.search(output)
-        if refusal:
+        if timed_out:
+            reason = (
+                f"the scheduler cancelled job {job_id or 'unknown'} at its "
+                f"{limit} time limit"
+            )
+        elif refusal:
             # The arm's own sentence names the path and the revision, so it is
             # the reason a reader is given rather than a log excerpt.
             reason = refusal.group(0).strip()
@@ -1101,6 +1175,9 @@ exit "$status"
             "",
         )
         returned.unreadable_reason = reason
+        returned.timed_out = timed_out
+        returned.job_id = job_id
+        returned.time_limit = limit
         return returned
 
     return run
@@ -1149,7 +1226,14 @@ def measure_run(
     landing = config.get("landing") or {}
     partition = str(landing.get("measure_partition") or "")
     execution = "slurm" if partition else "in-place"
-    node_tests = [str(path).strip() for path in test_files if str(path).strip()]
+    # A project that declares its measurement limit owns the floor every arm
+    # runs above: a caller that omits the figure, or passes a smaller one, must
+    # not submit an arm under a ceiling the project has said is too short for
+    # its own populations.
+    timeout = max(float(timeout), measure_timeout(config))
+    node_tests = _distinct_files(
+        str(path).strip() for path in test_files if str(path).strip()
+    )
     rate = median_seconds_per_file(stored)
 
     def bound(file_count: int) -> float:
@@ -1224,8 +1308,14 @@ def measure_run(
         file_count=len(node_tests),
     )
     if not partition:
+        # A partitioned arm's job carries the node's own files into the tree it
+        # builds; the base directory this node hands it is only a name.
         _carry_missing_tests(base_tree, tree, files)
-    population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
+    # The population runs the armed command extended with the importers, so an
+    # importer the armed command already names is not named again: a file run
+    # twice reads the same tests twice under one bound.
+    population_files = _distinct_files(files, exclude=argv)
+    population_command = [*argv, *population_files, "-n", str(POPULATION_WORKERS)]
     population_bound = bound(len(files))
     if files:
         population_base = _arm(
@@ -1273,11 +1363,21 @@ def measure_run(
         ),
     ):
         if not arm.readable:
-            unreadable = (
-                f"the {name} arm exceeded its {arm_bound_seconds:g}s bound"
-                if arm.timed_out
-                else f"the {name} arm did not run"
-            )
+            if arm.timed_out:
+                # The job and its limit are named inside the guard so a reader
+                # learns which submitted arm the scheduler stopped; the guard
+                # still ends on its bound, which is what the landing retries on.
+                scheduler = ""
+                if arm.job_id or arm.time_limit:
+                    job = f"job {arm.job_id}" if arm.job_id else "its job"
+                    limit = f"limit {arm.time_limit}" if arm.time_limit else "limit"
+                    scheduler = f" (scheduler {job}, {limit})"
+                unreadable = (
+                    f"the {name} arm{scheduler} exceeded its "
+                    f"{arm_bound_seconds:g}s bound"
+                )
+            else:
+                unreadable = f"the {name} arm did not run"
             break
     added_base = {*suite_base.failure_ids, *population_base.failure_ids}
     added_head = [*suite_head.failure_ids, *population_head.failure_ids]
@@ -1607,7 +1707,7 @@ def delivered_paths(repo: Path, base: str, head: str) -> list[str]:
 
 @contextlib.contextmanager
 def candidate_checkout(
-    repo: Path, primary: str, head: str, timeout: float
+    repo: Path, primary: str, head: str, timeout: float, *, tests_only: bool = False
 ) -> Iterator[tuple[str, Path]]:
     """Build the same merge as landing, and measure it without moving a branch."""
     from reckon.crew import merge
@@ -1625,7 +1725,7 @@ def candidate_checkout(
         raise BaseCheckoutError(
             f"the merge candidate could not be built: {exc}"
         ) from exc
-    with base_checkout(repo, candidate, timeout) as tree:
+    with base_checkout(repo, candidate, timeout, tests_only=tests_only) as tree:
         yield candidate, tree
 
 
@@ -1644,6 +1744,67 @@ def measures_on_partition(config: Mapping[str, Any] | None) -> bool:
     """Whether the project's landing measure submits its arms to a partition."""
     landing = (config or {}).get("landing") or {}
     return bool(str(landing.get("measure_partition") or "").strip())
+
+
+#: The prefix every tree and reference directory a landing measure builds under
+#: the node-local scratch root is named with.
+BASE_TREE_PREFIX = "landing-base-"
+
+
+def sweep_abandoned_base_trees(root: Path | None = None) -> list[dict[str, Any]]:
+    """Remove a measure's trees that no live process holds, and report each one.
+
+    A landing measure releases its own tree on every exit its process reaches.
+    A tree whose process was killed — by a signal, or by the scheduler — never
+    reaches that release, and the shared orphan sweep will not touch it until
+    two hours of ctime grace have passed. This closes that gap: the next landing
+    pass removes such a tree at once, because the fact that decides it is that
+    the process which built the tree is gone, not how old the tree is.
+
+    Only the trees this measure family builds are considered, and a tree a live
+    process still holds is kept — a concurrent measure's tree is read from the
+    process table the same way the orphan sweep reads it, so it is never
+    removed. Every removal is printed to stderr with the tree's path and bytes
+    so a reader can account for the space the pass reclaimed.
+    """
+    from reckon.crew.dispatch import tree_size_bytes
+
+    scratch_root = worker_scratch_root() if root is None else Path(root)
+    if not scratch_root.is_dir():
+        return []
+    candidates = sorted(
+        child
+        for child in scratch_root.iterdir()
+        if child.name.startswith(BASE_TREE_PREFIX)
+    )
+    if not candidates:
+        return []
+    # Imported here rather than at module load: the sweep shares the process
+    # table reader the orphan sweep uses, and gc reaches back into other crew
+    # modules that import this one.
+    from reckon.crew.gc import _scratch_process_holders
+
+    holders = _scratch_process_holders(scratch_root)
+    removed: list[dict[str, Any]] = []
+    for child in candidates:
+        if child.is_symlink() or not child.is_dir():
+            continue
+        if holders.get(child.name):
+            continue
+        try:
+            size = tree_size_bytes(child)
+        except OSError:
+            size = 0
+        shutil_rmtree(child)
+        if child.exists():
+            continue
+        removed.append({"path": str(child), "bytes": size})
+        print(
+            f"landing-base sweep: removed {child} ({size} bytes)",
+            file=sys.stderr,
+            flush=True,
+        )
+    return removed
 
 
 @contextlib.contextmanager
@@ -1669,6 +1830,13 @@ def base_tree_for_measure(
         with base_checkout(repo, base_sha, timeout) as tree:
             yield tree
         return
+    # A partitioned measure builds nothing here, but a tree an earlier landing
+    # whose process was killed left under the scratch root is reclaimed on this
+    # pass: the fact that decides it is that its process is gone, not its age.
+    root = worker_scratch_root()
+    if root.is_dir():
+        with contextlib.suppress(OSError):
+            sweep_abandoned_base_trees(root)
     if name is not None:
         yield Path(name)
         return
@@ -1677,7 +1845,11 @@ def base_tree_for_measure(
 
 @contextlib.contextmanager
 def base_checkout(
-    repo: Path, base_sha: str, timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS
+    repo: Path,
+    base_sha: str,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    *,
+    tests_only: bool = False,
 ) -> Iterator[Path]:
     """A detached scratch tree at ``base_sha``, released when the block ends.
 
@@ -1708,6 +1880,7 @@ def base_checkout(
     try:
         root = worker_scratch_root()
         root.mkdir(parents=True, exist_ok=True)
+        sweep_abandoned_base_trees(root)
         scratch = Path(tempfile.mkdtemp(prefix="landing-base-", dir=root))
     except OSError as exc:
         # A full or unwritable scratch root is a checkout that cannot be built,
@@ -1726,6 +1899,7 @@ def base_checkout(
                 "worktree",
                 "add",
                 "--detach",
+                *(("--no-checkout",) if tests_only else ()),
                 str(target),
                 base_sha,
                 timeout=timeout,
@@ -1748,6 +1922,16 @@ def base_checkout(
                 f"could not check out {base_sha} for the base arm: "
                 f"{(added.stderr or added.stdout or '').strip()}"
             )
+        if tests_only:
+            try:
+                _populate_tests_and_top_level(repo, target, base_sha, timeout)
+            except BaseCheckoutError:
+                with contextlib.suppress(Exception):
+                    _release_worktree_whole(
+                        repo, target, run_id="landing-base", trash_root=scratch
+                    )
+                shutil_rmtree(scratch)
+                raise
         _link_environment(repo, target)
         try:
             yield target
@@ -1766,6 +1950,44 @@ def base_checkout(
                 # it act immediately rather than after the default grace period.
                 with contextlib.suppress(OSError, subprocess.TimeoutExpired):
                     _git(repo, "worktree", "prune", "--expire", "now", timeout=timeout)
+
+
+def _populate_tests_and_top_level(
+    repo: Path, target: Path, revision: str, timeout: float
+) -> None:
+    """Write a revision's ``tests`` directory and top-level files into ``target``.
+
+    A partitioned measurement reads only these from its local tree: the test
+    files it selects and scans for imports, and the project files at the top.
+    The arms build their own full trees on the nodes that run them, so the rest
+    of a checkout would be gigabytes on the fleet node that nothing reads.
+    """
+    listed = _git(repo, "ls-tree", revision, timeout=timeout)
+    if listed.returncode:
+        raise BaseCheckoutError(
+            f"could not list {revision}: {(listed.stderr or '').strip()}"
+        )
+    names = []
+    for line in listed.stdout.splitlines():
+        meta, _, name = line.partition("\t")
+        kind = meta.split()[1] if len(meta.split()) > 1 else ""
+        if kind == "blob" or (kind == "tree" and name == "tests"):
+            names.append(name)
+    if not names:
+        return
+    archived = _RUN(
+        ["git", "-C", str(repo), "archive", revision, "--", *names],
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+    )
+    if archived.returncode:
+        raise BaseCheckoutError(
+            f"could not read the tests of {revision}: "
+            f"{bytes(archived.stderr or b'').decode(errors='replace').strip()}"
+        )
+    with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r:") as archive:
+        archive.extractall(target, filter="data")
 
 
 def shutil_rmtree(path: Path) -> None:
