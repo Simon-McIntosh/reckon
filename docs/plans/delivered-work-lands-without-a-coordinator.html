@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="176">
+<meta name="plan-version" content="177">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -935,6 +935,9 @@
 </div>
 <div class="r-comment" data-section="s54" data-id="c-run-r-20261123T124102296280-review-of-delivered-work-lands-without-a-coordinator-s54-43a7acfdfc33" data-who="reckon-build" data-when="2026-11-23T12:53:15.363Z">
     <div class="r-comment-body"><p>Review of r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54 at head 43a7acfdfc, base c0e484cbfb: six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 16, reuse 20), added failures 0, one non-blocking finding (unused _UNSET at reckon/crew/landing_measure.py:720). The repair resolves all three prior findings: partition_for_bound now delegates to admitting_partition, partition_max_seconds refuses an unreadable ceiling, and the head gate log names revision 43a7acfd.</p></div>
+</div>
+<div class="r-comment" data-section="s54" data-id="c-run-r-20261123T112715625088-delivered-work-lands-without-a-coordinator-s54" data-who="reckon-build" data-when="2026-11-23T12:40:50Z">
+    <div class="r-comment-body"><p>A run&#x27;s declared gate duration floors every landing arm it is measured with — crew declare-gate --duration 75m (or 4500, or 01:15:00) puts both arms on a partition that admits 4,500s at --time=01:15:00, while an undeclared run in the same project keeps all_debug&#x27;s 600s floor; a duration no configured partition admits is refused at declaration naming the longest limit available. The repair makes declaration and submission one decision (partition_for_bound delegates to admitting_partition) and refuses an unreadable landing.partition_max_seconds rather than reading it as unbounded; six tests pass and the 12-file population shows zero added failures (head 4 failed / 105 passed vs base 12 failed / 97 passed, the 4 head ids identical to the pre-existing set).</p></div>
 </div>
 <div class="r-comment" data-section="s56" data-id="c-run-r-20261123T122835403540-review-of-delivered-work-lands-without-a-coordinator-s56-5b1109a24dab" data-who="reckon-build" data-when="2026-11-23T12:45:09.263Z">
     <div class="r-comment-body"><p>Review of r-20261123T112733158377-delivered-work-lands-without-a-coordinator-s56 at 398a0d09..5b1109a24d scores goal_fidelity 14, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 18 (0 added failure ids) and records one blocking finding — the changed refusal at reckon/crew/landing_measure.py:1420 still discards arm.unreadable_reason for an arm whose launch raised OSError, the branch that produces the exit_status-null record the plan cites, reproduced at base and head in launch-failure-probe.log — plus one non-blocking finding on the evidence fragment's exit_status claim.</p></div>
