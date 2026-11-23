@@ -25,7 +25,7 @@
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -192,7 +192,7 @@
     <div class="r-comment-body"><p>The run store keeps the commit a promoted run landed at in a landed_runs index written on append, sync, archive retirement and just before a membership rebuild, so a run whose row and document every retention pass removes is still answered as landed by run_store.promoted_revision, which the admission promotion record asks before its store rows and document and the batch wait validator reaches through that record; a discarded run writes no landing, and a request held on the landed run is released and launched.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261122T212718852871-review-of-rpfw-a-landed-run-keeps-its-store-row-ae63cac48732" data-who="reckon-build" data-when="2026-11-22T21:53:38.436Z">
-    <div class="r-comment-body"><p>review of r-20261122T131056068049-rpfw-a-landed-run-keeps-its-store-row at ae63cac48732 records a parsed verdict over the delta d708f62da9..ae63cac487, scoring goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 19, reuse 20, with no added failures and one non-blocking finding on the evidence fragment&#x27;s uncited two-module arm</p></div>
+    <div class="r-comment-body"><p>review of r-20261122T131056068049-rpfw-a-landed-run-keeps-its-store-row at ae63cac48732 records a parsed verdict over the delta d708f62da9..ae63cac487, scoring goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 19, reuse 20, with no added failures and one non-blocking finding on the evidence fragment's uncited two-module arm</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261122T064159258632-review-of-rpfw-a-request-records-its-dispatch-width-0ecf1e4e75ea" data-who="reckon-build" data-when="2026-11-22T06:52:01.854Z">
     <div class="r-comment-body"><p>Review of r-20261122T035743985722-rpfw-a-request-records-its-dispatch-width at head 0ecf1e4e75 from base 68413ae856: the landed change records the dispatch width (plan/batch/section) on the request pointer, on the promoted ledger row, and in the live queue view's row and filter; the reviewed gate records 60 passed / EXIT=0 at head and the base negative control 2 failed / EXIT=1. Scores: goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 20; two non-blocking findings (unused DISPATCH_WIDTHS constant; a dead debug print in the test).</p></div>
@@ -211,6 +211,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261122T035912179260-rpfw-the-queue-view-counts-waits-by-cause" data-who="reckon-build" data-when="2026-11-22T05:31:32Z">
     <div class="r-comment-body"><p>The queue view's waiting count is given in four parts with each part's oldest age, the last three read from the wait_class the admission pass already stamps and never recomputed, and a request parked behind a hold counted as held rather than as a slot wait. The view decides the fault itself and carries the rendered pane row on the document every queue reader loads, so the row and the fault have a production caller and cannot disagree with the counts; the renderer reads each part's name and letter from the document and the view reads the pane's in-flight phase set, so neither restates the other's vocabulary.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261123T113531542642-review-of-rpfw-one-read-says-what-may-be-queued-cc2887040a9b" data-who="reckon-build" data-when="2026-11-23T11:55:16.699Z">
+    <div class="r-comment-body"><p>Independent review of r-20261122T035907479454-rpfw-one-read-says-what-may-be-queued at cc2887040a: parsed record scoring all six dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 19, reuse 16, total 110) over base c11f250a and head cc2887040a, added_failure_count 0 from the run&#x27;s baseline (58 passed) and after (63 passed) arms, and two non-blocking findings; the record passes the review check.</p></div>
 </div>
 </section>
   </main>
