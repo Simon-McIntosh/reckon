@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1536 _measure_guard",
+    "reckon/crew/queue_landing.py:1975 _verified_measurement",
+    "reckon/crew/queue_landing.py:1275 measure_run call",
+    "reckon/crew/review_landing.py:98 _partition_*runner",
+    "reckon/crew/standing_suite.py:232 _partition_runner"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T12:29:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-delivered-work-lands-without-a-coordinator-s56-5b1109a24dab",
+      "recorded_at": "2026-11-23T13:11:51.735244+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "1420",
+      "severity": "blocking",
+      "text": "the measured loop still refuses a launch failure as 'the {name} arm did not run' and discards arm.unreadable_reason, which _arm records at :847 with exit_status None when run() raises OSError; that branch is the only one that can produce the record the plan cites for this section (exit_status null, no job_id, empty log, elapsed 0.01) and it is not the branch the new submission_failed condition at :1166 covers (a non-zero sbatch return yields exit_status 3). Reproduced at both revisions (probe log r-20261123T122835403540/launch-failure-probe.log): a partitioned measurement whose runner raises OSError(7, 'Argument list too long') gives exit_status null, submission_failed false, unreadable_reason 'OSError: [Errno 7] Argument list too long' and the refusal 'the base arm did not run' at base 398a0d09 and at head 5b1109a24d, while landing_measure.py:1587 already surfaces the same field for an observation arm. The section's motivating signature therefore still says nothing, and the fix is one elif on a reason already recorded."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s56.html",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "the fragment presents 'exit_status null' as the reading reproduced at the pinned base, but no gate produced it: the node's own case records exit_status 3 (tests/test_a_landing_arm_that_never_starts_says_why.py:151) because the non-zero-return branch sets status 3, so the paragraph repeats the plan's observation while describing a different branch than the one that yields it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all five commits 398a0d09..5b1109a24d commit by commit; the net change is 3 paths, +303/-2, and the tail commit 5b1109a24d after the head gate ran at 100851f914 changes only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_landing_arm_that_never_starts_says_why.py; its three cases cover the non-zero submission (:130-158), the receipt path (:161-178) and both entry points (:180-206), and the manifest records 4 failed / 401 passed at head against 6 failed / 399 passed at base with zero added ids.",
+    "goal": "the node's goal is that a landing arm which never reaches the scheduler says why; reckon/crew/landing_measure.py:1166 adds the submission_failed condition and :1408 turns it into a refusal naming the submitted command, its status and its output, so the goal is met for a submission that exits non-zero and not for one whose launch raised.",
+    "manifest": "read; it records the literal gate command, three gate logs, the negative control at gate-base-newtest.log, measurement_module and measurement_cwd, four pre-existing failures under outside_scope, and status complete.",
+    "write_paths": "read the node's declared six paths; the net diff touches three -- reckon/crew/landing_measure.py, the new test and the evidence fragment -- all declared, and the two fixtures edited in 07f559da47 are restored byte-for-byte by 100851f914."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_arm_that_never_starts_says_why.py:145 reddens at base on \"refusal read: 'the base arm did not run'\" (gate-base-newtest.log) and the case at :174-176 reddens if the new condition at landing_measure.py:1166 drops its job-id or empty-log guard, so neither assertion merely echoes the value it supplied.",
+    "evidence": "the gate arms are logged at their own revisions with literal commands, imported module paths and closing EXIT lines (gate-base.log: 6 failed / 399 passed; gate-head.log: 4 failed / 401 passed, the same four ids), yet the fragment at delivered-work-lands-without-a-coordinator-s56.html:8 asserts an exit_status-null base reading that no gate produced.",
+    "fit": "reckon/crew/landing_measure.py:370-380 and :1162-1170 name the mechanism in comments and fields with no plan, stage or ticket label, matching the module's existing timed_out handling.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1166-1190 records and quotes a submission that exits non-zero, but the plan's own incident record (exit_status null) is the OSError branch at :847, which :1420 still refuses as 'the base arm did not run'.",
+    "reuse": "the new flag extends Arm.unreadable_reason, the owner of an unreadable arm's reason, and adds no second mechanism, though landing_measure.py:1420 does not adopt the surfacing that :1587 already performs.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the two fixtures 07f559da47 touched are left byte-identical to base by 100851f914 so the shipped tree carries no undeclared change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a landing arm which never reaches the scheduler says why; reckon/crew/landing_measure.py:1166 adds the submission_failed condition and :1408 turns it into a refusal naming the submitted command, its status and its output, so the goal is met for a submission that exits non-zero and not for one whose launch raised.\nVERDICT done_when: the done_when names tests/test_a_landing_arm_that_never_starts_says_why.py; its three cases cover the non-zero submission (:130-158), the receipt path (:161-178) and both entry points (:180-206), and the manifest records 4 failed / 401 passed at head against 6 failed / 399 passed at base with zero added ids.\nVERDICT write_paths: read the node's declared six paths; the net diff touches three -- reckon/crew/landing_measure.py, the new test and the evidence fragment -- all declared, and the two fixtures edited in 07f559da47 are restored byte-for-byte by 100851f914.\nVERDICT manifest: read; it records the literal gate command, three gate logs, the negative control at gate-base-newtest.log, measurement_module and measurement_cwd, four pre-existing failures under outside_scope, and status complete.\nVERDICT diff: read all five commits 398a0d09..5b1109a24d commit by commit; the net change is 3 paths, +303/-2, and the tail commit 5b1109a24d after the head gate ran at 100851f914 changes only the evidence fragment.\nCALL_SITES: reckon/crew/queue_landing.py:1536 _measure_guard, reckon/crew/queue_landing.py:1975 _verified_measurement, reckon/crew/queue_landing.py:1275 measure_run call, reckon/crew/review_landing.py:98 _partition_runner, reckon/crew/standing_suite.py:232 _partition_runner\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:1166-1190 records and quotes a submission that exits non-zero, but the plan's own incident record (exit_status null) is the OSError branch at :847, which :1420 still refuses as 'the base arm did not run'.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate arms are logged at their own revisions with literal commands, imported module paths and closing EXIT lines (gate-base.log: 6 failed / 399 passed; gate-head.log: 4 failed / 401 passed, the same four ids), yet the fragment at delivered-work-lands-without-a-coordinator-s56.html:8 asserts an exit_status-null base reading that no gate produced.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the two fixtures 07f559da47 touched are left byte-identical to base by 100851f914 so the shipped tree carries no undeclared change.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_arm_that_never_starts_says_why.py:145 reddens at base on the old sentence (gate-base-newtest.log) and the case at :174-176 reddens if the new condition at landing_measure.py:1166 drops its job-id or empty-log guard, so neither assertion merely echoes the value it supplied.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/landing_measure.py:370-380 and :1162-1170 name the mechanism in comments and fields with no plan, stage or ticket label, matching the module's existing timed_out handling.\nSCORE reuse: 18\nJUSTIFICATION reuse: the new flag extends Arm.unreadable_reason, the owner of an unreadable arm's reason, and adds no second mechanism, though landing_measure.py:1420 does not adopt the surfacing that :1587 already performs.\nFINDING reckon/crew/landing_measure.py:1420 blocking: the measured loop still refuses a launch failure as 'the {name} arm did not run' and discards arm.unreadable_reason, which _arm records at :847 with exit_status None when run() raises OSError; that branch is the only one that can produce the record the plan cites for this section (exit_status null, no job_id, empty log, elapsed 0.01) and it is not the branch the new submission_failed condition at :1166 covers (a non-zero sbatch return yields exit_status 3). Reproduced at both revisions (probe log r-20261123T122835403540/launch-failure-probe.log): a partitioned measurement whose runner raises OSError(7, 'Argument list too long') gives exit_status null, submission_failed false, unreadable_reason 'OSError: [Errno 7] Argument list too long' and the refusal 'the base arm did not run' at base 398a0d09 and at head 5b1109a24d, while landing_measure.py:1587 already surfaces the same field for an observation arm.\nFINDING docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s56.html:8 non-blocking: the fragment presents 'exit_status null' as the reading reproduced at the pinned base, but no gate produced it: the node's own case records exit_status 3 (tests/test_a_landing_arm_that_never_starts_says_why.py:151) because the non-zero-return branch sets status 3, so the paragraph repeats the plan's observation while describing a different branch than the one that yields it.",
+  "review_run_id": "r-20261123T122835403540-review-of-delivered-work-lands-without-a-coordinator-s56-5b1109a24dab",
+  "reviewed_base_sha": "398a0d09708dda09bec869b7a512404cf9eb2902",
+  "reviewed_head_sha": "5b1109a24dab077a330a9887e78750216e64eb43",
+  "reviewed_run_id": "r-20261123T112733158377-delivered-work-lands-without-a-coordinator-s56",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T12:50:22.097372+00:00",
+  "total": 105
+}
