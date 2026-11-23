@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1181">
+<meta name="plan-version" content="1182">
 <meta name="plan-modified" content="2026-11-23">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3664,6 +3664,12 @@
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261123T113005093668-qwnw-admission-tests-do-not-age-out" data-who="reckon-build" data-when="2026-11-23T12:22:34.679Z">
     <div class="r-comment-body"><p>The five admission tests date their live queued-pointer fixtures when the test runs instead of from a fixed past date, and the reference-comparison and composed-review tests are aligned with the fields and keywords current code carries; the five pass at head on all_debug and again with admission's clock advanced one year.</p></div>
 </div>
+<div class="r-comment" data-section="s46" data-id="c-run-r-20261123T185730143242-review-of-qwnw-a-section-dispatch-takes-its-write-paths-f2600e72fab9" data-who="reckon-build" data-when="2026-11-23T19:13:18.817Z">
+    <div class="r-comment-body"><p>Reviewed r-20261123T182635439101-qwnw-a-section-dispatch-takes-its-write-paths at f2600e72fab940545d69c72d520e4ccc9b68c6d2 against base 31eda5cd1f4e52346def5d1d484bd1c9f4de514d; the single-section dispatch now derives the section's write paths, the four new tests redden at the base (2 failed, EXIT=1) and pass at head (62 passed, EXIT=0), with two non-blocking findings recorded (a suppressed derivation refusal at dispatch_batch.py:716 and the section-supplied field tuple at dispatch_batch.py:655).</p></div>
+</div>
+<div class="r-comment" data-section="s46" data-id="c-run-r-20261123T182635439101-qwnw-a-section-dispatch-takes-its-write-paths" data-who="reckon-build" data-when="2026-11-23T18:57:11.133Z">
+    <div class="r-comment-body"><p>A single-section dispatch now takes its section's write paths. `apply_section_defaults` derives `write_paths` from the section's sentence when the node declares none, leaves a declared list untouched, and leaves an empty list where the section states none, so the default landing scope stands. Measured by tests/test_a_section_dispatch_takes_its_write_paths.py: 4 passed at head f2600e72; the three-path section derives its three paths plus the two default landing paths, equal to what a batch entry for the section derives; against the base revision the same dry run derives the two defaults alone (2 failed, 2 passed).</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T200845603829-qwnw-dispatch-prints-one-json-document-and-a-fresh-re" data-who="reckon-build" data-when="2026-11-14T21:26:23.637Z">
     <div class="r-comment-body"><p>not attempted; the coordinator merges this commit, and nothing was pushed</p></div>
 </div>
@@ -3712,11 +3718,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde" data-who="reckon-build" data-when="2026-11-15T06:53:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde.html</p></div>
 </div>
-<div class="r-comment" data-section="s46" data-id="c-run-r-20261123T185730143242-review-of-qwnw-a-section-dispatch-takes-its-write-paths-f2600e72fab9" data-who="reckon-build" data-when="2026-11-23T19:13:18.817Z">
-    <div class="r-comment-body"><p>Reviewed r-20261123T182635439101-qwnw-a-section-dispatch-takes-its-write-paths at f2600e72fab940545d69c72d520e4ccc9b68c6d2 against base 31eda5cd1f4e52346def5d1d484bd1c9f4de514d; the single-section dispatch now derives the section's write paths, the four new tests redden at the base (2 failed, EXIT=1) and pass at head (62 passed, EXIT=0), with two non-blocking findings recorded (a suppressed derivation refusal at dispatch_batch.py:716 and the section-supplied field tuple at dispatch_batch.py:655).</p></div>
-</div>
-<div class="r-comment" data-section="s46" data-id="c-run-r-20261123T182635439101-qwnw-a-section-dispatch-takes-its-write-paths" data-who="reckon-build" data-when="2026-11-23T18:57:11.133Z">
-    <div class="r-comment-body"><p>A single-section dispatch now takes its section&#x27;s write paths. `apply_section_defaults` derives `write_paths` from the section&#x27;s sentence when the node declares none, leaves a declared list untouched, and leaves an empty list where the section states none, so the default landing scope stands. Measured by tests/test_a_section_dispatch_takes_its_write_paths.py: 4 passed at head f2600e72; the three-path section derives its three paths plus the two default landing paths, equal to what a batch entry for the section derives; against the base revision the same dry run derives the two defaults alone (2 failed, 2 passed).</p></div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261123T191045767210-review-of-qwnw-a-landing-measures-the-named-tests-d074025635a1" data-who="reckon-build" data-when="2026-11-23T19:28:09.137Z">
+    <div class="r-comment-body"><p>Review of d074025635a141f9ee24bd7af8c5c505c60f1dc5 against base 31eda5cd1f4e52346def5d1d484bd1c9f4de514d; stored parsed record scoring all six dimensions with one blocking finding, that every done-when read is taken from pointer[&quot;node&quot;], which the slim live-listing pointer never carries, so the done-when source is inert in the landing pass.</p></div>
 </div>
 </section>
 </main>
