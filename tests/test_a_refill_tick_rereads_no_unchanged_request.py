@@ -80,3 +80,28 @@ def test_a_changed_request_is_decoded_again(monkeypatch) -> None:
     service.tick()
     assert "r-settled-b.json" in decoded
     assert "r-settled-a.json" not in decoded
+
+
+def test_the_retry_scan_takes_a_view_not_a_copy(monkeypatch) -> None:
+    monkeypatch.setattr(requests, "_JUDGING_CODE_REVISION", CODE, raising=False)
+    monkeypatch.setattr(requests, "_current_code_revision", lambda: CODE)
+    run_ids = [f"r-settled-view-{number}" for number in range(10)]
+    for run_id in run_ids:
+        _settled(run_id)
+    service = requests.PromotionService(width=1, execute=lambda request: {})
+    service.tick()
+
+    from reckon import file_memo
+
+    copies: list[object] = []
+    real_deepcopy = file_memo.copy.deepcopy
+
+    def counting_deepcopy(value, *args, **kwargs):
+        copies.append(value)
+        return real_deepcopy(value, *args, **kwargs)
+
+    monkeypatch.setattr(file_memo.copy, "deepcopy", counting_deepcopy)
+    service.tick()
+    # The pending-request scan still takes one mutable copy of each request it
+    # reads; the retry scan, which reads the same files, takes none.
+    assert len(copies) <= len(run_ids), len(copies)
