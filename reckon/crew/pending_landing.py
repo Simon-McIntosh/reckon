@@ -612,6 +612,50 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
 
 
 PREVIOUS_FLEET_NODE_RETIRED = "retired-previous-fleet-node"
+RELEASE_OBLIGATION_RECORDED = "release-obligation"
+
+
+def release_obligation_path(run_id: str) -> Path:
+    """The file naming why a release pass could not judge one run's liveness."""
+    return runs.crew_home() / "release-obligations" / f"{run_id}.json"
+
+
+def _release_obligation_missing(run_id: str) -> str:
+    try:
+        stored = json.loads(release_obligation_path(run_id).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(stored, Mapping):
+        return ""
+    return str(stored.get("missing") or "")
+
+
+def _record_release_obligation(run_id: str, missing: str) -> bool:
+    """Record the missing fact, answering whether this pass is its first report.
+
+    True the first time a run's liveness is reported undecidable and whenever
+    the fact that could not be read has changed; False for a later pass over the
+    same unchanged fact. A run that is reported by a pass which then cannot be
+    judged again is thus told to its coordinator once, while a run whose state
+    moved is reported again with the new fact.
+    """
+    if _release_obligation_missing(run_id) == missing:
+        return False
+    runs._write_json(
+        release_obligation_path(run_id),
+        {
+            "run_id": run_id,
+            "missing": missing,
+            "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        },
+        create_parents=True,
+    )
+    return True
+
+
+def _clear_release_obligation(run_id: str) -> None:
+    with contextlib.suppress(OSError):
+        release_obligation_path(run_id).unlink(missing_ok=True)
 
 
 def _is_a_promoted_pointer(pointer: Mapping[str, Any]) -> bool:
@@ -721,9 +765,34 @@ def release_pointers_of_a_previous_fleet_node(
         moved = process_liveness.launched_on_another_fleet_node(pointer, node)
         dead = False
         if not moved:
-            if process_liveness.record_process_liveness(pointer).alive is True:
+            reading = process_liveness.record_process_liveness(pointer)
+            if reading.alive is True:
                 continue
-            dead = process_liveness.record_process_alive(pointer) is False
+            # A placement naming no job id cannot be put to the scheduler, so
+            # its liveness is judged from this host's process table and the
+            # run's own worker record. A run those readings cannot decide is
+            # reported once rather than held without a word.
+            if reading.alive is None and process_liveness.placement_names_no_job(
+                pointer
+            ):
+                judged = process_liveness.judge_placement_without_a_job(
+                    pointer, fleet_node=node
+                )
+                if judged.verdict == process_liveness.JOBLESS_UNDECIDED:
+                    if _record_release_obligation(run_id, judged.missing):
+                        results.append(
+                            {
+                                "run_id": run_id,
+                                "status": RELEASE_OBLIGATION_RECORDED,
+                                "missing": judged.missing,
+                            }
+                        )
+                    continue
+                if judged.verdict != process_liveness.JOBLESS_DEAD:
+                    continue
+                dead = True
+            else:
+                dead = process_liveness.record_process_alive(pointer) is False
             if not dead:
                 continue
         if process_liveness.turn_in_progress(pointer):
@@ -743,6 +812,7 @@ def release_pointers_of_a_previous_fleet_node(
             != POINTER_RETIRED
         ):
             continue
+        _clear_release_obligation(run_id)
         results.append(
             {
                 "run_id": run_id,

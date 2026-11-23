@@ -4,6 +4,7 @@ import os
 import shutil
 import socket
 import subprocess
+import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -593,3 +594,146 @@ def launched_on_another_fleet_node(
     if not str(host).strip() or not node.strip():
         return False
     return not watch_unit._hosts_match(str(host), node)
+
+
+def placement_names_no_job(record: Mapping[str, Any] | None) -> bool:
+    """Whether a record carries a placement that names no readable job id.
+
+    A placed run's liveness is asked of the scheduler, and a placement whose record
+    names no job id cannot be asked at all: the query has no job to substitute,
+    so :func:`placement_job_alive` answers None and the record reads as unknown.
+    Unknown is held, which would keep the claim of a run whose worker is long
+    gone, so this shape is named here for the reader that judges it from what the
+    host can read instead.
+    """
+    if not _record_is_placed(record):
+        return False
+    return not str(record.get("job_id") or "").strip()
+
+
+#: How long a placed run with no job id must have left its worker record
+#: untouched, with its recorded pid gone from this host's process table, before
+#: the worker is read as gone rather than between writes. Both readings must say
+#: so: an absent pid alone proves only that the launcher process has ended, and a
+#: quiet record alone proves only that the worker has not written lately.
+PLACEMENT_WITHOUT_A_JOB_QUIET_SECONDS = 3600.0
+
+JOBLESS_ALIVE = "alive"
+JOBLESS_DEAD = "dead"
+JOBLESS_UNDECIDED = "undecided"
+
+
+@dataclass(frozen=True)
+class JoblessPlacementReading:
+    """A placed run with no job id, judged from the host's own readings.
+
+    ``verdict`` is one of :data:`JOBLESS_ALIVE`, :data:`JOBLESS_DEAD` and
+    ``JOBLESS_UNDECIDED``. ``missing`` names the fact that could not be read when
+    the verdict is undecided, and examiner text for a caller that must report the
+    run rather than hold it without a word.
+    """
+
+    verdict: str
+    missing: str = ""
+
+
+def worker_record_quiet_seconds(
+    record: Mapping[str, Any] | None, *, now_seconds: float | None = None
+) -> float | None:
+    """How long the run's worker record has gone unwritten, or None if unreadable.
+
+    The worker record is the run's own note of the run worker it spawned, written
+    when that worker starts. Its last write is therefore the newest moment the
+    run can show that anything of its own touched disk, and a record left that
+    long describes a worker that has neither written nor been probed alive.
+    """
+    if not record:
+        return None
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    from reckon.crew import runs as runs_module
+    from reckon.crew.recovery_liveness import WORKER_RECORD_NAME
+
+    try:
+        written = (runs_module.run_dir(run_id) / WORKER_RECORD_NAME).stat().st_mtime
+    except OSError:
+        return None
+    moment = time.time() if now_seconds is None else now_seconds
+    return max(0.0, moment - written)
+
+
+def judge_placement_without_a_job(
+    record: Mapping[str, Any] | None,
+    *,
+    alive: Callable[[Any], bool | None] | None = None,
+    fleet_node: str | None = None,
+    now_seconds: float | None = None,
+) -> JoblessPlacementReading:
+    """Judge a placed run that names no job id from what this host can read.
+
+    A placement with no job id cannot be asked of the scheduler, so the only two
+    readings left are the process table and the run's worker record. The run is
+    dead when both agree the worker is gone: the recorded pid is absent from this
+    host's table and the worker record has gone unwritten past
+    :data:`PLACEMENT_WITHOUT_A_JOB_QUIET_SECONDS`. A live pid is alive however
+    quiet the record, because the launcher is still up. Everything else names the
+    fact that could not be read, so the caller reports it rather than holding the
+    claim privately.
+
+    The pid on a placed record names the scheduler client, not the worker, so the
+    table is consulted only where that client was started on this host: a record
+    whose launcher host is unknown or foreign leaves the question to a reading
+    this host cannot take.
+    """
+    if not placement_names_no_job(record):
+        return JoblessPlacementReading(
+            JOBLESS_UNDECIDED,
+            "the record carries no placement, or names a job id to ask about",
+        )
+    from reckon.crew import watch_unit
+
+    node = watch_unit.fleet_record_node() if fleet_node is None else str(fleet_node)
+    if not str(node).strip():
+        return JoblessPlacementReading(
+            JOBLESS_UNDECIDED,
+            "the fleet record names no node, so this host cannot say whether "
+            "the worker's process table is here",
+        )
+    if launched_on_another_fleet_node(record, node):
+        return JoblessPlacementReading(
+            JOBLESS_UNDECIDED,
+            f"the worker was launched on {record.get('launcher_host')}, which the "
+            "fleet does not run on, so its process table cannot be read here",
+        )
+    if not str(record.get("launcher_host") or "").strip():
+        return JoblessPlacementReading(
+            JOBLESS_UNDECIDED,
+            "the pointer records no launcher host, so this host's process "
+            "table cannot say whether its worker is gone",
+        )
+    pid = record.get("pid")
+    if not str(pid or "").strip():
+        return JoblessPlacementReading(
+            JOBLESS_UNDECIDED,
+            "the pointer records no pid to probe on this host's process table",
+        )
+    probe = process_alive if alive is None else alive
+    running = probe(pid)
+    if running is True:
+        return JoblessPlacementReading(JOBLESS_ALIVE)
+    if running is None:
+        return JoblessPlacementReading(
+            JOBLESS_UNDECIDED,
+            f"the recorded pid {pid} cannot be read from this host's process table",
+        )
+    quiet = worker_record_quiet_seconds(record, now_seconds=now_seconds)
+    if quiet is not None and quiet > PLACEMENT_WITHOUT_A_JOB_QUIET_SECONDS:
+        return JoblessPlacementReading(JOBLESS_DEAD)
+    if quiet is not None:
+        return JoblessPlacementReading(JOBLESS_ALIVE)
+    return JoblessPlacementReading(
+        JOBLESS_UNDECIDED,
+        "the run's worker record cannot be read, so how long its worker has been "
+        "gone cannot be dated",
+    )
