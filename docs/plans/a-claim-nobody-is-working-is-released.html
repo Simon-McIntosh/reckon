@@ -25,7 +25,7 @@
   <title>A Claim Nobody Is Working Is Released | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -89,9 +89,9 @@
 
     <h2 id="s9">§9 — A promoted pointer whose placement names no job is judged, not held as unknown</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>§6's census record (<code>docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html</code>, "An own-node run was not proved dead at that census") reports a second reason pointers stay held: 47 of 76 live pointers carried a placement naming no readable job id, the scheduler arm answered nothing, and a liveness that reads unknown is held. A promoted run in that state keeps its claim however long its worker has been gone.</p>
+    <p>§6's census record (<code>docs/evidence/archive/a-claim-nobody-is-working-is-released-landed.html</code>, "An own-node run was not proved dead at that census") reports a second reason a pointer can stay held: 47 of 76 live pointers carried a placement naming no readable job id, the scheduler arm answered nothing, and a liveness that reads unknown is held. 75 of the 76 were dispatched runs, and the one promoted pointer at that census is the run §8 repairs, so no other promoted run was measured in this state. This section is the guard for that path: a promoted run whose placement names no job would otherwise keep its claim however long its worker has been gone.</p>
     <p><strong>Deliverable.</strong> A promoted run whose placement names no readable job id has its liveness decided from what the node can read, its process table and its worker's last write, and is released when both show the worker gone. A run whose liveness still cannot be decided is reported once as an obligation naming what is missing, rather than held without a word.</p>
-    <p><strong>Done when.</strong> <code>tests/test_a_placement_without_a_job_is_judged.py</code> passes, covering: a promoted pointer with no job id, no live process and a worker record untouched for more than an hour is released; the same pointer with a live process is kept; and a pointer whose node cannot be read is reported as an obligation naming the missing fact. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>.</p>
+    <p><strong>Done when.</strong> <code>tests/test_a_placement_without_a_job_is_judged.py</code> passes, covering: a promoted pointer with no job id, no live process and a worker record untouched for more than an hour is released; the same pointer with a live process is kept; a pointer whose node cannot be read is reported as an obligation naming the missing fact; a second pass over the same unchanged pointer adds no second report; and a change to what is missing reports it again. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. The tests that import the changed modules add no failure against a base arm run on <code>all_debug</code>.</p>
     <p><strong>Negative control.</strong> At the base revision, the first case fails, with the pointer held as unknown.</p>
 
 
