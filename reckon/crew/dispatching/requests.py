@@ -336,6 +336,9 @@ def queue_requests(
             "position": position,
             "index": index,
         }
+    if dry_run:
+        # Preview rows have no stored pointers to hold or reviews to compose.
+        return stored
     owed_plans: set[str] = set()
     with queue_admission.plan_review_pass():
         for run_id, row in stored.items():
