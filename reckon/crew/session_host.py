@@ -42,6 +42,7 @@ from __future__ import annotations
 import contextlib
 import ctypes
 import fcntl
+import hashlib
 import json
 import os
 import select
@@ -417,9 +418,57 @@ def live_work_run(project: str, session: str) -> str | None:
         pointers = runs_module._list_live_records(project=project)
     except OSError:
         return None
-    if not station_subscriber.population_has_live_work(pointers, session):
-        return None
-    return _naming_run(pointers, session)
+    # The crew home is part of the key: a different home is a different fleet.
+    key = (str(runs_module.crew_home()), project, session)
+    signature = _owned_pointer_signature(pointers, session)
+    now = time.monotonic()
+    held = _LIVE_WORK_ANSWERS.get(key)
+    if (
+        held is not None
+        and held[0] == signature
+        and now - held[1] < LIVE_WORK_RECHECK_SECONDS
+    ):
+        return held[2]
+    answer = (
+        _naming_run(pointers, session)
+        if station_subscriber.population_has_live_work(pointers, session)
+        else None
+    )
+    _LIVE_WORK_ANSWERS[key] = (signature, now, answer)
+    return answer
+
+
+# A settled pair is asked whether it owes a pane on every tick, and the answer
+# classifies every live pointer in the project: git calls per run, review and
+# budget reads, all on shared storage. Measured on 23 November, one session
+# host asked it every five seconds and read 27 to 52 MB/s doing so. The answer
+# is kept while the session's own pointers and the ownerless ones are unchanged,
+# and asked again after this many seconds whatever they show, because a duty on
+# a terminal run can move without its pointer moving.
+LIVE_WORK_RECHECK_SECONDS = 30.0
+_LIVE_WORK_ANSWERS: dict[tuple[str, str, str], tuple[str, float, str | None]] = {}
+
+
+def _owned_pointer_signature(
+    pointers: Sequence[Mapping[str, Any]], session: str
+) -> str:
+    """A digest of the pointers that can change this session's answer at once.
+
+    Those are the session's own pointers and the ownerless ones, which keep
+    every session's reading live. Another session's pointer cannot make this
+    session owe a pane, so its frequent rewrites do not force a fresh answer.
+    """
+    relevant = [
+        pointer
+        for pointer in pointers
+        if str(pointer.get("session") or "") in {"", str(session)}
+    ]
+    encoded = json.dumps(
+        sorted(relevant, key=lambda pointer: str(pointer.get("run_id") or "")),
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
 def _naming_run(pointers: Sequence[Mapping[str, Any]], session: str) -> str | None:
