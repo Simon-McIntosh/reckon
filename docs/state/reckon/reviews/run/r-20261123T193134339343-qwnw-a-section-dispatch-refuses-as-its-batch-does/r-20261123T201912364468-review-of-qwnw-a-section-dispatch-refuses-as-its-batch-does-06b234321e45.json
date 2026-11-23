@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:653 apply_section_defaults (single dispatch and validating dry run)",
+    "reckon/crew/dispatching/requests.py:240 apply_section_defaults (queued request before admission.requests.py:252 admission_domain_findings)",
+    "reckon/crew/dispatch_batch.py:834 section_derivation (batch entry, compared by the new tests)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T20:38:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-section-dispatch-refuses-as-its-batch-does.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "the \"declared suite, head\" arm the fragment cites (and the manifest's after_suite log_path) was run on 98dci4-clu-3141.iter.org, a node the done_when explicitly excludes (98dci4-clu-[3141-3143]); a compliant head arm at 2d13d5ade2 on 98dci4-clu-3144 64 passed in 42.32s exists and the only delta past it is docs, so the measure stands, but the recorded pair should cite the permitted-node arm."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 78972b6f..06b234321e commit by commit; 2d13d5ade2 is the only code commit (dispatch_batch.py +54 -22, test file +97 -12), and 16c7e11fc1, 4189349fa3 and 06b234321e each touch only the evidence fragment.",
+    "done_when": "the node's done_when names both refusal forms and SECTION_SUPPLIED_NODE_FIELDS; tests/test_a_section_dispatch_takes_its_write_paths.py:319 and :330 drive both refusal forms and :138 gives s4/s5 the ambiguous and parent-segment sentences, and the scoped gate log scoped-gate-1795464490043989969.log records 64 passed EXIT=0 with the negative control at negative-control-base.log 2 failed EXIT=1.",
+    "goal": "the goal is that a single-section dispatch refuses an unresolvable write-paths sentence as its batch entry does; reckon/crew/dispatch_batch.py:722 now derives the sentence through the same section_derivation call at dispatch_batch.py:834 the batch entry makes, so the refusal originates in one place.",
+    "manifest": "read; status complete, the four commits it names resolve, its tests line matches the scoped-gate log, baseline_suite and after_suite both record 0 failures EXIT=0, and the negative_control_log is a bare readable path whose run reproduces the declared mutation.",
+    "write_paths": "the node declared six expected paths; the delivered diff touches three of them \u2014 reckon/crew/dispatch_batch.py, tests/test_a_section_dispatch_takes_its_write_paths.py and the node's evidence fragment \u2014 and reckon/crew_dispatch_commands.py needed no change, so every landed path is declared."
+  },
+  "justifications": {
+    "durability": "tests/test_a_section_dispatch_takes_its_write_paths.py:319 and :330 assert exit_code != 0 and ok is false through _refusal, so reinstating the suppressed write-paths derivation reddens both \u2014 proven by negative-control-base.log 2 failed \u2014 while the SECTION_SUPPLIED_NODE_FIELDS membership clause has no direct assertion of its own.",
+    "evidence": "the scoped gate at 2d13d5ade2 on 98dci4-clu-3144 records 64 passed EXIT=0 and the negative control records 2 failed EXIT=1, but the after arm the manifest names was run on 98dci4-clu-3141, which the done_when excludes.",
+    "fit": "reckon/crew/dispatch_batch.py:666 and :669 name the sequence field and the unsaid rule by what they do, the docstrings at :669-681 state the mechanism with no plan, ticket or author reference, and the surrounding style of the module is matched.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:722 passes \"write_paths\" in omitted as derive_write_paths, so an empty path list now reaches the batch's own read.write_paths refusal instead of the suppressed fallback removed from apply_section_defaults.",
+    "reuse": "reckon/crew/dispatch_batch.py:722 reuses section_derivation and _PlanRead.write_paths at dispatch_batch.py:414 rather than reading the sentence a second way, and _section_field_unsaid generalises the existing empty-field rule rather than duplicating a capability.",
+    "scope_discipline": "git diff 78972b6f..06b234321e touches only reckon/crew/dispatch_batch.py, tests/test_a_section_dispatch_takes_its_write_paths.py and the declared evidence fragment, and the code commit adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a single-section dispatch refuses an unresolvable write-paths sentence as its batch entry does; reckon/crew/dispatch_batch.py:722 now derives the sentence through the same section_derivation call at dispatch_batch.py:834 the batch entry makes, so the refusal originates in one place.\nVERDICT done_when: the node's done_when names both refusal forms and SECTION_SUPPLIED_NODE_FIELDS; tests/test_a_section_dispatch_takes_its_write_paths.py:319 and :330 drive both refusal forms and :138 gives s4/s5 the ambiguous and parent-segment sentences, and the scoped gate log scoped-gate-1795464490043989969.log records 64 passed EXIT=0 with the negative control at negative-control-base.log 2 failed EXIT=1.\nVERDICT write_paths: the node declared six expected paths; the delivered diff touches three of them \u2014 reckon/crew/dispatch_batch.py, tests/test_a_section_dispatch_takes_its_write_paths.py and the node's evidence fragment \u2014 and reckon/crew_dispatch_commands.py needed no change, so every landed path is declared.\nVERDICT manifest: read; status complete, the four commits it names resolve, its tests line matches the scoped-gate log, baseline_suite and after_suite both record 0 failures EXIT=0, and the negative_control_log is a bare readable path whose run reproduces the declared mutation.\nVERDICT diff: read 78972b6f..06b234321e commit by commit; 2d13d5ade2 is the only code commit (dispatch_batch.py +54 -22, test file +97 -12), and 16c7e11fc1, 4189349fa3 and 06b234321e each touch only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:653, reckon/crew/dispatching/requests.py:240, reckon/crew/dispatch_batch.py:834\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:722 passes \"write_paths\" in omitted as derive_write_paths, so an empty path list now reaches the batch's own read.write_paths refusal instead of the suppressed fallback removed from apply_section_defaults.\nSCORE evidence: 16\nJUSTIFICATION evidence: the scoped gate at 2d13d5ade2 on 98dci4-clu-3144 records 64 passed EXIT=0 and the negative control records 2 failed EXIT=1, but the after arm the manifest names was run on 98dci4-clu-3141, which the done_when excludes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 78972b6f..06b234321e touches only reckon/crew/dispatch_batch.py, tests/test_a_section_dispatch_takes_its_write_paths.py and the declared evidence fragment, and the code commit adds nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_section_dispatch_takes_its_write_paths.py:319 and :330 assert exit_code != 0 and ok is false through _refusal, so reinstating the suppressed write-paths derivation reddens both \u2014 proven by negative-control-base.log 2 failed \u2014 while the SECTION_SUPPLIED_NODE_FIELDS membership clause has no direct assertion of its own.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py:666 and :669 name the sequence field and the unsaid rule by what they do, the docstrings at :669-681 state the mechanism with no plan, ticket or author reference, and the surrounding style of the module is matched.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/dispatch_batch.py:722 reuses section_derivation and _PlanRead.write_paths at dispatch_batch.py:414 rather than reading the sentence a second way, and _section_field_unsaid generalises the existing empty-field rule rather than duplicating a capability.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-section-dispatch-refuses-as-its-batch-does.html:26 non-blocking: the \"declared suite, head\" arm the fragment cites (and the manifest's after_suite log_path) was run on 98dci4-clu-3141.iter.org, a node the done_when explicitly excludes (98dci4-clu-[3141-3143]); a compliant head arm at 2d13d5ade2 on 98dci4-clu-3144 64 passed in 42.32s exists and the only delta past it is docs, so the measure stands, but the recorded pair should cite the permitted-node arm.\n",
+  "review_run_id": "r-20261123T201912364468-review-of-qwnw-a-section-dispatch-refuses-as-its-batch-does-06b234321e45",
+  "reviewed_base_sha": "78972b6f6072f501ae11f82baf0cbc8a5ed91337",
+  "reviewed_head_sha": "06b234321e45c5e463669d5d167a8ad878b3004a",
+  "reviewed_run_id": "r-20261123T193134339343-qwnw-a-section-dispatch-refuses-as-its-batch-does",
+  "reviewer_run_id": "r-20261123T201912364468-review-of-qwnw-a-section-dispatch-refuses-as-its-batch-does-06b234321e45",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T21:10:45.147117+00:00",
+  "total": 110
+}
