@@ -21,11 +21,11 @@
   <h2>An unchanged sweep reads no plan and walks no tree</h2>
 
   <p><strong>The defect.</strong> Each obligations sweep of the watch producer
-  re-parsed every candidate plan to read its section duties, and it walked the
-  project's state tree recursively statting every file under it, and its plan
-  changed since the last one, both costs were spent to learn that nothing moved.
-  On this project's state tree that is eight thousand files against four
-  thousand directories, spent to learn that nothing had moved.</p>
+  re-parsed every candidate plan to read its section duties, and walked the
+  project's state tree recursively statting every file under it. On a sweep
+  where no plan had changed since the last one, both costs were paid to learn
+  that nothing had moved &mdash; eight thousand files against four thousand
+  directories on this project's state tree.</p>
 
   <p><strong>What landed.</strong> The change check now records one stat per
   directory under the trees it watches. Every writer that changes these trees
@@ -63,6 +63,13 @@
     <li>in every case the published obligations equal those of a from-scratch
       sweep over the same state, compared row for row.</li>
   </ul>
+
+  <p><strong>Gate arms.</strong> The head arm at revision
+  <code>f5bd2cba91</code> reported <code>13 failed, 578 passed in 452.44s (0:07:32)</code>,
+  every one of those failures already red at base. The base arm at revision
+  <code>a1d432530d</code> reported <code>21 failed, 570 passed in 415.23s (0:06:55)</code>.
+  The eight base-only failures are the two negative-control cases below plus six
+  scheduler-dependent fleet-health tests; the head arm adds none.</p>
 
   <p><strong>Negative control.</strong> At the base revision the first case fails
   with all four plans parsed and all one thousand state files stat'ed on the
