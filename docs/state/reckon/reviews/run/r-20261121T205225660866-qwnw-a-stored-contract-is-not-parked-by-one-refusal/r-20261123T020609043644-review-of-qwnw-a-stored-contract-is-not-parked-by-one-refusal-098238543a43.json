@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:_until_changed_hold",
+    "reckon/crew/admission/selection.py:_retry_backoff_hold",
+    "reckon/crew/admission/launching.py:_stamp_failure",
+    "reckon/crew/obligations.py:_queued_contract_refusal",
+    "reckon/crew/recovery_classification.py:_queued_failure_remedy"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T02:07:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": 392,
+      "severity": "non-blocking",
+      "text": "_is_node_contract_refusal restates the node-contract half of _is_until_changed_failure, which the same module already owns at holds.py:993-1000 (_NODE_CONTRACT_REFUSAL in text and _CAPACITY_REFUSAL_REMEDY not in text), and obligations.py:1807-1813 keeps a third inline copy of the same two clauses. The three agree today, so no behaviour differs, but a change to what counts as a node-contract refusal now has three places to miss; the owner should be one predicate that the other two call (the reverse works too: _is_until_changed_failure could be 'CompetenceLimit: in text or _is_node_contract_refusal(text)')."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1838,
+      "severity": "non-blocking",
+      "text": "the row's next_command renders literal placeholders ('--done-when <measure>', '--brief <file>', '--write-path <path>', '--time-budget <budget>') straight into a string a session may copy, so running it as printed passes '<measure>' as the value; a rendered form should quote the placeholder or name the field without a shell-ready angle-bracket token, since the row's whole point is that its remedy changes the field the refusal names."
+    },
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": 1555,
+      "severity": "non-blocking",
+      "text": "the agreed-pass counter increments whenever the previous stamped failure is a node-contract refusal, without comparing the contract fingerprint it was refused about; a request parked and then requeued with an unrelated contract refusal carried over from before would reach the two-pass threshold on its first reading after the repair. The stamp check in _retry_backoff_hold still releases it on a healthy read, so the effect is confined to a re-refused-repaired contract, but counting only an agreed *contract* would make 'two passes that each read the request' literal."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/selection.py:620 and :639 call the two hold readers each admission pass; reckon/crew/admission/launching.py:775, :931, :1037, :1107 and :1112 stamp failures; reckon/crew/obligations.py:1815 reads the agreed pass count in _queued_contract_refusal; reckon/crew/recovery_classification.py:406 excludes the refusal from the dispatch-remedy row.",
+    "diff": "read commit by commit (one commit, 098238543a, seven files, +445/-12): the two-pass confirmation, the contract fingerprint, the obligation row with queue-edit flags, the classifier exclusion, and the two test files.",
+    "done_when": "tests/test_a_stored_contract_is_not_parked_by_one_refusal.py queues an implementation request and a composed review, drops one pass's body read, and asserts the next pass launches both with no row (:181-200); it parks a measureless request after two passes with a row naming done-when and --done-when (:203-230); the negative control reddens two of its three tests under a one-pass confirmation count.",
+    "goal": "the node goal is 'park a queued contract refusal only after two agreeing passes'; reckon/crew/admission/holds.py:392-403 adds the node-contract predicate, :1494-1526 holds a refusal only at passes>=2, and :1555-1572 counts agreeing passes and stamps the contract fingerprint.",
+    "manifest": "read; it reports the scoped gate, the baseline and head suite arms and a red negative control, each with a log path, and states the after_suite exit 0 with 0 failure ids.",
+    "write_paths": "the manifest declares eleven paths; the delivered diff touches seven of them (reckon/crew/admission/holds.py, reckon/crew/admission/shared.py, reckon/crew/obligations.py, reckon/crew/queue_admission.py, reckon/crew/recovery_classification.py, tests/test_a_refused_request_names_its_refusal.py, tests/test_a_stored_contract_is_not_parked_by_one_refusal.py) and no path outside the declared set."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261123T020609043644-review-of-qwnw-a-stored-contract-is-not-parked-by-one-refusal-098238543a43",
+  "reviewed_base_sha": "9255ce205f5b262bc245644233313e78113f3423",
+  "reviewed_head_sha": "098238543a434e149411cb34b0fb70bb1b375744",
+  "reviewed_run_id": "r-20261121T205225660866-qwnw-a-stored-contract-is-not-parked-by-one-refusal",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 8,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T02:24:29.990685+00:00",
+  "total": 99
+}
