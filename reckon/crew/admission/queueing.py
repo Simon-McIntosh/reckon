@@ -14,19 +14,20 @@ another live session coordinates and a plan a coordinator has held are all left
 alone by those two, in one vocabulary, so the service can never queue something
 a coordinator's dispatch would have refused.
 
-A pass costs a plan's parse, not a project's. Each project's plans carry an
-identity — the file names and their modification times, plus whether a plan
-hold is recorded — and a pass that finds an unchanged identity files nothing for
-it. That is what keeps a service pass every fifteen seconds from decoding every
-plan of every mounted project, and it is also right on its own terms: a plan
-whose sections have not moved has nothing new to fill, and a request a
-coordinator dropped was dropped deliberately.
+A pass costs one plan's parse per plan that has moved, not a project's. Each
+plan carries an identity — its file's modification time and whether a plan hold
+covers it — and a plan whose identity is unchanged is passed over without being
+decoded. A project's first pass still parses every plan it holds (measured at
+15.75 s for 40 plans and 120 sections), and a pass after one plan is edited
+costs that plan alone. It is also right on its own terms: a plan whose sections
+have not moved has nothing new to fill, and a request a coordinator dropped was
+dropped deliberately.
 """
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable, Mapping
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -38,19 +39,12 @@ SERVICE_SESSION = "admission-service"
 
 def mounted_projects() -> dict[str, Path]:
     """Every project the operator has mounted, mapped to its docs directory."""
-    try:
-        from reckon._store import _mounts_path
+    from reckon.serve import load_mounts
 
-        registered = json.loads(_mounts_path().read_text(encoding="utf-8"))
+    try:
+        return load_mounts()
     except (OSError, ValueError):
         return {}
-    if not isinstance(registered, dict):
-        return {}
-    return {
-        str(project): Path(str(directory)).expanduser()
-        for project, directory in registered.items()
-        if project and directory
-    }
 
 
 def _default_config(project: str, root: Path) -> Mapping[str, Any]:
@@ -59,39 +53,30 @@ def _default_config(project: str, root: Path) -> Mapping[str, Any]:
     return flight.resolve(project, checkout_path=str(root)).config
 
 
-def _plans_identity(root: Path, hold_path: Path) -> tuple[Any, ...]:
-    """What a project's sections and holds would have to move for a refill.
+def _plan_identity(docs: Path, slug: str, held: bool) -> tuple[Any, ...]:
+    """What one plan's sections and hold would have to move for a refill.
 
-    A plan file's name and modification time is the cheapest identity that
-    moves when a section is declared, delivered or edited, and the hold file's
-    own timestamp is what a hold or a release changes.
+    A plan file's modification time is the cheapest identity that moves when a
+    section is declared, delivered or edited, and whether the plan is held is
+    what a hold or a release changes. Both are read per plan, so a pass after
+    one plan moved refiles that plan rather than the project's whole set.
     """
-    plans_dir = root / "docs" / "plans"
     try:
-        entries = tuple(
-            sorted(
-                (path.name, path.stat().st_mtime_ns)
-                for path in plans_dir.glob("*.html")
-            )
-        )
+        stamp = (docs / "plans" / f"{slug}.html").stat().st_mtime_ns
     except OSError:
-        entries = ()
-    try:
-        held = hold_path.stat().st_mtime_ns
-    except OSError:
-        held = None
-    return entries, held
+        stamp = None
+    return stamp, held
 
 
 class PlanQueue:
     """File the requests a project's plans may have, remembering what it filed.
 
     One instance belongs to the service process: the record it keeps is what
-    makes a pass cost a stat per project rather than a parse per plan.
+    makes a pass cost a stat per plan rather than a parse per plan.
     """
 
     def __init__(self) -> None:
-        self._filled: dict[tuple[str, str], tuple[Any, ...]] = {}
+        self._filled: dict[tuple[str, str], dict[str, tuple[Any, ...]]] = {}
 
     def forget(self, project: str = "") -> None:
         """Drop the remembered identities, of one project or of every one."""
@@ -118,18 +103,27 @@ class PlanQueue:
         """
         from reckon.crew import queue_edit, runs
         from reckon.crew.dispatch_batch import queue_plan
-        from reckon.crew.plan_coordinator import resolve_plan_coordinators
+        from reckon.crew.plan_coordinator import (
+            _plans_and_owners,
+            resolve_plan_coordinators,
+        )
 
         store = queue if queue is not None else queue_plan
-        resolve_config = config_for or _default_config
         catalogue = dict(projects) if projects is not None else mounted_projects()
         report: dict[str, Any] = {"projects": [], "queued": 0, "filed": []}
         for project, docs in sorted(catalogue.items()):
             root = Path(docs).parent
             entry: dict[str, Any] = {"project": project, "plans": []}
             report["projects"].append(entry)
+            # The service's own pass names no callable, so its projects are
+            # resolved per pass from each project's checkout.
+            config_of = (
+                config_for
+                if config_for is not None
+                else partial(_default_config, root=root)
+            )
             try:
-                config = resolve_config(project)
+                config = config_of(project)
             except Exception as error:  # noqa: BLE001 - one layer cannot end a pass
                 entry["error"] = f"config: {error}"
                 continue
@@ -138,9 +132,23 @@ class PlanQueue:
             if not flight.service_queues_plans(config):
                 entry["reason"] = "service queueing is off for this project"
                 continue
-            identity = _plans_identity(root, queue_edit.plan_hold_path(project))
             key = (project, str(root))
-            if self._filled.get(key) == identity:
+            remembered = dict(self._filled.get(key) or {})
+            held = queue_edit.plan_holds(project)
+            moved: dict[str, tuple[Any, ...]] = {}
+            slugs = _plans_and_owners(Path(docs))
+            for slug in slugs:
+                identity = _plan_identity(Path(docs), slug, slug in held)
+                moved[slug] = identity
+                if remembered.get(slug) == identity:
+                    entry["plans"].append({"plan": slug, "reason": "unchanged"})
+            pending = [slug for slug in slugs if remembered.get(slug) != moved[slug]]
+            # A plan whose store refused is left out of the remembered set, so
+            # the next pass tries it again rather than waiting for its file to
+            # move a second time.
+            failed: set[str] = set()
+            if not pending:
+                self._filled[key] = moved
                 entry["reason"] = "no plan has moved since this project was filled"
                 continue
             try:
@@ -148,13 +156,11 @@ class PlanQueue:
             except Exception:  # noqa: BLE001 - an unreadable live set names nobody
                 live = []
             try:
-                ownership = resolve_plan_coordinators(
-                    project, root=root, pointers=live
-                )
+                ownership = resolve_plan_coordinators(project, root=root, pointers=live)
             except Exception:  # noqa: BLE001 - no resolution files nothing for it
                 ownership = {"plans": {}}
             plans = ownership.get("plans") or {}
-            for slug in _plan_slugs(root):
+            for slug in pending:
                 row = plans.get(slug) or {}
                 session = (
                     str(row.get("coordinator") or "")
@@ -166,11 +172,12 @@ class PlanQueue:
                         project,
                         slug,
                         session=session,
-                        config_for=resolve_config,
+                        config_for=config_of,
                         repo_root=root,
                         queued_by=SERVICE_SESSION,
                     )
                 except Exception as error:  # noqa: BLE001 - one plan cannot end a pass
+                    failed.add(slug)
                     entry["plans"].append(
                         {"plan": slug, "error": str(error), "session": session}
                     )
@@ -197,17 +204,10 @@ class PlanQueue:
                                     "section": queued.get("section"),
                                 }
                             )
-            self._filled[key] = identity
+            self._filled[key] = {
+                slug: identity for slug, identity in moved.items() if slug not in failed
+            }
         return report
-
-
-def _plan_slugs(root: Path) -> list[str]:
-    """Every plan slug a checkout's plans directory holds, in a stable order."""
-    plans_dir = Path(root) / "docs" / "plans"
-    try:
-        return sorted(path.stem for path in plans_dir.glob("*.html"))
-    except OSError:
-        return []
 
 
 #: The record one service process keeps of what it has already filled. It is

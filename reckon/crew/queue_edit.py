@@ -168,9 +168,7 @@ def plan_holds(project: str) -> dict[str, dict[str, Any]]:
     if not isinstance(loaded, dict):
         return {}
     return {
-        str(slug): record
-        for slug, record in loaded.items()
-        if isinstance(record, dict)
+        str(slug): record for slug, record in loaded.items() if isinstance(record, dict)
     }
 
 
@@ -189,7 +187,9 @@ def _write_plan_holds(project: str, holds: Mapping[str, Any]) -> None:
     os.replace(temporary, path)
 
 
-def hold_plan(project: str, plan: str, *, reason: str, session: str = "") -> dict[str, Any]:
+def hold_plan(
+    project: str, plan: str, *, reason: str, session: str = ""
+) -> dict[str, Any]:
     """Keep a plan's work out of the service's queue, request or none.
 
     A plan hold is what a coordinator uses when the plan has no request to hold
@@ -1110,7 +1110,9 @@ def hold(
     held_plan = None
     if plan:
         held_plan = hold_plan(
-            _plan_hold_target(run_id, project), plan, reason=reason, session=session or ""
+            _plan_hold_target(run_id, project, plan),
+            plan,
+            reason=reason,
         )
     ids = _selected_requests(
         run_id, plan, session, project, release=False, allow_none=bool(plan)
@@ -1189,7 +1191,9 @@ def release(
     """
     released_plan = None
     if plan:
-        released_plan = release_plan(_plan_hold_target(run_id, project), plan, reason=reason)
+        released_plan = release_plan(
+            _plan_hold_target(run_id, project, plan), plan, reason=reason
+        )
     ids = _selected_requests(
         run_id, plan, session, project, release=True, allow_none=bool(plan)
     )
