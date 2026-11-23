@@ -1,0 +1,88 @@
+<section id="delivered-work-lands-without-a-coordinator-s59-landing">
+  <h2>A project declares the scheduler profile its gate arms run under</h2>
+
+  <p><strong>What this measures.</strong> A gate that can only be measured on one
+  scheduler states that scheduler once, as a named profile under
+  <code>landing.gate_profiles</code> in the project's flight layer. The profile
+  names the partition, a reservation, a gres request, a memory, a CPU count and
+  a default time. Every submission a gate makes resolves the name it was given
+  against those profiles and carries the whole declaration: the job a
+  <code>crew declare-gate --partition &lt;profile&gt;</code> submits, the arms a
+  <code>crew suite run --partition &lt;profile&gt;</code> submits, both arms of
+  a landing measure for such a run, and the replayed gate at the integrated
+  revision. A name no profile carries is a bare partition and submits exactly
+  as it always did.</p>
+
+  <p><strong>The refusal is at load.</strong> A profile that declares no
+  memory, or a memory of zero, is refused while the flight layer is validated,
+  naming the profile: an absent or zero memory requests a whole node and pends
+  on Resources. A profile that names no CPU count keeps the shipped
+  population's, so omitting it does not silently run an arm one CPU at a
+  time.</p>
+
+  <p><strong>The job's own environment (see table).</strong> A profile's
+  submission keeps <code>TMPDIR</code> node-local and runs the project's
+  interpreter directly; nothing in the submitted step calls
+  <code>uv</code>.</p>
+
+  <table id="dwlw-s59-submission">
+    <thead><tr><th>submission</th><th>what carries the profile</th></tr></thead>
+    <tbody>
+      <tr><td><code>crew declare-gate --partition h200</code></td>
+        <td><code>landing_measure.measure_run</code> &rarr;
+        <code>partition_submission</code></td></tr>
+      <tr><td><code>crew suite run --partition h200</code></td>
+        <td><code>standing_suite.run_node_command</code> resolves the
+        project's config and passes it to the arm runner</td></tr>
+      <tr><td>a landing measure for such a run</td>
+        <td><code>queue_landing._measure_delivery</code> measures on the
+        declared partition even when the project's own measure partition is
+        unset</td></tr>
+      <tr><td>the replayed gate at the integrated revision
+        (<code>promotion_gate._rerun_gate_at_integrated_revision</code>)</td>
+        <td>the repository's resolved landing declaration</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> At the base
+  <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code>, the node's first case
+  fails with the submission carrying the partition alone:
+  <code>AssertionError: assert 'h200' == 'betelgeuse'</code>. The profile name
+  reaches the scheduler as though it were a partition, which is exactly the
+  reading the change exists to replace.</p>
+
+  <p><strong>Measure.</strong> The importer population of the changed modules —
+  139 files plus the node's own test — was run on <code>all_debug</code> at
+  both revisions. At the base
+  <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code> the population reports
+  <code>26 failed, 1443 passed, 9 skipped</code> in 679 s. At the head
+  <code>0087fa7291f217c762719d36318986eb0aad1701</code> it reports
+  <code>27 failed, 1447 passed, 9 skipped</code> in 747 s.</p>
+
+  <p><strong>The one difference is the scratch filesystem.</strong> The head
+  arm ran with <code>TMPDIR</code> on node-local memory, where the base arm
+  ran with it on <code>/tmp</code>, and the six ids the head arm adds are all
+  tests of the <code>/tmp</code> scratch policy itself
+  (<code>tests/test_session_scratch_uses_bounded_node_tmp.py</code> and
+  <code>test_a_control_pass_profiles_without_live_writes.py::test_the_filesystem_fence_refuses_an_external_write</code>).
+  Re-run over the same head with <code>TMPDIR</code> on <code>/tmp</code>, those
+  files report <code>96 passed</code> and one failure,
+  <code>test_excess_reaches_only_its_conversation_in_both_obligation_views</code>
+  — which the base arm already carries. No failure is added by the
+  change.</p>
+
+  <p><strong>The scratch runs are recorded too.</strong> Node-local
+  <code>/tmp</code> on <code>all_debug</code> exhausted twice while this node
+  was being measured (418 fixture errors creating pytest's own temporary
+  directories, with measurement passes unaffected), and a run with the scratch
+  on shared storage added 22 environment failures in the disk and store
+  suites. Both logs are kept beside the arm logs so the readings above can be
+  checked against what produced them.</p>
+
+  <p><strong>What does not change.</strong> A bare partition name keeps the
+  shipped defaults — the population's CPU count, 32 GB and the bound the
+  measure computed — and carries no reservation or gres. A profile's default
+  time raises the arm's bound but never shortens a caller's longer one, and
+  the client wait is raised with it so the wait and the scheduler limit the
+  arm runs under agree.</p>
+</section>
