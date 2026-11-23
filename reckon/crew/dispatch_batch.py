@@ -1435,6 +1435,10 @@ def queue_plan(
         plans=plans,
     )
     answers = reads.answers(project, plan)
+    ownership = reads.ownership(project, read.repo_root)
+    owner = str(
+        ((ownership.get("plans") or {}).get(plan) or {}).get("coordinator") or ""
+    )
     history = _plan_history(project, plan, read.repo_root)
     entries: list[dict[str, Any]] = []
     rows: dict[str, dict[str, Any]] = {}
@@ -1451,6 +1455,13 @@ def queue_plan(
             "status": "skipped",
         }
         rows[identity] = row
+        if owner and owner != session:
+            # Every authored row names the coordinating session, including the
+            # ones the read does not answer for: a caller enumerating a plan it
+            # does not own needs the owner on each row it is told to leave.
+            coordinated = _coordinated_answer(owner)
+            row.update(reason=coordinated, session=owner, queue_answer=coordinated)
+            continue
         answer = answers.get(identity)
         if answer is not None:
             row["queue_answer"] = answer["reason"]
