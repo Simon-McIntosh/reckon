@@ -119,9 +119,12 @@ RECORD_SUFFIX = ".json"
 
 # The record a reloading host writes beside its census before it execs, and
 # which its replacement reads to adopt the children it was supervising. It is
-# separate from the census because it describes one handover, not the fleet: a
-# reader of the census must not see a half-finished exec as a state of the host.
-RELOAD_SUFFIX = ".reload.json"
+# separate from the census because it describes one handover, and a reader of
+# the census must not see a half-finished exec as a state of the host. The
+# suffix is deliberately not ``.json``: the census is every ``*.json`` record in
+# the state directory, so a handover named that way would be read as one, and a
+# record it does not describe is worse than no record.
+RELOAD_SUFFIX = ".reload"
 
 # How long a reload that did not happen is waited out before it is retried: an
 # image that will not import, or an exec that failed, is not proved again on

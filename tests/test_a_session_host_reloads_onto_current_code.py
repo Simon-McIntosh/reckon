@@ -377,3 +377,37 @@ def test_unread_request_bytes_defer_the_reload_until_they_are_handled(
     )
     assert host.process.pid == original_pid
     assert host.reload_count() == 1, host.record()
+
+
+def test_a_pending_handover_is_never_read_as_a_census_record(
+    tmp_path: Path,
+) -> None:
+    """The handover is written beside the census and is not part of it.
+
+    A host writes the handover while its own census still describes the image
+    it is leaving, so a reader that took the handover for a record would report
+    a host with no pid and no children for the whole exec window. The census is
+    the ``*.json`` set in the state directory, which the handover's name is
+    therefore outside.
+    """
+    module = _module()
+    state = tmp_path / "state"
+    environ = {"RECKON_SESSION_HOST_STATE_DIR": str(state)}
+    owner = {
+        "pid": os.getpid(),
+        "start_time": module.process_start_time(os.getpid()),
+    }
+    host = module.SessionHost(owner=owner, environ=environ)
+    payload = {
+        "owner": owner,
+        "identity": "f" * 40,
+        "reload_count": 1,
+        "children": [],
+    }
+    host._handover_path.parent.mkdir(parents=True, exist_ok=True)
+    host._handover_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    assert host._handover_path.is_file()
+    assert host._handover_path.parent == state
+    assert list(state.glob("*.json")) == []
+    assert module.live_census(environ) == []
