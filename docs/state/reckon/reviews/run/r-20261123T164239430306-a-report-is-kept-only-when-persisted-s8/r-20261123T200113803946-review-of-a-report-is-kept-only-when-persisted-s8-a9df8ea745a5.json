@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite-1795462022968100725.log at 91f8d8d63be reports 58 passed, 0 failed; after_suite-1795462099876888144.log at a9df8ea7 reports 61 passed, 0 failed.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:1972",
+    "reckon/project_maintenance_commands.py:1483",
+    "reckon/crew/review_landing.py:229",
+    "reckon/evidence.py:1500"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T21:12:44Z",
+  "findings": [
+    {
+      "file": "reckon/project_state.py:302",
+      "line": 302,
+      "severity": "non-blocking",
+      "text": "plan_sprint_href re-implements the repository's served-document address rule: reckon/evidence.py:1166 _plan_page_href already turns a resolved resource into f\"/{project}/{relative}\" and resolve_resource already answers None for a document that is not there, so the sprint link's path convention is now defined twice and its .html form can drift."
+    },
+    {
+      "file": "tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py:312",
+      "line": 312,
+      "severity": "non-blocking",
+      "text": "The open-plan case writes the record frame before appending, so its equality assertion at :339 only covers an existing record not being rewritten; a regression that composes for an open plan when the record is absent would leave it green, and that absence is the state a plan that never landed a record is in."
+    },
+    {
+      "file": "docs/evidence/fragments/a-report-is-kept-only-when-persisted/a-report-is-kept-only-when-persisted-s8.html:1",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The dispatch declared the s8 evidence fragment and figure directory as write paths and neither exists in the delivery; the manifest states figures: none and the plan section's own task names only reckon/project_state.py, reckon/evidence.py and the new test, so the omission is a dispatch-spec gap rather than a scope breach."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commit a9df8ea7 against 91f8d8d63be: reckon/_store.py (+22), reckon/evidence.py (+197-18), reckon/project_state.py (+26) and the new 353-line test, with the composition reached only through the closure branch of _write_state_locked.",
+    "done_when": "The done_when names tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py with three cases; the manifest records 61 passed in 48.45s at head, and a re-run of that file at head gives 3 passed, EXIT=0.",
+    "goal": "The node's one-sentence deliverable is a single report composed at a plan's closure naming the plan and its sprint with each node's figures beneath that node's row; reckon/evidence.py:2022 compose_closed_plan_report and _node_figure_groups at :954 deliver exactly that.",
+    "manifest": "The manifest reports status complete, commit a9df8ea7, three cases passing, a base arm of 58 passed and a negative control of 1 failed at 91f8d8d63be, and names its three log paths on disk.",
+    "write_paths": "The six declared paths are reckon/project_state.py, reckon/evidence.py, the new test, the s8 evidence fragment, the s8 figure directory and reckon/_store.py; the diff carries four of them and produces neither the fragment nor the figure directory."
+  },
+  "justifications": {
+    "durability": "The sprint assertion at tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py:288 reddens on a regression that drops the sprint, but the open-plan case pre-writes its frame at :312 so it cannot see composition for a plan with no record.",
+    "evidence": "The gate ran the named test inside a fenced suite (61 passed at a9df8ea7, 58 passed at 91f8d8d63be, both EXIT=0), and the negative control reproduces the declared base failure exactly (1 failed, EXIT=1).",
+    "fit": "reckon/evidence.py:1461 follows the module's _escape/_source/dataclass idiom and no added name or comment carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/_store.py:1962 composes the report only on a transition into a landed status, and reckon/evidence.py:1907 gives it the plan and sprint identity the record's first block and head metadata carry.",
+    "reuse": "reckon/project_state.py:302 builds a document's served address itself instead of extending reckon/evidence.py:1166 _plan_page_href over a resolved resource, so the record's one address rule now exists in two places.",
+    "scope_discipline": "All four delivered files are inside the dispatch's declared write paths and nothing outside them is touched, though the declared s8 evidence fragment and figure directory were not produced."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's one-sentence deliverable is a single report composed at a plan's closure naming the plan and its sprint with each node's figures beneath that node's row; reckon/evidence.py:2022 compose_closed_plan_report delivers it.\nVERDICT done_when: the done_when names tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py; the manifest records that run at 61 passed in 48.45s, and a re-run at head gives 3 passed, EXIT=0.\nVERDICT write_paths: read the six declared paths and compared the four delivered files against them; all four are declared, and the declared s8 evidence fragment and figure directory were not produced.\nVERDICT manifest: read; it states complete, cites a9df8ea7, 61 passed at head, 58 passed at base and 1 failed for the negative control, and names all three log paths.\nVERDICT diff: read a9df8ea7 against 91f8d8d63be commit by commit; four files, all inside the declared scope, with the composition reached only from the closure branch.\nCALL_SITES: reckon/_store.py:1972, reckon/project_maintenance_commands.py:1483, reckon/crew/review_landing.py:229, reckon/evidence.py:1500\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:1962 composes the report only on a transition into a landed status, and reckon/evidence.py:1907 gives it the plan and sprint identity the record's first block and head metadata carry.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate ran the named test in a fenced suite (61 passed at a9df8ea7, 58 at 91f8d8d63be, both EXIT=0), and the negative control reproduces the declared base failure (1 failed, EXIT=1).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every delivered path is one of the declared write paths and nothing outside them is touched, though the declared s8 fragment and figure directory were never produced.\nSCORE durability: 16\nJUSTIFICATION durability: the sprint assertion at tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py:288 is shown able to fail, but the open-plan case at :312 pre-writes its frame and so cannot see composition for a plan with no record.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/evidence.py:1461 follows the module's _escape/_source/dataclass idiom and no added name or comment carries a plan, stage or ticket label.\nSCORE reuse: 8\nJUSTIFICATION reuse: reckon/project_state.py:302 re-implements the served-address construction owned by reckon/evidence.py:1166 _plan_page_href instead of resolving the sprint resource and reusing it.\nFINDING reckon/project_state.py:302 non-blocking: plan_sprint_href re-implements the served-document address rule owned by reckon/evidence.py:1166.\nFINDING tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py:312 non-blocking: the open-plan case pre-writes its frame, so it cannot see composition for a plan with no record.\nFINDING docs/evidence/fragments/a-report-is-kept-only-when-persisted/a-report-is-kept-only-when-persisted-s8.html:1 non-blocking: the declared s8 evidence fragment and figure directory were not delivered.",
+  "review_run_id": "r-20261123T200113803946-review-of-a-report-is-kept-only-when-persisted-s8-a9df8ea745a5",
+  "reviewed_base_sha": "91f8d8d63be0104bfa1308fb508fdce6e189ca83",
+  "reviewed_head_sha": "a9df8ea745a5c65de06eee9c0a28d6971ca1508c",
+  "reviewed_run_id": "r-20261123T164239430306-a-report-is-kept-only-when-persisted-s8",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 8,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T21:44:08.185076+00:00",
+  "total": 96
+}
