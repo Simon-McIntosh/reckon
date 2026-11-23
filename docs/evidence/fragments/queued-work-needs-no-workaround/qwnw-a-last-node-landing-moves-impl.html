@@ -35,6 +35,11 @@
   in flight keeps it. A run that leaves siblings open records nothing, so impl
   does not move and no override is recorded.</p>
 
+  <p>An earlier attempt at <code>bba1d13a7a</code> wrote the closure inside the
+  landing's own staged plan write instead, and the declaration-set axes of the
+  concurrency measure failed there: <code>2 failed, 5 passed, 34 deselected in
+  10.43s</code>. That is the state this ordering replaces.</p>
+
   <p>A closure that cannot be written or committed after the landing has
   committed is reported in the promotion's receipt (<code>plan_closure</code>)
   rather than raised: the code has already landed by then, and the missing
@@ -55,7 +60,7 @@
 
   <p>The concurrency measure is unchanged and passes again:
   <code>tests/test_every_landed_state_write_survives_a_promotion.py</code> reads
-  <code>41 passed in 67.27s</code> at this head.</p>
+  <code>41 passed in 67.27s (0:01:07)</code> at this head.</p>
 
   <p>The negative control extracts the unchanged base revision into a scratch
   tree and runs the same file there: the first case is refused with
