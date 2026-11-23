@@ -19,7 +19,7 @@ import pytest
 
 import reckon.crew.runs as runs_module
 from reckon import flight
-from reckon.crew import landing_measure, standing_suite
+from reckon.crew import landing_measure, promotion_gate, standing_suite
 
 PROFILE = {
     "partition": "betelgeuse",
@@ -207,6 +207,51 @@ def test_a_profile_without_memory_is_refused_at_load(tmp_path):
             strict=True,
         )
         == []
+    )
+
+
+def test_a_replayed_gate_waits_for_the_profiles_bound(project, monkeypatch, tmp_path):
+    """The replay submits with the profile and waits as long as its job may run.
+
+    A profile's default time raises the job's ``--time``, so a client that
+    waited on the replay's own shorter bound would kill a job the scheduler
+    was still running and report the kill as the gate's timeout.
+    """
+    repo, _base, head = project
+    monkeypatch.setattr(
+        promotion_gate,
+        "_replay_landing",
+        lambda root: {
+            "measure_partition": "h200",
+            "gate_profiles": {"h200": dict(PROFILE)},
+        },
+    )
+    calls = []
+
+    def runner(argv, **options):
+        calls.append((argv, options))
+        for option in argv:
+            if option.startswith("--output="):
+                Path(option.split("=", 1)[1]).write_text("EXIT=0\n")
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    report = promotion_gate._rerun_gate_at_integrated_revision(
+        repository=repo,
+        gate_check={"command": "printf 'EXIT=0\\n'"},
+        integrated_revision=head,
+        timeout_seconds=600,
+        run=runner,
+    )
+
+    assert calls, report
+    argv, options = calls[0]
+    _assert_profile_in(argv)
+    assert report["measure_partition"] == "betelgeuse"
+    assert report["replay_bound_seconds"] == 600
+    assert report["replay_job_bound_seconds"] == 4 * 3600
+    assert options["timeout"] == (
+        report["replay_job_bound_seconds"]
+        + promotion_gate._PARTITION_SUBMISSION_SLACK_SECONDS
     )
 
 

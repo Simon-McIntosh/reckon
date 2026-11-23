@@ -1351,21 +1351,33 @@ def _rerun_gate_at_integrated_revision(
             job_log: Path | None = None
             environment: dict[str, str] | None = None
             if declared:
-                from reckon.crew.landing_measure import partition_submission
+                from reckon.crew.landing_measure import (
+                    gate_bound_seconds,
+                    partition_submission,
+                )
 
                 job_log = _replay_job_log(replay_log_path)
+                # The job's own bound may exceed the one this replay resolved,
+                # because a gate profile's default time is the shortest bound
+                # its job may carry. Waiting for the shorter figure would kill
+                # a job the scheduler was still running and report the kill as
+                # the gate's timeout, so the wait follows the job's bound.
+                job_bound_seconds = gate_bound_seconds(
+                    {"landing": landing}, declared, bound_seconds
+                )
                 selected, argv, environment = partition_submission(
                     script=_partition_replay_script(replayed),
                     partition=declared,
                     long_partition=str(
                         landing.get("measure_long_partition") or "rigel"
                     ),
-                    bound_seconds=bound_seconds,
+                    bound_seconds=job_bound_seconds,
                     chdir=checkout_root,
                     log_path=job_log,
                     config={"landing": landing},
                 )
-                timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
+                timeout = job_bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
+                report["replay_job_bound_seconds"] = job_bound_seconds
             else:
                 argv = ["sh", "-c", replayed]
                 timeout = bound_seconds
@@ -1416,7 +1428,9 @@ def _rerun_gate_at_integrated_revision(
                     output=partial,
                     exit_status=None,
                     cut_short=_replay_cut_short_reason(
-                        bound_seconds=bound_seconds,
+                        bound_seconds=report.get(
+                            "replay_job_bound_seconds", bound_seconds
+                        ),
                         bound_source=bound_source,
                         elapsed_seconds=elapsed,
                     ),
@@ -1494,7 +1508,7 @@ def _rerun_gate_at_integrated_revision(
         report["reason"] = str(report["replay_failure"])
     elif report["timed_out"]:
         report["reason"] = _replay_cut_short_reason(
-            bound_seconds=bound_seconds,
+            bound_seconds=report.get("replay_job_bound_seconds", bound_seconds),
             bound_source=bound_source,
             elapsed_seconds=report["replay_elapsed_seconds"],
         )

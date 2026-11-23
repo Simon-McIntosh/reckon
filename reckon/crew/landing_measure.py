@@ -1140,6 +1140,25 @@ def gate_profile_time_seconds(profile: Mapping[str, Any]) -> float | None:
     return parse_gate_duration(profile.get("time"))
 
 
+def gate_bound_seconds(
+    config: Mapping[str, Any] | None, partition: str, bound_seconds: float
+) -> float:
+    """The bound a submission to ``partition`` actually executes under.
+
+    A profile's default time is the shortest bound its job may carry, so it
+    raises a caller's shorter bound and never shortens a longer one. A caller
+    that waits on the submission needs this figure rather than the one it
+    passed in: waiting for the shorter bound would kill a job the scheduler
+    was still running and read the kill as the gate's own timeout.
+    """
+    profile = gate_profile(config, partition)
+    if profile is not None:
+        profile_time = gate_profile_time_seconds(profile)
+        if profile_time is not None:
+            return max(float(bound_seconds), profile_time)
+    return float(bound_seconds)
+
+
 def _gate_profile_resource_options(profile: Mapping[str, Any]) -> list[str]:
     """The scheduler resource options a profile's submission carries.
 
@@ -1212,9 +1231,7 @@ def partition_submission(
     profile = gate_profile(config, partition)
     if profile is not None:
         selected = str(profile["partition"])
-        profile_time = gate_profile_time_seconds(profile)
-        if profile_time is not None:
-            bound_seconds = max(float(bound_seconds), profile_time)
+        bound_seconds = gate_bound_seconds(config, partition, bound_seconds)
         resource_options = _gate_profile_resource_options(profile)
     else:
         selected = partition_for_bound(partition, long_partition, bound_seconds, config)
