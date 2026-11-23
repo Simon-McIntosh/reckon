@@ -16,6 +16,7 @@ the run's head together.
 from __future__ import annotations
 
 import json
+import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -23,7 +24,7 @@ from typing import Any
 import pytest
 
 from reckon import _plan_html, _store
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_scope
 from reckon.crew.runs import _write_json, pointer_path
 from reckon.mcp_edit_plan import _edit_plan
 from tests.helpers.git import git as _git
@@ -373,3 +374,55 @@ def test_a_state_write_whose_provenance_cannot_be_saved_rolls_back(
         _write("section-append", run["repository"])
 
     assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("kind", ["declaration-set", "section-append"])
+def test_a_commit_refusal_preserves_a_state_write_after_the_snapshot(
+    run: dict[str, Any], kind: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = promotion._record_comment_with_snapshot
+
+    def wrapper(snapshot, **kwargs):
+        _write(kind, run["repository"])
+        return real(snapshot, **kwargs)
+
+    def refuse_stage(*args, **kwargs):
+        return subprocess.CompletedProcess(
+            ["git", "add"], 1, "", "injected staging refusal"
+        )
+
+    monkeypatch.setattr(promotion, "_record_comment_with_snapshot", wrapper)
+    monkeypatch.setattr(promotion_scope, "_stage_landing_writes", refuse_stage)
+
+    landing = _complete_land(run)
+
+    assert landing.exit_code != 0, landing.output
+    assert "injected staging refusal" in landing.output
+    _, holds = WRITES[kind]
+    assert holds(_state((run["repository"] / PLAN_PATH).read_text()))
+    assert not (run["repository"] / "reviewed.txt").exists()
+
+
+def test_a_state_receipt_does_not_adopt_prose_changed_after_the_snapshot(
+    run: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = promotion._record_comment_with_snapshot
+    path = run["repository"] / PLAN_PATH
+
+    def wrapper(snapshot, **kwargs):
+        _write("section-append", run["repository"])
+        text = path.read_text()
+        assert "Appended while a landing was in flight." in text
+        path.write_text(
+            text.replace("Appended while a landing was in flight.", "Unrecorded edit.")
+        )
+        return real(snapshot, **kwargs)
+
+    monkeypatch.setattr(promotion, "_record_comment_with_snapshot", wrapper)
+
+    landing = _complete_land(run)
+
+    assert landing.exit_code != 0, landing.output
+    assert "Unrecorded edit." in path.read_text()
+    assert _section_appended(_state(path.read_text()))
+    assert not (run["repository"] / "reviewed.txt").exists()
