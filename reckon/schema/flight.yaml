@@ -1131,6 +1131,23 @@ slots:
       admission pass reads it from the resolved config.
     range: StrandedWaitConfig
 
+  settle:
+    description: >-
+      When a run that holds a live-looking phase with no worker behind it is
+      settled as a worker that ended without delivering. The block is declared
+      here so a host or project layer retunes the bound without a code change;
+      the classifier reads it from the resolved config.
+    range: SettleConfig
+
+  quiet_after_hours:
+    description: >-
+      Hours a run's stream must have been still, after its launch step has left
+      the scheduler, before the run is settled. The bound is long because the
+      reading concludes nothing will write again: a run that is slow or thinking
+      without printing must never be settled. Defaults to 6.
+    range: float
+    minimum_value: 0
+
   report_after_hours:
     description: >-
       Hours a request waiting on an upstream that no run or request is building
@@ -1332,6 +1349,7 @@ classes:
       - session_scratch
       - lost_session
       - stranded_wait
+      - settle
       - summary
       - ticker
       - domain
@@ -1724,6 +1742,14 @@ classes:
       code.
     slots:
       - report_after_hours
+
+  SettleConfig:
+    description: >-
+      How long a run with no worker behind it may stay quiet before it is read
+      as ended. Settling is a conclusion that nothing will write again, so the
+      bound is a layer's decision rather than a constant of the code.
+    slots:
+      - quiet_after_hours
 
   SummaryConfig:
     description: When and how workers report.

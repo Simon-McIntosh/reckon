@@ -226,6 +226,7 @@ class FlightConfig(ConfiguredBaseModel):
     session_scratch: SessionScratchConfig | None = Field(default=None, description="""Per-session scratch bound and aggregate share of the local disk.""")
     lost_session: LostSessionConfig | None = Field(default=None, description="""When a coordinator session that nothing has heard from reads as lost. The block is declared here so a host or project layer retunes the threshold without a code change; the derivation reads it from the resolved config.""")
     stranded_wait: StrandedWaitConfig | None = Field(default=None, description="""How long a request waiting on an upstream that nobody is building may stand before its owner is told once. The block is declared here so a host or project layer retunes the threshold without a code change; the admission pass reads it from the resolved config.""")
+    settle: SettleConfig | None = Field(default=None, description="""When a run that holds a live-looking phase with no worker behind it is settled as a worker that ended without delivering. The block is declared here so a host or project layer retunes the bound without a code change; the classifier reads it from the resolved config.""")
     summary: SummaryConfig | None = Field(default=None)
     ticker: TickerConfig | None = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
     domain: DomainConfig | None = Field(default=None, description="""The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour.""")
@@ -770,6 +771,13 @@ class StrandedWaitConfig(ConfiguredBaseModel):
     report_after_hours: float | None = Field(default=None, description="""Hours a request waiting on an upstream that no run or request is building may stand before it appears once in its owner's obligations. A wait whose upstream can never land is retired whatever this figure is, and a wait is never removed for its age alone. Defaults to 72.""", ge=0)
 
 
+class SettleConfig(ConfiguredBaseModel):
+    """
+    How long a run with no worker behind it may stay quiet before it is read as ended. Settling is a conclusion that nothing will write again, so the bound is a layer's decision rather than a constant of the code.
+    """
+    quiet_after_hours: float | None = Field(default=None, description="""Hours a run's stream must have been still, after its launch step has left the scheduler, before the run is settled. The bound is long because the reading concludes nothing will write again: a run that is slow or thinking without printing must never be settled. Defaults to 6.""", ge=0)
+
+
 class SummaryConfig(ConfiguredBaseModel):
     """
     When and how workers report.
@@ -864,6 +872,7 @@ WorktreeConfig.model_rebuild()
 SessionScratchConfig.model_rebuild()
 LostSessionConfig.model_rebuild()
 StrandedWaitConfig.model_rebuild()
+SettleConfig.model_rebuild()
 SummaryConfig.model_rebuild()
 TickerConfig.model_rebuild()
 DomainConfig.model_rebuild()
