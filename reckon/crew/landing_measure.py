@@ -98,6 +98,20 @@ _TREE_BUILD_REFUSAL = re.compile(
     r"^cannot build the measurement tree: .*$", re.MULTILINE
 )
 
+#: The line the scheduler writes when it stops a job at its own time limit. A
+#: job cancelled that way never reaches the EXIT trap its script set, so its
+#: log carries no receipt and the scheduler's line is the only account of why
+#: the arm has no result.
+_TIME_LIMIT_CANCEL = re.compile(
+    r"^(?:slurmstepd: error|srun: error):.*(?:DUE TO TIME LIMIT|Time limit exceeded)",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+#: The job id a scheduler line names, for a cancellation whose submission's
+#: printed id cannot be read. A step cancelled by the time limit is named by
+#: ``STEP <job>.<step>``, and the STEP id's integer part is the job.
+_SCHEDULER_JOB = re.compile(r"\b(?:JOB|STEP) (\d+)\b")
+
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
 
@@ -360,6 +374,10 @@ class Arm:
     #: that took 900 s is not judged again under a bound that ignores it.
     elapsed_seconds: float = 0.0
     file_count: int = 0
+    #: The scheduler job a partitioned arm ran as and the time limit its
+    #: submission carried. Both are empty for an arm that ran in place.
+    job_id: str = ""
+    time_limit: str = ""
 
     @property
     def readable(self) -> bool:
@@ -385,6 +403,8 @@ class Arm:
             "timed_out": self.timed_out,
             "elapsed_seconds": self.elapsed_seconds,
             "file_count": self.file_count,
+            "job_id": self.job_id,
+            "time_limit": self.time_limit,
         }
 
 
@@ -541,6 +561,24 @@ def _target_name(token: str) -> str:
     while name.startswith("./"):
         name = name[2:]
     return name.rstrip("/")
+
+
+def _distinct_files(paths: Iterable[str], exclude: Iterable[str] = ()) -> list[str]:
+    """The files one command names, each counted once.
+
+    A node's armed test is also an importer when it imports the module the node
+    changed, and a delivery scope may name one file twice. A command that names
+    it twice runs it a second time under the same bound, so every file is named
+    once however many routes put it in the population. ``exclude`` names the
+    files the command already carries, which need not be named again.
+    """
+    taken = {_target_name(token) for token in exclude}
+    seen: dict[str, None] = {}
+    for path in paths:
+        name = _target_name(str(path))
+        if name and name not in taken:
+            seen.setdefault(name, None)
+    return list(seen)
 
 
 def armed_argv(
@@ -825,6 +863,12 @@ def _arm(
             unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
             elapsed_seconds=elapsed,
             file_count=file_count,
+            # A partitioned runner that read the scheduler's own cancel line
+            # reports the timeout here; an arm that simply exceeded the
+            # client-side ceiling is reported by the branch above.
+            timed_out=bool(getattr(finished, "timed_out", False)),
+            job_id=str(getattr(finished, "job_id", "") or ""),
+            time_limit=str(getattr(finished, "time_limit", "") or ""),
         )
 
 
@@ -844,6 +888,14 @@ def partition_for_bound(
     if bound_seconds > _LONG_PARTITION_BOUND_SECONDS:
         return long_partition or "rigel"
     return partition
+
+
+def time_limit_text(bound_seconds: float) -> str:
+    """A scheduler time limit as the ``HH:MM:SS`` a submission carries."""
+    seconds = max(1, math.ceil(bound_seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
 def partition_submission(
@@ -880,10 +932,7 @@ def partition_submission(
     with Path(f"{log_path}.scheduler").open("x", encoding="utf-8"):
         pass
     selected = partition_for_bound(partition, long_partition, bound_seconds)
-    seconds = max(1, math.ceil(bound_seconds))
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    bound = time_limit_text(bound_seconds)
     step = (
         shlex.join(
             [
@@ -1070,6 +1119,23 @@ exit "$status"
                     stream.write(f"{cancelled.stdout or ''}{cancelled.stderr or ''}")
             raise
         output = log.read_text() if log.exists() else ""
+        limit = time_limit_text(timeout)
+        job_id = ""
+        printed = re.match(
+            r"^(\d+)(?:;[^\n]*)?(?:\n|$)", (finished.stdout or "").strip()
+        )
+        if printed:
+            job_id = printed.group(1)
+        # The scheduler's own cancel line is the account of an arm stopped at
+        # the job's time limit: the trap that could have printed a receipt was
+        # killed with everything else, so the log has no receipt and nothing
+        # the arm printed is complete. The job's limit is the bound the
+        # submission carried, and the refusal names both.
+        timed_out = bool(_TIME_LIMIT_CANCEL.search(output))
+        if timed_out:
+            named = _SCHEDULER_JOB.search(output)
+            if named:
+                job_id = job_id or named.group(1)
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
         # The scheduler appends lines of its own to the job's log after the
@@ -1077,10 +1143,15 @@ exit "$status"
         # line rather than as the log's last one; the last such line is the
         # trap's, since the trap prints after everything the arm itself ran.
         receipts = _EXIT_RECEIPT.findall(output)
-        status = int(receipts[-1]) if receipts else 3
+        status = int(receipts[-1]) if receipts and not timed_out else 3
         reason = ""
         refusal = _TREE_BUILD_REFUSAL.search(output)
-        if refusal:
+        if timed_out:
+            reason = (
+                f"the scheduler cancelled job {job_id or 'unknown'} at its "
+                f"{limit} time limit"
+            )
+        elif refusal:
             # The arm's own sentence names the path and the revision, so it is
             # the reason a reader is given rather than a log excerpt.
             reason = refusal.group(0).strip()
@@ -1099,6 +1170,9 @@ exit "$status"
             "",
         )
         returned.unreadable_reason = reason
+        returned.timed_out = timed_out
+        returned.job_id = job_id
+        returned.time_limit = limit
         return returned
 
     return run
@@ -1142,7 +1216,14 @@ def measure_run(
     landing = config.get("landing") or {}
     partition = str(landing.get("measure_partition") or "")
     execution = "slurm" if partition else "in-place"
-    node_tests = [str(path).strip() for path in test_files if str(path).strip()]
+    # A project that declares its measurement limit owns the floor every arm
+    # runs above: a caller that omits the figure, or passes a smaller one, must
+    # not submit an arm under a ceiling the project has said is too short for
+    # its own populations.
+    timeout = max(float(timeout), measure_timeout(config))
+    node_tests = _distinct_files(
+        str(path).strip() for path in test_files if str(path).strip()
+    )
     rate = median_seconds_per_file(stored)
 
     def bound(file_count: int) -> float:
@@ -1209,7 +1290,11 @@ def measure_run(
         file_count=len(node_tests),
     )
     _carry_missing_tests(base_tree, tree, files)
-    population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
+    # The population runs the armed command extended with the importers, so an
+    # importer the armed command already names is not named again: a file run
+    # twice reads the same tests twice under one bound.
+    population_files = _distinct_files(files, exclude=argv)
+    population_command = [*argv, *population_files, "-n", str(POPULATION_WORKERS)]
     population_bound = bound(len(files))
     if files:
         population_base = _arm(
@@ -1257,11 +1342,21 @@ def measure_run(
         ),
     ):
         if not arm.readable:
-            unreadable = (
-                f"the {name} arm exceeded its {arm_bound_seconds:g}s bound"
-                if arm.timed_out
-                else f"the {name} arm did not run"
-            )
+            if arm.timed_out:
+                # The job and its limit are named inside the guard so a reader
+                # learns which submitted arm the scheduler stopped; the guard
+                # still ends on its bound, which is what the landing retries on.
+                scheduler = ""
+                if arm.job_id or arm.time_limit:
+                    job = f"job {arm.job_id}" if arm.job_id else "its job"
+                    limit = f"limit {arm.time_limit}" if arm.time_limit else "limit"
+                    scheduler = f" (scheduler {job}, {limit})"
+                unreadable = (
+                    f"the {name} arm{scheduler} exceeded its "
+                    f"{arm_bound_seconds:g}s bound"
+                )
+            else:
+                unreadable = f"the {name} arm did not run"
             break
     added_base = {*suite_base.failure_ids, *population_base.failure_ids}
     added_head = [*suite_head.failure_ids, *population_head.failure_ids]
