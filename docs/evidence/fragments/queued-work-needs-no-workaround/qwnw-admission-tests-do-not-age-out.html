@@ -1,0 +1,48 @@
+<section class="r-evidence" id="qwnw-admission-tests-do-not-age-out">
+<h2 id="qwnw-admission-tests-do-not-age-out-h">Admission tests date their live fixtures when they run</h2>
+<p id="qwnw-admission-tests-do-not-age-out-p1">Three of the five admission tests built their queued-pointer fixtures
+from a fixed calendar date. A queue entry belongs to a coordinator that is
+live at the moment admission reads it, so the five tests passed on the day the
+date was written and failed every day afterwards: once the fixed timestamp
+sits more than 72 hours behind the moment under test, the lost-session
+retirement drops the pointer as <code>retired-lost-session</code> before the
+assertion that expects it held or launched can see it. Both fixtures now stamp
+their live timestamps with <code>datetime.now(UTC).isoformat()</code> at import
+time. The one seed that is genuinely historical — the earlier completed run in
+<code>test_a_new_plan_review_is_a_first_attempt.py</code> — keeps its fixed
+date, because a past attempt is what it models.</p>
+<p id="qwnw-admission-tests-do-not-age-out-p2">The remaining two failures were a different kind of staleness in the same
+five files. <code>test_a_queued_launch_never_classifies_the_fleet.py</code>
+replays <code>reckon/crew/dispatching/preparation.py</code> at a pinned
+reference revision and compares the launch inputs the current code produces
+against it. Two changes land after that pin: the <code>seats_in_flight</code>
+keyword on the launch call, and the <code>dispatch_width</code> recorded
+default. The comparison now drops the keyword the pinned reference never knew
+and states the width on the request, so both arms are compared on the inputs
+they share rather than on the ones that postdate the pin.
+<code>test_composed_review_waits_for_a_roster_slot.py</code> asserted that the
+queued pointer carries the composed directory in <code>node.brief</code>; the
+pointer instead carries <code>brief_path</code>, the path of the run-directory
+copy the launch will read, and <code>node.brief</code> is null. The assertion
+now checks that the stored copy's parent is the request's own run directory and
+that the composed directory survives the hold.</p>
+<p id="qwnw-admission-tests-do-not-age-out-p3">The measure is the five tests in
+<code>tests/test_a_named_lane_request_queues_and_takes_the_reserve.py</code>,
+<code>tests/test_a_new_plan_review_is_a_first_attempt.py</code>,
+<code>tests/test_a_queued_launch_never_classifies_the_fleet.py</code> and
+<code>tests/test_composed_review_waits_for_a_roster_slot.py</code>, run together
+on the <code>all_debug</code> partition. Head, and head again with admission's
+clock advanced one year, both report 19 passed.</p>
+<p id="qwnw-admission-tests-do-not-age-out-p4">Base arm, revision 1a01424ccd:
+5 failed, 14 passed, <code>EXIT=1</code>. Each test fails for its own reason.
+The two date-fused tests in the named-lane file and the held-review test fail
+because the fixed-date pointer is retired before it is held or launched (empty
+<code>held</code> / <code>launched</code>). The reference-comparison test fails
+with <code>TypeError: dispatch() got an unexpected keyword argument
+'seats_in_flight'</code>, and the composed-review test fails at its
+<code>brief</code> assertion (<code>PosixPath('.')</code> against the composed
+directory). Head arm, revision cbcae1b912: 19 passed, <code>EXIT=0</code>. Clock
+arm, revision cbcae1b912 with <code>datetime</code> advanced 365 days
+process-wide: 19 passed, <code>EXIT=0</code>. No failure id appears at head
+that the base does not show.</p>
+</section>
