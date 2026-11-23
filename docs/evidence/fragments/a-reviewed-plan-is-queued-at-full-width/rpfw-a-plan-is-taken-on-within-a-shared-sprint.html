@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-reviewed-plan-is-queued-at-full-width">
+  <meta name="plan-title" content="A session takes on an unowned plan only inside a sprint it works in">
+  <meta name="plan-summary" content="An unowned plan's whole-plan dispatch is answered per section against the sprint the plan declares and the sprints the dispatching session coordinates; a session with no plan in that sprint queues nothing, one that has queues and is announced to the project's other sessions in one row, and the admission service is exempt.">
+  <meta name="plan-evidence-for" content="reckon:a-reviewed-plan-is-queued-at-full-width">
+  <meta name="plan-verifies" content="reckon:a-reviewed-plan-is-queued-at-full-width#s9">
+  <meta name="plan-commits" content="b46a4bff45">
+  <meta name="plan-recorded-at" content="2026-11-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,queue,sprint,watch">
+  <title>A session takes on an unowned plan only inside a shared sprint — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="rpfw-a-plan-is-taken-on-within-a-shared-sprint" data-reckon="landed" data-when="2026-11-23">
+  <h2>A session takes on an unowned plan only inside a shared sprint</h2>
+
+  <p id="rpfw-a-plan-is-taken-on-within-a-shared-sprint-why">A plan's coordinator is
+  derived from the session that dispatched its most recent run, so taking an unowned plan
+  on is not a separate act: it is what a whole-plan dispatch already does. Nothing
+  constrained which plan, so any session could become the coordinator of any unowned plan
+  in the project, including one in a sprint it does not work in. At the pinned base
+  <code>11d1229dde</code> the new test's second case fails with the plan's sections
+  queued, reporting <code>assert 3 == 0</code> over a result reading
+  <code>'queued': 3</code>.</p>
+
+  <p id="rpfw-a-plan-is-taken-on-within-a-shared-sprint-what">The queue read now asks,
+  before it answers that an unowned plan's sections may be queued, whether the
+  dispatching session already coordinates a plan carrying the same
+  <code>plan-sprint</code> the plan declares. Where it does not, every section answers
+  with one reason and queues nothing. A plan that declares no sprint is unaffected, so
+  the read's existing answer for such a plan is unchanged.</p>
+
+  <p id="rpfw-a-plan-is-taken-on-within-a-shared-sprint-row">When a session does take a
+  plan on, one row is appended to the project's watch stream naming the plan and the
+  session. The row carries no <code>session</code> field, so it is a broadcast rather
+  than one coordinator's run: the follower's project-wide partition puts it in every live
+  session's own rows, the taking session's included. The append is outside the
+  dispatch's success: a row that cannot be written never fails a dispatch whose requests
+  were queued.</p>
+
+  <p id="rpfw-a-plan-is-taken-on-within-a-shared-sprint-service">The admission service is
+  exempt. Its purpose is to queue work that no session owns, across every sprint the
+  project holds, so the sprint rule that constrains which unowned plans a session may
+  take on does not apply to a dispatch filed under the service identity. The rule lives
+  in the shared read (<code>reckon/crew/dispatch_batch.py</code>, <code>_QueueReads</code>),
+  so the whole-plan dispatch, a single-section dispatch and the service's own pass all
+  answer in one vocabulary.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li id="rpfw-a-plan-is-taken-on-within-a-shared-sprint-base"><strong>The declared
+    negative control, executed and logged.</strong> At the pinned base
+    <code>11d1229dde</code>, with this node's test file copied onto base source extracted
+    into a scratch tree, <code>3 failed, 1 passed in 1.26s</code>, closing
+    <code>EXIT=1</code>. The second case reads <code>assert 3 == 0</code> with the plan's
+    three sections queued, the row case reads <code>one take-on row, not []</code>, and
+    the service case fails on the absent <code>ADMISSION_SERVICE_SESSION</code>. The
+    first case passes at base, as the declared control requires: the rule being tested
+    only withholds, so a base that already queued the plan is consistent with the rule
+    being absent and not with the test being broken.</li>
+    <li id="rpfw-a-plan-is-taken-on-within-a-shared-sprint-head"><strong>The head
+    arm.</strong> At <code>b46a4bff45</code> all four cases pass in
+    <code>3.43s</code>. The taking case queues three sections and the coordinator
+    resolution names the taking session; the broadcast case reads exactly one row with
+    <code>kind</code> <code>plan-taken-on</code> and <code>took_by</code> the taking
+    session, and a second live session's partition places it in its own rows; the
+    foreign-sprint case skips every section naming the sprint, writes no row and leaves
+    no request; the service case queues all three sections of the foreign-sprint
+    plan.</li>
+    <li id="rpfw-a-plan-is-taken-on-within-a-shared-sprint-gate"><strong>The scoped gate
+    and its arms.</strong> The composed scoped gate ran
+    <code>62 passed in 42.00s</code> with <code>EXIT=0</code> at
+    <code>b46a4bff45</code> on <code>all_debug</code>. The base arm at
+    <code>11d1229dde</code> reported <code>58 passed in 42.23s</code> and the after arm
+    at <code>b46a4bff45</code> reported <code>62 passed in 39.44s</code>, both
+    <code>EXIT=0</code>. The two arms' commands differ by this node's new test file,
+    which the base tree does not carry and which the base arm's command omits: the four
+    added passes are exactly this node's cases, and the head adds no failure id.</li>
+  </ul>
+</article>
+</body>
+</html>
