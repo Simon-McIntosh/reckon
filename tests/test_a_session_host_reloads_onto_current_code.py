@@ -407,6 +407,9 @@ def test_the_host_reloader_takes_a_commit_through_the_station_reloader(
 
     monkeypatch.setattr(station_module.StationReloader, "_replace", _record)
     reloader = _module()._HostReloader(REPO_ROOT, environ=_reloader_environ(tmp_path))
+    # Asserted before the replacement is driven: a host that owns its own
+    # sequence would reach the real exec here, not the station's stub.
+    assert isinstance(reloader._station, station_module.StationReloader)
 
     reloader.replace("f" * 40, {})
 
