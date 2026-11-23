@@ -212,6 +212,13 @@ DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
 # would otherwise cycle through release, refusal and re-queue for ever.
 QUEUE_LAUNCH_FAILURE_LIMIT_KEY = "launch_failure_limit"
 DEFAULT_QUEUE_LAUNCH_FAILURE_LIMIT = 3
+# The priority points at which a request counts as critical work and takes a
+# freed slot ahead of waiting reviews of delivered runs. Below this level a
+# delivered review still leads, because a finished run cannot land without it;
+# at or above it the critical request is served first.
+# Declared in the ``queue`` namespace so a project retunes it per its own work.
+QUEUE_CRITICAL_PRIORITY_KEY = "critical_priority"
+DEFAULT_QUEUE_CRITICAL_PRIORITY = 100
 
 # How long a run whose launch step has left the scheduler may keep writing
 # before it is read as a worker that ended without delivering. The bound is in
@@ -1409,6 +1416,28 @@ def queue_max_requests(config: Mapping[str, Any] | None) -> int:
     return int(value)
 
 
+def queue_critical_priority(config: Mapping[str, Any] | None) -> int:
+    """The override at which a request takes a freed slot ahead of reviews.
+
+    A delivered run's review leads the lane, because a finished run cannot land
+    without it and the sections waiting on that run cannot launch. Critical
+    work takes precedence: at or above this level a request's priority override
+    outranks a waiting review. Read from the resolved config's
+    ``queue`` namespace so a project retunes the level, with the same fallbacks
+    as :func:`queue_max_requests`: a config that sets no value, or one that is
+    not a positive integer, falls back to the shipped default.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    value = (
+        queue.get(QUEUE_CRITICAL_PRIORITY_KEY, DEFAULT_QUEUE_CRITICAL_PRIORITY)
+        if isinstance(queue, Mapping)
+        else DEFAULT_QUEUE_CRITICAL_PRIORITY
+    )
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        return DEFAULT_QUEUE_CRITICAL_PRIORITY
+    return int(value)
+
+
 def queue_launch_failure_limit(config: Mapping[str, Any] | None) -> int:
     """How many failed launches in a row a request takes before it stops.
 
@@ -1794,9 +1823,7 @@ def validate_layer(
         raise FlightConfigError(source, unknown[0], UNKNOWN_KEY_CONSTRAINT)
 
     schema_layer = {
-        key: value
-        for key, value in data.items()
-        if key not in RECKON_OWNED_SCHEMA_KEYS
+        key: value for key, value in data.items() if key not in RECKON_OWNED_SCHEMA_KEYS
     }
     try:
         FlightConfig.model_validate(_inject_map_keys(_schema_view(schema_layer)))
@@ -1972,9 +1999,7 @@ def unknown_key_paths(data: Mapping[str, Any]) -> list[str]:
     from reckon._flight_schema import FlightConfig
 
     schema_layer = {
-        key: value
-        for key, value in data.items()
-        if key not in RECKON_OWNED_SCHEMA_KEYS
+        key: value for key, value in data.items() if key not in RECKON_OWNED_SCHEMA_KEYS
     }
     return sorted(
         set(

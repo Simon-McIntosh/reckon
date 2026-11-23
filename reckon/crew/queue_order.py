@@ -319,12 +319,30 @@ def _starved(queued_at: datetime | None, now: datetime) -> bool:
     )
 
 
+def _critical_level(
+    pointer: Mapping[str, Any],
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> int:
+    """The project's critical level, read through its resolved flight config.
+
+    A request whose override reaches this figure is critical work and takes a
+    freed slot ahead of a waiting review. Each project retunes the level in its
+    own flight layer, so it is resolved per request; without a resolver the
+    shipped default applies.
+    """
+    from reckon import flight
+
+    config = config_for(pointer) if config_for is not None else None
+    return flight.queue_critical_priority(config)
+
+
 def _precedence(
     pointer: Mapping[str, Any],
     *,
     queued_at: datetime | None,
     now: datetime,
     review: bool,
+    critical: int,
 ) -> tuple[tuple[int, int], str]:
     """The urgency classes shared by admission and promotion.
 
@@ -335,8 +353,15 @@ def _precedence(
     the review's own queued record, written by the dispatch that composed it.
     Below both, ageing sits above priority on purpose, so a spent budget can
     move work ahead but cannot starve another session.
+
+    Critical work leads everything: a request whose override reaches its
+    project's critical level is unblocking work, so it takes a freed slot ahead
+    of waiting reviews. Below that level
+    every other request keeps the order above, with delivered reviews first.
     """
     points = _override(pointer)
+    if points is not None and points >= critical:
+        return (-1, -points), f"priority override {points}"
     if review:
         if points is not None:
             return (0, -points), f"delivered review at priority {points}"
@@ -356,6 +381,7 @@ def fair_queue_order_details(
     is_review: Callable[[Mapping[str, Any]], bool],
     served: Mapping[str, int],
     consumes_turn: Callable[[Mapping[str, Any]], bool],
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> list[tuple[Mapping[str, Any], str]]:
     """Serve urgency classes fairly, charging only requests that take a turn.
 
@@ -367,7 +393,11 @@ def fair_queue_order_details(
     for request in requests:
         stamp = joined_at(request)
         rank, reason = _precedence(
-            request, queued_at=stamp, now=now, review=is_review(request)
+            request,
+            queued_at=stamp,
+            now=now,
+            review=is_review(request),
+            critical=_critical_level(request, config_for),
         )
         classes[rank].append((request, stamp, reason))
 
@@ -396,6 +426,7 @@ def _next_to_launch(
     rows: deque[tuple[datetime, int, Mapping[str, Any]]],
     keys: Mapping[int, tuple[Any, ...]],
     moment: datetime,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> tuple[datetime, int, Mapping[str, Any]]:
     """Take a delivered review, then aged work, then the highest priority.
 
@@ -412,7 +443,11 @@ def _next_to_launch(
     def rank(row: tuple[datetime, int, Mapping[str, Any]]) -> tuple[Any, ...]:
         pointer = row[2]
         urgency, _reason = _precedence(
-            pointer, queued_at=row[0], now=moment, review=_is_review_run(pointer)
+            pointer,
+            queued_at=row[0],
+            now=moment,
+            review=_is_review_run(pointer),
+            critical=_critical_level(pointer, config_for),
         )
         roadmap = (
             (id(pointer) not in keys, keys.get(id(pointer), ()))
@@ -429,6 +464,7 @@ def admission_order_details(
     live_pointers: Sequence[Mapping[str, Any]],
     *,
     now: datetime,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> list[tuple[Mapping[str, Any], str]]:
     """Rank requests and name the signal that placed each one.
 
@@ -476,7 +512,7 @@ def admission_order_details(
 
     def _rank(group: tuple[str, str]) -> tuple[Any, ...]:
         oldest = waiting[group][0]
-        launch = _next_to_launch(waiting[group], keys, moment)
+        launch = _next_to_launch(waiting[group], keys, moment, config_for)
         pointer = launch[2]
         # The urgency class leads, so a request the session placed points on is
         # chosen before the fair-share count of live runs: the points are the
@@ -484,7 +520,11 @@ def admission_order_details(
         # workers first would rank the request its session paid for behind one
         # nobody prioritised. Occupancy still breaks ties inside a class.
         urgency, _reason = _precedence(
-            pointer, queued_at=launch[0], now=moment, review=_is_review_run(pointer)
+            pointer,
+            queued_at=launch[0],
+            now=moment,
+            review=_is_review_run(pointer),
+            critical=_critical_level(pointer, config_for),
         )
         return (
             urgency,
@@ -495,11 +535,15 @@ def admission_order_details(
         )
 
     def _project_rank(group: tuple[str, str]) -> tuple[Any, ...]:
-        row = _next_to_launch(waiting[group], keys, moment)
+        row = _next_to_launch(waiting[group], keys, moment, config_for)
         pointer = row[2]
         oldest = waiting[group][0][0]
         urgency, _reason = _precedence(
-            pointer, queued_at=oldest, now=moment, review=_is_review_run(pointer)
+            pointer,
+            queued_at=oldest,
+            now=moment,
+            review=_is_review_run(pointer),
+            critical=_critical_level(pointer, config_for),
         )
         override = _override(pointer)
         key = keys.get(id(pointer))
@@ -521,11 +565,15 @@ def admission_order_details(
         project = first[0]
         candidates = [group for group in waiting if group[0] == project]
         group = min(candidates, key=_project_rank) if project else first
-        row = _next_to_launch(waiting[group], keys, moment)
+        row = _next_to_launch(waiting[group], keys, moment, config_for)
         waiting[group].remove(row)
         pointer = row[2]
         urgency, reason = _precedence(
-            pointer, queued_at=row[0], now=moment, review=_is_review_run(pointer)
+            pointer,
+            queued_at=row[0],
+            now=moment,
+            review=_is_review_run(pointer),
+            critical=_critical_level(pointer, config_for),
         )
         if urgency == (3, 0) and (key := keys.get(id(pointer))) is not None:
             rivals = [
@@ -554,17 +602,19 @@ def admission_order(
     live_pointers: Sequence[Mapping[str, Any]],
     *,
     now: datetime,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> list[Mapping[str, Any]]:
     """Rank queued pointers, charging each admission to its session's lane use.
 
     The caller supplies a snapshot from ``runs.list_live``. Queued and terminal
     pointers consume no lane slot; each selected queued pointer consumes one
     in the simulated order. A session keeps its join order, except that its
-    reviews launch ahead of the implementations queued before them.
+    reviews launch ahead of the implementations queued before them, and a
+    request at or above its project's critical level leads both.
     """
     return [
         pointer
         for pointer, _reason in admission_order_details(
-            queued_pointers, live_pointers, now=now
+            queued_pointers, live_pointers, now=now, config_for=config_for
         )
     ]

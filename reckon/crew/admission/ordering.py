@@ -278,6 +278,7 @@ def priorities_first(
     order: Sequence[Mapping[str, Any]],
     *,
     now: datetime | None = None,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> list[Mapping[str, Any]]:
     """Hoist explicitly reprioritised requests ahead of the rest of the lane.
 
@@ -315,6 +316,15 @@ def priorities_first(
             >= queue_order.STARVATION_AGE_SECONDS
         )
 
+    def _critical(pointer: Mapping[str, Any]) -> bool:
+        points = queue_order._override(pointer)
+        return points is not None and queue_order._critical_level(
+            pointer, config_for
+        ) <= (points or 0)
+
+    # A critical request is already placed by the ordering at the head of the
+    # lane, ahead of the reviews; excluding it here keeps this hoist from
+    # rebuilding the review's lead over a request the ordering raised above it.
     raised = sorted(
         (
             pointer
@@ -322,6 +332,7 @@ def priorities_first(
             if queue_order._priority(pointer) > 0
             and not _is_review_run(pointer)
             and not _aged(pointer)
+            and not _critical(pointer)
         ),
         key=lambda pointer: -queue_order._priority(pointer),
     )
@@ -354,12 +365,13 @@ def fair_share_admission_order(
         queued,
         [pointer for pointer in live if pointer.get("phase") != HELD_PHASE],
         now=now,
+        config_for=config_for,
     )
     order = role_share_order(order)
     weights = _fair_use_weights(queued, config_for=config_for)
     if weights is not None:
         order = weighted_project_order(order, weights)
-    return priorities_first(order, now=now)
+    return priorities_first(order, now=now, config_for=config_for)
 
 
 def awaits_a_lane_slot(pointer: Mapping[str, Any]) -> bool:
@@ -433,6 +445,7 @@ def queued_placements(
         queued,
         [pointer for pointer in pointers if pointer.get("phase") != HELD_PHASE],
         now=moment,
+        config_for=config_for,
     )
     reasons = {str(pointer.get("run_id") or ""): reason for pointer, reason in details}
     weights = _fair_use_weights(queued, config_for=config_for)
@@ -440,7 +453,7 @@ def queued_placements(
     order = role_share_order(order)
     if weights is not None:
         order = weighted_project_order(order, weights)
-    order = priorities_first(order, now=moment)
+    order = priorities_first(order, now=moment, config_for=config_for)
     from reckon.crew.recovery_review_delivery import _is_review_run
 
     for position, pointer in enumerate(order, 1):
