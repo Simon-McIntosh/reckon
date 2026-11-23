@@ -26,6 +26,7 @@ from typing import Any
 
 from reckon._plan_html import section_record_id
 from reckon._timestamps import parse_utc
+from reckon.crew.admission.wait_refs import section_waits_for
 from reckon.ledger import is_unmetered_backend
 
 #: How long a waiting request may go without a recorded admission verdict
@@ -50,6 +51,22 @@ WAITING_VERDICTS = frozenset(
         "retired",
     }
 )
+
+#: A review run carries its subject's section and is not held by that section's
+#: waits, so its launch neither waits for an upstream nor violates the order.
+#: Counting it was the measure's first defect: twelve of fourteen reported
+#: launches were reviews of sections whose own waits did not apply to them.
+UNHELD_ROLES = frozenset({"review"})
+
+#: The dispatch flag that makes a request wait only on the refs it names, so the
+#: section's declared waits are not applied to it. It is carried onto the
+#: promoted row inside ``node_definition``, which makes it the durable record a
+#: completed run keeps of why a declared wait did not hold it: the derived wait
+#: set itself lives on the request pointer, and promotion removes that pointer.
+WAITS_ONLY_AFTER_FIELD = "waits_only_after"
+
+#: The node definition a promoted row carries, where the dispatch flags persist.
+NODE_DEFINITION_FIELD = "node_definition"
 
 #: How a run records that its own review landed it, with no coordinator turn.
 SELF_LANDED = frozenset({"review-self", "review-acceptance"})
@@ -89,7 +106,9 @@ def measure_drain(
         },
         "runs_in_window": len(windowed),
     }
-    report["dag_order"] = measure_dag_order(windowed, depends_on or {}, history=runs)
+    report["dag_order"] = measure_dag_order(
+        windowed, depends_on or {}, history=runs, live_pointers=live_pointers
+    )
     report["fair_share"] = measure_fair_share(
         windowed, weights=weights, ready_by_project=ready_by_project
     )
@@ -125,25 +144,59 @@ def measure_dag_order(
     depends_on: Mapping[tuple[str, str], Mapping[str, Sequence[str]]],
     *,
     history: Iterable[Mapping[str, Any]] | None = None,
+    live_pointers: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
-    """Count launches that preceded the landing of a section they wait on.
+    """Count work runs launched before the landing of a section they wait on.
+
+    Only a run the queue holds on its section waits is counted. A review run
+    carries its subject's section and is never held by that section's waits, so
+    a review run is skipped rather than reported: the measure's first reading
+    counted twelve review launches as violations of a wait that did not bind
+    them.
 
     A section's landing moment is the earliest completion recorded for that
-    section. That is the earliest moment the work could have landed, so a launch
-    is reported only when it preceded even that: the count is a lower bound on
-    the violations, never an artefact of a landing recorded late.
+    section, read from the run record that landed it. That is the earliest
+    moment the work could have landed, so a launch is reported only when it
+    preceded even that: the count is a lower bound on the violations, never an
+    artefact of a landing recorded late.
 
     ``history`` is every run the landing moments may be read from. It defaults
     to ``runs``, and a caller measuring a window must pass the whole ledger:
     an upstream that landed before the window opened is landed, and reading
-    only the window would report it as never having landed at all.
+    only the window would report it as never having landed at all. Because a
+    landing moment comes from an immutable completion record and the rows are
+    sorted, two reads of one window return identical rows; a run added outside
+    the window cannot move them.
+
+    An early launch is reported by why it was allowed, from the records that
+    exist. A promoted row carries the dispatch flags a request ran under, so a
+    request dispatched to wait only on the refs it names is reported with that
+    flag rather than as a violation of a declared wait it was never held by.
+    The wait set a request was queued under is read through
+    :func:`~reckon.crew.admission.wait_refs.section_waits_for`, the owner of
+    that record, from whichever record carries it: a live pointer supplied by
+    the caller, or a pointer-shaped run. A record that does not name this edge
+    was not held by it. A completed row keeps no wait set — promotion removes
+    the pointer — so an early launch with no such record is a defect, and its
+    row says no record shows the wait was lifted.
     """
     runs = list(runs)
     landed = landed_moments(history if history is not None else runs)
+    pointers = {
+        str(pointer.get("run_id") or ""): pointer
+        for pointer in live_pointers
+        if str(pointer.get("run_id") or "")
+    }
     checked = 0
+    reviews_skipped = 0
     blocked_edges = 0
     violations: list[dict[str, Any]] = []
+    waived: list[dict[str, Any]] = []
+    edited: list[dict[str, Any]] = []
     for run in runs:
+        if _unheld_role(run):
+            reviews_skipped += 1
+            continue
         project = str(run.get("project") or "")
         plan = _run_plan(run)
         section = _run_section(run)
@@ -155,36 +208,139 @@ def measure_dag_order(
             blocked_edges += 1
             continue
         checked += 1
+        pointer = pointers.get(str(run.get("run_id") or ""))
         for ref in edges:
             upstream = dependency_key(ref, default_project=project)
             upstream_moment = landed.get(upstream)
+            if upstream_moment is not None and launched >= upstream_moment:
+                continue
             row = {
                 "run_id": str(run.get("run_id") or ""),
+                "role": _run_role(run),
                 "project": project,
                 "plan": plan,
                 "section": section,
-                "waits_on": "{}#{}".format(*upstream[1:]),
+                "waits_on": row_waits_on(upstream),
                 "launched_at": launched.isoformat(),
             }
+            queued_waits = _queued_waits(run, pointer)
+            if queued_waits is not None and not _wait_names_edge(
+                queued_waits, ref, upstream
+            ):
+                row["reason"] = (
+                    "launched before the waited-on section landed; the request "
+                    "was queued under a wait set that does not name this section"
+                )
+                row["queued_waits"] = sorted(queued_waits)
+                edited.append(row)
+                continue
+            if _waits_only_after(run):
+                row["reason"] = (
+                    "launched before the waited-on section landed; the request "
+                    "was dispatched to wait only on the refs it names, so this "
+                    "section's declared waits did not apply"
+                )
+                row[WAITS_ONLY_AFTER_FIELD] = True
+                waived.append(row)
+                continue
             if upstream_moment is None:
                 row["reason"] = "the waited-on section never landed"
-                violations.append(row)
-            elif launched < upstream_moment:
+            else:
                 row["reason"] = "launched before the waited-on section landed"
                 row["seconds_early"] = round(
                     (upstream_moment - launched).total_seconds(), 3
                 )
-                violations.append(row)
+            violations.append(row)
+    waived.sort(key=_row_order)
+    edited.sort(key=_row_order)
+    violations.sort(key=_row_order)
     return {
         "status": "measured",
         "basis": "launch compared with the earliest completion recorded for each "
-        "declared upstream section",
+        "declared upstream section, counting only runs the queue holds on those "
+        "waits",
+        "reason_evidence": "a promoted row carries the dispatch flags it ran "
+        "under; the wait set a request was queued under is read through "
+        "section_waits_for from the record that carries it, and promotion removes "
+        "the pointer holding it",
         "launches_with_declared_waits": checked,
         "launches_without_a_launch_moment": blocked_edges,
+        "review_runs_not_counted": reviews_skipped,
         "violations": len(violations),
         "runs_in_violation": len({row["run_id"] for row in violations}),
+        "waived_launches": len(waived),
+        "waived_rows": waived[:50],
+        "edited_wait_launches": len(edited),
+        "edited_wait_rows": edited[:50],
+        "allowed_early_launches": len(edited) + len(waived),
         "rows": violations[:50],
     }
+
+
+def _run_role(run: Mapping[str, Any]) -> str:
+    """The role a run records, defaulting to the implement role when it says none."""
+    return str(run.get("role") or "implement")
+
+
+def _unheld_role(run: Mapping[str, Any]) -> bool:
+    """Whether the run's role is one the queue does not hold on section waits."""
+    return _run_role(run) in UNHELD_ROLES
+
+
+def _ref_keys(ref: str, upstream: tuple[str, str, str]) -> tuple[str, ...]:
+    """Every spelling a recorded wait may use for one waited-on section."""
+    return (ref, "{}#{}".format(*upstream[1:]))
+
+
+def _node_definition(run: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The node definition a promoted row carries, or an empty mapping."""
+    definition = run.get(NODE_DEFINITION_FIELD)
+    return definition if isinstance(definition, Mapping) else {}
+
+
+def _waits_only_after(run: Mapping[str, Any]) -> bool:
+    """Whether the request was dispatched to wait only on the refs it names.
+
+    The flag is the dispatch record's own statement that the section's declared
+    waits were not applied, and it rides the promoted row, so it is durable.
+    """
+    return bool(_node_definition(run).get(WAITS_ONLY_AFTER_FIELD))
+
+
+def _queued_waits(
+    run: Mapping[str, Any], pointer: Mapping[str, Any] | None
+) -> list[str] | None:
+    """The refs the request was queued under, or None when no record survives.
+
+    The live pointer is the record that holds them; a caller measuring the queue
+    itself may instead pass a pointer-shaped run. Both are read through
+    :func:`section_waits_for`, the owner of that field, so the measure and the
+    admission pass cannot disagree about what a record's waits say. A completed
+    row keeps neither, and None says so rather than reading as an empty wait
+    set.
+    """
+    for record in (pointer, run):
+        if isinstance(record, Mapping) and record.get("waits") is not None:
+            return section_waits_for(record)
+    return None
+
+
+def _wait_names_edge(
+    waits: Sequence[str], ref: str, upstream: tuple[str, str, str]
+) -> bool:
+    """Whether a queued wait set held the run on this edge."""
+    present = {str(wait) for wait in waits}
+    return any(key in present for key in _ref_keys(ref, upstream))
+
+
+def row_waits_on(upstream: tuple[str, str, str]) -> str:
+    """The ``plan#section`` form a reported row displays for one waited-on section."""
+    return "{}#{}".format(*upstream[1:])
+
+
+def _row_order(row: Mapping[str, Any]) -> tuple[str, str]:
+    """A stable order for reported rows, so two reads return the same list."""
+    return (str(row.get("run_id") or ""), str(row.get("waits_on") or ""))
 
 
 def measure_fair_share(
