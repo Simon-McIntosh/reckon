@@ -15,10 +15,9 @@ a commit, a branch and a ref update in the main checkout, a commit in a peer's
 worktree, and ``--git-dir``/``--work-tree`` aimed back at the main checkout.
 A commit in the run's own worktree still lands.
 
-The declared negative control leaves the main checkout and the worktree pool
-out of the protected set. The same foreign writes then land, so the refusals
-above rest on the fence and not on git declining the commands for some other
-reason.
+The declared negative control grants the main checkout and the worktree pool
+writable. The same foreign writes then land, so the refusals above rest on the
+fence and not on git declining the commands for some other reason.
 """
 
 from __future__ import annotations
@@ -197,12 +196,25 @@ def unsealed_node_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", node_tmp)
 
 
-def _fenced_probe(home: Path, repo: Path, own: Path, peer: Path) -> dict[str, str]:
+def _fenced_probe(
+    home: Path, repo: Path, own: Path, peer: Path, *, granted: tuple[Path, ...] = ()
+) -> dict[str, str]:
     argv = _backends.fence_argv(
         ["sh", "-c", _PROBE.format(own=own, repo=repo, peer=peer)],
         worktree=own,
         home=home,
     )
+    if granted:
+        # The declared mutation: a writable grant is the last word on its own
+        # path, so binding these after the composition is exactly the surface
+        # an unfenced worker without the shim would face.
+        separator = len(argv) - 1 - argv[::-1].index("--")
+        binds = [
+            argument
+            for path in granted
+            for argument in ("--bind", str(path), str(path))
+        ]
+        argv = [*argv[:separator], *binds, *argv[separator:]]
     proc = subprocess.run(argv, capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stderr
     return dict(line.split("=", 1) for line in proc.stdout.split())
@@ -230,25 +242,21 @@ def test_the_fence_refuses_every_foreign_git_write_the_shim_refused(
 @requires_bwrap
 @pytest.mark.usefixtures("unsealed_node_tmp")
 def test_the_negative_control_lands_the_foreign_writes_without_the_seal(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
+    """The declared mutation: the main checkout and the worktree pool, granted.
+
+    Without the fence's read-only hold on those trees the same foreign writes
+    land, which is what an unfenced worker without the shim would face. The
+    mutation is a declared grant because a grant is the one thing the fence
+    lets through, so this shows the refusals above rest on the hold and not on
+    git declining the commands for some other reason.
+    """
     home, repo, own, peer = _home(tmp_path)
     main_head = _git(repo, "rev-parse", "HEAD")
-    # The declared mutation: the main checkout and the worktree pool leave the
-    # protected set, which is what an unfenced worker without the shim would
-    # face.
-    sealed = _worker_fence._named_protected_paths
+    pool = home / "Code" / ".reckon-worktrees"
 
-    def without_checkouts(home_dir: str | Path | None = None) -> list[Path]:
-        return [
-            path
-            for path in sealed(home_dir)
-            if path not in {repo, home / "Code" / ".reckon-worktrees"}
-        ]
-
-    monkeypatch.setattr(_worker_fence, "_named_protected_paths", without_checkouts)
-
-    outcome = _fenced_probe(home, repo, own, peer)
+    outcome = _fenced_probe(home, repo, own, peer, granted=(repo, pool))
 
     assert outcome["main-commit"] == "ok", outcome
     assert outcome["peer-commit"] == "ok", outcome

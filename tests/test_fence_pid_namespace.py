@@ -71,8 +71,9 @@ def test_the_fence_puts_the_worker_in_its_own_pid_namespace(
     assert "--unshare-pid" in head
     proc = head.index("--proc")
     assert head[proc + 1] == "/proc"
-    # The procfs mount overlays the root bind, so it must come after it.
-    assert head.index("--dev-bind") < proc
+    # The procfs mount overlays the read-only root bind, so it must come after
+    # it; the root is mounted read-only and every write is a grant on top.
+    assert head.index("--ro-bind") < proc
 
 
 def _fence_runs() -> str | None:

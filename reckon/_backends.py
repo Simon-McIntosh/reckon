@@ -120,6 +120,7 @@ from reckon._worker_fence import (  # noqa: F401
     codex_login_truncation_detail,
     codex_worker_mcp_flags,
     create_write_roots,
+    declared_grant_refusal,
     declared_protected_paths,
     fence_argv,
     fence_capability_problem,
@@ -304,11 +305,18 @@ def fenced_write_roots(
     produce the artifact its node exists for.
 
     What is granted here is therefore: the same delivery roots every restricted
-    tier gets, the repository for a ``workspace-write`` run, and every declared
-    write path that lies outside the worktree — whatever the tier. A declared
-    path is resolved against the worktree when it is not absolute, because a
-    relative declaration names a file in the worker's own checkout; a path
-    naming a file is granted through its parent directory.
+    tier gets, and every declared write path that lies outside the worktree —
+    whatever the tier. A declared path is resolved against the worktree when it
+    is not absolute, because a relative declaration names a file in the worker's
+    own checkout; a path naming a file is granted through its parent directory.
+
+    A ``workspace-write`` tier is *not* given the main checkout here. That tier
+    means the whole workspace, and the main checkout is precisely the shared
+    resource the fence exists to withhold: granting it would re-open every
+    protected path and every sibling checkout in one bind, and a project root is
+    refused as a declared grant by name. The fence grants the worktree itself,
+    so a fenced ``workspace-write`` run still writes the tree it works in and
+    nothing beside it.
     """
     roots = delivery_write_roots(
         run_directory=run_directory,
@@ -316,14 +324,15 @@ def fenced_write_roots(
         manifest_path=manifest_path,
         review_store_directory=review_store_directory,
     )
-    if str(backend.get("sandbox") or READ_ONLY) == WORKSPACE_WRITE:
-        roots.add(Path(repository).expanduser().resolve())
     for declared in declared_write_paths:
         grant = _declared_write_grant(
             declared, repository=repository, worktree=worktree
         )
         if grant is None:
             continue
+        refusal = declared_grant_refusal(grant)
+        if refusal is not None:
+            raise BackendError(refusal)
         roots.add(grant)
     return tuple(sorted(roots, key=lambda path: path.as_posix()))
 

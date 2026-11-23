@@ -276,7 +276,7 @@ def test_a_fenced_worker_commits_in_its_own_worktree(tmp_path: Path) -> None:
     before = _rev(worktree)
 
     argv = _argv(worktree, repo, home)
-    assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert argv[:4] == ["bwrap", "--ro-bind", "/", "/"]
     # The new roots are exactly the worktree's own git directory and the shared
     # object store — never the common directory that carries refs/heads and the
     # main index.

@@ -523,9 +523,18 @@ def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
     argv = node.argv()
     expected = [
         _worker_fence.FENCE_BINARY,
-        "--dev-bind",
+        "--ro-bind",
         "/",
         "/",
+        # A fresh devtmpfs, because a read-only root carries the device nodes
+        # read-only and a worker's first redirect to /dev/null would fail.
+        "--dev",
+        "/dev",
+        # The devtmpfs brings an empty /dev/shm of its own, so the node's is
+        # mounted back read-only.
+        "--ro-bind",
+        str(_worker_fence.NODE_SHM_ROOT),
+        str(_worker_fence.NODE_SHM_ROOT),
         # The worker's own pid namespace and its procfs.
         "--unshare-pid",
         "--proc",
