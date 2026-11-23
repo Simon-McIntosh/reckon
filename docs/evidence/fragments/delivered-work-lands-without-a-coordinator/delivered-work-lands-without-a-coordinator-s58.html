@@ -1,0 +1,34 @@
+<article class="r-evidence" data-node="delivered-work-lands-without-a-coordinator-s58" id="delivered-work-lands-without-a-coordinator-s58">
+<h3>A re-pointed arm records the completion its new log shows</h3>
+<p>On 23 November a hand merge was refused under the red-base rule although the
+gate had been measured and the lead had approved it. The worker's manifest
+recorded both arms as not completed, and <code>crew repair --arm</code>
+re-pointed each arm's revision, command and log without touching the exit
+status, the failure ids or the <code>completed</code> key. The red-base rule
+reads that key literally on each arm and reads the head ids from the log the
+gate cites, so the re-pointed arms could never admit the merge they described.</p>
+<p>The repair now reads the log it is given and records what that log says. A
+gate log that runs several test processes closes each with a
+<code># ---- process exit N rc=&lt;n&gt;</code> header, and the text between two
+headers is one process's output. The arm is complete when every process reports
+its own summary and the log's terminal <code>EXIT=&lt;n&gt;</code> record agrees
+with the children; its failure ids are the union of the processes' ids. A
+process that stopped before its summary states no result, so the arm is left
+incomplete and the process is named on the arm, which keeps a killed or
+abandoned test from reading as a clean one. A log with a single process takes
+its own terminal status and ids. The derived fields travel through the manifest
+reader, so a later reader sees the same completion and the same named process.</p>
+<p>Measure: <code>tests/test_a_repointed_arm_records_its_completion.py</code>
+passes 5 of 5, covering the two-process log (completed, union of ids, and a
+red-base merge whose head adds no id then landing), the stopped process
+(incomplete, named), the single-process log (exit 2 and its own id), a log the
+repair was told to read but cannot, and the same re-point through
+<code>crew repair</code>. The base arm over the test files importing the
+changed modules gave 164 passed and <code>EXIT=0</code> on
+<code>all_debug</code>; the head arm gave 169 passed and
+<code>EXIT=0</code>, the five added cases and no added failure id. Negative
+control: with the same delivered test copied into a base-revision tree, the
+first case fails (1 failed, <code>EXIT=1</code>), because the base repair leaves
+the arm's completion as the worker declared it and the red-base rule refuses the
+merge.</p>
+</article>
