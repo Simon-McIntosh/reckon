@@ -570,6 +570,7 @@ def _file_idle_upstreams(
     pointer: Mapping[str, Any],
     *,
     config_for: Callable[[str, Path], Mapping[str, Any]] | None = None,
+    filing: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """File a request for each unqueued section one idle wait names.
 
@@ -583,6 +584,12 @@ def _file_idle_upstreams(
     A section the read refuses is returned with that answer. An event that
     stops a plan from being filed is not the read's answer and is not recorded
     as one: the request keeps waiting and the next pass tries again.
+
+    ``filing`` is the pass's record of what it has already filed and read. The
+    coordinator resolution answers for a whole project and is read once per
+    project, and a plan is filed once per pass however many waits name it, so
+    a later wait on the same plan reads the answers the first filing gave
+    rather than filing it again.
     """
     refs = _wait_refs.section_waits_for(pointer)
     project = str(pointer.get("project") or "")
@@ -611,6 +618,11 @@ def _file_idle_upstreams(
     # records that identity; a request carrying none names the service.
     queued_by = session or _queueing.SERVICE_SESSION
 
+    record = filing if filing is not None else {}
+    owners: dict[str, Mapping[str, Any]] = record.setdefault("ownership", {})
+    filed_plans: dict[tuple[str, str], Mapping[str, Any]] = record.setdefault(
+        "plans", {}
+    )
     for (waited_project, plan), sections in wanted.items():
         target_docs = _wait_refs._docs_for_project(
             waited_project, current_project=project, current_docs=docs
@@ -618,17 +630,32 @@ def _file_idle_upstreams(
         if target_docs is None:
             continue
         target_root = Path(target_docs).parent
-        try:
-            result = queue_plan(
-                waited_project,
-                plan,
-                session=session,
-                config_for=lambda name, _root=target_root: resolve_config(name, _root),
-                repo_root=target_root,
-                queued_by=queued_by,
-            )
-        except Exception:  # noqa: BLE001, S112 - one unreadable plan ends nothing
-            continue
+        first_filing = (waited_project, plan) not in filed_plans
+        if first_filing:
+            if waited_project not in owners:
+                from reckon.crew.plan_coordinator import resolve_plan_coordinators
+
+                try:
+                    owners[waited_project] = resolve_plan_coordinators(
+                        waited_project, root=target_root
+                    )
+                except Exception:  # noqa: BLE001 - the plan's own read resolves it
+                    owners[waited_project] = None
+            try:
+                filed_plans[(waited_project, plan)] = queue_plan(
+                    waited_project,
+                    plan,
+                    session=session,
+                    config_for=lambda name, _root=target_root: resolve_config(
+                        name, _root
+                    ),
+                    repo_root=target_root,
+                    queued_by=queued_by,
+                    ownership=owners[waited_project],
+                )
+            except Exception:  # noqa: BLE001, S112 - one unreadable plan ends nothing
+                continue
+        result = filed_plans[(waited_project, plan)]
         rows = {
             normalize_section(str(row.get("section") or "")): row
             for row in result.get("results") or ()
@@ -641,6 +668,9 @@ def _file_idle_upstreams(
             status = str(row.get("status") or "")
             answer = str(row.get("queue_answer") or "")
             if status in _FILED_STATUSES:
+                if not first_filing:
+                    # The first filing returned this request to the pass.
+                    continue
                 run_id = str(row.get("run_id") or "")
                 new_pointer = runs.read_pointer(run_id) if run_id else None
                 if isinstance(new_pointer, dict):
@@ -707,6 +737,8 @@ def _advance_waiting_requests(
     # its own rows sees the phase the pass recorded, exactly as it did when
     # the pass wrote the row itself. The copy is what keeps the record a
     # listing handed out — the memo's view — out of every write here.
+    # One record per pass of what the idle-wait filing has read and filed.
+    filing: dict[str, Any] = {}
     for _round in range(len(candidates) + 1):
         dead = _dead_sections(live)
         changed = False
@@ -743,7 +775,9 @@ def _advance_waiting_requests(
                 # a wait does not stand on a section the read says may be
                 # queued. A section the read refuses leaves its answer here for
                 # the owner's duty to name.
-                filed, unqueued = _file_idle_upstreams(pointer, config_for=config_for)
+                filed, unqueued = _file_idle_upstreams(
+                    pointer, config_for=config_for, filing=filing
+                )
                 if filed:
                     live.extend(filed)
                     candidates.extend(
