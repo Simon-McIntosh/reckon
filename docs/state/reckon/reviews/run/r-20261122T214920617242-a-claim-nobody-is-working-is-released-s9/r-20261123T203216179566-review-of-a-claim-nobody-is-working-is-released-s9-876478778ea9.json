@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_count": 0,
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: arm-base.log at 4fa07b80 reports 9 failed, 596 passed, EXIT=1; arm-head.log at 876478778e reports 6 failed, 599 passed, EXIT=1; the three base-only failures are tests/test_a_placement_without_a_job_is_judged.py cases test_a_jobless_run_with_no_process_and_a_quiet_record_is_released, test_a_pointer_without_a_readable_node_is_reported_once and test_a_changed_missing_fact_is_reported_again, i.e. the negative-control cases, so the head adds no failure.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:461",
+    "reckon/crew/pending_landing.py:2517",
+    "reckon/crew/pending_landing.py:767"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T21:54:27Z",
+  "findings": [
+    {
+      "disposition": "folded",
+      "file": "reckon/crew/pending_landing.py:767",
+      "line": 767,
+      "severity": "non-blocking",
+      "text": "A jobless pointer whose launcher_host names a different host sets moved=True, so the whole judge branch is skipped, dead stays False and the loop reaches 'if not dead: continue' at :796 with no obligation row; that undecidable shape is still held without a word, which is the second half of the deliverable left uncovered."
+    },
+    {
+      "disposition": "folded",
+      "file": "reckon/crew/process_liveness.py:640",
+      "line": 640,
+      "severity": "non-blocking",
+      "text": "worker_record_quiet_seconds re-implements the worker-record write-time read owned by reckon/crew/recovery_liveness.py:1481 _worker_record_mtime, which this same function already imports WORKER_RECORD_NAME from, resolving the path through runs.run_dir(run_id) instead of the record; the same fact now has two owners."
+    },
+    {
+      "disposition": "exempted",
+      "file": "reckon/crew/process_liveness.py:625",
+      "line": 625,
+      "severity": "non-blocking",
+      "text": "The JoblessPlacementReading docstring reads 'and examiner text for a caller that must report the run', where 'explanatory' was intended; the phrase names no mechanism a reader can use."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_total": 5,
+  "item_verdicts": {
+    "call_sites": "The landed functions are reached in production only through release_pointers_of_a_previous_fleet_node, called from reckon/crew/station.py:461 and reckon/crew/pending_landing.py:2517 inside finish_pending_landings; no other runtime caller exists.",
+    "diff": "Read commit 876478778e against 4fa07b80: process_liveness.py +144 (placement_names_no_job, worker_record_quiet_seconds, JoblessPlacementReading, judge_placement_without_a_job), pending_landing.py +72/-2 (obligation store at :618-:658 and the branch at :767-:793), and the new 229-line test.",
+    "done_when": "The done_when names tests/test_a_placement_without_a_job_is_judged.py with five clauses; its four cases cover release, keep-on-live-pid, report-once-then-silent and re-report-on-changed-fact, and arm-head.log records the file passing with zero added failures against arm-base.log.",
+    "goal": "The node goal is to judge a promoted pointer whose placement names no readable job id from this host's process table and the run's own worker record, releasing it when both show the worker gone and reporting an undecidable one once as an obligation; reckon/crew/process_liveness.py:666 and the :772 branch of reckon/crew/pending_landing.py deliver that, save for the moved case at :767.",
+    "manifest": "Read; status complete, commit 876478778e, changed_paths naming the three delivered files, 6 failed/599 passed at head versus 9 failed/596 passed at base, negative control 3 failed/1 passed, and the three log paths named on disk.",
+    "write_paths": "The five declared paths are the s9 evidence fragment, the s9 figure directory, reckon/crew/pending_landing.py, reckon/crew/process_liveness.py and the new test file; the diff carries the last three and neither of the first two."
+  },
+  "justifications": {
+    "durability": "Each added assertion names a regression that reddens it, and negative-control-base.log proves the release assertion can fail: 3 failed, 1 passed at 4fa07b80, so removing the release or the obligation write reddens the matching case.",
+    "evidence": "The done_when's five clauses map onto the four cases in tests/test_a_placement_without_a_job_is_judged.py, and arm-head.log records 6 failed / 599 passed with no added failure against arm-base.log's 9 failed / 596 passed, the three extra base failures being exactly this new file's negative-control cases.",
+    "fit": "The added helpers at reckon/crew/process_liveness.py:599 and :666 follow the module's public-helper-plus-dataclass idiom at :340, and no added name, comment or docstring carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/process_liveness.py:666 judge_placement_without_a_job, gated at reckon/crew/pending_landing.py:772 on placement_names_no_job, releases a promoted jobless pointer when the recorded pid is absent and the worker record is quiet past PLACEMENT_WITHOUT_A_JOB_QUIET_SECONDS at :619, which is the plan section's deliverable; a pointer launched on another host still bypasses it at :767.",
+    "reuse": "reckon/crew/process_liveness.py:640 worker_record_quiet_seconds re-reads the worker-record write time that reckon/crew/recovery_liveness.py:1481 _worker_record_mtime already owns, in a module it already imports WORKER_RECORD_NAME from.",
+    "scope_discipline": "All three delivered files (reckon/crew/pending_landing.py, reckon/crew/process_liveness.py, tests/test_a_placement_without_a_job_is_judged.py) are inside the five declared write paths and the diff carries nothing the goal does not imply, though the declared s9 evidence fragment and figure directory were not produced."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to judge a promoted pointer whose placement names no readable job id from this host's process table and the run's own worker record, releasing it when both show the worker gone and reporting an undecidable one once as an obligation; reckon/crew/process_liveness.py:666 judge_placement_without_a_job and the :772 branch of reckon/crew/pending_landing.py deliver it, save for the moved case at :767.\nVERDICT done_when: The done_when names tests/test_a_placement_without_a_job_is_judged.py with five clauses; its four cases cover release, keep-on-live-pid, report-once-then-silent and re-report-on-changed-fact, and arm-head.log records the file passing with zero added failures against arm-base.log.\nVERDICT write_paths: The five declared paths are the s9 evidence fragment, the s9 figure directory, reckon/crew/pending_landing.py, reckon/crew/process_liveness.py and the new test file; the diff carries the last three and neither of the first two.\nVERDICT manifest: Read; status complete, commit 876478778e, changed_paths naming the three delivered files, 6 failed/599 passed at head versus 9 failed/596 passed at base, negative control 3 failed/1 passed, the three log paths named on disk.\nVERDICT diff: Read commit 876478778e against 4fa07b80 commit by commit: process_liveness.py +144, pending_landing.py +72/-2, and a new 229-line test, all inside the declared scope.\nCALL_SITES: reckon/crew/station.py:461, reckon/crew/pending_landing.py:2517, reckon/crew/pending_landing.py:767\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/process_liveness.py:666 releases when the recorded pid is absent and the worker record is quiet past PLACEMENT_WITHOUT_A_JOB_QUIET_SECONDS at :619, but the moved branch at pending_landing.py:767 leaves one undecidable shape held silently.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate ran tests/test_a_placement_without_a_job_is_judged.py and arm-head.log records 6 failed/599 passed with the new file green, against arm-base.log 9 failed/596 passed where its three negative-control cases fail.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the three delivered files are all among the five declared write paths and the diff touches nothing outside them.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control-base.log shows the release case failing at 4fa07b80 (3 failed, 1 passed), so the assertion in tests/test_a_placement_without_a_job_is_judged.py:159 reddens if the release or the obligation write is removed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/process_liveness.py:666 follows the module's public-helper-plus-dataclass idiom at :340, and no added name carries a plan, stage or ticket label.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/crew/process_liveness.py:640 duplicates the worker-record write-time read owned by reckon/crew/recovery_liveness.py:1481 _worker_record_mtime rather than extending it.\nFINDING reckon/crew/pending_landing.py:767 non-blocking: a jobless pointer launched on a foreign host bypasses the judge and is held with no obligation row.\nFINDING reckon/crew/process_liveness.py:640 non-blocking: worker_record_quiet_seconds re-implements the worker-record mtime helper owned by reckon/crew/recovery_liveness.py:1481.\nFINDING reckon/crew/process_liveness.py:625 non-blocking: JoblessPlacementReading docstring 'examiner text' reads as a word that names no mechanism.",
+  "review_run_id": "r-20261123T203216179566-review-of-a-claim-nobody-is-working-is-released-s9-876478778ea9",
+  "reviewed_base_sha": "4fa07b80a8d5335def32b0297d595958115ae7e4",
+  "reviewed_head_sha": "876478778ea9216b7c9bfaa46623b4bb94761345",
+  "reviewed_run_id": "r-20261122T214920617242-a-claim-nobody-is-working-is-released-s9",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 11,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T22:19:03.079229+00:00",
+  "total": 97
+}
