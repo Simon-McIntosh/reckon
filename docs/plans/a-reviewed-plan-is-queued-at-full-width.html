@@ -25,7 +25,7 @@
   <title>A Reviewed Plan Is Queued At Full Width | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-11-23">
 </head>
 <body>
@@ -223,6 +223,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261123T133512401022-review-of-rpfw-a-plan-is-taken-on-within-a-shared-sprint-47acf61b1588" data-who="reckon-build" data-when="2026-11-23T13:50:18.334Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T072009706992 at base 11d1229dde against head 47acf61b15: the sprint rule is implemented, tested with a red negative control, and its diff stays inside the declared paths, but the take-on announcement row is not carried by ticker.stream_carries so no live session is shown it and an unsprinted plan bypasses the rule; six dimensions scored, three non-blocking findings, no added failure id.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261122T072009706992-rpfw-a-plan-is-taken-on-within-a-shared-sprint" data-who="reckon-build" data-when="2026-11-23T13:34:47.728Z">
+    <div class="r-comment-body"><p>An unowned plan&#x27;s whole-plan dispatch now queues only when the dispatching session already coordinates a plan in the plan&#x27;s declared sprint, answering every section &quot;the plan&#x27;s sprint is not one the session works in&quot; otherwise and exempting the admission service; a session that does take a plan on broadcasts one `plan-taken-on` row naming the plan and the session to the project&#x27;s other live sessions. Scoped gate 62 passed, EXIT=0 at b46a4bff45; base arm 58 passed and after arm 62 passed, both EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261123T135210616203-review-of-rpfw-the-service-queues-what-may-be-queued-5f1906c3a13c" data-who="reckon-build" data-when="2026-11-23T14:08:45.127Z">
     <div class="r-comment-body"><p>Reviewed r-20261122T035922959564 at 5f1906c3a13c9cb025407dab71ffb2783280c948 against base 11d1229dde: parsed record scoring goal_fidelity 7, evidence 11, scope_discipline 18, durability 8, fit 16, reuse 5 (total 65), added_failure_count 0, with one blocking finding — the service pass files nothing whenever config_for is absent, which is the only way the CLI reaches it (queueing.py:132).</p></div>
