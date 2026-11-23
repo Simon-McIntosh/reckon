@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T13:35:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 1642,
+      "severity": "non-blocking",
+      "text": "The take-on row is appended to the project's watch stream with event/kind plan-taken-on and no to_state, but ticker.stream_carries (reckon/crew/ticker.py:1674) has no branch for that kind: the row's _pane_word is blank and its transition_class(None, None) is ROW_OBSERVER, so no live session's stream releases it. The plan's deliverable says every other live session is shown one row; as landed the row is written and readable in the stream, but the pane prints nothing, so the announcement needs a carry rule (or a to_state) before a session is actually told."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 1266,
+      "severity": "non-blocking",
+      "text": "The sprint test is guarded by `if sprint and not self._works_in_sprint(...)`, so a plan that declares no plan-sprint is still taken on by any session. The section's deliverable accepts a whole-plan dispatch 'only when the plan's sprint is one in which that session already coordinates a plan', and a plan with no sprint is not such a plan. The fragment records the choice deliberately (an unsprinted plan would otherwise be unqueueable by every session, since _works_in_sprint can only ever match a non-empty declaration), but it is a deviation from the literal deliverable and is unguarded by any test."
+    },
+    {
+      "file": "tests/test_a_plan_is_taken_on_within_a_shared_sprint.py",
+      "line": 225,
+      "severity": "non-blocking",
+      "text": "The row assertion calls recovery_watch._partition_session_rows on a watch-stream row, but that helper is applied in production only to run snapshots (recovery_watch.py:2320, 2926, 3553), never to stream rows, and the pane's release gate is ticker.stream_carries. The assertion therefore guards the row's broadcast shape (a row carrying a session key would fall to `peers` and fail it) but not that any session is shown the row, which is what it claims."
+    }
+  ],
+  "justifications": {
+    "durability": "negative-control.log shows the node's cases fail at the pinned base: test_a_plan_in_a_sprint_the_session_does_not_work_in_is_skipped reads assert 3 == 0 with 'queued': 3, the row case reads 'one take-on row, not []', and the service case raises on the absent constant, so three of the four cases redden on the behaviour being reverted; the row-display half is unguarded because the pane is never exercised.",
+    "evidence": "The gate the done_when names ran as '62 passed in 42.00s' EXIT=0 at b46a4bff45 in scoped-gate-1795440477646435753.log and the arms reconcile (base 58, after 62, both EXIT=0, no added failure id), but the fragment's separate 'all four cases pass in 3.43s' head arm cites no log of its own.",
+    "fit": "dispatch_batch.py:1082-1097 follows the module's existing answered-reason constants and documented-module-constant idiom, and neither the new symbols nor the comments name a plan label, ticket or version.",
+    "goal_fidelity": "dispatch_batch.py:1264-1268 answers QUEUE_ANSWER_SPRINT for every implementable section of an unowned plan in a foreign sprint and queues nothing, which is the section's rule, but the row written at :1642 is not carried by ticker.stream_carries (ticker.py:1674), so no session is shown the announcement the deliverable also asks for.",
+    "reuse": "ADMISSION_SERVICE_SESSION has no prior owner (the admission service's own identity is a process record at reckon/crew/admission/service.py:50, not a session name) and plan_taken_on_row follows the repository's per-module broadcast-row builders (gate_watch.py:309, lift_watch.py:258, watch_unit.py:664) rather than forking a shared one, because no shared row builder exists to extend.",
+    "scope_discipline": "The whole diff is confined to the declared dispatch_batch.py, the node's test module and its evidence fragment, with no change to plan state, the index or a shared record."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261123T133512401022-review-of-rpfw-a-plan-is-taken-on-within-a-shared-sprint-47acf61b1588",
+  "reviewed_base_sha": "11d1229dde4cc7b2ca70a3fc8a7084071d21c8c5",
+  "reviewed_head_sha": "47acf61b158838b1a82dc3b3301a5e3b41afe6ef",
+  "reviewed_run_id": "r-20261122T072009706992-rpfw-a-plan-is-taken-on-within-a-shared-sprint",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T13:58:00+00:00",
+  "total": 106,
+  "verdicts": [
+    {
+      "item": "goal",
+      "verdict": "The node goal is that an unowned plan is taken on by a whole-plan dispatch only inside a sprint the session already works in, with the acceptance announced to the project; reckon/crew/dispatch_batch.py:1264-1268 adds the sprint answer and :1635-1645 appends the announcement row, so the rule lands but its announcement reaches no live pane, since ticker.py:1674 carries no plan-taken-on row."
+    },
+    {
+      "item": "done_when",
+      "verdict": "The done_when names tests/test_a_plan_is_taken_on_within_a_shared_sprint.py covering the accepted-and-named case, the second session's row, the foreign-sprint skip and the service exemption; the manifest records scoped-gate-1795440477646435753.log as '62 passed in 42.00s' EXIT=0 at b46a4bff45, and the log's own header names that revision, tree and literal command."
+    },
+    {
+      "item": "write_paths",
+      "verdict": "The declared set is dispatch_batch.py, plan_coordinator.py, ticker.py, the test module, the evidence fragment and a figures directory; the diff 11d1229dde..47acf61b15 touches only dispatch_batch.py, tests/test_a_plan_is_taken_on_within_a_shared_sprint.py and the evidence fragment, so every path is inside the declaration and two declared paths are simply unused."
+    },
+    {
+      "item": "manifest",
+      "verdict": "Read; status complete, commits b46a4bff45 and 47acf61b15, changed_paths the three landed files, test_logs the scoped gate, baseline_suite and after_suite both completed true with failure_ids [] and exit_status 0, and negative_control_log negative-control.log which exists and closes EXIT=1."
+    },
+    {
+      "item": "diff",
+      "verdict": "Read commit by commit: b46a4bff45 adds QUEUE_ANSWER_SPRINT, ADMISSION_SERVICE_SESSION, PLAN_TAKEN_ON_EVENT/plan_taken_on_row and the _works_in_sprint check plus the append in queue_plan, and 47acf61b15 adds the evidence fragment; nothing outside the three paths carries node-authored work, and the base-vs-after suites differ only by the new test module (58 -> 62 passes)."
+    },
+    {
+      "item": "call_sites",
+      "verdict": "The changed read and row are reached at runtime by reckon/crew_dispatch_commands.py:1225, which selects queue_plan for a plan-level dispatch; plan_queue_answers and project_queue_answers have no production caller yet, and the appended row is written through runs._append_watch_lines (reckon/crew/runs.py:4806) to runs.watch_stream_path(project), read by the pane and crew view."
+    }
+  ]
+}
