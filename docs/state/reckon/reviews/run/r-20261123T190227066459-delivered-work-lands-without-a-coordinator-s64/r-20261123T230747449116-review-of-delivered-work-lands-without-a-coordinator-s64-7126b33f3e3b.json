@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:08:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 4692,
+      "severity": "non-blocking",
+      "text": "the obligation map is rewritten whole on every pass from only the plans that pass weighed, so a held plan the one-plan pass limit or the rotation does not reach loses the reason recorded for it on the previous pass, and the owner's obligations view then shows a review owed with no reason while the plan still holds its request"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 4706,
+      "severity": "non-blocking",
+      "text": "_plan_review_holds re-implements the held-request predicate (phase held, an automatic hold, reason plan-review-owed, plan via _run_plan) that obligations.py:5439-5452 already applies, adding a second copy of one rule rather than extracting the owner both read"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 4753,
+      "severity": "non-blocking",
+      "text": "for a held plan _held_plan_obligation calls review_coverage and compose_burst_refusal again after _owed_review_skip_reason (plan_review.py:4890-4902) already computed both, so each held plan costs a second and often third store walk in one pass, the read amplification test_a_pass_computes_coverage_once measures"
+    },
+    {
+      "file": "tests/test_a_held_plan_review_is_never_settled_unreviewed.py",
+      "line": 181,
+      "severity": "non-blocking",
+      "text": "the assertion compares the stamp the test itself passed to _record_weighed_edits through _weigh_at_current_edit against the same path.stat().st_mtime, so it holds even if the pass stopped calling _record_weighed_edits at all; the assertions that do redden on that regression are report['read'] == [] and launched == [] at lines 178-180"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan holding a request on plan-review-owed is never recorded as settled; reckon/crew/plan_review.py:5205 removes held plans from the already-weighed set and plan_review.py:5425 refuses to write one back as weighed.\nVERDICT done_when: the done_when names tests/test_a_held_plan_review_is_never_settled_unreviewed.py and its four cases; the manifest records gate-head.log reporting 2 failed, 63 passed and gate-base.log reporting 6 failed, 59 passed, and all four named cases pass at head and fail at the base arm's opening FFF block.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, reckon/crew/plan_review.py, the new test file and the evidence fragment beside a figure directory; the diff d7f54a14..7126b33f touches exactly those four code and evidence paths and no others.\nVERDICT manifest: read at the reviewed run's manifest.md; it records status complete, a literal nine-file pytest command, both gate log paths, a negative-control note quoting the base arm, and the four commits it landed.\nVERDICT diff: read commit by commit (4a4f1de5 code, 41e436f1, a122b885 and 7126b33f docs); the change is +16 lines in obligations.py and +175 in plan_review.py with +181 lines of new tests, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatching/preparation.py:222, reckon/crew/dispatching/requests.py:381, reckon/crew/resumption.py:3306, reckon/crew/obligations.py:5470\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the pass removes a held plan from the weighed set before judging it (reckon/crew/plan_review.py:5205) and refuses to record it settled after composing (plan_review.py:5425), which is what the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log and gate-base.log each carry their revision, literal command and a closing EXIT= line, and their failure sets differ only by the four new tests, so added_failure_count is 0 from the receipt rather than from a claim.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in d7f54a14..7126b33f (obligations.py, plan_review.py, the test file, the evidence fragment) is inside the declared write paths the manifest lists.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_held_plan_review_is_never_settled_unreviewed.py:102-107 reddens at the base revision with composed: [] from the skip, so the guard fires on the regression it was added for.\nSCORE fit: 18\nJUSTIFICATION fit: the new readers follow the reflex-state idiom at reckon/crew/plan_review.py:4590-4666 (_reflex_state, _observed_edits, _composed_review) and no added name carries a plan, ticket or version label.\nSCORE reuse: 12\nJUSTIFICATION reuse: _plan_review_holds (reckon/crew/plan_review.py:4706) re-states the held-request predicate obligations.py:5439-5452 already applies, and _held_plan_obligation re-walks review_coverage that _owed_review_skip_reason already computed.\n",
+  "review_run_id": "r-20261123T230747449116-review-of-delivered-work-lands-without-a-coordinator-s64-7126b33f3e3b",
+  "reviewed_base_sha": "d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e",
+  "reviewed_head_sha": "7126b33f3e3b7c337da33df200b37f61a7545a6c",
+  "reviewed_run_id": "r-20261123T190227066459-delivered-work-lands-without-a-coordinator-s64",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:35:26.299464+00:00",
+  "total": 101
+}
