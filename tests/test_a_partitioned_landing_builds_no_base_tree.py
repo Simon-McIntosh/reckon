@@ -39,15 +39,16 @@ def checkouts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> list[str]:
     return built
 
 
-def test_a_partitioned_measure_gets_an_empty_placeholder(
+def test_a_partitioned_measure_gets_a_name_and_no_directory(
     scratch: Path, checkouts: list[str]
 ) -> None:
+    name = scratch / "base-arm"
     with landing_measure.base_tree_for_measure(
-        Path("/repo"), "abc123", 30.0, partitioned=True
+        Path("/repo"), "abc123", 30.0, partitioned=True, name=name
     ) as tree:
-        assert tree.is_dir()
-        assert list(tree.iterdir()) == []
-        assert tree.parent == scratch
+        assert tree == name
+        assert not tree.exists()
+    assert not scratch.exists() or list(scratch.iterdir()) == []
     assert checkouts == []
     assert not tree.exists()
 
