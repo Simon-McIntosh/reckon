@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion_checks.py:_require_impl_moved",
+    "reckon/crew/promotion_scope.py:_close_a_landed_section"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:20:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "ffb34afb365",
+      "line": "2296",
+      "severity": "non-blocking",
+      "text": "non-blocking: _section_declaration(state, section) duplicates the capability owned by reckon/crew/dispatching/measurement.py:22 _section_declaration(project, slug, *, repo, section); the gained commit now shares ledger.normalize_section and the Mapping-status read, but the lookup loop remains a second implementation rather than a call to the owner or a shared state-based helper, so the manifest's statement that 'the duplicated rules themselves are gone' overstates the fix."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "pass \u2014 read 31eda5cd1f..09a5538303 commit by commit, with attention to the two commits gained since the prior review at 3aae3f6073 (5b5fdafd80, 09a5538303).",
+    "done_when": "pass \u2014 the done_when names tests/test_landing_a_sections_last_node_moves_impl.py with the three cases (lone node :169, open sibling :189, refused landing :249) plus its negative control; scoped-gate-round3.log records 6 passed in 4.20s at 5b5fdafd80 and negative-control.log records 2 failed, 1 passed at 31eda5cd1f.",
+    "goal": "pass \u2014 the node goal is that a section's last open node records the section done as it lands so the plan's impl moves; reckon/crew/promotion.py:3573-3583 calls _close_a_landed_section after the section's landing is written, and tests/test_landing_a_sections_last_node_moves_impl.py:169 shows impl moving 0.5 to 1.0.",
+    "manifest": "pass \u2014 read; it records the scoped gate, the concurrency suite, both suite arms with 0 failures, and the declaration/reuse/negative controls; every named log exists and its summary matches.",
+    "write_paths": "pass \u2014 git diff --stat 31eda5cd1f..09a5538303 names exactly six paths, every one inside the eight declared write paths stored on the run's pointer."
+  },
+  "justifications": {
+    "durability": "reverting the section-closure call at promotion.py:3575 reddens tests/test_landing_a_sections_last_node_moves_impl.py:169, the sibling assertion at :203 now requires 'section-open', and declaration-control.log shows the mapping case reddening 1/1 when the declaration read is reverted.",
+    "evidence": "tests/test_landing_a_sections_last_node_moves_impl.py:169-263 drives crew.complete against a temporary git-backed two-section plan and reads the declaration map, the typed record and the derived impl back; scoped-gate-round3.log records 6 passed and both suite arms record 0 failures.",
+    "fit": "reckon/crew/promotion_scope.py:1583-1730 and promotion_checks.py:2296 follow the modules' private-helper and lazy-import idiom, and no added name or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:3573 calls _close_a_landed_section after the landing is written, which sets section_declarations.<key> to done and commits it, and tests/test_landing_a_sections_last_node_moves_impl.py:169 shows impl moving from 0.5 to 1.0 on that landing.",
+    "reuse": "promotion_scope.py:1633 now asks pending_landing.nodes_awaiting_landing, but promotion_checks.py:2296 _section_declaration still duplicates the declaration lookup owned by reckon/crew/dispatching/measurement.py:22 rather than extending it.",
+    "scope_discipline": "every path in git diff --stat 31eda5cd1f..09a5538303 is inside the eight declared write paths, and the two gained commits touch only promotion_checks.py, the test file and the test evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the node goal is that a section's last open node records the section done as it lands so the plan's impl moves; reckon/crew/promotion.py:3573-3583 calls _close_a_landed_section after the landing commit, and tests/test_landing_a_sections_last_node_moves_impl.py:169 shows impl moving 0.5 to 1.0.\nVERDICT done_when: pass \u2014 the done_when names tests/test_landing_a_sections_last_node_moves_impl.py with the three cases (lone node :169, open sibling :189, refused landing :249) plus its negative control; scoped-gate-round3.log records 6 passed in 4.20s at 5b5fdafd80 and negative-control.log records 2 failed, 1 passed at 31eda5cd1f with the refused landings quoting 'impl did not move'.\nVERDICT write_paths: pass \u2014 git diff --stat 31eda5cd1f..09a5538303 names exactly six paths (promotion.py, promotion_checks.py, promotion_scope.py, the test file, the node fragment, s48.html), every one inside the eight declared write paths stored on the run's pointer.\nVERDICT manifest: pass \u2014 read; it records the scoped gate 6 passed in 4.20s at 5b5fdafd80, the concurrency suite 41 passed, the base arm 58 passed at 31eda5cd1f, the head arm 64 passed at 5b5fdafd80, and the declaration/reuse/negative controls; every named log exists on disk and its summary line matches the claim.\nVERDICT diff: pass \u2014 read 31eda5cd1f..09a5538303 commit by commit, with attention to the two commits gained since the prior review at 3aae3f6073 (5b5fdafd80, 09a5538303); they read the section declaration through ledger.normalize_section and its status mapping, tighten the sibling verdict to 'section-open', add the mapping case, and update the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion_checks.py:_require_impl_moved, reckon/crew/promotion_scope.py:_close_a_landed_section\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3573 calls _close_a_landed_section after the landing commit, which sets section_declarations.<key> to done and commits it, and tests/test_landing_a_sections_last_node_moves_impl.py:169 shows impl moving from 0.5 to 1.0 on that landing.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_landing_a_sections_last_node_moves_impl.py:169-263 drives crew.complete against a temporary git-backed two-section plan and reads the declaration map, the typed record and the derived impl back; scoped-gate-round3.log records 6 passed and both suite arms record 0 failures.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 31eda5cd1f..09a5538303 is inside the eight declared write paths, and the two gained commits touch only promotion_checks.py, the test file and the evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the closure call at promotion.py:3575 reddens tests/test_landing_a_sections_last_node_moves_impl.py:169, the sibling assertion at :203 now requires 'section-open' so a guard that skips the exemption fails, and declaration-control.log shows the mapping case reddening 1/1 when the declaration read is reverted.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:1583-1730 and promotion_checks.py:2296 follow the modules' private-helper and lazy-import idiom, the closure subject is 'close(<run_id>): section <key> done', and no added name or comment carries a plan, sprint or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: promotion_scope.py:1633 now asks pending_landing.nodes_awaiting_landing (extending the owner), but promotion_checks.py:2296 _section_declaration still duplicates the declaration lookup owned by reckon/crew/dispatching/measurement.py:22 rather than extending it.\nFINDING reckon/crew/promotion_checks.py:2296 non-blocking: _section_declaration(state, section) duplicates the capability owned by reckon/crew/dispatching/measurement.py:22 _section_declaration(project, slug, *, repo, section); the gained commit now shares ledger.normalize_section and the Mapping-status read, but the lookup loop remains a second implementation rather than a call to the owner or a shared state-based helper, so the manifest's statement that 'the duplicated rules themselves are gone' overstates the fix.\n",
+  "review_run_id": "r-20261123T231958041682-review-of-qwnw-a-last-node-landing-moves-impl-09a5538303f9",
+  "reviewed_base_sha": "31eda5cd1f4e52346def5d1d484bd1c9f4de514d",
+  "reviewed_head_sha": "09a5538303f9dacdc2956eb360e32a09776bbec9",
+  "reviewed_run_id": "r-20261123T182815880028-qwnw-a-last-node-landing-moves-impl",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:30:27.097563+00:00",
+  "total": 95
+}

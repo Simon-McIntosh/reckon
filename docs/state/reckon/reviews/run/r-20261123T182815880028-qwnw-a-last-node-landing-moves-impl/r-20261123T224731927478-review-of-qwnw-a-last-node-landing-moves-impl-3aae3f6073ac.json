@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion_checks.py:_require_impl_moved",
+    "reckon/crew/promotion_scope.py:_close_a_landed_section"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-a-last-node-landing-moves-impl-3aae3f6073ac",
+      "recorded_at": "2026-11-23T23:20:35.225790+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-23T22:48:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: _section_declaration(state, section) duplicates the capability owned by reckon/crew/dispatching/measurement.py:22 _section_declaration(project, slug, *, repo, section) rather than extending it -- same contract (one section's own declaration, resolved through an identity normal form), a second identity function (section_record_id here vs ledger.normalize_section there), and the new copy drops the owner's Mapping declaration-value handling, so a plan whose section_declarations value is a {status: ...} mapping reads as a non-match and the section-open exemption never fires for it."
+    },
+    {
+      "file": "tests/test_landing_a_sections_last_node_moves_impl.py",
+      "line": "203",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sibling case's verdict assertion accepts {None, 'section-open'}, so it also holds when completion reports no impl_move verdict at all, weakening the one assertion that would catch the guard silently skipping the exemption rather than reading the section declaration."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites (reckon/crew/promotion.py:_complete_locked calls _close_a_landed_section; reckon/crew/promotion_checks.py:_require_impl_moved reads the section declaration through _require_independently at :3119)",
+    "diff": "Read all eight commits against base 31eda5cd1f: bba1d13a adds the section-open exemption to _require_impl_moved and a first closure written inside the landing's staged plan write; fb996f11cb moves the closure after the landing commit; f1577fdd19 routes the open-node question through pending_landing.nodes_awaiting_landing; the remaining commits are evidence documents and the s48 fragment.",
+    "done_when": "The done_when names tests/test_landing_a_sections_last_node_moves_impl.py with three cases (lone node closes and moves impl, sibling still open lands untouched with no override, refused landing writes no declaration); the file implements those as :169, :189 and :240 and adds two sibling-edge cases; scoped-gate-repair.log records 5 passed in 3.48s at f1577fdd19f.",
+    "goal": "The node goal is that a landing which is its section's last open node records the section done so impl moves; reckon/crew/promotion.py:3575 calls _close_a_landed_section after the landing commit, which sets section_declarations.<key> to done and commits it, and reckon/crew/promotion_checks.py:2475 stops refusing an implementable-section landing.",
+    "manifest": "The manifest records the scoped gate (5 passed at f1577fdd19f), the concurrency suite (41 passed), the base arm (58 passed at 31eda5cd1f), the head arm (63 passed at f1577fdd19f) and the negative control (2 failed, 1 passed at 31eda5cd1f); every named log exists on disk and its summary line matches the claim.",
+    "write_paths": "git diff --stat over 31eda5cd1f..3aae3f6073 names exactly six paths -- reckon/crew/promotion.py, promotion_checks.py, promotion_scope.py, the test file, and the two evidence fragments -- every one inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "Reverting the closure call at promotion.py:3575 reddens tests/test_landing_a_sections_last_node_moves_impl.py:174 (declaration stays implementable, impl stays 0.5), and reuse-control.log at f1577fdd19f shows the two sibling-edge cases failing 2/2 when the pending_landing predicate hunk is reverted, though the sibling verdict assertion at :203 tolerates None.",
+    "evidence": "tests/test_landing_a_sections_last_node_moves_impl.py:174-263 drives crew.complete against a temporary git-backed two-section plan and reads the declaration map, the typed record and the derived impl back; the file passes 5/5 at the reviewed head and the arms record 0 failures both sides.",
+    "fit": "reckon/crew/promotion_scope.py:1578-1710 follows the module's private-helper and lazy-import idiom and no added name or comment carries a plan, sprint, or ticket identifier; the closure subject is 'close(<run_id>): section <key> done'.",
+    "goal_fidelity": "reckon/crew/promotion.py:3575 writes the section's declaration after the landing commits and tests/test_landing_a_sections_last_node_moves_impl.py:174 shows impl moving from 0.5 to 1.0 on that landing.",
+    "reuse": "reckon/crew/promotion_scope.py:165 now asks pending_landing.nodes_awaiting_landing (extending the owner) after f1577fdd19f, but reckon/crew/promotion_checks.py:44 adds a second _section_declaration that duplicates reckon/crew/dispatching/measurement.py:22 instead of extending it.",
+    "scope_discipline": "git diff --stat over 31eda5cd1f..3aae3f6073 names only the six declared paths, and no hunk reaches anything the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a landing which is its section's last open node records the section done so impl moves; reckon/crew/promotion.py:3575 calls _close_a_landed_section after the landing commit, which sets section_declarations.<key> to done and commits it, and reckon/crew/promotion_checks.py:2475 stops refusing an implementable-section landing.\nVERDICT done_when: the done_when names tests/test_landing_a_sections_last_node_moves_impl.py with three cases (lone node closes and moves impl, sibling still open lands untouched with no override, refused landing writes no declaration); the file implements those at :169, :189 and :240 and adds two sibling-edge cases; scoped-gate-repair.log records 5 passed in 3.48s at f1577fdd19f.\nVERDICT write_paths: git diff --stat over 31eda5cd1f..3aae3f6073 names exactly six paths -- reckon/crew/promotion.py, promotion_checks.py, promotion_scope.py, the test file, and the two evidence fragments -- every one inside the declared write paths.\nVERDICT manifest: the manifest records the scoped gate (5 passed at f1577fdd19f), the concurrency suite (41 passed), the base arm (58 passed at 31eda5cd1f), the head arm (63 passed at f1577fdd19f) and the negative control (2 failed, 1 passed at 31eda5cd1f); every named log exists on disk and its summary line matches the claim.\nVERDICT diff: Read all eight commits against base 31eda5cd1f: bba1d13a adds the section-open exemption to _require_impl_moved and a first closure written inside the landing's staged plan write; fb996f11cb moves the closure after the landing commit; f1577fdd19 routes the open-node question through pending_landing.nodes_awaiting_landing; the remainder are evidence documents and the s48 fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion_checks.py:_require_impl_moved, reckon/crew/promotion_scope.py:_close_a_landed_section\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3575 writes the section's declaration after the landing commits and tests/test_landing_a_sections_last_node_moves_impl.py:174 shows impl moving from 0.5 to 1.0 on that landing.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_landing_a_sections_last_node_moves_impl.py:174-263 drives crew.complete against a temporary git-backed two-section plan and reads the declaration map, the typed record and the derived impl back; 5/5 pass at the reviewed head and both arms record 0 failures.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat over 31eda5cd1f..3aae3f6073 names only the six declared paths, and no hunk reaches anything the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: reverting the closure call at promotion.py:3575 reddens tests/test_landing_a_sections_last_node_moves_impl.py:174, and reuse-control.log shows the two sibling-edge cases failing 2/2 when the pending_landing predicate hunk is reverted, though the sibling verdict assertion at :203 tolerates None.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:1578-1710 follows the module's private-helper and lazy-import idiom and carries no plan or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion_scope.py:165 now asks pending_landing.nodes_awaiting_landing (extending the owner), but reckon/crew/promotion_checks.py:44 adds a second _section_declaration duplicating reckon/crew/dispatching/measurement.py:22 instead of extending it.\nFINDING reckon/crew/promotion_checks.py:44 non-blocking: _section_declaration(state, section) duplicates reckon/crew/dispatching/measurement.py:22 _section_declaration(project, slug, *, repo, section) -- same contract, a second identity function (section_record_id vs ledger.normalize_section), and the copy drops the owner's Mapping declaration-value handling, so a {status: ...}-shaped declaration never reads as implementable.\nFINDING tests/test_landing_a_sections_last_node_moves_impl.py:203 non-blocking: the sibling verdict assertion accepts {None, 'section-open'}, so it also holds when completion reports no impl_move verdict at all.",
+  "review_run_id": "r-20261123T224731927478-review-of-qwnw-a-last-node-landing-moves-impl-3aae3f6073ac",
+  "reviewed_base_sha": "31eda5cd1f4e52346def5d1d484bd1c9f4de514d",
+  "reviewed_head_sha": "3aae3f6073ac3b9a520d3e4005c7a6369dfdd19d",
+  "reviewed_run_id": "r-20261123T182815880028-qwnw-a-last-node-landing-moves-impl",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:30:55.040266+00:00",
+  "total": 93
+}
