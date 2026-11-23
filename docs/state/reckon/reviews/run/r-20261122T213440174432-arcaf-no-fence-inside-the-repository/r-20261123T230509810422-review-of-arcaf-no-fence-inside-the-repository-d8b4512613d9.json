@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:_orientation_substance",
+    "reckon/crew/promotion_checks.py:_landing_scope_products",
+    "reckon/crew/promotion_evidence.py:_declared_repository_roots"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:05:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the fragment's case count describes the earlier control run; it is evidence wording, and the shipped tests and their control are what the landing measures",
+      "recorded_at": "2026-11-23T23:24:09.062943+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-run-changes-any-file-in-its-repository-s5",
+      "recorded_at": "2026-11-23T23:24:11.912242+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-run-changes-any-file-in-its-repository/arcaf-no-fence-inside-the-repository.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the negative control's \"five cases\" fail at the base revision, but the shipped test file has seven cases (five functions, one parametrized twice); the cited control (logs/negative-control.log) ran the earlier five-case revision, and the two audit-level cases added at tests/test_a_run_changes_any_file_in_its_repository.py:174 are controlled only in logs/negative-control-reuse.log, which the fragment does not cite, so a reader cannot tie the sentence to the file now shipped."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "837",
+      "severity": "non-blocking",
+      "text": "non-blocking: promotion's refusal for an out-of-repository path says only \"changed paths outside its declared write scope\" and never names the kind, so the coordinator reading it cannot tell an exclusive artifact from a path outside the repository, while the write-time audit does name it; the fragment's claim that the two surfaces cannot disagree holds for the set of refused paths but not for the sentence they emit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from e849b54202 to d8b4512613 \u2014 efd9933d59 replaces two copies of the worktree/repository containment loop with _repository_relative_path, 7f8b5b1fbb switches _changed_artifacts_needing_acceptance to _declaration_needed_kind and adds the audit-level test, and 30e2ec4630/7c6cdc54ba/d8b4512613 record the rule and the measured arms in the fragment.",
+    "done_when": "tests/test_a_run_changes_any_file_in_its_repository.py:85, :103, :139 (plan document and figure directory, each asserting the kind), :154 (promotion's filter) and :174 (the audit's own verdict, both parametrizations) cover the three \u00a71 arms; the manifest records the four-file declared suite at 83 passed at 7c6cdc54ba against 75 passed at 78972b6f60, zero failures either arm, both logs EXIT=0.",
+    "goal": "\u00a71 stays as delivered \u2014 a run's commits are judged by path class, with only exclusive artifacts and out-of-repository paths refused \u2014 and the five gained commits answer the prior review's three findings: reckon/crew/promotion_scope.py:534 adds one containment rule used by both the declared-path mapping and the audit predicate, and :689 refuses an out-of-repository path.",
+    "manifest": "read; it states the repaired scope, the declared suite pair (83 at 7c6cdc54ba, 75 at 78972b6f60, EXIT=0, on rigel), the all_debug importing population at both revisions where every head failure also fails at base, and three controls in logs/negative-control-reuse.log.",
+    "write_paths": "the gained diff e849b54202..d8b4512613 touches exactly the three paths the goal names \u2014 docs/evidence/fragments/a-run-changes-any-file-in-its-repository/arcaf-no-fence-inside-the-repository.html, reckon/crew/promotion_scope.py and tests/test_a_run_changes_any_file_in_its_repository.py \u2014 all inside the node's seven declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_changes_any_file_in_its_repository.py:174 fails if the audit stops refusing an out-of-repository path (negative control 3: 2 failed, 5 passed under the mutation), and :154 fails if promotion's filter stops applying that class (control 2: 1 failed, 6 passed with the commit reversed).",
+    "evidence": "the manifest's baseline_suite and after_suite carry revision, literal command, exit_status 0 and log paths (baseline_suite-1795474613822499294.log 75 passed, after_suite-1795474689032472302.log 83 passed), and the negative-control-reuse.log shows the two red arms.",
+    "fit": "reckon/crew/promotion_scope.py:534 follows the module's prose-docstring idiom and its name states the mechanism, but it duplicates the name of reckon/project_state.py:186 while doing unrelated validation, which a reader scanning both modules could confuse.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:534 is the single containment rule and :689 returns the outside-repository kind, so the audit and promotion now refuse the same two classes and promotion's filter at reckon/crew/promotion_checks.py:2983 reads the same predicate.",
+    "reuse": "the search over reckon/crew and reckon for a repository-containment owner found only purpose-specific checks (reckon/crew/dispatch_claims.py:2218 for fragment claims, reckon/crew/node.py:1093 for delivery roots), so reckon/crew/promotion_scope.py:534 becomes the owner rather than a fork, and the duplication the prior review named is gone (2 occurrences to 0).",
+    "scope_discipline": "the gained diff (e849b54202..d8b4512613) is confined to the three declared paths the goal names, with no incidental edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a71 stays as delivered \u2014 a run's commits are judged by path class, with only exclusive artifacts and out-of-repository paths refused \u2014 and the five gained commits answer the prior review's three findings: reckon/crew/promotion_scope.py:534 adds one containment rule used by both the declared-path mapping and the audit predicate, and :689 refuses an out-of-repository path.\nVERDICT done_when: tests/test_a_run_changes_any_file_in_its_repository.py:85, :103, :139 (plan document and figure directory, each asserting the kind), :154 (promotion's filter) and :174 (the audit's own verdict, both parametrizations) cover the three \u00a71 arms; the manifest records the four-file declared suite at 83 passed at 7c6cdc54ba against 75 passed at 78972b6f60, zero failures either arm, both logs EXIT=0.\nVERDICT write_paths: the gained diff e849b54202..d8b4512613 touches exactly the three paths the goal names \u2014 docs/evidence/fragments/a-run-changes-any-file-in-its-repository/arcaf-no-fence-inside-the-repository.html, reckon/crew/promotion_scope.py and tests/test_a_run_changes_any_file_in_its_repository.py \u2014 all inside the node's seven declared write paths.\nVERDICT manifest: read; it states the repaired scope, the declared suite pair (83 at 7c6cdc54ba, 75 at 78972b6f60, EXIT=0, on rigel), the all_debug importing population at both revisions where every head failure also fails at base, and three controls in logs/negative-control-reuse.log.\nVERDICT diff: read commit by commit from e849b54202 to d8b4512613 \u2014 efd9933d59 replaces two copies of the worktree/repository containment loop with _repository_relative_path, 7f8b5b1fbb switches _changed_artifacts_needing_acceptance to _declaration_needed_kind and adds the audit-level test, and 30e2ec4630/7c6cdc54ba/d8b4512613 record the rule and the measured arms in the fragment.\nCALL_SITES: reckon/crew/dispatch_sessions.py:_orientation_substance, reckon/crew/promotion_checks.py:_landing_scope_products, reckon/crew/promotion_evidence.py:_declared_repository_roots\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:534 is the single containment rule and :689 returns the outside-repository kind, so the audit and promotion now refuse the same two classes and promotion's filter at reckon/crew/promotion_checks.py:2983 reads the same predicate.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite carry revision, literal command, exit_status 0 and log paths (baseline_suite-1795474613822499294.log 75 passed, after_suite-1795474689032472302.log 83 passed), and the negative-control-reuse.log shows the two red arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff (e849b54202..d8b4512613) is confined to the three declared paths the goal names, with no incidental edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_run_changes_any_file_in_its_repository.py:174 fails if the audit stops refusing an out-of-repository path (negative control 3: 2 failed, 5 passed under the mutation), and :154 fails if promotion's filter stops applying that class (control 2: 1 failed, 6 passed with the commit reversed).\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:534 follows the module's prose-docstring idiom and its name states the mechanism, but it duplicates the name of reckon/project_state.py:186 while doing unrelated validation, which a reader scanning both modules could confuse.\nSCORE reuse: 19\nJUSTIFICATION reuse: the search over reckon/crew and reckon for a repository-containment owner found only purpose-specific checks (reckon/crew/dispatch_claims.py:2218 for fragment claims, reckon/crew/node.py:1093 for delivery roots), so reckon/crew/promotion_scope.py:534 becomes the owner rather than a fork, and the duplication the prior review named is gone (2 occurrences to 0).\nFINDING docs/evidence/fragments/a-run-changes-any-file-in-its-repository/arcaf-no-fence-inside-the-repository.html:45 non-blocking: the fragment states the negative control's \"five cases\" fail at the base revision, but the shipped test file has seven cases (five functions, one parametrized twice); the cited control (logs/negative-control.log) ran the earlier five-case revision, and the two audit-level cases added at tests/test_a_run_changes_any_file_in_its_repository.py:174 are controlled only in logs/negative-control-reuse.log, which the fragment does not cite, so a reader cannot tie the sentence to the file now shipped.\nFINDING reckon/crew/promotion_scope.py:837 non-blocking: promotion's refusal for an out-of-repository path says only \"changed paths outside its declared write scope\" and never names the kind, so the coordinator reading it cannot tell an exclusive artifact from a path outside the repository, while the write-time audit does name it; the fragment's claim that the two surfaces cannot disagree holds for the set of refused paths but not for the sentence they emit.",
+  "review_run_id": "r-20261123T230509810422-review-of-arcaf-no-fence-inside-the-repository-d8b4512613d9",
+  "reviewed_base_sha": "e849b54202ea995f47042dd8ac4dbc3c07851a76",
+  "reviewed_head_sha": "d8b4512613d97afe8ae71d47c18a7c59d1f03662",
+  "reviewed_run_id": "r-20261122T213440174432-arcaf-no-fence-inside-the-repository",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-23T23:34:28.713052+00:00",
+  "total": 112
+}
