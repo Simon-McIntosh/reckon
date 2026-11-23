@@ -397,10 +397,24 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     failure = record.get("failure")
     if not failure:
         return None
-    from reckon.crew.queue_admission import _failure_text, _is_lane_hold
+    from reckon.crew.queue_admission import (
+        _failure_text,
+        _is_lane_hold,
+        _is_node_contract_refusal,
+    )
     from reckon.crew.watch_unit import _watch_attach_line
 
     if _is_lane_hold(failure):
+        return None
+    if _is_node_contract_refusal(failure):
+        # The refusal quotes the dispatch remedy for a node contract, and that
+        # command is not what clears a queued request: its contract is repaired
+        # with ``crew queue edit``, which the obligations view publishes from
+        # the pointer. Reading the quoted dispatch line here would tell a
+        # session to re-dispatch a request that is still queued, and would mask
+        # the contract duty that view owns. One pass's reading is not a finding
+        # at all, so the waiting reading is the true one until a second pass
+        # agrees and the contract duty is raised.
         return None
     text = _failure_text(failure)
     refusal_class = _stamped_refusal_class(text)
