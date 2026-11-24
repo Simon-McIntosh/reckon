@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:4406 _dispatch_composed_review",
+    "reckon/crew/recovery_watch.py:4560",
+    "reckon/crew_dispatch_commands.py:3418",
+    "reckon/crew/recovery_review_acceptance.py:1742",
+    "reckon/crew/pending_landing.py:1328",
+    "reckon/crew/plan_review.py:5244"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T00:22:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the shared claim directory means \"one sweep of that directory covers a review claim left by a dead dispatcher exactly as it covers a node claim left by one\", but no sweep reclaims claim records at all: reckon/crew/gc.py:876 only matches exec-identity filenames, and the only other reader of that directory, reckon/crew/promotion.py:3870, releases claims of a discarded run. Both kinds are in fact reclaimed lazily by the next dispatch through _read_node_dispatch_claim and _reclaim_stale_node_dispatch_claim; the reader benefit of sharing the directory is real, the sweep stated here is not"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from af562db738 to 2f79c541c9: 8d2ea44036 moves the claim into the shared claim directory and onto the owner's readers/reclaimers/atomic writer, aaa12aa153 counts reviews on disk, 8295d313f4 and 2f79c541c9 restate the arms in the evidence fragment",
+    "done_when": "all three named cases are implemented in tests/test_one_delivered_head_gets_one_review.py and pass at the repair head (3 passed in 7.26s, EXIT=0), and the base arm falsifies the concurrent case (1 failed, 2 deselected, EXIT=1)",
+    "goal": "the goal is one review per delivered head and review kind; reckon/crew/recovery_review_dispatch.py:4406 puts every non-plan, non-dry dispatch under _take_review_head_claim, and the four repair commits carry that claim onto the shared owner helpers without changing what it arbitrates",
+    "manifest": "read; it records the four repair commits, the suites (58 passed base, 61 passed head), the gate arms, the three negative-control logs and the outside-scope attribution of the eight setup errors",
+    "write_paths": "the five paths s49 declares; the four gained commits touch only reckon/crew/recovery_review_dispatch.py, tests/test_one_delivered_head_gets_one_review.py and the section's evidence fragment"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that concurrent dispatchers create exactly one review per delivered head and review kind; reckon/crew/recovery_review_dispatch.py:4406 takes _take_review_head_claim in _dispatch_composed_review for every non-plan, non-dry dispatch, and the gained commits keep that key while moving the claim onto the shared helpers.\nVERDICT done_when: the three cases s49 names are implemented in tests/test_one_delivered_head_gets_one_review.py and pass at the repair head (3 passed in 7.26s, EXIT=0), with the base arm red on the concurrent case (1 failed, 2 deselected in 3.03s, EXIT=1).\nVERDICT write_paths: the five declared paths; the four gained commits touch only reckon/crew/recovery_review_dispatch.py, tests/test_one_delivered_head_gets_one_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html.\nVERDICT manifest: read; it names the four repair commits, the base and head suite arms (58 passed / 61 passed), the gate arms (1 failed, 279 passed base; 1 failed, 281 passed, 8 errors head) and the negative-control logs at logs/negative-control.log and logs/nc-shared-writer.log.\nVERDICT diff: read commit by commit from af562db738 to 2f79c541c9; 8d2ea44036 takes REVIEW_CLAIM_LABEL_PREFIX under NODE_DISPATCH_CLAIM_DIRECTORY and reuses _read_node_dispatch_claim, _empty_claim_is_stale, _reclaim_stale_node_dispatch_claim and write_json_atomically, aaa12aa153 counts run directories on disk, 8295d313f4 and 2f79c541c9 record the measured arms.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:4406, reckon/crew/recovery_watch.py:4560, reckon/crew_dispatch_commands.py:3418, reckon/crew/recovery_review_acceptance.py:1742, reckon/crew/pending_landing.py:1328, reckon/crew/plan_review.py:5244\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:4406 routes every review-kind dispatch through the (run, head, kind) claim, so one head receives one review of each kind wherever the dispatch enters.\nSCORE evidence: 18\nJUSTIFICATION evidence: the three cases run as separate interpreters and are logged at logs/repair-node-test.log, and the base arm the previous review asked for is now measured at logs/repair-base-concurrent-node.log (8 errors in 2.27s, EXIT=1).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in af562db738..2f79c541c9 is one of the five paths s49 declares; s49.html and the figure directory are untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_delivered_head_gets_one_review.py:329 asserts the on-disk run directories number one, which reddens on the base revision and on the launcher variant logged at logs/nc-assertion-current.log (3 failed in 6.56s).\nSCORE fit: 18\nJUSTIFICATION fit: the review claim now follows the naming and helper idiom of reckon/crew/dispatch_claims.py:720, and no symbol carries a plan or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:4628 reuses the claim directory, the attempt bound and the shared reader/reclaimer/writer from reckon/crew/dispatch_claims.py, though its reclaim loop remains a parallel copy of _claim_node_dispatch's.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html:27 non-blocking: the fragment claims one sweep of the shared claim directory covers a stale review claim as it covers a stale node claim, but reckon/crew/gc.py:876 only matches exec-identity filenames and no sweep reclaims claim records; both kinds are reclaimed lazily by the next dispatch, so the stated sweep does not exist.\n",
+  "review_run_id": "r-20261124T002038045328-review-of-qwnw-one-delivered-head-gets-one-review-2f79c541c927",
+  "reviewed_base_sha": "af562db738485ebe7c0512ba570d711285d15f75",
+  "reviewed_head_sha": "2f79c541c927609228805e5829400a44456e632c",
+  "reviewed_run_id": "r-20261123T222545133163-qwnw-one-delivered-head-gets-one-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:34:04.693616+00:00",
+  "total": 108
+}
