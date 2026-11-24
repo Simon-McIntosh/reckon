@@ -20,19 +20,19 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a node&#x27;s own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;, &quot;test-time-is-not-the-nodes-time#s5&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;], &quot;s5&quot;: [&quot;test-time-is-not-the-nodes-time#s3&quot;], &quot;s6&quot;: [&quot;test-time-is-not-the-nodes-time#s5&quot;]}">
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-11-24">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
   <main class="plan-doc">
     <h2 id="s1">§1 — Measure what a node's time budget controls, and how much of it the gates spend</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-18 nova's lead directed that "test work should not count as timing towards the node's work". nova reported the same day that most blocking review findings, on both lanes, came from gates squeezed to fit the 60-minute fence. Workers ran suites in-process under <code>timeout 480</code> or <code>timeout 560</code>, cut them off at 75 of 104 tests, skipped baseline arms, or let jobs reach their limit. That report names no run or review a reader can open yet, so this section's measurement records the run id of every truncated gate it finds.</p>
 <p>What the budget controls, as read from the code on 2026-10-18:</p>
 <ul>
