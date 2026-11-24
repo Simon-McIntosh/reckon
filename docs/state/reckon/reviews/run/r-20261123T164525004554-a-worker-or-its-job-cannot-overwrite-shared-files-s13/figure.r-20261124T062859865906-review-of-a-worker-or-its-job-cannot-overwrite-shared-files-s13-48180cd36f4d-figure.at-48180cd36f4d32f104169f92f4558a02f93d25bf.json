@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T06:29:48Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence-write-grants.svg",
+      "id": "f752ab3d4de",
+      "line": 23,
+      "severity": "non-blocking",
+      "summary": "Three text runs sit just under the 4.5:1 AA contrast for normal text against the white page: the left panel's explanatory footnote (script lines 79-82, 'a write or a recursive removal here fails in the kernel ...') and the 'refused' legend (line 99) draw in GREY #7a7a7a at 4.29:1, and the 'granted' legend (line 100) draws in GREEN #2e8b57 at 4.25:1; on the #f7f8fa card surface they fall to 4.04:1 and 3.99:1. All three are 14pt, under the large-text exemption. The footnote is the least contrasty text in the figure although it carries the left side's whole explanation of why a refusal happens in the kernel regardless of enumeration, so a reader's eye can pass over it in favour of the four dark list entries above. Non-blocking because 4.25:1 is still comfortably legible and the dashed-versus-solid arrow distinction carries the direction without colour. Disposition: exempted - already recorded as non-blocking by the figure review at head 4130ac and unchanged since; the figure is byte-identical between 4130ac and 48180cd and this read-only review may not edit it. Remedy if the coordinator takes it: draw those runs in BODY #3f3f3f (10.5:1), use GREEN_DARK #1f5c3a (7.92:1) for the 'granted' legend, and keep GREEN #2e8b57 for the arrow strokes alone, which need only 3:1."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261124T062859865906-review-of-a-worker-or-its-job-cannot-overwrite-shared-files-s13-48180cd36f4d-figure",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "48180cd36f4d32f104169f92f4558a02f93d25bf",
+  "reviewed_run_id": "r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "defect - the two headings render in INK #2b2b2b at 14.16:1 on white, the left and right list entries in BODY #3f3f3f and GREEN_DARK #1f5c3a at 10.5:1 and 7.92:1, and the closing note in BODY at 10.5:1; but the left panel's explanatory footnote and the 'refused' legend render in GREY #7a7a7a at 4.29:1 and the 'granted' legend in GREEN #2e8b57 at 4.25:1, just under the 4.5:1 AA threshold for normal text and lower still (4.04:1 and 3.99:1) on the #f7f8fa card surface. All three remain legible and clear the 3:1 non-text bar, so nothing is lost to a reader. This is the same non-blocking finding the figure review at head 4130ac recorded; the figure is byte-identical between 4130ac and 48180cd.",
+    "data_ink": "pass - no quantity is plotted; the ink is the entry text, the arrows and two 1.3pt panel strokes, and the only solid fill is the centre node that marks the subject, drawn beneath its white label. Nothing competes with the words.",
+    "decoration": "pass - the canvas is fully transparent (alpha 0 at every background pixel), there is no gradient, no background fill, no shading, no drop shadow and no styled frame; colours are flat grey, green and near-black.",
+    "label_collision": "pass - the ink bounding box is (59,37)-(1340,655) inside the 1400x720 canvas, leaving at least 59px left, 60px right, 37px top and 65px bottom, so nothing is clipped. Measured band by band, no two text runs share a row range and no arrow, panel border or closing note crosses a text run: the 'refused' band (y 124-150) holds grey text only and the nearest dashed arrow begins below it at y 150; the left panel's text stops at x 439 against its right border at x 519; the right panel's text stops at x 1313 against its border at 1340.",
+    "legibility": "pass - the single attached PNG (1400x720, RGBA with a fully transparent canvas) reads at a glance: two headed columns, a filled centre block lettered 'the fence and its worker', four dashed arrows fanned left under the word 'refused' and four solid green arrows fanned right under the word 'granted'. Every label the prior review found missing at head bc734dea is present; the left column lists four refused paths, its footnote explains the kernel refusal, the right column lists four writable roots, and a closing note under both columns states that a grant naming a filesystem or project root is refused by name before any mount is composed. Body text is 20px at this canvas, about 13px at page scale.",
+    "table_form": "pass - the content is a relation rather than a table: one fence node issuing two outcomes, refused and granted, which the paired arrow fans carry and a two-column table would not. The two columns are the endpoints of that relation, not rows to be scanned."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T06:37:06.966393+00:00",
+  "total": null
+}

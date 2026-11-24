@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/_worker_fence.py:1730 node_tmp_runtime_paths",
+    "reckon/_worker_fence.py:1769 create_node_tmp_runtime_paths",
+    "reckon/_worker_fence.py:2279 fence argv grant loop",
+    "reckon/crew/fleet_supervisor.py:1198 runtime_directory",
+    "reckon/crew/dispatch_launch.py:1293 _worker_runtime_environment"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T06:28:28Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13/precheck-three-cases.log",
+      "line": 248,
+      "severity": "non-blocking",
+      "text": "this log is the red arm showing all three dispatch-return cases failing before the fixture change, but it is absent from the manifest's test_logs, so a reader following the manifest's own record cannot reach the reproduction that shows the delta guards anything."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the two-arm baseline_suite/after_suite commands list eleven test files but not tests/test_dispatch_returns_without_worker.py, so the recorded suite pair does not itself exercise the delta; its green evidence rests on prove_all.log separately rather than on the added_failure_count derivation."
+    }
+  ],
+  "justifications": {
+    "durability": "precheck-three-cases.log shows the three dispatch-return cases failing at the pre-repair revision and prove_all.log shows them passing at the repaired head, so removing the fixture's FLEET_RUNTIME_DIR grant reddens them against tests/test_dispatch_returns_without_worker.py:1217.",
+    "evidence": "arms-after-repair-2.log records base 4 failed/155 passed at bee04f7fb9 and head 4 failed/163 passed at 48180cd36f with the same four failure ids, giving added_failure_count 0, and prove_all.log records 11 passed at the repaired head for the three dispatch-return cases plus the section's own test.",
+    "fit": "the delta reuses the existing monkeypatch.setenv(\"FLEET_RUNTIME_DIR\", ...) idiom already used at tests/test_fence_pid_namespace.py:48 and follows the module's fixture style at tests/test_dispatch_returns_without_worker.py:87.",
+    "goal_fidelity": "tests/test_dispatch_returns_without_worker.py:112 pins FLEET_RUNTIME_DIR, the variable reckon/crew/fleet_supervisor.py:1201 reads into node_tmp_runtime_paths at reckon/_worker_fence.py:1760, so the stub's marker directory becomes a handed writable root under the read-only fence without loosening any seal.",
+    "reuse": "the delta extends the production runtime-directory mechanism (reckon/crew/fleet_supervisor.py:1198 through reckon/_worker_fence.py:1730) rather than adding a new grant; a search of tests/conftest.py and the test tree found no shared fixture owning this capability to extend.",
+    "scope_discipline": "git diff 4130ac1484..48180cd36f touches only tests/test_dispatch_returns_without_worker.py, which is inside the review's declared write paths and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 13's deliverable is a fence that mounts the filesystem read-only and grants writes only to handed roots and dispatch-declared grants; the delta gained since the reviewed head 4130ac1484 is the single commit 48180cd36f, which makes the dispatch-return gate's stub writable under that fence by pinning FLEET_RUNTIME_DIR to the case's marker directory at tests/test_dispatch_returns_without_worker.py:112.\nVERDICT done_when: the done_when names tests/test_a_worker_can_write_only_what_it_was_granted.py, which landed before this delta and is unchanged by it; the manifest's two-arm suite records zero added failures and prove_all.log records 11 passed for the three dispatch-return cases plus the section's own test at the repaired head.\nVERDICT write_paths: the review's declared write paths include tests/test_dispatch_returns_without_worker.py; git diff 4130ac1484..48180cd36f touches only that file (14 insertions, 5 deletions), so the delta stays inside the declared scope.\nVERDICT manifest: read; it names commits through 48180cd36f, records tests/test_dispatch_returns_without_worker.py under outside_scope as the one path edited for the repair, and states base 4 failed/155 passed against head 4 failed/163 passed with the same four failure ids.\nVERDICT diff: the gained diff is the single commit 48180cd36f, which changes only the writable_marker_dir fixture: it adds a monkeypatch parameter, adds monkeypatch.setenv(\"FLEET_RUNTIME_DIR\", str(directory)) at tests/test_dispatch_returns_without_worker.py:112, and rewrites the docstring to explain that the directory is handed to the run as its runtime directory.\nCALL_SITES: reckon/_worker_fence.py:1730 (node_tmp_runtime_paths), reckon/_worker_fence.py:1769 (create_node_tmp_runtime_paths), reckon/_worker_fence.py:2279 (fence argv grant loop via create_node_tmp_runtime_paths), reckon/crew/fleet_supervisor.py:1198 (runtime_directory reads FLEET_RUNTIME_DIR), reckon/crew/dispatch_launch.py:1293 (_worker_runtime_environment)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_dispatch_returns_without_worker.py:112 pins FLEET_RUNTIME_DIR, which reckon/crew/fleet_supervisor.py:1201 reads into node_tmp_runtime_paths at reckon/_worker_fence:1760, so the stub's marker directory becomes a handed writable root under the read-only fence.\nSCORE evidence: 17\nJUSTIFICATION evidence: arms-after-repair-2.log records base 4 failed/155 passed at bee04f7fb9 and head 4 failed/163 passed at 48180cd36f with the same four ids, so added_failure_count is 0, and prove_all.log records 11 passed at the repaired head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 4130ac1484..48180cd36f touches only tests/test_dispatch_returns_without_worker.py, which is inside the review's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: precheck-three-cases.log shows the three dispatch-return cases failing at the pre-repair revision and prove_all.log shows them passing at the repaired head, so removing the fixture's FLEET_RUNTIME_DIR grant reddens them against tests/test_dispatch_returns_without_worker.py:1217.\nSCORE fit: 18\nJUSTIFICATION fit: the delta reuses the existing monkeypatch.setenv(\"FLEET_RUNTIME_DIR\", ...) idiom already used at tests/test_fence_pid_namespace.py:48 and follows the module's fixture style at tests/test_dispatch_returns_without_worker.py:87.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta extends the production runtime-directory mechanism (reckon/crew/fleet_supervisor.py:1198 through reckon/_worker_fence.py:1730) rather than adding a new grant; a search of tests/conftest.py and the test tree found no shared fixture owning this capability to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13/precheck-three-cases.log:248 non-blocking: this log is the red arm showing all three dispatch-return cases failing before the fixture change, but it is absent from the manifest's test_logs, so a reader following the manifest's own record cannot reach the reproduction that shows the delta guards anything.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13/manifest.md:19 non-blocking: the two-arm baseline_suite/after_suite commands list eleven test files but not tests/test_dispatch_returns_without_worker.py, so the recorded suite pair does not itself exercise the delta; its green evidence rests on prove_all.log separately rather than on the added_failure_count derivation.\n",
+  "review_run_id": "r-20261124T062759632938-review-of-a-worker-or-its-job-cannot-overwrite-shared-files-s13-48180cd36f4d",
+  "reviewed_base_sha": "4130ac148489bf7510e50a23ce5410cbf4f20489",
+  "reviewed_head_sha": "48180cd36f4d32f104169f92f4558a02f93d25bf",
+  "reviewed_run_id": "r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T06:47:29.509895+00:00",
+  "total": 112
+}
