@@ -1638,6 +1638,7 @@ def _write_state(
     root: str | Path | None = None,
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
+    report_warnings: list[str] | None = None,
 ) -> int:
     """Atomically rewrite the semantic HTML state for a plan slug.
 
@@ -1658,6 +1659,7 @@ def _write_state(
             root,
             artifact_type,
             retire_preimages,
+            report_warnings,
         )
 
 
@@ -1669,6 +1671,7 @@ def _write_state_locked(
     root: str | Path | None = None,
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
+    report_warnings: list[str] | None = None,
 ) -> int:
     """The version check and the replacement of one plan HTML file.
 
@@ -1965,16 +1968,25 @@ def _write_state_locked(
         # and says which plan it documents and which sprint it ran in. The
         # close has already passed its guards and this file is the record of a
         # decision taken, so a composition failure cannot undo it: the close
-        # stands and the caller is told the record was not written.
+        # stands, a durable record names the plan and the error, and the caller
+        # is told the record was not written. Every failure is caught, not only
+        # the ones this module names: an error of any other kind would otherwise
+        # leave the close committed with no report and no account of why.
         from reckon import evidence
 
         try:
             evidence.compose_closed_plan_report(docs_dir, project, slug)
-        except (evidence.EvidenceSynthesisError, OSError) as exc:
-            warnings.warn(
-                f"plan {project}/{slug} closed but its report was not composed: {exc}",
-                stacklevel=2,
+        except Exception as exc:  # noqa: BLE001 — the close stands whatever failed
+            message = (
+                f"plan {project}/{slug} closed but its report was not composed: {exc}"
             )
+            try:
+                evidence.record_close_failure(project, slug, exc)
+            except Exception as record_exc:  # noqa: BLE001 — never undo the close
+                message = f"{message} (and the failure record could not be written: {record_exc})"
+            warnings.warn(message, stacklevel=2)
+            if report_warnings is not None:
+                report_warnings.append(message)
     return new_data["version"]
 
 
@@ -2114,6 +2126,7 @@ def write_plan(
     root: str | Path | None = None,
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
+    report_warnings: list[str] | None = None,
 ) -> int:
     """Write a plan through the store and advance its write generation.
 
@@ -2121,6 +2134,13 @@ def write_plan(
     editors above it and the HTTP handler alike — so the generation advances
     for all of them at one place, whether or not the write commits and whether
     or not a change watch is running.
+
+    ``report_warnings`` collects the sentences a close owes when the plan's
+    evidence report could not be composed, so the caller's own result states
+    that no report was written rather than leaving it to a process-wide warning
+    nobody reads. A caller that passes no list still hears it through
+    :func:`warnings.warn`, and the durable failure record is written either
+    way.
 
     The whole write runs inside :func:`reckon._plan_html.one_parse_per_document`,
     so the version check, the heading guard, the coverage check and the
@@ -2139,6 +2159,7 @@ def write_plan(
             root,
             artifact_type,
             retire_preimages,
+            report_warnings,
         )
     advance_write_generation(project)
     return version
@@ -2152,6 +2173,7 @@ def _write_plan_at_version(
     root: str | Path | None = None,
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
+    report_warnings: list[str] | None = None,
 ) -> int:
     """Write a full data blob back with version check.
 
@@ -2204,6 +2226,7 @@ def _write_plan_at_version(
         root,
         artifact_type,
         retire_preimages,
+        report_warnings,
     )
 
 

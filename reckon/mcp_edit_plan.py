@@ -2034,6 +2034,10 @@ def _edit_plan(
             return {"ok": False, "error": "unwired_plan", "detail": refusal}
 
     # ── persist the working DICT via the version-checked atomic write ──
+    # A close whose evidence report could not be composed must say so on this
+    # call's own result: the plan still closes, and the caller learns that no
+    # report was written and why.
+    report_warnings: list[str] = []
     try:
         new_version = write_plan(
             project,
@@ -2043,6 +2047,7 @@ def _edit_plan(
             root,
             artifact_type=selected_type,
             retire_preimages=retire_preimages,
+            report_warnings=report_warnings,
         )
     except VersionConflict as e:
         return _attach_changed_targets(
@@ -2096,6 +2101,8 @@ def _edit_plan(
             )
     if warnings:
         result["warnings"] = warnings
+    if report_warnings:
+        result["warnings"] = [*(result.get("warnings") or []), *report_warnings]
     if create:
         result["created"] = True
         if pending_limit_warning is not None:

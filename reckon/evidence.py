@@ -2167,3 +2167,60 @@ def compose_closed_plan_report(
     plan that stays open composes none.
     """
     return synthesize_landed_record(docs_dir, project, plan_slug, require_runs=False)
+
+
+#: Where the record of a failed close composition is kept. It sits in the crew
+#: home rather than in the repository: a plan whose close composed no report is
+#: an operational fact about the close, and committing it would put a report
+#: nobody asked for in the docs tree the retention sweep reads.
+CLOSE_FAILURE_DIRECTORY = "close-failures"
+
+
+def close_failure_path(
+    project: str, plan_slug: str, *, home: str | Path | None = None
+) -> Path:
+    """Where one plan's close-composition failure is recorded, keyed by plan."""
+    from reckon.crew.run_paths import crew_home
+
+    base = Path(home) if home is not None else crew_home()
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", f"{project}-{plan_slug}") or "plan"
+    return base / CLOSE_FAILURE_DIRECTORY / f"{readable}.json"
+
+
+def record_close_failure(
+    project: str,
+    plan_slug: str,
+    error: BaseException | str,
+    *,
+    home: str | Path | None = None,
+    when: str | None = None,
+) -> Path:
+    """Record that a closing plan's evidence report could not be composed.
+
+    The plan stays closed: the close is the record of a decision already taken,
+    and a composition failure must not undo it. What must survive is the fact
+    that the close carries no report and why, naming the plan and the error, so
+    a reader of the closed plan is never left with a missing record and no
+    account of it.
+    """
+    from datetime import UTC, datetime
+
+    from reckon._store import write_json_atomically
+
+    if isinstance(error, BaseException):
+        error_type = type(error).__name__
+        error_text = str(error)
+    else:
+        error_type = "Error"
+        error_text = str(error)
+    payload = {
+        "project": project,
+        "plan": plan_slug,
+        "error_type": error_type,
+        "error": error_text,
+        "recorded_at": when
+        or datetime.now(tz=UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+    }
+    return write_json_atomically(
+        close_failure_path(project, plan_slug, home=home), payload
+    )
