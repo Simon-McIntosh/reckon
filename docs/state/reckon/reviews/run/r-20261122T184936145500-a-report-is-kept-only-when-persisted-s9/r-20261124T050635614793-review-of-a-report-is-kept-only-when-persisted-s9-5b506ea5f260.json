@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/project_state.py:_write_sprint_closing_page"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T05:14:50Z",
+  "findings": [
+    {
+      "file": "reckon/evidence.py",
+      "line": "1251",
+      "severity": "non-blocking",
+      "text": "non-blocking: _report_href composes the served address f\"/{project}/evidence/archive/{path.name}\" itself, restating the address convention that _served_href in the same module documents as stated once for every link; a change to addressing now needs two edits."
+    },
+    {
+      "file": "reckon/evidence.py",
+      "line": "1557",
+      "severity": "non-blocking",
+      "text": "non-blocking: the carried test excludes the missing-document row by comparing row.status to the literal \"no plan document\" produced at :1319, a display string with other uses, so a change to that sentinel would silently mark a missing member as carried."
+    },
+    {
+      "file": "tests/test_a_closed_sprint_has_a_report_naming_its_plans.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate ran this file plus two unrelated files but omitted tests/test_a_closing_sprint_gets_one_page.py, the existing file covering the changed _sprint_row/render_sprint_page/write_sprint_page path; its distinct cases (a done section with no landing, a member with no document) are not re-run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "Read commit 5b506ea5 against 3a906bc0; two files, +513/-10, adding _report_href, _sprint_theme, _carried_sprints, three SprintPlanRow fields and the theme/carried rendering.",
+    "done_when": "The done_when names tests/test_a_closed_sprint_has_a_report_naming_its_plans.py; the run's scoped gate ran it at 5b506ea5 with 64 passed and EXIT=0, and the base arm records the first case failing with 2 failed, 4 passed, EXIT=1.",
+    "goal": "The goal is a closing page that names the sprint's theme, links each plan's row to its evidence report where one exists, and marks an open plan carried with its next sprint; reckon/evidence.py:1465, :1337 and :1557 land all three.",
+    "manifest": "Read; it records the gate command, both suite arms (baseline 58 passed, after 64 passed, both EXIT=0), the base negative control at logs/negative-control-base.log and a complete status.",
+    "write_paths": "The declared paths are reckon/evidence.py, the new test, an evidence fragment and a figures directory; the diff touches only the first two, and the plan's own write-paths sentence names exactly those two."
+  },
+  "justifications": {
+    "durability": "tests/test_a_closed_sprint_has_a_report_naming_its_plans.py:336-371 asserts the exact report href, the theme text and the carried-to sprint, each of which reddens if reckon/evidence.py:1337 or :1557 regresses; the base arm shows only the theme arm failing.",
+    "evidence": "The gate log runs tests/test_a_closed_sprint_has_a_report_naming_its_plans.py at head 5b506ea with 64 passed and EXIT=0, but omits tests/test_a_closing_sprint_gets_one_page.py, the existing file that exercises the changed render/write path at reckon/evidence.py:1337.",
+    "fit": "reckon/evidence.py:1251 and :1513 follow the module's existing private-helper, lazy-import and frozen-dataclass idioms, and add only behavioural names.",
+    "goal_fidelity": "reckon/evidence.py:1465-1478 states the sprint theme in a visible block and in plan-sprint/sprint-theme metadata, :1337-1355 links each row report-first, and :1557-1558 marks a non-terminal member carried to the sprint the close moved it to.",
+    "reuse": "reckon/evidence.py:1251 restates the served-address convention owned by _served_href in the same module and :1533 re-implements sprint item-slug parsing that project_state holds, though _evidence_record_path and TERMINAL_STATUSES are reused correctly.",
+    "scope_discipline": "The single commit 5b506ea5 changes only reckon/evidence.py and the new test file, both inside the plan's stated write paths and inside the dispatch's declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a sprint closing page that names its theme, links each plan's row to its evidence report where one exists, and marks an open plan carried to its next sprint; reckon/evidence.py:1465-1478, :1337-1355 and :1557-1558 land all three.\nVERDICT done_when: the done_when names tests/test_a_closed_sprint_has_a_report_naming_its_plans.py; the manifest records the scoped gate at 5b506ea5 with 64 passed and EXIT=0, and the base arm at 3a906bc0 with 2 failed, 4 passed and EXIT=1.\nVERDICT write_paths: declared paths reckon/evidence.py, the new test, an evidence fragment and a figures directory; the diff touches only the first two and the plan's own write-paths sentence names exactly those two.\nVERDICT manifest: read; it records the gate command, baseline 58 passed and after 64 passed with both EXIT=0, the negative control log at logs/negative-control-base.log, and status complete.\nVERDICT diff: read commit 5b506ea5 against base 3a906bc0, two files and +513/-10, inside scope.\nCALL_SITES: reckon/project_state.py:_write_sprint_closing_page\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/evidence.py:1465-1478 states the theme in a visible block and in plan-sprint/sprint-theme metadata.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate ran the new test file at head with 64 passed and EXIT=0 but omitted tests/test_a_closing_sprint_gets_one_page.py, which covers the changed path at reckon/evidence.py:1337.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the commit touches only reckon/evidence.py and tests/test_a_closed_sprint_has_a_report_naming_its_plans.py.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_closed_sprint_has_a_report_naming_its_plans.py:336-371 asserts the exact report href, theme text and carried sprint, each reddening if reckon/evidence.py:1337 or :1557 regresses.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/evidence.py:1513 follows the module's private-helper and lazy-import idiom.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/evidence.py:1251 restates the served-address convention owned by _served_href in the same module.\nFINDING reckon/evidence.py:1251 non-blocking: _report_href restates the served-address convention owned by _served_href and documented as stated once.\nFINDING reckon/evidence.py:1557 non-blocking: the carried filter compares row.status to the display sentinel \"no plan document\" produced at :1319.\nFINDING tests/test_a_closed_sprint_has_a_report_naming_its_plans.py:1 non-blocking: the gate omitted tests/test_a_closing_sprint_gets_one_page.py, which covers the changed path.",
+  "review_run_id": "r-20261124T050635614793-review-of-a-report-is-kept-only-when-persisted-s9-5b506ea5f260",
+  "reviewed_base_sha": "3a906bc09c3f9c399854e418255015370682ebbe",
+  "reviewed_head_sha": "5b506ea5f26090a5dbc405fed4a0d32ef43004fa",
+  "reviewed_run_id": "r-20261122T184936145500-a-report-is-kept-only-when-persisted-s9",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T05:23:39.203962+00:00",
+  "total": 103
+}
