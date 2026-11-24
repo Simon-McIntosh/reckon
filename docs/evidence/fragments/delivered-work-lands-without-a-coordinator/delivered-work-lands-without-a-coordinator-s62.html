@@ -1,0 +1,75 @@
+<section id="delivered-work-lands-without-a-coordinator-s62-landing">
+  <h2>A hand merge can be recorded with the gate that passed</h2>
+
+  <p>A run whose recorded suite arm aborted before pytest printed a summary
+  carries no failure count to compare, so its arms cannot licence a promotion.
+  When the lead has already merged that run's reviewed head by hand, the gate
+  that actually passed is the coordinator's merged-head run, kept in its own
+  log. <code>crew merge</code> has always taken that gate as
+  <code>--gate-command</code>, <code>--gate-log-path</code> and
+  <code>--gate-exit-status</code>; <code>crew record-merge</code> took none of
+  them, so the only evidence the recording could cite was the aborted arm.</p>
+
+  <p><strong>What changed.</strong> <code>crew record-merge</code> accepts the
+  gate options <code>crew merge</code> accepts, plus
+  <code>--waive-suite-delta</code>. A cited gate must be complete and must have
+  exited zero; the row carries its command, exit status and log path, and the
+  run's recorded arms are not read in that gate's place. A recording that cites
+  no gate falls back to the arms the run recorded, so an armed run whose arm
+  aborted is refused exactly as any other promotion refuses an uncounted arm,
+  with the test rows, the measured receipt and the formatter unchanged. A gate
+  declared with <code>crew declare-gate</code> carries no log or exit status,
+  so it is never read as a citation.</p>
+
+  <p><strong>Test coverage.</strong>
+  <code>tests/test_a_hand_merge_records_the_gate_that_passed.py</code> covers
+  the three cases the node names: an armed run whose base and after arms both
+  aborted at exit 134 is recorded when given a passing gate, and its row
+  carries that gate's command, exit status and log path; a gate whose exit
+  status is 1 is refused with nothing written and the pointer left live; and a
+  run given no gate is refused on its uncounted arm, naming
+  <code>--waive-suite-delta</code> as the remedy. The verb's help lists all
+  four options.</p>
+
+  <p><strong>Negative control.</strong> The node's test file was run against a
+  tree built from the base revision
+  <code>d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e</code>: <code>2 failed, 1
+  passed in 1.61s</code>, <code>EXIT=1</code>. The passing case is the refusal
+  of a nonzero gate, which the base reaches only because
+  <code>--gate-exit-status</code> is an unknown option. One measurement here
+  contradicts the plan's own account of the defect. The plan says the base
+  refused such a recording "on the aborted arm"; measured, the base accepted
+  it and exited 0, recording the merge with a suite delta of status
+  <code>not-run</code>. The reason is in
+  <code>reckon/crew/promotion_records.py</code>: a record naming
+  <code>recorded_merge</code> returned <code>not-run</code> before its arms were
+  read at all, so an aborted arm could not refuse it. The first case still
+  fails at the base, as the plan requires, but on the absent option rather than
+  on the arm-abort refusal. The arm-abort refusal is what this node makes
+  reachable for a gate-less recording, and it is asserted directly by the third
+  case.</p>
+
+  <p><strong>Measure.</strong> The importer population of the three changed
+  modules — 176 test files — was run on <code>all_debug</code> at both
+  revisions, eight workers, from one job. The base arm
+  <code>d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e</code> reports <code>41
+  failed, 1571 passed, 13 warnings, 41 errors in 571.42s (0:09:31)</code>; the
+  head arm <code>26a903a13897f0f4d8a4578b6cacb2210959569e</code> reports
+  <code>37 failed, 1616 passed, 13 warnings in 571.49s (0:09:31)</code>. Comparing the failing test
+  ids, the head adds none and clears 45; the 37 that remain fail at both
+  revisions. The node's own tests plus the sibling hand-merge, rollup, help and
+  skill-contract tests report <code>94 passed in 20.36s</code> at the head. The
+  verb-grammar suite reports <code>5 failed, 31 passed</code> at the base and
+  <code>2 failed, 34 passed</code> at the head, so the two it still reports are
+  pre-existing. The plan's gate logs are
+  <code>arms/base-gate.log</code> and <code>arms/head-gate.log</code> in the
+  node's run directory; each carries its revision, its literal command and a
+  closing <code>EXIT=</code> line.</p>
+
+  <p><strong>What does not change.</strong> A hand-merged run armed with no
+  suite command still records as <code>not-run</code>, as
+  <code>tests/test_a_hand_merged_run_is_in_the_rollup.py</code> asserts. The
+  suite-delta waiver reaches the arm evidence unchanged, and the record that a
+  cited gate is written onto is the same row the ledger builds for every
+  promotion.</p>
+</section>

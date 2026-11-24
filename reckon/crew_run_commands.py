@@ -4834,6 +4834,35 @@ def crew_declare_gate(
     help="Ratify one deliberate companion path the run wrote.",
 )
 @click.option(
+    "--gate-command",
+    "gate_command",
+    default="",
+    help=(
+        "A gate this recording cites: the command that actually ran and "
+        "passed. Its arms are not re-read in this gate's place."
+    ),
+)
+@click.option(
+    "--gate-exit-status",
+    "gate_exit_status",
+    type=GateExitStatusType(),
+    default=None,
+    help="The cited gate's exit status; a leading integer is read, the rest is note.",
+)
+@click.option(
+    "--gate-log-path",
+    "gate_log_path",
+    default="",
+    help="Where the cited gate's log is kept, for a later reader.",
+)
+@click.option(
+    "--waive-suite-delta",
+    "waive_suite_delta",
+    default="",
+    metavar="REASON",
+    help="State why no suite delta is measured for this recording.",
+)
+@click.option(
     "--checkout-path",
     default=None,
     type=click.Path(path_type=Path),
@@ -4848,6 +4877,10 @@ def crew_record_merge(
     outcome: str,
     no_impl_change: str,
     accepted_paths,
+    gate_command: str,
+    gate_exit_status: int | None,
+    gate_log_path: str,
+    waive_suite_delta: str,
     checkout_path: Path | None,
     pretty: bool,
 ) -> None:
@@ -4858,8 +4891,10 @@ def crew_record_merge(
     pointer, worktree and claims stay held, the section it delivered stays
     blocked, and a pending landing record can resurrect the pointer. This
     records the run exactly as a landing would — the ledger row, the release
-    and the waiters the section releases — naming the merge that carried it,
-    and measures no suite delta because the branch already carries the change.
+    and the waiters the section releases — naming the merge that carried it.
+    A gate given on the command line is cited on the row and stands in for the
+    run's recorded suite arms; with no gate the arms are judged as any other
+    promotion judges them.
     """
     from reckon.crew import merge as merge_module
     from reckon.crew import pending_landing
@@ -4927,6 +4962,29 @@ def crew_record_merge(
             f"merge {merge_revision} is not on the local primary branch; push "
             "or fetch it first"
         )
+    # A gate this recording cites is evidence in its own right: the row carries
+    # its command, exit status and log, and the run's recorded suite arms are
+    # not read in that gate's place. A declared gate carries no log or exit
+    # status, so it is never read here. Partial gate evidence is refused by the
+    # same precondition every promotion uses, before anything is written.
+    gate_check = None
+    gate_given = (
+        bool(str(gate_command).strip())
+        or gate_exit_status is not None
+        or bool(str(gate_log_path).strip())
+    )
+    if gate_given:
+        if gate_exit_status != 0:
+            raise click.ClickException(
+                "the cited gate must have exited zero; a gate that exited "
+                f"{gate_exit_status!r} is not evidence a recording can cite"
+            )
+        gate_check = {
+            "command": str(gate_command).strip(),
+            "exit_status": gate_exit_status,
+            "log_path": str(gate_log_path).strip(),
+            "log_digest": "",
+        }
     if pointer_exists:
         runs_module._mutate_pointer(
             run_id,
@@ -4953,7 +5011,9 @@ def crew_record_merge(
             no_impl_change=no_impl_change,
             accepted_paths=dict(accepted_paths),
             recorded_merge=merge_revision,
-            require_gate_check=False,
+            gate_check=gate_check,
+            require_gate_check=gate_check is not None,
+            suite_delta_waiver=str(waive_suite_delta).strip(),
         )
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
