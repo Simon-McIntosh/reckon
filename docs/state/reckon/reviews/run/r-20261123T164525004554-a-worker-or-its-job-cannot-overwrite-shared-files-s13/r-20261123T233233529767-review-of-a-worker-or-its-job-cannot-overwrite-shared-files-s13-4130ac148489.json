@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:34:04Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence-write-grants.svg",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "no test renders this figure or asserts the committed SVG carries no <text> element; reverting fence_write_grants.py:18 svg.fonttype to text output passes the whole suite while restoring the illegible artifact the prior review failed, so a one-line test asserting the SVG holds zero <text> would close the regression the repair exists to prevent."
+    },
+    {
+      "file": "docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence_write_grants.py",
+      "line": 120,
+      "severity": "non-blocking",
+      "text": "the get_window_extent overlap check, the off-canvas check and the svg.fonttype=path setting are a further independent copy of a pattern already implemented in plot_compaction_drops.py:100, working-workers.py:56, plot_cutover_window.py and section_row_readers.py; there is no shared owner, so a later style change must be repeated in every copy."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13/repair-after-suite.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "this head arm, cited as after_suite, opens with pytest progress and closes on a summary line with no bare EXIT= line and no # revision: header, so its revision attribution rests on the manifest's JSON rather than the log's own first and last lines as the manifest contract requires; the same holds for repair-baseline-suite.log."
+    }
+  ],
+  "justifications": {
+    "durability": "no test renders docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence-write-grants.svg or asserts it carries no <text> element; reverting fence_write_grants.py:18 svg.fonttype to text output would pass the whole suite while restoring the illegible artifact the prior review failed, so legibility rests on a manual raster and the generator's own overlap check at fence_write_grants.py:118.",
+    "evidence": "the manifest quotes the two arm summaries as 4 failed/155 passed/5 skipped at bee04f7fb9 and 4 failed/163 passed/5 skipped at 74fd040d, which match repair-baseline-suite.log and repair-after-suite.log line for line and share the same four FAILED ids, so the eight extra passes are this node's own test file; the two arm logs carry no # revision: header and no bare EXIT= line, so the delta is readable from the summaries and ids but not from a log-borne revision stamp.",
+    "fit": "fence_write_grants.py follows the standalone figure-script idiom of docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py:51 and the caption uses <figcaption>, but it reimplements the off-canvas/overlap guard those scripts each carry.",
+    "goal_fidelity": "the gained commit 92c2ebf101 rewrites docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence-write-grants.svg so all 21 labels are glyph paths, and 74fd040d22 wraps it in <figure>/<figcaption> at docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13.html:34, repairing both prior findings.",
+    "reuse": "fence_write_grants.py:120 reimplements the get_window_extent overlap and svg.fonttype=path guard already written independently in docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py:100 and docs/figures/work-flows-to-the-lane/work-flows-to-the-lane-s67/working-workers.py:56; the search over docs/figures, docs/research and the reckon package found no shared figure owner to extend.",
+    "scope_discipline": "the gained diff bc734dea053e..4130ac1484 touches only the fragment, the SVG and fence_write_grants.py, all inside the declared write paths, and 74fd040d and 4130ac14 edit only the fragment's measured lines."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is section 13's deliverable, a fence that mounts the filesystem read-only and grants writes only to handed roots plus dispatch-declared grants, landed at d8e4d746f0 and reviewed at bc734dea05; the commits gained since that review repair the figure the prior review failed for legibility (docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence-write-grants.svg) and record its proof.\nVERDICT done_when: the done_when names tests/test_a_worker_can_write_only_what_it_was_granted.py; the repaired figure at 4130ac148489 holds zero <text> elements and renders all 21 labels (I rasterised it at 140 dpi and read every word), and the manifest's after arm records 4 failed/163 passed against 4 failed/155 passed at base with the same four ids.\nVERDICT write_paths: the declared paths include the fragment, the svg and the generator; the gained diff bc734dea05..4130ac148489 touches exactly those three and nothing else.\nVERDICT manifest: read; it states status complete, names commits through 4130ac1484, records the figure negative control (3810 px label ink at head vs 4 px pre-repair) and the two arm summaries, which match repair-baseline-suite.log and repair-after-suite.log.\nVERDICT diff: read bc734dea05..4130ac148489 commit by commit; 92c2ebf101 rewrites the SVG with every label as a glyph path, 74fd040d22 and 4130ac1484 add only evidence-fragment lines, and the 8-line HTML change wraps the image in <figure>/<figcaption> at :34, fixing the prior caption finding.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commit 92c2ebf101 rewrites fence-write-grants.svg so all 21 labels are glyph paths and 74fd040d22 adds a <figcaption> at docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13.html:34, repairing both prior findings.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest's two arm summaries (4 failed/155 passed at bee04f7fb9, 4 failed/163 passed at 74fd040d, same four ids) match repair-baseline-suite.log and repair-after-suite.log, but those logs carry no # revision: header and no bare EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff bc734dea05..4130ac148489 touches only the fragment, the SVG and fence_write_grants.py, all inside the declared write paths.\nSCORE durability: 11\nJUSTIFICATION durability: no test renders fence-write-grants.svg or asserts it carries no <text>; reverting fence_write_grants.py:18 svg.fonttype to text leaves every test green, so the repair's legibility rests on a manual raster and the generator's own overlap check at :118.\nSCORE fit: 16\nJUSTIFICATION fit: fence_write_grants.py follows the standalone figure-script idiom of docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py:51 and the caption uses <figcaption>, but it reimplements the off-canvas/overlap guard those scripts carry.\nSCORE reuse: 15\nJUSTIFICATION reuse: fence_write_grants.py:120 reimplements the get_window_extent overlap and svg.fonttype=path guard already written independently in plot_compaction_drops.py:100 and working-workers.py:56; the search found no shared figure owner in docs/figures, docs/research or the reckon package.\nFINDING docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence-write-grants.svg:1 non-blocking: no test renders this figure or asserts it carries no <text>, so reverting fence_write_grants.py:18 to text passes the suite while restoring the illegible artifact the prior review failed.\nFINDING docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13/fence_write_grants.py:120 non-blocking: the off-canvas/overlap guard and svg.fonttype=path setting are another independent copy of a pattern already in plot_compaction_drops.py:100 and working-workers.py:56 with no shared owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13/repair-after-suite.log:1 non-blocking: the arm cited as after_suite opens on pytest progress and closes on a summary with no # revision: header and no bare EXIT= line, so its revision rests on the manifest's JSON rather than the log's own lines; the same holds for repair-baseline-suite.log.\n",
+  "review_run_id": "r-20261123T233233529767-review-of-a-worker-or-its-job-cannot-overwrite-shared-files-s13-4130ac148489",
+  "reviewed_base_sha": "bc734dea053eae300109a66f1a026224e827afe6",
+  "reviewed_head_sha": "4130ac148489bf7510e50a23ce5410cbf4f20489",
+  "reviewed_run_id": "r-20261123T164525004554-a-worker-or-its-job-cannot-overwrite-shared-files-s13",
+  "scores": {
+    "durability": 11,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:00:20.773446+00:00",
+  "total": 97
+}
