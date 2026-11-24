@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:1202 _repair_review_wait",
+    "reckon/crew/recovery_watch.py:4560",
+    "reckon/crew/recovery_review_acceptance.py:1742",
+    "reckon/crew_dispatch_commands.py:3418",
+    "reckon/crew/plan_review.py:5244",
+    "reckon/crew/review.py:5015",
+    "reckon/crew/recovery_review_dispatch.py:4179 dispatch_review_for_run"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T06:58:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "3427",
+      "severity": "non-blocking",
+      "text": "non-blocking: the figure in-flight answer's refusal-marker removal has no deterministic assertion \u2014 the new lander test reaches only the code path (dispatch_review_for_run opens the figure dispatch only when _changed_figure_paths is non-empty, and the fixture has no figures), so reinstating \"refused\": True there would leave the suite green and could silently restore the false-refusal reading for figure reviews."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html",
+      "line": "80",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says \"Reinstating the marker in either answer fails that test\", but the test exercises only the code answer; the figure answer at reckon/crew/recovery_review_dispatch.py:3427 is never reached, so the stated control covers one of the two answers."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 74185d1ee8 to d72bde8dc9: 78c809b0ef drops the marker and adds the lander test, 079deb7b27 and d72bde8dc9 record the awaiting reading and the marker control",
+    "done_when": "the three concurrency cases and the base arm are recorded in the manifest (3 passed, twenty -n 8 repetitions EXIT=0, base 1 failed EXIT=1), and this delta's own marker control is logs/nc-refused-marker.log (1 failed, EXIT=1)",
+    "goal": "the gained commits repair the prior blocking finding: an in-flight review is no longer marked refused at recovery_review_dispatch.py:3123/:3427, so it is awaited, not reported as a refused landing attempt",
+    "manifest": "read; it records the base and after arms, the marker control, and the outside-scope compute-node failures",
+    "write_paths": "the three files in 74185d1ee8..d72bde8dc9 are all among the run's six declared paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits repair the prior review's blocking finding \u2014 reckon/crew/recovery_review_dispatch.py:3123 and :3427 no longer mark an in-flight review as refused, so a running review reads as awaited.\nVERDICT done_when: the node's done_when names three concurrency cases in tests/test_one_delivered_head_gets_one_review.py and its base arm; the manifest records 3 passed (logs/repair-node-test.log), twenty -n 8 repetitions (logs/concurrency-20.log, EXIT=0) and the base arm red (logs/negative-control.log, 1 failed, EXIT=1), and this delta's own control is logs/nc-refused-marker.log (1 failed, EXIT=1).\nVERDICT write_paths: the delta touches only reckon/crew/recovery_review_dispatch.py, tests/test_stranded_launch_releases_its_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html, all inside the run's six declared paths.\nVERDICT manifest: read; it names the repair commits ending at d72bde8dc9, the base arm (63 passed) and after arm (66 passed), the marker negative control and the outside-scope attribution of a compute node's nine failures.\nVERDICT diff: read commit by commit from 74185d1ee8 to d72bde8dc9 \u2014 78c809b0ef drops the refusal marker from both in-flight answers and adds the lander test, 079deb7b27 and d72bde8dc9 record the awaiting reading and the marker control in the evidence fragment.\nCALL_SITES: reckon/crew/pending_landing.py:1202 _repair_review_wait, reckon/crew/recovery_watch.py:4560, reckon/crew/recovery_review_acceptance.py:1742, reckon/crew_dispatch_commands.py:3418, reckon/crew/plan_review.py:5244, reckon/crew/review.py:5015, reckon/crew/recovery_review_dispatch.py:4179 dispatch_review_for_run\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:3130-3131 and :3431-3432 drop the refused key and restate the reason, so pending_landing.py:1230's `refused` test no longer fires and a running review is recorded awaiting rather than refused.\nSCORE evidence: 16\nJUSTIFICATION evidence: the delta's gate is measured and reproducible \u2014 logs/repair4-after-suite.log ends `66 passed`/`EXIT=0`, and logs/nc-refused-marker.log ends `1 failed`/`EXIT=1` \u2014 though the evidence fragment at :80 overstates what that control proves.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 74185d1ee8..d72bde8dc9 is one of the run's six declared write paths; no plan file and no figure was touched.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_stranded_launch_releases_its_claim.py:157 asserts `wait[\"status\"] == \"awaiting-review\"` through the lander's own reader and reddens when the code-path marker is reinstated, but the figure in-flight answer at reckon/crew/recovery_review_dispatch.py:3427 has no assertion and a revert of its key removal leaves the suite green.\nSCORE fit: 18\nJUSTIFICATION fit: the new test follows the synthesised-crew-home idiom already in tests/test_stranded_launch_releases_its_claim.py:39, and the added comment at recovery_review_dispatch.py:3126 states the mechanism with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition; the test drives the existing lander reader at reckon/crew/pending_landing.py:1202 rather than reimplementing the refusal-to-status mapping.\nFINDING reckon/crew/recovery_review_dispatch.py:3427 non-blocking: the figure in-flight answer's refusal-marker removal has no deterministic assertion \u2014 the new lander test reaches only the code path (dispatch_review_for_run opens the figure dispatch only when _changed_figure_paths is non-empty, and the fixture has no figures), so reinstating `\"refused\": True` there would leave the suite green and could silently restore the false-refusal reading for figure reviews.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html:80 non-blocking: the fragment says \"Reinstating the marker in either answer fails that test\", but the test exercises only the code answer; the figure answer at reckon/crew/recovery_review_dispatch.py:3427 is never reached, so the stated control covers one of the two answers.\n",
+  "review_run_id": "r-20261124T065719981605-review-of-qwnw-one-delivered-head-gets-one-review-d72bde8dc9f4",
+  "reviewed_base_sha": "74185d1ee89b82e5a2f9ffc314cf633c2f8fc464",
+  "reviewed_head_sha": "d72bde8dc9f4d7e5c147b456226c11e1a642127d",
+  "reviewed_run_id": "r-20261123T222545133163-qwnw-one-delivered-head-gets-one-review",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T07:05:38.174366+00:00",
+  "total": 107
+}
