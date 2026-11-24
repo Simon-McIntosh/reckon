@@ -4,16 +4,22 @@
   <p><strong>What changed.</strong> The admission order ranked a delivered run's
   review above every priority override, so no override could reach a freed slot
   while a review waited. A request whose override reaches its project's critical
-  level now leads the lane: the critical level is the flight setting
-  <code>queue.critical_priority</code> (default 100), read per project through
-  the same resolved config the pass uses. Below that level every request keeps
-  the order it had, with delivered reviews first. The setting is declared in
-  <code>reckon/schema/flight.yaml</code>, shipped at 100 in
+  level now takes a freed slot ahead of a waiting delivered review. The critical
+  level is the flight setting <code>queue.critical_priority</code> (default
+  100), read per project through the same resolved config the pass uses. It is
+  declared in <code>reckon/schema/flight.yaml</code>, shipped at 100 in
   <code>reckon/schema/flight-defaults.yaml</code>, and read by
-  <code>flight.queue_critical_priority</code>; the ordering applies it in
-  <code>queue_order._precedence</code>, and the admission pass's own hoist
-  (<code>ordering.priorities_first</code>) no longer rebuilds the review's lead
-  over a request the ordering raised above it.</p>
+  <code>flight.queue_critical_priority</code>.</p>
+
+  <p>The level is a move over the shared order, not a class within it:
+  <code>queue_order._critical_ahead_of_reviews</code> places a critical request
+  ahead of the first waiting review, after every request past the starvation
+  age, and returns the queue unchanged when no review waits. Both
+  <code>admission_order_details</code> and <code>fair_queue_order_details</code>
+  apply the same move, so the admission and promotion queues keep one order,
+  and starvation ageing and a review's precedence over the run it reviews are
+  unchanged. Every request below the critical level keeps the order it had, with
+  delivered reviews first.</p>
 
   <h3 id="arcaf-reviews-take-slots-first-measured">Measured</h3>
 
@@ -21,14 +27,17 @@
   order's head is the implement request at override 100 and the review at
   override 99, with no override, and at override 50 under a project layer
   setting the level to 50. At the base revision the same first case offers the
-  review the slot ahead of the override-100 request.</p>
+  review the slot ahead of the override-100 request. The production paths are
+  covered too: <code>fair_share_admission_order</code> returns the critical
+  request, then the review, then a lower override, and
+  <code>promotion_requests._pending_requests</code> honours a project level of
+  50 for an override of 50.</p>
 
-  <p>The production paths, not only the raw ordering, are covered: the
-  admission pass's <code>fair_share_admission_order</code> now returns the
-  critical request, then the review, then a lower override, and the promotion
-  queue's <code>promotion_requests._pending_requests</code> honours a project
-  level of 50
-  for an override of 50.</p>
+  <p>The five shared-order tests that first failed &mdash; the starvation bound,
+  both starvation boundaries, ageing ahead of a younger priority, and a queued
+  review ahead of the run it reviews &mdash; pass unchanged in the importing-test
+  arm at the head, and the base and head arms fail exactly the same twelve
+  environment-dependent tests, so this change adds no failure.</p>
 
   <table id="arcaf-reviews-take-slots-first-arms">
     <caption>Every arm is a log whose first line names its revision, tree and
@@ -38,15 +47,13 @@
       <tr><td>negative control (base &mdash; review leads override 100)</td>
         <td><code>4fa07b80a8d5335def32b0297d595958115ae7e4</code></td>
         <td>2 failed, 2 passed in 10.82s &mdash; first case fails as declared</td></tr>
-      <tr><td>scoped gate, head</td>
-        <td><code>8c1aa2741ef99a79bca10c52843544b4c11649f7</code></td>
-        <td>66 passed in 43.57s, EXIT=0</td></tr>
-      <tr><td>baseline suite, base</td>
+      <tr><td>importing-test arm, base</td>
         <td><code>4fa07b80a8d5335def32b0297d595958115ae7e4</code></td>
-        <td>59 passed in 46.39s, EXIT=0</td></tr>
-      <tr><td>after suite, head</td>
-        <td><code>8c1aa2741ef99a79bca10c52843544b4c11649f7</code></td>
-        <td>66 passed in 46.25s, EXIT=0</td></tr>
+        <td>12 failed, 556 passed in 664.58s, EXIT=1</td></tr>
+      <tr><td>importing-test arm, head</td>
+        <td><code>e65d2506abc5abd1039a4816c0d9fe96bd2c85df</code></td>
+        <td>12 failed, 562 passed in 670.08s, EXIT=1 &mdash; same twelve ids,
+        no added failure</td></tr>
     </tbody>
   </table>
 </section>
