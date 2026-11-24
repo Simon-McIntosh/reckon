@@ -1040,6 +1040,12 @@ def _commit_is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool | No
     key = ("ancestry", str(repo), ancestor, descendant)
     if cache is not None and key in cache:
         return cache[key]
+    # A definite answer about two commits holds for as long as both exist, so
+    # it is also kept across passes; sorting a plan's stored reviews asks the
+    # same pairs on every pass that judges the plan.
+    settled = _SETTLED_ANCESTRY.get(key)
+    if settled is not None:
+        return settled
     from reckon.velocity import _is_ancestor
 
     try:
@@ -1048,7 +1054,16 @@ def _commit_is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool | No
         return None
     if cache is not None:
         cache[key] = answer
+    if answer is not None:
+        if len(_SETTLED_ANCESTRY) >= _SETTLED_ANCESTRY_LIMIT:
+            _SETTLED_ANCESTRY.clear()
+        _SETTLED_ANCESTRY[key] = answer
     return answer
+
+
+#: Definite ancestry answers, kept across passes because they never change.
+_SETTLED_ANCESTRY: dict[tuple[str, str, str, str], bool] = {}
+_SETTLED_ANCESTRY_LIMIT = 65536
 
 
 def _record_is_newer(
@@ -2174,11 +2189,31 @@ def plan_commit_for(
     if location is None:
         return None
     repo, _path, relative = location
+    key = (str(repo), relative, sha)
+    found = _PLAN_COMMIT_FOR_BLOB.get(key)
+    if found is not None:
+        return found
     output = _git(repo, "log", "--format=%H", f"--find-object={sha}", "--", relative)
     if output is None:
         return None
     lines = [line.strip() for line in output.splitlines() if line.strip()]
-    return lines[-1] if lines else None
+    if not lines:
+        return None
+    # The commit that added a blob is fixed once it exists, so a found answer
+    # is kept for the life of the process: the lookup walks the plan file's
+    # whole history, and a coverage pass asks it once per stored finding. An
+    # answer of no commit is not kept, because the plan may be committed later.
+    if len(_PLAN_COMMIT_FOR_BLOB) >= _PLAN_COMMIT_MEMO_LIMIT:
+        _PLAN_COMMIT_FOR_BLOB.clear()
+    _PLAN_COMMIT_FOR_BLOB[key] = lines[-1]
+    return lines[-1]
+
+
+#: Found answers of :func:`plan_commit_for`, keyed by repository, plan path and
+#: reviewed blob. Bounded so a long-lived process holds a working set, not a
+#: history.
+_PLAN_COMMIT_FOR_BLOB: dict[tuple[str, str, str], str] = {}
+_PLAN_COMMIT_MEMO_LIMIT = 8192
 
 
 def _plan_head_commit(
