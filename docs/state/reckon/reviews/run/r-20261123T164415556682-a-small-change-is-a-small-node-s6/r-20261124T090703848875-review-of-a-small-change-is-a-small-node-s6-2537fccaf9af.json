@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T09:07:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html",
+      "line": 123,
+      "severity": "non-blocking",
+      "text": "the \"Reproducing commands\" run measure.py, measure_section.py and measure_final.py, which live only in the ephemeral run directory and not in the repository, so the sentence \"From a checkout at this run's head\" overstates reproducibility and the table's only drift guard is a script that will be deleted with the run."
+    },
+    {
+      "file": "docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html",
+      "line": 42,
+      "severity": "non-blocking",
+      "text": "p25 54.9 and p75 1315.1 come from statistics.quantiles(n=4)'s exclusive method, yet the paragraph at :83 invites a reader to compute them from the inlined rows, where linear-interpolation quartiles give 55.0 and 354.0 on p75, so the convention is unstated and a reader recomputing gets a materially different p75 without explanation."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: plan section 6's deliverable (docs/plans/a-small-change-is-a-small-node.html:86-88) is the median time from a stored review to the promotion of a repair of at most 50 changed lines; the fragment at docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:13-57 delivers that median with sample sizes against the 30-minute target, and the reviewed delta supplies the 29-row first-week sample the median rests on.\nVERDICT done_when: the done_when is \"the median is recorded with its sample size, against a target of 30 minutes\"; the fragment at :42 records 103.5 min (n=29), :44 105.9 min (n=87) and :46 109.1 min (2 of 145) against the not-met verdict at :50-57, and sec_week.json, sec_all.json and final_all.json carry those figures.\nVERDICT write_paths: the declared paths are the fragment and its figures directory; both the reviewed delta 3c208bc8..2537fcca and the full delivered diff 3a81cbdd..2537fcca change only docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html (134 insertions, 0 deletions), with the figures path unused.\nVERDICT manifest: read; it declares status complete, commits d3075253/9daeb1d3/3c208bc8/2537fcca, tests: none for an unarmed measurement node, and the as-delivered manifest carries baseline_suite:{} and after_suite:{}, so added_failure_count is zero from the run's own declared absence of a comparable suite pair rather than an unread gate.\nVERDICT diff: read all four commits against base 3a81cbdd; d3075253 adds the fragment, 9daeb1d3 repaired the strict-population row and the tail, 3c208bc8 the median-difference prose, and the delta 3c208bc8..2537fcca (47 insertions, 0 deletions) inlines the 29-row first-week sample and the reproducing commands at :83-129; I recomputed the table against sec_week.json and all 29 rows match it exactly, in order and in both columns.\nCALL_SITES: reckon/resources.py:_is_evidence_fragment, reckon/evidence.py:evidence_fragment_href, reckon/serve.py:_send_evidence_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the delta at docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:83-129 supplies the sample the median at :42 rests on, which is section 6's deliverable at docs/plans/a-small-change-is-a-small-node.html:86-88.\nSCORE evidence: 18\nJUSTIFICATION evidence: every one of the 29 inlined rows at a-small-change-is-a-small-node-s6.html:88-120 matches sec_week.json's samples field exactly (repair_node, changed_lines, minutes, same order), and the medians at :42/:44/:46 match sec_week.json, sec_all.json and final_all.json.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat over 3a81cbdd..2537fcca and over the reviewed delta 3c208bc8..2537fcca both list only docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html.\nSCORE durability: 10\nJUSTIFICATION durability: the fragment adds only prose and a table and carries no committed guard, and the reconciler that proves the table (reconcile_fragment.py) lives in the ephemeral run directory named at a-small-change-is-a-small-node-s6.html:71-75, so a later mistyped row is caught by no in-repo check.\nSCORE fit: 18\nJUSTIFICATION fit: the added block at :83-129 continues the section/h3/table shape of a-small-change-is-a-small-node-s6.html:33-129 and introduces no symbol or filename the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no function, class or module; I searched the evidence-fragment owners reckon/evidence.py and reckon/resources.py and found no inlining mechanism for this table to extend or fork.\nFINDING docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:123 non-blocking: the \"Reproducing commands\" run measure.py, measure_section.py and measure_final.py, which live only in the ephemeral run directory and not in the repository, so the sentence \"From a checkout at this run's head\" overstates reproducibility and the table's only drift guard is a script that will be deleted with the run.\nFINDING docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:42 non-blocking: p25 54.9 and p75 1315.1 come from statistics.quantiles(n=4)'s exclusive method, yet the paragraph at :83 invites a reader to compute them from the inlined rows, where linear-interpolation quartiles give 55.0 and 354.0 on p75, so the convention is unstated and a reader recomputing gets a materially different p75 without explanation.\n",
+  "review_run_id": "r-20261124T090703848875-review-of-a-small-change-is-a-small-node-s6-2537fccaf9af",
+  "reviewed_base_sha": "3a81cbdd00f90d500c7c468b54b44b236284ad5a",
+  "reviewed_head_sha": "2537fccaf9afa1994827a1c7762113961c4475cd",
+  "reviewed_run_id": "r-20261123T164415556682-a-small-change-is-a-small-node-s6",
+  "scores": {
+    "durability": 10,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:16:13.913749+00:00",
+  "total": 104
+}
