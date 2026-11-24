@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T08:00:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 1187,
+      "severity": "non-blocking",
+      "text": "the manifest template is shared by both carriers but its `figures:` line says figures live under docs/figures/<plan>/, while the brief carrier's location sentence gives docs/figures/<topic>/ at prompts.py:1028, so one brief prompt names two directories for one figure; section \u00a711 already owns this."
+    },
+    {
+      "file": "manifest.md",
+      "line": 0,
+      "severity": "non-blocking",
+      "text": "the artifacts line says the head arm ran at 9096b78bef and quotes \"86 passed\" there, but the reviewed head is 5d6644ccde, after_suite and importer_arm_head both record 5d6644ccde (144 and 441 passed), and no log in the run directory reports 86, so the headline cannot be reconciled with the evidence it cites."
+    },
+    {
+      "file": "tests/test_a_drawable_result_leaves_a_figure.py",
+      "line": 74,
+      "severity": "non-blocking",
+      "text": "ASK_PATTERN matches three fixed phrasings, so the \"no contract both asks and withholds\" guard cannot see an asking clause written in other words, and the rename contract's \"A figure goes under the topic directory ...\" beside \"this node has no figure to draw\" is not recognised as an ask; the guard catches today's wording, not a reworded one."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the composing call site in dispatch_claims.py:1569 and the import/export chain that reaches it.",
+    "diff": "read all three commits ed34968e..5d6644ccde commit by commit; four evidence constants collapse into one producer read by both carriers, a measured-quantity classifier is added, the manifest template gains the `figures:` key, each carrier names one figure directory, and five pre-existing prompt tests are updated to the new constants.",
+    "done_when": "tests/test_a_drawable_result_leaves_a_figure.py asserts each of the four named cases plus the one-producer property, and I re-ran that file at the reviewed head 5d6644ccde from the head tree: 14 passed, EXIT=0, logged in the run directory at gate-head-5d6644ccde.log.",
+    "goal": "the node goal is that a drawable result leaves a figure and no prose report; reckon/crew/prompts.py:281 composes one evidence rule per contract from the node's own done-when, asks for the figure when that done-when states a measure, and prompts.py:1187 names the manifest's `figures:` line.",
+    "manifest": "read; it records baseline_suite 130 passed at ed34968e and after_suite 144 passed at 5d6644ccde, both EXIT=0, and a base negative control failing both cases at EXIT=1, but its artifacts line names the wrong head and quotes 86 with no supporting log.",
+    "write_paths": "the eight delivered paths all lie inside the ten declared write paths; the declared evidence-fragment and figure paths were not written, consistent with the manifest's `figures: none`."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a drawable result leaves a figure and no prose report; reckon/crew/prompts.py:281 composes one evidence rule per contract from the node's own done-when, asks for the figure when that done-when states a measure, and prompts.py:1187 names the manifest's `figures:` line.\nVERDICT done_when: tests/test_a_drawable_result_leaves_a_figure.py asserts each of the four named cases plus the one-producer property, and I re-ran that file at the reviewed head 5d6644ccde from the head tree: 14 passed, EXIT=0, logged in the run directory at gate-head-5d6644ccde.log.\nVERDICT write_paths: the eight delivered paths all lie inside the ten declared write paths; the declared evidence-fragment and figure paths were not written, consistent with the manifest's `figures: none`.\nVERDICT manifest: read; it records baseline_suite 130 passed at ed34968e and after_suite 144 passed at 5d6644ccde, both EXIT=0, and a base negative control failing both cases at EXIT=1, but its artifacts line still names 9096b78bef as the head arm and quotes \"86 passed\" that no log in the run directory reports.\nVERDICT diff: read all three commits ed34968e..5d6644ccde commit by commit; four evidence constants collapse into one producer read by both carriers, a measured-quantity classifier is added, the manifest template gains the `figures:` key, each carrier names one figure directory, and five pre-existing prompt tests are updated to the new constants.\nCALL_SITES: reckon/crew/dispatch_claims.py:1569, reckon/crew/dispatch_claims.py:51, reckon/crew.py:161, reckon/crew/dispatch.py:471, reckon/crew/dispatching/_imports.py:189\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:281 composes the asking clause for a measured done-when, verified by composing \"the gate cuts runtime by 30 percent\", though a count without an enumerated unit word is still told it states no measure, the residue section \u00a711 owns.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_drawable_result_leaves_a_figure.py passed 14, EXIT=0 under my own re-run at 5d6644ccde, and the gate, base and after logs each carry their revision, literal command and a closing EXIT= line, with the artifacts line the one unreconciled record.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in ed34968e..5d6644ccde is among the declared write paths, and nothing outside them was touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_drawable_result_leaves_a_figure.py:133 reddens if MEASURE_PATTERN reverts to FIGURE_NAME_PATTERN alone, and the monkeypatch case at line 203 reddens if either carrier stops reading EVIDENCE_FIGURE_RULE_COMMON, though the ask/withhold patterns at line 74 are phrase-bounded.\nSCORE fit: 18\nJUSTIFICATION fit: the new constants and _evidence_figure_rule at reckon/crew/prompts.py:240-297 follow the module's constant-plus-composer idiom, though skills/reckon-build/references/worker-protocol.md:159 leaves one line unwrapped past the file's width.\nSCORE reuse: 19\nJUSTIFICATION reuse: the figure predicate is extended in place at reckon/crew/prompts.py:247, the `figures:` key feeds the parser reckon/evidence.py:397 already owns, and reckon/capability.py:39 matches execution measures, a different question, so nothing is forked.\nFINDING reckon/crew/prompts.py:1187 non-blocking: the manifest template is shared by both carriers but its `figures:` line says figures live under docs/figures/<plan>/, while the brief carrier's location sentence gives docs/figures/<topic>/ at prompts.py:1028, so one brief prompt names two directories for one figure; section \u00a711 already owns this.\nFINDING manifest.md:0 non-blocking: the artifacts line says the head arm ran at 9096b78bef and quotes \"86 passed\" there, but the reviewed head is 5d6644ccde, after_suite and importer_arm_head both record 5d6644ccde (144 and 441 passed), and no log in the run directory reports 86, so the headline cannot be reconciled with the evidence it cites.\nFINDING tests/test_a_drawable_result_leaves_a_figure.py:74 non-blocking: ASK_PATTERN matches three fixed phrasings, so the \"no contract both asks and withholds\" guard cannot see an asking clause written in other words, and the rename contract's \"A figure goes under the topic directory ...\" beside \"this node has no figure to draw\" is not recognised as an ask; the guard catches today's wording, not a reworded one.\n",
+  "review_run_id": "r-20261124T075944613328-review-of-a-report-is-kept-only-when-persisted-s7-5d6644ccde02",
+  "reviewed_base_sha": "ed34968e986cc663035e7e41790ffba484bf5e1b",
+  "reviewed_head_sha": "5d6644ccde02d2eb5920d6c59a557528b080260f",
+  "reviewed_run_id": "r-20261123T164237323884-a-report-is-kept-only-when-persisted-s7",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T08:31:11.542821+00:00",
+  "total": 110
+}
