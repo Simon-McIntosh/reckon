@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/landing_measure.py:measure_run",
+    "reckon/crew/landing_measure.py:_partition_runner",
+    "reckon/crew/queue_landing.py:_measure_delivery",
+    "reckon/crew/promotion_gate.py:_rerun_gate_at_integrated_revision",
+    "reckon/crew/review_landing.py:replay_candidate",
+    "reckon/crew/standing_suite.py:run_node_command",
+    "reckon/crew/promotion_records.py:_measure_missing_arms"
+  ],
+  "checklist": {
+    "call_sites": "examined the six production callers of partition_submission/_partition_runner and the arms path in promotion_records; the profile reaches every one, but the replay client wait is not raised with it.",
+    "diff": "read commit by commit over bee04f7f..fcafde86: one feat commit plus two evidence commits; the two later commits touch only the evidence HTML.",
+    "done_when": "read; the gate names tests/test_a_gate_profile_reaches_every_submission.py and the manifest records base 31 failed vs head 27 failed with zero added ids, which asserts the done-when's 'no added failure' arm.",
+    "goal": "read; the node goal is that a project names the scheduler profile its gate arms run under, and reckon/flight.py GATE_PROFILE_KEYS plus landing_measure.gate_profile implement it.",
+    "manifest": "read; it records five tests covering declare-gate, landing arms, suite run, the memory refusal and the bare partition, with base/head gate logs and a negative-control log.",
+    "write_paths": "read the nine declared paths; every path in the 8-path delivered diff is inside them, and the evidence fragment and test file are the two the node added."
+  },
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:26:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-delivered-work-lands-without-a-coordinator-s59-fcafde86aed3",
+      "recorded_at": "2026-11-23T23:54:24.982263+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": 1368,
+      "severity": "blocking",
+      "text": "the replayed gate's sbatch client wait is computed from the pre-profile bound, so a profile whose default time exceeds the replay bound has its wait killed early and the replay reports a false timeout, defeating the long GPU gate the profile exists for"
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 1227,
+      "severity": "non-blocking",
+      "text": "a partition with no profile now carries --cpus-per-task and --mem on the srun step it did not carry before, so 'submits exactly as today' is not literal and the test only asserts the top-level sbatch argv"
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 1251,
+      "severity": "non-blocking",
+      "text": "a measure whose partition is declared by the run but not by measure_partition builds a full checkout and then discards it before submitting partition arms, because _tests_only_checkout still reads only measure_partition"
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": 1744,
+      "severity": "non-blocking",
+      "text": "the memory validator accepts a value with an internal space such as '96 G' and the submission then emits it as one malformed --mem argument, so a malformed declaration is not refused at load as claimed"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261123T232620054384-review-of-delivered-work-lands-without-a-coordinator-s59-fcafde86aed3",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "fcafde86aed3b85d6d4163132e014a85b6c48423",
+  "reviewed_run_id": "r-20261123T173038342398-delivered-work-lands-without-a-coordinator-s59",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:00:03.763096+00:00",
+  "total": 100
+}
