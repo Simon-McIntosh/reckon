@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T08:56:23Z",
+  "findings": [],
+  "project": "reckon",
+  "review": "VERDICT goal: \u00a76's goal is to measure the small-change repair path end to end; docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:1-86 records the median review-record-to-promotion time for repairs of at most 50 changed lines, with sample sizes and a verdict against the 30-minute target, which is the section's deliverable.\nVERDICT done_when: the done_when is \"the median is recorded with its sample size, against a target of 30 minutes\"; the fragment states 103.5 min (n=29) at :42, 105.9 min (n=87) at :44, and 109.1 min (2 of 145) at :46 against the not-met verdict at :50-57, and the run-directory outputs sec_week.json (median 103.52, n=29), sec_all.json (median 105.91, n=87) and final_all.json (median 109.145, n=2) carry those exact figures.\nVERDICT write_paths: the declared paths are docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html and its figures directory; the full delivered diff 3a81cbdd..3c208bc8 changes only the fragment (87 insertions, 0 deletions), inside the declared scope, with the figure path unused.\nVERDICT manifest: read; it declares status complete, commits d30752534944/9daeb1d37321/3c208bc8ed82, tests: none for an unarmed measurement node, and no baseline_suite/after_suite pair, so added_failure_count is zero from the run's own declared absence of a comparable suite pair rather than from an unread gate.\nVERDICT diff: read all three commits against base 3a81cbdd00f90d500c7c468b54b44b236284ad5a; d30752534944 adds the fragment, 9daeb1d37321 repaired the strict-population row and the slow tail, and the re-reviewed delta 9daeb1d37321..3c208bc8ed82 (3 insertions, 2 deletions) replaces \"agree to within two minutes\" with \"their medians differ by 2.4 minutes (103.5 and 105.9)\" at :52-54, repairing the sole prior finding at :53 with no out-of-scope path touched.\nCALL_SITES: reckon/resources.py:244 _is_evidence_fragment, reckon/evidence.py:867 evidence_fragment_href, reckon/serve.py _send_evidence_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:42-57 delivers the median, its sample size and the target verdict the goal names, with the proxy nature of the operational reading stated at :84.\nSCORE evidence: 19\nJUSTIFICATION evidence: every headline figure reproduces against the named raw JSON (sec_week 103.52/n=29, sec_all 105.91/n=87, final_all 109.145/n=2), and the repaired clause at :54 now states the 2.4-minute difference the raw medians give.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat over 3a81cbdd..3c208bc8 and over the reviewed delta 9daeb1d37321..3c208bc8 both list only docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html.\nSCORE durability: 8\nJUSTIFICATION durability: the fragment adds no committed test, and the only guard is the run-directory reconcile_fragment.py, which I ran and which exits 1 on the pre-fix fragment (naming the \"within two minutes\" clause) and 0 on the repaired head, so the clause is verified but no committed regression guard exists.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:1-3 follow the section/h2/bold-led-paragraph shape of a peer fragment and every element id at :1/:34/:71 begins with the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and forks no capability; the scripts read reckoning/velocity.py's promotion-commit clock rather than reimplement a review-to-promotion latency mechanism, and a search over reckon/ found no existing owner of that measurement.",
+  "review_run_id": "r-20261124T085558558569-review-of-a-small-change-is-a-small-node-s6-3c208bc8ed82",
+  "reviewed_base_sha": "3a81cbdd00f90d500c7c468b54b44b236284ad5a",
+  "reviewed_head_sha": "3c208bc8ed824c037b29130ddeb920182ac5df0c",
+  "reviewed_run_id": "r-20261123T164415556682-a-small-change-is-a-small-node-s6",
+  "scores": {
+    "durability": 8,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:03:50.105824+00:00",
+  "total": 103
+}
