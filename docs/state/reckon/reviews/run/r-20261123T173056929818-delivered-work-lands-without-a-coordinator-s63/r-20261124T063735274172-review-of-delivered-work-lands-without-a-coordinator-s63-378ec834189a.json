@@ -1,0 +1,102 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 20,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/importer-head.log",
+      "revision": "9683d8b1d964b36986eb5ebf57d7768ebb6af7fd",
+      "summary": "20 failed, 1267 passed, 2 skipped in 155.74s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 24,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/importer-base.log",
+      "revision": "bf5ff985a74aa4a5e3634a1423d646553740edaf",
+      "summary": "24 failed, 1263 passed, 2 skipped in 150.16s"
+    },
+    "derivation": "comm -13 of the reviewed run's sorted failed-base.txt and failed-head.txt is empty: the 20 head failures are all also base failures, so added_failure_count is 0 and added_failure_ids is empty. The four base-only ids are tests that need a git repository and cannot run inside the population's git-archive tree."
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1312 measure_run (passes done_when, config, partition)",
+    "reckon/crew/promotion_records.py:1381 armed_observations (passes done_when, config, partition)",
+    "reckon/crew/delivery_scope.py:97 resolve_landing_tests",
+    "reckon/crew/standing_suite.py:279 gate_profile",
+    "reckon/crew/promotion_gate.py:1365 gate_bound_seconds",
+    "reckon/flight.py:1871 _validate_gate_profiles from _validate_landing"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T06:37:54Z",
+  "findings": [
+    {
+      "line": 662,
+      "path": "reckon/crew/landing_measure.py:662",
+      "severity": "non-blocking",
+      "text": "resolve_landing_tests' docstring states four sources are tried in order, naming 'the test files its diff changed' as the second, but the implementation at :672-680 tries only three: fenced test files, done-when-named files, then importer files. A test file present in `changed` but neither fenced nor named in the done-when is not selected directly by this function; delivery_scope.py:84-92 handles diff-changed test files in a separate candidates branch before calling it. A reader trusting the docstring believes this function covers a source it does not, and a direct caller passing test_files=() with a changed test file gets the refusal path. Non-blocking: every production caller either passes fenced/diff-derived tests or resolves candidates first, so the current refusal text is not reached on the landing path."
+    },
+    {
+      "line": 1775,
+      "path": "reckon/flight.py:1775",
+      "severity": "non-blocking",
+      "text": "_GATE_PROFILE_TIME_RE requires a colon form or an s/m/h suffix, so a quoted plain-seconds duration such as time: \"900\" is refused at load, while parse_gate_duration at landing_measure.py:1024-1027 accepts an unsuffixed count. An integer time: 900 passes validation (the isinstance branch at :1802-1804), but the string spelling of the same duration is refused, so the validator and the reader disagree on an accepted form. Safe direction (refuses rather than misreads), but the two owners should accept the same set. Non-blocking."
+    }
+  ],
+  "incremental": true,
+  "item_verdicts": {
+    "diff": "Read the gained commits since 5430d25e99 (d074025635, 6be79c28ce, 5286a3dd07, 0087fa7291) and the merge 378ec83418; both s63's _archive_step exclusion and main's gate_profile/partition_submission and resolve_landing_tests survive intact.",
+    "done_when": "The done_when names tests/test_a_partitioned_arm_unpacks_what_it_needs.py; gate-head.log records 3 passed in 1.60s EXIT=0 at 9683d8b1d9 and gate-base.log records 2 failed, 1 passed EXIT=1 at bf5ff985a74a with the second case reading exactly 'the base arm did not run'; re-run at 378ec83418 gives 3 passed EXIT=0.",
+    "goal": "The reviewed node's goal is that a partitioned arm unpacks only what its tests need and a setup failure is named; at 378ec83418 landing_measure.py:_archive_step (948) is fed arm_excluded_paths(config) at :1521 and used at :1543, and setup_failed detection at :1646-1665 records the node and error text, so both halves survive the merge.",
+    "manifest": "Read; status complete with five commits, gate and importer logs and a rubric self-check, but its population arm was measured at 9683d8b1d9 before the merge to 378ec83418, so the recorded evidence does not itself cover the merged head.",
+    "write_paths": "The manifest declares five paths; the two files this review scopes gained only upstream main content through the merge and carry nothing outside the section scope, and the wider 108-path diff is mainline merge traffic."
+  },
+  "justifications": {
+    "durability": "tests/test_a_partitioned_arm_unpacks_what_it_needs.py:138-197 reddens at bf5ff985a74a reading 'the base arm did not run', and tests/test_a_partitioned_arm_judges_files_against_its_revision.py:121-135 asserts a missing base_tree still names KEPT in the base arm, which reddens if revision_holds regresses to a local-tree read.",
+    "evidence": "The reviewed run's gate-head.log closes 3 passed in 1.60s EXIT=0 and gate-base.log closes 2 failed, 1 passed EXIT=1, and importer-base.log/importer-head.log (24 vs 20 failed, comm -13 empty) give added_failure_count 0, though the population predates the merge head I also verified.",
+    "fit": "reckon/crew/landing_measure.py:662 overstates its sources (:672-680 implements three of four) and reckon/flight.py:1775 validates a narrower time grammar than parse_gate_duration reads, so the new code does not fully match the surrounding contract.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1543 builds each partitioned arm's tree through _archive_step(git, revision, excluded) and :1646-1665 detects a setup failure with the node and error text, so the reviewed head still delivers the section goal.",
+    "reuse": "The added helpers extend existing owners rather than fork them: _archive_step parameterises the prior inline archive step, _gate_profile_resource_options extends partition_submission, revision_holds extends _tree_holds, and resolve_landing_tests is the one resolver delivery_scope.py:97 and promotion_records.py:1023 both call.",
+    "scope_discipline": "The two files' gained diff since 5430d25e99 carries only the upstream fixes main already held, and the merged tree keeps the node's own _archive_step and setup_failed paths intact without adding unrelated edits."
+  },
+  "previous_reviewed_head": "5430d25e99f30dcd58957568635ae0fd9759f2fb",
+  "project": "reckon",
+  "review_run_id": "r-20261124T063735274172-review-of-delivered-work-lands-without-a-coordinator-s63-378ec834189a",
+  "reviewed_base_sha": "5430d25e99f30dcd58957568635ae0fd9759f2fb",
+  "reviewed_head_sha": "378ec834189a085c02b2728609e62ecb19cf6c20",
+  "reviewed_run_id": "r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63",
+  "reviewer_notes": {
+    "call_sites": [
+      "reckon/crew/queue_landing.py:1312 measure_run (done_when, config, partition passed)",
+      "reckon/crew/promotion_records.py:1381 armed_observations (done_when, config, partition passed)",
+      "reckon/crew/delivery_scope.py:97 resolve_* files",
+      "reckon/crew/standing_suite.py:279 gate_profile",
+      "reckon/crew/promotion_gate.py:1365 gate_bound_seconds",
+      "reckon/flight.py:1871 _validate_gate_profiles"
+    ],
+    "durability_reading": "Each gained commit carries its own test: tests/test_a_landing_measures_the_tests_its_done_when_names.py asserts the observed arm command names the done-when's test and its exit_status is 0 over a real base/head repo; tests/test_a_partitioned...test_a_partitioned_arm_judges_files_against_its_revision.py uses a non-existent base_tree so an in-place read regresses to leaving KEPT out; tests/test_a_gate_profile_reaches_every_submission.py asserts the profile's options reach the sbatch argv, the fallback partition with no profile keeps --mem=32G and no reservation, and a memory-less profile is refused naming it. None compares the code's output against the same variable the test supplied as the expected answer.",
+    "prior_finding_resolution": "The previous review's non-blocking finding (arm_excluded_paths not passed to the review-landing and standing-suite partition runners) is resolved at 378ec83418: review_landing.py:107 and standing_suite.py:253 now pass config=config to _partition_runner.",
+    "reuse_reading": "Searched reckon/ by capability for existing owners of (a) arm tree building, (b) partition submission. _partition_runner's inline git-archive step becomes _archive_step; partition_submission already existed and gains a profile branch rather than a parallel submission builder; arm_test_files already existed and gains a revision-aware presence test. No duplicate builder is introduced."
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T06:52:31.348922+00:00",
+  "total": 107,
+  "verdicts": {
+    "diff": "Read the gained commits since the previous reviewed head 5430d25e99 by log and diff: d074025635 (done-when test resolution), 0087fa7291 (gate profiles), 6be79c28ce (arm files judged against their revision), 5286a3dd07 (profiles' bound on the waiting client), merged at 378ec83418 whose first parent is 5430d25e99 and second is main 1aaabf3ba7. Both sides survive: s63's _archive_step exclusion and setup_failed coexist with main's gate_profile/partition_submission resource options and resolve_landing_tests.",
+    "done_when": "The done_when names tests/test_a_partitioned_arm_unpacks_what_it_needs.py; the reviewed run's gate-head.log records 3 passed in 1.60s EXIT=0 at 9683d8b1d9 and gate-base.log records 2 failed, 1 passed in 0.54s EXIT=1 at bf5ff985a74a with the second case reading exactly 'the base arm did not run'. I re-ran that file against an extracted tree of 378ec83418 with the repo interpreter: 3 passed in 1.70s EXIT=0, so the merge preserves the gate.",
+    "goal": "The reviewed node's goal is that a partitioned arm unpacks only what its tests need and a setup failure is named; at the reviewed head reckon/crew/landing_measure.py:_archive_step (line 948) is fed arm_excluded_paths(config) at :1521 and used at :1543 inside _partition_runner, and setup_failed detection at :1646-1665 records the node and the setup error text, so both halves survive the merge into 378ec83418.",
+    "manifest": "Read; status complete with the five commits, gate-head.log/gate-base.log carrying revisions and EXIT lines, the 117-file importer population at job 1341410, and a rubric self-check. Its population arm was measured at 9683d8b1d9, before the merge that lands at 378ec83418, so the recorded evidence does not itself cover the merged head; I verified the gate test at 378ec83418 separately.",
+    "write_paths": "The manifest declares five paths (the s63 fragment, its figure dir, landing_measure.py, flight.py, and the gate test); the two files this review scopes touched only gained upstream content from main through the merge and carry nothing outside the node's section scope. The wider 108-path delivered diff is mainline merge traffic (plan state and peer evidence fragments), reconciled by the merge rather than authored by this node."
+  }
+}
