@@ -107,7 +107,7 @@ def _scheduler(monkeypatch: pytest.MonkeyPatch, answers: list[tuple[str, int, st
     def run(argv, **options):
         if not argv or argv[0] != "sbatch":
             return real_run(argv, **options)
-        if any(token == "--job-name=landing-arm-sweep" for token in argv):
+        if any(argument == "--job-name=landing-arm-sweep" for argument in argv):
             # The sweep an arm's node is sent after a cancellation is
             # bookkeeping, not one of the arm submissions under test.
             return subprocess.CompletedProcess(argv, 0, "900000\n", "")
