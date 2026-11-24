@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="232">
+<meta name="plan-version" content="233">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -1139,6 +1139,9 @@
 </div>
 <div class="r-comment" data-section="s66" data-id="c-run-r-20261124T002046932935-review-of-delivered-work-lands-without-a-coordinator-s66-9be3a4435869" data-who="reckon-build" data-when="2026-11-24T00:32:39.907Z">
     <div class="r-comment-body"><p>Independent review of r-20261123T190235235854-delivered-work-lands-without-a-coordinator-s66 at base d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e and head 9be3a443586949f5a8db7ffe82d9b3af648d33cd: six SCORE lines (goal 19, evidence 16, scope 19, durability 18, fit 19, reuse 17; total 108), added_failure_count 0, three non-blocking findings, status parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s66" data-id="c-run-r-20261123T190235235854-delivered-work-lands-without-a-coordinator-s66" data-who="reckon-build" data-when="2026-11-24T00:17:04.584Z">
+    <div class="r-comment-body"><p>`crew record-merge` on a run whose ledger row already exists now corrects a wrong citation instead of refusing — the head is read from the merge that carried it (a `--no-ff` merge&#x27;s second parent), the row&#x27;s `commits` and `promoted_revision` are replaced with that head and the merge is recorded, the replaced citation is kept beside them in `citation_superseded` naming why, a row already citing the head is left byte-identical with no superseded block and no commit, and a commit carrying no second parent is refused with the row untouched; the run is resolved from its stored row alone, so the correction works with no live pointer and no run directory. Measure: at base d7f54a14d1 the 33-file population reports 20 failed, 531 passed in 2427.59s (0:40:27) EXIT=1 (the node&#x27;s four cases plus sixteen environment-dependent failures), and at head 1d98180fc9 it reports 16 failed, 535 passed in 1762.53s (0:29:22) EXIT=1 — the same sixteen only, so no failure is added; the negative control shows the node&#x27;s four cases failing at the base source, 4 failed in 1.94s, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s67" data-id="c-run-r-20261124T000427898303-review-of-delivered-work-lands-without-a-coordinator-s67-996de7601126" data-who="reckon-build" data-when="2026-11-24T00:11:55.674Z">
     <div class="r-comment-body"><p>review of r-20261123T203441087742-delivered-work-lands-without-a-coordinator-s67 at head 996de760112626adc0acec9d1ed15e0774ef160a is parsed: all six dimensions scored in 0..20 (goal_fidelity 19, evidence 12, scope_discipline 20, durability 18, fit 19, reuse 20), the base and head gate arms carry identical 11-failure sets so added_failure_count is 0, one non-blocking evidence finding (the manifest misquotes a stale red head-newtest.log) and one non-blocking robustness finding (the storage regex is unanchored). No blocking finding; the reviewed change is sound.</p></div>
