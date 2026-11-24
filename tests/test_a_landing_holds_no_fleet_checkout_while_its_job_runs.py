@@ -272,7 +272,14 @@ def _signalled_runner(landing, real, outcome: dict[str, object]):
         held: Path | None = None
         deadline = time.monotonic() + 30.0
         while time.monotonic() < deadline:
-            matches = [p for p in root.glob(prefix + "*") if (p / "tree").is_dir()]
+            # Wait for the unpacked tree, not for its empty directory: the
+            # script creates the directory before it extracts into it, so an
+            # empty one is not yet something the job is holding.
+            matches = [
+                p
+                for p in root.glob(prefix + "*")
+                if (p / "tree" / "subject.py").is_file()
+            ]
             if matches:
                 held = matches[0]
                 break

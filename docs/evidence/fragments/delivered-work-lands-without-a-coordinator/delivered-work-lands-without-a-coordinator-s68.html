@@ -1,0 +1,72 @@
+<section id="delivered-work-lands-without-a-coordinator-s68" class="evidence-fragment">
+  <h2>§68 — A landing arm's tree does not outlive its job</h2>
+  <p>
+    A partitioned arm unpacks its tree under
+    <code>/tmp/&lt;user&gt;-landing-&lt;id&gt;-XXXXXX</code> on the compute node
+    and removes it from the EXIT trap its own script installs. A job the
+    scheduler ends at its time limit, or kills outright, never reaches that
+    trap, and nothing removed the tree afterwards: the sweep over the fleet's
+    scratch directory never looked at
+    <code>/tmp/&lt;user&gt;-landing-*</code>, because the worker scratch root is
+    a child of the fleet node's <code>/tmp</code> and the arm trees are its
+    siblings. On 23 November the per-entry listing showed 18 such trees
+    totalling 19.4 GB on <code>98dci4-clu-3141</code> and 9 totalling 9.6 GB on
+    <code>98dci4-clu-3142</code>, eleven of them four to five hours old with no
+    process holding them.
+  </p>
+  <p>
+    The lander cannot read a compute node's process table from where it runs,
+    so the rule that dates a tree as abandoned is the partition's own time
+    limit: a tree whose last activity is older than the longest a job there may
+    run cannot belong to a live job, because the scheduler would already have
+    ended one holding it. Where the sweep runs on the tree's own node it also
+    reads the process table and keeps a tree a live process holds, so a
+    concurrent arm's tree is never touched. An unbounded partition
+    (<code>rigel</code>) licenses no such age and so no removal.
+  </p>
+  <p>
+    The sweep reaches every node the lander placed an arm on by two routes.
+    Each submitted job sweeps its own node before it builds anything, which
+    covers a node that runs a further arm. An arm that ended without printing
+    its exit receipt — the timeout signature — gets a second job submitted with
+    <code>--nodelist=&lt;arm's host&gt;</code> and
+    <code>--begin=now+&lt;limit&gt;</code>, so a node that runs no further arm is
+    swept once the limit has passed. A refusal to submit that bookkeeping job is
+    written to the arm's log and never raises, because it is not evidence.
+  </p>
+  <p id="delivered-work-lands-without-a-coordinator-s68-measure">
+    Measure: both arms ran in one <code>all_debug</code> job (1342944), each as
+    a real clone under that node's own tmp, because a fenced worktree's
+    <code>.git</code> is read-only and a <code>git archive</code> tree has none —
+    either would make the arms measure the environment. The head arm at
+    <code>bb37d59ebf</code> reports
+    <code>9 failed, 419 passed in 265.18s (0:04:25)</code>;
+    the base arm at <code>37bcd91013</code> reports
+    <code>17 failed, 411 passed in 214.54s (0:03:34)</code>, each carrying its revision,
+    its literal command and a closing <code>EXIT=</code> line. Comparing the
+    failure sets, the head adds no failure; the eight failures the head removes
+    are exactly the new test file's, which passes at head and fails at base.
+  </p>
+  <p>
+    The four cases the plan requires are in
+    <code>tests/test_a_landing_arm_leaves_no_tree.py</code>: a tree left by a
+    job killed at its limit is removed once it is older than the limit and no
+    process holds it; a tree a live process holds is kept however old it is
+    (the holder is a real child process whose working directory is the tree); a
+    tree younger than the limit is kept; and each removal is recorded with the
+    node, the path and the bytes reclaimed. Three further cases hold the
+    boundaries: another account's tree is left alone on a shared node, an
+    unbounded partition removes nothing, and the job's entry point and the
+    command it runs name the sweep and the limit.
+  </p>
+  <p>
+    Negative control: at the base revision the first case fails because the
+    sweep does not exist there — the base arm's traceback is
+    <code>AttributeError: module 'reckon.crew.landing_measure' has no attribute
+    'arm_tree_prefix'</code>. The behaviour is shown directly as well: from a
+    clone at <code>37bcd91013</code>, a <code>mcintos-landing-killed-abcd1234</code>
+    tree aged two hours with no holder, put through every sweep that revision
+    offers (only <code>sweep_abandoned_base_trees</code>), is still present
+    afterwards — <code>RESULT: still present</code>.
+  </p>
+</section>
