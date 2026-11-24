@@ -92,46 +92,126 @@ _NON_RUNNERS = frozenset(
     }
 )
 
+# Programs a gate is launched through rather than by: each one is skipped, so
+# the runner after it is what the segment is asked about.
+_PREFIX_WRAPPERS = frozenset(
+    {
+        "env",
+        "cd",
+        "nohup",
+        "time",
+        "exec",
+        "command",
+        "setsid",
+        "stdbuf",
+        "uv",
+        "uvx",
+        "run",
+        "srun",
+        "salloc",
+        "sbatch",
+    }
+)
+
+_BASH_PROGRAMS = frozenset({"bash", "sh", "zsh", "dash"})
+
+_SHELLS_OR_SCHEDULERS = _BASH_PROGRAMS | {"sbatch", "srun", "salloc"}
+
+# The flags that make a shell take the command it is to run as an argument, so
+# the words after them are a nested command line rather than this one's.
+_SHELL_STRING_FLAGS = ("-ic", "-lc", "-cl", "-c", "--wrap")
+
+# ``env`` options whose value is the next word rather than part of the flag.
+_ENV_ARG_FLAGS = frozenset({"-u", "-C", "--unset", "--chdir"})
+
 
 def _is_gate_command(command: str) -> bool:
-    """Whether a shell call actually runs a test suite.
+    """Whether a shell call actually runs a test suite in any of its segments.
 
     A stream mentions pytest in greps, reads and commit messages far more often
-    than it runs it, so the runner must be the program being executed: the
-    command's leading tokens, after ``env``/``cd``/assignment prefixes and an
-    optional ``timeout N``, name a test runner or the run's own gate script.
+    than it runs it, so the runner must be the program being executed: a
+    segment's leading tokens, after a ``uv``/``srun``/``env``/assignment prefix
+    and an optional ``timeout N``, name a test runner or the run's own gate
+    script. Every segment of a compound line is asked, because a worker usually
+    runs its gate behind assignments and a ``cd`` rather than alone, and a
+    shell's ``bash -lc "<script>"`` carries the runner one level down.
     """
-    tokens = _tokens(command)
-    if (
-        tokens
-        and Path(tokens[0]).name in {"bash", "sh"}
-        and any(t in {"-c", "-lc"} for t in tokens[1:2])
-    ):
-        tokens = _tokens(tokens[-1])
+    return _runs_a_gate(command, depth=0)
+
+
+def _runs_a_gate(command: str, *, depth: int) -> bool:
+    if depth > 3:
+        return False
+    return any(
+        _segment_runs_a_gate(segment, depth=depth) for segment in _segments(command)
+    )
+
+
+def _segments(command: str) -> list[list[str]]:
+    """Split a command line into the words of each simple command it runs.
+
+    ``shlex`` is asked for its punctuation so ``;``, ``&&``, ``||`` and ``|``
+    arrive as their own tokens; a token made only of those characters ends one
+    segment. A line with no separator yields the whole line as one segment.
+    """
+    segments: list[list[str]] = [[]]
+    for line in command.splitlines() or [command]:
+        try:
+            lexer = shlex.shlex(line, posix=True, punctuation_chars=";&|")
+            lexer.whitespace_split = True
+            tokens = list(lexer)
+        except ValueError:
+            tokens = line.split()
+        for token in tokens:
+            if token and set(token) <= set(";&|"):
+                segments.append([])
+            else:
+                segments[-1].append(token)
+    return [segment for segment in segments if segment]
+
+
+def _segment_runs_a_gate(tokens: list[str], *, depth: int) -> bool:
     index = 0
-    while index < len(tokens) and (
-        ("=" in tokens[index] and not tokens[index].startswith("-"))
-        or tokens[index] in {"env", "cd", "nohup", "time", "exec", "bash", "-lc", "-c"}
-        or tokens[index].startswith("-")
-    ):
-        index += 1
-    if index < len(tokens) and tokens[index] == "timeout":
-        index += 1
-        while index < len(tokens) and not tokens[index].startswith("-"):
-            if tokens[index].replace(".", "").isdigit():
-                index += 1
-                break
+    while index < len(tokens):
+        word = tokens[index]
+        if word in _PREFIX_WRAPPERS:
             index += 1
+            if word == "env":
+                # ``env -u NAME`` and ``env -C DIR`` take their own argument.
+                while index + 1 < len(tokens) and tokens[index] in _ENV_ARG_FLAGS:
+                    index += 2
+        elif word == "timeout":
+            index += 1
+            if index < len(tokens) and tokens[index].isdigit():
+                index += 1
+        elif word in _SHELL_STRING_FLAGS and any(
+            Path(candidate).name in _SHELLS_OR_SCHEDULERS for candidate in tokens
+        ):
+            # ``bash -lc "<script>"`` and ``sbatch --wrap "<script>"`` carry a
+            # whole command line as one word; the runner is inside that word.
+            if index + 1 < len(tokens):
+                return _runs_a_gate(tokens[index + 1], depth=depth + 1)
+            return False
+        elif word.startswith("-") or ("=" in word and not word.startswith("=")):
+            index += 1
+        else:
+            break
     rest = tokens[index:]
     if not rest:
         return False
     program = Path(rest[0]).name
+    if program in _BASH_PROGRAMS:
+        if not any(flag in rest for flag in _SHELL_STRING_FLAGS):
+            return False
+        inner = rest[-1]
+        return inner != program and _runs_a_gate(inner, depth=depth + 1)
     if program in _NON_RUNNERS:
         return False
     if program in {"pytest", "ctest", "nosetests", "py.test"}:
         return True
     if program.startswith("python") and "-m" in rest:
-        module = rest[rest.index("-m") + 1] if rest.index("-m") + 1 < len(rest) else ""
+        position = rest.index("-m") + 1
+        module = rest[position] if position < len(rest) else ""
         return module in {"pytest", "py.test", "unittest"}
     return bool(re.search(r"gate", program, re.IGNORECASE))
 
@@ -306,6 +386,20 @@ def _truncation_markers(commands: Iterable[str], logs: Iterable[Path]) -> list[s
     return sorted(set(markers))
 
 
+def _call_wrote_log(command: str, log: Path, log_names: Iterable[str]) -> bool:
+    """Whether this tool call is the call that produced this cited log.
+
+    The absolute path is the strong match. A stream usually records the command
+    with a shell variable in place of the run directory, so the file name is the
+    fallback, and only when it names one of the run's cited logs alone: two
+    ``gate.log`` files beside each other are not joined by name.
+    """
+    if str(log) in command:
+        return True
+    name = log.name
+    return name in command and sum(1 for other in log_names if other == name) == 1
+
+
 def measure_run(record: Mapping[str, Any]) -> dict[str, Any]:
     run_id = str(record.get("run_id") or "")
     manifest = _manifest_of(record)
@@ -329,8 +423,30 @@ def measure_run(record: Mapping[str, Any]) -> dict[str, Any]:
 
     gates: list[dict[str, Any]] = []
     joined_call_ids: set[int] = set()
+    # A command usually reaches its log through a shell variable (``$R/logs/x.log``)
+    # rather than by the absolute path, so the log is joined by its file name
+    # when that name is this run's alone. Without it the same gate is charged
+    # twice: once at the log's duration and again as the call that wrote it.
+    log_names = [log.name for log in logs]
+    logs_without_duration: list[str] = []
     for log in logs:
         seconds = _log_seconds(run_id, log)
+        writers = [
+            index
+            for index, call in enumerate(calls)
+            if _call_wrote_log(call["command"], log, log_names)
+        ]
+        if (
+            seconds is None
+            and log.is_file()
+            and not any(_is_gate_command(calls[index]["command"]) for index in writers)
+        ):
+            # A cited log the run produced but no test runner wrote is an
+            # artifact (a soak, a census, a probe), not a gate. Counting it as
+            # an unmeasured gate would make an otherwise fully readable run
+            # unmeasurable, so it is named instead of charged.
+            logs_without_duration.append(str(log))
+            continue
         gates.append(
             {
                 "source": "log",
@@ -339,9 +455,7 @@ def measure_run(record: Mapping[str, Any]) -> dict[str, Any]:
                 "background": False,
             }
         )
-        for index, call in enumerate(calls):
-            if str(log) in call["command"]:
-                joined_call_ids.add(index)
+        joined_call_ids.update(writers)
 
     for index, call in enumerate(calls):
         if index in joined_call_ids:
@@ -387,6 +501,7 @@ def measure_run(record: Mapping[str, Any]) -> dict[str, Any]:
         "unmeasurable": not measurable,
         "truncated": truncated,
         "background": any(g["background"] for g in gates),
+        "logs_without_duration": logs_without_duration,
         "tool_call_timing": tool_call_timing,
         "wall_covers_attempts": _wall_covers_attempts(record),
     }
@@ -486,6 +601,9 @@ def summarise(results: list[dict[str, Any]]) -> dict[str, Any]:
                 "wall_misses_attempts": sorted(
                     e["run_id"] for e in entries if e["wall_covers_attempts"] is False
                 ),
+                "logs_without_duration": sorted(
+                    e["run_id"] for e in entries if e["logs_without_duration"]
+                ),
             }
         )
     return {"lanes": table}
@@ -519,9 +637,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--fences", action="store_true", help="report the resolved watchdog fence"
     )
+    parser.add_argument(
+        "--control-detector",
+        action="store_true",
+        help="show the gate detector's answers on command shapes whose answer is known",
+    )
     args = parser.parse_args(argv)
 
     now = _stamp(args.now) or datetime.now(UTC)
+    if args.control_detector:
+        return _report_detector()
     if args.control_run:
         return _report_control(args.control_run)
     if args.fences:
@@ -563,23 +688,38 @@ def _bracket_seconds(path: Path) -> float | None:
     return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
 
 
+def _duration_lines(path: Path) -> int:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return 0
+    return len(promotion_gate._GATE_LOG_DURATION.findall(text))
+
+
 def _report_control(run_id: str) -> int:
     """Show the timing scanner agreeing with an independent figure, or failing.
 
     The scanned figure comes from the runner's ``in N s`` summary; the
     comparison is the ``(h:mm:ss)`` field the same log prints beside it. Two
     differently formatted fields must agree within 5%, so the control can fail.
+    A log carrying several summaries (several arms appended to one file) has no
+    single figure to agree with, so it is listed as not comparable rather than
+    scored against the wrong arm.
     """
     record = _control_record(run_id)
     entry = measure_run(record)
     manifest = _manifest_of(record)
     logs = _cited_logs(record, manifest)
     findings = []
+    not_comparable = []
     ok = True
     for log in logs:
         scanned = _log_seconds(run_id, log)
         independent = _bracket_seconds(log)
         if scanned is None or independent is None:
+            continue
+        if _duration_lines(log) > 1:
+            not_comparable.append(str(log))
             continue
         delta = abs(scanned - independent) / independent if independent else 1.0
         within = delta <= 0.05
@@ -597,7 +737,13 @@ def _report_control(run_id: str) -> int:
         ok = False
     print(
         json.dumps(
-            {"run_id": run_id, "run": entry, "control": findings, "passes": ok},
+            {
+                "run_id": run_id,
+                "run": entry,
+                "control": findings,
+                "not_comparable": not_comparable,
+                "passes": ok,
+            },
             indent=2,
         )
     )
@@ -615,6 +761,49 @@ def _control_record(run_id: str) -> dict[str, Any]:
         "manifest_path": str(run_dir(run_id) / "manifest.md"),
         "wall_seconds": None,
     }
+
+
+# Command shapes the detector must classify, each paired with its answer. Both
+# directions are present, so a detector that answered yes to everything fails
+# on the mentions, and one that only read the line's first program fails on the
+# compound rows. The shapes are the ones workers on this host actually write.
+_DETECTOR_CASES: tuple[tuple[str, bool], ...] = (
+    ("pytest -q tests/test_a.py", True),
+    (".venv/bin/python -m pytest -q tests/a.py", True),
+    ("PYTHONPATH=. .venv/bin/python -m pytest -q", True),
+    ("uv run pytest -q tests/test_a.py", True),
+    ("uv run --no-sync pytest tests", True),
+    ("env -u PYTHONPATH python -m pytest tests", True),
+    ("timeout 560 .venv/bin/python -m pytest tests", True),
+    ("ctest --output-on-failure", True),
+    ("bash -lc 'uv run pytest tests'", True),
+    ("srun --partition=all_debug bash -lc 'cd w; uv run pytest -q'", True),
+    (
+        (
+            'D=$(mktemp -d); git archive HEAD | tar -x -C "$D"; cd "$D" && '
+            'PYTHONPATH="$D" timeout 600 /repo/.venv/bin/python -m pytest -q tests'
+        ),
+        True,
+    ),
+    ("grep -rn pytest reck", False),
+    ("git commit -m 'ran pytest on the module'", False),
+    ("python -c 'import pytest'", False),
+    ("sed -n '1,20p' tests/test_a.py", False),
+    ("uv pip install pytest-xdist", False),
+    ("git status", False),
+)
+
+
+def _report_detector() -> int:
+    """Show the gate detector's answers on shapes whose answer is known."""
+    wrong = []
+    for command, expected in _DETECTOR_CASES:
+        found = _is_gate_command(command)
+        print(f"{'ok ' if found == expected else 'BAD'} {found!s:5} {command}")
+        if found != expected:
+            wrong.append(command)
+    print(f"{len(_DETECTOR_CASES) - len(wrong)} of {len(_DETECTOR_CASES)} as expected")
+    return 0 if not wrong else 1
 
 
 if __name__ == "__main__":
