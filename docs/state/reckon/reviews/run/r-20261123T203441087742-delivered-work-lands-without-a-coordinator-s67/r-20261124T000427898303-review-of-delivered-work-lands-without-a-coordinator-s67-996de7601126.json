@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1310",
+    "reckon/crew/promotion_records.py:1381",
+    "reckon/crew/promotion_gate.py:1357",
+    "reckon/crew/queue_landing.py:794",
+    "reckon/crew/queue_landing.py:816"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T00:05:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T203441087742-delivered-work-lands-without-a-coordinator-s67/manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "summary": "The manifest's artifacts line cites head-newtest.log as '4 passed in 1.73s locally', but that file reads '1 failed in 2.45s' and its mtime (23:22) precedes the fix commit 4d42346e22 (23:30), so it ran an earlier draft of the test; no log under the run directory records the final test passing at head, and neither gate arm (gate-base.log, gate-head.log) includes tests/test_a_full_disk_is_not_a_test_failure.py (grep count 0 in both). The green result is therefore claimed and not recorded. An independent re-run of that single test at 996de76011 gives '4 passed in 1.70s', so the deliverable is sound and the defect is in the record: cite a real green log and add the test to an arm, or correct the artifacts line."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 122,
+      "severity": "non-blocking",
+      "summary": "_STORAGE_FAILURE matches storage phrases case-insensitively against every line of an arm's output, so a genuine test failure whose own message contains 'no space left on device' or 'ENOSPC' would be read as the node's storage failure, discarding real failure ids and triggering a retry that excludes a healthy node; scope the match to pytest's setup-error line shape so a delivery's own assertion text cannot be mistaken for the node's disk."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_full_disk_is_not_a_test_failure.py:155-207 asserts the retry record, node naming, empty real set and --exclude in the submitted argv, each of which reddens if the storage branch is removed; the base negative control records 4 failed.",
+    "evidence": "reckon/crew/landing_measure.py is measured by two on-disk gate arms with identical 11-failure sets, but tests/test_a_full_disk_is_not_a_test_failure.py is absent from both arm commands and its only cited local log is a stale red run.",
+    "fit": "reckon/crew/landing_measure.py:566 reuses socket.gethostname as the rest of reckon/crew does, and the added names (storage_failure, arm_node, exclude_nodes) describe mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1843 breaks out of the judged-arm loop on arm.storage_failure, names the node and reports no test ids, which is the goal verbatim.",
+    "reuse": "No existing storage-failure parser exists under reckon/ (grep for 'no space left on device', 'ENOSPC', 'numbered dir with prefix' finds none), and exclude_nodes extends the existing partition_submission/_partition_runner owners rather than forking them.",
+    "scope_discipline": "Every path in diff d7f54a14..996de760 is one of the declared write paths, and the two later commits are docs-only."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261124T000427898303-review-of-delivered-work-lands-without-a-coordinator-s67-996de7601126",
+  "reviewed_base_sha": "d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e",
+  "reviewed_head_sha": "996de760112626adc0acec9d1ed15e0774ef160a",
+  "reviewed_run_id": "r-20261123T203441087742-delivered-work-lands-without-a-coordinator-s67",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:14:40.073262+00:00",
+  "total": 108,
+  "verdicts": {
+    "diff": "Read commit by commit against d7f54a14: 4d42346e22 adds storage_failure/arm_node, Arm.node/storage_failure, Measurement.storage_node/storage_retry, exclude_nodes plumbing and the _is_environmental branch; 5b013e015a makes the fixture name 18 distinct files; 12936c291a and 996de76011 add the evidence fragment. All inside scope.",
+    "done_when": "The done_when names tests/test_a_full_disk_is_not_a_test_failure.py; the file exists at head and passes 4/4 when run at 996de76011, but no gate log under the run directory records that pass (gate-base.log and gate-head.log each contain zero references to it) and the cited head-newtest.log shows the earlier draft failing.",
+    "goal": "The node goal is 'a full disk on the arm's node is not a test failure'; reckon/crew/landing_measure.py:1843 sets storage_node from the arm's own '# host:' line and suppresses its failure ids, delivering exactly that.",
+    "manifest": "Read; it reports 11 failed / 597 passed at both arms and names its gate logs, but its artifacts line misquotes head-newtest.log as a green run where the file reads '1 failed in 2.45s'.",
+    "write_paths": "The four changed paths -- the evidence fragment, reckon/crew/landing_measure.py, reckon/crew/queue_landing.py and tests/test_a_full_disk_is_not_a_test_failure.py -- are all inside the five declared write paths."
+  }
+}
