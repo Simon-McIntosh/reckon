@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T09:10:46Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: The census is described as counting \"worker-written shell script\" while the instrument's shell_script() accepts any file whose first two bytes are #!, so Python files (pair.py in the after depth-2 hits, check_snapshot_assertions.py in the before depth-3 hits) are counted; it inflates the depth-2 and depth-3 percentages by at most 0.5 points each and leaves the depth-1 after figure (11.0 %) above the 5 % bound, so the arm's failure stands."
+    },
+    {
+      "file": "docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html",
+      "line": "196",
+      "severity": "non-blocking",
+      "text": "non-blocking: One of the five representative census paths, r-20261123T190235235854-delivered-work-lands-without-a-coordinator-s66/gate_base.sh, no longer resolves because its run directory was pruned, so a reader cannot open it; the full recorded list survives in arms/wrapper-census2-1343925.json and run directories are transient by design."
+    },
+    {
+      "file": "docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s10/census.svg",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The four \"after\" value labels are drawn in the series green #2e8b57 at 4.24:1 against the white canvas, under the 4.5:1 WCAG AA floor for 14 pt text, while the grey \"before\" labels beside them read 9.74:1; the bar lengths repeat the same numbers so no reader is blocked."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit by commit against efb4b7ed; f584a969ae adds the cumulative archive record (231 lines), the \u00a710 fragment (41 lines) and census.svg (1406 lines), and 169294fda8 appends the scoped-gate line to the archive and the fragment, with no deletion anywhere.",
+    "done_when": "The done_when asks for five arms in a cumulative record and a census under 5 %; the archive at :33-63 and :162-214 gives every arm's measured result, the census reads 11.0 % against that bound, and the manifest's scoped gate at arms/scoped-gate-1343980.log shows 28 passed, 1 skipped, 5 deselected, EXIT=0 at revision f584a969aea2.",
+    "goal": "The node's goal is \u00a710's one record of the guards measured together through the path a real worker takes (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:107-108); docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html:31-63 records all five arms with job ids and receipts and correctly leaves the section open on the census.",
+    "manifest": "Read; the reviewed manifest records status complete, commits f584a969ae and 169294fda8, its gate command and log, the five arms' evidence inputs, and the census failure as a measured outcome rather than a blocked step.",
+    "write_paths": "The declared write paths are the archive HTML, the \u00a710 evidence fragment and a figure directory; git diff --name-only efb4b7ed1b1a6e8b8d6286bd5626749e946e5752..169294fda8025eb73efd4e0af371b732b7f073b4 returns exactly those three paths."
+  },
+  "justifications": {
+    "durability": "The diff adds no assertion and FENCE \u2014 SUITE is unarmed for this node, so nothing fails if the census figures or the record's claims regress; only the pre-existing tests/test_shared_environments_are_read_only.py::test_redirect_through_three_links_refuses_and_preserves_decoy guards arm A.",
+    "evidence": "Every headline number reconciles with its receipt (arms/replay-1343880/receipts.json, arms/permission-1343916/permission-receipts.json, arms/hold-1343953/receipt.json, arms/wrapper-census2-1343925.json and arms/arm-c-health.log), but the census rule at :173 counts any shebang file as a shell script and the scoped gate deselects the five tests covering the scheduler route and the killed supervisor.",
+    "fit": "The fragment follows the sibling evidence fragment docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13.html and both commits carry conventional subjects with explanatory bodies and no attribution trailer.",
+    "goal_fidelity": "docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html:33 records four arms holding and the census failing and keeps the section open as \u00a710 requires, though the census is compared against a baseline (:49-52) the record concedes it cannot reproduce.",
+    "reuse": "The diff adds no code definition, and the search for a run-directory wrapper-census owner over reckon/ found reckon/crew/live_worker_census.py measures live workers rather than run-directory scripts, so no owner is forked.",
+    "scope_discipline": "git diff --stat efb4b7ed..169294fda8 shows 1683 insertions across exactly the three declared paths and no modification or deletion of any other file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is \u00a710's one record of the guards measured together through the path a real worker takes (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:107-108); docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html:31-63 records all five arms with job ids and receipts and correctly leaves the section open on the census.\nVERDICT done_when: The done_when asks for five arms in a cumulative record and a census under 5 %; the archive at :33-63 and :162-214 gives every arm's measured result, the census reads 11.0 % against that bound, and the manifest's scoped gate at arms/scoped-gate-1343980.log shows 28 passed, 1 skipped, 5 deselected, EXIT=0 at revision f584a969aea2.\nVERDICT write_paths: The declared write paths are the archive HTML, the \u00a710 evidence fragment and a figure directory; git diff --name-only efb4b7ed1b1a6e8b8d6286bd5626749e946e5752..169294fda8025eb73efd4e0af371b732b7f073b4 returns exactly those three paths.\nVERDICT manifest: Read; the reviewed manifest records status complete, commits f584a969ae and 169294fda8, its gate command and log, the five arms' evidence inputs, and the census failure as a measured outcome rather than a blocked step.\nVERDICT diff: Read commit by commit against efb4b7ed; f584a969ae adds the cumulative archive record (231 lines), the \u00a710 fragment (41 lines) and census.svg (1406 lines), and 169294fda8 appends the scoped-gate line to the archive and the fragment, with no deletion anywhere.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html:33 records four arms holding and the census failing and keeps the section open as \u00a710 requires, though the census is compared against a baseline (:49-52) the record concedes it cannot reproduce.\nSCORE evidence: 16\nJUSTIFICATION evidence: Every headline number reconciles with its receipt (arms/replay-1343880/receipts.json, arms/permission-1343916/permission-receipts.json, arms/hold-1343953/receipt.json, arms/wrapper-census2-1343925.json and arms/arm-c-health.log), but the census rule at :173 counts any shebang file as a shell script and the scoped gate deselects the five tests covering the scheduler route and the killed supervisor.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat efb4b7ed..169294fda8 shows 1683 insertions across exactly the three declared paths and no modification or deletion of any other file.\nSCORE durability: 12\nJUSTIFICATION durability: The diff adds no assertion and FENCE \u2014 SUITE is unarmed for this node, so nothing fails if the census figures or the record's claims regress; only the pre-existing tests/test_shared_environments_are_read_only.py::test_redirect_through_three_links_refuses_and_preserves_decoy guards arm A.\nSCORE fit: 18\nJUSTIFICATION fit: The fragment follows the sibling evidence fragment docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s13.html and both commits carry conventional subjects with explanatory bodies and no attribution trailer.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no code definition, and the search for a run-directory wrapper-census owner over reckon/ found reckon/crew/live_worker_census.py measures live workers rather than run-directory scripts, so no owner is forked.\nFINDING docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html:47 non-blocking: The census is described as counting \"worker-written shell script\" while the instrument's shell_script() accepts any file whose first two bytes are #!, so Python files (pair.py in the after depth-2 hits, check_snapshot_assertions.py in the before depth-3 hits) are counted; it inflates the depth-2 and depth-3 percentages by at most 0.5 points each and leaves the depth-1 after figure (11.0 %) above the 5 % bound, so the arm's failure stands.\nFINDING docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html:196 non-blocking: One of the five representative census paths, r-20261123T190235235854-delivered-work-lands-without-a-coordinator-s66/gate_base.sh, no longer resolves because its run directory was pruned, so a reader cannot open it; the full recorded list survives in arms/wrapper-census2-1343925.json and run directories are transient by design.\nFINDING docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s10/census.svg:1 non-blocking: The four \"after\" value labels are drawn in the series green #2e8b57 at 4.24:1 against the white canvas, under the 4.5:1 WCAG AA floor for 14 pt text, while the grey \"before\" labels beside them read 9.74:1; the bar lengths repeat the same numbers so no reader is blocked.",
+  "review_method": "Read-only review of the node's manifest, its two commits against efb4b7ed, the gate log and the arm receipts on disk; the node's test files were not re-run and nothing was mutated.",
+  "review_run_id": "r-20261124T091025904415-review-of-a-worker-or-its-job-cannot-overwrite-shared-files-s10-169294fda802",
+  "reviewed_base_sha": "efb4b7ed1b1a6e8b8d6286bd5626749e946e5752",
+  "reviewed_head_sha": "169294fda8025eb73efd4e0af371b732b7f073b4",
+  "reviewed_run_id": "r-20261122T071538397515-a-worker-or-its-job-cannot-overwrite-shared-files-s10",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:35:26.819531+00:00",
+  "total": 104
+}
