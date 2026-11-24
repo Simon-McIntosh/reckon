@@ -92,7 +92,7 @@ def fleet(tmp_path, monkeypatch):
     monkeypatch.setattr(obligations, "_classified_rows", lambda *_: [])
     monkeypatch.setattr(obligations, "_acknowledgements_in_force", lambda *a, **k: {})
     monkeypatch.setattr(obligations, "_sub_floor_items_by_session", lambda *a, **k: {})
-    monkeypatch.setattr(runs, "drain_unreconciled_by_session", lambda *_: {})
+    monkeypatch.setattr(runs, "drain_unreconciled_by_session", lambda *a, **k: {})
     monkeypatch.setattr(station_obligations, "follower_rows", lambda *_: [])
     monkeypatch.setattr(station_obligations, "_station_producer", lambda *_: {})
     file_memo.clear()

@@ -1352,7 +1352,7 @@ def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
             {
                 "kind": _UNREADABLE_RECORD_KIND,
                 "run_id": path,
-# The view projects every duty row through its own action form,
+                # The view projects every duty row through its own action form,
                 # which names the ids the row concerns; this duty's identity is
                 # the path it could not read, so the row states it here. A
                 # snapshot reader rebuilds the row from the stored finding with
@@ -1886,12 +1886,21 @@ class _SweepMemory:
 _SWEEPS: dict[str, _SweepMemory] = {}
 
 
-def _stat_identity(directories: Iterable[Any]) -> dict[str, tuple[int, int]]:
-    """The stat identity of every file under the given directories.
+def _directory_identity(directories: Iterable[Any]) -> dict[str, tuple[int, int]]:
+    """The stat identity of every directory under the given roots.
 
-    Judged per file rather than per directory: an in-place edit that leaves a
-    directory's own stat unchanged still moves the file's size or mtime, and
-    that is the change the producer republishes on.
+    Judged per directory rather than per file. Every writer that changes these
+    trees replaces a file rather than editing it in place — plans and review
+    records are written to a temporary and renamed over the original — so adding,
+    removing or replacing a file moves its containing directory's own stat; and
+    a directory's stat is one call however many files it holds. Reading the tree
+    this way makes the sweep's change check cost the number of directories it
+    watches rather than the number of files under them, which on this project's
+    state tree is eight thousand files against four thousand directories.
+
+    The plan the obligation derivation parses is read by the plan-state cache,
+    which this identity tells which of the watched directories moved; that cache
+    stats a directory's files only when the directory itself has moved.
 
     A ``runs`` directory directly under one of the roots is not walked. Its
     files change whenever a run records anything, and those changes reach the
@@ -1899,25 +1908,34 @@ def _stat_identity(directories: Iterable[Any]) -> dict[str, tuple[int, int]]:
     sweep's stat budget on a trigger that carries no new event.
     """
     identity: dict[str, tuple[int, int]] = {}
+
+    def visit(directory: Path) -> None:
+        try:
+            metadata = directory.stat()
+        except OSError:
+            return
+        identity[str(directory)] = (metadata.st_ino, metadata.st_mtime_ns)
+        try:
+            with os.scandir(directory) as entries:
+                children = sorted(
+                    (entry for entry in entries if entry.name != _RUNS_DIRNAME),
+                    key=lambda entry: entry.name,
+                )
+        except OSError:
+            return
+        for entry in children:
+            try:
+                if not entry.is_dir(follow_symlinks=False):
+                    continue
+            except OSError:
+                continue
+            visit(directory / entry.name)
+
     for directory in directories:
         root = Path(directory)
         if not root.is_dir():
             continue
-        for entry in sorted(root.iterdir()):
-            if entry.name == _RUNS_DIRNAME:
-                continue
-            try:
-                if entry.is_file():
-                    metadata = entry.stat()
-                    identity[str(entry)] = (metadata.st_size, metadata.st_mtime_ns)
-                    continue
-                for path in sorted(entry.rglob("*")):
-                    if not path.is_file():
-                        continue
-                    metadata = path.stat()
-                    identity[str(path)] = (metadata.st_size, metadata.st_mtime_ns)
-            except OSError:
-                continue
+        visit(root)
     return identity
 
 
@@ -2468,9 +2486,11 @@ def sweep(
     """Publish every registered session's snapshot when a trigger fires.
 
     The three triggers are the producer's own: a pointer transition it has
-    already detected, a per-file stat change under the project's state and plan
-    directories, and a floor tick so duties that become due by the passage of
-    time appear with no other event. Nothing is written when none fires, and
+    already detected, a change in a directory under the project's state and plan
+    trees, and a floor tick so duties that become due by the passage of time
+    appear with no other event. The directory check costs one stat per directory
+    rather than one per file, and it is what tells the plan-state cache which
+    plan files to re-read. Nothing is written when none fires, and
     the first sweep of a producer always writes, so a session has a snapshot
     from the moment its producer takes the seat.
 
@@ -2490,7 +2510,7 @@ def sweep(
         and (instant - memory.checked_at).total_seconds()
         < STAT_IDENTITY_INTERVAL_SECONDS
     )
-    identity = memory.identity if checked else _stat_identity(state_dirs)
+    identity = memory.identity if checked else _directory_identity(state_dirs)
     due = (
         transition_fired
         or memory is None
@@ -2508,10 +2528,24 @@ def sweep(
     written: list[Path] = []
     ledger_module = _ledger_module()
     head_module = _review_head_module()
+    from reckon.crew import section_obligations
+
+    # The derivation parses the plans whose runs it classifies. It reuses the
+    # parse of every plan while the directory holding it has not moved, and a
+    # directory's own stat is what says which changed -- the same reading this
+    # sweep took to decide it was due. A checked identity is reused from the
+    # previous sweep and is up to ten seconds old, so it is handed over as
+    # unknown rather than as proof no plan moved; the plan cache then stats the
+    # plan files themselves, which is correct but is the cost this path avoids.
+    plan_identity = None if checked else identity
     # One region spans the derivation and every session's slice, so the index is
     # built once and each live run's reviewed head is resolved once for the
     # whole sweep rather than once per session that names it.
-    with ledger_module.index_reuse(), head_module.review_heads_resolve_once():
+    with (
+        ledger_module.index_reuse(),
+        head_module.review_heads_resolve_once(),
+        section_obligations.plan_directory_identity(plan_identity),
+    ):
         try:
             state = fleet_state(project, now=instant)
         except Exception:  # noqa: BLE001 - one unreadable input costs one sweep

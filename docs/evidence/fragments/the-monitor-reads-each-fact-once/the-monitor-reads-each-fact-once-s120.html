@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s120">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-23">
+  <meta name="evidence-commit" content="95b4a02d56">
+  <title>An unchanged sweep reads no plan and walks no tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="an-unchanged-sweep-reads-no-plan-and-walks-no-tree">
+  <h2>An unchanged sweep reads no plan and walks no tree</h2>
+
+  <p><strong>The defect.</strong> Each obligations sweep of the watch producer
+  re-parsed every candidate plan to read its section duties, and walked the
+  project's state tree recursively statting every file under it. On a sweep
+  where no plan had changed since the last one, both costs were paid to learn
+  that nothing had moved &mdash; eight thousand files against four thousand
+  directories on this project's state tree.</p>
+
+  <p><strong>What landed.</strong> The change check now records one stat per
+  directory under the trees it watches. Every writer that changes these trees
+  replaces a file rather than editing it in place &mdash; plans and review
+  records are written to a temporary and renamed over the original &mdash; so a
+  change still moves the containing directory's own stat, and a directory's stat
+  is one call however many files it holds. That reading is handed to a plan-state
+  cache, keyed on the directory identity and the plan file's own signature. While
+  the directory holding a plan is unchanged the cache returns its stored parse
+  with no stat and no parse; when the directory has moved it re-parses exactly
+  the plan whose file changed.</p>
+
+  <p>A stat identity reused from the previous sweep can be up to ten seconds
+  old, so it is handed to the plan cache as unknown rather than as proof that no
+  plan moved; the cache then falls back to each plan's own file signature. That
+  is correct and pays the per-file cost only on the sweep that reused a checked
+  identity.</p>
+
+  <p><strong>The test.</strong>
+  <code>tests/test_an_unchanged_sweep_reads_no_plan_and_walks_no_tree.py</code>
+  drives full sweeps: the in-process sweep memory is cleared and the clock is
+  advanced past both the stat-identity interval and the floor tick, so neither
+  shortcut answers the second sweep on the first one's behalf. The fixture is a
+  project of four plans, each with a live run whose section duty makes the plan a
+  candidate, and one thousand state files across two hundred directories. The
+  cases are:</p>
+
+  <ul>
+    <li>the second of two full sweeps parses no plan, stats no file of the state
+      population, and stats no directory beyond the watched tree but the ledger's
+      own rows directory;</li>
+    <li>a sweep after one plan's file is replaced parses that plan alone;</li>
+    <li>a sweep after a state file changes publishes the change;</li>
+    <li>a sweep after a review record is added publishes the change;</li>
+    <li>in every case the published obligations equal those of a from-scratch
+      sweep over the same state, compared row for row.</li>
+  </ul>
+
+  <p><strong>Gate arms.</strong> The head arm at revision
+  <code>95b4a02d56</code>, over the new test and the four importer files,
+  reported <code>79 passed in 60.28s (0:01:00)</code>. The base arm at revision
+  <code>a1d432530d</code> reported <code>6 failed, 69 passed in 32.30s</code>:
+  four are the held-tree read-once cases, whose stand-in refused the keyword
+  its caller passes, and two are the staged-write census, which finds nothing
+  because the base tree is a git archive with no index and the census reads
+  one. The held-tree file also ran alone at both revisions &mdash; nine passed
+  at the base revision and nine at the head &mdash; so the case where a run
+  file and a later aggregate row name one tree is attributed to the run
+  the file carries at both revisions.</p>
+
+  <p>The importer population &mdash; 231 test files that import the changed
+  modules &mdash; ran in three parts per revision. The head arm reported
+  <code>44 failed, 1843 passed, 1 error</code>; the base arm reported
+  <code>63 failed, 1824 passed, 1 error</code>. Every head failure is also red
+  at base, so the head adds none. The nineteen base-only failures are the two
+  negative-control cases below, the two reuse cases and the bounded read the
+  held-tree repairs fixed, four held-tree discovery cases, and ten tests whose
+  outcome depends on the arm host's temporary storage and git state. The
+  failures present in both arms are an environment population identical at the
+  two revisions.</p>
+
+  <p><strong>Negative control.</strong> At the base revision the first case fails
+  with all four plans parsed and one thousand state files stat'ed on the second
+  sweep; the second case fails with all four plans parsed after one plan's file
+  changed. Both are in the base importer arm's first part log. Base and head
+  population gate logs are held under the run directory with each arm's
+  revision, its literal command, and a closing <code>EXIT=</code> line.</p>
+</section>
+</main>
+</body>
+</html>

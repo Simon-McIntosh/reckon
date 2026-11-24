@@ -663,18 +663,21 @@ def test_a_resumed_run_is_published_and_owes_no_duty_for_the_head_it_replaced(
 
 
 def test_the_stat_walk_skips_run_records(fleet: dict[str, Any]) -> None:
-    """A record under the state directory's runs subtree is not walked."""
+    """The identity walk covers directories and never the runs subtree."""
     state_dir = fleet["repo"] / "docs" / "state" / PROJECT
     record = state_dir / "runs" / "r-one.json"
     record.parent.mkdir(parents=True, exist_ok=True)
     record.write_text("{}\n", encoding="utf-8")
     kept = state_dir / "crew.json"
     kept.write_text("{}\n", encoding="utf-8")
-    identity = obligation_snapshot._stat_identity(
+    identity = obligation_snapshot._directory_identity(
         [state_dir, fleet["repo"] / "docs" / "plans"]
     )
-    assert str(kept) in identity, "a file beside the runs subtree is still walked"
-    assert not any("/runs/" in path for path in identity)
+    # The walk records each directory it visits, not the files inside them, so
+    # a file's identity is never what it reports.
+    assert str(state_dir) in identity, "the state directory itself is still walked"
+    assert str(kept) not in identity, "a file was recorded as a watched identity"
+    assert not any("/runs/" in path or path.endswith("/runs") for path in identity)
 
 
 def test_a_zombie_producer_is_not_fresh(fleet: dict[str, Any]) -> None:
