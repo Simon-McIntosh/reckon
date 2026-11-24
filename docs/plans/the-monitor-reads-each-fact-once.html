@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="626">
+<meta name="plan-version" content="627">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -1373,6 +1373,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s120" data-id="c-run-r-20261123T195832804610-review-of-the-monitor-reads-each-fact-once-s120-79a79f0603e7" data-who="reckon-build" data-when="2026-11-23T21:38:37.489Z">
     <div class="r-comment-body"><p>review scored 104, 1 finding(s)</p></div>
+</div>
+<div class="r-comment" data-section="s120" data-id="c-run-r-20261123T115801957881-the-monitor-reads-each-fact-once-s120" data-who="reckon-build" data-when="2026-11-23T19:58:15Z">
+    <div class="r-comment-body"><p>obligations sweep compares directories instead of statting every file, and re-parses only the plan whose directory moved</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261107T171647831487-review-of-obligations-recompute-only-what-changed-902372b94625" data-who="reckon-build" data-when="2026-11-07T17:35:01.610Z">
     <div class="r-comment-body"><p>Reviewed r-20261107T155222105164-obligations-recompute-only-what-changed at base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 and head 902372b946250b719af5df8a9f0a146625130397: the three memoisations landed and the base arm genuinely fails their zero-count assertions, but the done_when's live under-2-s bullet is unmet at 75.761 s and four non-blocking findings are recorded (stale held-record signature, a live timing log that ends in a NameError stamped EXIT=0, an after-arm recorded one revision behind head, and a hand-rolled memo beside file_memo).</p></div>
