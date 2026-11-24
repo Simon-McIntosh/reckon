@@ -322,16 +322,11 @@ def priorities_first(
             pointer, config_for
         ) <= (points or 0)
 
-    # Critical work leads the lane: a request at or above its project's critical
-    # level is hoisted to the very front, ahead of the reviews, so that the
-    # order this pass launches by agrees with the ordering's own head. The
-    # remaining raised requests still follow the leading reviews, because a
-    # review lets a delivered run land and those requests are below the
-    # critical level.
-    criticals = sorted(
-        (pointer for pointer in order if _critical(pointer)),
-        key=lambda pointer: -queue_order._priority(pointer),
-    )
+    # Critical work is moved by the shared order itself, not by this hoist: a
+    # request at or above its project's critical level is placed ahead of a
+    # waiting review inside ``queue_order``, so this pass must leave it where
+    # that order put it. It is excluded from ``raised`` only so the hoist below
+    # cannot drag it back behind the reviews.
     raised = sorted(
         (
             pointer
@@ -343,16 +338,26 @@ def priorities_first(
         ),
         key=lambda pointer: -queue_order._priority(pointer),
     )
-    if not raised and not criticals:
-        return list(order)
-    hoisted = {id(pointer) for pointer in raised} | {
-        id(pointer) for pointer in criticals
-    }
-    rest = [pointer for pointer in order if id(pointer) not in hoisted]
-    lead = 0
-    while lead < len(rest) and (_is_review_run(rest[lead]) or _aged(rest[lead])):
-        lead += 1
-    return criticals + rest[:lead] + raised + rest[lead:]
+    if raised:
+        hoisted = {id(pointer) for pointer in raised}
+        rest = [pointer for pointer in order if id(pointer) not in hoisted]
+        lead = 0
+        while lead < len(rest) and (
+            _is_review_run(rest[lead]) or _aged(rest[lead]) or _critical(rest[lead])
+        ):
+            lead += 1
+        order = rest[:lead] + raised + rest[lead:]
+    # The role-share and weight passes run between the shared order and this
+    # one, so the critical lead is asserted once more over their result. The
+    # move is the shared order's own, applied again rather than reimplemented.
+    placements = queue_order._critical_ahead_of_reviews(
+        [(pointer, "") for pointer in order],
+        now=moment,
+        config_for=config_for,
+        is_review=_is_review_run,
+        stamp=lambda pointer: parse_utc(pointer.get("queued_at")),
+    )
+    return [pointer for pointer, _reason in placements]
 
 
 def fair_share_admission_order(

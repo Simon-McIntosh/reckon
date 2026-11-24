@@ -336,13 +336,63 @@ def _critical_level(
     return flight.queue_critical_priority(config)
 
 
+def _critical_ahead_of_reviews(
+    rows: Sequence[tuple[Mapping[str, Any], str]],
+    *,
+    now: datetime | None,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    is_review: Callable[[Mapping[str, Any]], bool],
+    stamp: Callable[[Mapping[str, Any]], datetime | None],
+) -> list[tuple[Mapping[str, Any], str]]:
+    """Offer a critical request the slot ahead of a waiting delivered review.
+
+    This is the one move the critical level makes over the shared order: a
+    request at or above its project's critical level is served before the
+    waiting reviews, and every other request keeps the place the urgency
+    classes gave it. Two boundaries keep the rest of the order exact:
+
+    * An aged request keeps its precedence. The critical block is placed after
+      every request past the starvation age, even where that leaves the review
+      ahead of it, so a newer override can never displace work that has waited.
+    * A queue holding no waiting review is returned unchanged, because there is
+      nothing for the critical request to overtake.
+
+    A review is never itself moved: it is the thing being overtaken.
+    """
+
+    def _is_critical(pointer: Mapping[str, Any]) -> bool:
+        points = _override(pointer)
+        if points is None or is_review(pointer):
+            return False
+        if now is not None and _starved(stamp(pointer), now):
+            return False
+        return points >= _critical_level(pointer, config_for)
+
+    criticals = [row for row in rows if _is_critical(row[0])]
+    if not criticals:
+        return list(rows)
+    moved = {id(row[0]) for row in criticals}
+    rest = [row for row in rows if id(row[0]) not in moved]
+    insert: int | None = None
+    for index, row in enumerate(rest):
+        if is_review(row[0]):
+            insert = index
+            break
+    if insert is None:
+        return list(rows)
+    if now is not None:
+        for index, row in enumerate(rest):
+            if _starved(stamp(row[0]), now) and index + 1 > insert:
+                insert = index + 1
+    return rest[:insert] + criticals + rest[insert:]
+
+
 def _precedence(
     pointer: Mapping[str, Any],
     *,
     queued_at: datetime | None,
     now: datetime,
     review: bool,
-    critical: int,
 ) -> tuple[tuple[int, int], str]:
     """The urgency classes shared by admission and promotion.
 
@@ -354,14 +404,12 @@ def _precedence(
     Below both, ageing sits above priority on purpose, so a spent budget can
     move work ahead but cannot starve another session.
 
-    Critical work leads everything: a request whose override reaches its
-    project's critical level is unblocking work, so it takes a freed slot ahead
-    of waiting reviews. Below that level
-    every other request keeps the order above, with delivered reviews first.
+    Critical work is a separate move over this order, not a class within it: a
+    request at or above its project's critical level is offered the slot ahead
+    of a waiting review by :func:`_critical_ahead_of_reviews`, so ageing and
+    the review-versus-its-run order keep exactly the classes below.
     """
     points = _override(pointer)
-    if points is not None and points >= critical:
-        return (-1, -points), f"priority override {points}"
     if review:
         if points is not None:
             return (0, -points), f"delivered review at priority {points}"
@@ -397,7 +445,6 @@ def fair_queue_order_details(
             queued_at=stamp,
             now=now,
             review=is_review(request),
-            critical=_critical_level(request, config_for),
         )
         classes[rank].append((request, stamp, reason))
 
@@ -419,7 +466,13 @@ def fair_queue_order_details(
             remaining.remove(row)
             if consumes_turn(request):
                 turns[str(request.get("session") or "")] += 1
-    return ordered
+    return _critical_ahead_of_reviews(
+        ordered,
+        now=now,
+        config_for=config_for,
+        is_review=is_review,
+        stamp=joined_at,
+    )
 
 
 def _next_to_launch(
@@ -447,7 +500,6 @@ def _next_to_launch(
             queued_at=row[0],
             now=moment,
             review=_is_review_run(pointer),
-            critical=_critical_level(pointer, config_for),
         )
         roadmap = (
             (id(pointer) not in keys, keys.get(id(pointer), ()))
@@ -524,7 +576,6 @@ def admission_order_details(
             queued_at=launch[0],
             now=moment,
             review=_is_review_run(pointer),
-            critical=_critical_level(pointer, config_for),
         )
         return (
             urgency,
@@ -543,7 +594,6 @@ def admission_order_details(
             queued_at=oldest,
             now=moment,
             review=_is_review_run(pointer),
-            critical=_critical_level(pointer, config_for),
         )
         override = _override(pointer)
         key = keys.get(id(pointer))
@@ -573,7 +623,6 @@ def admission_order_details(
             queued_at=row[0],
             now=moment,
             review=_is_review_run(pointer),
-            critical=_critical_level(pointer, config_for),
         )
         if urgency == (3, 0) and (key := keys.get(id(pointer))) is not None:
             rivals = [
@@ -594,7 +643,13 @@ def admission_order_details(
         occupancy[(str(pointer.get("backend") or ""), group[1])] += 1
         if not waiting[group]:
             del waiting[group]
-    return ordered
+    return _critical_ahead_of_reviews(
+        ordered,
+        now=moment,
+        config_for=config_for,
+        is_review=_is_review_run,
+        stamp=lambda pointer: parse_utc(pointer.get("queued_at")),
+    )
 
 
 def admission_order(
