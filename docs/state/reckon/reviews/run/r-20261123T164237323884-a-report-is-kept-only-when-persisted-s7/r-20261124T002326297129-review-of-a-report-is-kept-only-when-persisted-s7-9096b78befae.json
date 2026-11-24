@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T00:24:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 271,
+      "severity": "non-blocking",
+      "text": "MEASURE_PATTERN needs a digit followed by one of its enumerated unit words, so a done-when that states a measure as a count of an unnamed thing (\"reduces 120 sequential calls to 3 batched ones\") or in words (\"halves the runtime\") is composed with \"Your done-when states no measure\", the same falsehood the previous blocking finding named, now for a narrower class."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 1187,
+      "severity": "non-blocking",
+      "text": "The manifest template is shared by both carriers but its figures line says figures live \"under docs/figures/<plan>/\", while FIGURE_LOCATION_SENTENCE gives a brief carrier docs/figures/<topic>/ at prompts.py:1027, so a brief run reads two different directories for one figure in one prompt."
+    },
+    {
+      "file": "manifest.md",
+      "line": 0,
+      "severity": "non-blocking",
+      "text": "The artifacts line quotes \"head tests 86 passed at 9096b78bef\", which no log supports \u2014 the only log it lists, logs/node-tests-head.log, reports 81 passed and its header names revision ed34968e, so the quoted figure cannot be reconciled with the evidence it cites."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 1 production composing call site plus three exports/re-exports.",
+    "diff": "read both commits against ed34968e: one producer, the measured-quantity classifier, the manifest figures key, the full brief source path and an independent test.",
+    "done_when": "tests/test_a_drawable_result_leaves_a_figure.py asserts the five facts the done-when names, and the gate and both arms are recorded with their revision, command and EXIT=0.",
+    "goal": "the node goal is that a drawable result leaves a figure and no prose report; reckon/crew/prompts.py:295 now asks for the figure when the done-when names a figure artifact or states a measured quantity.",
+    "manifest": "read; gate 144 passed at head, arms 130 base / 144 after, negative control failing both cases at base; one quoted figure (86) is unsupported by its log (81).",
+    "write_paths": "seven delivered paths, all inside the nine declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a drawable result leaves a figure and no prose report; reckon/crew/prompts.py:295 now asks for the figure when the done-when names a figure artifact or states a measured quantity, so the withholding the previous review found is gone.\nVERDICT done_when: the done-when's five facts are each asserted by tests/test_a_drawable_result_leaves_a_figure.py (drawable plan and brief, rename withholds, no contract both asks and withholds over six composed cases, the protocol's same words, and the one-producer monkeypatch case), and the scoped gate and both suite arms are recorded at their revisions with EXIT=0.\nVERDICT write_paths: the seven delivered paths all lie inside the nine declared write paths; nothing outside them was touched.\nVERDICT manifest: read; it records the scoped gate at 9096b78 as 144 passed, the base arm at ed34968e as 130 passed, the after arm at 9096b78 as 144 passed, and the base negative control failing both cases with EXIT=1, but its artifacts line quotes \"head tests 86 passed\" while the only log it names reports 81.\nVERDICT diff: read both commits against ed34968e: e0c9d608 collapses four evidence constants into one producer read by both carriers, and 9096b78 adds the measured-quantity classifier, the manifest figures key, the full brief source path and an independent test.\nCALL_SITES: reckon/crew/dispatch_claims.py:1537 dispatch_claims._compose_dispatch_prompt, reckon/crew/dispatch_claims.py:51 import, reckon/crew.py:161 export, reckon/crew/dispatch.py:471 export, reckon/crew/dispatching/_imports.py:189 re-export\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:295 composes the asking clause for a measured done-when, reproduced by composing \"the gate cuts runtime by 30 percent\" at head, but a done-when stating a count without an enumerated unit word (\"reduces 120 sequential calls to 3 batched ones\") is still told it states no measure.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_drawable_result_leaves_a_figure.py asserts every fact the done_when names, and the three arm logs under the run directory carry their revision, literal command and a closing EXIT=0 line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the seven paths in ed34968e..9096b78 is inside the nine declared write paths, and no file outside them is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_drawable_result_leaves_a_figure.py:152 reddens if the classifier reverts to FIGURE_NAME_PATTERN alone because its measured fixture never says \"figure\" and its expected sentence is a literal.\nSCORE fit: 18\nJUSTIFICATION fit: the new constants and _evidence_figure_rule at reckon/crew/prompts.py:281 follow the constant-plus-composer idiom of the surrounding module, though skills/reckon-build/references/worker-protocol.md:159 leaves one line unwrapped past the file's width.\nSCORE reuse: 20\nJUSTIFICATION reuse: the figure-name predicate is extended in place (reckon/crew/prompts.py:247) and the figures key feeds the parser reckon/evidence.py:397 already owns; reckon/capability.py:39 matches execution measures, a different predicate, so nothing is forked.\nFINDING reckon/crew/prompts.py:271 non-blocking: MEASURE_PATTERN needs a digit followed by one of its enumerated unit words, so a done-when that states a measure as a count of an unnamed thing (\"reduces 120 sequential calls to 3 batched ones\") or in words (\"halves the runtime\") is composed with \"Your done-when states no measure\", the same falsehood the previous blocking finding named, now for a narrower class.\nFINDING reckon/crew/prompts.py:1187 non-blocking: the manifest template is shared by both carriers but its figures line says figures live \"under docs/figures/<plan>/\", while FIGURE_LOCATION_SENTENCE gives a brief carrier docs/figures/<topic>/ at prompts.py:1027, so a brief run reads two different directories for one figure in one prompt.\nFINDING manifest.md:artifacts non-blocking: the artifacts line quotes \"head tests 86 passed at 9096b78bef\", which no log supports \u2014 the only log it lists, logs/node-tests-head.log, reports 81 passed and its header names revision ed34968e, so the quoted figure cannot be reconciled with the evidence it cites.\n",
+  "review_run_id": "r-20261124T002326297129-review-of-a-report-is-kept-only-when-persisted-s7-9096b78befae",
+  "reviewed_base_sha": "ed34968e986cc663035e7e41790ffba484bf5e1b",
+  "reviewed_head_sha": "9096b78befaeba3cd1a17755934fd4e795848185",
+  "reviewed_run_id": "r-20261123T164237323884-a-report-is-kept-only-when-persisted-s7",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:34:58.294642+00:00",
+  "total": 112
+}
